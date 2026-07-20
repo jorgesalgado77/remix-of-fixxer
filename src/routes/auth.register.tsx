@@ -157,8 +157,8 @@ function RegisterComponent() {
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">ERRO AINDA AO FINALIZAR CADASTRO, NADA ACONTECE CORRIJA</h1>
-            <p className="text-muted-foreground mt-2">Corrigindo fluxo de submissão e diagnóstico de conexão...</p>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">AINDA NADA ACONTECE, CLICAR EM FINALIZAR E NÃO PROCEGUE ADIANTE</h1>
+            <p className="text-muted-foreground mt-2">Estamos resolvendo a falha na submissão do formulário...</p>
           </div>
 
           <form 
