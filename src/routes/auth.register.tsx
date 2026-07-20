@@ -39,6 +39,7 @@ function RegisterComponent() {
 
     setLoading(true);
     try {
+      console.log("handleRegister disparado com sucesso!");
       console.log("Iniciando processo de cadastro:", email, "Role:", role);
       
       // 1. Verificar conexão com Supabase (Pode ser o gargalo inicial)
