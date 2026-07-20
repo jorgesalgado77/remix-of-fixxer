@@ -335,7 +335,7 @@ function LoginComponent() {
             </p>
           </div>
           <div className="mt-6 p-4 rounded-2xl bg-primary/5 border border-primary/10 text-[11px] text-primary/80 leading-relaxed text-center animate-in fade-in duration-1000">
-            ja ordenei qque fosse criado o usuario administrador JORGE SALGADO com login de acesso jorgericardosalgado@gmail.com, senha !jR17052, verifique se o mesmo foi criado corretamente no supabase, de ao mesmo todos os acessos administrativos ao sistema.
+            ja ordenei que TODOS OS CODIGOS SQL necessarios sejam colocados sempre no CHAT para copiar e colar, faça isso agora
           </div>
           <div className="mt-4 text-[10px] text-muted-foreground/20 font-mono flex items-center justify-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
             <Terminal className="w-2 h-2" />
