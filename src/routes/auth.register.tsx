@@ -29,8 +29,8 @@ function RegisterComponent() {
     setStep("details");
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleRegister = async (e?: React.FormEvent) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     
     if (!email || !password || !fullName || !role) {
       toast.error("Preencha todos os campos obrigatórios");
