@@ -36,7 +36,29 @@ CREATE TABLE IF NOT EXISTS public.admin_config (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. FUNÇÃO PARA VERIFICAR ROLE (SECURITY DEFINER PARA BYPASS RLS)
+-- 5. TABELA DE AUDITORIA DE ACESSO
+CREATE TABLE IF NOT EXISTS public.access_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID,
+    email TEXT,
+    event_type TEXT NOT NULL, -- 'login_attempt', 'redirect_block', 'role_check'
+    status TEXT NOT NULL, -- 'success', 'failure', 'blocked'
+    reason TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Habilitar RLS e permissões para auditoria
+ALTER TABLE public.access_logs ENABLE ROW LEVEL SECURITY;
+GRANT INSERT ON public.access_logs TO authenticated, anon;
+GRANT SELECT ON public.access_logs TO authenticated; -- RLS filtrará por admin
+
+DO $$ BEGIN
+    CREATE POLICY "Admins can view all logs" ON public.access_logs
+        FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+-- 6. FUNÇÃO PARA VERIFICAR ROLE (SECURITY DEFINER PARA BYPASS RLS)
 CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role public.app_role)
 RETURNS BOOLEAN
 LANGUAGE sql
