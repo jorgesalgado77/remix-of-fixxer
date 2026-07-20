@@ -91,7 +91,8 @@ function RegisterComponent() {
         // Redirecionamento FORÇADO para garantir que o estado limpe
         setTimeout(() => {
           if (authData.session) {
-             window.location.href = role === 'admin' ? '/admin' : '/dashboard';
+             const isAdmin = (role as string) === 'admin';
+             window.location.href = isAdmin ? '/admin' : '/dashboard';
           } else {
              window.location.href = '/auth?registered=true';
           }
