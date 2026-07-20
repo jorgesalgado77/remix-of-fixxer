@@ -30,16 +30,19 @@ function RegisterComponent() {
   };
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
     if (!email || !password || !fullName || !role) {
-      toast.error("Preencha todos os campos");
+      toast.error("Preencha todos os campos obrigatórios");
       return;
     }
 
     setLoading(true);
     try {
-      console.log("Tentando cadastrar:", email);
-      const { data, error } = await supabase.auth.signUp({
+      console.log("Tentando cadastrar:", email, "Role:", role);
+      
+      // 1. Auth SignUp
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -50,23 +53,43 @@ function RegisterComponent() {
         },
       });
 
-      if (error) {
-        console.error("Erro no signUp:", error);
-        throw error;
+      if (authError) {
+        console.error("Erro no auth.signUp:", authError);
+        throw authError;
       }
 
-      console.log("Resposta do signUp:", data);
+      console.log("Auth registrado com sucesso:", authData.user?.id);
 
-      if (data.user && data.session) {
+      // 2. Garantir Perfil (Caso o Trigger falhe ou atrase no banco externo)
+      if (authData.user) {
+        try {
+          console.log("Criando/Verificando perfil manualmente...");
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: authData.user.id,
+              full_name: fullName,
+              role: role,
+            });
+          
+          if (profileError) {
+            console.warn("Aviso ao criar perfil manual (pode ser RLS ou Trigger):", profileError);
+          }
+        } catch (pErr) {
+          console.error("Erro silencioso no perfil manual:", pErr);
+        }
+      }
+
+      if (authData.user && authData.session) {
         toast.success("Cadastro realizado com sucesso!");
         navigate({ to: "/dashboard" });
       } else {
-        toast.success("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
+        toast.success("Cadastro realizado! Verifique seu e-mail para confirmar.");
         navigate({ to: "/auth" });
       }
     } catch (error: any) {
-      console.error("Catch erro cadastro:", error);
-      toast.error(error.message || "Erro ao realizar cadastro");
+      console.error("Erro fatal no processo de cadastro:", error);
+      toast.error(error.message || "Erro ao realizar cadastro. Verifique os logs.");
     } finally {
       setLoading(false);
     }
