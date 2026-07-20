@@ -78,30 +78,52 @@ function LoginComponent() {
       setDiagnosticSteps([...steps]);
 
       // Passo 2: Profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, plan_id')
-        .eq('id', data.user.id)
-        .maybeSingle();
+      console.log("Login realizado. Buscando perfil para user id:", data.user.id);
+      
+      let profile = null;
+      let retryCount = 0;
+      const maxRetries = 5;
 
-      if (profileError) {
+      // Loop de retry para aguardar o trigger do Supabase criar o perfil
+      while (retryCount < maxRetries) {
+        const { data: p, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, plan_id')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        if (p) {
+          profile = p;
+          break;
+        }
+
+        if (profileError) {
+          console.error("Erro ao buscar perfil:", profileError);
+          // Não paramos aqui, tentamos novamente se for um erro transitório
+        }
+
+        console.log(`Perfil não encontrado, tentativa ${retryCount + 1}/${maxRetries}...`);
+        retryCount++;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      if (!profile) {
         steps[1].status = 'error';
-        steps[1].detail = profileError.message;
+        steps[1].detail = "Perfil não encontrado após várias tentativas. O trigger do Supabase pode ter falhado.";
         setDiagnosticSteps([...steps]);
-        throw profileError;
+        throw new Error("Perfil não sincronizado. Verifique os triggers no Supabase.");
       }
 
       steps[1].status = 'success';
-      steps[1].detail = profile ? `Perfil encontrado: ${profile.role}` : "Perfil em criação...";
+      steps[1].detail = `Perfil encontrado: ${profile.role}`;
       steps[2].status = 'loading';
       setDiagnosticSteps([...steps]);
 
       // Passo 3: Role & Plan Validation
-      const role = profile?.role || 'lojista';
+      const role = profile.role || 'lojista';
       
-      // Se não tiver plano, o trigger handle_new_user deve cuidar disso, mas vamos validar
       steps[2].status = 'success';
-      steps[2].detail = `Role: ${role.toUpperCase()} | Plano: ${profile?.plan_id ? 'Ativo' : 'Teste Gratuito'}`;
+      steps[2].detail = `Role: ${role.toUpperCase()} | Plano: ${profile.plan_id ? 'Ativo' : 'Teste Gratuito'}`;
       steps[3].status = 'loading';
       setDiagnosticSteps([...steps]);
 
@@ -110,21 +132,23 @@ function LoginComponent() {
         status: 'success', 
         user_id: data.user.id,
         email: email.trim(),
-        metadata: { role, plan_id: profile?.plan_id }
+        metadata: { role, plan_id: profile.plan_id, method: 'diagnostic_success' }
       });
 
       // Passo 4: Redirect
-      setTimeout(() => {
-        steps[3].status = 'success';
-        setDiagnosticSteps([...steps]);
-        toast.success(`Bem-vindo, ${role}!`);
-        
-        if (role === 'admin') {
-          navigate({ to: "/admin" });
-        } else {
-          navigate({ to: "/dashboard" });
-        }
-      }, 800);
+      console.log("Redirecionando usuário com role:", role);
+      steps[3].status = 'success';
+      setDiagnosticSteps([...steps]);
+      toast.success(`Bem-vindo, ${role}!`);
+      
+      // Pequeno delay para o usuário ver o sucesso no diagnóstico
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      if (role === 'admin') {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/dashboard";
+      }
 
     } catch (error: any) {
       setLoading(false);
