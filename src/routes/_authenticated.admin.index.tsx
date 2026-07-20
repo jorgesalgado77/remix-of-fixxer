@@ -4,7 +4,6 @@ import {
   Users, 
   ShieldCheck, 
   Activity,
-  AlertTriangle,
   ArrowUpRight,
   Mail,
   Plus,
@@ -13,7 +12,10 @@ import {
   ShieldAlert,
   Hammer,
   Store,
-  Truck
+  Truck,
+  CreditCard,
+  Lock,
+  Zap
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 function AdminDashboard() {
   const { glassClass } = usePerformanceMode();
+  const [activeTab, setActiveTab] = useState<'overview' | 'plans'>('overview');
   const [authorizedEmails, setAuthorizedEmails] = useState<{id: string, email: string}[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [loading, setLoading] = useState(true);
@@ -109,7 +112,27 @@ function AdminDashboard() {
         </div>
       </header>
 
-      {/* Atalhos Rápidos */}
+      {/* Abas de Navegação */}
+      <div className="flex gap-4 border-b border-white/5 pb-1">
+        <button 
+          onClick={() => setActiveTab('overview')}
+          className={`pb-4 px-2 text-sm font-bold uppercase tracking-widest transition-all relative ${activeTab === 'overview' ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
+        >
+          Visão Geral
+          {activeTab === 'overview' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_8px_rgba(0,255,135,0.6)]" />}
+        </button>
+        <button 
+          onClick={() => setActiveTab('plans')}
+          className={`pb-4 px-2 text-sm font-bold uppercase tracking-widest transition-all relative ${activeTab === 'plans' ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
+        >
+          Gestão de Planos
+          {activeTab === 'plans' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_8px_rgba(0,255,135,0.6)]" />}
+        </button>
+      </div>
+
+      {activeTab === 'overview' ? (
+        <>
+          {/* Atalhos Rápidos */}
       <section>
         <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4">Atalhos do Sistema</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -219,6 +242,102 @@ function AdminDashboard() {
             * Usuários registrados com estes emails receberão automaticamente o perfil de Admin.
           </div>
         </div>
+      ) : (
+        <PlansManagement glassClass={glassClass} />
+      )}
+    </div>
+  );
+}
+
+function PlansManagement({ glassClass }: { glassClass: string }) {
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPlans = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .order('category');
+      
+      if (error) throw error;
+      setPlans(data || []);
+    } catch (error: any) {
+      toast.error("Erro ao carregar planos: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const updatePrice = async (id: string, price: number) => {
+    try {
+      const { error } = await supabase
+        .from('subscription_plans')
+        .update({ price })
+        .eq('id', id);
+      
+      if (error) throw error;
+      toast.success("Preço atualizado!");
+    } catch (error: any) {
+      toast.error("Erro ao atualizar preço");
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {plans.map((plan) => (
+          <div key={plan.id} className={`p-8 rounded-3xl ${glassClass} border border-white/5 space-y-6`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white capitalize">{plan.category}</h3>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{plan.name}</p>
+                </div>
+              </div>
+              <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(0,255,135,0.6)]" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Valor Mensal (R$)</label>
+              <input 
+                type="number" 
+                defaultValue={plan.price}
+                onBlur={(e) => updatePrice(plan.id, parseFloat(e.target.value))}
+                className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 font-bold text-white outline-none focus:border-primary transition-all"
+              />
+            </div>
+
+            <div className="pt-4 border-t border-white/5 space-y-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Privilégios Técnicos</p>
+              <div className="space-y-3">
+                <FeatureToggle label="Chat Interno" enabled={true} />
+                <FeatureToggle label="Contratos Digitais" enabled={plan.price > 0} />
+                <FeatureToggle label="Relatórios Técnicos" enabled={plan.price > 0} />
+                <FeatureToggle label="Prioridade no Radar" enabled={plan.price > 150} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FeatureToggle({ label, enabled }: { label: string, enabled: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-white/70">{label}</span>
+      <div className={`w-10 h-5 rounded-full p-1 transition-all ${enabled ? 'bg-primary' : 'bg-white/10'}`}>
+        <div className={`w-3 h-3 rounded-full bg-white transition-all ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
       </div>
     </div>
   );
