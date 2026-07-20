@@ -136,17 +136,18 @@ function LoginComponent() {
       });
 
       // Passo 4: Redirect
-      console.log("Redirecionando usuário com role:", role);
+      console.log("Validando Role para redirecionamento:", role);
       steps[3].status = 'success';
       setDiagnosticSteps([...steps]);
-      toast.success(`Bem-vindo, ${role}!`);
       
-      // Pequeno delay para o usuário ver o sucesso no diagnóstico
-      await new Promise(resolve => setTimeout(resolve, 800));
-
+      // Verificação explícita de Role antes do redirecionamento
       if (role === 'admin') {
+        toast.success("Acesso Administrativo Confirmado");
+        await new Promise(resolve => setTimeout(resolve, 800));
         window.location.href = "/admin";
       } else {
+        toast.success(`Bem-vindo, ${role}!`);
+        await new Promise(resolve => setTimeout(resolve, 800));
         window.location.href = "/dashboard";
       }
 
