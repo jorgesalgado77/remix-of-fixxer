@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated")({
       .from('profiles')
       .select('role')
       .eq('id', session.user.id)
-      .single();
+      .maybeSingle();
 
     const role = profile?.role || 'lojista';
 
