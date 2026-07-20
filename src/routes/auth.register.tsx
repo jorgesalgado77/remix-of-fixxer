@@ -153,8 +153,8 @@ function RegisterComponent() {
             <p className="text-muted-foreground mt-2">Estamos forçando a submissão via bypass de evento...</p>
           </div>
 
-          <form 
-            onSubmit={handleRegister}
+          <div 
+            id="register-form-container"
             className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl space-y-5"
           >
             <InputField 
