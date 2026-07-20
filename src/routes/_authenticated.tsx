@@ -13,12 +13,23 @@ export const Route = createFileRoute("/_authenticated")({
       });
     }
 
-    // Buscar o perfil e papel do usuário
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .maybeSingle();
+    // Buscar o perfil e papel do usuário com retry (importante para o primeiro acesso)
+    let profile = null;
+    let retryCount = 0;
+    while (retryCount < 3 && !profile) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      
+      if (data) {
+        profile = data;
+        break;
+      }
+      retryCount++;
+      if (!profile) await new Promise(res => setTimeout(res, 500));
+    }
 
     const role = profile?.role || 'lojista';
 
