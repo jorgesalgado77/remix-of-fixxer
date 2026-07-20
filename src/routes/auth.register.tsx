@@ -106,12 +106,16 @@ function RegisterComponent() {
             <p className="text-muted-foreground mt-2">Preencha os dados do seu perfil de {role}</p>
           </div>
 
-          <div className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl space-y-5">
+          <form 
+            onSubmit={handleRegister}
+            className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl space-y-5"
+          >
             <InputField 
               label="Nome Completo" 
               placeholder="Seu nome" 
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              required
             />
             
             {role === "lojista" && (
@@ -127,6 +131,7 @@ function RegisterComponent() {
               type="email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
             <InputField 
               label="Senha" 
@@ -134,17 +139,18 @@ function RegisterComponent() {
               type="password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
 
             <button 
-              onClick={handleRegister}
+              type="submit"
               disabled={loading}
               className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               Finalizar Cadastro
             </button>
-          </div>
+          </form>
         </div>
       )}
     </div>
@@ -169,7 +175,7 @@ function RoleCard({ icon, title, description, onClick }: { icon: React.ReactNode
   );
 }
 
-function InputField({ label, placeholder, type = "text", value, onChange }: { label: string, placeholder: string, type?: string, value?: string, onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+function InputField({ label, placeholder, type = "text", value, onChange, required }: { label: string, placeholder: string, type?: string, value?: string, onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void, required?: boolean }) {
   return (
     <div>
       <label className="block text-sm font-bold text-muted-foreground mb-2">{label}</label>
@@ -178,6 +184,7 @@ function InputField({ label, placeholder, type = "text", value, onChange }: { la
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        required={required}
         className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
       />
     </div>
