@@ -15,9 +15,10 @@ type Step = "role" | "details";
 type Role = "lojista" | "prestador" | "fornecedor";
 
 function RegisterComponent() {
+  const { email: initialEmail } = Route.useSearch();
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<Role | null>(null);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail || "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
