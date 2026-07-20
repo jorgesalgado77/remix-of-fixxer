@@ -69,17 +69,3 @@ function Index() {
     </div>
   );
 }
-
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
-  return (
-    <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm active:bg-slate-50 transition-colors flex gap-4">
-      <div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center shrink-0">
-        {icon}
-      </div>
-      <div>
-        <h4 className="font-bold text-slate-900 text-sm mb-1">{title}</h4>
-        <p className="text-xs text-slate-500 leading-relaxed">{description}</p>
-      </div>
-    </div>
-  );
-}
