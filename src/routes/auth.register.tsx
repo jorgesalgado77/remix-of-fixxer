@@ -148,8 +148,8 @@ function RegisterComponent() {
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">AINDA NADA ACONTECE, CLICAR EM FINALIZAR E NÃO PROCEGUE ADIANTE</h1>
-            <p className="text-muted-foreground mt-2">Estamos resolvendo a falha na submissão do formulário...</p>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">PROBLEMA PERSISTE CORRIJA</h1>
+            <p className="text-muted-foreground mt-2">Estamos forçando a submissão via bypass de evento...</p>
           </div>
 
           <form 
