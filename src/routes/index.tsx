@@ -38,6 +38,9 @@ function Index() {
             <div id="ts-visual-edit-probe-8be0b32ec0b04c3c" className="text-primary/60 text-xs font-mono mb-2 break-all">
               vamos conectar ao banco de dados externo: https://rnhgpxembtgupxnrohxo.supabase.co
             </div>
+            <div id="ts-visual-edit-probe-2ea3b57d8a4341e5" className="text-primary/60 text-xs font-mono mb-2 break-all">
+              vamos configuras as chaves necessarias para correto vinculo com o banco de dados externo
+            </div>
             <div id="ts-visual-edit-probe-07e9adad4a834bc8" className="text-xs text-muted-foreground/40 mb-2 italic">
               Implementar uma verificação de health check no app para confirmar que o Supabase está respondendo com a URL e chave corretas, exibindo um erro amigável se falhar.
             </div>
