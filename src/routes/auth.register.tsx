@@ -38,7 +38,8 @@ function RegisterComponent() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log("Tentando cadastrar:", email);
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -49,11 +50,22 @@ function RegisterComponent() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro no signUp:", error);
+        throw error;
+      }
 
-      toast.success("Cadastro realizado! Verifique seu e-mail.");
-      navigate({ to: "/auth" });
+      console.log("Resposta do signUp:", data);
+
+      if (data.user && data.session) {
+        toast.success("Cadastro realizado com sucesso!");
+        navigate({ to: "/dashboard" });
+      } else {
+        toast.success("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
+        navigate({ to: "/auth" });
+      }
     } catch (error: any) {
+      console.error("Catch erro cadastro:", error);
       toast.error(error.message || "Erro ao realizar cadastro");
     } finally {
       setLoading(false);
