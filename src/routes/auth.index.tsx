@@ -271,12 +271,23 @@ function LoginComponent() {
             ))}
             
             {diagnosticSteps.some(s => s.status === 'error') && (
-              <button 
-                onClick={() => setView("login")}
-                className="w-full mt-4 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
-              >
-                Tentar novamente
-              </button>
+              <div className="space-y-3">
+                <button 
+                  onClick={() => setView("login")}
+                  className="w-full mt-4 bg-primary text-primary-foreground font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  Tentar novamente
+                </button>
+                {diagnosticSteps[0].status === 'error' && (
+                  <Link
+                    to="/auth/register"
+                    search={{ email }}
+                    className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+                  >
+                    Primeiro Acesso? Cadastre-se aqui
+                  </Link>
+                )}
+              </div>
             )}
           </div>
         </div>
