@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/register")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    email: (search.email as string) || "",
+  }),
   component: RegisterComponent,
 });
 
