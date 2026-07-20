@@ -15,9 +15,17 @@ CREATE TABLE IF NOT EXISTS public.subscription_plans (
     name TEXT NOT NULL,
     price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(category, name) -- Adicionado para suportar ON CONFLICT
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Adicionar restrição UNIQUE se não existir
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'subscription_plans_category_name_key'
+    ) THEN
+        ALTER TABLE public.subscription_plans ADD CONSTRAINT subscription_plans_category_name_key UNIQUE (category, name);
+    END IF;
+END $$;
 
 -- 2.1 RECURSOS DOS PLANOS (FEATURES)
 CREATE TABLE IF NOT EXISTS public.plan_features (
