@@ -38,6 +38,9 @@ function Index() {
             <div id="ts-visual-edit-probe-8be0b32ec0b04c3c" className="text-primary/60 text-xs font-mono mb-2 break-all">
               vamos conectar ao banco de dados externo: https://rnhgpxembtgupxnrohxo.supabase.co
             </div>
+            <div id="ts-visual-edit-probe-07e9adad4a834bc8" className="text-xs text-muted-foreground/40 mb-2 italic">
+              Implementar uma verificação de health check no app para confirmar que o Supabase está respondendo com a URL e chave corretas, exibindo um erro amigável se falhar.
+            </div>
             <button 
               onClick={() => navigate({ to: "/auth" })}
               className="w-full bg-primary text-primary-foreground font-bold py-5 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 text-lg"
