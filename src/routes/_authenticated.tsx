@@ -12,7 +12,18 @@ export const Route = createFileRoute("/_authenticated")({
         },
       });
     }
-    return { session };
+
+    // Buscar o perfil e papel do usuário
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    return { 
+      session,
+      userRole: profile?.role || 'lojista'
+    };
   },
   component: AuthenticatedLayout,
 });
