@@ -1,49 +1,41 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/api/public/setup-db')({
   server: {
     handlers: {
-      POST: async () => {
-        // Este endpoint simula a criação das tabelas no Supabase via SQL (em ambiente real seria uma migração)
-        const sql = `
-          -- 1. Tabela Profiles
-          CREATE TABLE IF NOT EXISTS public.profiles (
-            id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
-            full_name TEXT,
-            role TEXT CHECK (role IN ('lojista', 'prestador', 'fornecedor', 'admin')),
-            company_name TEXT,
-            cnpj_cpf TEXT,
-            specialty TEXT,
-            portfolio_url TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
+      GET: async () => {
+        return new Response(`
+# PASSO A PASSO: CONEXÃO SUPABASE EXTERNO (FIXXER)
 
-          GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
-          GRANT ALL ON public.profiles TO service_role;
-          ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+## 1. Criar Projeto no Supabase
+- Vá para [supabase.com](https://supabase.com) e crie um novo projeto chamado "FIXXER".
 
-          -- 2. Tabela Orders of Service
-          CREATE TABLE IF NOT EXISTS public.orders_of_service (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            client_id UUID REFERENCES auth.users(id),
-            provider_id UUID REFERENCES auth.users(id),
-            status TEXT DEFAULT 'pending',
-            valor_contrato_real NUMERIC(12,2) NOT NULL,
-            contract_url TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
+## 2. Configurar o Banco de Dados
+- No painel do Supabase, vá em **SQL Editor**.
+- Copie o conteúdo do arquivo \`src/integrations/supabase/schema.sql\` e execute-o.
+- Isso criará as tabelas de perfis, papéis e a lógica de automação.
 
-          GRANT SELECT, INSERT, UPDATE ON public.orders_of_service TO authenticated;
-          GRANT ALL ON public.orders_of_service TO service_role;
-          ALTER TABLE public.orders_of_service ENABLE ROW LEVEL SECURITY;
-        `;
-        
-        console.log("SQL Schema implementation planned for Supabase:", sql);
-        
-        return new Response(JSON.stringify({ message: 'Schema SQL preparado internamente' }), {
-          headers: { 'Content-Type': 'application/json' }
+## 3. Configurar Variáveis de Ambiente
+- Vá em **Project Settings > API**.
+- Copie a **Project URL** e a **anon public key**.
+- Adicione no seu ambiente (ou arquivo .env):
+  - \`VITE_SUPABASE_URL=sua_url_aqui\`
+  - \`VITE_SUPABASE_ANON_KEY=sua_chave_aqui\`
+
+## 4. Criar Administrador Master
+- Você pode criar o administrador via painel (**Authentication > Users > Add User**) ou via código.
+- Dados solicitados:
+  - **Email:** jorgericardosalgado@gmail.com
+  - **Senha:** !jR17052
+- Após criar, certifique-se de atribuir o papel 'admin' na tabela \`user_roles\`.
+
+## 5. Integração no Código
+- O cliente Supabase já está configurado em \`src/integrations/supabase/client.ts\`.
+- Use \`import { supabase } from '@/integrations/supabase/client'\` para realizar chamadas.
+        `, {
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' }
         });
       }
     }
   }
-})
+});
