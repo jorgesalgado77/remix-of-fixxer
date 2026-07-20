@@ -182,9 +182,16 @@ BEGIN
         default_role := COALESCE((new.raw_user_meta_data->>'role')::public.app_role, 'lojista');
     END IF;
 
-    INSERT INTO public.profiles (id, full_name, role)
-    VALUES (new.id, COALESCE(new.raw_user_meta_data->>'full_name', ''), default_role)
-    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
+    INSERT INTO public.profiles (id, full_name, role, plan_id)
+    VALUES (
+        new.id, 
+        COALESCE(new.raw_user_meta_data->>'full_name', ''), 
+        default_role,
+        (SELECT id FROM public.subscription_plans WHERE category = default_role AND price = 0 LIMIT 1)
+    )
+    ON CONFLICT (id) DO UPDATE SET 
+        role = EXCLUDED.role,
+        plan_id = COALESCE(profiles.plan_id, EXCLUDED.plan_id);
     
     INSERT INTO public.user_roles (user_id, role)
     VALUES (new.id, default_role)
@@ -229,9 +236,16 @@ BEGIN
         default_role := COALESCE((_meta->>'role')::public.app_role, 'lojista');
     END IF;
 
-    INSERT INTO public.profiles (id, full_name, role)
-    VALUES (_id, COALESCE(_meta->>'full_name', ''), default_role)
-    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
+    INSERT INTO public.profiles (id, full_name, role, plan_id)
+    VALUES (
+        _id, 
+        COALESCE(_meta->>'full_name', ''), 
+        default_role,
+        (SELECT id FROM public.subscription_plans WHERE category = default_role AND price = 0 LIMIT 1)
+    )
+    ON CONFLICT (id) DO UPDATE SET 
+        role = EXCLUDED.role,
+        plan_id = COALESCE(profiles.plan_id, EXCLUDED.plan_id);
     
     INSERT INTO public.user_roles (user_id, role)
     VALUES (_id, default_role)
