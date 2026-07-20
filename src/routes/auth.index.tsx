@@ -17,9 +17,9 @@ function LoginComponent() {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
-    alert("SUBMIT");
     e.preventDefault();
-    console.log("CLIQUE NO LOGIN DETECTADO");
+    console.log("LOGIN_SUBMIT_START");
+    toast.info("Processando login...");
     
     if (!email || !password) {
       toast.error("Preencha todos os campos");
