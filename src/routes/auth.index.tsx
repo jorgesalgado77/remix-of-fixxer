@@ -48,7 +48,7 @@ function LoginComponent() {
     const steps: DiagnosticStep[] = [
       { label: "Autenticação Supabase", status: 'loading' },
       { label: "Verificação de Perfil", status: 'pending' },
-      { label: "Validação de Papel (Role)", status: 'pending' },
+      { label: "Validação de Plano & Roles", status: 'pending' },
       { label: "Redirecionamento Final", status: 'pending' },
     ];
     setDiagnosticSteps([...steps]);
@@ -80,7 +80,7 @@ function LoginComponent() {
       // Passo 2: Profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, plan_id')
         .eq('id', data.user.id)
         .maybeSingle();
 
@@ -92,14 +92,16 @@ function LoginComponent() {
       }
 
       steps[1].status = 'success';
-      steps[1].detail = profile ? `Perfil encontrado: ${profile.role}` : "Perfil não encontrado (Trigger pendente?)";
+      steps[1].detail = profile ? `Perfil encontrado: ${profile.role}` : "Perfil em criação...";
       steps[2].status = 'loading';
       setDiagnosticSteps([...steps]);
 
-      // Passo 3: Role Validation
+      // Passo 3: Role & Plan Validation
       const role = profile?.role || 'lojista';
+      
+      // Se não tiver plano, o trigger handle_new_user deve cuidar disso, mas vamos validar
       steps[2].status = 'success';
-      steps[2].detail = `Atribuído como: ${role.toUpperCase()}`;
+      steps[2].detail = `Role: ${role.toUpperCase()} | Plano: ${profile?.plan_id ? 'Ativo' : 'Teste Gratuito'}`;
       steps[3].status = 'loading';
       setDiagnosticSteps([...steps]);
 
@@ -108,7 +110,7 @@ function LoginComponent() {
         status: 'success', 
         user_id: data.user.id,
         email: email.trim(),
-        metadata: { role }
+        metadata: { role, plan_id: profile?.plan_id }
       });
 
       // Passo 4: Redirect
@@ -126,7 +128,13 @@ function LoginComponent() {
 
     } catch (error: any) {
       setLoading(false);
-      toast.error(error.message || "Erro no processo de login");
+      // Mantém a tela de diagnóstico se houve erro para que o usuário veja onde falhou
+      if (steps.some(s => s.status === 'error')) {
+         toast.error("Falha no diagnóstico de login");
+      } else {
+        setView("login");
+        toast.error(error.message || "Erro no processo de login");
+      }
     }
   };
 
