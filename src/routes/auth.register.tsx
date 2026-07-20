@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/register")({
   component: RegisterComponent,
@@ -12,6 +14,10 @@ type Role = "lojista" | "prestador" | "fornecedor";
 function RegisterComponent() {
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<Role | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleRoleSelect = (selectedRole: Role) => {

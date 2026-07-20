@@ -1,6 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, LogIn } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ChevronRight, LogIn, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/")({
   component: LoginComponent,
@@ -9,6 +11,33 @@ export const Route = createFileRoute("/auth/")({
 function LoginComponent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast.success("Login realizado com sucesso!");
+      navigate({ to: "/" });
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao realizar login");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">
@@ -22,7 +51,7 @@ function LoginComponent() {
         </div>
 
         <div className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl">
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={handleLogin}>
             <div>
               <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
               <input
@@ -44,8 +73,11 @@ function LoginComponent() {
               />
             </div>
 
-            <button className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2">
-              <LogIn className="w-4 h-4" />
+            <button 
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
               Entrar
             </button>
           </form>
