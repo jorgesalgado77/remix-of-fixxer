@@ -18,6 +18,7 @@ function LoginComponent() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("handleLogin chamado!", { email, password });
     if (!email || !password) {
       toast.error("Preencha todos os campos");
       return;
@@ -44,15 +45,13 @@ function LoginComponent() {
         throw new Error("Usuário não encontrado após autenticação.");
       }
 
-      console.log("Login realizado com sucesso. UID:", data.user.id);
-      
       // Buscar perfil para redirecionamento inteligente
       console.log("Buscando perfil na tabela public.profiles...");
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle(); // Usar maybeSingle para evitar erro se não existir
       
       console.log("Resultado da busca de perfil:", { profile, profileError });
 
@@ -60,6 +59,13 @@ function LoginComponent() {
         console.error("Erro ao buscar perfil:", profileError);
         // Fallback: se não tiver perfil mas autenticou, manda para dashboard
         toast.success("Login realizado! Redirecionando...");
+        navigate({ to: "/dashboard" });
+        return;
+      }
+
+      if (!profile) {
+        console.warn("Perfil não encontrado. Verifique se o trigger handle_new_user funcionou.");
+        toast.success("Login realizado! Perfil básico em criação...");
         navigate({ to: "/dashboard" });
         return;
       }
