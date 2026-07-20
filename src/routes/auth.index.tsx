@@ -18,7 +18,8 @@ function LoginComponent() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("handleLogin chamado!", { email, password });
+    console.log("CLIQUE NO LOGIN DETECTADO");
+    
     if (!email || !password) {
       toast.error("Preencha todos os campos");
       return;
@@ -26,12 +27,12 @@ function LoginComponent() {
 
     setLoading(true);
     try {
-      console.log("Iniciando tentativa de login para:", email);
+      console.log("Tentando signInWithPassword para:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      console.log("Resposta Supabase Auth:", { data, error });
+      console.log("Resultado Auth:", { data, error });
 
       if (error) {
         console.error("Erro de autenticação Supabase:", error);
