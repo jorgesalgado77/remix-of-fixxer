@@ -6,7 +6,8 @@ import {
   Zap,
   Lock,
   Mail,
-  LayoutGrid
+  LayoutGrid,
+  Activity
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 
