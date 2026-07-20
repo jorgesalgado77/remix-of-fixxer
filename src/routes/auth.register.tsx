@@ -29,8 +29,8 @@ function RegisterComponent() {
     setStep("details");
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleRegister = async (e?: React.FormEvent) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     
     if (!email || !password || !fullName || !role) {
       toast.error("Preencha todos os campos obrigatórios");
@@ -39,6 +39,7 @@ function RegisterComponent() {
 
     setLoading(true);
     try {
+      console.log("handleRegister disparado com sucesso!");
       console.log("Iniciando processo de cadastro:", email, "Role:", role);
       
       // 1. Verificar conexão com Supabase (Pode ser o gargalo inicial)
@@ -120,7 +121,7 @@ function RegisterComponent() {
       {step === "role" ? (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Como você quer usar o FIXXER?</h1>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">PROBLEMA PERSISTE CORRIJA</h1>
             <p className="text-muted-foreground mt-2">Escolha seu perfil para continuar</p>
           </div>
 
@@ -148,12 +149,12 @@ function RegisterComponent() {
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">AINDA NADA ACONTECE, CLICAR EM FINALIZAR E NÃO PROCEGUE ADIANTE</h1>
-            <p className="text-muted-foreground mt-2">Estamos resolvendo a falha na submissão do formulário...</p>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">PROBLEMA PERSISTE CORRIJA</h1>
+            <p className="text-muted-foreground mt-2">Estamos forçando a submissão via bypass de evento...</p>
           </div>
 
-          <form 
-            onSubmit={handleRegister}
+          <div 
+            id="register-form-container"
             className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl space-y-5"
           >
             <InputField 
@@ -189,19 +190,20 @@ function RegisterComponent() {
             />
 
             <button 
-              type="submit"
+              type="button"
               disabled={loading}
-              onClick={(e) => {
-                console.log("Botão clicado via onClick");
-                // Fallback se o onSubmit do form falhar por algum motivo de renderização do DOM
-                if (!loading) handleRegister(e);
+              onClick={async (e) => {
+                console.log("Clique detectado no botão 'Finalizar Cadastro'");
+                e.preventDefault();
+                e.stopPropagation();
+                await handleRegister(e as any);
               }}
-              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50 cursor-pointer"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               Finalizar Cadastro
             </button>
-          </form>
+          </div>
         </div>
       )}
 
