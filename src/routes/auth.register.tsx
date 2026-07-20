@@ -152,7 +152,7 @@ function RegisterComponent() {
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">APOS CLICAR EM FINALIZAR CADASTRO, NADA ACONTECE, NÃO ENTRA NO SISTEMA, NÃO VAI PARA ADASHBOAR ESPECIFICA, NO CASO A DASHBOARD DO PRESTADOR, , LOJISTA OU PARCEIRO FORNECEDOR</h1>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">Complete seu perfil</h1>
             <p className="text-muted-foreground mt-2">Informe seus dados para finalizar o cadastro</p>
           </div>
 
