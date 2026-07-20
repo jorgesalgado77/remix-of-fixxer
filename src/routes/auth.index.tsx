@@ -12,83 +12,115 @@ function LoginComponent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState<"login" | "forgot-password">("login");
+  const [view, setView] = useState<"login" | "forgot-password" | "diagnostic">("login");
   const [resetLoading, setResetLoading] = useState(false);
+  const [diagnosticSteps, setDiagnosticSteps] = useState<{label: string, status: 'pending' | 'loading' | 'success' | 'error', detail?: string}[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  const logAccess = async (data: { event_type: string, status: string, reason?: string, metadata?: any, email?: string, user_id?: string }) => {
+    try {
+      await supabase.from('access_logs').insert([{
+        ...data,
+        metadata: { ...data.metadata, agent: navigator.userAgent }
+      }]);
+    } catch (e) {
+      console.error("Erro ao gravar log de acesso:", e);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("LOGIN_SUBMIT_START");
-    toast.info("Processando login...");
-    
     if (!email || !password) {
       toast.error("Preencha todos os campos");
       return;
     }
 
     setLoading(true);
+    setView("diagnostic");
+    
+    const steps = [
+      { label: "Autenticação Supabase", status: 'loading' as const },
+      { label: "Verificação de Perfil", status: 'pending' as const },
+      { label: "Validação de Papel (Role)", status: 'pending' as const },
+      { label: "Redirecionamento Final", status: 'pending' as const },
+    ];
+    setDiagnosticSteps([...steps]);
+
     try {
-      console.log("Tentando login manual via console...");
-      console.log("Credenciais:", email, password);
-      
-      console.log("Chamando supabase.auth.signInWithPassword...");
+      // Passo 1: Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password.trim(),
       });
-      console.log("RESULTADO LOGIN:", { success: !!data?.user, error: error?.message });
-      console.log("Sessão ativa após login:", !!(await supabase.auth.getSession()).data.session);
 
       if (error) {
-        console.error("Erro de autenticação Supabase:", error);
-        if (error.message.includes("Invalid login credentials")) {
-          throw new Error("E-mail ou senha incorretos. Verifique suas credenciais.");
-        }
+        steps[0].status = 'error';
+        steps[0].detail = error.message;
+        setDiagnosticSteps([...steps]);
+        await logAccess({ 
+          event_type: 'login_attempt', 
+          status: 'failure', 
+          reason: error.message, 
+          email: email.trim() 
+        });
         throw error;
       }
 
-      if (!data.user) {
-        throw new Error("Usuário não encontrado após autenticação.");
-      }
+      steps[0].status = 'success';
+      steps[1].status = 'loading';
+      setDiagnosticSteps([...steps]);
 
-      // Buscar perfil para redirecionamento inteligente
-      console.log("Buscando perfil na tabela public.profiles...");
+      // Passo 2: Profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .maybeSingle(); // Usar maybeSingle para evitar erro se não existir
-      
-      console.log("Resultado da busca de perfil:", { profile, profileError });
+        .maybeSingle();
 
       if (profileError) {
-        console.error("Erro ao buscar perfil:", profileError);
-        // Fallback: se não tiver perfil mas autenticou, manda para dashboard
-        toast.success("Login realizado! Redirecionando...");
-        navigate({ to: "/dashboard" });
-        return;
+        steps[1].status = 'error';
+        steps[1].detail = profileError.message;
+        setDiagnosticSteps([...steps]);
+        throw profileError;
       }
 
-      if (!profile) {
-        console.warn("Perfil não encontrado. Verifique se o trigger handle_new_user funcionou.");
-        toast.success("Login realizado! Perfil básico em criação...");
-        navigate({ to: "/dashboard" });
-        return;
-      }
+      steps[1].status = 'success';
+      steps[1].detail = profile ? `Perfil encontrado: ${profile.role}` : "Perfil não encontrado (Trigger pendente?)";
+      steps[2].status = 'loading';
+      setDiagnosticSteps([...steps]);
 
-      toast.success("Bem-vindo ao FIXXER!");
-      
-      if (profile?.role === 'admin') {
-        navigate({ to: "/admin" });
-      } else {
-        navigate({ to: "/dashboard" });
-      }
+      // Passo 3: Role Validation
+      const role = profile?.role || 'lojista';
+      steps[2].status = 'success';
+      steps[2].detail = `Atribuído como: ${role.toUpperCase()}`;
+      steps[3].status = 'loading';
+      setDiagnosticSteps([...steps]);
+
+      await logAccess({ 
+        event_type: 'login_attempt', 
+        status: 'success', 
+        user_id: data.user.id,
+        email: email.trim(),
+        metadata: { role }
+      });
+
+      // Passo 4: Redirect
+      setTimeout(() => {
+        steps[3].status = 'success';
+        setDiagnosticSteps([...steps]);
+        toast.success(`Bem-vindo, ${role}!`);
+        
+        if (role === 'admin') {
+          navigate({ to: "/admin" });
+        } else {
+          navigate({ to: "/dashboard" });
+        }
+      }, 800);
+
     } catch (error: any) {
-      console.error("Erro no fluxo de login:", error);
-      toast.error(error.message || "Erro ao realizar login. Tente novamente.");
-    } finally {
       setLoading(false);
+      toast.error(error.message || "Erro no processo de login");
     }
   };
 
@@ -157,6 +189,54 @@ function LoginComponent() {
                 Enviar Link de Recuperação
               </button>
             </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "diagnostic") {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background animate-in zoom-in-95 duration-300">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl text-primary mb-4 animate-pulse">
+              <Search className="w-8 h-8" />
+            </div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Diagnóstico de Acesso</h1>
+            <p className="text-muted-foreground text-sm">Validando permissões e integridade do banco...</p>
+          </div>
+
+          <div className="bg-card backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-2xl space-y-4">
+            {diagnosticSteps.map((step, i) => (
+              <div key={i} className="flex items-start gap-3 p-3 rounded-2xl bg-white/5 border border-white/5">
+                <div className="mt-0.5">
+                  {step.status === 'loading' && <Loader2 className="w-5 h-5 text-primary animate-spin" />}
+                  {step.status === 'success' && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                  {step.status === 'error' && <ShieldAlert className="w-5 h-5 text-red-500" />}
+                  {step.status === 'pending' && <div className="w-5 h-5 rounded-full border-2 border-white/10" />}
+                </div>
+                <div className="flex-1">
+                  <p className={`text-sm font-bold ${step.status === 'error' ? 'text-red-400' : 'text-white'}`}>
+                    {step.label}
+                  </p>
+                  {step.detail && (
+                    <p className="text-xs text-muted-foreground mt-1 font-mono leading-relaxed">
+                      {step.detail}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+            
+            {diagnosticSteps.some(s => s.status === 'error') && (
+              <button 
+                onClick={() => setView("login")}
+                className="w-full mt-4 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                Tentar novamente
+              </button>
+            )}
           </div>
         </div>
       </div>
