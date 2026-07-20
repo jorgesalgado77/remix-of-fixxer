@@ -203,7 +203,7 @@ function RegisterComponent() {
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               Finalizar Cadastro
             </button>
-          </form>
+          </div>
         </div>
       )}
 
