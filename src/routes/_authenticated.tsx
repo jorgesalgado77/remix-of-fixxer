@@ -37,7 +37,14 @@ function AuthenticatedLayout() {
           <span className="font-bold tracking-tight">FIXXER</span>
         </div>
         <div className="flex items-center gap-4">
+          <Link 
+            to="/admin" 
+            className="text-xs font-bold uppercase tracking-widest text-primary hover:text-white transition-colors"
+          >
+            Admin
+          </Link>
           <button 
+
             onClick={async () => {
               await supabase.auth.signOut();
               window.location.href = "/auth";
