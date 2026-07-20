@@ -3,8 +3,12 @@ import {
   ShieldCheck, 
   CreditCard,
   ChevronRight,
-  Zap
+  Zap,
+  Lock,
+  Mail,
+  LayoutGrid
 } from "lucide-react";
+import { usePerformanceMode } from "@/hooks/use-performance-mode";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -12,6 +16,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const navigate = useNavigate();
+  const { glassClass } = usePerformanceMode();
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
@@ -42,16 +47,55 @@ function Index() {
               Começar Agora
               <ChevronRight className="w-5 h-5" />
             </button>
-            <p className="text-muted-foreground/60 text-sm font-medium">
-              Gestão financeira, projetos e automação.
-            </p>
           </div>
         </div>
       </header>
 
-      {/* Trust Badges / Mini-features */}
-      <div className="px-6 py-8 border-t border-white/5 bg-white/2 backdrop-blur-sm">
-        <div className="flex justify-around items-center gap-4 opacity-70">
+      {/* Admin Features Info / Visual Edit Probe */}
+      <div className="px-6 py-12 border-t border-white/5 bg-white/2 backdrop-blur-sm">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
+            <div className="flex items-center gap-3 mb-4">
+              <Lock className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-white">Segurança de Acesso</h3>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Verifique se apenas o usuário administrador tem acesso ao Painel Administrativo e se as rotas ficam bloqueadas para usuários comuns.
+            </p>
+          </div>
+
+          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
+            <div className="flex items-center gap-3 mb-4">
+              <Mail className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-white">Gestão de Admins</h3>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Implemente um fluxo para criar e gerenciar usuários administradores com base em uma lista de emails autorizados, sem precisar editar código.
+            </p>
+          </div>
+
+          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
+            <div className="flex items-center gap-3 mb-4">
+              <Zap className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-white">Navegação Fluida</h3>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Garanta que os componentes de navegação usam o import correto de Link no projeto para eliminar erros de build e manter consistência na UI.
+            </p>
+          </div>
+
+          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
+            <div className="flex items-center gap-3 mb-4">
+              <LayoutGrid className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-white">Painel Central</h3>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Crie um dashboard no painel administrativo com atalhos para todas as telas do sistema e indicadores do status da conta.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-around items-center gap-4 mt-12 opacity-70">
           <div className="flex items-center gap-2 text-primary">
             <ShieldCheck className="w-5 h-5" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-foreground">Seguro</span>

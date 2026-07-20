@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const { userRole } = Route.useRouteContext();
+  const { userRole, session } = Route.useRouteContext();
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -44,23 +44,24 @@ function AuthenticatedLayout() {
           {userRole === 'admin' && (
             <Link 
               to="/admin" 
-              className="text-xs font-bold uppercase tracking-widest text-primary hover:shadow-[0_0_10px_rgba(0,255,135,0.4)] transition-all"
+              className="text-xs font-bold uppercase tracking-widest text-primary hover:shadow-[0_0_10px_rgba(0,255,135,0.4)] transition-all active:scale-95"
             >
               Admin
             </Link>
           )}
           <Link 
             to="/dashboard" 
-            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors"
+            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95"
           >
             Dashboard
           </Link>
+          <div className="h-4 w-[1px] bg-white/10 mx-1" />
           <button 
             onClick={async () => {
               await supabase.auth.signOut();
               window.location.href = "/auth";
             }}
-            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors ml-2"
+            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-red-400 transition-colors active:scale-95"
           >
             Sair
           </button>
