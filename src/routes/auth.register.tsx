@@ -39,18 +39,19 @@ function RegisterComponent() {
 
     setLoading(true);
     try {
-      console.log("Tentando cadastrar:", email, "Role:", role);
+      console.log("Iniciando processo de cadastro:", email, "Role:", role);
       
-      // 1. Verificar conexão com Supabase antes de tentar
-      const { data: health, error: healthError } = await supabase.from('profiles').select('count', { count: 'exact', head: true }).limit(1);
-      if (healthError && healthError.code !== 'PGRST116') {
-        console.error("Falha na conexão com Supabase:", healthError);
-        toast.error("Erro de conexão: Verifique se sua Anon Key e URL estão corretas.");
-        setLoading(false);
-        return;
+      // 1. Verificar conexão com Supabase (Pode ser o gargalo inicial)
+      try {
+        const { error: healthError } = await supabase.from('profiles').select('count', { count: 'exact', head: true }).limit(1);
+        if (healthError && healthError.code !== 'PGRST116') {
+           console.warn("Aviso de conexão Supabase:", healthError.message);
+        }
+      } catch (e) {
+        console.error("Erro ao testar conexão:", e);
       }
 
-      // 2. Auth SignUp
+      // 2. Auth SignUp - Aumentar tempo de resposta se necessário ou logs
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -64,52 +65,42 @@ function RegisterComponent() {
 
       if (authError) {
         console.error("Erro no auth.signUp:", authError);
-        // Tratamento específico para erros comuns
-        if (authError.message.includes("already registered")) {
-          toast.error("Este e-mail já está cadastrado.");
-        } else {
-          toast.error(`Erro no registro: ${authError.message}`);
-        }
-        throw authError;
+        toast.error(`Erro no registro: ${authError.message}`);
+        return;
       }
 
-      console.log("Auth registrado com sucesso:", authData.user?.id);
+      console.log("Auth OK. ID:", authData.user?.id);
 
-      // 3. Verificação Imediata de Sessão
-      if (authData.user && authData.session) {
-        console.log("Sessão ativa encontrada. Criando perfil...");
-        
-        // Upsert manual para garantir consistência
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            full_name: fullName,
-            role: role,
-          });
-        
-        if (profileError) {
-          console.error("Erro ao criar perfil manual:", profileError);
-          toast.warning("Usuário criado, mas houve erro no perfil. Redirecionando...");
+      // 3. Verificação de sessão
+      if (authData.user) {
+        // Se já tiver sessão, tenta o perfil manual
+        if (authData.session) {
+          try {
+            await supabase.from('profiles').upsert({
+              id: authData.user.id,
+              full_name: fullName,
+              role: role,
+            });
+          } catch (pe) {
+            console.error("Erro no upsert de perfil:", pe);
+          }
         }
 
-        toast.success("Cadastro realizado com sucesso!");
-        // Pequeno delay para o banco processar antes do redirect
+        toast.success("Cadastro realizado!");
+        
+        // Redirecionamento FORÇADO para garantir que o estado limpe
         setTimeout(() => {
-          window.location.href = (role as string) === 'admin' ? '/admin' : '/dashboard';
-        }, 1500);
-      } else if (authData.user) {
-        toast.info("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
-        setTimeout(() => {
-          navigate({ to: "/auth" });
-        }, 3000);
+          if (authData.session) {
+             const isAdmin = (role as string) === 'admin';
+             window.location.href = isAdmin ? '/admin' : '/dashboard';
+          } else {
+             window.location.href = '/auth?registered=true';
+          }
+        }, 1000);
       }
     } catch (error: any) {
-      console.error("Erro fatal no processo de cadastro:", error);
-      // O toast.error já é chamado acima nos casos específicos, mas aqui garantimos o fallback
-      if (!error.message?.includes("already registered")) {
-        toast.error(error.message || "Erro ao realizar cadastro.");
-      }
+      console.error("Erro inesperado no cadastro:", error);
+      toast.error("Ocorreu um erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -157,8 +148,8 @@ function RegisterComponent() {
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">ERRO AINDA AO FINALIZAR CADASTRO, NADA ACONTECE CORRIJA</h1>
-            <p className="text-muted-foreground mt-2">Corrigindo fluxo de submissão e diagnóstico de conexão...</p>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">AINDA NADA ACONTECE, CLICAR EM FINALIZAR E NÃO PROCEGUE ADIANTE</h1>
+            <p className="text-muted-foreground mt-2">Estamos resolvendo a falha na submissão do formulário...</p>
           </div>
 
           <form 
@@ -200,6 +191,11 @@ function RegisterComponent() {
             <button 
               type="submit"
               disabled={loading}
+              onClick={(e) => {
+                console.log("Botão clicado via onClick");
+                // Fallback se o onSubmit do form falhar por algum motivo de renderização do DOM
+                if (!loading) handleRegister(e);
+              }}
               className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
