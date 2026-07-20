@@ -17,6 +17,7 @@ function LoginComponent() {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
+    alert("SUBMIT");
     e.preventDefault();
     console.log("CLIQUE NO LOGIN DETECTADO");
     
