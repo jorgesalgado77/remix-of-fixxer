@@ -133,115 +133,117 @@ function AdminDashboard() {
       {activeTab === 'overview' ? (
         <>
           {/* Atalhos Rápidos */}
-      <section>
-        <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4">Atalhos do Sistema</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <ShortcutButton icon={<LayoutGrid />} label="Dashboard" to="/dashboard" />
-          <ShortcutButton icon={<Store />} label="Lojistas" to="/dashboard" />
-          <ShortcutButton icon={<Hammer />} label="Prestadores" to="/dashboard" />
-          <ShortcutButton icon={<Truck />} label="Fornecedores" to="/dashboard" />
-          <ShortcutButton icon={<Settings />} label="Config" to="/admin" />
-          <ShortcutButton icon={<ShieldAlert />} label="Logs" to="/admin" />
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Estatísticas */}
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <AdminStatCard 
-            icon={<Users className="text-primary" />} 
-            label="Total Usuários" 
-            value="1,284" 
-            change="+12% este mês"
-            glassClass={glassClass} 
-          />
-          <AdminStatCard 
-            icon={<ShieldCheck className="text-primary" />} 
-            label="Sessões Ativas" 
-            value="42" 
-            change="Estável"
-            glassClass={glassClass} 
-          />
-          
-          <div className={`md:col-span-2 p-8 rounded-3xl ${glassClass} border border-white/5`}>
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-bold flex items-center gap-3">
-                <Activity className="w-5 h-5 text-primary" />
-                Atividade Recente
-              </h2>
+          <section>
+            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4">Atalhos do Sistema</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <ShortcutButton icon={<LayoutGrid />} label="Dashboard" to="/dashboard" />
+              <ShortcutButton icon={<Store />} label="Lojistas" to="/dashboard" />
+              <ShortcutButton icon={<Hammer />} label="Prestadores" to="/dashboard" />
+              <ShortcutButton icon={<Truck />} label="Fornecedores" to="/dashboard" />
+              <ShortcutButton icon={<Settings />} label="Config" to="/admin" />
+              <ShortcutButton icon={<ShieldAlert />} label="Logs" to="/admin" />
             </div>
-            
-            <div className="space-y-4">
-              {[
-                { user: "Jorge Ricardo", action: "Login Administrador", time: "Agora" },
-                { user: "Marcenaria Silva", action: "Upload de Projeto", time: "15 min atrás" },
-                { user: "Pedro Montador", action: "OS Finalizada", time: "1 hora atrás" }
-              ].map((log, i) => (
-                <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(0,255,135,0.6)]" />
-                    <div>
-                      <p className="font-bold text-sm text-white">{log.user}</p>
-                      <p className="text-xs text-muted-foreground">{log.action}</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-medium text-muted-foreground/60 uppercase">{log.time}</span>
+          </section>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Estatísticas */}
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <AdminStatCard 
+                icon={<Users className="text-primary" />} 
+                label="Total Usuários" 
+                value="1,284" 
+                change="+12% este mês"
+                glassClass={glassClass} 
+              />
+              <AdminStatCard 
+                icon={<ShieldCheck className="text-primary" />} 
+                label="Sessões Ativas" 
+                value="42" 
+                change="Estável"
+                glassClass={glassClass} 
+              />
+              
+              <div className={`md:col-span-2 p-8 rounded-3xl ${glassClass} border border-white/5`}>
+                <div className="flex justify-between items-center mb-8">
+                  <h2 className="text-xl font-bold flex items-center gap-3">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Atividade Recente
+                  </h2>
                 </div>
-              ))}
+                
+                <div className="space-y-4">
+                  {[
+                    { user: "Jorge Ricardo", action: "Login Administrador", time: "Agora" },
+                    { user: "Marcenaria Silva", action: "Upload de Projeto", time: "15 min atrás" },
+                    { user: "Pedro Montador", action: "OS Finalizada", time: "1 hora atrás" }
+                  ].map((log, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(0,255,135,0.6)]" />
+                        <div>
+                          <p className="font-bold text-sm text-white">{log.user}</p>
+                          <p className="text-xs text-muted-foreground">{log.action}</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-medium text-muted-foreground/60 uppercase">{log.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Gestão de Administradores */}
+            <div className={`p-8 rounded-3xl ${glassClass} border border-white/5 flex flex-col`}>
+              <div className="flex items-center gap-3 mb-6">
+                <Mail className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-bold">Emails Autorizados</h2>
+              </div>
+              
+              <div className="flex gap-2 mb-6">
+                <input 
+                  type="email" 
+                  placeholder="novo-admin@email.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="flex-1 bg-background border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-primary outline-none transition-all"
+                />
+                <button 
+                  onClick={addAdminEmail}
+                  className="bg-primary text-primary-foreground p-2 rounded-xl hover:opacity-90 active:scale-95 transition-all"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 space-y-3 overflow-auto max-h-[400px] pr-2 custom-scrollbar">
+                {loading ? (
+                  <div className="flex justify-center p-8">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : authorizedEmails.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 group hover:border-primary/30 transition-all">
+                    <span className="text-sm font-medium text-muted-foreground truncate mr-2">{item.email}</span>
+                    {item.email !== "jorgericardosalgado@gmail.com" && (
+                      <button 
+                        onClick={() => removeAdminEmail(item.id, item.email)}
+                        className="text-xs text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        Remover
+                      </button>
+                    )}
+                    {item.email === "jorgericardosalgado@gmail.com" && (
+                      <span className="text-[8px] font-black uppercase text-primary/50">Master</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-white/5 text-[10px] text-muted-foreground/60 leading-relaxed italic">
+                * Usuários registrados com estes emails receberão automaticamente o perfil de Admin.
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Gestão de Administradores */}
-        <div className={`p-8 rounded-3xl ${glassClass} border border-white/5 flex flex-col`}>
-          <div className="flex items-center gap-3 mb-6">
-            <Mail className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-bold">Emails Autorizados</h2>
-          </div>
-          
-          <div className="flex gap-2 mb-6">
-            <input 
-              type="email" 
-              placeholder="novo-admin@email.com"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              className="flex-1 bg-background border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-primary outline-none transition-all"
-            />
-            <button 
-              onClick={addAdminEmail}
-              className="bg-primary text-primary-foreground p-2 rounded-xl hover:opacity-90 active:scale-95 transition-all"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex-1 space-y-3 overflow-auto max-h-[400px] pr-2 custom-scrollbar">
-            {loading ? (
-              <div className="flex justify-center p-8">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : authorizedEmails.map((item) => (
-              <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 group hover:border-primary/30 transition-all">
-                <span className="text-sm font-medium text-muted-foreground truncate mr-2">{item.email}</span>
-                {item.email !== "jorgericardosalgado@gmail.com" && (
-                  <button 
-                    onClick={() => removeAdminEmail(item.id, item.email)}
-                    className="text-xs text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    Remover
-                  </button>
-                )}
-                {item.email === "jorgericardosalgado@gmail.com" && (
-                  <span className="text-[8px] font-black uppercase text-primary/50">Master</span>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-white/5 text-[10px] text-muted-foreground/60 leading-relaxed italic">
-            * Usuários registrados com estes emails receberão automaticamente o perfil de Admin.
-          </div>
-        </div>
+        </>
       ) : (
         <PlansManagement glassClass={glassClass} />
       )}
