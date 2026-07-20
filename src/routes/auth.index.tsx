@@ -62,7 +62,9 @@ function LoginComponent() {
 
       if (error) {
         steps[0].status = 'error';
-        steps[0].detail = error.message;
+        steps[0].detail = error.message === "Invalid login credentials" 
+          ? "Credenciais inválidas. Se você ainda não se cadastrou, use a tela de cadastro primeiro."
+          : error.message;
         setDiagnosticSteps([...steps]);
         await logAccess({ 
           event_type: 'login_attempt', 
