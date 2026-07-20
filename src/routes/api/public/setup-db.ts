@@ -1,41 +1,33 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/api/public/setup-db')({
   server: {
     handlers: {
       GET: async () => {
         return new Response(`
-# PASSO A PASSO: CONEXÃO SUPABASE EXTERNO (FIXXER)
+# WEBAPP FIXXER - CONFIGURAÇÃO DO BANCO DE DADOS EXTERNO
 
-## 1. Criar Projeto no Supabase
-- Vá para [supabase.com](https://supabase.com) e crie um novo projeto chamado "FIXXER".
+Siga os passos abaixo para garantir que o Supabase esteja pronto para o sistema:
 
-## 2. Configurar o Banco de Dados
-- No painel do Supabase, vá em **SQL Editor**.
-- Copie o conteúdo do arquivo \`src/integrations/supabase/schema.sql\` e execute-o.
-- Isso criará as tabelas de perfis, papéis e a lógica de automação.
+1. Acesse o SQL Editor no seu painel do Supabase.
+2. Crie uma nova query.
+3. Copie e cole o conteúdo do arquivo 'src/integrations/supabase/complete_schema.sql' localizado na pasta do projeto.
+4. Execute o script.
 
-## 3. Configurar Variáveis de Ambiente
-- Vá em **Project Settings > API**.
-- Copie a **Project URL** e a **anon public key**.
-- Adicione no seu ambiente (ou arquivo .env):
-  - \`VITE_SUPABASE_URL=sua_url_aqui\`
-  - \`VITE_SUPABASE_ANON_KEY=sua_chave_aqui\`
+Este script SQL completo automatiza:
+- Criação dos Enums de usuários (admin, lojista, prestador, fornecedor).
+- Tabela de perfis sincronizada com o Auth.
+- Trigger de criação automática de perfil no cadastro.
+- Identificação automática do e-mail jorgericardosalgado@gmail.com como administrador master.
+- Políticas de Segurança (RLS) e permissões de acesso.
 
-## 4. Criar Administrador Master
-- Você pode criar o administrador via painel (**Authentication > Users > Add User**) ou via código.
-- Dados solicitados:
-  - **Email:** jorgericardosalgado@gmail.com
-  - **Senha:** !jR17052
-- Após criar, certifique-se de atribuir o papel 'admin' na tabela \`user_roles\`.
-
-## 5. Integração no Código
-- O cliente Supabase já está configurado em \`src/integrations/supabase/client.ts\`.
-- Use \`import { supabase } from '@/integrations/supabase/client'\` para realizar chamadas.
+Caso o usuário já exista no Auth, execute manualmente:
+UPDATE public.profiles SET role = 'admin' WHERE id = (SELECT id FROM auth.users WHERE email = 'jorgericardosalgado@gmail.com');
+INSERT INTO public.user_roles (user_id, role) VALUES ((SELECT id FROM auth.users WHERE email = 'jorgericardosalgado@gmail.com'), 'admin') ON CONFLICT DO NOTHING;
         `, {
-          headers: { 'Content-Type': 'text/markdown; charset=utf-8' }
-        });
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        })
       }
     }
   }
-});
+})
