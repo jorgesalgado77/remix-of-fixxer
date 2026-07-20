@@ -52,65 +52,41 @@ function Index() {
         </div>
       </header>
 
-      {/* Admin Features Info / Visual Edit Probe */}
-      <div className="px-6 py-12 border-t border-white/5 bg-white/2 backdrop-blur-sm" id="ts-visual-edit-probe-0791c131b1d04508">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
-            <div className="flex items-center gap-3 mb-4">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-white">Segurança RLS</h3>
+  {/* Section: Planos de Assinatura */}
+      <section className="px-6 py-20 bg-background border-t border-white/5" id="planos">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-black text-center text-white mb-16 tracking-tight">
+            Escolha o seu plano <span className="text-primary">FIXXER</span>
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Lojista */}
+            <div className={`p-8 rounded-3xl ${glassClass} border border-white/10 flex flex-col`}>
+              <h3 className="text-xl font-bold text-white mb-4">Lojista</h3>
+              <p className="text-muted-foreground text-sm mb-8 flex-1">Gestão de múltiplos profissionais, antifraude de contratos e auditoria de laudos.</p>
+              <div className="text-3xl font-black text-white mb-8">R$ 299<span className="text-sm text-muted-foreground font-normal">/mês</span></div>
+              <button className="w-full py-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all font-bold text-white">Selecionar</button>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Crie as políticas RLS completas para proteger perfis e user_roles, garantindo que apenas o usuário administrador possa listar/alterar outros usuários e que usuários comuns só vejam seus próprios dados.
-            </p>
-          </div>
 
-          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
-            <div className="flex items-center gap-3 mb-4">
-              <Zap className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-white">Sincronização SQL</h3>
+            {/* Prestador */}
+            <div className={`p-8 rounded-3xl ${glassClass} border border-primary/30 flex flex-col relative`}>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-primary-foreground text-[10px] font-black uppercase rounded-full">Popular</div>
+              <h3 className="text-xl font-bold text-white mb-4">Prestador</h3>
+              <p className="text-muted-foreground text-sm mb-8 flex-1">Lotação de agenda, badges de verificação e liberação acelerada de recebíveis.</p>
+              <div className="text-3xl font-black text-white mb-8">R$ 149<span className="text-sm text-muted-foreground font-normal">/mês</span></div>
+              <button className="w-full py-4 rounded-xl bg-primary text-primary-foreground transition-all font-bold">Selecionar</button>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Implemente um SQL de sincronização para preencher profiles e user_roles de usuários que já existem no auth.users, antes de ativar triggers, para que o banco fique consistente.
-            </p>
-          </div>
 
-          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
-            <div className="flex items-center gap-3 mb-4">
-              <Mail className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-white">Gestão Dinâmica</h3>
+            {/* Fornecedor */}
+            <div className={`p-8 rounded-3xl ${glassClass} border border-white/10 flex flex-col`}>
+              <h3 className="text-xl font-bold text-white mb-4">Fornecedor</h3>
+              <p className="text-muted-foreground text-sm mb-8 flex-1">Anúncios na dashboard, captação de leads de materiais e vitrine destacada.</p>
+              <div className="text-3xl font-black text-white mb-8">R$ 399<span className="text-sm text-muted-foreground font-normal">/mês</span></div>
+              <button className="w-full py-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all font-bold text-white">Selecionar</button>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Implemente uma interface no painel administrativo para gerenciar a lista de emails autorizados (criar, remover e atualizar admins) sem precisar editar código, atualizando as roles via Supabase.
-            </p>
-          </div>
-
-          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
-            <div className="flex items-center gap-3 mb-4">
-              <Activity className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-white">Diagnóstico & Guards</h3>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Crie um script SQL de validação e ajuste o middleware de rotas para bloquear acesso ao Painel Administrativo com base na role do Supabase (admin), retornando mensagens claras.
-            </p>
           </div>
         </div>
-
-        <div className="flex justify-around items-center gap-4 mt-12 opacity-70">
-          <div className="flex items-center gap-2 text-primary">
-            <ShieldCheck className="w-5 h-5" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground">Seguro</span>
-          </div>
-          <div className="flex items-center gap-2 text-primary">
-            <Zap className="w-5 h-5" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground">Rápido</span>
-          </div>
-          <div className="flex items-center gap-2 text-primary">
-            <CreditCard className="w-5 h-5" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground">Split</span>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

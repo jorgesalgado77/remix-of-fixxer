@@ -8,11 +8,31 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- 2. TABELA DE PERFIS
+-- 2. TABELA DE PLANOS DE ASSINATURA
+CREATE TABLE IF NOT EXISTS public.subscription_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category public.app_role NOT NULL, -- lojista, prestador, fornecedor
+    name TEXT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.1 RECURSOS DOS PLANOS (FEATURES)
+CREATE TABLE IF NOT EXISTS public.plan_features (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plan_id UUID REFERENCES public.subscription_plans(id) ON DELETE CASCADE,
+    feature_key TEXT NOT NULL, -- 'allow_chat', 'allow_contracts', 'priority_listing', 'unlimited_os'
+    is_enabled BOOLEAN DEFAULT FALSE,
+    UNIQUE(plan_id, feature_key)
+);
+
+-- 2.2 TABELA DE PERFIS (ATUALIZADA)
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     full_name TEXT,
     role public.app_role NOT NULL DEFAULT 'lojista',
+    plan_id UUID REFERENCES public.subscription_plans(id), -- Rastreia o plano ativo
     company_name TEXT,
     cnpj_cpf TEXT,
     specialty TEXT,
@@ -20,6 +40,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Inserir Planos Padrão (Freemium)
+INSERT INTO public.subscription_plans (category, name, price) VALUES 
+('lojista', 'Teste Gratuito Lojista', 0.00),
+('prestador', 'Teste Gratuito Prestador', 0.00),
+('fornecedor', 'Teste Gratuito Fornecedor', 0.00)
+ON CONFLICT DO NOTHING;
 
 -- 3. TABELA DE ROLES (PARA CONTROLE DE ACESSO)
 CREATE TABLE IF NOT EXISTS public.user_roles (
@@ -75,11 +102,17 @@ AS $$
 $$;
 
 -- 6. CONFIGURAÇÃO DE SEGURANÇA (RLS)
+ALTER TABLE public.subscription_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plan_features ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_config ENABLE ROW LEVEL SECURITY;
 
 -- 7. PERMISSÕES (GRANTS)
+GRANT SELECT ON public.subscription_plans TO authenticated;
+GRANT ALL ON public.subscription_plans TO service_role;
+GRANT SELECT ON public.plan_features TO authenticated;
+GRANT ALL ON public.plan_features TO service_role;
 GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
 GRANT ALL ON public.profiles TO service_role;
 GRANT SELECT ON public.user_roles TO authenticated;
@@ -149,9 +182,16 @@ BEGIN
         default_role := COALESCE((new.raw_user_meta_data->>'role')::public.app_role, 'lojista');
     END IF;
 
-    INSERT INTO public.profiles (id, full_name, role)
-    VALUES (new.id, COALESCE(new.raw_user_meta_data->>'full_name', ''), default_role)
-    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
+    INSERT INTO public.profiles (id, full_name, role, plan_id)
+    VALUES (
+        new.id, 
+        COALESCE(new.raw_user_meta_data->>'full_name', ''), 
+        default_role,
+        (SELECT id FROM public.subscription_plans WHERE category = default_role AND price = 0 LIMIT 1)
+    )
+    ON CONFLICT (id) DO UPDATE SET 
+        role = EXCLUDED.role,
+        plan_id = COALESCE(profiles.plan_id, EXCLUDED.plan_id);
     
     INSERT INTO public.user_roles (user_id, role)
     VALUES (new.id, default_role)
@@ -196,9 +236,16 @@ BEGIN
         default_role := COALESCE((_meta->>'role')::public.app_role, 'lojista');
     END IF;
 
-    INSERT INTO public.profiles (id, full_name, role)
-    VALUES (_id, COALESCE(_meta->>'full_name', ''), default_role)
-    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
+    INSERT INTO public.profiles (id, full_name, role, plan_id)
+    VALUES (
+        _id, 
+        COALESCE(_meta->>'full_name', ''), 
+        default_role,
+        (SELECT id FROM public.subscription_plans WHERE category = default_role AND price = 0 LIMIT 1)
+    )
+    ON CONFLICT (id) DO UPDATE SET 
+        role = EXCLUDED.role,
+        plan_id = COALESCE(profiles.plan_id, EXCLUDED.plan_id);
     
     INSERT INTO public.user_roles (user_id, role)
     VALUES (_id, default_role)
