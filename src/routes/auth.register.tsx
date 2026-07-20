@@ -210,7 +210,21 @@ function RoleCard({ icon, title, description, onClick }: { icon: React.ReactNode
   );
 }
 
-function InputField({ label, placeholder, type = "text", value, onChange, required }: { label: string, placeholder: string, type?: string, value?: string, onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void, required?: boolean }) {
+function InputField({ 
+  label, 
+  placeholder, 
+  type = "text", 
+  value, 
+  onChange, 
+  required 
+}: { 
+  label: string, 
+  placeholder: string, 
+  type?: string, 
+  value?: string, 
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void, 
+  required?: boolean 
+}) {
   return (
     <div>
       <label className="block text-sm font-bold text-muted-foreground mb-2">{label}</label>
@@ -225,3 +239,102 @@ function InputField({ label, placeholder, type = "text", value, onChange, requir
     </div>
   );
 }
+
+const SQL_COMPLETE = `
+-- 1. ENUMS (Garanta que a role 'admin' existe)
+DO \$\$ BEGIN
+    CREATE TYPE public.app_role AS ENUM ('admin', 'lojista', 'prestador', 'fornecedor');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END \$\$;
+
+-- 2. TABELA DE PLANOS (Dependência de Profiles)
+CREATE TABLE IF NOT EXISTS public.subscription_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category public.app_role NOT NULL,
+    name TEXT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Inserir Planos Padrão
+INSERT INTO public.subscription_plans (category, name, price) VALUES 
+('lojista', 'Grátis Lojista', 0.00),
+('prestador', 'Grátis Prestador', 0.00),
+('fornecedor', 'Grátis Fornecedor', 0.00)
+ON CONFLICT DO NOTHING;
+
+-- 3. TABELA DE PERFIS
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    full_name TEXT,
+    role public.app_role NOT NULL DEFAULT 'lojista',
+    plan_id UUID REFERENCES public.subscription_plans(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 4. TABELA DE ROLES (Extra segurança)
+CREATE TABLE IF NOT EXISTS public.user_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    role public.app_role NOT NULL,
+    UNIQUE (user_id, role)
+);
+
+-- 5. TRIGGER DE REGISTRO (CRÍTICO)
+-- Remova o trigger antigo se existir para evitar conflitos
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS \$\$
+DECLARE
+    default_role public.app_role;
+BEGIN
+    -- Define a role baseada no email master ou metadados
+    IF new.email = 'jorgericardosalgado@gmail.com' THEN
+        default_role := 'admin';
+    ELSE
+        default_role := COALESCE((new.raw_user_meta_data->>'role')::public.app_role, 'lojista');
+    END IF;
+
+    -- Cria o perfil
+    INSERT INTO public.profiles (id, full_name, role, plan_id)
+    VALUES (
+        new.id, 
+        COALESCE(new.raw_user_meta_data->>'full_name', ''), 
+        default_role,
+        (SELECT id FROM public.subscription_plans WHERE category = default_role AND price = 0 LIMIT 1)
+    )
+    ON CONFLICT (id) DO UPDATE SET 
+        role = EXCLUDED.role;
+    
+    -- Cria a user_role
+    INSERT INTO public.user_roles (user_id, role)
+    VALUES (new.id, default_role)
+    ON CONFLICT (user_id, role) DO NOTHING;
+    
+    RETURN NEW;
+END;
+\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- 6. PERMISSÕES RLS BÁSICAS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+GRANT ALL ON public.profiles TO authenticated;
+GRANT ALL ON public.user_roles TO authenticated;
+GRANT ALL ON public.subscription_plans TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
+GRANT ALL ON public.user_roles TO service_role;
+GRANT ALL ON public.subscription_plans TO service_role;
+
+-- POLÍTICAS
+CREATE POLICY "Permitir leitura própria" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Permitir update próprio" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+`;
