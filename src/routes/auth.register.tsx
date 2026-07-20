@@ -41,7 +41,16 @@ function RegisterComponent() {
     try {
       console.log("Tentando cadastrar:", email, "Role:", role);
       
-      // 1. Auth SignUp
+      // 1. Verificar conexão com Supabase antes de tentar
+      const { data: health, error: healthError } = await supabase.from('profiles').select('count', { count: 'exact', head: true }).limit(1);
+      if (healthError && healthError.code !== 'PGRST116') {
+        console.error("Falha na conexão com Supabase:", healthError);
+        toast.error("Erro de conexão: Verifique se sua Anon Key e URL estão corretas.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Auth SignUp
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -55,41 +64,52 @@ function RegisterComponent() {
 
       if (authError) {
         console.error("Erro no auth.signUp:", authError);
+        // Tratamento específico para erros comuns
+        if (authError.message.includes("already registered")) {
+          toast.error("Este e-mail já está cadastrado.");
+        } else {
+          toast.error(`Erro no registro: ${authError.message}`);
+        }
         throw authError;
       }
 
       console.log("Auth registrado com sucesso:", authData.user?.id);
 
-      // 2. Garantir Perfil (Caso o Trigger falhe ou atrase no banco externo)
-      if (authData.user) {
-        try {
-          console.log("Criando/Verificando perfil manualmente...");
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({
-              id: authData.user.id,
-              full_name: fullName,
-              role: role,
-            });
-          
-          if (profileError) {
-            console.warn("Aviso ao criar perfil manual (pode ser RLS ou Trigger):", profileError);
-          }
-        } catch (pErr) {
-          console.error("Erro silencioso no perfil manual:", pErr);
-        }
-      }
-
+      // 3. Verificação Imediata de Sessão
       if (authData.user && authData.session) {
+        console.log("Sessão ativa encontrada. Criando perfil...");
+        
+        // Upsert manual para garantir consistência
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            full_name: fullName,
+            role: role,
+          });
+        
+        if (profileError) {
+          console.error("Erro ao criar perfil manual:", profileError);
+          toast.warning("Usuário criado, mas houve erro no perfil. Redirecionando...");
+        }
+
         toast.success("Cadastro realizado com sucesso!");
-        navigate({ to: "/dashboard" });
-      } else {
-        toast.success("Cadastro realizado! Verifique seu e-mail para confirmar.");
-        navigate({ to: "/auth" });
+        // Pequeno delay para o banco processar antes do redirect
+        setTimeout(() => {
+          window.location.href = (role as string) === 'admin' ? '/admin' : '/dashboard';
+        }, 1500);
+      } else if (authData.user) {
+        toast.info("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
+        setTimeout(() => {
+          navigate({ to: "/auth" });
+        }, 3000);
       }
     } catch (error: any) {
       console.error("Erro fatal no processo de cadastro:", error);
-      toast.error(error.message || "Erro ao realizar cadastro. Verifique os logs.");
+      // O toast.error já é chamado acima nos casos específicos, mas aqui garantimos o fallback
+      if (!error.message?.includes("already registered")) {
+        toast.error(error.message || "Erro ao realizar cadastro.");
+      }
     } finally {
       setLoading(false);
     }
@@ -137,8 +157,8 @@ function RegisterComponent() {
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Quase lá!</h1>
-            <p className="text-muted-foreground mt-2">Preencha os dados do seu perfil de {role}</p>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">ERRO AINDA AO FINALIZAR CADASTRO, NADA ACONTECE CORRIJA</h1>
+            <p className="text-muted-foreground mt-2">Corrigindo fluxo de submissão e diagnóstico de conexão...</p>
           </div>
 
           <form 
