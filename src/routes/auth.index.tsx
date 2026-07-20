@@ -30,6 +30,7 @@ function LoginComponent() {
         email,
         password,
       });
+      console.log("Resposta Supabase Auth:", { data, error });
 
       if (error) {
         console.error("Erro de autenticação Supabase:", error);
@@ -43,14 +44,17 @@ function LoginComponent() {
         throw new Error("Usuário não encontrado após autenticação.");
       }
 
-      console.log("Login realizado. Buscando perfil para:", data.user.id);
+      console.log("Login realizado com sucesso. UID:", data.user.id);
       
       // Buscar perfil para redirecionamento inteligente
+      console.log("Buscando perfil na tabela public.profiles...");
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single();
+      
+      console.log("Resultado da busca de perfil:", { profile, profileError });
 
       if (profileError) {
         console.error("Erro ao buscar perfil:", profileError);
