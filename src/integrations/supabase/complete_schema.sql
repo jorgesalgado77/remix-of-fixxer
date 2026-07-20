@@ -163,23 +163,23 @@ DECLARE
   _user_id UUID;
 BEGIN
   -- 1. Inserir na auth.users se não existir
-  INSERT INTO auth.users (
-    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, 
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at
-  )
-  VALUES (
-    '00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', 
-    'jorgericardosalgado@gmail.com', crypt('!jR17052', gen_salt('bf')), now(),
-    '{"provider":"email","providers":["email"]}', '{"full_name":"Admin Master","role":"admin"}',
-    now(), now()
-  )
-  ON CONFLICT (email) DO NOTHING
-  RETURNING id INTO _user_id;
-
-  -- Se o usuário já existia, pegar o ID dele
-  IF _user_id IS NULL THEN
+  -- NOTA: Se o erro "no unique or exclusion constraint" ocorrer na tabela auth.users,
+  -- use o script de fallback abaixo que não depende de ON CONFLICT.
+  BEGIN
+    INSERT INTO auth.users (
+      instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, 
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+    )
+    VALUES (
+      '00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', 
+      'jorgericardosalgado@gmail.com', crypt('!jR17052', gen_salt('bf')), now(),
+      '{"provider":"email","providers":["email"]}', '{"full_name":"Admin Master","role":"admin"}',
+      now(), now()
+    )
+    RETURNING id INTO _user_id;
+  EXCEPTION WHEN unique_violation THEN
     SELECT id INTO _user_id FROM auth.users WHERE email = 'jorgericardosalgado@gmail.com';
-  END IF;
+  END;
 
   -- 2. Garantir que a senha está atualizada (forçar a senha !jR17052)
   UPDATE auth.users 
