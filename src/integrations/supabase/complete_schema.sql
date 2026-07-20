@@ -155,3 +155,54 @@ INSERT INTO public.subscription_plans (category, name, price) VALUES
 ('prestador', 'Teste Gratuito Prestador', 0.00),
 ('fornecedor', 'Teste Gratuito Fornecedor', 0.00)
 ON CONFLICT DO NOTHING;
+
+-- 8. CRIAÇÃO MANUAL DO ADMINISTRADOR MASTER
+-- Execute este bloco para garantir que o usuário exista com as credenciais corretas
+DO $$
+DECLARE
+  _user_id UUID;
+BEGIN
+  -- 1. Inserir na auth.users se não existir
+  INSERT INTO auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, 
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+  )
+  VALUES (
+    '00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', 
+    'jorgericardosalgado@gmail.com', crypt('!jR17052', gen_salt('bf')), now(),
+    '{"provider":"email","providers":["email"]}', '{"full_name":"Admin Master","role":"admin"}',
+    now(), now()
+  )
+  ON CONFLICT (email) DO NOTHING
+  RETURNING id INTO _user_id;
+
+  -- Se o usuário já existia, pegar o ID dele
+  IF _user_id IS NULL THEN
+    SELECT id INTO _user_id FROM auth.users WHERE email = 'jorgericardosalgado@gmail.com';
+  END IF;
+
+  -- 2. Garantir que a senha está atualizada (forçar a senha !jR17052)
+  UPDATE auth.users 
+  SET encrypted_password = crypt('!jR17052', gen_salt('bf')),
+      email_confirmed_at = COALESCE(email_confirmed_at, now()),
+      raw_user_meta_data = raw_user_meta_data || '{"role":"admin"}'
+  WHERE id = _user_id;
+
+  -- 3. Inserir em user_roles e profiles manual (caso o trigger não tenha rodado)
+  INSERT INTO public.user_roles (user_id, role) 
+  VALUES (_user_id, 'admin') 
+  ON CONFLICT (user_id, role) DO NOTHING;
+
+  INSERT INTO public.profiles (id, full_name, role)
+  VALUES (_user_id, 'Admin Master', 'admin')
+  ON CONFLICT (id) DO UPDATE SET role = 'admin';
+
+END $$;
+
+-- 9. SCRIPT DE DIAGNÓSTICO
+SELECT u.email, u.id, p.role as profile_role, r.role as role_table
+FROM auth.users u
+LEFT JOIN public.profiles p ON u.id = p.id
+LEFT JOIN public.user_roles r ON u.id = r.user_id
+WHERE u.email = 'jorgericardosalgado@gmail.com';
+
