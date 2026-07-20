@@ -188,8 +188,6 @@ function RegisterComponent() {
           </form>
         </div>
       )}
-        </div>
-      )}
 
       {/* Seção Informativa para Erros de Banco (SQL) */}
       <div className="mt-12 p-6 bg-red-500/10 border border-red-500/20 rounded-2xl animate-in fade-in duration-700">
