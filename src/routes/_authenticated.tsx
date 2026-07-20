@@ -14,15 +14,25 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     // Buscar o perfil e papel do usuário
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', session.user.id)
       .single();
 
+    const role = profile?.role || 'lojista';
+
+    // Bloqueio explícito para rotas de admin
+    if (location.pathname.startsWith('/admin') && role !== 'admin') {
+      console.warn("Acesso negado: Usuário não é administrador.");
+      throw redirect({
+        to: "/dashboard",
+      });
+    }
+
     return { 
       session,
-      userRole: profile?.role || 'lojista'
+      userRole: role
     };
   },
   component: AuthenticatedLayout,
