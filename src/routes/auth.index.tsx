@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft, Terminal } from "lucide-react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -173,7 +173,10 @@ function LoginComponent() {
             <div>
               <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
               <input
+                name="email"
                 type="email"
+                autoComplete="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="exemplo@email.com"
@@ -192,7 +195,10 @@ function LoginComponent() {
                 </button>
               </div>
               <input
+                name="password"
                 type="password"
+                autoComplete="current-password"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -201,6 +207,7 @@ function LoginComponent() {
             </div>
 
             <button 
+              type="submit"
               disabled={loading}
               className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -216,6 +223,10 @@ function LoginComponent() {
                 Cadastre-se
               </Link>
             </p>
+          </div>
+          <div className="mt-4 text-[10px] text-muted-foreground/20 font-mono flex items-center justify-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
+            <Terminal className="w-2 h-2" />
+            <span>EXTERNAL_DB_ACTIVE: {supabase.auth.onAuthStateChange ? "YES" : "NO"}</span>
           </div>
         </div>
       </div>
