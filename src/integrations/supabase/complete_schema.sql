@@ -32,9 +32,17 @@ CREATE TABLE IF NOT EXISTS public.plan_features (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     plan_id UUID REFERENCES public.subscription_plans(id) ON DELETE CASCADE,
     feature_key TEXT NOT NULL, -- 'allow_chat', 'allow_contracts', 'priority_listing', 'unlimited_os'
-    is_enabled BOOLEAN DEFAULT FALSE,
-    UNIQUE(plan_id, feature_key)
+    is_enabled BOOLEAN DEFAULT FALSE
 );
+
+-- Adicionar restrição UNIQUE se não existir para plan_features
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'plan_features_plan_id_feature_key_key'
+    ) THEN
+        ALTER TABLE public.plan_features ADD CONSTRAINT plan_features_plan_id_feature_key_key UNIQUE (plan_id, feature_key);
+    END IF;
+END $$;
 
 -- 2.2 TABELA DE PERFIS (ATUALIZADA)
 CREATE TABLE IF NOT EXISTS public.profiles (
