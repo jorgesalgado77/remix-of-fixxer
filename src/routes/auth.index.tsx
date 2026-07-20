@@ -30,11 +30,12 @@ function LoginComponent() {
       console.log("Tentando login manual via console...");
       console.log("Credenciais:", email, password);
       
+      console.log("Chamando supabase.auth.signInWithPassword...");
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: email.trim(),
+        password: password.trim(),
       });
-      console.log("Resposta Auth Bruta:", data, error);
+      console.log("RESULTADO LOGIN:", { success: !!data?.user, error: error?.message });
 
       if (error) {
         console.error("Erro de autenticação Supabase:", error);
