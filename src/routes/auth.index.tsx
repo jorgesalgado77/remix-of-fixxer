@@ -226,7 +226,7 @@ function LoginComponent() {
           </div>
           <div className="mt-4 text-[10px] text-muted-foreground/20 font-mono flex items-center justify-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
             <Terminal className="w-2 h-2" />
-            <span>EXTERNAL_DB_ACTIVE: {supabase.auth.onAuthStateChange ? "YES" : "NO"}</span>
+            <span>EXTERNAL_DB_ACTIVE: YES</span>
           </div>
         </div>
       </div>
