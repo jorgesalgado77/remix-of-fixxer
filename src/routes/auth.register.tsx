@@ -188,6 +188,33 @@ function RegisterComponent() {
           </form>
         </div>
       )}
+        </div>
+      )}
+
+      {/* Seção Informativa para Erros de Banco (SQL) */}
+      <div className="mt-12 p-6 bg-red-500/10 border border-red-500/20 rounded-2xl animate-in fade-in duration-700">
+        <h2 className="text-red-400 font-bold mb-2 flex items-center gap-2">
+          <ChevronRight className="w-4 h-4" />
+          Erro de Banco Externo? (500)
+        </h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Se o cadastro falhar com erro 500, o seu Supabase externo não conseguiu rodar o gatilho de criação de perfil. Copie o código abaixo e rode no **SQL Editor** do seu Supabase.
+        </p>
+        <div className="relative group">
+          <pre className="text-[10px] bg-black/40 p-4 rounded-xl overflow-x-auto text-primary/70 border border-white/5 max-h-40">
+            <code>{SQL_COMPLETE}</code>
+          </pre>
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(SQL_COMPLETE);
+              toast.success("SQL copiado para o clipboard!");
+            }}
+            className="absolute top-2 right-2 bg-primary/20 hover:bg-primary/40 text-primary text-[10px] px-2 py-1 rounded border border-primary/20 transition-all opacity-0 group-hover:opacity-100"
+          >
+            Copiar SQL
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
