@@ -25,48 +25,75 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 function AdminDashboard() {
   const { glassClass } = usePerformanceMode();
-  const [authorizedEmails, setAuthorizedEmails] = useState<string[]>([]);
+  const [authorizedEmails, setAuthorizedEmails] = useState<{id: string, email: string}[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Carregar emails autorizados (simulado para este MVP, mas pronto para tabela admin_config)
-  useEffect(() => {
-    // No futuro, isso viria de uma tabela public.admin_config
-    const emails = localStorage.getItem('fixxer_authorized_admins');
-    if (emails) {
-      setAuthorizedEmails(JSON.parse(emails));
-    } else {
-      const defaultAdmins = ["jorgericardosalgado@gmail.com"];
-      setAuthorizedEmails(defaultAdmins);
-      localStorage.setItem('fixxer_authorized_admins', JSON.stringify(defaultAdmins));
+  const fetchAdmins = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('admin_config')
+        .select('id, email')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAuthorizedEmails(data || []);
+    } catch (error: any) {
+      console.error("Erro ao buscar admins:", error.message);
+      toast.error("Falha ao carregar lista de administradores");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchAdmins();
   }, []);
 
-  const addAdminEmail = () => {
+  const addAdminEmail = async () => {
     if (!newEmail || !newEmail.includes("@")) {
       toast.error("Email inválido");
       return;
     }
-    if (authorizedEmails.includes(newEmail)) {
-      toast.error("Email já autorizado");
-      return;
+    
+    try {
+      const { error } = await supabase
+        .from('admin_config')
+        .insert([{ email: newEmail }]);
+
+      if (error) {
+        if (error.code === '23505') throw new Error("Email já está na lista");
+        throw error;
+      }
+
+      toast.success(`Email ${newEmail} autorizado!`);
+      setNewEmail("");
+      fetchAdmins();
+    } catch (error: any) {
+      toast.error(error.message);
     }
-    const updated = [...authorizedEmails, newEmail];
-    setAuthorizedEmails(updated);
-    localStorage.setItem('fixxer_authorized_admins', JSON.stringify(updated));
-    setNewEmail("");
-    toast.success(`Email ${newEmail} autorizado com sucesso!`);
   };
 
-  const removeAdminEmail = (email: string) => {
+  const removeAdminEmail = async (id: string, email: string) => {
     if (email === "jorgericardosalgado@gmail.com") {
       toast.error("Não é possível remover o administrador master");
       return;
     }
-    const updated = authorizedEmails.filter(e => e !== email);
-    setAuthorizedEmails(updated);
-    localStorage.setItem('fixxer_authorized_admins', JSON.stringify(updated));
-    toast.info("Email removido da lista de autorizados");
+
+    try {
+      const { error } = await supabase
+        .from('admin_config')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.info("Email removido");
+      fetchAdmins();
+    } catch (error: any) {
+      toast.error("Erro ao remover: " + error.message);
+    }
   };
 
   return (
@@ -166,18 +193,22 @@ function AdminDashboard() {
           </div>
 
           <div className="flex-1 space-y-3 overflow-auto max-h-[400px] pr-2 custom-scrollbar">
-            {authorizedEmails.map((email) => (
-              <div key={email} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 group hover:border-primary/30 transition-all">
-                <span className="text-sm font-medium text-muted-foreground truncate mr-2">{email}</span>
-                {email !== "jorgericardosalgado@gmail.com" && (
+            {loading ? (
+              <div className="flex justify-center p-8">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : authorizedEmails.map((item) => (
+              <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 group hover:border-primary/30 transition-all">
+                <span className="text-sm font-medium text-muted-foreground truncate mr-2">{item.email}</span>
+                {item.email !== "jorgericardosalgado@gmail.com" && (
                   <button 
-                    onClick={() => removeAdminEmail(email)}
+                    onClick={() => removeAdminEmail(item.id, item.email)}
                     className="text-xs text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
                   >
                     Remover
                   </button>
                 )}
-                {email === "jorgericardosalgado@gmail.com" && (
+                {item.email === "jorgericardosalgado@gmail.com" && (
                   <span className="text-[8px] font-black uppercase text-primary/50">Master</span>
                 )}
               </div>

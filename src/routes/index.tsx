@@ -6,7 +6,8 @@ import {
   Zap,
   Lock,
   Mail,
-  LayoutGrid
+  LayoutGrid,
+  Activity
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 
@@ -52,45 +53,45 @@ function Index() {
       </header>
 
       {/* Admin Features Info / Visual Edit Probe */}
-      <div className="px-6 py-12 border-t border-white/5 bg-white/2 backdrop-blur-sm">
+      <div className="px-6 py-12 border-t border-white/5 bg-white/2 backdrop-blur-sm" id="ts-visual-edit-probe-0791c131b1d04508">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
             <div className="flex items-center gap-3 mb-4">
-              <Lock className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-white">Segurança de Acesso</h3>
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-white">Segurança RLS</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Verifique se apenas o usuário administrador tem acesso ao Painel Administrativo e se as rotas ficam bloqueadas para usuários comuns.
-            </p>
-          </div>
-
-          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
-            <div className="flex items-center gap-3 mb-4">
-              <Mail className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-white">Gestão de Admins</h3>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Implemente um fluxo para criar e gerenciar usuários administradores com base em uma lista de emails autorizados, sem precisar editar código.
+              Crie as políticas RLS completas para proteger perfis e user_roles, garantindo que apenas o usuário administrador possa listar/alterar outros usuários e que usuários comuns só vejam seus próprios dados.
             </p>
           </div>
 
           <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
             <div className="flex items-center gap-3 mb-4">
               <Zap className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-white">Navegação Fluida</h3>
+              <h3 className="font-bold text-white">Sincronização SQL</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Garanta que os componentes de navegação usam o import correto de Link no projeto para eliminar erros de build e manter consistência na UI.
+              Implemente um SQL de sincronização para preencher profiles e user_roles de usuários que já existem no auth.users, antes de ativar triggers, para que o banco fique consistente.
             </p>
           </div>
 
           <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
             <div className="flex items-center gap-3 mb-4">
-              <LayoutGrid className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-white">Painel Central</h3>
+              <Mail className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-white">Gestão Dinâmica</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Crie um dashboard no painel administrativo com atalhos para todas as telas do sistema e indicadores do status da conta.
+              Implemente uma interface no painel administrativo para gerenciar a lista de emails autorizados (criar, remover e atualizar admins) sem precisar editar código, atualizando as roles via Supabase.
+            </p>
+          </div>
+
+          <div className={`p-6 rounded-3xl ${glassClass} border border-white/5`}>
+            <div className="flex items-center gap-3 mb-4">
+              <Activity className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-white">Diagnóstico & Guards</h3>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Crie um script SQL de validação e ajuste o middleware de rotas para bloquear acesso ao Painel Administrativo com base na role do Supabase (admin), retornando mensagens claras.
             </p>
           </div>
         </div>
