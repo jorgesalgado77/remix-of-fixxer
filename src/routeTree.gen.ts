@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
+import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -34,17 +35,24 @@ const AuthRegisterRoute = AuthRegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => AuthRoute,
 } as any)
+const ApiPublicSetupDbRoute = ApiPublicSetupDbRouteImport.update({
+  id: '/api/public/setup-db',
+  path: '/api/public/setup-db',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/auth/register': typeof AuthRegisterRoute
   '/auth/': typeof AuthIndexRoute
+  '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth': typeof AuthIndexRoute
+  '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -52,18 +60,31 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/auth/register': typeof AuthRegisterRoute
   '/auth/': typeof AuthIndexRoute
+  '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/auth/register' | '/auth/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/auth/register'
+    | '/auth/'
+    | '/api/public/setup-db'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/register' | '/auth'
-  id: '__root__' | '/' | '/auth' | '/auth/register' | '/auth/'
+  to: '/' | '/auth/register' | '/auth' | '/api/public/setup-db'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/auth/register'
+    | '/auth/'
+    | '/api/public/setup-db'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
+  ApiPublicSetupDbRoute: typeof ApiPublicSetupDbRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -96,6 +117,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRegisterRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/api/public/setup-db': {
+      id: '/api/public/setup-db'
+      path: '/api/public/setup-db'
+      fullPath: '/api/public/setup-db'
+      preLoaderRoute: typeof ApiPublicSetupDbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -114,6 +142,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
+  ApiPublicSetupDbRoute: ApiPublicSetupDbRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

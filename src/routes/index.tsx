@@ -1,14 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { 
-  Hammer, 
-  MessageSquare, 
-  LayoutDashboard, 
-  Users, 
-  TrendingUp, 
   ShieldCheck, 
   CreditCard,
   ChevronRight,
-  Star,
   Zap
 } from "lucide-react";
 
