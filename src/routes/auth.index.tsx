@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft, Terminal } from "lucide-react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -18,6 +18,9 @@ function LoginComponent() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("LOGIN_SUBMIT_START");
+    toast.info("Processando login...");
+    
     if (!email || !password) {
       toast.error("Preencha todos os campos");
       return;
@@ -25,11 +28,15 @@ function LoginComponent() {
 
     setLoading(true);
     try {
-      console.log("Iniciando tentativa de login para:", email);
+      console.log("Tentando login manual via console...");
+      console.log("Credenciais:", email, password);
+      
+      console.log("Chamando supabase.auth.signInWithPassword...");
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: email.trim(),
+        password: password.trim(),
       });
+      console.log("RESULTADO LOGIN:", { success: !!data?.user, error: error?.message });
 
       if (error) {
         console.error("Erro de autenticação Supabase:", error);
@@ -43,19 +50,27 @@ function LoginComponent() {
         throw new Error("Usuário não encontrado após autenticação.");
       }
 
-      console.log("Login realizado. Buscando perfil para:", data.user.id);
-      
       // Buscar perfil para redirecionamento inteligente
+      console.log("Buscando perfil na tabela public.profiles...");
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle(); // Usar maybeSingle para evitar erro se não existir
+      
+      console.log("Resultado da busca de perfil:", { profile, profileError });
 
       if (profileError) {
         console.error("Erro ao buscar perfil:", profileError);
         // Fallback: se não tiver perfil mas autenticou, manda para dashboard
         toast.success("Login realizado! Redirecionando...");
+        navigate({ to: "/dashboard" });
+        return;
+      }
+
+      if (!profile) {
+        console.warn("Perfil não encontrado. Verifique se o trigger handle_new_user funcionou.");
+        toast.success("Login realizado! Perfil básico em criação...");
         navigate({ to: "/dashboard" });
         return;
       }
@@ -162,7 +177,10 @@ function LoginComponent() {
             <div>
               <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
               <input
+                name="email"
                 type="email"
+                autoComplete="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="exemplo@email.com"
@@ -181,7 +199,10 @@ function LoginComponent() {
                 </button>
               </div>
               <input
+                name="password"
                 type="password"
+                autoComplete="current-password"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -190,6 +211,7 @@ function LoginComponent() {
             </div>
 
             <button 
+              type="submit"
               disabled={loading}
               className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -205,6 +227,10 @@ function LoginComponent() {
                 Cadastre-se
               </Link>
             </p>
+          </div>
+          <div className="mt-4 text-[10px] text-muted-foreground/20 font-mono flex items-center justify-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
+            <Terminal className="w-2 h-2" />
+            <span>EXTERNAL_DB_ACTIVE: YES</span>
           </div>
         </div>
       </div>
