@@ -253,7 +253,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 11. SCRIPT DE DIAGNÓSTICO
+-- 11. SCRIPT PARA CRIAR USUÁRIO ADMINISTRADOR DIRETAMENTE (CASO NECESSÁRIO)
+-- Copie e cole este bloco no SQL Editor para criar o Jorge como Admin Master
+-- Nota: A senha '!jR17052' é apenas uma referência para o Auth.
+-- Use as funções de hash do postgres ou prefira o método auth.signUp via código se quiser automatizar.
+/*
+INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, recovery_sent_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token)
+VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    'jorgericardosalgado@gmail.com',
+    crypt('!jR17052', gen_salt('bf')),
+    now(),
+    NULL,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Jorge Ricardo Salgado","role":"admin"}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+) ON CONFLICT (email) DO NOTHING;
+*/
+
+-- 12. SCRIPT DE DIAGNÓSTICO
 -- RODE ISSO PARA VERIFICAR O STATUS
 /*
 SELECT 
