@@ -27,12 +27,14 @@ function LoginComponent() {
 
     setLoading(true);
     try {
-      console.log("Tentando signInWithPassword para:", email);
+      console.log("Tentando login manual via console...");
+      console.log("Credenciais:", email, password);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      console.log("Resultado Auth:", { data, error });
+      console.log("Resposta Auth Bruta:", data, error);
 
       if (error) {
         console.error("Erro de autenticação Supabase:", error);
