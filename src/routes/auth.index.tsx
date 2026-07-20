@@ -38,6 +38,7 @@ function LoginComponent() {
         password: password.trim(),
       });
       console.log("RESULTADO LOGIN:", { success: !!data?.user, error: error?.message });
+      console.log("Sessão ativa após login:", !!(await supabase.auth.getSession()).data.session);
 
       if (error) {
         console.error("Erro de autenticação Supabase:", error);
