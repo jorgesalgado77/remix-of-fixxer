@@ -96,7 +96,7 @@ function RegisterComponent() {
         toast.success("Cadastro realizado com sucesso!");
         // Pequeno delay para o banco processar antes do redirect
         setTimeout(() => {
-          window.location.href = role === 'admin' ? '/admin' : '/dashboard';
+          window.location.href = (role as string) === 'admin' ? '/admin' : '/dashboard';
         }, 1500);
       } else if (authData.user) {
         toast.info("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
