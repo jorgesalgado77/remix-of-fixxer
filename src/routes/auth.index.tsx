@@ -302,7 +302,7 @@ function LoginComponent() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] text-primary-foreground font-black text-2xl mb-6">
             F
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">PROBELAM LOGINPERSISTE</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">problema persiste</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta FIXXER</p>
         </div>
 
