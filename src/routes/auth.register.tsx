@@ -200,6 +200,11 @@ function RegisterComponent() {
             <button 
               type="submit"
               disabled={loading}
+              onClick={(e) => {
+                console.log("Botão clicado via onClick");
+                // Fallback se o onSubmit do form falhar por algum motivo de renderização do DOM
+                if (!loading) handleRegister(e);
+              }}
               className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
