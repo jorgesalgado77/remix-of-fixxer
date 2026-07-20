@@ -62,7 +62,9 @@ function LoginComponent() {
 
       if (error) {
         steps[0].status = 'error';
-        steps[0].detail = error.message;
+        steps[0].detail = error.message === "Invalid login credentials" 
+          ? "Credenciais inválidas. Se você ainda não se cadastrou, use a tela de cadastro primeiro."
+          : error.message;
         setDiagnosticSteps([...steps]);
         await logAccess({ 
           event_type: 'login_attempt', 
@@ -269,12 +271,23 @@ function LoginComponent() {
             ))}
             
             {diagnosticSteps.some(s => s.status === 'error') && (
-              <button 
-                onClick={() => setView("login")}
-                className="w-full mt-4 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
-              >
-                Tentar novamente
-              </button>
+              <div className="space-y-3">
+                <button 
+                  onClick={() => setView("login")}
+                  className="w-full mt-4 bg-primary text-primary-foreground font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  Tentar novamente
+                </button>
+                {diagnosticSteps[0].status === 'error' && (
+                  <Link
+                    to="/auth/register"
+                    search={{ email }}
+                    className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+                  >
+                    Primeiro Acesso? Cadastre-se aqui
+                  </Link>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -289,7 +302,7 @@ function LoginComponent() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] text-primary-foreground font-black text-2xl mb-6">
             F
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Bem-vindo de volta</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">PROBELAM LOGINPERSISTE</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta FIXXER</p>
         </div>
 
