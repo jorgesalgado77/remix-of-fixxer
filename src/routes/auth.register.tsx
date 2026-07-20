@@ -25,6 +25,37 @@ function RegisterComponent() {
     setStep("details");
   };
 
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !fullName || !role) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("Cadastro realizado! Verifique seu e-mail.");
+      navigate({ to: "/auth" });
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao realizar cadastro");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col px-6 py-12 max-w-lg mx-auto w-full bg-background min-h-screen">
       <div className="mb-8">
