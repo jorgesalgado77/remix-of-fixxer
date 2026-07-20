@@ -8,13 +8,19 @@ export const Route = createFileRoute("/auth/")({
   component: LoginComponent,
 });
 
+type DiagnosticStep = {
+  label: string;
+  status: 'pending' | 'loading' | 'success' | 'error';
+  detail?: string;
+};
+
 function LoginComponent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<"login" | "forgot-password" | "diagnostic">("login");
   const [resetLoading, setResetLoading] = useState(false);
-  const [diagnosticSteps, setDiagnosticSteps] = useState<{label: string, status: 'pending' | 'loading' | 'success' | 'error', detail?: string}[]>([]);
+  const [diagnosticSteps, setDiagnosticSteps] = useState<DiagnosticStep[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
