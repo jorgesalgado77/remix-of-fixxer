@@ -149,8 +149,8 @@ function RegisterComponent() {
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">PROBLEMA PERSISTE CORRIJA</h1>
-            <p className="text-muted-foreground mt-2">Estamos forçando a submissão via bypass de evento...</p>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">Complete seu perfil</h1>
+            <p className="text-muted-foreground mt-2">Informe seus dados para finalizar o cadastro</p>
           </div>
 
           <div 
