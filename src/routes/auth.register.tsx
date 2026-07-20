@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/register")({
   component: RegisterComponent,
@@ -12,11 +14,46 @@ type Role = "lojista" | "prestador" | "fornecedor";
 function RegisterComponent() {
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<Role | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleRoleSelect = (selectedRole: Role) => {
     setRole(selectedRole);
     setStep("details");
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !fullName || !role) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("Cadastro realizado! Verifique seu e-mail.");
+      navigate({ to: "/auth" });
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao realizar cadastro");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,40 +103,42 @@ function RegisterComponent() {
           </div>
 
           <div className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl space-y-5">
+            <InputField 
+              label="Nome Completo" 
+              placeholder="Seu nome" 
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+            
             {role === "lojista" && (
               <>
                 <InputField label="CNPJ / Razão Social" placeholder="00.000.000/0001-00" />
                 <InputField label="Nome Comercial" placeholder="Minha Marcenaria" />
               </>
             )}
-            {role === "prestador" && (
-              <>
-                <InputField label="CPF / CNPJ" placeholder="000.000.000-00" />
-                <InputField label="Especialidade Principal" placeholder="Montador de Móveis" />
-                <InputField label="Comissão Desejada (%)" placeholder="15" type="number" />
-              </>
-            )}
-            {role === "fornecedor" && (
-              <>
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-muted-foreground">Tipo de Serviço</label>
-                  <select className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary text-white">
-                    <option className="bg-slate-900">Marmoraria</option>
-                    <option className="bg-slate-900">Vidraçaria</option>
-                    <option className="bg-slate-900">Eletricista</option>
-                    <option className="bg-slate-900">Pintor</option>
-                  </select>
-                </div>
-                <InputField label="Portfólio (Link)" placeholder="instagram.com/seu-trabalho" />
-              </>
-            )}
             
-            <InputField label="E-mail" placeholder="seu@email.com" type="email" />
-            <InputField label="Senha" placeholder="••••••••" type="password" />
+            <InputField 
+              label="E-mail" 
+              placeholder="seu@email.com" 
+              type="email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <InputField 
+              label="Senha" 
+              placeholder="••••••••" 
+              type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-            <button className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4">
+            <button 
+              onClick={handleRegister}
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               Finalizar Cadastro
-              <CheckCircle2 className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -126,13 +165,15 @@ function RoleCard({ icon, title, description, onClick }: { icon: React.ReactNode
   );
 }
 
-function InputField({ label, placeholder, type = "text" }: { label: string, placeholder: string, type?: string }) {
+function InputField({ label, placeholder, type = "text", value, onChange }: { label: string, placeholder: string, type?: string, value?: string, onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <div>
       <label className="block text-sm font-bold text-muted-foreground mb-2">{label}</label>
       <input
         type={type}
         placeholder={placeholder}
+        value={value}
+        onChange={onChange}
         className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
       />
     </div>
