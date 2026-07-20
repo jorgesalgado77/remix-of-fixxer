@@ -19,6 +19,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
 import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated.admin.users'
+import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated.admin.plans'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -69,6 +70,11 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/': typeof AuthIndexRoute
+  '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth': typeof AuthIndexRoute
+  '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/': typeof AuthIndexRoute
+  '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/auth/register'
     | '/auth/'
+    | '/admin/plans'
     | '/admin/users'
     | '/api/public/setup-db'
     | '/admin/'
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/auth/register'
     | '/auth'
+    | '/admin/plans'
     | '/admin/users'
     | '/api/public/setup-db'
     | '/admin'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/auth/register'
     | '/auth/'
+    | '/_authenticated/admin/plans'
     | '/_authenticated/admin/users'
     | '/api/public/setup-db'
     | '/_authenticated/admin/'
@@ -217,15 +229,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/plans': {
+      id: '/_authenticated/admin/plans'
+      path: '/plans'
+      fullPath: '/admin/plans'
+      preLoaderRoute: typeof AuthenticatedAdminPlansRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }

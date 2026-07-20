@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, redirect, useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { 
@@ -8,6 +8,7 @@ import {
   ShieldAlert,
   Menu,
   X,
+  CreditCard,
   ChevronRight
 } from "lucide-react";
 import { useState } from "react";
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminLayout() {
   const { glassClass } = usePerformanceMode();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const location = useLocation();
 
   return (
     <div className="flex h-[calc(100vh-65px)] bg-background">
@@ -51,10 +53,41 @@ function AdminLayout() {
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
-          <AdminNavItem icon={<LayoutDashboard />} label="Dashboard" isOpen={isSidebarOpen} active />
-          <AdminNavItem icon={<Users />} label="Usuários" isOpen={isSidebarOpen} />
-          <AdminNavItem icon={<ShieldAlert />} label="Segurança" isOpen={isSidebarOpen} />
-          <AdminNavItem icon={<Settings />} label="Configurações" isOpen={isSidebarOpen} />
+          <AdminNavItem 
+            to="/admin" 
+            icon={<LayoutDashboard className="w-4 h-4" />} 
+            label="Dashboard" 
+            isOpen={isSidebarOpen} 
+            active={location.pathname === '/admin'} 
+          />
+          <AdminNavItem 
+            to="/admin/users" 
+            icon={<Users className="w-4 h-4" />} 
+            label="Usuários" 
+            isOpen={isSidebarOpen} 
+            active={location.pathname === '/admin/users'} 
+          />
+          <AdminNavItem 
+            to="/admin/plans" 
+            icon={<CreditCard className="w-4 h-4" />} 
+            label="Planos" 
+            isOpen={isSidebarOpen} 
+            active={location.pathname === '/admin/plans'} 
+          />
+          <AdminNavItem 
+            to="/admin" 
+            icon={<ShieldAlert className="w-4 h-4" />} 
+            label="Segurança" 
+            isOpen={isSidebarOpen} 
+            active={false} 
+          />
+          <AdminNavItem 
+            to="/admin" 
+            icon={<Settings className="w-4 h-4" />} 
+            label="Configurações" 
+            isOpen={isSidebarOpen} 
+            active={false} 
+          />
         </nav>
       </aside>
 
@@ -66,14 +99,17 @@ function AdminLayout() {
   );
 }
 
-function AdminNavItem({ icon, label, isOpen, active = false }: { icon: any, label: string, isOpen: boolean, active?: boolean }) {
+function AdminNavItem({ to, icon, label, isOpen, active = false }: { to: string, icon: any, label: string, isOpen: boolean, active?: boolean }) {
   return (
-    <button className={`
-      w-full flex items-center gap-4 p-3 rounded-xl transition-all
-      ${active ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(0,255,135,0.2)]' : 'text-muted-foreground hover:bg-white/5 hover:text-white'}
-    `}>
+    <Link 
+      to={to}
+      className={`
+        w-full flex items-center gap-4 p-3 rounded-xl transition-all
+        ${active ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(0,255,135,0.2)]' : 'text-muted-foreground hover:bg-white/5 hover:text-white'}
+      `}
+    >
       <div className="shrink-0">{icon}</div>
       {isOpen && <span className="text-sm font-bold">{label}</span>}
-    </button>
+    </Link>
   );
 }
