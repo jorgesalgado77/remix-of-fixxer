@@ -45,11 +45,11 @@ function LoginComponent() {
     setLoading(true);
     setView("diagnostic");
     
-    const steps = [
-      { label: "Autenticação Supabase", status: 'loading' as const },
-      { label: "Verificação de Perfil", status: 'pending' as const },
-      { label: "Validação de Papel (Role)", status: 'pending' as const },
-      { label: "Redirecionamento Final", status: 'pending' as const },
+    const steps: DiagnosticStep[] = [
+      { label: "Autenticação Supabase", status: 'loading' },
+      { label: "Verificação de Perfil", status: 'pending' },
+      { label: "Validação de Papel (Role)", status: 'pending' },
+      { label: "Redirecionamento Final", status: 'pending' },
     ];
     setDiagnosticSteps([...steps]);
 
