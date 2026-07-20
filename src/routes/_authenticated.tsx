@@ -25,6 +25,17 @@ export const Route = createFileRoute("/_authenticated")({
     // Bloqueio explícito para rotas de admin
     if (location.pathname.startsWith('/admin') && role !== 'admin') {
       console.warn("Acesso negado: Usuário não é administrador.");
+      
+      // Registrar tentativa de acesso não autorizado
+      await supabase.from('access_logs').insert([{
+        user_id: session.user.id,
+        email: session.user.email,
+        event_type: 'redirect_block',
+        status: 'blocked',
+        reason: `Tentativa de acesso a ${location.pathname} com role ${role}`,
+        metadata: { path: location.pathname, role }
+      }]);
+
       throw redirect({
         to: "/dashboard",
       });
