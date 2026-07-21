@@ -286,16 +286,8 @@ function InputField({
   );
 }
 
-const SQL_CHECK_AND_FIX = `
--- 0. Habilitar extensões necessárias
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- 1. ENUMS (Garanta que a role 'admin' existe)
--- ... [Resto do script permanece igual, mas agora com a verificação de extensão]
-`;
-
 const SQL_COMPLETE = `
--- Habilitar pgcrypto para criptografia de senhas se necessário
+-- 0. HABILITAR EXTENSÕES NECESSÁRIAS
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 1. ENUMS (Garanta que a role 'admin' existe)
@@ -312,7 +304,8 @@ CREATE TABLE IF NOT EXISTS public.subscription_plans (
     name TEXT NOT NULL,
     price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT subscription_plans_category_name_key UNIQUE (category, name)
 );
 
 -- Inserir Planos Padrão
@@ -320,7 +313,7 @@ INSERT INTO public.subscription_plans (category, name, price) VALUES
 ('lojista', 'Grátis Lojista', 0.00),
 ('prestador', 'Grátis Prestador', 0.00),
 ('fornecedor', 'Grátis Fornecedor', 0.00)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (category, name) DO NOTHING;
 
 -- 3. TABELA DE PERFIS
 CREATE TABLE IF NOT EXISTS public.profiles (
