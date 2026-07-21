@@ -69,6 +69,23 @@ function ProfilePage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+    const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+    const MAX_DOC_SIZE = 10 * 1024 * 1024; // 10MB
+
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+    const allowedDocTypes = [
+      'application/pdf', 
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain'
+    ];
+
     try {
       setSaving(true);
       const newMedia = [];
@@ -76,21 +93,65 @@ function ProfilePage() {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        let processedFile = file;
         
+        // Validation
         if (type === 'image') {
-          processedFile = await compressImage(file);
+          if (!allowedImageTypes.includes(file.type)) {
+            toast.error(`Arquivo "${file.name}" não é uma imagem suportada.`);
+            continue;
+          }
+          if (file.size > MAX_IMAGE_SIZE) {
+            toast.error(`Imagem "${file.name}" excede o limite de 5MB.`);
+            continue;
+          }
+        } else if (type === 'video') {
+          if (!allowedVideoTypes.includes(file.type)) {
+            toast.error(`Arquivo "${file.name}" não é um vídeo suportado.`);
+            continue;
+          }
+          if (file.size > MAX_VIDEO_SIZE) {
+            toast.error(`Vídeo "${file.name}" excede o limite de 50MB.`);
+            continue;
+          }
+        } else if (type === 'document') {
+          if (!allowedDocTypes.includes(file.type)) {
+            toast.error(`Arquivo "${file.name}" não é um documento suportado.`);
+            continue;
+          }
+          if (file.size > MAX_DOC_SIZE) {
+            toast.error(`Documento "${file.name}" excede o limite de 10MB.`);
+            continue;
+          }
+        }
+
+        let processedFile = file;
+        if (type === 'image') {
+          try {
+            processedFile = await compressImage(file);
+          } catch (err) {
+            console.error("Erro na compressão:", err);
+            // Fallback to original if compression fails
+          }
         }
 
         const fileExt = file.name.split('.').pop();
         const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
         const filePath = `${type}s/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('media')
-          .upload(filePath, processedFile);
+        const uploadWithRetry = async (retries = 2): Promise<any> => {
+          try {
+            const { error: uploadError } = await supabase.storage
+              .from('media')
+              .upload(filePath, processedFile);
+            if (uploadError) throw uploadError;
+            return true;
+          } catch (err) {
+            if (retries > 0) return uploadWithRetry(retries - 1);
+            throw err;
+          }
+        };
 
-        if (uploadError) throw uploadError;
+        await uploadWithRetry();
 
         const { data: { publicUrl } } = supabase.storage
           .from('media')
@@ -114,15 +175,25 @@ function ProfilePage() {
       const updatedPortfolio = [...(profile.portfolio_media || []), ...newMedia];
       const updatedDocs = [...(profile.documents || []), ...newDocs];
       
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          portfolio_media: updatedPortfolio, 
+          documents: updatedDocs 
+        })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+
       setProfile({ 
         ...profile, 
         portfolio_media: updatedPortfolio, 
         documents: updatedDocs 
       });
       
-      toast.success(`${files.length} arquivo(s) carregado(s) com sucesso!`);
+      toast.success(`${newMedia.length + newDocs.length} arquivo(s) salvos com sucesso!`);
     } catch (error: any) {
-      toast.error("Erro no upload: " + error.message);
+      toast.error("Erro ao salvar arquivos: " + error.message);
     } finally {
       setSaving(false);
     }

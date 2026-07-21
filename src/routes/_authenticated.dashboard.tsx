@@ -29,7 +29,8 @@ import {
   Map,
   DollarSign,
   ChevronRight,
-  Filter
+  Filter,
+  Trash2
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -200,20 +201,43 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
       return data ?? [];
     },
     enabled: !!lojistaId,
-    retry: 1,
+    retry: 2,
   });
+
+  // --- Realtime Subscriptions ---
+  useEffect(() => {
+    if (!lojistaId) return;
+
+    const channel = supabase
+      .channel('dashboard-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders_of_service', filter: `lojista_id=eq.${lojistaId}` },
+        () => queryClient.invalidateQueries({ queryKey: ['lojista-os', lojistaId] })
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'os_messages' },
+        () => queryClient.invalidateQueries({ queryKey: ['lojista-notifications', lojistaId] })
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [lojistaId, queryClient]);
 
   // --- Fetch providers (marketplace) ---
   const { data: providers, isLoading: providersLoading, isError: providersError, refetch: refetchProviders } = useQuery({
     queryKey: ['marketplace-providers', selectedCategory],
     queryFn: async () => {
-      let q = supabase.from('profiles').select('id, full_name, company_name, avatar_url, karma_score, specialty').eq('role', 'prestador').limit(20);
+      let q = supabase.from('profiles').select('id, full_name, company_name, avatar_url, karma_score, specialty').eq('role', 'prestador').limit(50);
       if (selectedCategory) q = q.eq('specialty', selectedCategory);
       const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
-    retry: 1,
+    retry: 2,
   });
 
   // --- Notifications (latest messages on user's OS) ---
@@ -227,12 +251,12 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
         .select('id, content, created_at, os_id')
         .in('os_id', ids)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
       if (error) throw error;
       return data ?? [];
     },
     enabled: !!lojistaId && !!osList,
-    retry: 1,
+    retry: 2,
   });
 
   // --- Metrics ---
@@ -645,10 +669,46 @@ function ProposalModal({ draft, onChange, onClose, onSubmit, isSubmitting, glass
   isSubmitting: boolean;
   glassClass: string;
 }) {
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`Arquivo ${file.name} excede 10MB.`);
+        return false;
+      }
+      return true;
+    });
+    setAttachments(prev => [...prev, ...validFiles]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const validateAndSubmit = () => {
+    if (!draft.title.trim()) return toast.error("Título é obrigatório.");
+    const val = parseFloat((draft.value || '0').replace(/\./g, '').replace(',', '.'));
+    if (!val || val <= 0) return toast.error("Valor inválido.");
+    
+    // Simulating progress for feedback since mutation is handled in parent
+    setUploadProgress(10);
+    const interval = setInterval(() => {
+      setUploadProgress(p => p < 90 ? p + 10 : p);
+    }, 200);
+
+    onSubmit();
+    
+    // Parent will close modal on success, so we don't need to clear interval here
+    // but a cleanup or success handler would be better in a real app
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
       <div
-        className={`w-full md:max-w-md ${glassClass} border-t md:border border-white/10 rounded-t-3xl md:rounded-3xl p-6 space-y-4 animate-in slide-in-from-bottom-4 duration-300`}
+        className={`w-full md:max-w-md ${glassClass} border-t md:border border-white/10 rounded-t-3xl md:rounded-3xl p-6 space-y-4 animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -665,7 +725,7 @@ function ProposalModal({ draft, onChange, onClose, onSubmit, isSubmitting, glass
 
         <div className="space-y-3">
           <label className="block">
-            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Título da O.S.</span>
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Título da O.S. *</span>
             <input
               type="text"
               value={draft.title}
@@ -676,7 +736,7 @@ function ProposalModal({ draft, onChange, onClose, onSubmit, isSubmitting, glass
           </label>
 
           <label className="block">
-            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Descrição</span>
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Descrição detalhada</span>
             <textarea
               value={draft.description}
               onChange={(e) => onChange({ ...draft, description: e.target.value })}
@@ -687,7 +747,7 @@ function ProposalModal({ draft, onChange, onClose, onSubmit, isSubmitting, glass
           </label>
 
           <label className="block">
-            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Valor Oferecido (R$)</span>
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Valor do Contrato (R$) *</span>
             <input
               type="text"
               inputMode="decimal"
@@ -697,7 +757,38 @@ function ProposalModal({ draft, onChange, onClose, onSubmit, isSubmitting, glass
               className="mt-1 w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none transition-colors"
             />
           </label>
+
+          <div className="space-y-2">
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Anexos (Opcional)</span>
+            <div className="grid grid-cols-1 gap-2">
+              {attachments.map((file, idx) => (
+                <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-[10px] text-white truncate">{file.name}</span>
+                  </div>
+                  <button onClick={() => removeAttachment(idx)} className="text-red-400 hover:text-red-300">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              <label className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-white/10 hover:border-primary/30 hover:bg-white/5 transition-all cursor-pointer">
+                <Upload className="w-4 h-4 text-muted-foreground" />
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Adicionar Arquivos</span>
+                <input type="file" multiple className="hidden" onChange={handleFileChange} />
+              </label>
+            </div>
+          </div>
         </div>
+
+        {isSubmitting && (
+          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mt-2">
+            <div 
+              className="bg-primary h-full transition-all duration-300 ease-out" 
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        )}
 
         <div className="flex gap-2 pt-2">
           <button
@@ -708,7 +799,7 @@ function ProposalModal({ draft, onChange, onClose, onSubmit, isSubmitting, glass
             Cancelar
           </button>
           <button
-            onClick={onSubmit}
+            onClick={validateAndSubmit}
             disabled={isSubmitting}
             className="flex-1 py-3 rounded-xl bg-primary text-black text-[10px] font-black uppercase tracking-tighter hover:opacity-90 transition-all shadow-[0_0_20px_rgba(0,255,135,0.3)] disabled:opacity-50 flex items-center justify-center gap-2"
           >

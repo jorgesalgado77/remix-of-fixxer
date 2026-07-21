@@ -3,11 +3,17 @@ import { useState } from 'react';
 
 // Máscaras simplificadas e seguras
 export const applyPhoneMask = (value: string) => {
-  let v = value.replace(/\D/g, '');
-  if (v.length > 11) v = v.slice(0, 11);
-  if (v.length > 6) return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
-  if (v.length > 2) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
-  return v ? `(${v}` : "";
+  const v = value.replace(/\D/g, '');
+  if (v.length <= 10) {
+    // (99) 9999-9999
+    if (v.length > 6) return `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6, 10)}`;
+    if (v.length > 2) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
+    return v ? `(${v}` : "";
+  } else {
+    // (99) 99999-9999
+    const limited = v.slice(0, 11);
+    return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(7, 11)}`;
+  }
 };
 
 export const applyCnpjCpfMask = (value: string) => {
