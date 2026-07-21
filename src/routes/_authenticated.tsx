@@ -51,21 +51,21 @@ function AuthenticatedLayout() {
         <div className="flex items-center gap-4">
           {userRole === 'admin' && (
             <Link 
-              to="/_authenticated/admin" 
+              to="/admin" 
               className="text-xs font-bold uppercase tracking-widest text-primary hover:shadow-[0_0_10px_rgba(0,255,135,0.4)] transition-all active:scale-95"
             >
               Admin
             </Link>
           )}
           <Link 
-            to="/_authenticated/profile" 
+            to="/profile" 
             className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95 flex items-center gap-2"
           >
             <User className="w-3 h-3" />
             Perfil
           </Link>
           <Link 
-            to="/_authenticated/dashboard" 
+            to="/dashboard" 
             className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95"
           >
             Dashboard

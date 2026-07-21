@@ -35,7 +35,7 @@ function NotFoundComponent() {
         </div>
         <div className="pt-4 flex flex-col gap-3">
           <Link
-            to="/_authenticated/dashboard"
+            to="/dashboard"
             className="w-full bg-primary text-primary-foreground font-black py-4 rounded-xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:scale-[1.02] active:scale-95 transition-all text-sm uppercase tracking-widest"
           >
             Ir para Dashboard

@@ -109,7 +109,7 @@ function Dashboard() {
 
         <div className="flex items-center gap-2">
            <Link 
-            to="/_authenticated/profile"
+            to="/profile"
             className={`flex items-center gap-3 p-3 rounded-2xl border border-white/10 hover:border-primary/50 transition-all ${glassClass} group`}
           >
             <Settings className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -136,7 +136,7 @@ function Dashboard() {
           <LayoutDashboard className="w-12 h-12 text-primary mb-4 opacity-20" />
           <h2 className="text-xl font-black text-white uppercase italic">Dashboard Admin</h2>
           <p className="text-muted-foreground text-sm max-w-xs mb-6">Use o menu superior para acessar as ferramentas de gestão do sistema.</p>
-          <Link to="/_authenticated/admin" className="px-6 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all">Ir para Painel Admin</Link>
+          <Link to="/admin" className="px-6 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all">Ir para Painel Admin</Link>
         </div>
       )}
     </div>
