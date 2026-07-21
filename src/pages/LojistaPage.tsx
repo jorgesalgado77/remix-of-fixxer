@@ -119,6 +119,7 @@ export function LojistaDashboard() {
   };
 
   const [emergencySetGallery, setEmergencySetGallery] = useState<any>(null);
+  const [failedUploads, setFailedUploads] = useState<File[]>([]);
 
   const handleUndo = () => {
     if (undoStack.length === 0) return;
@@ -195,7 +196,20 @@ export function LojistaDashboard() {
 
                 <TooltipProvider>
                   <nav className="flex flex-col gap-3">
-                      <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                      <Link 
+                        to="/_authenticated/feed" 
+                        onClick={() => setMobileMenuOpen(false)} 
+                        className={`flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs shadow-[0_0_15px_rgba(255,255,255,0.05)] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none`}
+                      >
+                          <Search className="w-4 h-4 text-primary" /> Ir para o Feed
+                      </Link>
+
+                      <SidebarButton 
+                        icon={<Activity className="w-5 h-5"/>} 
+                        label="Visão Geral" 
+                        active={activeTab === 'dashboard'} 
+                        onClick={() => handleTabChange('dashboard')} 
+                      />
                       
                       <NavButtonWithTooltip 
                         icon={<PlusCircle className="w-5 h-5"/>} 
@@ -217,9 +231,7 @@ export function LojistaDashboard() {
                   </nav>
                 </TooltipProvider>
                 <div className="mt-auto pt-6 flex flex-col gap-4">
-                    <Link to="/_authenticated/feed" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-                        <Search className="w-4 h-4" /> Ir para o Feed
-                    </Link>
+                    <div className="h-px bg-white/5 mx-2" />
                     <Button variant="ghost" onClick={() => { /* Logout logic */ }} className="text-red-400 font-bold uppercase italic text-xs justify-start px-4 h-12">
                         <LogOut className="w-4 h-4 mr-2" /> Encerrar Sessão
                     </Button>
@@ -240,6 +252,10 @@ export function LojistaDashboard() {
 
         <TooltipProvider>
           <nav className="flex flex-col gap-2">
+              <Link to="/_authenticated/feed" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider border border-transparent hover:border-white/10 mb-2">
+                  <Search className="w-4 h-4 text-primary" /> Ir para o Feed
+              </Link>
+
               <SidebarButton icon={<Activity className="w-4 h-4"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
               
               <NavButtonWithTooltip 
@@ -262,9 +278,6 @@ export function LojistaDashboard() {
           </nav>
         </TooltipProvider>
         <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-2">
-            <Link to="/_authenticated/feed" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider">
-                <Search className="w-4 h-4 text-primary" /> Ir para o Feed
-            </Link>
             <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 font-bold uppercase text-xs italic justify-start px-4">
               <LogOut className="w-4 h-4 mr-2" /> Sair do Sistema
             </Button>
@@ -388,6 +401,8 @@ export function LojistaDashboard() {
                     pushToUndo={pushToUndo}
                     setEmergencySetGallery={setEmergencySetGallery}
                     handleUndo={handleUndo}
+                    failedUploads={failedUploads}
+                    setFailedUploads={setFailedUploads}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
@@ -982,7 +997,7 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo, setEmergencySetGallery, handleUndo }: { 
+function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo, setEmergencySetGallery, handleUndo, failedUploads, setFailedUploads }: { 
     setIsProfileComplete: (complete: boolean) => void; 
     rating: number; 
     getRatingColor: (val: number) => string; 
@@ -991,6 +1006,8 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     pushToUndo: (action: string, state: any) => void;
     setEmergencySetGallery: (fn: any) => void;
     handleUndo: () => void;
+    failedUploads: File[];
+    setFailedUploads: React.Dispatch<React.SetStateAction<File[]>>;
 }) {
     const [cnpj, setCnpj] = useState("");
     const [whatsapp, setWhatsapp] = useState("");
@@ -1060,6 +1077,24 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
 
     
     const { uploadFile, isUploading, uploadProgress } = useMediaUpload();
+
+    const retryFailedUpload = async (fileName: string) => {
+        const file = failedUploads.find(f => f.name === fileName);
+        if (file) {
+            setFailedUploads(prev => prev.filter(f => f.name !== fileName));
+            const type = file.type.startsWith('video/') ? 'video' : 'gallery';
+            handleFileUpload({ target: { files: [file] } } as any, type);
+        }
+    };
+
+    const retryAllFailed = async () => {
+        const filesToRetry = [...failedUploads];
+        setFailedUploads([]);
+        for (const file of filesToRetry) {
+            const type = file.type.startsWith('video/') ? 'video' : 'gallery';
+            handleFileUpload({ target: { files: [file] } } as any, type);
+        }
+    };
 
     useEffect(() => {
         const loadMediaOrder = async () => {
@@ -1175,6 +1210,8 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                 toast.success("Upload concluído", {
                     description: `${file.name} está pronto.`
                 });
+            } else {
+                setFailedUploads(prev => [...prev, file]);
             }
             return url;
         });
@@ -1538,6 +1575,9 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                                                 if (cropType === 'logo') setLogoUrl(url);
                                                 setCropImage(null);
                                                 toast.success("Logo ajustado com sucesso!");
+                                            } else {
+                                                // Se falhar, adicionar aos falhados se necessário
+                                                setFailedUploads(prev => [...prev, new File([file], 'cropped.png', { type: 'image/png' })]);
                                             }
                                         }}
                                         className="flex-1 bg-primary text-black uppercase font-black"
@@ -1551,16 +1591,51 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     
                     {uploadProgress.length > 0 && (
                         <div className="space-y-3 p-4 rounded-2xl bg-white/5 border border-white/10 animate-in fade-in slide-in-from-top-2">
-                            <div className="text-[10px] font-black uppercase text-primary italic">Status do Upload</div>
-                            {uploadProgress.map((p, i) => (
-                                <div key={i} className="space-y-1">
-                                    <div className="flex justify-between text-[8px] font-bold text-muted-foreground uppercase">
-                                        <span>{p.fileName}</span>
-                                        <span>{p.progress}%</span>
-                                    </div>
-                                    <Progress value={p.progress} className="h-1 bg-white/5" />
+                            <div className="flex items-center justify-between mb-1">
+                                <div className="text-[10px] font-black uppercase text-primary italic">Status do Upload</div>
+                                <div className="text-[8px] font-bold text-muted-foreground uppercase italic">
+                                    {uploadProgress.filter(p => p.progress === 100).length} OK / {uploadProgress.filter(p => p.error).length} Erros
                                 </div>
-                            ))}
+                            </div>
+                            
+                            <div className="max-h-40 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-white/10">
+                                {uploadProgress.map((p, i) => (
+                                    <div key={i} className="space-y-1 group">
+                                        <div className="flex justify-between items-center text-[8px] font-bold uppercase">
+                                            <span className="truncate max-w-[60%] text-muted-foreground">{p.fileName}</span>
+                                            <div className="flex items-center gap-2">
+                                                {p.error ? (
+                                                    <span className="text-red-400 flex items-center gap-1">
+                                                        Falhou
+                                                        <Button 
+                                                            size="icon" 
+                                                            className="h-4 w-4 bg-primary text-black hover:bg-primary/80 rounded-md"
+                                                            onClick={() => retryFailedUpload(p.fileName)}
+                                                            title="Reenviar arquivo"
+                                                        >
+                                                            <Zap className="w-2.5 h-2.5" />
+                                                        </Button>
+                                                    </span>
+                                                ) : (
+                                                    <span className={p.progress === 100 ? "text-primary" : "text-muted-foreground"}>{p.progress}%</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                            <Progress value={p.progress} className={`h-full transition-all ${p.error ? 'bg-red-500/50' : ''}`} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {uploadProgress.some(p => p.error) && (
+                                <Button 
+                                    onClick={retryAllFailed}
+                                    className="w-full h-8 bg-primary text-black font-black uppercase italic text-[9px] rounded-xl hover:bg-primary/90 mt-2"
+                                >
+                                    <Zap className="w-3 h-3 mr-2" /> Reenviar Todos os Erros
+                                </Button>
+                            )}
                         </div>
                     )}
                     
@@ -1720,7 +1795,14 @@ function SortableItem({ id, isVideo, onRemove, isSelected, onToggleSelect }: { i
             ref={setNodeRef} 
             style={style} 
             onClick={onToggleSelect}
-            className={`relative rounded-2xl overflow-hidden border transition-all cursor-pointer bg-black/40 group touch-none ${isSelected ? 'border-primary ring-2 ring-primary ring-inset' : 'border-white/10'} ${isVideo ? 'aspect-video sm:aspect-square' : 'aspect-square'}`}
+            onKeyDown={(e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    onToggleSelect?.();
+                }
+            }}
+            tabIndex={0}
+            className={`relative rounded-2xl overflow-hidden border transition-all cursor-pointer bg-black/40 group touch-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:z-20 ${isSelected ? 'border-primary ring-2 ring-primary ring-inset' : 'border-white/10'} ${isVideo ? 'aspect-video sm:aspect-square' : 'aspect-square'}`}
         >
             <div {...attributes} {...listeners} className="w-full h-full cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
                 {isVideo ? (
