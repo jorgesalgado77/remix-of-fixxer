@@ -571,22 +571,48 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                                         
                                         {expandedServiceId === service.id && (
                                             <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
-                                                <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <div className="text-[8px] font-black uppercase text-muted-foreground italic">Detalhes do Serviço</div>
-                                                        <p className="text-[10px] text-white/70 leading-relaxed">
-                                                            Solicitação de {service.title.toLowerCase()} para projeto de alto padrão. Requer profissional com experiência e ferramentas completas.
-                                                        </p>
+                                                <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="space-y-4">
+                                                        <div className="space-y-2">
+                                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic">Detalhes do Serviço</div>
+                                                            <p className="text-[10px] text-white/70 leading-relaxed">
+                                                                Solicitação de {service.title.toLowerCase()} para projeto de alto padrão. Requer profissional com experiência e ferramentas completas.
+                                                            </p>
+                                                        </div>
+                                                        
+                                                        <div className="space-y-3">
+                                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic flex items-center gap-2">
+                                                                <Clock className="w-2.5 h-2.5" /> Linha do Tempo / Histórico
+                                                            </div>
+                                                            <div className="space-y-3 pl-2 border-l border-white/10">
+                                                                <div className="relative pl-4">
+                                                                    <div className="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-primary" />
+                                                                    <div className="text-[9px] font-black text-white uppercase italic">Status alterado para {service.status}</div>
+                                                                    <div className="text-[7px] text-muted-foreground uppercase font-bold">Hoje às 14:30 • Por Sistema</div>
+                                                                </div>
+                                                                <div className="relative pl-4">
+                                                                    <div className="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-white/20" />
+                                                                    <div className="text-[9px] font-black text-white/50 uppercase italic">OS Criada</div>
+                                                                    <div className="text-[7px] text-muted-foreground/50 uppercase font-bold">10/07 às 09:15 • Por Marcenaria Inovamad</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex gap-2 justify-end items-end">
-                                                        <Link 
-                                                            to="/_authenticated/feed" 
-                                                            search={{ context: service.id }}
-                                                            className="bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2 rounded-lg"
-                                                        >
-                                                            Ver Detalhes O.S.
-                                                        </Link>
-                                                        <Button size="sm" className="bg-primary text-black text-[9px] font-black uppercase italic">Avançar Status</Button>
+
+                                                    <div className="flex flex-col gap-3 justify-end items-end">
+                                                        <div className="w-full p-3 rounded-xl bg-white/5 border border-white/5">
+                                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic mb-2">Ações Rápidas</div>
+                                                            <div className="flex gap-2">
+                                                                <Link 
+                                                                    to="/_authenticated/feed" 
+                                                                    search={{ context: service.id }}
+                                                                    className="flex-1 text-center bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2.5 rounded-lg transition-all"
+                                                                >
+                                                                    Ver Detalhes O.S.
+                                                                </Link>
+                                                                <Button size="sm" className="flex-1 bg-primary text-black text-[9px] font-black uppercase italic h-10 rounded-lg shadow-[0_0_15px_rgba(0,255,135,0.2)]">Avançar Status</Button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
