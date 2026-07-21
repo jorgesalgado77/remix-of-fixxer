@@ -60,7 +60,7 @@ function FeedPage() {
   } = useInfiniteQuery({
     queryKey: ['feed-posts-infinite', activeTab, searchQuery, selectedCategory, locationFilter],
     queryFn: async ({ pageParam = 0 }) => {
-      const pageSize = 5;
+      const pageSize = 10;
       let q = supabase
         .from('feed_posts')
         .select(`
@@ -99,7 +99,7 @@ function FeedPage() {
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
-      return lastPage.length === 5 ? allPages.length : undefined;
+      return lastPage.length === 10 ? allPages.length : undefined;
     },
   });
 
@@ -311,7 +311,7 @@ function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: strin
               </button>
               <Link 
                 to="/_authenticated/profile" 
-                search={{ id: profile?.id }}
+                search={{ id: profile?.id, context: post.id }}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-[9px] font-black uppercase italic"
               >
                 Ver Perfil
