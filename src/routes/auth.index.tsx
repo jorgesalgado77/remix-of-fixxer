@@ -43,8 +43,8 @@ function LoginComponent() {
     }
 
     setLoading(true);
-    setView("diagnostic");
     
+    // Configura o diagnóstico mas não bloqueia se for bem sucedido
     const steps: DiagnosticStep[] = [
       { label: "Conectividade Supabase", status: 'loading' },
       { label: "Autenticação de Usuário", status: 'pending' },
@@ -53,18 +53,27 @@ function LoginComponent() {
     ];
     setDiagnosticSteps([...steps]);
 
-    // Lógica de Retry com Backoff Exponencial
     const performAuthWithRetry = async (retries = 3, delay = 1000): Promise<any> => {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password: password.trim(),
         });
-        if (error) throw error;
+        
+        if (error) {
+          // Tratamento explícito de erros Supabase
+          if (error.message?.includes("Email not confirmed")) {
+            throw new Error("Por favor, confirme seu e-mail para acessar.");
+          }
+          if (error.status === 400 || error.message?.includes("Invalid login credentials")) {
+            throw new Error("E-mail ou senha inválidos.");
+          }
+          throw error;
+        }
         return data;
       } catch (err: any) {
-        // Retry apenas para erros de rede ou 500
-        if (retries > 0 && (err.status === 500 || err.name === "AuthRetryableFetchError" || err.message?.includes("fetch"))) {
+        const isRetryable = err.status === 500 || err.name === "AuthRetryableFetchError" || err.message?.includes("fetch");
+        if (retries > 0 && isRetryable) {
           console.warn(`Erro 500/Rede detectado. Tentando novamente em ${delay}ms... (${retries} restantes)`);
           await new Promise(res => setTimeout(res, delay));
           return performAuthWithRetry(retries - 1, delay * 1.5);
@@ -74,14 +83,14 @@ function LoginComponent() {
     };
 
     try {
-      // Passo 1: Checagem de Conectividade pré-login
+      // Passo 1: Conectividade
       try {
         const { error: healthError } = await supabase.from('brand_flags').select('count', { count: 'exact', head: true });
-        // Se retornar erro mas o código for 401 ou 403, significa que o banco respondeu (conectividade OK)
         if (healthError && 'code' in healthError && healthError.code !== 'PGRST301' && healthError.code !== '42501') {
            throw healthError;
         }
       } catch (connErr) {
+        setView("diagnostic");
         steps[0].status = 'error';
         steps[0].detail = "Falha de conexão com o Supabase externo. Verifique sua URL/Key ou rede.";
         setDiagnosticSteps([...steps]);
@@ -92,72 +101,77 @@ function LoginComponent() {
       steps[1].status = 'loading';
       setDiagnosticSteps([...steps]);
 
-      // Passo 2: Auth com Retry e Timeout
+      // Passo 2: Auth
       const authPromise = performAuthWithRetry();
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout na autenticação")), 15000));
       
-      const data = await Promise.race([authPromise, timeoutPromise]) as any;
+      const authData = await Promise.race([authPromise, timeoutPromise]) as any;
+      const user = authData.user;
       
       steps[1].status = 'success';
       steps[2].status = 'loading';
       setDiagnosticSteps([...steps]);
 
-      // Passo 3: Sincronização de Perfil (aguarda o trigger do banco)
-      let profile = null;
-      let retryCount = 0;
-      const maxRetries = 5;
+      // Passo 3: Perfil (Redução de latência: busca imediata e upsert automático)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, plan_id')
+        .eq('id', user.id)
+        .maybeSingle();
 
-      while (retryCount < maxRetries) {
-        const { data: p, error: profileError } = await supabase
-          .from('profiles')
-          .select('role, plan_id')
-          .eq('id', data.user.id)
-          .maybeSingle();
-
-        if (p) {
-          profile = p;
-          break;
-        }
-        console.log(`Aguardando perfil... tentativa ${retryCount + 1}/${maxRetries}`);
-        retryCount++;
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
+      let finalRole = profile?.role;
 
       if (!profile) {
-        steps[2].status = 'error';
-        steps[2].detail = "Perfil não encontrado. Execute o script SQL no seu Supabase.";
-        setDiagnosticSteps([...steps]);
-        throw new Error("Perfil não sincronizado.");
+        console.log("Perfil não encontrado. Criando perfil básico (upsert)...");
+        // Fallback: tenta criar o perfil se não existir para evitar travamento
+        const { data: newProfile, error: upsertError } = await supabase
+          .from('profiles')
+          .upsert({ 
+            id: user.id, 
+            email: user.email,
+            role: 'lojista' // Default role
+          })
+          .select('role')
+          .single();
+        
+        if (upsertError) {
+          setView("diagnostic");
+          steps[2].status = 'error';
+          steps[2].detail = "Erro ao criar perfil. Verifique as permissões da tabela 'profiles'.";
+          setDiagnosticSteps([...steps]);
+          throw upsertError;
+        }
+        finalRole = newProfile.role;
       }
 
       steps[2].status = 'success';
       steps[3].status = 'loading';
       setDiagnosticSteps([...steps]);
 
-      const role = profile.role || 'lojista';
-      
       await logAccess({ 
         event_type: 'login_attempt', 
         status: 'success', 
-        user_id: data.user.id,
+        user_id: user.id,
         email: email.trim(),
-        metadata: { role, method: 'secured_flow' }
+        metadata: { role: finalRole, method: 'secured_flow' }
       });
 
       steps[3].status = 'success';
       setDiagnosticSteps([...steps]);
-      
-      // Pequeno delay para visualização do diagnóstico antes do redirect
-      setTimeout(() => {
-        window.location.href = role === 'admin' ? "/admin" : "/dashboard";
-      }, 1000);
+
+      // Redirecionamento instantâneo se tudo estiver OK
+      const target = finalRole === 'admin' ? "/admin" : "/dashboard";
+      window.location.href = target;
 
     } catch (error: any) {
       setLoading(false);
-      // Se já marcou algum erro no diagnóstico, não sobrescreve com toast genérico
+      // Converte qualquer objeto de erro para string legível
+      const errorMsg = typeof error === 'string' ? error : (error.message || JSON.stringify(error));
+      
       if (!steps.some(s => s.status === 'error')) {
+        setView("diagnostic");
         steps[1].status = 'error';
-        steps[1].detail = error.message || "Erro de autenticação. Verifique suas credenciais.";
+        steps[1].detail = errorMsg === "{}" ? "Erro interno de autenticação (objeto vazio)." : errorMsg;
         setDiagnosticSteps([...steps]);
       }
     }
@@ -303,8 +317,22 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-61018f6a6dc240da" className="hidden">
-          Implementar uma verificação de conectividade e um tratamento de erros padronizado para chamadas ao Supabase, exibindo mensagens claras ao usuário e logs seguros no servidor. Verificar e validar as policies de RLS e as tabelas exigidas para Auth (incluindo profiles, brand_flags e trigger handle_new_user) no Supabase externo para garantir acesso correto. Rodar uma checagem de build e garantir que não há erros TypeScript pendentes relacionados ao auth e ao tratamento de PostgrestError.
+        <div id="ts-visual-edit-probe-92cad893586e4871" className="hidden">
+          CORREÇÃO CRÍTICA DE AUTENTICAÇÃO E DIAGNÓSTICO DE ACESSO:
+          O fluxo de login está travando na etapa "Autenticação de Usuário" retornando um objeto de erro vazio `{}`. Refatore o código do diagnóstico e da autenticação imediatamente com as seguintes regras:
+          1. TRATAMENTO DE ERROS DE AUTH (SUPABASE):
+          - O método `supabase.auth.signInWithPassword()` deve tratar explicitamente os cenários de retorno:
+          * Se o erro for "Email not confirmed", exiba uma mensagem amigável: "Por favor, confirme seu e-mail para acessar."
+          * Se as credenciais estiverem incorretas, exiba: "E-mail ou senha inválidos."
+          * Trate qualquer erro extra garantindo que `error.message` seja convertido para texto visível, e nunca exiba `{}` no diagnóstico.
+          2. FLUXO DE LOGIN E REDIRECIONAMENTO DIRETO:
+          - Quando o usuário fizer login com sucesso no formulário de login, obtenha a sessão ativa imediatamente (`supabase.auth.getSession()`).
+          - Busque o perfil do usuário na tabela `profiles` pelo `id` do usuário logado.
+          - Se a sessão e o perfil forem válidos, redirecione DIRETO para a Dashboard correspondente (Lojista, Prestador ou Parceiro) com base no campo `user_type` cadastrado no perfil.
+          - Se o perfil não existir na tabela `profiles`, execute um upsert/fallback automático criando o perfil básico com o `user_type` correspondente antes de redirecionar, evitando travamento na sincronização.
+          3. REMOÇÃO DE TELAS DE DIAGNÓSTICO INTERMEDIÁRIAS DESNECESSÁRIAS:
+          - A tela "Diagnóstico de Acesso" não deve travar o fluxo do usuário final. Se os dados forem válidos, o login deve levar o usuário instantaneamente para a aplicação sem telas intermediárias lentas, mantendo o foco em carregamento instantâneo para mobile (conforme as Regras de Ouro).
+          Refatore esta rotina de autenticação e teste o login novamente.
         </div>
       </div>
 
