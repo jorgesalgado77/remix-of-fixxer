@@ -31,17 +31,18 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const navigate = useNavigate();
-  const { isAdmin, pathname } = Route.useRouteContext();
+  const location = useLocation();
+  const { isAdmin } = Route.useRouteContext();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
     // Sincroniza o estado showAdminPanel com a URL ou se for admin master
-    if (isAdmin || pathname.includes('admin')) {
+    if (isAdmin || location.pathname.includes('admin')) {
       setShowAdminPanel(true);
     } else {
       setShowAdminPanel(false);
     }
-  }, [isAdmin, pathname]);
+  }, [isAdmin, location.pathname]);
 
   useEffect(() => {
     const checkAuth = async () => {
