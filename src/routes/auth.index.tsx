@@ -45,17 +45,18 @@ function LoginComponent() {
       });
       
       if (error) {
-        toast.error(error.message);
+        toast.error(`Erro no login: ${error.message}`);
         setLoading(false);
         return;
       }
 
       if (data?.user) {
-        // Redirecionamento instantâneo e direto
-        // O layout _authenticated cuidará da busca/fallback do perfil
-        navigate({ to: "/_authenticated/dashboard" });
+        // Força o redirecionamento imediato para a dashboard via location.href
+        // conforme instrução para garantir o avanço do sistema
+        window.location.href = "/_authenticated/dashboard";
       }
     } catch (error: any) {
+      console.error("Erro inesperado:", error);
       setLoading(false);
       toast.error(error.message || "Erro inesperado ao realizar login");
     }
@@ -143,15 +144,20 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-cb561c03d47f47ba" className="hidden">
-          CORREÇÃO DEFINITIVA DE AUTENTICAÇÃO (BYPASS DE DIAGNÓSTICO):
-          A tela de "Diagnóstico de Acesso" está bloqueando o uso do sistema e deve ser REMOVIDA COMPLETAMENTE do código. 
-          Aplique a seguinte lógica simplificada no formulário de Login.
-          Ao submeter o e-mail e senha no formulário:
-          - Execute: supabase.auth.signInWithPassword
-          - Se houver erro, exiba um alerta em toast vermelho.
-          - Se o login for BEM-SUCEDIDO: Navegue DIRETO para a rota da Dashboard.
-          Refatore o fluxo para ser instantâneo e direto para a Dashboard após o clique em Login.
+        <div id="ts-visual-edit-probe-a8a3e28643e048ae" className="hidden">
+          CORREÇÃO CRÍTICA: BOTÃO DE LOGIN NÃO REDIRECIONA / DESTRANCAMENTO DE ROTAS
+
+          O login no Supabase ocorre com sucesso, mas ao clicar em "Entrar" o sistema não avança nem muda de tela. Isso ocorre devido a um bloqueio no `ProtectedRoute` ou à ausência da rota declarada no roteador. 
+
+          Corrija o fluxo de rotas e o evento de login aplicando EXATAMENTE estas 3 alterações:
+
+          1. DECLARAÇÃO E LIBERAÇÃO DAS ROTAS (`App.tsx`):
+          - Certifique-se de que a rota `/dashboard` existe e está devidamente mapeada para o componente da Dashboard.
+          - Para testes de desenvolvimento, DESATIVE temporariamente qualquer trava de verificação no componente `<ProtectedRoute>` que esteja redirecionando de volta para o login. Permita que a rota `/dashboard` seja acessível diretamente pós-login.
+
+          2. EVENTO DE SUBMIT NO FORMULÁRIO DE LOGIN (`Login.tsx`):
+          - Adicione um estado de carregamento visual (`loading`) no botão "Entrar" (ex: texto "Acessando..." com spinner esmeralda) para que o usuário saiba que o clique foi registrado.
+          - Trate o evento de login com o seguinte fluxo direto.
         </div>
       </div>
 
@@ -208,8 +214,17 @@ function LoginComponent() {
               disabled={loading}
               className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-              Entrar
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                  <span>Acessando...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>Entrar</span>
+                </>
+              )}
             </button>
           </form>
 
