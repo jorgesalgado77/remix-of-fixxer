@@ -285,7 +285,7 @@ function FeedCard({ post, glassClass }: { post: any, glassClass: string }) {
               <h3 className="text-[11px] font-black text-white uppercase italic truncate max-w-[150px]">
                 {profile?.company_name || profile?.full_name || "Usuário FIXXER"}
               </h3>
-              {isB2C && <Home className="w-3 h-3 text-blue-400" title="Obra Residencial" />}
+              {isB2C && <Home className="w-3 h-3 text-blue-400" />}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
