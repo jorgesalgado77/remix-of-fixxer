@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { 
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 });
 
 function AdminDashboard() {
+  const navigate = useNavigate();
   const { glassClass } = usePerformanceMode();
   const [metrics, setMetrics] = useState({
     totalUsers: 0,
@@ -33,6 +34,24 @@ function AdminDashboard() {
     pendingReports: 0
   });
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Validação de acesso exclusivo do administrador master
+    const checkAdminAccess = async () => {
+      const email = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
+      const role = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
+      
+      // Se não for o email admin master ou role Admin, redireciona para a dashboard genérica
+      if (email.trim() !== 'jorgericardosalgado@gmail.com' && role.toLowerCase() !== 'admin') {
+        console.warn("[ADMIN SECURITY]: Acesso negado a não-administrador. Redirecionando...");
+        navigate({ to: '/_authenticated/dashboard' as any });
+        return;
+      }
+      setLoading(false);
+    };
+
+    checkAdminAccess();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchMetrics = async () => {
