@@ -600,7 +600,15 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
                         <Star className="w-4 h-4 fill-[#00FF87] text-[#00FF87]" />
                         <span className="text-xs font-black text-white italic">Reputação Atual: <span className="text-[#00FF87]">4.9 / 5.0</span></span>
                     </div>
-                    <Button className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98]">
+                    <Button 
+                        onClick={() => {
+                            setIsProfileComplete(true);
+                            toast.success("Perfil Atualizado", {
+                                description: "Seus dados foram salvos com sucesso. Agora você pode acessar todas as funcionalidades.",
+                            });
+                        }}
+                        className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98]"
+                    >
                         Salvar Todas as Alterações
                     </Button>
                  </div>
