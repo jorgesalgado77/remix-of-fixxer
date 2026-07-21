@@ -339,7 +339,7 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
     );
 }
 
-function DashboardView() {
+function DashboardView({ rating, getRatingColor }: { rating: number; getRatingColor: (val: number) => string }) {
     const [filter, setFilter] = useState('Hoje');
     const [customDates, setCustomDates] = useState({ start: '', end: '' });
     
