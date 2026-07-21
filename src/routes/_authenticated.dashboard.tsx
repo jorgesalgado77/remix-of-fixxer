@@ -900,6 +900,14 @@ function PrestadorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: 
           </div>
         </div>
       </div>
+      
+      {/* Bottom Nav Mobile for Prestador */}
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 h-20 border-t border-white/10 flex items-center justify-around px-6 z-50 ${glassClass} backdrop-blur-xl`}>
+        <MobileNavItem icon={<LayoutDashboard />} label="Início" active={activeSubTab === 'overview'} onClick={() => setActiveSubTab('overview')} />
+        <MobileNavItem icon={<TrendingUp />} label="Feed" active={window.location.pathname === '/feed'} onClick={() => window.location.href = '/feed'} />
+        <MobileNavItem icon={<MessageSquare />} label="Chat" active={activeSubTab === 'os'} onClick={() => setActiveSubTab('os')} />
+        <MobileNavItem icon={<User />} label="Perfil" active={activeSubTab === 'profile'} onClick={() => setActiveSubTab('profile')} />
+      </div>
     </div>
   );
 }
