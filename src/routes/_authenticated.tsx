@@ -1,48 +1,28 @@
 import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { AdminDashboardComponent } from "./_authenticated.admin";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => {
-    // Carregamos a sessão mas não bloqueamos a renderização com redirect aqui
-    // Isso evita telas brancas e loops se a hidratação demorar no preview
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    let storedEmail = null;
-    let storedRole = 'user';
-
-    if (typeof window !== 'undefined') {
-      storedEmail = localStorage.getItem('fixxer_user_email');
-      storedRole = localStorage.getItem('fixxer_user_role') || 'user';
-    }
-
-    return { 
-      session, 
-      userRole: storedRole,
-      userEmail: session?.user?.email || storedEmail
-    };
-  },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
-  const { userRole, session } = Route.useRouteContext();
   const navigate = useNavigate();
+  const [userEmail, setUserEmail] = useState('');
+  const [userRole, setUserRole] = useState('');
+  const [isPathAdmin, setIsPathAdmin] = useState(false);
 
   useEffect(() => {
-    // Redirecionamento não bloqueante via useEffect
-    const checkAuth = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
-      
-      if (!currentSession && !isAuthenticated) {
-        console.log("[FIXXER]: Sessão não encontrada, redirecionando para /auth");
-        navigate({ to: "/auth" as any });
-      }
-    };
-    checkAuth();
-  }, [navigate]);
+    if (typeof window !== 'undefined') {
+      const email = localStorage.getItem('fixxer_user_email') || '';
+      const role = localStorage.getItem('fixxer_user_role') || '';
+      setUserEmail(email);
+      setUserRole(role);
+      setIsPathAdmin(window.location.pathname.includes('/admin'));
+    }
+  }, []);
 
   const getDashboardPath = (role: string) => {
     const r = role.toLowerCase();
@@ -54,12 +34,17 @@ function AuthenticatedLayout() {
   };
 
   const dashboardPath = getDashboardPath(userRole);
+  const isAdmin = userEmail.trim() === 'jorgericardosalgado@gmail.com' || userRole.toLowerCase() === 'admin';
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <nav className="border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link to={dashboardPath as any} className="flex items-center gap-2 group">
+          <Link 
+            to={dashboardPath as any} 
+            className="flex items-center gap-2 group"
+            onClick={() => setIsPathAdmin(false)}
+          >
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-xl shadow-[0_0_15px_rgba(0,255,135,0.3)] group-hover:scale-110 transition-transform">
               F
             </div>
@@ -68,18 +53,23 @@ function AuthenticatedLayout() {
         </div>
 
         <div className="flex items-center gap-6">
-          {(userRole === 'admin' || userRole === 'Admin') && (
-            <Link 
-              to="/_authenticated/admin" 
-              className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
+          {isAdmin && (
+            <div 
+              onClick={() => {
+                setIsPathAdmin(true);
+                window.history.pushState({}, '', '/_authenticated/admin');
+                navigate({ to: '/_authenticated/admin' as any });
+              }}
+              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors ${isPathAdmin ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-[#00FF87]'}`}
             >
               <ShieldCheck className="w-4 h-4" />
               Admin
-            </Link>
+            </div>
           )}
 
           <Link 
             to="/_authenticated/feed" 
+            onClick={() => setIsPathAdmin(false)}
             className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
           >
             <Rss className="w-4 h-4" />
@@ -88,6 +78,7 @@ function AuthenticatedLayout() {
 
           <Link 
             to={dashboardPath as any}
+            onClick={() => setIsPathAdmin(false)}
             className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
           >
             <LayoutDashboard className="w-4 h-4" />
@@ -96,6 +87,7 @@ function AuthenticatedLayout() {
 
           <Link 
             to="/_authenticated/profile" 
+            onClick={() => setIsPathAdmin(false)}
             className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
           >
             <User className="w-4 h-4" />
@@ -123,7 +115,11 @@ function AuthenticatedLayout() {
       </nav>
 
       <main className="flex-1 overflow-auto">
-        <Outlet />
+        {isPathAdmin && isAdmin ? (
+          <AdminDashboardComponent />
+        ) : (
+          <Outlet />
+        )}
       </main>
     </div>
   );

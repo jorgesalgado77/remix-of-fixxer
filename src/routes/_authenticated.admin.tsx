@@ -6,7 +6,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminDashboardComponent,
 });
 
+export { AdminDashboardComponent };
+
 function AdminDashboardComponent() {
+
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
