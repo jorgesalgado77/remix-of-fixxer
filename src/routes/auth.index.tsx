@@ -29,17 +29,13 @@ function LoginComponent() {
         localStorage.setItem('fixxer_user_email', email.trim());
         localStorage.setItem('fixxer_user_role', 'Admin');
         localStorage.setItem('fixxer_authenticated', 'true');
-        // Usamos pushState + dispatchEvent para forçar o router a reagir
-        window.history.pushState({}, '', '/admin');
-        window.dispatchEvent(new PopStateEvent('popstate'));
-        setTimeout(() => {
-          if (window.location.pathname !== '/admin') {
-            window.location.href = '/admin';
-          }
-        }, 100);
+        
+        // Redirecionamento forçado para garantir que o bypass seja ativado
+        window.location.assign('/admin');
       }
       return;
     }
+
 
 
     try {
