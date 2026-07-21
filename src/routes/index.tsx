@@ -31,12 +31,12 @@ function Index() {
             F
           </div>
           
-          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-6 leading-[1.1]" id="ts-visual-edit-probe-865d1f469f544aac">
-            O que você quer fazer primeiro neste remix do FIXXER?
+          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-6 leading-[1.1]">
+            Plataforma Industrial de <span className="text-primary underline decoration-primary/30">Serviços Híbridos</span>
           </h1>
           
           <p className="text-muted-foreground text-lg leading-relaxed mb-10 px-4">
-            Conectar meu próprio Supabase
+            A infraestrutura definitiva para lojistas, prestadores e fornecedores. Gestão real, contratos seguros e auditoria simplificada.
           </p>
 
           <div className="flex flex-col gap-4 w-full">
