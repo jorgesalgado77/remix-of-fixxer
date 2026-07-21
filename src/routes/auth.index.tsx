@@ -303,7 +303,10 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
+        <div id="ts-visual-edit-probe-61018f6a6dc240da" className="hidden">
+          Implementar uma verificação de conectividade e um tratamento de erros padronizado para chamadas ao Supabase, exibindo mensagens claras ao usuário e logs seguros no servidor. Verificar e validar as policies de RLS e as tabelas exigidas para Auth (incluindo profiles, brand_flags e trigger handle_new_user) no Supabase externo para garantir acesso correto. Rodar uma checagem de build e garantir que não há erros TypeScript pendentes relacionados ao auth e ao tratamento de PostgrestError.
         </div>
+      </div>
 
         <div className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl">
           <form className="space-y-5" onSubmit={handleLogin}>
