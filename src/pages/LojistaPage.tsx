@@ -43,7 +43,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { IMaskInput } from "react-imask";
 import { useMediaUpload } from "@/hooks/use-media-upload";
 import { Progress } from "@/components/ui/progress";
-
+import { ActivitySelect } from "@/components/ActivitySelect";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy } from "@dnd-kit/sortable";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
