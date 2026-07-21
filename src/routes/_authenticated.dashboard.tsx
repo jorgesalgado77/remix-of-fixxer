@@ -374,9 +374,13 @@ function FornecedorDashboard({ glassClass, isFreePlan, onAction }: { glassClass:
                 <LayoutDashboard className="w-8 h-8 opacity-20" />
               </div>
             </div>
-            <button className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase hover:bg-white/10 transition-all">
+            <button 
+              onClick={(e) => onAction(e, "criar novos anúncios")}
+              className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase hover:bg-white/10 transition-all"
+            >
               Novo Anúncio
             </button>
+
           </div>
         </div>
       </div>
