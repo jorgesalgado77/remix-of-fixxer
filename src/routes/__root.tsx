@@ -15,8 +15,13 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   useEffect(() => {
-    const userEmail = localStorage.getItem('fixxer_user_email') || 'anonymous';
-    console.error(`[FIXXER 404]: Rota não encontrada acessada por ${userEmail}: ${window.location.pathname}`);
+    if (typeof window === "undefined") return;
+    try {
+      const userEmail = localStorage.getItem('fixxer_user_email') || 'anonymous';
+      console.error(`[FIXXER 404]: Rota não encontrada acessada por ${userEmail}: ${window.location.pathname}`);
+    } catch (e) {
+      console.error(`[FIXXER 404]: Rota não encontrada: ${window.location.pathname}`);
+    }
   }, []);
 
   return (
