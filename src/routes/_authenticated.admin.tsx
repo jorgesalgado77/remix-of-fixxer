@@ -5,7 +5,7 @@ import {
   LayoutDashboard, 
   Users, 
   Settings, 
-  ShieldAlert,
+  AlertTriangle,
   Menu,
   X,
   CreditCard,
@@ -76,7 +76,7 @@ function AdminLayout() {
           />
           <AdminNavItem 
             to="/admin" 
-            icon={<ShieldAlert className="w-4 h-4" />} 
+            icon={<AlertTriangle className="w-4 h-4" />} 
             label="Segurança" 
             isOpen={isSidebarOpen} 
             active={false} 
