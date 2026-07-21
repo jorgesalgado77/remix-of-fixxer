@@ -1,46 +1,25 @@
-import { createFileRoute, Outlet, redirect, Link } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
+    // Carregamos a sessão mas não bloqueamos a renderização com redirect aqui
+    // Isso evita telas brancas e loops se a hidratação demorar no preview
     const { data: { session } } = await supabase.auth.getSession();
     
-    let isAuthenticated = false;
     let storedEmail = null;
     let storedRole = 'user';
 
     if (typeof window !== 'undefined') {
-      isAuthenticated = localStorage.getItem('fixxer_authenticated') === 'true';
       storedEmail = localStorage.getItem('fixxer_user_email');
       storedRole = localStorage.getItem('fixxer_user_role') || 'user';
     }
 
-    if (!session && !isAuthenticated) {
-      throw redirect({ to: "/auth" });
-    }
-
-    // Busca o perfil para injetar o role no contexto
-    const userId = session?.user?.id;
-    let userRole = storedRole;
-
-    if (userId) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      if (profile?.role) {
-        userRole = profile.role;
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('fixxer_user_role', userRole);
-        }
-      }
-    }
-
     return { 
       session, 
-      userRole,
+      userRole: storedRole,
       userEmail: session?.user?.email || storedEmail
     };
   },
@@ -49,6 +28,21 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const { userRole, session } = Route.useRouteContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirecionamento não bloqueante via useEffect
+    const checkAuth = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
+      
+      if (!currentSession && !isAuthenticated) {
+        console.log("[FIXXER]: Não autenticado, redirecionando para /auth");
+        navigate({ to: "/auth" });
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -60,7 +54,7 @@ function AuthenticatedLayout() {
           </Link>
         </div>
         <div className="flex items-center gap-4">
-          {userRole === 'admin' && (
+          {(userRole === 'admin' || userRole === 'Admin') && (
             <Link 
               to="/admin" 
               className="text-xs font-bold uppercase tracking-widest text-primary hover:shadow-[0_0_10px_rgba(0,255,135,0.4)] transition-all active:scale-95"
@@ -91,6 +85,11 @@ function AuthenticatedLayout() {
           <button 
             onClick={async () => {
               await supabase.auth.signOut();
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('fixxer_authenticated');
+                localStorage.removeItem('fixxer_user_email');
+                localStorage.removeItem('fixxer_user_role');
+              }
               window.location.href = "/auth";
             }}
             className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-red-400 transition-colors active:scale-95"

@@ -78,7 +78,7 @@ function LoginComponent() {
         localStorage.setItem('fixxer_user_email', email);
         localStorage.setItem('fixxer_user_role', 'Admin');
         localStorage.setItem('fixxer_authenticated', 'true');
-        window.location.replace('/_authenticated/admin');
+        navigate({ to: '/_authenticated/admin' as any });
       }
       return;
     }
@@ -128,12 +128,12 @@ function LoginComponent() {
         });
 
         // REGRA DE OURO: Apenas jorgericardosalgado@gmail.com acessa o /admin
-        if (email.trim() === 'jorgericardosalgado@gmail.com' && (role.toLowerCase() === 'admin')) {
+        if (email.trim() === 'jorgericardosalgado@gmail.com') {
           console.log("[FIXXER AUTH]: Redirecionando para ADMIN");
-          window.location.replace('/_authenticated/admin');
+          navigate({ to: '/_authenticated/admin' as any });
         } else {
           console.log("[FIXXER AUTH]: Redirecionando para DASHBOARD");
-          window.location.replace('/_authenticated/dashboard');
+          navigate({ to: '/_authenticated/dashboard' as any });
         }
       }
     } catch (err: any) {
@@ -226,8 +226,8 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-9690115540f0443b" className="hidden">
-          REMOÇÃO DA TELA DE "ERRO CRÍTICO DE SISTEMA" E LIBERAÇÃO DA INTERFACE
+        <div id="ts-visual-edit-probe-954647b9df4d447d" className="hidden">
+          REFATORAÇÃO TANSTACK ROUTER: REMOÇÃO DE BLOQUEIOS NAS LAYOUT ROUTES `_authenticated` E IMPLEMENTAÇÃO DA DASHBOARD DO LOJISTA E FEED DINÂMICO
         </div>
       </div>
 
