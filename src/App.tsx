@@ -1,12 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
-import { FeedPage } from "./pages/FeedPage";
-import { AdminPage } from "./pages/AdminPage";
-import { LojistaPage } from "./pages/LojistaPage";
-import { PrestadorPage } from "./pages/PrestadorPage";
-import { ParceiroPage } from "./pages/ParceiroPage";
-import { ClientePage } from "./pages/ClientePage";
+import { FeedPage, AdminPage, LojistaPage, PrestadorPage, ParceiroPage, ClientePage } from "./pages/DashboardPages";
 
 export default function App() {
   return (
