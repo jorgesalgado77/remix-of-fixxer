@@ -236,7 +236,11 @@ function ProfilePage() {
                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">CEP</label>
                     <input 
                       value={profile?.cep || ''} 
-                      onChange={e => setProfile({...profile, cep: e.target.value})}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setProfile({...profile, cep: val});
+                        if (val.replace(/\D/g, '').length === 8) handleCepLookup(val);
+                      }}
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                     />
                   </div>
@@ -246,6 +250,30 @@ function ProfilePage() {
                       value={profile?.street || ''} 
                       onChange={e => setProfile({...profile, street: e.target.value})}
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Bairro</label>
+                    <input 
+                      value={profile?.neighborhood || ''} 
+                      onChange={e => setProfile({...profile, neighborhood: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Cidade</label>
+                    <input 
+                      value={profile?.city || ''} 
+                      onChange={e => setProfile({...profile, city: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Estado (UF)</label>
+                    <input 
+                      value={profile?.state || ''} 
+                      onChange={e => setProfile({...profile, state: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                     />
                   </div>
                 </div>
@@ -306,11 +334,35 @@ function ProfilePage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {['Projetista', 'Medidor', 'Conferente Técnico', 'Fretista', 'Montador', 'Supervisor'].map(svc => (
                       <label key={svc} className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer hover:border-primary/30 transition-all">
-                        <input type="checkbox" className="w-5 h-5 accent-primary bg-black border-white/20 rounded-md" />
+                        <input 
+                          type="checkbox" 
+                          checked={profile?.service_types?.includes(svc)}
+                          onChange={(e) => {
+                            const current = profile?.service_types || [];
+                            const next = e.target.checked 
+                              ? [...current, svc]
+                              : current.filter((s: string) => s !== svc);
+                            setProfile({...profile, service_types: next});
+                          }}
+                          className="w-5 h-5 accent-primary bg-black border-white/20 rounded-md" 
+                        />
                         <span className="text-xs font-bold">{svc}</span>
                       </label>
                     ))}
                   </div>
+                  {profile?.service_types?.includes('Conferente Técnico') && profile?.service_types?.includes('Medidor') && (
+                    <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+                       <label className="flex items-center gap-3 cursor-pointer">
+                         <input 
+                           type="checkbox" 
+                           checked={profile?.is_medidor_conferente}
+                           onChange={e => setProfile({...profile, is_medidor_conferente: e.target.checked})}
+                           className="w-5 h-5 accent-primary bg-black border-white/20 rounded-md" 
+                         />
+                         <span className="text-xs font-bold text-primary">Acumulo a função de Medidor junto com Conferente Técnico</span>
+                       </label>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
