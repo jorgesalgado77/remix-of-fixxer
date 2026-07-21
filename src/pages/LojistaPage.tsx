@@ -406,7 +406,32 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
                 <MetricCard label="Serviços Criados" value={(12 * multiplier).toString()} icon={<Briefcase />} color="text-blue-400" />
-                <MetricCard label="Serviços Pendentes" value={(5 * multiplier).toString()} icon={<Clock />} color="text-orange-400" />
+                <MetricCard 
+                    label="Serviços Pendentes" 
+                    value={(5 * multiplier).toString()} 
+                    icon={<Clock />} 
+                    color="text-orange-400" 
+                    subValue={
+                        <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
+                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
+                                <span className="text-muted-foreground">Aguardando:</span>
+                                <span className="text-white">{(2 * multiplier)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
+                                <span className="text-muted-foreground">Em andamento:</span>
+                                <span className="text-white">{(2 * multiplier)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
+                                <span className="text-muted-foreground">Atrasado:</span>
+                                <span className="text-red-500">{(1 * multiplier)}</span>
+                            </div>
+                            <div className="mt-1 flex items-center gap-1 text-[7px] font-black italic uppercase">
+                                <span className="text-green-400">↑ 12%</span>
+                                <span className="text-muted-foreground/50">vs. semana ant.</span>
+                            </div>
+                        </div>
+                    }
+                />
                 <MetricCard label="Concluídos" value={(7 * multiplier).toString()} icon={<ShieldCheck />} color="text-primary" />
                 <MetricCard 
                     label="Saldo do Período" 
