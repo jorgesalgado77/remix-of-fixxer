@@ -406,7 +406,32 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
                 <MetricCard label="Serviços Criados" value={(12 * multiplier).toString()} icon={<Briefcase />} color="text-blue-400" />
-                <MetricCard label="Serviços Pendentes" value={(5 * multiplier).toString()} icon={<Clock />} color="text-orange-400" />
+                <MetricCard 
+                    label="Serviços Pendentes" 
+                    value={(5 * multiplier).toString()} 
+                    icon={<Clock />} 
+                    color="text-orange-400" 
+                    subValue={
+                        <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
+                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
+                                <span className="text-muted-foreground">Aguardando:</span>
+                                <span className="text-white">{(2 * multiplier)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
+                                <span className="text-muted-foreground">Em andamento:</span>
+                                <span className="text-white">{(2 * multiplier)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
+                                <span className="text-muted-foreground">Atrasado:</span>
+                                <span className="text-red-500">{(1 * multiplier)}</span>
+                            </div>
+                            <div className="mt-1 flex items-center gap-1 text-[7px] font-black italic uppercase">
+                                <span className="text-green-400">↑ 12%</span>
+                                <span className="text-muted-foreground/50">vs. semana ant.</span>
+                            </div>
+                        </div>
+                    }
+                />
                 <MetricCard label="Concluídos" value={(7 * multiplier).toString()} icon={<ShieldCheck />} color="text-primary" />
                 <MetricCard 
                     label="Saldo do Período" 
@@ -424,7 +449,14 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
             </div>
             
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
-                <h3 className="font-black text-white uppercase italic mb-6 text-sm md:text-base">Solicitações no Período</h3>
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-black text-white uppercase italic text-sm md:text-base">Solicitações no Período</h3>
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" className="text-[9px] font-bold uppercase italic text-muted-foreground hover:text-white">
+                            Filtrar por Status
+                        </Button>
+                    </div>
+                </div>
                 
                 <div className="space-y-3 md:space-y-4">
                     <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -437,9 +469,15 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                               <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-2490 • São Paulo/SP</div>
                            </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
-                           <span className="font-black text-xs text-white">R$ 450,00</span>
+                        <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
+                           <div className="flex flex-col items-end mr-2">
+                               <span className="font-black text-xs text-white">R$ 450,00</span>
+                               <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: 15/07</span>
+                           </div>
                            <span className="px-3 py-1 bg-[#00FF87]/10 text-[#00FF87] font-bold text-[9px] rounded-full uppercase">Concluído</span>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary">
+                               <ChevronRight className="w-4 h-4" />
+                           </Button>
                         </div>
                     </div>
                     <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -452,9 +490,15 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                               <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-2491 • Campinas/SP</div>
                            </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
-                           <span className="font-black text-xs text-white">R$ 200,00</span>
+                        <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
+                           <div className="flex flex-col items-end mr-2">
+                               <span className="font-black text-xs text-white">R$ 200,00</span>
+                               <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: 18/07</span>
+                           </div>
                            <span className="px-3 py-1 bg-amber-500/10 text-amber-500 font-bold text-[9px] rounded-full uppercase">Pendente</span>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary">
+                               <ChevronRight className="w-4 h-4" />
+                           </Button>
                         </div>
                     </div>
                 </div>
