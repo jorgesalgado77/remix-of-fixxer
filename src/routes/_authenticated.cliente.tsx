@@ -127,16 +127,92 @@ function JornadaObra({ glassClass }: { glassClass: string }) {
 
 function PublicarNecessidade({ glassClass }: { glassClass: string }) {
   const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
-  const handleSubmit = (e: any) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        toast.error("Arquivo muito grande", {
+          description: "O tamanho máximo permitido é 5MB.",
+        });
+        return;
+      }
+      if (!selectedFile.type.startsWith('image/')) {
+        toast.error("Formato inválido", {
+          description: "Por favor, selecione uma imagem (JPG, PNG, WEBP).",
+        });
+        return;
+      }
+      setFile(selectedFile);
+      setPreview(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const formData = new FormData(e.target);
+      const title = formData.get('title') as string;
+      const city = formData.get('city') as string;
+      const category = formData.get('category') as string;
+      const details = formData.get('details') as string;
+
+      let fileUrl = "";
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('media')
+          .upload(`publicacoes/${fileName}`, file);
+
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('media')
+          .getPublicUrl(`publicacoes/${fileName}`);
+        fileUrl = publicUrl;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { error } = await supabase
+        .from('feed_posts')
+        .insert({
+          title,
+          content: details,
+          category,
+          location: city,
+          author_id: user.id,
+          type: 'b2c',
+          media_url: fileUrl,
+          metadata: {
+            status: 'active',
+            source: 'cliente_portal'
+          }
+        });
+
+      if (error) throw error;
+
       toast.success("Necessidade publicada!", {
         description: "Sua demanda já está visível para os prestadores da sua cidade.",
       });
-    }, 1500);
+      
+      e.target.reset();
+      setFile(null);
+      setPreview(null);
+    } catch (error: any) {
+      console.error("Erro ao publicar:", error);
+      toast.error("Erro ao publicar", {
+        description: error.message || "Ocorreu um erro inesperado.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -151,6 +227,7 @@ function PublicarNecessidade({ glassClass }: { glassClass: string }) {
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Título da Necessidade</label>
             <input 
+              name="title"
               required
               placeholder="Ex: Adequar pontos elétricos na cozinha" 
               className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none transition-all font-medium"
@@ -161,6 +238,7 @@ function PublicarNecessidade({ glassClass }: { glassClass: string }) {
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Cidade</label>
               <input 
+                name="city"
                 required
                 placeholder="Ex: São Paulo" 
                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none transition-all font-medium"
@@ -168,12 +246,12 @@ function PublicarNecessidade({ glassClass }: { glassClass: string }) {
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Categoria Principal</label>
-              <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none transition-all font-medium appearance-none">
-                <option>Elétrica</option>
-                <option>Gesso / Sanca</option>
-                <option>Pintura</option>
-                <option>Limpeza Pós-Obra</option>
-                <option>Pequenos Reparos</option>
+              <select name="category" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none transition-all font-medium appearance-none">
+                <option value="Elétrica">Elétrica</option>
+                <option value="Gesso">Gesso / Sanca</option>
+                <option value="Pintura">Pintura</option>
+                <option value="Limpeza">Limpeza Pós-Obra</option>
+                <option value="Reparos">Pequenos Reparos</option>
               </select>
             </div>
           </div>
@@ -181,21 +259,44 @@ function PublicarNecessidade({ glassClass }: { glassClass: string }) {
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Detalhes do que precisa</label>
             <textarea 
+              name="details"
               rows={4}
               placeholder="Descreva aqui o que precisa ser feito..." 
               className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none transition-all font-medium resize-none"
             ></textarea>
           </div>
 
-          <div className="p-4 border-2 border-dashed border-white/10 rounded-xl hover:border-[#00FF87]/50 transition-all cursor-pointer group">
-            <div className="flex flex-col items-center justify-center gap-2 py-2">
-              <Camera className="w-6 h-6 text-muted-foreground group-hover:text-[#00FF87] transition-colors" />
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Anexar Projeto/Foto da Obra</span>
-            </div>
+          <div className="relative">
+            <input 
+              type="file" 
+              id="file-upload" 
+              className="hidden" 
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+            <label 
+              htmlFor="file-upload"
+              className="block p-4 border-2 border-dashed border-white/10 rounded-xl hover:border-[#00FF87]/50 transition-all cursor-pointer group overflow-hidden"
+            >
+              {preview ? (
+                <div className="relative aspect-video rounded-lg overflow-hidden">
+                  <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-6 h-6 text-[#00FF87]" />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 py-2">
+                  <Camera className="w-6 h-6 text-muted-foreground group-hover:text-[#00FF87] transition-colors" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Anexar Projeto/Foto da Obra</span>
+                </div>
+              )}
+            </label>
           </div>
 
           <button 
             disabled={loading}
+            type="submit"
             className="w-full py-4 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all flex items-center justify-center gap-2"
           >
             {loading ? "Publicando..." : "Publicar Necessidade no Feed"}
@@ -217,7 +318,7 @@ function PublicarNecessidade({ glassClass }: { glassClass: string }) {
         <div className={`${glassClass} border border-white/5 rounded-3xl p-6`}>
            <h3 className="text-xs font-black text-white uppercase italic mb-4">Minhas Publicações Ativas</h3>
            <div className="space-y-3">
-             <div className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between">
+             <div className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between hover:border-white/20 transition-all cursor-pointer">
                <div className="flex flex-col">
                  <span className="text-[10px] font-bold text-white uppercase">Ponto Elétrico Cozinha</span>
                  <span className="text-[8px] text-muted-foreground uppercase">Publicado hoje • 3 Propostas</span>
