@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -39,7 +40,8 @@ function AuthenticatedLayout() {
       setRole(storedRole);
 
       // Se for o admin master ou a URL contiver 'admin', força a exibição do painel admin
-      if (storedEmail.trim() === 'jorgericardosalgado@gmail.com' || window.location.pathname.includes('admin')) {
+      const isPathAdmin = window.location.pathname.includes('/admin');
+      if (storedEmail.trim() === 'jorgericardosalgado@gmail.com' || isPathAdmin) {
         setShowAdminPanel(true);
       }
 

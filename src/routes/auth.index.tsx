@@ -32,7 +32,8 @@ function LoginComponent() {
         localStorage.setItem('fixxer_authenticated', 'true');
         
         // Redirecionamento forçado usando window.location para a rota que o layout intercepta
-        window.location.href = '/admin';
+        localStorage.setItem('fixxer_last_login', new Date().toISOString());
+        window.location.replace('/admin');
       }
       return;
     }
