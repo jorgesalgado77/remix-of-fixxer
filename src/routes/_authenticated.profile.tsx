@@ -192,37 +192,58 @@ function ProfilePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Nome / Razão Social</label>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Razão Social</label>
                   <input 
-                    value={profile?.full_name || ''} 
-                    onChange={e => setProfile({...profile, full_name: e.target.value})}
+                    value={profile?.company_name || ''} 
+                    onChange={e => setProfile({...profile, company_name: e.target.value})}
                     className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">CNPJ / CPF</label>
-                  <input 
+                  <MaskedInput 
+                    mask="cnpj"
                     value={profile?.cnpj_cpf || ''} 
-                    onChange={e => setProfile({...profile, cnpj_cpf: e.target.value})}
+                    onChange={(val: string) => setProfile({...profile, cnpj_cpf: val})}
                     className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">WhatsApp</label>
-                  <input 
+                  <MaskedInput 
+                    mask="phone"
                     value={profile?.whatsapp || ''} 
-                    onChange={e => setProfile({...profile, whatsapp: e.target.value})}
+                    onChange={(val: string) => setProfile({...profile, whatsapp: val})}
                     className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Telefone</label>
-                  <input 
+                  <MaskedInput 
+                    mask="phone"
                     value={profile?.phone || ''} 
-                    onChange={e => setProfile({...profile, phone: e.target.value})}
+                    onChange={(val: string) => setProfile({...profile, phone: val})}
                     className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email de Contato</label>
+                  <input 
+                    type="email"
+                    value={profile?.contact_email || ''} 
+                    onChange={e => setProfile({...profile, contact_email: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Responsável</label>
+                  <input 
+                    value={profile?.responsible_name || ''} 
+                    onChange={e => setProfile({...profile, responsible_name: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
+                  />
+                </div>
+
               </div>
 
               {/* ENDEREÇO ESTRUTURADO */}
