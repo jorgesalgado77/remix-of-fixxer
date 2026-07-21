@@ -48,6 +48,22 @@ function Dashboard() {
 
   const isFreePlan = profile?.subscription_plans?.price === 0 || !profile?.subscription_plans;
 
+  const handlePaywallAction = (e: React.MouseEvent, action: string) => {
+    if (isFreePlan) {
+      e.preventDefault();
+      toast.error("Ação Bloqueada", {
+        description: `O plano 'Teste Gratuito' não permite ${action}. Faça upgrade para o Plano Profissional.`,
+        action: {
+          label: "Upgrade",
+          onClick: () => console.log("Upgrade clicked")
+        }
+      });
+      return false;
+    }
+    return true;
+  };
+
+
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto">
       {/* Dynamic Header */}
