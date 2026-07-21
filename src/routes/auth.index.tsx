@@ -20,39 +20,7 @@ function LoginComponent() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificação de conectividade ao carregar a tela de login
-    const checkConnectivity = async () => {
-      try {
-        // Envolvemos em try/catch silencioso conforme solicitado
-        const { error } = await supabase.from('admin_config').select('id').limit(1);
-        
-        // Se houver erro, apenas logamos e mostramos aviso, não travamos o app
-        if (error) {
-          console.warn("[FIXXER Connectivity Check]:", error.message);
-          return;
-        }
-
-        toast.success("Sistema conectado ao Supabase Cloud", {
-          description: "Infraestrutura operacional.",
-          duration: 3000,
-        });
-      } catch (err) {
-        console.error("[FIXXER Connectivity Exception]:", err);
-      }
-    };
-    
-    checkConnectivity();
-
-    // DESATIVADO PARA EVITAR LOOPS DE REDIRECIONAMENTO
-    /*
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        window.location.href = "/_authenticated/dashboard";
-      }
-    };
-    checkSession();
-    */
+    // Carregar credenciais salvas se necessário no futuro
   }, []);
 
   const logAccess = async (data: { event_type: string, status: string, reason?: string, metadata?: any, email?: string, user_id?: string }) => {
@@ -226,9 +194,6 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-954647b9df4d447d" className="hidden">
-          REFATORAÇÃO TANSTACK ROUTER: REMOÇÃO DE BLOQUEIOS NAS LAYOUT ROUTES `_authenticated` E IMPLEMENTAÇÃO DA DASHBOARD DO LOJISTA E FEED DINÂMICO
-        </div>
       </div>
 
         <div className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl">
@@ -308,15 +273,12 @@ function LoginComponent() {
               Ainda não tem conta?{" "}
               <button 
                 type="button" 
-                onClick={() => window.location.href = '/cadastro'}
+                onClick={() => navigate({ to: '/cadastro' as any })}
                 className="text-[#00FF87] hover:underline cursor-pointer font-bold"
               >
                 Cadastre-se
               </button>
             </p>
-          </div>
-          <div id="ts-visual-edit-probe-4734473525d94a60" className="hidden">
-            VEJA AS IMAGENS, AO PREENCHER OS CAMPOS AS MASCARAS NÃO FICAM CORRETAS EM CNPJ, CPF, TELEFONE, CORRIJA
           </div>
         </div>
       </div>
