@@ -9,9 +9,11 @@ import {
   Menu,
   X,
   CreditCard,
-  ChevronRight
+  ChevronRight,
+  Database
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
@@ -41,6 +43,24 @@ function AdminLayout() {
   const { glassClass } = usePerformanceMode();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
+
+  useEffect(() => {
+    const checkConn = async () => {
+      const { error } = await supabase.from('admin_config').select('id').limit(1);
+      if (error) {
+        toast.error("ALERTA: Conexão Supabase Inativa", {
+          description: "O painel administrativo pode não funcionar corretamente.",
+          duration: 10000,
+        });
+      } else {
+        toast.success("Conexão Supabase Ativa", {
+          description: "Status do banco: 100% operacional.",
+          duration: 3000,
+        });
+      }
+    };
+    checkConn();
+  }, []);
 
   return (
     <div className="flex h-[calc(100vh-65px)] bg-background">
