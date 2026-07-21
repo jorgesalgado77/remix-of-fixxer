@@ -302,13 +302,17 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
     }
 
     return (
-        <Tooltip>
+        <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
-                <div>
+                <div className="w-full touch-none">
                     <SidebarButton icon={icon} label={label} active={active} onClick={onClick} disabled={disabled} />
                 </div>
             </TooltipTrigger>
-            <TooltipContent side="right" className="bg-[#00FF87] text-black font-bold uppercase text-[10px] italic">
+            <TooltipContent 
+                side="right" 
+                align="center"
+                className="bg-[#00FF87] text-black font-bold uppercase text-[9px] md:text-[10px] italic shadow-[0_0_20px_rgba(0,255,135,0.4)] z-[100] max-w-[200px] text-center"
+            >
                 Preencha o perfil completo para habilitar
             </TooltipContent>
         </Tooltip>
