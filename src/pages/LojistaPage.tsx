@@ -404,8 +404,9 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
                 <MetricCard label="Serviços Criados" value={(12 * multiplier).toString()} icon={<Briefcase />} color="text-blue-400" />
+                <MetricCard label="Serviços Pendentes" value={(5 * multiplier).toString()} icon={<Clock />} color="text-orange-400" />
                 <MetricCard label="Concluídos" value={(7 * multiplier).toString()} icon={<ShieldCheck />} color="text-primary" />
                 <MetricCard 
                     label="Saldo do Período" 
