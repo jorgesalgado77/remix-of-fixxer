@@ -352,7 +352,15 @@ function RegisterComponent() {
         </div>
       )}
 
-      {/* Seção de Diagnóstico removida conforme orientação */}
+      {/* Footer Segurança */}
+      <div className="text-center py-6 text-xs text-white/30 flex items-center justify-center gap-1.5 mt-auto">
+        <ShieldCheck className="w-4 h-4 text-[#00FF87]"/>
+        <span>Conexão e Cadastro Seguro FIXXER</span>
+      </div>
+
+      <div id="ts-visual-edit-probe-afadfb2c3e9f46ad" className="hidden">
+        AJUSTE DE CATEGORIAS NA TELA DE CADASTRO
+      </div>
     </div>
   );
 }
