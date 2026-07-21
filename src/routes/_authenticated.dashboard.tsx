@@ -201,7 +201,11 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
       return data ?? [];
     },
     enabled: !!lojistaId,
-    retry: 2,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30,   // 30 minutes
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000),
+
   });
 
   // --- Realtime Subscriptions ---
@@ -237,7 +241,9 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
       if (error) throw error;
       return data ?? [];
     },
-    retry: 2,
+    staleTime: 1000 * 60 * 10,
+    retry: 3,
+
   });
 
   // --- Notifications (latest messages on user's OS) ---
@@ -256,7 +262,9 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
       return data ?? [];
     },
     enabled: !!lojistaId && !!osList,
-    retry: 2,
+    staleTime: 1000 * 60 * 2,
+    retry: 3,
+
   });
 
   // --- Metrics ---
