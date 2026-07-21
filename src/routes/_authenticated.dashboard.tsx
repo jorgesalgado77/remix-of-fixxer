@@ -19,10 +19,21 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  RefreshCcw
+  RefreshCcw,
+  Star,
+  Search,
+  FileText,
+  User,
+  Upload,
+  Camera,
+  Map,
+  DollarSign,
+  ChevronRight,
+  Filter
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
