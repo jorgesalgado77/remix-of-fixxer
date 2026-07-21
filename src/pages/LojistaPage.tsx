@@ -744,6 +744,28 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     
     const { uploadFile, isUploading, uploadProgress } = useMediaUpload();
 
+    useEffect(() => {
+        const loadMediaOrder = async () => {
+            try {
+                const { data: { user } } = await supabaseExternal.auth.getUser();
+                if (!user) return;
+
+                const { data, error } = await supabaseExternal
+                    .from('user_profiles')
+                    .select('gallery_order, video_order')
+                    .eq('user_id', user.id)
+                    .single();
+
+                if (error) throw error;
+                if (data.gallery_order) setGalleryUrls(data.gallery_order);
+                if (data.video_order) setVideoUrls(data.video_order);
+            } catch (err) {
+                console.error('Erro ao carregar ordem:', err);
+            }
+        };
+        loadMediaOrder();
+    }, []);
+
     const [address, setAddress] = useState({
         logradouro: "",
         bairro: "",
