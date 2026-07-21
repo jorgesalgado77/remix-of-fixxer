@@ -153,7 +153,7 @@ function LoginComponent() {
 
           1. DECLARAÇÃO E LIBERAÇÃO DAS ROTAS (`App.tsx`):
           - Certifique-se de que a rota `/dashboard` existe e está devidamente mapeada para o componente da Dashboard.
-          - Para testes de desenvolvimento, DESATIVE temporariamente qualquer trava de verificação no componente `<ProtectedRoute>` que esteja redirecionando de volta para o login. Permita que a rota `/dashboard` seja acessível diretamente pós-login.
+          - Para testes de desenvolvimento, DESATIVE temporariamente qualquer trava de verificação no componente `ProtectedRoute` que esteja redirecionando de volta para o login. Permita que a rota `/dashboard` seja acessível diretamente pós-login.
 
           2. EVENTO DE SUBMIT NO FORMULÁRIO DE LOGIN (`Login.tsx`):
           - Adicione um estado de carregamento visual (`loading`) no botão "Entrar" (ex: texto "Acessando..." com spinner esmeralda) para que o usuário saiba que o clique foi registrado.
