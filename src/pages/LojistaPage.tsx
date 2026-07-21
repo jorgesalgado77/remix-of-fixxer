@@ -360,7 +360,10 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
 
 function DashboardView({ rating, getRatingColor }: { rating: number; getRatingColor: (val: number) => string }) {
     const [filter, setFilter] = useState('Hoje');
+    const [statusFilter, setStatusFilter] = useState('Todos');
     const [customDates, setCustomDates] = useState({ start: '', end: '' });
+    const [expandedServiceId, setExpandedServiceId] = useState<number | null>(null);
+
     
     // Simulação de filtragem global (poderia ser baseada em dados reais)
     const getMultiplier = () => {
