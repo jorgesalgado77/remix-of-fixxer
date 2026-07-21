@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Star,
   Activity,
-  MessageSquare
+  MessageSquare,
+  User
 } from "lucide-react";
 import { useState } from "react";
 

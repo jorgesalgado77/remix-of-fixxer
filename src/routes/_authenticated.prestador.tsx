@@ -13,7 +13,8 @@ import {
   TrendingUp,
   ShieldCheck,
   PlusCircle,
-  Camera
+  Camera,
+  Hammer
 } from "lucide-react";
 import { useState } from "react";
 import { ReviewModal } from "@/components/ReviewModal";

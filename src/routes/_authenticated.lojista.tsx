@@ -13,7 +13,8 @@ import {
   Star,
   Search,
   Filter,
-  ShieldCheck
+  ShieldCheck,
+  User
 } from "lucide-react";
 import { useState } from "react";
 import { ReviewModal } from "@/components/ReviewModal";
