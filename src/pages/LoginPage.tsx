@@ -25,11 +25,9 @@ export function LoginPage() {
       if (data.user) {
         toast.success("Login realizado com sucesso!");
         
-        // Salva informações básicas no localStorage para persistência visual
         localStorage.setItem('fixxer_authenticated', 'true');
         localStorage.setItem('fixxer_user_email', data.user.email || '');
         
-        // Busca o perfil para saber o redirecionamento
         const { data: profile } = await supabaseExternal
           .from('profiles')
           .select('role')
