@@ -197,9 +197,9 @@ export function LojistaDashboard() {
         </header>
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
-            {activeTab === 'dashboard' && <DashboardView />}
+            {activeTab === 'dashboard' && <DashboardView rating={rating} getRatingColor={getRatingColor} />}
             {activeTab === 'create' && <CreateServiceView />}
-            {activeTab === 'profile' && <ProfileView setIsProfileComplete={setIsProfileComplete} />}
+            {activeTab === 'profile' && <ProfileView setIsProfileComplete={setIsProfileComplete} rating={rating} getRatingColor={getRatingColor} setRating={setRating} />}
             {activeTab === 'reviews' && <ReviewsView />}
         </div>
       </main>
