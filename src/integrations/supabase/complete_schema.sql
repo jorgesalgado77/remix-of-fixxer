@@ -329,26 +329,36 @@ CREATE TABLE IF NOT EXISTS public.advertisements (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- RLS para novas tabelas
-ALTER TABLE public.orders_of_service ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.os_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.lead_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.advertisements ENABLE ROW LEVEL SECURITY;
+-- 9.1 FEED DINÂMICO
+CREATE TABLE IF NOT EXISTS public.feed_posts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    user_type TEXT NOT NULL, -- 'Lojista', 'Prestador', 'Parceiro'
+    post_type TEXT NOT NULL, -- 'Demanda_OS', 'Vitrine_Prestador', 'Vitrine_Parceiro'
+    target_audience TEXT NOT NULL, -- 'Prestadores', 'Parceiros', 'Lojistas'
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    category TEXT NOT NULL,
+    city TEXT NOT NULL,
+    state TEXT NOT NULL,
+    price_type TEXT NOT NULL, -- 'Fixo', 'Comissao'
+    price_value NUMERIC(12, 2) NOT NULL,
+    is_negotiable BOOLEAN DEFAULT TRUE,
+    deadline DATE,
+    media_urls TEXT[] DEFAULT '{}'::TEXT[],
+    proposals_count INTEGER DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'Ativo', -- 'Ativo', 'Fechado', 'Pausado'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- Políticas simplificadas (Admin vê tudo, usuários vêem o que lhes pertence)
-CREATE POLICY "Users Manage Own OS" ON public.orders_of_service FOR ALL TO authenticated USING (auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Prestadores View Relevant OS" ON public.orders_of_service FOR SELECT TO authenticated USING (status = 'pendente' OR current_professional_id = auth.uid());
+-- RLS para feed_posts
+ALTER TABLE public.feed_posts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users Manage Own Proposals" ON public.proposals FOR ALL TO authenticated USING (prestador_id = auth.uid() OR EXISTS (SELECT 1 FROM public.orders_of_service WHERE id = os_id AND lojista_id = auth.uid()) OR public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Public View Active Feed" ON public.feed_posts FOR SELECT TO authenticated USING (status = 'Ativo');
+CREATE POLICY "Users Manage Own Feed" ON public.feed_posts FOR ALL TO authenticated USING (auth.uid() = user_id OR public.has_role(auth.uid(), 'admin'));
 
-CREATE POLICY "Users Chat OS" ON public.os_messages FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM public.orders_of_service WHERE id = os_id AND (lojista_id = auth.uid() OR current_professional_id = auth.uid())) OR public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Public Read Leads" ON public.lead_requests FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users Manage Own Leads" ON public.lead_requests FOR ALL TO authenticated USING (requester_id = auth.uid() OR public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Public Read Ads" ON public.advertisements FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Fornecedores Manage Own Ads" ON public.advertisements FOR ALL TO authenticated USING (fornecedor_id = auth.uid() OR public.has_role(auth.uid(), 'admin'));
+GRANT ALL ON public.feed_posts TO authenticated;
+GRANT ALL ON public.feed_posts TO service_role;
 
 -- 10. SCRIPT DE DIAGNÓSTICO
 SELECT u.email, u.id, p.role as profile_role, r.role as role_table
@@ -356,5 +366,6 @@ FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 LEFT JOIN public.user_roles r ON u.id = r.user_id
 WHERE u.email = 'jorgericardosalgado@gmail.com';
+
 
 
