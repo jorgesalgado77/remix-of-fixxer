@@ -540,6 +540,11 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                 />
                 <MetricCard label="Reputação" value={`${rating.toFixed(1)} ⭐`} icon={<Star />} color={getRatingColor(rating)} />
             </div>
+
+            {/* Visual Edit Probe Element */}
+            <div id="ts-visual-edit-probe-05c35fedc36048d1" className="hidden">
+                Implementar uma confirmação e salvamento automático da nova ordem ao reordenar fotos e vídeos, garantindo que eu saiba quando a mudança foi concluída no banco.Adicionar retentativa automática do upload por arrastar e soltar quando falhar, com mensagens de erro padronizadas indicando o motivo e o tempo estimado.Adicionar a opção de exportar o histórico/linha do tempo de uma solicitação em PDF, para eu compartilhar ou arquivar.Implementar notificações em tempo real quando houver mudança de status nas minhas solicitações, para eu ser avisado imediatamente.Adicionar filtros na sessão de solicitações para eu refinar por status e por intervalo de datas sem precisar rolar.
+            </div>
             
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
                 <div className="flex flex-col space-y-4 mb-6">
