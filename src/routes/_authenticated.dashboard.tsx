@@ -19,9 +19,23 @@ function Dashboard() {
 
   return (
     <div className="p-6 space-y-8 animate-in fade-in duration-700">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Dashboard Central</h1>
-        <p className="text-muted-foreground">Bem-vindo ao centro de comando FIXXER.</p>
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">Dashboard Central</h1>
+          <p className="text-muted-foreground">Bem-vindo ao centro de comando FIXXER.</p>
+        </div>
+        <Link 
+          to="/_authenticated/profile"
+          className={`flex items-center gap-3 p-3 rounded-2xl border border-white/10 hover:border-primary/50 transition-all ${glassClass}`}
+        >
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Settings className="w-5 h-5" />
+          </div>
+          <div className="text-left pr-4">
+            <p className="text-xs font-black uppercase tracking-tighter text-white leading-tight">Meu Perfil</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gerenciar Conta</p>
+          </div>
+        </Link>
       </header>
 
       {/* Stats Grid */}
