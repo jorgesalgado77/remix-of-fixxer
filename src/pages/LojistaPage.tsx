@@ -875,6 +875,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     const [bannerUrl, setBannerUrl] = useState<string | null>(null);
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
+    const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
 
     const sensors = useSensors(
