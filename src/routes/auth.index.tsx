@@ -112,10 +112,10 @@ function LoginComponent() {
         localStorage.setItem('fixxer_user_role', role);
 
         // REGRA DE OURO: Apenas jorgericardosalgado@gmail.com acessa o /admin
-        if (email.trim() === 'jorgericardosalgado@gmail.com' && role === 'admin') {
+        if (email.trim() === 'jorgericardosalgado@gmail.com' && (role === 'admin' || role === 'Admin')) {
           window.location.replace('/admin');
         } else {
-          // Todos os outros usuários vão para o Dashboard operacional
+          // Garante que o redirecionamento vá para a rota exata registrada
           window.location.replace('/_authenticated/dashboard');
         }
       }
