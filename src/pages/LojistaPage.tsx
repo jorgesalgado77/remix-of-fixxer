@@ -535,7 +535,7 @@ function ProfileView() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logo da Empresa</Label>
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logo da Empresa *</Label>
                             <div className="h-40 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 group relative overflow-hidden shadow-inner">
                                 <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
                                 <span className="text-[10px] font-black uppercase text-muted-foreground group-hover:text-primary transition-colors">Upload Logo</span>
