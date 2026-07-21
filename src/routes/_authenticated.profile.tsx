@@ -516,38 +516,204 @@ function ProfilePage() {
                     <Briefcase className="w-6 h-6 text-primary" />
                     <h3 className="text-xl font-black uppercase tracking-tighter">Serviços & Especialidades</h3>
                   </div>
+
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {['Projetista', 'Medidor', 'Conferente Técnico', 'Fretista', 'Montador', 'Supervisor'].map(svc => (
                       <label key={svc} className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer hover:border-primary/30 transition-all">
-                        <input 
-                          type="checkbox" 
-                          checked={profile?.service_types?.includes(svc)}
+                        <input
+                          type="checkbox"
+                          checked={profile?.service_types?.includes(svc) || false}
                           onChange={(e) => {
                             const current = profile?.service_types || [];
-                            const next = e.target.checked 
+                            const next = e.target.checked
                               ? [...current, svc]
                               : current.filter((s: string) => s !== svc);
-                            setProfile({...profile, service_types: next});
+                            setProfile({ ...profile, service_types: next });
                           }}
-                          className="w-5 h-5 accent-primary bg-black border-white/20 rounded-md" 
+                          className="w-5 h-5 accent-primary bg-black border-white/20 rounded-md"
                         />
                         <span className="text-xs font-bold">{svc}</span>
                       </label>
                     ))}
                   </div>
-                  {profile?.service_types?.includes('Conferente Técnico') && profile?.service_types?.includes('Medidor') && (
-                    <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-2xl">
-                       <label className="flex items-center gap-3 cursor-pointer">
-                         <input 
-                           type="checkbox" 
-                           checked={profile?.is_medidor_conferente}
-                           onChange={e => setProfile({...profile, is_medidor_conferente: e.target.checked})}
-                           className="w-5 h-5 accent-primary bg-black border-white/20 rounded-md" 
-                         />
-                         <span className="text-xs font-bold text-primary">Acumulo a função de Medidor junto com Conferente Técnico</span>
-                       </label>
+
+                  {/* CAIXA DE ACÚMULO DE FUNÇÕES - MOSTRA TODAS AS SELECIONADAS */}
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+                    <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1 mb-3 block">
+                      Acúmulo de Funções ({profile?.service_types?.length || 0})
+                    </label>
+                    <div className="flex flex-wrap gap-2 min-h-[40px]">
+                      {(profile?.service_types || []).length === 0 ? (
+                        <span className="text-xs text-muted-foreground italic">Selecione as funções acima para acumular.</span>
+                      ) : (
+                        (profile?.service_types || []).map((svc: string) => (
+                          <span key={svc} className="bg-primary text-black text-[11px] font-black uppercase tracking-tight px-3 py-1.5 rounded-lg flex items-center gap-2">
+                            <BadgeCheck className="w-3 h-3" />
+                            {svc}
+                          </span>
+                        ))
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  {/* VEÍCULO PRÓPRIO */}
+                  <div className="pt-6 space-y-4 border-t border-white/5">
+                    <h4 className="text-sm font-black uppercase tracking-tighter text-white">🚚 Veículo Próprio</h4>
+
+                    <label className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={profile?.has_vehicle || false}
+                        onChange={e => setProfile({ ...profile, has_vehicle: e.target.checked })}
+                        className="w-5 h-5 accent-primary"
+                      />
+                      <span className="text-xs font-bold">Possuo veículo próprio</span>
+                    </label>
+
+                    {profile?.has_vehicle && (
+                      <div className="space-y-4 pl-2 border-l-2 border-primary/30">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Tipo de Veículo</label>
+                          <div className="flex flex-wrap gap-2">
+                            {['Carro', 'Moto', 'Van', 'Caminhonete', 'Caminhão'].map(v => (
+                              <button
+                                key={v}
+                                type="button"
+                                onClick={() => setProfile({ ...profile, vehicle_type: v })}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${profile?.vehicle_type === v ? 'bg-primary text-black border-primary' : 'bg-white/5 border-white/10 hover:border-primary/50'}`}
+                              >
+                                {v}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Descrição do Veículo (marca, modelo, ano, capacidade)</label>
+                          <textarea
+                            value={profile?.vehicle_description || ''}
+                            onChange={e => setProfile({ ...profile, vehicle_description: e.target.value })}
+                            rows={2}
+                            className="w-full bg-white/5 border border-white/10 focus:border-primary/50 p-4 rounded-2xl outline-none text-sm"
+                          />
+                        </div>
+
+                        <label className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={profile?.available_for_transport || false}
+                            onChange={e => setProfile({ ...profile, available_for_transport: e.target.checked })}
+                            className="w-5 h-5 accent-primary"
+                          />
+                          <span className="text-xs font-bold">Disponibilizo veículo para trabalhos de transporte/frete</span>
+                        </label>
+
+                        {profile?.available_for_transport && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Valor por Frete (R$)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={profile?.freight_rate || ''}
+                                onChange={e => setProfile({ ...profile, freight_rate: e.target.value })}
+                                className="w-full bg-white/5 border border-white/10 focus:border-primary/50 p-4 rounded-2xl outline-none font-mono"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Valor por KM Rodado (R$)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={profile?.km_rate || ''}
+                                onChange={e => setProfile({ ...profile, km_rate: e.target.value })}
+                                className="w-full bg-white/5 border border-white/10 focus:border-primary/50 p-4 rounded-2xl outline-none font-mono"
+                              />
+                            </div>
+                            <div className="md:col-span-2 space-y-2">
+                              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Pedágio</label>
+                              <div className="flex gap-2">
+                                {[
+                                  { v: 'incluso', l: 'Incluso no valor' },
+                                  { v: 'fora', l: 'Pago por fora' },
+                                ].map(opt => (
+                                  <button
+                                    key={opt.v}
+                                    type="button"
+                                    onClick={() => setProfile({ ...profile, toll_policy: opt.v })}
+                                    className={`flex-1 px-4 py-3 rounded-xl text-xs font-bold transition-all border ${profile?.toll_policy === opt.v ? 'bg-primary text-black border-primary' : 'bg-white/5 border-white/10 hover:border-primary/50'}`}
+                                  >
+                                    {opt.l}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* DISPONIBILIDADE / HORÁRIOS */}
+                  <div className="pt-6 space-y-4 border-t border-white/5">
+                    <h4 className="text-sm font-black uppercase tracking-tighter text-white">🕒 Disponibilidade de Atendimento</h4>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Dias da Semana</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map(day => {
+                          const days = profile?.working_days || [];
+                          const active = days.includes(day);
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => {
+                                const next = active ? days.filter((d: string) => d !== day) : [...days, day];
+                                setProfile({ ...profile, working_days: next });
+                              }}
+                              className={`w-14 h-14 rounded-2xl text-xs font-black uppercase transition-all border ${active ? 'bg-primary text-black border-primary shadow-[0_0_15px_rgba(0,255,135,0.4)]' : 'bg-white/5 border-white/10 hover:border-primary/50 text-muted-foreground'}`}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Início do Atendimento</label>
+                        <input
+                          type="time"
+                          value={profile?.work_start_time || ''}
+                          onChange={e => setProfile({ ...profile, work_start_time: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 focus:border-primary/50 p-4 rounded-2xl outline-none font-mono"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Fim do Atendimento</label>
+                        <input
+                          type="time"
+                          value={profile?.work_end_time || ''}
+                          onChange={e => setProfile({ ...profile, work_end_time: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 focus:border-primary/50 p-4 rounded-2xl outline-none font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <label className="flex items-start gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={profile?.receive_off_hours_notifications || false}
+                        onChange={e => setProfile({ ...profile, receive_off_hours_notifications: e.target.checked })}
+                        className="w-5 h-5 accent-primary mt-0.5"
+                      />
+                      <span className="text-xs font-bold leading-snug">
+                        Aceito receber avisos de propostas fora do meu horário e dias de atendimento
+                      </span>
+                    </label>
+                  </div>
                 </div>
               )}
               {/* CAMPOS ESPECÍFICOS: FORNECEDOR */}
