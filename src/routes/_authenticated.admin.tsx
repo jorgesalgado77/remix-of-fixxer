@@ -5,12 +5,16 @@ import {
   LayoutDashboard, 
   Users, 
   Settings, 
-  AlertTriangle,
+  ShieldAlert,
   Menu,
   X,
   CreditCard,
   ChevronRight,
-  Database
+  Database,
+  Activity,
+  Layers,
+  FileText,
+  DollarSign
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -90,32 +94,41 @@ function AdminLayout() {
             active={location.pathname === '/admin/users'} 
           />
           <AdminNavItem 
-            to="/admin/plans" 
-            icon={<CreditCard className="w-4 h-4" />} 
-            label="Planos" 
+            to="/admin" 
+            icon={<Activity className="w-4 h-4" />} 
+            label="Moderação Feed" 
             isOpen={isSidebarOpen} 
-            active={location.pathname === '/admin/plans'} 
+            active={false} 
+          />
+          <AdminNavItem 
+            to="/admin" 
+            icon={<DollarSign className="w-4 h-4" />} 
+            label="Auditoria Escrow" 
+            isOpen={isSidebarOpen} 
+            active={false} 
+          />
+          <AdminNavItem 
+            to="/admin" 
+            icon={<Layers className="w-4 h-4" />} 
+            label="Categorias" 
+            isOpen={isSidebarOpen} 
+            active={false} 
           />
           <AdminNavItem 
             to="/admin/integrations" 
             icon={<Settings className="w-4 h-4" />} 
-            label="Integrações" 
+            label="Integrações API" 
             isOpen={isSidebarOpen} 
             active={location.pathname === '/admin/integrations'} 
-          />
-          <AdminNavItem 
-            to="/admin" 
-            icon={<AlertTriangle className="w-4 h-4" />} 
-            label="Segurança" 
-            isOpen={isSidebarOpen} 
-            active={false} 
           />
         </nav>
       </aside>
 
       {/* Área de Conteúdo */}
-      <main className="flex-1 overflow-auto p-8">
-        <Outlet />
+      <main className="flex-1 overflow-auto p-4 md:p-8 bg-[#0a0a0c]">
+        <div className="max-w-7xl mx-auto">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
