@@ -304,8 +304,8 @@ function LoginComponent() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] text-primary-foreground font-black text-2xl mb-6">
             F
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Acesso Administrativo Master</h1>
-          <p className="text-muted-foreground mt-2">Use as credenciais fornecidas para entrar</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
+          <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
         </div>
 
