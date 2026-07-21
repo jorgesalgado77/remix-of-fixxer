@@ -48,6 +48,8 @@ function DashboardRedirect() {
         navigate({ to: '/_authenticated/parceiro' as any });
       } else if (normalizedRole.includes('admin')) {
         navigate({ to: '/_authenticated/admin' as any });
+      } else if (normalizedRole.includes('cliente')) {
+        navigate({ to: '/_authenticated/cliente' as any });
       } else {
         navigate({ to: '/_authenticated/prestador' as any });
       }
