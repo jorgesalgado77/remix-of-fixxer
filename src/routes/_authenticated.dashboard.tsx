@@ -299,21 +299,26 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
   const { data: notifications, isLoading: notifLoading, isError: notifError } = useQuery({
     queryKey: ['lojista-notifications', lojistaId],
     queryFn: async () => {
+      // Pega IDs da lista atual de OS (ou faz query separada se necessário)
       const ids = (osList ?? []).map((o: any) => o.id);
       if (!ids.length) return [];
+      
       const { data, error } = await supabase
         .from('os_messages')
         .select('id, content, created_at, os_id')
         .in('os_id', ids)
         .order('created_at', { ascending: false })
         .limit(10);
-      if (error) throw error;
+      
+      if (error) {
+        console.error("[DASHBOARD NOTIF ERROR]:", error);
+        throw error;
+      }
       return data ?? [];
     },
-    enabled: !!lojistaId && !!osList,
+    enabled: !!lojistaId && !!osList?.length, // Só roda se houver OS
     staleTime: 1000 * 60 * 2,
     retry: 3,
-
   });
 
   // --- Metrics ---
