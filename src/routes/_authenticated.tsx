@@ -1,107 +1,84 @@
-import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
-import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { ShieldCheck, Users, FileText, DollarSign, Activity, CheckCircle, LogOut, LayoutDashboard } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    let storedEmail = null;
-    let storedRole = 'user';
-
-    if (typeof window !== 'undefined') {
-      storedEmail = localStorage.getItem('fixxer_user_email');
-      storedRole = localStorage.getItem('fixxer_user_role') || 'user';
-    }
-
-    return { 
-      session, 
-      userRole: storedRole,
-      userEmail: session?.user?.email || storedEmail
-    };
-  },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
-      const storedRole = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
-      const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
-      
-      setEmail(storedEmail);
-      setRole(storedRole);
-
-      // Se for o admin master ou a URL contiver 'admin', força a exibição do painel admin
-      const isPathAdmin = window.location.pathname.includes('/admin');
-      const isAdmin = storedEmail.trim() === 'jorgericardosalgado@gmail.com' || storedRole.toLowerCase() === 'admin';
-
-      if (isAdmin && isPathAdmin) {
-        setShowAdminPanel(true);
-      } else if (!isPathAdmin) {
-        // Se sair da rota admin e não tiver clicado explicitamente no toggle, volta para dashboard normal
-        // No entanto, para evitar flickering, mantemos se isAdmin for true e showAdminPanel já estiver true (toggle manual)
-      }
-
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession && !isAuthenticated) {
-        window.location.href = "/auth/";
+    const checkUser = async () => {
+      try {
+        const storedEmail = typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_email') || '').trim() : '';
+        const storedRole = typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_role') || '').toLowerCase() : '';
+        
+        // Se for o e-mail master ou role admin
+        if (storedEmail === 'jorgericardosalgado@gmail.com' || storedRole === 'admin') {
+          setIsAdmin(true);
+        } else {
+          // Checa na sessão Supabase se o e-mail for o seu
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.email === 'jorgericardosalgado@gmail.com') {
+            setIsAdmin(true);
+            localStorage.setItem('fixxer_user_email', session.user.email);
+            localStorage.setItem('fixxer_user_role', 'Admin');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
-    checkAuth();
-  }, [navigate, location.pathname]);
 
-  const isAdmin = email.trim() === 'jorgericardosalgado@gmail.com' || role.toLowerCase() === 'admin';
+    checkUser();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#00FF87] border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-400 font-medium animate-pulse">
+            Iniciando FIXXER...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <nav className="border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-black text-white flex flex-col">
+      {/* Topbar Fixa */}
+      <nav className="border-b border-white/5 bg-black/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div onClick={() => setShowAdminPanel(isAdmin)} className="flex items-center gap-2 cursor-pointer">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-xl">
-              F
-            </div>
-            <span className="font-bold tracking-tight text-white">FIXXER</span>
+          <div className="w-8 h-8 bg-[#00FF87] rounded-lg flex items-center justify-center text-black font-black text-xl">
+            F
           </div>
+          <span className="font-bold tracking-tighter text-white text-xl">FIXXER</span>
         </div>
 
         <div className="flex items-center gap-6">
           {isAdmin && (
-            <div 
-              onClick={() => setShowAdminPanel(true)} 
-              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer ${showAdminPanel ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-white'}`}
-            >
+            <div className="text-[#00FF87] text-xs font-bold uppercase tracking-wider flex items-center gap-1">
               <ShieldCheck className="w-4 h-4" />
-              Admin
+              Admin Master
             </div>
           )}
-
-          <div 
-            onClick={() => setShowAdminPanel(false)} 
-            className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer ${!showAdminPanel ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-white'}`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Dashboard
-          </div>
-
-          <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
           <button 
             onClick={async () => {
               await supabase.auth.signOut();
-              if (typeof window !== 'undefined') {
-                localStorage.clear();
-              }
+              localStorage.clear();
               window.location.href = "/auth";
             }}
-            className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-red-400 transition-colors flex items-center gap-1 cursor-pointer"
+            className="text-xs font-bold uppercase tracking-wider text-white/50 hover:text-red-400 transition-colors flex items-center gap-1 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             Sair
@@ -109,67 +86,72 @@ function AuthenticatedLayout() {
         </div>
       </nav>
 
+      {/* Conteúdo Principal */}
       <main className="flex-1 overflow-auto">
-        {/* RENDERIZAÇÃO DIRETA DO PAINEL ADMIN MASTER SE FOR O ADMINISTRADOR */}
-        {showAdminPanel && isAdmin ? (
-          <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-card to-background border border-white/10 p-8 shadow-2xl">
+        {/* SE FOR O ADMINISTRADOR MASTER, EXIBE O PAINEL ADMIN DIRETO SEM PASSAR PELAS ROTAS DA URL */}
+        {isAdmin ? (
+          <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
+            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#111] to-black border border-white/5 p-10 shadow-2xl">
               <div className="relative z-10">
-                <div className="flex items-center gap-2 text-[#00FF87] mb-4">
-                  <ShieldCheck className="w-5 h-5" />
-                  <span className="text-xs font-bold uppercase tracking-widest">Acesso Privilegiado Master</span>
+                <div className="flex items-center gap-2 text-[#00FF87] mb-6">
+                  <ShieldCheck className="w-6 h-6" />
+                  <span className="text-sm font-black uppercase tracking-[0.2em]">Acesso Privilegiado Master</span>
                 </div>
 
-                <h1 className="text-4xl font-black text-white mb-2 tracking-tight">
-                  Painel Administrativo Master
-                </h1>
-
-                <p className="text-muted-foreground max-w-2xl">
-                  Gestão global de usuários, auditoria de O.S. e controle da plataforma FIXXER.
-                </p>
+                <div className="space-y-4">
+                  <h1 className="text-6xl font-black text-white tracking-tighter leading-none">
+                    Painel Administrativo Master
+                  </h1>
+                  <p className="text-gray-400 text-lg max-w-2xl leading-relaxed">
+                    Gestão global de usuários, auditoria de O.S. e controle da plataforma FIXXER.
+                  </p>
+                </div>
               </div>
             </div>
 
+            {/* Cards de Métricas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-card/50 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
-                <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500 mb-4">
-                  <Users className="w-6 h-6" />
+              <div className="bg-[#111] border border-white/5 p-8 rounded-[2rem] hover:border-[#00FF87]/30 transition-all group">
+                <div className="w-14 h-14 bg-[#00FF87]/10 rounded-2xl flex items-center justify-center text-[#00FF87] mb-6 group-hover:scale-110 transition-transform">
+                  <Users className="w-7 h-7" />
                 </div>
-                <div className="text-3xl font-black text-white mb-1">--</div>
-                <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Usuários Totais</div>
+                <div className="text-4xl font-black text-white mb-2">--</div>
+                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Usuários Totais</div>
               </div>
 
-              <div className="bg-card/50 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
-                <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 mb-4">
-                  <FileText className="w-6 h-6" />
+              <div className="bg-[#111] border border-white/5 p-8 rounded-[2rem] hover:border-blue-500/30 transition-all group">
+                <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 transition-transform">
+                  <FileText className="w-7 h-7" />
                 </div>
-                <div className="text-3xl font-black text-white mb-1">--</div>
-                <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">O.S. Ativas</div>
+                <div className="text-4xl font-black text-white mb-2">--</div>
+                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">O.S. Ativas</div>
               </div>
 
-              <div className="bg-card/50 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
-                <div className="w-12 h-12 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-500 mb-4">
-                  <DollarSign className="w-6 h-6" />
+              <div className="bg-[#111] border border-white/5 p-8 rounded-[2rem] hover:border-yellow-500/30 transition-all group">
+                <div className="w-14 h-14 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 mb-6 group-hover:scale-110 transition-transform">
+                  <DollarSign className="w-7 h-7" />
                 </div>
-                <div className="text-3xl font-black text-white mb-1">R$ 0,00</div>
-                <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Volume Transacionado</div>
+                <div className="text-4xl font-black text-white mb-2">R$ 0,00</div>
+                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Volume Transacionado</div>
               </div>
 
-              <div className="bg-card/50 backdrop-blur-xl border border-white/10 p-6 rounded-3xl">
-                <div className="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-500 mb-4">
-                  <Activity className="w-6 h-6" />
+              <div className="bg-[#111] border border-white/5 p-8 rounded-[2rem] hover:border-purple-500/30 transition-all group">
+                <div className="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-500 mb-6 group-hover:scale-110 transition-transform">
+                  <Activity className="w-7 h-7" />
                 </div>
-                <div className="text-3xl font-black text-white mb-1">100%</div>
-                <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status do Sistema</div>
+                <div className="text-4xl font-black text-white mb-2">100%</div>
+                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Status do Sistema</div>
               </div>
             </div>
 
-            <div className="bg-[#00FF87]/5 border border-[#00FF87]/20 p-6 rounded-3xl flex items-start gap-4">
-              <CheckCircle className="w-6 h-6 text-[#00FF87] shrink-0 mt-1" />
-              <div>
-                <h3 className="font-bold text-[#00FF87]">Painel Master Conectado Direct-Render</h3>
-                <p className="text-sm text-[#00FF87]/70">
-                  O sistema ignorou erros de roteamento e carregou a dashboard do administrador diretamente.
+            <div className="bg-[#00FF87]/5 border border-[#00FF87]/20 p-8 rounded-[2rem] flex items-center gap-6">
+              <div className="w-12 h-12 bg-[#00FF87]/20 rounded-full flex items-center justify-center shrink-0">
+                <CheckCircle className="w-6 h-6 text-[#00FF87]" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold text-[#00FF87]">Painel Master Ativo</h3>
+                <p className="text-gray-400">
+                  O painel administrativo foi montado diretamente e está totalmente operacional.
                 </p>
               </div>
             </div>
