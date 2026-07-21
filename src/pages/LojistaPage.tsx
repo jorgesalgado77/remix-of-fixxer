@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { 
   Store, 
   PlusCircle, 
@@ -31,7 +31,10 @@ import {
   X,
   Crop,
   Download,
-  History
+  History,
+  Bell,
+  Check,
+  Trash
 } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
