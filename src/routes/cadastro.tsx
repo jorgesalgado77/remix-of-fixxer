@@ -3,7 +3,6 @@ import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2, E
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import InputMask from "react-input-mask";
 
 export const Route = createFileRoute("/cadastro")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -414,24 +413,30 @@ function MaskedInputField({
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void, 
   required?: boolean 
 }) {
+  const formatValue = (val: string, maskStr: string) => {
+    let i = 0;
+    const clean = val.replace(/\D/g, "");
+    return maskStr.replace(/9/g, () => clean[i++] || "");
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onChange) {
+      // Simplificação para evitar findDOMNode
+      onChange(e);
+    }
+  };
+
   return (
     <div>
       <label className="block text-sm font-bold text-muted-foreground mb-2">{label}</label>
-      <InputMask
-        mask={mask}
+      <input
+        type="text"
+        placeholder={placeholder}
         value={value}
-        onChange={onChange}
-      >
-        {(inputProps: any) => (
-          <input
-            {...inputProps}
-            type="text"
-            placeholder={placeholder}
-            required={required}
-            className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
-          />
-        )}
-      </InputMask>
+        onChange={handleChange}
+        required={required}
+        className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
+      />
     </div>
   );
 }

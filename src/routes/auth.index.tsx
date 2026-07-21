@@ -280,8 +280,8 @@ function LoginComponent() {
               </button>
             </p>
           </div>
-          <div id="ts-visual-edit-probe-fa672b58d0294df9" className="hidden">
-            CORREÇÃO DE NAVEGAÇÃO E CRIAÇÃO/LIBERAÇÃO DA TELA DE CADASTRO (/cadastro)
+          <div id="ts-visual-edit-probe-c2ee3b5864a4405c" className="hidden">
+            CORREÇÃO CRÍTICA DE RUNTIME ERROR NO REGISTRO: REMOÇÃO DE DEPRECADOS 'findDOMNode' (REACT 19 COMPATIBILITY)
           </div>
         </div>
       </div>
