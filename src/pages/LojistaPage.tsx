@@ -613,10 +613,40 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     const [whatsapp, setWhatsapp] = useState("");
     const [phone, setPhone] = useState("");
     const [cep, setCep] = useState("");
+    const [activityBranch, setActivityBranch] = useState("");
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [bannerUrl, setBannerUrl] = useState<string | null>(null);
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: any, type: 'gallery' | 'video') => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            if (type === 'gallery') {
+                setGalleryUrls((items) => {
+                    const oldIndex = items.indexOf(active.id);
+                    const newIndex = items.indexOf(over.id);
+                    return arrayMove(items, oldIndex, newIndex);
+                });
+            } else {
+                setVideoUrls((items) => {
+                    const oldIndex = items.indexOf(active.id);
+                    const newIndex = items.indexOf(over.id);
+                    return arrayMove(items, oldIndex, newIndex);
+                });
+            }
+            toast.success("Ordem atualizada!");
+        }
+    };
+
     
     const { uploadFile, isUploading, uploadProgress } = useMediaUpload();
 
