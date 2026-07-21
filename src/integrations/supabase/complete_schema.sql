@@ -164,8 +164,9 @@ CREATE POLICY "Admin Manage Brands" ON public.brand_flags FOR ALL TO authenticat
 -- 5. GRANTS
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 GRANT SELECT ON public.subscription_plans, public.plan_features TO authenticated;
-GRANT SELECT, UPDATE ON public.profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
 GRANT SELECT ON public.user_roles TO authenticated;
+GRANT SELECT, INSERT ON public.brand_flags TO authenticated;
 GRANT INSERT ON public.access_logs TO authenticated, anon;
 
 -- 6. TRIGGER DE REGISTRO
