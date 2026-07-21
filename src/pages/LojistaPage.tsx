@@ -718,6 +718,25 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                 });
             }
             toast.success("Ordem atualizada!");
+            saveMediaOrder(type);
+        }
+    };
+
+    const saveMediaOrder = async (type: 'gallery' | 'video') => {
+        try {
+            const { data: { user } } = await supabaseExternal.auth.getUser();
+            if (!user) return;
+
+            const updateData = type === 'gallery' ? { gallery_order: galleryUrls } : { video_order: videoUrls };
+            
+            const { error } = await supabaseExternal
+                .from('user_profiles')
+                .update(updateData)
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+        } catch (err) {
+            console.error('Erro ao salvar ordem:', err);
         }
     };
 
