@@ -8,11 +8,6 @@ export const Route = createFileRoute("/auth/")({
   component: LoginComponent,
 });
 
-type DiagnosticStep = {
-  label: string;
-  status: 'pending' | 'loading' | 'success' | 'error';
-  detail?: string;
-};
 
 function LoginComponent() {
   const [email, setEmail] = useState("");
