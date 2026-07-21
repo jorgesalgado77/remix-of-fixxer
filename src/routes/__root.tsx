@@ -16,18 +16,30 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <div className="mt-6">
+      <div className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 p-10 rounded-3xl shadow-2xl text-center space-y-6">
+        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mx-auto animate-pulse">
+          <AlertTriangle className="w-10 h-10" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">Erro 404</h1>
+          <h2 className="text-lg font-bold text-muted-foreground uppercase tracking-widest">Rota Não Encontrada</h2>
+          <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+            A página que você está tentando acessar não existe ou você não tem permissão para visualizá-la. 
+            Se você acabou de fazer login, tente voltar ao início.
+          </p>
+        </div>
+        <div className="pt-4 flex flex-col gap-3">
           <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            to="/_authenticated/dashboard"
+            className="w-full bg-primary text-primary-foreground font-black py-4 rounded-xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:scale-[1.02] active:scale-95 transition-all text-sm uppercase tracking-widest"
           >
-            Go home
+            Ir para Dashboard
+          </Link>
+          <Link
+            to="/auth"
+            className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-xl transition-all text-xs uppercase tracking-widest"
+          >
+            Voltar ao Login
           </Link>
         </div>
       </div>
