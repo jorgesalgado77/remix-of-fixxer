@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { 
   Store, 
@@ -25,11 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { EscrowBadge } from "@/components/EscrowBadge";
 
-export const Route = createFileRoute("/_authenticated/lojista")({
-  component: LojistaDashboard,
-});
-
-function LojistaDashboard() {
+export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { glassClass } = usePerformanceMode();
 
