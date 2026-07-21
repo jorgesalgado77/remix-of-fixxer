@@ -182,11 +182,12 @@ function ProfilePage() {
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center h-[80vh] gap-4">
+    <div className="flex flex-col items-center justify-center h-[80vh] gap-4 bg-[#121214]">
       <Loader2 className="animate-spin text-primary w-12 h-12" />
-      <p className="text-muted-foreground font-bold uppercase tracking-tighter animate-pulse">Carregando Perfil...</p>
+      <p className="text-muted-foreground font-black uppercase tracking-widest text-[10px] animate-pulse">Sincronizando Perfil...</p>
     </div>
   );
+
 
   return (
     <div className="min-h-screen bg-[#121214] pb-20 overflow-x-hidden">
