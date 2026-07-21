@@ -35,6 +35,9 @@ import { EscrowBadge } from "@/components/EscrowBadge";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { IMaskInput } from "react-imask";
+import { useMediaUpload } from "@/hooks/use-media-upload";
+import { Progress } from "@/components/ui/progress";
+
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -573,6 +576,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     const [whatsapp, setWhatsapp] = useState("");
     const [phone, setPhone] = useState("");
     const [cep, setCep] = useState("");
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+    const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+    const [videoUrls, setVideoUrls] = useState<string[]>([]);
+    
+    const { uploadFile, isUploading, uploadProgress } = useMediaUpload();
+
     const [address, setAddress] = useState({
         logradouro: "",
         bairro: "",
@@ -582,6 +592,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
         complemento: ""
     });
     const [isLoadingCep, setIsLoadingCep] = useState(false);
+
 
     useEffect(() => {
         const cleanCep = cep.replace(/\D/g, '');
@@ -610,6 +621,28 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
             setIsLoadingCep(false);
         }
     };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery' | 'video') => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        const folder = type === 'video' ? 'videos' : type === 'gallery' ? 'gallery' : 'branding';
+        
+        const url = await uploadFile(file, 'media', folder);
+        
+        if (url) {
+            if (type === 'logo') setLogoUrl(url);
+            else if (type === 'banner') setBannerUrl(url);
+            else if (type === 'gallery') setGalleryUrls(prev => [...prev, url]);
+            else if (type === 'video') setVideoUrls(prev => [...prev.slice(-2), url]);
+            
+            toast.success("Upload realizado!", {
+                description: "O arquivo foi enviado e salvo com sucesso."
+            });
+        }
+    };
+
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
@@ -791,46 +824,94 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logo da Empresa *</Label>
-                            <div className="h-40 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 group relative overflow-hidden shadow-inner">
-                                <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                                <span className="text-[10px] font-black uppercase text-muted-foreground group-hover:text-primary transition-colors">Upload Logo</span>
+                            <label className="h-40 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 group relative overflow-hidden shadow-inner">
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logo')} />
+                                {logoUrl ? (
+                                    <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-4" />
+                                ) : (
+                                    <>
+                                        <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <span className="text-[10px] font-black uppercase text-muted-foreground group-hover:text-primary transition-colors">Upload Logo</span>
+                                    </>
+                                )}
                                 <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
+                            </label>
                         </div>
                         <div className="space-y-2">
                             <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Banner da Empresa</Label>
-                            <div className="h-40 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 group relative overflow-hidden shadow-inner">
-                                <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                                <span className="text-[10px] font-black uppercase text-muted-foreground group-hover:text-primary transition-colors">Upload Banner</span>
+                            <label className="h-40 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 group relative overflow-hidden shadow-inner">
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner')} />
+                                {bannerUrl ? (
+                                    <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                                ) : (
+                                    <>
+                                        <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <span className="text-[10px] font-black uppercase text-muted-foreground group-hover:text-primary transition-colors">Upload Banner</span>
+                                    </>
+                                )}
                                 <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
+                            </label>
                         </div>
                     </div>
+                    
+                    {uploadProgress.length > 0 && (
+                        <div className="space-y-3 p-4 rounded-2xl bg-white/5 border border-white/10 animate-in fade-in slide-in-from-top-2">
+                            <div className="text-[10px] font-black uppercase text-primary italic">Status do Upload</div>
+                            {uploadProgress.map((p, i) => (
+                                <div key={i} className="space-y-1">
+                                    <div className="flex justify-between text-[8px] font-bold text-muted-foreground uppercase">
+                                        <span>{p.fileName}</span>
+                                        <span>{p.progress}%</span>
+                                    </div>
+                                    <Progress value={p.progress} className="h-1 bg-white/5" />
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     
                     <div className="space-y-2">
                         <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Galeria de Fotos da Empresa</Label>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="aspect-square rounded-2xl border-2 border-dashed border-white/10 flex items-center justify-center hover:border-primary/30 transition-all cursor-pointer bg-black/20 group">
-                                    <PlusCircle className="w-6 h-6 text-muted-foreground group-hover:text-primary/50" />
+                            {galleryUrls.map((url, i) => (
+                                <div key={i} className="aspect-square rounded-2xl border border-white/10 overflow-hidden relative group">
+                                    <img src={url} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
+                                    <button 
+                                        onClick={() => setGalleryUrls(prev => prev.filter((_, idx) => idx !== i))}
+                                        className="absolute top-2 right-2 p-1 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <PlusCircle className="w-3 h-3 text-white rotate-45" />
+                                    </button>
                                 </div>
                             ))}
-                            <div className="aspect-square rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-1 bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group">
+                            <label className="aspect-square rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-1 bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group">
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'gallery')} />
                                 <PlusCircle className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
                                 <span className="text-[8px] font-black text-primary uppercase">Adicionar</span>
-                            </div>
+                            </label>
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Vídeos da Empresa (Até 3 vídeos)</Label>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="h-40 rounded-2xl border-2 border-dashed border-white/10 flex items-center justify-center hover:border-primary/30 transition-all cursor-pointer bg-black/20 group">
-                                    <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary/50" />
-                                    <span className="text-[10px] font-black text-muted-foreground uppercase ml-2">Vídeo {i}</span>
+                            {videoUrls.map((url, i) => (
+                                <div key={i} className="h-40 rounded-2xl border border-white/10 bg-black/40 overflow-hidden relative group">
+                                    <video src={url} className="w-full h-full object-cover" controls />
+                                    <button 
+                                        onClick={() => setVideoUrls(prev => prev.filter((_, idx) => idx !== i))}
+                                        className="absolute top-2 right-2 p-1 bg-red-500 rounded-lg z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <PlusCircle className="w-3 h-3 text-white rotate-45" />
+                                    </button>
                                 </div>
                             ))}
+                            {videoUrls.length < 3 && (
+                                <label className="h-40 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center hover:border-primary/30 transition-all cursor-pointer bg-black/20 group">
+                                    <input type="file" className="hidden" accept="video/*" onChange={(e) => handleFileUpload(e, 'video')} />
+                                    <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary/50" />
+                                    <span className="text-[10px] font-black text-muted-foreground uppercase ml-2">Adicionar Vídeo</span>
+                                </label>
+                            )}
                         </div>
                     </div>
                  </div>
