@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft, Terminal, Eye, EyeOff, AlertTriangle, CheckCircle2, Search, Shield } from "lucide-react";
+import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft, Terminal, Eye, EyeOff, AlertTriangle, CheckCircle2, Search } from "lucide-react";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -204,23 +204,6 @@ function LoginComponent() {
             </div>
 
             <div className="pt-4 flex flex-col gap-4">
-              <button 
-                type="button"
-                id="login-button-master"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem('fixxer_user_email', 'jorgericardosalgado@gmail.com');
-                    localStorage.setItem('fixxer_user_role', 'Admin');
-                    localStorage.setItem('fixxer_authenticated', 'true');
-                    window.location.href = '/admin';
-                  }
-                }}
-                className="w-full bg-[#00FF87]/10 border border-[#00FF87]/20 text-[#00FF87] font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-[#00FF87]/20 transition-all group"
-              >
-                <Shield className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                Acesso Master (Admin)
-              </button>
-
               <button 
                 type="button"
                 id="login-button-regular"
