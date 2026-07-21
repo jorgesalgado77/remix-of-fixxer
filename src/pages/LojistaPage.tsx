@@ -68,10 +68,59 @@ export function LojistaDashboard() {
             {activeTab === 'dashboard' && <DashboardView />}
             {activeTab === 'create' && <CreateServiceView />}
             {activeTab === 'profile' && <ProfileView />}
+            {activeTab === 'reviews' && <ReviewsView />}
         </div>
       </main>
     </div>
   );
+}
+
+function ReviewsView() {
+    return (
+        <div className="max-w-4xl space-y-8 animate-in fade-in duration-500">
+            <div className="bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl">
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h3 className="font-black text-white uppercase italic text-lg">Avaliações Recebidas</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-2xl font-black text-[#00FF87]">4.9</span>
+                            <div className="flex gap-0.5">
+                                {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 fill-[#00FF87] text-[#00FF87]" />)}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold ml-2">24 depoimentos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    {[1, 2].map(i => (
+                        <div key={i} className="p-6 rounded-2xl bg-black/40 border border-white/5 space-y-4">
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                                        {i === 1 ? 'C' : 'M'}
+                                    </div>
+                                    <div>
+                                        <div className="text-xs font-black text-white uppercase italic">{i === 1 ? 'Carlos Silva' : 'Marcos Oliveira'}</div>
+                                        <div className="text-[8px] text-muted-foreground uppercase font-bold">{i === 1 ? 'Conferente Técnico' : 'Montador de Móveis'}</div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <div className="flex gap-0.5">
+                                        {[1,2,3,4,5].map(s => <Star key={s} className={`w-2 h-2 ${s <= 5 ? 'fill-amber-500 text-amber-500' : 'text-white/10'}`} />)}
+                                    </div>
+                                    <span className="text-[8px] text-muted-foreground uppercase mt-1">12/07/2026</span>
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-white/70 leading-relaxed italic">
+                                "{i === 1 ? 'Excelente empresa, projeto muito bem detalhado facilitando muito a conferência técnica. Recomendo!' : 'Pagamento rápido e equipe muito atenciosa no suporte. OS muito bem organizada.'}"
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
 }
 
 function SidebarButton({ icon, label, active, onClick }: any) {
