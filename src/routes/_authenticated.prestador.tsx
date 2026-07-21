@@ -12,9 +12,13 @@ import {
   ChevronRight,
   TrendingUp,
   ShieldCheck,
-  PlusCircle
+  PlusCircle,
+  Camera
 } from "lucide-react";
 import { useState } from "react";
+import { ReviewModal } from "@/components/ReviewModal";
+import { EscrowBadge } from "@/components/EscrowBadge";
+
 
 export const Route = createFileRoute("/_authenticated/prestador")({
   component: PrestadorDashboard,
@@ -80,10 +84,17 @@ function PrestadorDashboard() {
         <div className="space-y-6">
           <div className={`${glassClass} border border-white/5 rounded-3xl p-6`}>
             <h2 className="text-sm font-black text-white uppercase italic mb-4 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" /> Garantia Segura
+              <ShieldCheck className="w-4 h-4 text-emerald-400" /> Pagamento em Custódia Protegida FIXXER
             </h2>
-            <p className="text-[10px] text-muted-foreground font-medium mb-4">Você tem <span className="text-white font-bold">R$ 1.250,00</span> retidos em custódia aguardando finalização.</p>
-            <button className="w-full py-3 rounded-xl bg-[#00FF87]/10 border border-[#00FF87]/20 text-[9px] font-black text-[#00FF87] uppercase tracking-widest">Ver Detalhes Escrow</button>
+            <div className="mb-4">
+              <EscrowBadge />
+            </div>
+            <p className="text-[10px] text-muted-foreground font-medium mb-4 italic">
+              O saldo de <span className="text-white font-bold tracking-tighter">R$ 1.250,00</span> está retido e será liberado após o upload da foto de conclusão.
+            </p>
+            <button className="w-full py-3 rounded-xl bg-[#00FF87]/10 border border-[#00FF87]/20 text-[9px] font-black text-[#00FF87] uppercase tracking-widest flex items-center justify-center gap-2">
+              <Camera className="w-3.5 h-3.5" /> Enviar Comprovação Final
+            </button>
           </div>
 
           <div className={`${glassClass} border border-white/5 rounded-3xl p-6`}>

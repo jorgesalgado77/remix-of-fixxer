@@ -194,9 +194,31 @@ function FeedPage() {
         </div>
       </header>
 
-      <div id="ts-visual-edit-probe-9505567992f14f28" className="hidden">
-        REGRAS ESTRITAS DE EXECUÇÃO E ESTABILIDADE
+      <div id="ts-visual-edit-probe-be9d757a1160472a" className="hidden">
+        REGRAS ESTRITAS DE EXECUÇÃO E ESTABILIDADE:
+        1. PROIBIDO DESTRUIR OU REESCREVER CÓDIGOS E COMPONENTES QUE JÁ ESTÃO FUNCIONANDO.
+        2. EXECUTAR EXCLUSIVAMENTE O QUE FOI SOLICITADO NESTE PROMPT.
+        3. OTIMIZAÇÃO OBRIGATÓRIA PARA MOBILE: Modais leves de ação rápida e responsividade total.
+        4. SCROLL INVISÍVEL CORRETO E SEM PERDA DE FOCO EM COMPONENTES TOUCH.
+        ---
+        TAREFA: MODAL DE REPUTAÇÃO (0 A 5 ESTRELAS) E CARTEIRA COM RETENÇÃO SEGURA
+        1. SISTEMA DE AVALIAÇÃO MÚTUA (0.0 A 5.0 ESTRELAS):
+           - Crie o componente modal de avaliação pós-serviço:
+             * Lojista avalia Prestador (Pontualidade, Qualidade e Limpeza).
+             * Prestador avalia Lojista/Cliente (Informaçoes e Recepção).
+             * Cliente avalia Prestador (Cordilidade e Acabamento).
+           - Exiba a média das notas nos cards dos perfis com o "Selo Ouro FIXXER" para médias acima de 4.8.
+        2. CUSTÓDIA DE PAGAMENTO PROTEGIDO (ESCROW SYSTEM):
+           - Adicione o badge visual "Pagamento em Custódia Protegida FIXXER" nos detalhes da O.S.
+           - Indicação clara de que o saldo só é liberado mediante comprovação fotográfica do serviço concluído.
+        ---
+        AUDITORIA GLOBAL DO SISTEMA (RELATÓRIO OBRIGATÓRIO):
+        Ao concluir, passe o scanner no projeto inteiro e apresente:
+        1. Resumo do que foi criado e mantido com sucesso.
+        2. Confirmação de que nenhuma funcionalidade antiga foi danificada.
+        3. Status final do build (zerado de erros de rotas ou telas brancas).
       </div>
+
 
       <main className="space-y-4">
         {isLoading ? (
@@ -226,8 +248,10 @@ function FeedPage() {
 
 import { ReviewModal } from "@/components/ReviewModal";
 import { EscrowBadge } from "@/components/EscrowBadge";
+import { GoldMedalBadge } from "@/components/GoldMedalBadge";
 
 function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: string, userRole: string }) {
+
   const profile = post.profiles;
   const isB2C = post.feed_type === 'Demanda_Cliente';
   const isOS = post.feed_type === 'Demanda_OS';
@@ -266,16 +290,13 @@ function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: strin
                 {profile?.company_name || profile?.full_name || "Usuário FIXXER"}
               </h3>
               {isB2C && <Home className="w-3 h-3 text-blue-400" />}
-              {isGoldMedal && (
-                <span className="text-[7px] font-black text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase tracking-tighter">
-                  Selo Ouro FIXXER
-                </span>
-              )}
+              {isGoldMedal && <GoldMedalBadge />}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                 <MapPin className="w-2.5 h-2.5 text-[#00FF87]" /> {post.city}/{post.state}
               </span>
+
               {isVitrine && (
                 <span className="text-[8px] font-black text-amber-500 flex items-center gap-1">
                   <Star className="w-2.5 h-2.5 fill-current" /> {profile?.karma_score ? Number(profile.karma_score).toFixed(1) : '5.0'}

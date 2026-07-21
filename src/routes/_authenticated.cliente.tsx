@@ -16,10 +16,14 @@ import {
   Sparkles,
   MapPin,
   Calendar,
-  Search
+  Search,
+  Star
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { EscrowBadge } from "@/components/EscrowBadge";
+import { ReviewModal } from "@/components/ReviewModal";
+
 
 export const Route = createFileRoute("/_authenticated/cliente")({
   component: ClientePortal,
@@ -378,9 +382,12 @@ function MinhasContratacoes({ glassClass }: { glassClass: string }) {
         <div>
           <h2 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-400" />
-            Contratações Ativas & Escrow
+            Pagamento em Custódia Protegida FIXXER
           </h2>
-          <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest">Seu dinheiro está seguro até você confirmar a entrega</p>
+          <div className="mt-1 flex items-center gap-2">
+            <EscrowBadge />
+            <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest">Saldo liberado apenas após sua confirmação</p>
+          </div>
         </div>
       </div>
 
