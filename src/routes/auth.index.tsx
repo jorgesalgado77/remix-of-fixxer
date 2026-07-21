@@ -19,6 +19,25 @@ function LoginComponent() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Verificação de conectividade ao carregar a tela de login
+    const checkConnectivity = async () => {
+      try {
+        const { error } = await supabase.from('admin_config').select('id').limit(1);
+        if (error) throw error;
+        toast.success("Sistema conectado ao Supabase Cloud", {
+          description: "Infraestrutura operacional.",
+          duration: 3000,
+        });
+      } catch (err) {
+        toast.error("Erro de conexão com o banco de dados", {
+          description: "Verifique suas configurações de rede ou chaves de API.",
+          duration: 5000,
+        });
+      }
+    };
+    
+    checkConnectivity();
+
     // DESATIVADO PARA EVITAR LOOPS DE REDIRECIONAMENTO
     /*
     const checkSession = async () => {
@@ -173,6 +192,9 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
+        <div id="ts-visual-edit-probe-f1dc2eaa215a4f53" className="hidden">
+          Adicione toasts/notifications claros no Painel Admin e no fluxo de login para informar quando a conexão com o Supabase estiver ativa ou inativa.
+        </div>
         <div id="ts-visual-edit-probe-c8dc31aafde64dfd" className="hidden">
           {`CONFIGURAÇÃO E MAPEAMENTO COMPLETO DAS CHAVES DA API DO SUPABASE EXTERNO
 
