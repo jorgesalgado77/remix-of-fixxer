@@ -103,8 +103,10 @@ export function AdminDashboardComponent() {
         <StatCard icon={<AlertTriangle className="w-5 h-5 text-red-500" />} label="Disputas" value="03" color="bg-red-500/10" />
       </div>
 
-      {/* Barra de Filtros Operacionais */}
-      <div className={`${glassClass} border border-white/5 rounded-3xl p-4 md:p-6 space-y-4`}>
+      <div id="admin-feed-section" className="pt-8 space-y-8">
+        {/* Barra de Filtros Operacionais */}
+        <div className={`${glassClass} border border-white/5 rounded-3xl p-4 md:p-6 space-y-4`}>
+
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-white/10 group focus-within:border-[#00FF87]/50 transition-all">
             <Search className="w-4 h-4 text-muted-foreground" />
