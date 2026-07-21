@@ -12,9 +12,13 @@ import {
   Activity, 
   Star,
   Search,
-  Filter
+  Filter,
+  ShieldCheck
 } from "lucide-react";
 import { useState } from "react";
+import { ReviewModal } from "@/components/ReviewModal";
+import { EscrowBadge } from "@/components/EscrowBadge";
+
 
 export const Route = createFileRoute("/_authenticated/lojista")({
   component: LojistaDashboard,
@@ -83,7 +87,10 @@ function LojistaDashboard() {
              <div className="space-y-3">
                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                  <div className="flex flex-col">
-                   <span className="text-[10px] font-black text-white uppercase italic">OS-2410</span>
+                   <div className="flex items-center gap-2">
+                     <span className="text-[10px] font-black text-white uppercase italic">OS-2410</span>
+                     <EscrowBadge />
+                   </div>
                    <span className="text-[8px] text-muted-foreground uppercase">Concluída em 12/07</span>
                  </div>
                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -92,8 +99,11 @@ function LojistaDashboard() {
           </div>
           
           <div className={`${glassClass} border border-white/5 rounded-3xl p-6 bg-gradient-to-br from-[#00FF87]/5 to-transparent`}>
-             <h2 className="text-sm font-black text-white uppercase italic mb-2">Garantia FIXXER</h2>
-             <p className="text-[10px] text-muted-foreground font-medium">Seu pagamento só é liberado ao profissional após a conclusão do serviço.</p>
+             <h2 className="text-sm font-black text-white uppercase italic mb-2 flex items-center gap-2">
+               <ShieldCheck className="w-4 h-4 text-[#00FF87]" />
+               Custódia Segura FIXXER
+             </h2>
+             <p className="text-[10px] text-muted-foreground font-medium">Seu pagamento está protegido e o saldo só é liberado mediante comprovação fotográfica do serviço concluído.</p>
           </div>
         </div>
       </div>

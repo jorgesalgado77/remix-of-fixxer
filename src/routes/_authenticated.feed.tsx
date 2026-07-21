@@ -194,9 +194,31 @@ function FeedPage() {
         </div>
       </header>
 
-      <div id="ts-visual-edit-probe-9505567992f14f28" className="hidden">
-        REGRAS ESTRITAS DE EXECUÇÃO E ESTABILIDADE
+      <div id="ts-visual-edit-probe-be9d757a1160472a" className="hidden">
+        REGRAS ESTRITAS DE EXECUÇÃO E ESTABILIDADE:
+        1. PROIBIDO DESTRUIR OU REESCREVER CÓDIGOS E COMPONENTES QUE JÁ ESTÃO FUNCIONANDO.
+        2. EXECUTAR EXCLUSIVAMENTE O QUE FOI SOLICITADO NESTE PROMPT.
+        3. OTIMIZAÇÃO OBRIGATÓRIA PARA MOBILE: Modais leves de ação rápida e responsividade total.
+        4. SCROLL INVISÍVEL CORRETO E SEM PERDA DE FOCO EM COMPONENTES TOUCH.
+        ---
+        TAREFA: MODAL DE REPUTAÇÃO (0 A 5 ESTRELAS) E CARTEIRA COM RETENÇÃO SEGURA
+        1. SISTEMA DE AVALIAÇÃO MÚTUA (0.0 A 5.0 ESTRELAS):
+           - Crie o componente modal de avaliação pós-serviço:
+             * Lojista avalia Prestador (Pontualidade, Qualidade e Limpeza).
+             * Prestador avalia Lojista/Cliente (Informaçoes e Recepção).
+             * Cliente avalia Prestador (Cordilidade e Acabamento).
+           - Exiba a média das notas nos cards dos perfis com o "Selo Ouro FIXXER" para médias acima de 4.8.
+        2. CUSTÓDIA DE PAGAMENTO PROTEGIDO (ESCROW SYSTEM):
+           - Adicione o badge visual "Pagamento em Custódia Protegida FIXXER" nos detalhes da O.S.
+           - Indicação clara de que o saldo só é liberado mediante comprovação fotográfica do serviço concluído.
+        ---
+        AUDITORIA GLOBAL DO SISTEMA (RELATÓRIO OBRIGATÓRIO):
+        Ao concluir, passe o scanner no projeto inteiro e apresente:
+        1. Resumo do que foi criado e mantido com sucesso.
+        2. Confirmação de que nenhuma funcionalidade antiga foi danificada.
+        3. Status final do build (zerado de erros de rotas ou telas brancas).
       </div>
+
 
       <main className="space-y-4">
         {isLoading ? (
@@ -224,11 +246,17 @@ function FeedPage() {
   );
 }
 
+import { ReviewModal } from "@/components/ReviewModal";
+import { EscrowBadge } from "@/components/EscrowBadge";
+import { GoldMedalBadge } from "@/components/GoldMedalBadge";
+
 function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: string, userRole: string }) {
+
   const profile = post.profiles;
   const isB2C = post.feed_type === 'Demanda_Cliente';
   const isOS = post.feed_type === 'Demanda_OS';
   const isVitrine = post.feed_type.startsWith('Vitrine');
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
   
   const maskContacts = (text: string) => {
     if (!text) return "";
@@ -236,15 +264,24 @@ function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: strin
                .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[E-MAIL PROTEGIDO]');
   };
 
+  const isGoldMedal = profile?.karma_score && Number(profile.karma_score) >= 4.8;
+
   return (
     <div className={`p-5 rounded-3xl border border-white/5 ${glassClass} hover:border-[#00FF87]/30 transition-all group relative overflow-hidden`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/5 overflow-hidden flex items-center justify-center">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-5 h-5 text-[#00FF87]/50" />
+          <div className="relative">
+            <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/5 overflow-hidden flex items-center justify-center">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-5 h-5 text-[#00FF87]/50" />
+              )}
+            </div>
+            {isGoldMedal && (
+              <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full p-0.5 shadow-[0_0_10px_rgba(245,158,11,0.5)] border border-amber-300">
+                <Star className="w-2 h-2 text-white fill-current" />
+              </div>
             )}
           </div>
           <div>
@@ -253,11 +290,13 @@ function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: strin
                 {profile?.company_name || profile?.full_name || "Usuário FIXXER"}
               </h3>
               {isB2C && <Home className="w-3 h-3 text-blue-400" />}
+              {isGoldMedal && <GoldMedalBadge />}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                 <MapPin className="w-2.5 h-2.5 text-[#00FF87]" /> {post.city}/{post.state}
               </span>
+
               {isVitrine && (
                 <span className="text-[8px] font-black text-amber-500 flex items-center gap-1">
                   <Star className="w-2.5 h-2.5 fill-current" /> {profile?.karma_score ? Number(profile.karma_score).toFixed(1) : '5.0'}
@@ -267,18 +306,19 @@ function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: strin
           </div>
         </div>
 
-        {isVitrine && (
-          <div className="flex flex-col items-end gap-1">
-             <span className="px-2 py-0.5 rounded-full bg-[#00FF87]/10 text-[#00FF87] text-[7px] font-black uppercase tracking-widest border border-[#00FF87]/20">
-               Disponível Agora
-             </span>
-          </div>
-        )}
-        {isOS && post.is_negotiable && (
-          <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[7px] font-black uppercase tracking-widest border border-blue-500/20">
-            Negociável
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-2">
+          {isVitrine && (
+            <span className="px-2 py-0.5 rounded-full bg-[#00FF87]/10 text-[#00FF87] text-[7px] font-black uppercase tracking-widest border border-[#00FF87]/20">
+              Disponível Agora
+            </span>
+          )}
+          {(isOS || isB2C) && <EscrowBadge />}
+          {isOS && post.is_negotiable && (
+            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[7px] font-black uppercase tracking-widest border border-blue-500/20">
+              Negociável
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2 mb-4">
@@ -317,6 +357,12 @@ function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: strin
         <div className="flex items-center gap-2">
           {isVitrine ? (
             <>
+              <button 
+                onClick={() => setReviewModalOpen(true)}
+                className="p-2 rounded-xl bg-white/5 hover:bg-[#00FF87]/10 border border-white/10 hover:border-[#00FF87]/30 transition-all text-[#00FF87]"
+              >
+                <Star className="w-3.5 h-3.5" />
+              </button>
               <button className="p-2 rounded-xl bg-white/5 hover:bg-[#00FF87]/10 border border-white/10 hover:border-[#00FF87]/30 transition-all text-[#00FF87]">
                 <MessageSquare className="w-3.5 h-3.5" />
               </button>
@@ -334,10 +380,21 @@ function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: strin
           )}
         </div>
       </div>
+      
+      <ReviewModal 
+        isOpen={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        targetId={profile?.id}
+        targetName={profile?.company_name || profile?.full_name || "Usuário"}
+        userRole={userRole}
+        orderId={post.id}
+      />
+      
       <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-[#00FF87]/5 blur-3xl rounded-full"></div>
     </div>
   );
 }
+
 
 function ProposalModal({ post, userRole }: { post: any, userRole: string }) {
   const [open, setOpen] = useState(false);
