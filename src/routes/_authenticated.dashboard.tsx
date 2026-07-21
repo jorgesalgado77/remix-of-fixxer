@@ -44,7 +44,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { glassClass } = usePerformanceMode();
   const context = Route.useRouteContext();
-  const { session } = context;
+  const { session, userEmail: email } = context;
   const [userRole, setUserRole] = useState<string>(() => {
     const contextRole = context.userRole;
     if (contextRole) return contextRole;
