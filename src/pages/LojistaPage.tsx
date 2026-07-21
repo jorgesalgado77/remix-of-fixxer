@@ -469,9 +469,15 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                               <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-2490 • São Paulo/SP</div>
                            </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
-                           <span className="font-black text-xs text-white">R$ 450,00</span>
+                        <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
+                           <div className="flex flex-col items-end mr-2">
+                               <span className="font-black text-xs text-white">R$ 450,00</span>
+                               <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: 15/07</span>
+                           </div>
                            <span className="px-3 py-1 bg-[#00FF87]/10 text-[#00FF87] font-bold text-[9px] rounded-full uppercase">Concluído</span>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary">
+                               <ChevronRight className="w-4 h-4" />
+                           </Button>
                         </div>
                     </div>
                     <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
