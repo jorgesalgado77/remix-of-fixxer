@@ -187,19 +187,69 @@ function CreateServiceView() {
 
 function ProfileView() {
     return (
-        <div className="bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl space-y-6">
-             <h3 className="font-black text-white uppercase italic">Dados Cadastrais</h3>
-             <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <Label className="uppercase font-bold text-xs text-muted-foreground">CEP</Label>
-                    <Input placeholder="00000-000" className="bg-black/40 border-white/10" />
+        <div className="max-w-4xl space-y-8 animate-in fade-in duration-500">
+            <div className="bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl space-y-8">
+                 <div className="flex items-center gap-4 mb-4">
+                     <div className="w-20 h-20 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center text-primary">
+                         <Store className="w-10 h-10" />
+                     </div>
+                     <div>
+                         <h3 className="font-black text-white uppercase italic text-lg">Perfil da Empresa</h3>
+                         <p className="text-[10px] text-muted-foreground uppercase font-bold">Mantenha seus dados atualizados para gerar confiança.</p>
+                     </div>
                  </div>
-                 <div className="space-y-2">
-                    <Label className="uppercase font-bold text-xs text-muted-foreground">Número</Label>
-                    <Input placeholder="Ex: 123" className="bg-black/40 border-white/10" />
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="space-y-2">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome Fantasia</Label>
+                        <Input placeholder="FIXXER Móveis Planejados" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                     </div>
+                     <div className="space-y-2">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social</Label>
+                        <Input placeholder="FIXXER LTDA" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                     </div>
                  </div>
-             </div>
-             <Button className="bg-white/10 text-white font-bold uppercase italic hover:bg-white/20">Salvar Alterações</Button>
+
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                     <div className="space-y-2">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CEP</Label>
+                        <Input placeholder="00000-000" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                     </div>
+                     <div className="md:col-span-2 space-y-2">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Endereço</Label>
+                        <Input placeholder="Logradouro preenchido automaticamente" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                     </div>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="space-y-2">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">E-mail de Contato</Label>
+                        <Input type="email" placeholder="contato@fixxer.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                     </div>
+                     <div className="space-y-2">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">WhatsApp / Telefone</Label>
+                        <Input placeholder="(11) 99999-9999" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                     </div>
+                 </div>
+
+                 <div className="space-y-4 pt-4 border-t border-white/5">
+                    <h4 className="text-[10px] font-black uppercase italic text-muted-foreground tracking-widest">Identidade Visual</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="h-32 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:border-[#00FF87]/50 transition-colors cursor-pointer bg-black/20">
+                            <PlusCircle className="w-6 h-6 text-muted-foreground" />
+                            <span className="text-[8px] font-bold uppercase text-muted-foreground">Upload Logo</span>
+                        </div>
+                        <div className="h-32 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:border-[#00FF87]/50 transition-colors cursor-pointer bg-black/20">
+                            <PlusCircle className="w-6 h-6 text-muted-foreground" />
+                            <span className="text-[8px] font-bold uppercase text-muted-foreground">Upload Banner</span>
+                        </div>
+                    </div>
+                 </div>
+
+                 <Button className="w-full md:w-auto px-12 bg-white/10 text-white font-black uppercase italic hover:bg-white/20 h-12 rounded-xl">
+                    Salvar Alterações
+                 </Button>
+            </div>
         </div>
     )
 }
