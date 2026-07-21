@@ -144,7 +144,7 @@ function Dashboard() {
 }
 
 // --- LOJISTA DASHBOARD ---
-function LojistaDashboard({ glassClass, isFreePlan }: { glassClass: string, isFreePlan: boolean }) {
+function LojistaDashboard({ glassClass, isFreePlan, onAction }: { glassClass: string, isFreePlan: boolean, onAction: (e: any, action: string) => boolean }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
