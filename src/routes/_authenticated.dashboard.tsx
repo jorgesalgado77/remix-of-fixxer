@@ -7,7 +7,7 @@ import {
   Users, 
   Settings, 
   MessageSquare, 
-  Package,
+  TrendingUp,
   Package,
   Clock,
   Plus,
@@ -30,8 +30,7 @@ import {
   DollarSign,
   ChevronRight,
   Filter,
-  Trash2,
-  TrendingUp
+  Trash2
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
