@@ -65,7 +65,7 @@ function LoginComponent() {
         steps[0].status = 'error';
         steps[0].detail = error.message === "Invalid login credentials" 
           ? "Credenciais inválidas. Certifique-se de que o usuário administrador foi criado no SQL Editor do Supabase."
-          : `Erro Supabase: ${error.message} (${error.status || 'sem status'})`;
+          : `Erro Supabase: ${error.message} (${error.status || 'sem status'}). Se o erro for {}, verifique a conectividade e se as tabelas de Auth existem no banco externo.`;
         setDiagnosticSteps([...steps]);
         await logAccess({ 
           event_type: 'login_attempt', 
