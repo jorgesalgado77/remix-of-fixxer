@@ -667,25 +667,25 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex flex-col gap-3 justify-end items-end">
+                                                    <div className="flex flex-col gap-3 justify-end items-end w-full">
                                                         <div className="w-full p-3 rounded-xl bg-white/5 border border-white/5">
-                                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic mb-2">Ações Rápidas</div>
-                                                        <div className="flex gap-2">
-                                                            <Link 
-                                                                to="/_authenticated/feed" 
-                                                                search={{ context: service.id }}
-                                                                className="flex-1 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2.5 rounded-lg transition-all"
-                                                            >
-                                                                <Info className="w-3 h-3" /> Ver Detalhes
-                                                            </Link>
-                                                            <Button 
-                                                                onClick={() => exportToPDF(service)}
-                                                                className="flex-1 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2.5 rounded-lg transition-all h-auto"
-                                                            >
-                                                                <Download className="w-3 h-3" /> PDF
-                                                            </Button>
-                                                            <Button size="sm" className="flex-1 bg-primary text-black text-[9px] font-black uppercase italic h-10 rounded-lg shadow-[0_0_15px_rgba(0,255,135,0.2)]">Avançar Status</Button>
-                                                        </div>
+                                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic mb-3">Ações Rápidas</div>
+                                                            <div className="flex flex-wrap gap-2 w-full">
+                                                                <Link 
+                                                                    to="/_authenticated/feed" 
+                                                                    search={{ context: service.id }}
+                                                                    className="flex-1 min-w-[110px] flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2.5 rounded-lg transition-all"
+                                                                >
+                                                                    <Info className="w-3 h-3" /> Ver Detalhes
+                                                                </Link>
+                                                                <Button 
+                                                                    onClick={() => exportToPDF(service)}
+                                                                    className="flex-1 min-w-[80px] flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2.5 rounded-lg transition-all h-auto"
+                                                                >
+                                                                    <Download className="w-3 h-3" /> PDF
+                                                                </Button>
+                                                                <Button className="w-full sm:flex-1 min-w-[140px] bg-primary text-black text-[9px] font-black uppercase italic h-10 rounded-lg shadow-[0_0_15px_rgba(0,255,135,0.2)]">Avançar Status</Button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
