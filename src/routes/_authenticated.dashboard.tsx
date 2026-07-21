@@ -163,7 +163,7 @@ function Dashboard() {
       {userRole?.toLowerCase() === 'prestador' && <PrestadorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
       {userRole?.toLowerCase() === 'fornecedor' && <FornecedorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
 
-      {userRole === 'admin' && (
+      {(userRole?.toLowerCase() === 'admin' || email?.trim() === 'jorgericardosalgado@gmail.com') && (
         <div className={`p-12 rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center text-center ${glassClass}`}>
           <LayoutDashboard className="w-12 h-12 text-primary mb-4 opacity-20" />
           <h2 className="text-xl font-black text-white uppercase italic">Dashboard Admin</h2>
