@@ -43,8 +43,22 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const { glassClass } = usePerformanceMode();
-  const { session } = Route.useRouteContext();
-  const userRole = Route.useRouteContext().userRole || (typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') : 'user');
+  const context = Route.useRouteContext();
+  const { session, userEmail: email } = context;
+  const [userRole, setUserRole] = useState<string>(() => {
+    const contextRole = context.userRole;
+    if (contextRole) return contextRole;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('fixxer_user_role') || 'user';
+    }
+    return 'user';
+  });
+
+  useEffect(() => {
+    if (context.userRole && context.userRole !== userRole) {
+      setUserRole(context.userRole);
+    }
+  }, [context.userRole]);
   
   const { data: profile } = useQuery({
     queryKey: ['profile', session?.user?.id],
@@ -149,7 +163,7 @@ function Dashboard() {
       {userRole?.toLowerCase() === 'prestador' && <PrestadorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
       {userRole?.toLowerCase() === 'fornecedor' && <FornecedorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
 
-      {userRole === 'admin' && (
+      {(userRole?.toLowerCase() === 'admin' || email?.trim() === 'jorgericardosalgado@gmail.com') && (
         <div className={`p-12 rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center text-center ${glassClass}`}>
           <LayoutDashboard className="w-12 h-12 text-primary mb-4 opacity-20" />
           <h2 className="text-xl font-black text-white uppercase italic">Dashboard Admin</h2>
@@ -198,6 +212,7 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
   const { data: osList, isLoading: osLoading, isError: osError, refetch: refetchOs } = useQuery({
     queryKey: ['lojista-os', lojistaId],
     queryFn: async () => {
+      // Tenta buscar por lojista_id ou client_id para garantir compatibilidade
       const { data, error } = await supabase
         .from('orders_of_service')
         .select('*')
@@ -221,19 +236,44 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
   useEffect(() => {
     if (!lojistaId) return;
 
+    console.log(`[DASHBOARD REALTIME]: Subscribing for lojistaId: ${lojistaId}`);
+    
     const channel = supabase
-      .channel('dashboard-updates')
+      .channel(`dashboard-updates-${lojistaId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders_of_service', filter: `lojista_id=eq.${lojistaId}` },
-        () => queryClient.invalidateQueries({ queryKey: ['lojista-os', lojistaId] })
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders_of_service', 
+          filter: `lojista_id=eq.${lojistaId}` 
+        },
+        (payload) => {
+          console.log('[DASHBOARD REALTIME] Change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['lojista-os', lojistaId] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders_of_service', 
+          filter: `client_id=eq.${lojistaId}` 
+        },
+        (payload) => {
+          console.log('[DASHBOARD REALTIME] Change detected (client):', payload);
+          queryClient.invalidateQueries({ queryKey: ['lojista-os', lojistaId] });
+        }
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'os_messages' },
         () => queryClient.invalidateQueries({ queryKey: ['lojista-notifications', lojistaId] })
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[DASHBOARD REALTIME] Subscription status: ${status}`);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -259,21 +299,26 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
   const { data: notifications, isLoading: notifLoading, isError: notifError } = useQuery({
     queryKey: ['lojista-notifications', lojistaId],
     queryFn: async () => {
+      // Pega IDs da lista atual de OS (ou faz query separada se necessário)
       const ids = (osList ?? []).map((o: any) => o.id);
       if (!ids.length) return [];
+      
       const { data, error } = await supabase
         .from('os_messages')
         .select('id, content, created_at, os_id')
         .in('os_id', ids)
         .order('created_at', { ascending: false })
         .limit(10);
-      if (error) throw error;
+      
+      if (error) {
+        console.error("[DASHBOARD NOTIF ERROR]:", error);
+        throw error;
+      }
       return data ?? [];
     },
-    enabled: !!lojistaId && !!osList,
+    enabled: !!lojistaId && !!osList?.length, // Só roda se houver OS
     staleTime: 1000 * 60 * 2,
     retry: 3,
-
   });
 
   // --- Metrics ---
