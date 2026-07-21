@@ -49,7 +49,7 @@ export function LojistaDashboard() {
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-            <div className="flex flex-col h-full p-8 space-y-8">
+            <div className="flex flex-col h-full p-8 space-y-6 overflow-y-auto scrollbar-none">
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-black font-black text-xl">F</div>
@@ -59,17 +59,20 @@ export function LojistaDashboard() {
                         <PlusCircle className="w-6 h-6 rotate-45" />
                     </button>
                 </div>
-                <nav className="flex flex-col gap-4">
+
+                <UserProfileCard />
+
+                <nav className="flex flex-col gap-3">
                     <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} />
                     <SidebarButton icon={<PlusCircle className="w-5 h-5"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => { setActiveTab('create'); setMobileMenuOpen(false); }} />
                     <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => { setActiveTab('profile'); setMobileMenuOpen(false); }} />
                     <SidebarButton icon={<Star className="w-5 h-5"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => { setActiveTab('reviews'); setMobileMenuOpen(false); }} />
                 </nav>
-                <div className="mt-auto flex flex-col gap-4">
-                    <Link to="/_authenticated/feed" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs">
-                        <Search className="w-4 h-4" /> Acessar Feed
+                <div className="mt-auto pt-6 flex flex-col gap-4">
+                    <Link to="/_authenticated/feed" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+                        <Search className="w-4 h-4" /> Ir para o Feed
                     </Link>
-                    <Button variant="ghost" onClick={() => { /* Logout logic */ }} className="text-red-400 font-bold uppercase italic text-xs justify-start px-4">
+                    <Button variant="ghost" onClick={() => { /* Logout logic */ }} className="text-red-400 font-bold uppercase italic text-xs justify-start px-4 h-12">
                         <LogOut className="w-4 h-4 mr-2" /> Encerrar Sessão
                     </Button>
                 </div>
@@ -78,21 +81,27 @@ export function LojistaDashboard() {
       )}
 
       {/* Sidebar Retrátil (Desktop) */}
-      <aside className="w-64 border-r border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-[#0A0A0A]">
-        <div className="flex items-center gap-2">
+      <aside className="w-72 border-r border-white/10 p-6 flex flex-col gap-6 hidden md:flex bg-[#0A0A0A] overflow-y-auto scrollbar-none">
+        <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(0,255,135,0.3)]">F</div>
             <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
         </div>
+
+        <UserProfileCard />
+
         <nav className="flex flex-col gap-2">
             <SidebarButton icon={<Activity className="w-4 h-4"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
             <SidebarButton icon={<PlusCircle className="w-4 h-4"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => setActiveTab('create')} />
             <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
             <SidebarButton icon={<Star className="w-4 h-4"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} />
         </nav>
-        <div className="mt-auto pt-6 border-t border-white/10">
-            <Link to="/_authenticated/feed" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-medium text-sm">
-                <Search className="w-4 h-4" /> Ir para o Feed
+        <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-2">
+            <Link to="/_authenticated/feed" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider">
+                <Search className="w-4 h-4 text-primary" /> Ir para o Feed
             </Link>
+            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 font-bold uppercase text-xs italic justify-start px-4">
+              <LogOut className="w-4 h-4 mr-2" /> Sair do Sistema
+            </Button>
         </div>
       </aside>
 
@@ -104,9 +113,12 @@ export function LojistaDashboard() {
                   {activeTab === 'dashboard' ? 'Painel Lojista' : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
                </h2>
            </div>
-           <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 font-bold uppercase text-xs italic">
-             <LogOut className="w-4 h-4 mr-2" /> Sair
-           </Button>
+           <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-[10px] font-black text-primary uppercase italic">Sessão Ativa</span>
+              </div>
+           </div>
         </header>
 
         <div className="p-8 max-w-7xl mx-auto">
@@ -118,6 +130,48 @@ export function LojistaDashboard() {
       </main>
     </div>
   );
+}
+
+function UserProfileCard() {
+    return (
+        <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
+            <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full border-2 border-primary/50 p-0.5 shadow-[0_0_15px_rgba(0,255,135,0.2)]">
+                    <div className="w-full h-full rounded-full bg-black/40 flex items-center justify-center text-primary overflow-hidden">
+                        <Store className="w-6 h-6" />
+                    </div>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                    <div className="text-[11px] font-black text-white uppercase italic truncate">Marcenaria & Design Inovamad</div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black uppercase">🏪 Lojista</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                <div className="flex flex-col">
+                    <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">Reputação</span>
+                    <div className="flex items-center gap-1">
+                        <Star className="w-2.5 h-2.5 fill-primary text-primary" />
+                        <span className="text-[10px] font-black text-white italic">4.9 / 5.0</span>
+                    </div>
+                </div>
+                <div className="flex flex-col items-end">
+                    <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest text-right">Plano</span>
+                    <div className="flex items-center gap-1">
+                        <Zap className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                        <span className="text-[10px] font-black text-amber-500 italic">Plano Pro</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-primary/5 border border-primary/10">
+                <ShieldCheck className="w-3 h-3 text-primary" />
+                <span className="text-[8px] font-black text-primary uppercase italic">Selo Ouro FIXXER</span>
+            </div>
+        </div>
+    );
 }
 
 function ReviewsView() {
