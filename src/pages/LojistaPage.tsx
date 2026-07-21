@@ -136,33 +136,51 @@ function DashboardView() {
 
 function CreateServiceView() {
     return (
-        <div className="max-w-2xl bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl space-y-6">
-            <div className="space-y-2">
-                <Label className="uppercase font-bold text-xs text-muted-foreground">Tipo de Profissional</Label>
-                <Select>
-                    <SelectTrigger className="bg-black/40 border-white/10">
-                        <SelectValue placeholder="Selecione o parceiro..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1A1A1B] border-white/10">
-                        <SelectItem value="montador">Montador de Móveis</SelectItem>
-                        <SelectItem value="conferente">Conferente Técnico</SelectItem>
-                    </SelectContent>
-                </Select>
+        <div className="max-w-3xl animate-in slide-in-from-bottom duration-500">
+          <div className="bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Tipo de Profissional</Label>
+                    <Select>
+                        <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl">
+                            <SelectValue placeholder="Selecione o parceiro..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1A1A1B] border-white/10">
+                            <SelectItem value="montador">Montador de Móveis</SelectItem>
+                            <SelectItem value="conferente">Conferente Técnico</SelectItem>
+                            <SelectItem value="projetista">Projetista</SelectItem>
+                            <SelectItem value="medidor">Medidor</SelectItem>
+                            <SelectItem value="instalador">Instalador</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Título do Serviço</Label>
+                    <Input placeholder="Ex: Medição Técnica Cozinha" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                </div>
             </div>
             
             <div className="space-y-2">
-                <Label className="uppercase font-bold text-xs text-muted-foreground">Título do Serviço</Label>
-                <Input placeholder="Ex: Medição técnica..." className="bg-black/40 border-white/10" />
+                <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Descrição Detalhada</Label>
+                <Textarea placeholder="Descreva as especificações técnicas..." className="bg-black/40 border-white/10 min-h-[150px] rounded-xl p-4" />
             </div>
 
-            <div className="space-y-2">
-                <Label className="uppercase font-bold text-xs text-muted-foreground">Descrição</Label>
-                <Textarea className="bg-black/40 border-white/10 min-h-[120px]" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Valor Contrato Final (R$)</Label>
+                    <Input type="number" placeholder="20000.00" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                    <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Localização (Cidade/UF)</Label>
+                    <Input placeholder="Ex: São Paulo/SP" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                </div>
             </div>
 
-            <Button className="w-full bg-[#00FF87] text-black font-black uppercase tracking-widest hover:bg-[#00FF87]/90 h-12">
-                Publicar no Feed
+            <Button className="w-full bg-[#00FF87] text-black font-black uppercase italic tracking-widest hover:bg-[#00FF87]/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)]">
+                Publicar Serviço no Feed
             </Button>
+          </div>
         </div>
     )
 }
