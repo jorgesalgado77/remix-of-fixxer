@@ -1558,20 +1558,26 @@ function SortableItem({ id, isVideo, onRemove, isSelected, onToggleSelect }: { i
         <div 
             ref={setNodeRef} 
             style={style} 
-            className={`relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 group touch-none \${isVideo ? 'aspect-video sm:aspect-square' : 'aspect-square'}`}
+            onClick={onToggleSelect}
+            className={`relative rounded-2xl overflow-hidden border transition-all cursor-pointer bg-black/40 group touch-none ${isSelected ? 'border-primary ring-2 ring-primary ring-inset' : 'border-white/10'} ${isVideo ? 'aspect-video sm:aspect-square' : 'aspect-square'}`}
         >
-            <div {...attributes} {...listeners} className="w-full h-full cursor-grab active:cursor-grabbing">
+            <div {...attributes} {...listeners} className="w-full h-full cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
                 {isVideo ? (
                     <video src={id} className="w-full h-full object-cover" />
                 ) : (
                     <img src={id} alt="Gallery" className="w-full h-full object-cover" />
                 )}
             </div>
+            
+            <div className={`absolute top-2 left-2 w-5 h-5 rounded-full border-2 border-white/20 transition-all flex items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-black/40'}`}>
+                {isSelected && <Check className="w-3 h-3 text-black" />}
+            </div>
+
             <button 
                 onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                className="absolute top-1.5 right-1.5 p-1 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
             >
-                <Trash2 className="w-2.5 h-2.5 text-white" />
+                <Trash2 className="w-3 h-3 text-white" />
             </button>
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
         </div>
