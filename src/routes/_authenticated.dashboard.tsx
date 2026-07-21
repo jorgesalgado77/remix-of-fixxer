@@ -29,7 +29,8 @@ import {
   Map,
   DollarSign,
   ChevronRight,
-  Filter
+  Filter,
+  Trash2
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
