@@ -31,7 +31,49 @@ export function LojistaDashboard() {
 
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
-      {/* Sidebar Retrátil */}
+      {/* Mobile Top Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#050505]/95 backdrop-blur-md border-b border-white/10 z-50 flex items-center justify-between px-6">
+        <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center text-black font-black text-sm">F</div>
+            <h1 className="font-bold text-white text-sm uppercase italic">FIXXER</h1>
+        </div>
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-white">
+            <Menu className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+            <div className="flex flex-col h-full p-8 space-y-8">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-black font-black text-xl">F</div>
+                        <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
+                    </div>
+                    <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-white">
+                        <PlusCircle className="w-6 h-6 rotate-45" />
+                    </button>
+                </div>
+                <nav className="flex flex-col gap-4">
+                    <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} />
+                    <SidebarButton icon={<PlusCircle className="w-5 h-5"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => { setActiveTab('create'); setMobileMenuOpen(false); }} />
+                    <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => { setActiveTab('profile'); setMobileMenuOpen(false); }} />
+                    <SidebarButton icon={<Star className="w-5 h-5"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => { setActiveTab('reviews'); setMobileMenuOpen(false); }} />
+                </nav>
+                <div className="mt-auto flex flex-col gap-4">
+                    <Link to="/_authenticated/feed" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs">
+                        <Search className="w-4 h-4" /> Acessar Feed
+                    </Link>
+                    <Button variant="ghost" onClick={() => { /* Logout logic */ }} className="text-red-400 font-bold uppercase italic text-xs justify-start px-4">
+                        <LogOut className="w-4 h-4 mr-2" /> Encerrar Sessão
+                    </Button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Sidebar Retrátil (Desktop) */}
       <aside className="w-64 border-r border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-[#0A0A0A]">
         <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(0,255,135,0.3)]">F</div>
@@ -51,10 +93,9 @@ export function LojistaDashboard() {
       </aside>
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 overflow-y-auto scrollbar-none bg-[#050505]">
-        <header className="px-8 py-6 border-b border-white/10 flex items-center justify-between sticky top-0 z-10 bg-[#050505]/80 backdrop-blur-md">
+      <main className="flex-1 overflow-y-auto scrollbar-none bg-[#050505] pt-16 md:pt-0">
+        <header className="px-8 py-6 border-b border-white/10 flex items-center justify-between sticky top-0 z-10 bg-[#050505]/80 backdrop-blur-md hidden md:flex">
            <div className="flex items-center gap-4">
-               <Button variant="ghost" className="md:hidden"><Menu/></Button>
                <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
                   {activeTab === 'dashboard' ? 'Painel Lojista' : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
                </h2>
