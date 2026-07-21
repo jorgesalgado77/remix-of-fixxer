@@ -34,7 +34,11 @@ import {
   History,
   Bell,
   Check,
-  Trash
+  Trash,
+  Undo2,
+  Settings,
+  XCircle,
+  Eye
 } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -334,7 +338,16 @@ export function LojistaDashboard() {
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {activeTab === 'dashboard' && <DashboardView rating={rating} getRatingColor={getRatingColor} />}
             {activeTab === 'create' && <CreateServiceView />}
-            {activeTab === 'profile' && <ProfileView setIsProfileComplete={setIsProfileComplete} rating={rating} getRatingColor={getRatingColor} setRating={setRating} />}
+            {activeTab === 'profile' && (
+                <ProfileView 
+                    setIsProfileComplete={setIsProfileComplete} 
+                    rating={rating} 
+                    getRatingColor={getRatingColor} 
+                    setRating={setRating} 
+                    undoStack={undoStack}
+                    pushToUndo={pushToUndo}
+                />
+            )}
             {activeTab === 'reviews' && <ReviewsView />}
         </div>
       </main>
@@ -890,7 +903,14 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }: { setIsProfileComplete: (complete: boolean) => void; rating: number; getRatingColor: (val: number) => string; setRating: (rating: number) => void }) {
+function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo }: { 
+    setIsProfileComplete: (complete: boolean) => void; 
+    rating: number; 
+    getRatingColor: (val: number) => string; 
+    setRating: (rating: number) => void;
+    undoStack: any[];
+    pushToUndo: (action: string, state: any) => void;
+}) {
     const [cnpj, setCnpj] = useState("");
     const [whatsapp, setWhatsapp] = useState("");
     const [phone, setPhone] = useState("");
