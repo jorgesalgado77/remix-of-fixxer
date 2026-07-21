@@ -8,7 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { ShieldAlert } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -46,7 +46,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md w-full text-center space-y-6">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-red-500/10 rounded-3xl text-red-500 mb-2">
-          <ShieldAlert className="w-10 h-10" />
+          <AlertTriangle className="w-10 h-10" />
         </div>
         
         <h1 className="text-2xl font-black text-white tracking-tight uppercase">
