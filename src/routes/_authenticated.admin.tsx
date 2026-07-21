@@ -94,25 +94,32 @@ function AdminLayout() {
             active={location.pathname === '/admin/users'} 
           />
           <AdminNavItem 
-            to="/admin/plans" 
-            icon={<CreditCard className="w-4 h-4" />} 
-            label="Planos" 
+            to="/admin" 
+            icon={<Activity className="w-4 h-4" />} 
+            label="Moderação Feed" 
             isOpen={isSidebarOpen} 
-            active={location.pathname === '/admin/plans'} 
+            active={false} 
+          />
+          <AdminNavItem 
+            to="/admin" 
+            icon={<DollarSign className="w-4 h-4" />} 
+            label="Auditoria Escrow" 
+            isOpen={isSidebarOpen} 
+            active={false} 
+          />
+          <AdminNavItem 
+            to="/admin" 
+            icon={<Layers className="w-4 h-4" />} 
+            label="Categorias" 
+            isOpen={isSidebarOpen} 
+            active={false} 
           />
           <AdminNavItem 
             to="/admin/integrations" 
             icon={<Settings className="w-4 h-4" />} 
-            label="Integrações" 
+            label="Integrações API" 
             isOpen={isSidebarOpen} 
             active={location.pathname === '/admin/integrations'} 
-          />
-          <AdminNavItem 
-            to="/admin" 
-            icon={<ShieldAlert className="w-4 h-4" />} 
-            label="Segurança" 
-            isOpen={isSidebarOpen} 
-            active={false} 
           />
         </nav>
       </aside>
