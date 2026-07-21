@@ -15,9 +15,10 @@ export function AdminDashboardComponent() {
       const email = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
       const role = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
       
+      // Validação do Admin Master - Redireciona para a URL pública /dashboard em caso de falha
       if (email.trim() !== 'jorgericardosalgado@gmail.com' && role.toLowerCase() !== 'admin') {
-        console.warn("[ADMIN SECURITY]: Acesso negado. Redirecionando...");
-        navigate({ to: '/_authenticated/dashboard' as any });
+        console.warn("[ADMIN SECURITY]: Acesso negado. Redirecionando para a Dashboard...");
+        navigate({ to: '/dashboard' as any });
         return;
       }
       setLoading(false);
