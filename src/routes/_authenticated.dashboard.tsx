@@ -926,6 +926,8 @@ function PrestadorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: 
 
 // --- FORNECEDOR DASHBOARD ---
 function FornecedorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: string, isFreePlan: boolean, onAction: (e: any, action: string) => boolean }) {
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'os' | 'profile'>('overview');
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -996,6 +998,14 @@ function FornecedorDashboard({ glassClass, isFreePlan, onAction }: { glassClass:
 
           </div>
         </div>
+      </div>
+      
+      {/* Bottom Nav Mobile for Fornecedor */}
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 h-20 border-t border-white/10 flex items-center justify-around px-6 z-50 ${glassClass} backdrop-blur-xl`}>
+        <MobileNavItem icon={<LayoutDashboard />} label="Início" active={activeSubTab === 'overview'} onClick={() => setActiveSubTab('overview')} />
+        <MobileNavItem icon={<TrendingUp />} label="Feed" active={window.location.pathname === '/feed'} onClick={() => window.location.href = '/feed'} />
+        <MobileNavItem icon={<MessageSquare />} label="Chat" active={activeSubTab === 'os'} onClick={() => setActiveSubTab('os')} />
+        <MobileNavItem icon={<User />} label="Perfil" active={activeSubTab === 'profile'} onClick={() => setActiveSubTab('profile')} />
       </div>
     </div>
   );
