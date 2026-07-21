@@ -12,9 +12,13 @@ import {
   Activity, 
   Star,
   Search,
-  Filter
+  Filter,
+  ShieldCheck
 } from "lucide-react";
 import { useState } from "react";
+import { ReviewModal } from "@/components/ReviewModal";
+import { EscrowBadge } from "@/components/EscrowBadge";
+
 
 export const Route = createFileRoute("/_authenticated/lojista")({
   component: LojistaDashboard,
