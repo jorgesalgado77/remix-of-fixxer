@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Users, FileText, DollarSign, Activity, CheckCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminDashboardComponent,
@@ -9,19 +10,38 @@ export const Route = createFileRoute("/_authenticated/admin")({
 export function AdminDashboardComponent() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
     const checkAdminAccess = async () => {
-      const email = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
-      const role = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
-      
-      // Validação do Admin Master - Redireciona para a URL pública /dashboard em caso de falha
-      if (email.trim() !== 'jorgericardosalgado@gmail.com' && role.toLowerCase() !== 'admin') {
-        console.warn("[ADMIN SECURITY]: Acesso negado. Redirecionando para a Dashboard...");
-        navigate({ to: '/dashboard' as any });
-        return;
+      try {
+        // 1. Tenta obter pelo localStorage
+        let email = typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_email') || '').trim() : '';
+        let role = typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_role') || '').toLowerCase() : '';
+
+        // 2. Se não encontrou no localStorage, busca diretamente na sessão do Supabase
+        if (!email) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.email) {
+            email = session.user.email.trim();
+            localStorage.setItem('fixxer_user_email', email);
+          }
+        }
+
+        // 3. Validação Master Irrestrita
+        if (email === 'jorgericardosalgado@gmail.com' || role === 'admin') {
+          setAuthorized(true);
+        } else {
+          console.warn("[ADMIN SECURITY]: Acesso negado para o e-mail:", email);
+          // Redireciona para o login ou feed em vez de rota inexistente
+          navigate({ to: '/_authenticated' as any });
+          return;
+        }
+      } catch (error) {
+        console.error("Erro na verificação admin:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     checkAdminAccess();
@@ -33,11 +53,15 @@ export function AdminDashboardComponent() {
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[#00FF87] border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-400 font-medium animate-pulse">
-            Carregando Painel Administrativo Master FIXXER...
+            Validando Acesso Master FIXXER...
           </p>
         </div>
       </div>
     );
+  }
+
+  if (!authorized) {
+    return null;
   }
 
   return (
@@ -130,7 +154,7 @@ export function AdminDashboardComponent() {
               Infraestrutura Operacional
             </h2>
             <p className="text-gray-400 leading-relaxed">
-              Rota única configurada com sucesso. Você tem controle total do sistema.
+              Sessão validada com sucesso. Você tem controle total do sistema.
             </p>
           </div>
         </div>
