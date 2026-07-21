@@ -82,10 +82,10 @@ export function LojistaDashboard() {
                 <UserProfileCard />
 
                 <nav className="flex flex-col gap-3">
-                    <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} />
-                    <SidebarButton icon={<PlusCircle className="w-5 h-5"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => { setActiveTab('create'); setMobileMenuOpen(false); }} />
-                    <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => { setActiveTab('profile'); setMobileMenuOpen(false); }} />
-                    <SidebarButton icon={<Star className="w-5 h-5"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => { setActiveTab('reviews'); setMobileMenuOpen(false); }} />
+                    <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                    <SidebarButton icon={<PlusCircle className="w-5 h-5"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => handleTabChange('create')} />
+                    <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
+                    <SidebarButton icon={<Star className="w-5 h-5"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => handleTabChange('reviews')} />
                 </nav>
                 <div className="mt-auto pt-6 flex flex-col gap-4">
                     <Link to="/_authenticated/feed" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs shadow-[0_0_15px_rgba(255,255,255,0.05)]">
