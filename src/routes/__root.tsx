@@ -14,6 +14,11 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
+  useEffect(() => {
+    const userEmail = localStorage.getItem('fixxer_user_email') || 'anonymous';
+    console.error(`[FIXXER 404]: Rota não encontrada acessada por ${userEmail}: ${window.location.pathname}`);
+  }, []);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 p-10 rounded-3xl shadow-2xl text-center space-y-6">
