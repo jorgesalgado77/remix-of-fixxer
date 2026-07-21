@@ -65,7 +65,7 @@ function AuthenticatedLayout() {
             Perfil
           </Link>
           <Link 
-            to="/dashboard" 
+            to="/_authenticated/dashboard" 
             className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95"
           >
             Dashboard
