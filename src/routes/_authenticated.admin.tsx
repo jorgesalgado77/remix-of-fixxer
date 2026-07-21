@@ -106,119 +106,118 @@ export function AdminDashboardComponent() {
       <div id="admin-feed-section" className="pt-8 space-y-8">
         {/* Barra de Filtros Operacionais */}
         <div className={`${glassClass} border border-white/5 rounded-3xl p-4 md:p-6 space-y-4`}>
-
-
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-white/10 group focus-within:border-[#00FF87]/50 transition-all">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Pesquisar por ID, Nome ou E-mail..." 
-              className="bg-transparent border-none outline-none text-xs text-white w-full font-medium"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-white/10 group focus-within:border-[#00FF87]/50 transition-all">
+              <Search className="w-4 h-4 text-muted-foreground" />
+              <input 
+                type="text" 
+                placeholder="Pesquisar por ID, Nome ou E-mail..." 
+                className="bg-transparent border-none outline-none text-xs text-white w-full font-medium"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-white/10">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <select 
+                className="bg-transparent border-none outline-none text-[10px] font-black uppercase text-white w-full md:w-40 appearance-none cursor-pointer"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="todas">Todas Categorias</option>
+                <option value="lojista">Lojistas</option>
+                <option value="prestador">Prestadores</option>
+                <option value="fornecedor">Fornecedores</option>
+                <option value="casual">Casuais</option>
+              </select>
+            </div>
           </div>
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-white/10">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <select 
-              className="bg-transparent border-none outline-none text-[10px] font-black uppercase text-white w-full md:w-40 appearance-none cursor-pointer"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="todas">Todas Categorias</option>
-              <option value="lojista">Lojistas</option>
-              <option value="prestador">Prestadores</option>
-              <option value="fornecedor">Fornecedores</option>
-              <option value="casual">Casuais</option>
-            </select>
+
+          {/* Abas de Navegação (Scroll Invisível Mobile) */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none md:justify-start">
+            <TabButton active={activeTab === 'os'} onClick={() => setActiveTab('os')} label="📋 Ordens de Serviço" icon={<FileText className="w-3 h-3" />} />
+            <TabButton active={activeTab === 'fornecedores'} onClick={() => setActiveTab('fornecedores')} label="🏬 Insumos B2B" icon={<Truck className="w-3 h-3" />} />
+            <TabButton active={activeTab === 'prestadores'} onClick={() => setActiveTab('prestadores')} label="🛠️ Profissionais" icon={<Users className="w-3 h-3" />} />
+            <TabButton active={activeTab === 'ocorrencias'} onClick={() => setActiveTab('ocorrencias')} label="⚠️ Auditoria" icon={<AlertTriangle className="w-3 h-3" />} />
           </div>
         </div>
 
-        {/* Abas de Navegação (Scroll Invisível Mobile) */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none md:justify-start">
-          <TabButton active={activeTab === 'os'} onClick={() => setActiveTab('os')} label="📋 Ordens de Serviço" icon={<FileText className="w-3 h-3" />} />
-          <TabButton active={activeTab === 'fornecedores'} onClick={() => setActiveTab('fornecedores')} label="🏬 Insumos B2B" icon={<Truck className="w-3 h-3" />} />
-          <TabButton active={activeTab === 'prestadores'} onClick={() => setActiveTab('prestadores')} label="🛠️ Profissionais" icon={<Users className="w-3 h-3" />} />
-          <TabButton active={activeTab === 'ocorrencias'} onClick={() => setActiveTab('ocorrencias')} label="⚠️ Auditoria" icon={<AlertTriangle className="w-3 h-3" />} />
+        <div id="ts-visual-edit-probe-f6903356d77d4b86" className="hidden">
+          REGRAS ESTRITAS DE EXECUÇÃO E ESTABILIDADE
         </div>
-      </div>
 
-      <div id="ts-visual-edit-probe-f6903356d77d4b86" className="hidden">
-        REGRAS ESTRITAS DE EXECUÇÃO E ESTABILIDADE
-      </div>
+        {/* Listagem de Conteúdo do Admin */}
+        <div className="space-y-4">
+          {activeTab === 'os' && (
+            <>
+              <AdminCard 
+                type="OS"
+                id="OS-2490"
+                title="Montagem Dormitório Casal"
+                owner="Móveis Premium Ltda"
+                ownerType="Lojista"
+                value="R$ 450,00"
+                status="Em Execução"
+                location="São Paulo/SP"
+                assignedTo="Jorge Ricardo (Prestador)"
+                onAction={() => {}}
+              />
+              <AdminCard 
+                type="OS"
+                id="OS-2512"
+                title="Adequação Elétrica Cozinha"
+                owner="Carlos Silva"
+                ownerType="Casual"
+                value="R$ 180,00"
+                status="Pendente"
+                location="São Bernardo/SP"
+                onAction={() => {}}
+              />
+            </>
+          )}
 
-      {/* Listagem de Conteúdo do Admin */}
-      <div className="space-y-4">
-        {activeTab === 'os' && (
-          <>
+          {activeTab === 'fornecedores' && (
             <AdminCard 
-              type="OS"
-              id="OS-2490"
-              title="Montagem Dormitório Casal"
-              owner="Móveis Premium Ltda"
-              ownerType="Lojista"
-              value="R$ 450,00"
-              status="Em Execução"
-              location="São Paulo/SP"
-              assignedTo="Jorge Ricardo (Prestador)"
+              type="B2B"
+              id="B2B-102"
+              title="Lote Ferragens Italianas"
+              owner="Ferragens Global"
+              ownerType="Fornecedor"
+              value="R$ 12.500,00"
+              status="Em Análise"
+              location="Curitiba/PR"
               onAction={() => {}}
             />
+          )}
+
+          {activeTab === 'prestadores' && (
             <AdminCard 
-              type="OS"
-              id="OS-2512"
-              title="Adequação Elétrica Cozinha"
-              owner="Carlos Silva"
-              ownerType="Casual"
-              value="R$ 180,00"
-              status="Pendente"
-              location="São Bernardo/SP"
+              type="USER"
+              id="USR-442"
+              title="Conferente Técnico Pleno"
+              owner="Marcos Oliveira"
+              ownerType="Prestador"
+              value="Rating 4.9"
+              status="Validado"
+              location="Rio de Janeiro/RJ"
               onAction={() => {}}
             />
-          </>
-        )}
+          )}
 
-        {activeTab === 'fornecedores' && (
-          <AdminCard 
-            type="B2B"
-            id="B2B-102"
-            title="Lote Ferragens Italianas"
-            owner="Ferragens Global"
-            ownerType="Fornecedor"
-            value="R$ 12.500,00"
-            status="Em Análise"
-            location="Curitiba/PR"
-            onAction={() => {}}
-          />
-        )}
-
-        {activeTab === 'prestadores' && (
-          <AdminCard 
-            type="USER"
-            id="USR-442"
-            title="Conferente Técnico Pleno"
-            owner="Marcos Oliveira"
-            ownerType="Prestador"
-            value="Rating 4.9"
-            status="Validado"
-            location="Rio de Janeiro/RJ"
-            onAction={() => {}}
-          />
-        )}
-
-        {activeTab === 'ocorrencias' && (
-          <AdminCard 
-            type="ALERT"
-            id="DISP-03"
-            title="Avaliação Baixa (1.5★)"
-            owner="Cliente ➔ Prestador"
-            ownerType="Crítico"
-            value="Disputa Aberta"
-            status="Mediação"
-            location="OS-2410"
-            onAction={() => {}}
-          />
-        )}
+          {activeTab === 'ocorrencias' && (
+            <AdminCard 
+              type="ALERT"
+              id="DISP-03"
+              title="Avaliação Baixa (1.5★)"
+              owner="Cliente ➔ Prestador"
+              ownerType="Crítico"
+              value="Disputa Aberta"
+              status="Mediação"
+              location="OS-2410"
+              onAction={() => {}}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -327,4 +326,3 @@ function AdminCard({ type, id, title, owner, ownerType, value, status, location,
     </div>
   );
 }
-
