@@ -410,7 +410,7 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
             head: [['Campo', 'Valor']],
             body: details,
             theme: 'striped',
-            headStyles: { fillStyle: 'F', fillColor: [0, 255, 135], textColor: [0, 0, 0] }
+            headStyles: { fillColor: [0, 255, 135], textColor: [0, 0, 0] }
         });
 
         // History
