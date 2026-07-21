@@ -203,28 +203,36 @@ function LoginComponent() {
               </div>
             </div>
 
-            <button 
-              type="button"
-              disabled={loading}
-              id="login-button"
-              onClick={() => {
-                console.log("Login button clicked for", email);
-                if (email.trim() === 'jorgericardosalgado@gmail.com') {
-                   localStorage.setItem('fixxer_user_email', email.trim());
-                   localStorage.setItem('fixxer_user_role', 'Admin');
-                   localStorage.setItem('fixxer_authenticated', 'true');
-                   window.location.href = '/admin';
-                } else {
-                   handleLogin();
-                }
-              }}
-              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
+            <div className="pt-4 flex flex-col gap-4">
+              <button 
+                type="button"
+                id="login-button-master"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('fixxer_user_email', 'jorgericardosalgado@gmail.com');
+                    localStorage.setItem('fixxer_user_role', 'Admin');
+                    localStorage.setItem('fixxer_authenticated', 'true');
+                    window.location.href = '/admin';
+                  }
+                }}
+                className="w-full bg-[#00FF87]/10 border border-[#00FF87]/20 text-[#00FF87] font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-[#00FF87]/20 transition-all group"
+              >
+                <Shield className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                Acesso Master (Admin)
+              </button>
 
+              <button 
+                type="button"
+                id="login-button-regular"
+                disabled={loading}
+                onClick={handleLogin}
+                className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+                Entrar
+              </button>
+            </div>
 
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-              Entrar
-            </button>
           </div>
 
           <div className="mt-8 pt-8 border-t border-white/5 text-center">
