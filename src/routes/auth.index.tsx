@@ -23,17 +23,21 @@ function LoginComponent() {
     // Verificação de conectividade ao carregar a tela de login
     const checkConnectivity = async () => {
       try {
+        // Envolvemos em try/catch silencioso conforme solicitado
         const { error } = await supabase.from('admin_config').select('id').limit(1);
-        if (error) throw error;
+        
+        // Se houver erro, apenas logamos e mostramos aviso, não travamos o app
+        if (error) {
+          console.warn("[FIXXER Connectivity Check]:", error.message);
+          return;
+        }
+
         toast.success("Sistema conectado ao Supabase Cloud", {
           description: "Infraestrutura operacional.",
           duration: 3000,
         });
       } catch (err) {
-        toast.error("Erro de conexão com o banco de dados", {
-          description: "Verifique suas configurações de rede ou chaves de API.",
-          duration: 5000,
-        });
+        console.error("[FIXXER Connectivity Exception]:", err);
       }
     };
     
@@ -187,191 +191,8 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-3c247348da414fbf" className="hidden">
-          {`CORREÇÃO DEFINITIVA DO ERRO DE CORS/REDE \`{}\` E BYPASS AUTOMÁTICO DO ADMIN
-
-O erro \`{}\` continua acontecendo porque a requisição de rede para 'https://rnhgpxembtgupxnrohxo.supabase.co' está sendo bloqueada por CORS/Iframe dentro do preview do Lovable, gerando uma exceção de rede sem corpo que o Supabase JS retransmite como um objeto vazio \`{}\`.
-
-Remova esse travamento e aplique a seguinte refatoração de emergência no formulário de login (\`Login.tsx\` / \`Auth.tsx\`):
-
-### 1. CAPTURA DE EXCEÇÃO E FALLBACK DE ADMIN
-Substitua o manipulador \`handleLogin\` no formulário por este código imune a erros de rede:
-
-\`\`\`typescript
-const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setErrorMsg('');
-
-  // SE FOR O E-MAIL E SENHA DO ADMINISTRADOR MASTER, LIBERA ACESSO IMEDIATO
-  // (Evita travamentos por bloqueio de CORS no preview do Lovable)
-  if (email.trim() === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
-    localStorage.setItem('fixxer_user_email', email);
-    localStorage.setItem('fixxer_user_role', 'Admin');
-    localStorage.setItem('fixxer_authenticated', 'true');
-    window.location.replace('/admin');
-    return;
-  }
-
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      // Se o erro for um objeto vazio {} ou sem mensagem, exibe um texto legível em tela
-      const msg = error.message && error.message !== '{}' 
-        ? error.message 
-        : 'Erro de conexão/CORS com o Supabase. Verifique as credenciais.';
-      setErrorMsg(msg);
-      setLoading(false);
-      return;
-    }
-
-    if (data?.session) {
-      localStorage.setItem('fixxer_user_email', email);
-      window.location.replace('/admin');
-    }
-  } catch (err: any) {
-    // Tratamento para exceções de rede do iframe
-    console.error("Erro capturado no login:", err);
-    setErrorMsg("Falha ao se comunicar com o banco de dados.");
-    setLoading(false);
-  }
-};\`\`\``}
-        </div>
-        <div id="ts-visual-edit-probe-faea4463318a44d5" className="hidden">
-          {`DESEFEITO E RECONSTRUÇÃO DEFINITIVA DO FLUXO DE SUBMIT DO LOGIN
-
-As chaves do Supabase já estão injetadas e o banco está operacional, porém ao clicar no botão "Entrar" com as credenciais corretas, o formulário não executa a navegação nem avança de tela.
-
-Substitua e refatore integralmente a lógica do componente de Login e a tabela de rotas com a seguinte estrutura simplificada e direta:
-
-### 1. REESCRITA DO COMPONENTE DE LOGIN (Login.tsx / Auth.tsx)
-- Certifique-se de que a tag <form> possua o handler onSubmit={handleLogin} e que o botão "Entrar" seja do tipo type="submit".
-- Substitua a função handleLogin pelo seguinte bloco à prova de falhas:
-
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-export const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg('');
-
-    try {
-      // 1. Chamada de autenticação direta
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setErrorMsg(error.message || "Erro ao realizar login.");
-        setLoading(false);
-        return;
-      }
-
-      // 2. Se a sessão for retornada, força o redirecionamento direto por URL
-      if (data?.session || data?.user) {
-        localStorage.setItem('fixxer_user_email', email);
-
-        if (email === 'jorgericardosalgado@gmail.com') {
-          window.location.replace('/admin');
-        } else {
-          window.location.replace('/dashboard/lojista');
-        }
-      } else {
-        setErrorMsg("Não foi possível validar a sessão do usuário.");
-        setLoading(false);
-      }
-    } catch (err: any) {
-      console.error("Exceção no login:", err);
-      setErrorMsg(err?.message || "Erro inesperado de comunicação.");
-      setLoading(false);
-    }
-  };
-
-  return (
-    // Garanta que o botão exiba estado visual "Entrando..." quando loading = true
-    // e que a mensagem de erro (errorMsg) apareça em texto vermelho caso aconteça algo.
-  );
-};`}
-        </div>
-        <div id="ts-visual-edit-probe-2dc08690fee849ec" className="hidden">
-          {`INJEÇÃO DIRETA DE CREDENCIAIS DO SUPABASE NO CLIENTE E FIX DE CONEXÃO
-
-Preciso garantir a conexão imediata do FIXXER com o meu projeto do Supabase sem depender unicamente de variáveis de ambiente do preview.
-
-Reescreva o arquivo do cliente Supabase (src/integrations/supabase/client.ts ou src/lib/supabase.ts) definindo as credenciais diretamente no código com os seguintes dados:
-
-### 1. DADOS DE CONEXÃO FIXOS (HARDCODED FALLBACK)
-Configure as constantes de conexão com estes valores exatos:
-- SUPABASE_URL: "https://rnhgpxembtgupxnrohxo.supabase.co"
-- SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuaGdweGVtYnRndXB4bnJvaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTk3NjQsImV4cCI6MjEwMDEzNTc2NH0.qqZxpJKYzuK48EawEDMamXA2Cy2YVOB0RV0-CgsSwMA"
-
-### 2. CÓDIGO DO CLIENTE SUPABASE
-Certifique-se de que a inicialização do cliente esteja estruturada assim:
-
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://rnhgpxembtgupxnrohxo.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuaGdweGVtYnRndXB4bnJvaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTk3NjQsImV4cCI6MjEwMDEzNTc2NH0.qqZxpJKYzuK48EawEDMamXA2Cy2YVOB0RV0-CgsSwMA';
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-});`}
-        </div>
-        <div id="ts-visual-edit-probe-f1dc2eaa215a4f53" className="hidden">
-          Adicione toasts/notifications claros no Painel Admin e no fluxo de login para informar quando a conexão com o Supabase estiver ativa ou inativa.
-        </div>
-        <div id="ts-visual-edit-probe-c8dc31aafde64dfd" className="hidden">
-          {`CONFIGURAÇÃO E MAPEAMENTO COMPLETO DAS CHAVES DA API DO SUPABASE EXTERNO
-
-Preciso garantir a conexão e autenticação perfeita do FIXXER com o banco de dados Supabase. Mapeie e configure o cliente de integração do Supabase (src/integrations/supabase/client.ts ou equivalente) com tratamento rigoroso de variáveis de ambiente.
-
-Siga exatamente estas etapas de configuração:
-
-### 1. MAPEAMENTO DE VARIÁVEIS DE AMBIENTE (.env e .env.example)
-
-Crie/atualize o arquivo .env na raiz do projeto contendo a estrutura abaixo para armazenar as chaves de conexão:
-
-- VITE_SUPABASE_URL: URL do projeto no Supabase (ex: https://xxx.supabase.co)
-
-- VITE_SUPABASE_ANON_KEY: Chave anônima (public anon key) do Supabase
-
-### 2. REFATORAÇÃO DO CLIENTE SUPABASE (src/integrations/supabase/client.ts)
-
-Reescreva a inicialização do cliente Supabase para garantir que a aplicação nunca quebre com erro 500 ou objetos vazios {} caso alguma chave falhe na leitura:
-
-- Adicione verificação prévia das variáveis import.meta.env.VITE_SUPABASE_URL e import.meta.env.VITE_SUPABASE_ANON_KEY.
-
-- Se as variáveis não estiverem definidas, exiba um log amigável e legível no console: [FIXXER Supabase Error]: Chaves de API do Supabase não encontradas no arquivo .env.
-
-- Adicione tratamento para que as requisições de Autenticação, SELECT, INSERT e UPDATE utilizem persistence no localStorage por padrão (auth: { persistSession: true, autoRefreshToken: true }).
-
-### 3. INTERFACE DE DESTAQUE NO PAINEL ADMIN PARA GERENCIAMENTO DE CHAVES
-
-No Painel Administrativo (/admin), crie a aba "Configurações do Sistema / Integrações":
-
-- Adicione um formulário visual em Glassmorphism Dark Metal com detalhes em Verde Esmeralda Neon (#00FF87) permitindo ao administrador visualizar o status da conexão do Supabase (Ativo/Inativo), testar a conectividade e visualizar as chaves configuradas.
-
-### 4. INSTRUÇÕES PARA O USUÁRIO
-
-Ao concluir a implementação, forneça a lista exata donde devo inserir minhas chaves reais no painel do Lovable (ex: na aba Project Settings -> Secrets / Environment Variables).
-
-Execute essa reestruturação do cliente Supabase agora.`}
+        <div id="ts-visual-edit-probe-9690115540f0443b" className="hidden">
+          REMOÇÃO DA TELA DE "ERRO CRÍTICO DE SISTEMA" E LIBERAÇÃO DA INTERFACE
         </div>
       </div>
 
