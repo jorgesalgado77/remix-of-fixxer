@@ -130,10 +130,10 @@ function LoginComponent() {
         // REGRA DE OURO: Apenas jorgericardosalgado@gmail.com acessa o /admin
         if (email.trim() === 'jorgericardosalgado@gmail.com' && (role.toLowerCase() === 'admin')) {
           console.log("[FIXXER AUTH]: Redirecionando para ADMIN");
-          window.location.replace('/admin');
+          window.location.replace('/_authenticated/admin');
         } else {
           console.log("[FIXXER AUTH]: Redirecionando para DASHBOARD");
-          window.location.replace('/dashboard');
+          window.location.replace('/_authenticated/dashboard');
         }
       }
     } catch (err: any) {
