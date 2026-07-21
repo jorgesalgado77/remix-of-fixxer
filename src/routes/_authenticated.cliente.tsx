@@ -333,13 +333,37 @@ function PublicarNecessidade({ glassClass }: { glassClass: string }) {
 }
 
 function MinhasContratacoes({ glassClass }: { glassClass: string }) {
-  const [confirming, setConfirming] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<any | null>(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleRelease = (id: string) => {
-    toast.success("Pagamento liberado!", {
-      description: `O valor foi enviado para a conta do prestador.`,
-    });
-    setConfirming(null);
+  const handleRelease = async () => {
+    if (!confirming) return;
+    setLoading(true);
+    
+    try {
+      // Chama a função RPC para liberar o escrow e avaliar
+      const { error } = await supabase.rpc('complete_and_release_escrow', {
+        _post_id: confirming.id,
+        _rating: rating,
+        _comment: comment
+      });
+
+      if (error) throw error;
+
+      toast.success("Serviço concluído!", {
+        description: "Pagamento liberado e avaliação registrada com sucesso.",
+      });
+      setConfirming(null);
+    } catch (error: any) {
+      console.error("Erro ao liberar escrow:", error);
+      toast.error("Erro ao finalizar", {
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -361,7 +385,7 @@ function MinhasContratacoes({ glassClass }: { glassClass: string }) {
           role="Eletricista"
           value={450}
           status="Em Execução"
-          onRelease={() => setConfirming("C-102")}
+          onRelease={() => setConfirming({ id: 'dummy-id-1', name: 'Carlos Eduardo' })}
           glassClass={glassClass}
         />
         <ContractCard 
@@ -377,28 +401,53 @@ function MinhasContratacoes({ glassClass }: { glassClass: string }) {
 
       {confirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className={`${glassClass} border border-white/10 p-8 rounded-3xl max-w-sm w-full text-center space-y-6 shadow-2xl`}>
+          <div className={`${glassClass} border border-white/10 p-8 rounded-3xl max-w-sm w-full space-y-6 shadow-2xl`}>
              <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
                <ShieldCheck className="w-8 h-8 text-[#00FF87]" />
              </div>
-             <div>
-               <h3 className="text-lg font-black text-white uppercase italic">Confirmar Entrega?</h3>
+             <div className="text-center">
+               <h3 className="text-lg font-black text-white uppercase italic">Finalizar Contratação?</h3>
                <p className="text-xs text-muted-foreground font-medium mt-2">
-                 Ao confirmar, você atesta que o serviço foi concluído com sucesso e libera o valor retido para o profissional.
+                 Libere o pagamento para <strong>{confirming.name}</strong> e deixe sua avaliação.
                </p>
              </div>
+
+             <div className="space-y-4">
+               <div className="flex justify-center gap-2">
+                 {[1, 2, 3, 4, 5].map((star) => (
+                   <button 
+                    key={star}
+                    onClick={() => setRating(star)}
+                    className={`text-2xl transition-all ${rating >= star ? 'text-yellow-400 scale-110' : 'text-white/20'}`}
+                   >
+                     ★
+                   </button>
+                 ))}
+               </div>
+               
+               <textarea 
+                placeholder="Como foi o serviço? (Opcional)"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none transition-all font-medium resize-none"
+                rows={3}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+               />
+             </div>
+
              <div className="flex flex-col gap-2">
                <button 
-                 onClick={() => handleRelease(confirming)}
-                 className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest transition-all"
+                 disabled={loading}
+                 onClick={handleRelease}
+                 className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest transition-all disabled:opacity-50"
                >
-                 Sim, Liberar Pagamento
+                 {loading ? "Processando..." : "Liberar & Avaliar"}
                </button>
                <button 
+                 disabled={loading}
                  onClick={() => setConfirming(null)}
                  className="w-full py-3 rounded-xl bg-white/5 text-muted-foreground font-bold uppercase text-[10px] tracking-widest"
                >
-                 Cancelar
+                 Voltar
                </button>
              </div>
           </div>
@@ -407,6 +456,7 @@ function MinhasContratacoes({ glassClass }: { glassClass: string }) {
     </div>
   );
 }
+
 
 function ContractCard({ id, name, role, value, status, onRelease, isCompleted, glassClass }: any) {
   return (
