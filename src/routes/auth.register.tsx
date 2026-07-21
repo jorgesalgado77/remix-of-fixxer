@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2, Eye, EyeOff, ShieldCheck, Copy } from "lucide-react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import InputMask from "react-input-mask";
 
 export const Route = createFileRoute("/auth/register")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -20,9 +21,46 @@ function RegisterComponent() {
   const [role, setRole] = useState<Role | null>(null);
   const [email, setEmail] = useState(initialEmail || "");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [phone, setPhone] = useState("");
+  const [cellphone, setCellphone] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const generateStrongPassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
+    let newPassword = "";
+    // Garantir requisitos
+    newPassword += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+    newPassword += "!@#$%^&*()_+"[Math.floor(Math.random() * 12)];
+    for (let i = 0; i < 10; i++) {
+      newPassword += chars[Math.floor(Math.random() * chars.length)];
+    }
+    setPassword(newPassword);
+    setConfirmPassword(newPassword);
+    toast.info("Senha forte gerada!");
+  };
+
+  const copyPassword = () => {
+    if (!password) return;
+    navigator.clipboard.writeText(password);
+    toast.success("Senha copiada!");
+  };
+
+  const validatePassword = (pass: string) => {
+    const hasMinLength = pass.length >= 8;
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+    const hasUpper = /[A-Z]/.test(pass);
+    return { hasMinLength, hasSpecial, hasUpper };
+  };
+
+  const { hasMinLength, hasSpecial, hasUpper } = validatePassword(password);
+  const isPasswordValid = hasMinLength && hasSpecial && hasUpper;
+  const doPasswordsMatch = password === confirmPassword && password !== "";
 
   const handleRoleSelect = (selectedRole: Role) => {
     setRole(selectedRole);
@@ -34,6 +72,16 @@ function RegisterComponent() {
     
     if (!email || !password || !fullName || !role) {
       toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    if (!isPasswordValid) {
+      toast.error("A senha não atende aos requisitos mínimos");
+      return;
+    }
+
+    if (!doPasswordsMatch) {
+      toast.error("As senhas não coincidem");
       return;
     }
 
@@ -168,12 +216,43 @@ function RegisterComponent() {
               required
             />
             
-            {role === "lojista" && (
+            {role === "lojista" ? (
               <>
-                <InputField label="CNPJ / Razão Social" placeholder="00.000.000/0001-00" />
+                <MaskedInputField 
+                  mask="99.999.999/9999-99"
+                  label="CNPJ / Razão Social" 
+                  placeholder="00.000.000/0001-00" 
+                  value={cnpj}
+                  onChange={(e) => setCnpj(e.target.value)}
+                />
                 <InputField label="Nome Comercial" placeholder="Minha Marcenaria" />
               </>
+            ) : (
+              <MaskedInputField 
+                mask="999.999.999-99"
+                label="CPF" 
+                placeholder="000.000.000-00" 
+                value={cpf}
+                onChange={(e) => setCpf(e.target.value)}
+              />
             )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <MaskedInputField 
+                mask="(99) 9999-9999"
+                label="Telefone" 
+                placeholder="(00) 0000-0000" 
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+              <MaskedInputField 
+                mask="(99) 99999-9999"
+                label="Celular" 
+                placeholder="(00) 00000-0000" 
+                value={cellphone}
+                onChange={(e) => setCellphone(e.target.value)}
+              />
+            </div>
             
             <InputField 
               label="E-mail" 
@@ -183,14 +262,71 @@ function RegisterComponent() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <InputField 
-              label="Senha" 
-              placeholder="••••••••" 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+
+            <div className="space-y-4">
+              <div className="relative">
+                <InputField 
+                  label="Senha" 
+                  placeholder="••••••••" 
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <div className="absolute right-3 top-[38px] flex gap-2">
+                  <button
+                    type="button"
+                    onClick={copyPassword}
+                    className="text-muted-foreground hover:text-white transition-colors"
+                    title="Copiar senha"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-muted-foreground hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={generateStrongPassword}
+                  className="text-[10px] flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded-md border border-primary/20 transition-all"
+                >
+                  <ShieldCheck className="w-3 h-3" />
+                  Gerar Senha Forte
+                </button>
+              </div>
+
+              <InputField 
+                label="Confirmar Senha" 
+                placeholder="••••••••" 
+                type={showPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+
+              <div className="grid grid-cols-3 gap-2 text-[10px] mt-2">
+                <div className={`flex items-center gap-1 ${hasMinLength ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <div className={`w-1 h-1 rounded-full ${hasMinLength ? 'bg-primary' : 'bg-muted-foreground'}`} />
+                  8+ chars
+                </div>
+                <div className={`flex items-center gap-1 ${hasUpper ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <div className={`w-1 h-1 rounded-full ${hasUpper ? 'bg-primary' : 'bg-muted-foreground'}`} />
+                  1 Maiúscula
+                </div>
+                <div className={`flex items-center gap-1 ${hasSpecial ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <div className={`w-1 h-1 rounded-full ${hasSpecial ? 'bg-primary' : 'bg-muted-foreground'}`} />
+                  1 Especial
+                </div>
+              </div>
+            </div>
 
             <button 
               type="button"
@@ -210,30 +346,7 @@ function RegisterComponent() {
         </div>
       )}
 
-      {/* Seção Informativa para Erros de Banco (SQL) */}
-      <div className="mt-12 p-6 bg-red-500/10 border border-red-500/20 rounded-2xl animate-in fade-in duration-700">
-        <h2 className="text-red-400 font-bold mb-2 flex items-center gap-2">
-          <ChevronRight className="w-4 h-4" />
-          Erro de Banco Externo? (500)
-        </h2>
-        <p className="text-xs text-muted-foreground mb-4">
-          Se o cadastro falhar com erro 500, o seu Supabase externo não conseguiu rodar o gatilho de criação de perfil. Copie o código abaixo e rode no **SQL Editor** do seu Supabase.
-        </p>
-        <div className="relative group">
-          <pre className="text-[10px] bg-black/40 p-4 rounded-xl overflow-x-auto text-primary/70 border border-white/5 max-h-40">
-            <code>{SQL_COMPLETE}</code>
-          </pre>
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText(SQL_COMPLETE);
-              toast.success("SQL copiado para o clipboard!");
-            }}
-            className="absolute top-2 right-2 bg-primary/20 hover:bg-primary/40 text-primary text-[10px] px-2 py-1 rounded border border-primary/20 transition-all opacity-0 group-hover:opacity-100"
-          >
-            Copiar SQL
-          </button>
-        </div>
-      </div>
+      {/* Seção de Diagnóstico removida conforme orientação */}
     </div>
   );
 }
@@ -282,6 +395,43 @@ function InputField({
         required={required}
         className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
       />
+    </div>
+  );
+}
+
+function MaskedInputField({ 
+  label, 
+  placeholder, 
+  mask,
+  value, 
+  onChange, 
+  required 
+}: { 
+  label: string, 
+  placeholder: string, 
+  mask: string,
+  value?: string, 
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void, 
+  required?: boolean 
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-bold text-muted-foreground mb-2">{label}</label>
+      <InputMask
+        mask={mask}
+        value={value}
+        onChange={onChange}
+      >
+        {(inputProps: any) => (
+          <input
+            {...inputProps}
+            type="text"
+            placeholder={placeholder}
+            required={required}
+            className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
+          />
+        )}
+      </InputMask>
     </div>
   );
 }
