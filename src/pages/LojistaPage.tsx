@@ -23,7 +23,13 @@ import {
   Video,
   Phone,
   MessageCircle,
-  Lock
+  Lock,
+  Filter,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  X,
+  Crop
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
