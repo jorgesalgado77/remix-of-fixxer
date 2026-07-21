@@ -1,25 +1,32 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { 
   Search, 
   MapPin, 
   Star, 
   MessageSquare, 
-  Clock, 
-  CheckCircle2,
   ChevronRight,
   AlertCircle,
   Briefcase,
   Home,
   User,
   Store,
-  Filter,
   Layers,
   FileText
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { useInView } from "react-intersection-observer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/feed")({
   component: FeedPage,
@@ -29,7 +36,6 @@ function FeedPage() {
   const { glassClass } = usePerformanceMode();
   const { userRole } = Route.useRouteContext();
   
-  // Tab logic based on user role
   const [activeTab, setActiveTab] = useState<'demandas_lojista' | 'obras_b2c' | 'prestadores' | 'parceiros'>(
     (userRole === 'lojista' || userRole === 'cliente') ? 'prestadores' : 'demandas_lojista'
   );
@@ -43,16 +49,24 @@ function FeedPage() {
     obras: ["Gesso", "Eletricista", "Encanador", "Alvenaria", "Pintura", "Marmoraria", "Vidraçaria", "Limpeza"]
   };
 
-  const allCategories = [...categories.tecnico, ...categories.obras];
+  const { ref, inView } = useInView();
 
-  const { data: posts, isLoading } = useQuery({
-    queryKey: ['feed-posts', activeTab, searchQuery, selectedCategory, locationFilter],
-    queryFn: async () => {
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading
+  } = useInfiniteQuery({
+    queryKey: ['feed-posts-infinite', activeTab, searchQuery, selectedCategory, locationFilter],
+    queryFn: async ({ pageParam = 0 }) => {
+      const pageSize = 5;
       let q = supabase
         .from('feed_posts')
         .select(`
           *,
           profiles:user_id (
+            id,
             full_name,
             company_name,
             avatar_url,
@@ -62,36 +76,40 @@ function FeedPage() {
           )
         `)
         .eq('status', 'Ativo')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(pageParam * pageSize, (pageParam + 1) * pageSize - 1);
 
-      // Tab mapping to DB fields/types
       if (activeTab === 'demandas_lojista') {
-        q = q.eq('post_type', 'Demanda_OS');
+        q = q.eq('feed_type', 'Demanda_OS');
       } else if (activeTab === 'obras_b2c') {
-        q = q.eq('post_type', 'Demanda_B2C');
+        q = q.eq('feed_type', 'Demanda_Cliente');
       } else if (activeTab === 'prestadores') {
-        q = q.eq('post_type', 'Vitrine_Prestador');
+        q = q.eq('feed_type', 'Vitrine_Prestador');
       } else if (activeTab === 'parceiros') {
-        q = q.eq('post_type', 'Vitrine_Parceiro');
+        q = q.eq('feed_type', 'Vitrine_Parceiro');
       }
 
-      if (searchQuery) {
-        q = q.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-      }
-      
-      if (locationFilter) {
-        q = q.or(`city.ilike.%${locationFilter}%,state.ilike.%${locationFilter}%`);
-      }
-      
-      if (selectedCategory) {
-        q = q.eq('category', selectedCategory);
-      }
+      if (searchQuery) q = q.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+      if (locationFilter) q = q.or(`city.ilike.%${locationFilter}%,state.ilike.%${locationFilter}%`);
+      if (selectedCategory) q = q.eq('category', selectedCategory);
 
       const { data, error } = await q;
       if (error) throw error;
       return data;
-    }
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === 5 ? allPages.length : undefined;
+    },
   });
+
+  useEffect(() => {
+    if (inView && hasNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, fetchNextPage]);
+
+  const posts = data?.pages.flat() || [];
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-5xl mx-auto pb-24 animate-in fade-in duration-500">
@@ -105,43 +123,21 @@ function FeedPage() {
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Conexão B2B & B2C em tempo real</p>
           </div>
           
-          {/* SELETOR DE VISÃO (CHIPS NO TOPO) */}
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide md:pb-0">
             {(userRole === 'lojista' || userRole === 'cliente') ? (
               <>
-                <TabChip 
-                  active={activeTab === 'prestadores'} 
-                  onClick={() => setActiveTab('prestadores')} 
-                  label="Encontrar Prestadores" 
-                  icon={<User className="w-3 h-3" />}
-                />
-                <TabChip 
-                  active={activeTab === 'parceiros'} 
-                  onClick={() => setActiveTab('parceiros')} 
-                  label="Encontrar Parceiros" 
-                  icon={<Store className="w-3 h-3" />}
-                />
+                <TabChip active={activeTab === 'prestadores'} onClick={() => setActiveTab('prestadores')} label="Encontrar Prestadores" icon={<User className="w-3 h-3" />} />
+                <TabChip active={activeTab === 'parceiros'} onClick={() => setActiveTab('parceiros')} label="Encontrar Parceiros" icon={<Store className="w-3 h-3" />} />
               </>
             ) : (
               <>
-                <TabChip 
-                  active={activeTab === 'demandas_lojista'} 
-                  onClick={() => setActiveTab('demandas_lojista')} 
-                  label="Demandas Lojistas" 
-                  icon={<Briefcase className="w-3 h-3" />}
-                />
-                <TabChip 
-                  active={activeTab === 'obras_b2c'} 
-                  onClick={() => setActiveTab('obras_b2c')} 
-                  label="Obras Clientes" 
-                  icon={<Home className="w-3 h-3" />}
-                />
+                <TabChip active={activeTab === 'demandas_lojista'} onClick={() => setActiveTab('demandas_lojista')} label="Demandas Lojistas" icon={<Briefcase className="w-3 h-3" />} />
+                <TabChip active={activeTab === 'obras_b2c'} onClick={() => setActiveTab('obras_b2c')} label="Obras Clientes" icon={<Home className="w-3 h-3" />} />
               </>
             )}
           </div>
         </div>
 
-        {/* BARRA DE FILTROS AVANÇADOS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className={`flex items-center gap-3 p-3 rounded-2xl border border-white/10 ${glassClass}`}>
             <Search className="w-4 h-4 text-muted-foreground" />
@@ -165,15 +161,11 @@ function FeedPage() {
           </div>
         </div>
 
-        {/* CATEGORIAS ESPECÍFICAS */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Filtrar por Especialidade</span>
             {selectedCategory && (
-              <button 
-                onClick={() => setSelectedCategory(null)}
-                className="text-[9px] font-bold text-red-400 uppercase tracking-widest hover:underline"
-              >
+              <button onClick={() => setSelectedCategory(null)} className="text-[9px] font-bold text-red-400 uppercase tracking-widest hover:underline">
                 Limpar Filtro
               </button>
             )}
@@ -182,23 +174,13 @@ function FeedPage() {
              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 <span className="shrink-0 text-[8px] font-bold text-primary/50 uppercase self-center mr-1">Técnico:</span>
                 {categories.tecnico.map(cat => (
-                  <CategoryChip 
-                    key={cat} 
-                    label={cat} 
-                    active={selectedCategory === cat} 
-                    onClick={() => setSelectedCategory(cat)} 
-                  />
+                  <CategoryChip key={cat} label={cat} active={selectedCategory === cat} onClick={() => setSelectedCategory(cat)} />
                 ))}
              </div>
              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 <span className="shrink-0 text-[8px] font-bold text-blue-400/50 uppercase self-center mr-1">Obras:</span>
                 {categories.obras.map(cat => (
-                  <CategoryChip 
-                    key={cat} 
-                    label={cat} 
-                    active={selectedCategory === cat} 
-                    onClick={() => setSelectedCategory(cat)} 
-                  />
+                  <CategoryChip key={cat} label={cat} active={selectedCategory === cat} onClick={() => setSelectedCategory(cat)} />
                 ))}
              </div>
           </div>
@@ -210,57 +192,32 @@ function FeedPage() {
           <div className="space-y-4">
             {[1,2,3].map(i => <div key={i} className={`h-40 rounded-3xl animate-pulse ${glassClass}`} />)}
           </div>
-        ) : !posts?.length ? (
+        ) : !posts.length ? (
           <div className="text-center py-20 opacity-30">
             <AlertCircle className="w-12 h-12 mx-auto mb-4" />
             <p className="text-sm font-bold uppercase tracking-widest">Nenhum anúncio encontrado</p>
           </div>
         ) : (
-          posts.map((post: any) => (
-            <FeedCard key={post.id} post={post} glassClass={glassClass} />
-          ))
+          <>
+            {posts.map((post: any) => (
+              <FeedCard key={post.id} post={post} glassClass={glassClass} userRole={userRole} />
+            ))}
+            
+            <div ref={ref} className="py-4 text-center">
+              {isFetchingNextPage && <div className={`h-10 w-10 border-2 border-[#00FF87] border-t-transparent rounded-full animate-spin mx-auto`}></div>}
+            </div>
+          </>
         )}
       </main>
     </div>
   );
 }
 
-function TabChip({ active, onClick, label, icon }: any) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all border flex items-center gap-2 shrink-0 ${
-        active 
-          ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_15px_rgba(0,255,135,0.3)]' 
-          : 'bg-white/5 text-muted-foreground border-white/10 hover:border-white/20'
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-function CategoryChip({ label, active, onClick }: any) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all shrink-0 border ${
-        active 
-          ? 'bg-white/10 text-[#00FF87] border-[#00FF87]' 
-          : 'bg-black/20 text-muted-foreground border-white/5 hover:border-white/20'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function FeedCard({ post, glassClass }: { post: any, glassClass: string }) {
+function FeedCard({ post, glassClass, userRole }: { post: any, glassClass: string, userRole: string }) {
   const profile = post.profiles;
-  const isB2C = post.post_type === 'Demanda_B2C';
-  const isOS = post.post_type === 'Demanda_OS';
-  const isVitrine = post.post_type.startsWith('Vitrine');
+  const isB2C = post.feed_type === 'Demanda_Cliente';
+  const isOS = post.feed_type === 'Demanda_OS';
+  const isVitrine = post.feed_type.startsWith('Vitrine');
   
   const maskContacts = (text: string) => {
     if (!text) return "";
@@ -270,7 +227,6 @@ function FeedCard({ post, glassClass }: { post: any, glassClass: string }) {
 
   return (
     <div className={`p-5 rounded-3xl border border-white/5 ${glassClass} hover:border-[#00FF87]/30 transition-all group relative overflow-hidden`}>
-      {/* CARD HEADER */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/5 overflow-hidden flex items-center justify-center">
@@ -300,7 +256,6 @@ function FeedCard({ post, glassClass }: { post: any, glassClass: string }) {
           </div>
         </div>
 
-        {/* BADGES ESPECÍFICOS */}
         {isVitrine && (
           <div className="flex flex-col items-end gap-1">
              <span className="px-2 py-0.5 rounded-full bg-[#00FF87]/10 text-[#00FF87] text-[7px] font-black uppercase tracking-widest border border-[#00FF87]/20">
@@ -315,7 +270,6 @@ function FeedCard({ post, glassClass }: { post: any, glassClass: string }) {
         )}
       </div>
 
-      {/* CARD BODY */}
       <div className="space-y-2 mb-4">
         <div className="flex items-center justify-between">
           <h4 className="text-[13px] font-black text-white uppercase italic group-hover:text-[#00FF87] transition-colors">
@@ -339,7 +293,6 @@ function FeedCard({ post, glassClass }: { post: any, glassClass: string }) {
         )}
       </div>
 
-      {/* CARD FOOTER */}
       <div className="flex items-center justify-between pt-4 border-t border-white/5">
         <div className="flex flex-col">
           <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -356,39 +309,25 @@ function FeedCard({ post, glassClass }: { post: any, glassClass: string }) {
               <button className="p-2 rounded-xl bg-white/5 hover:bg-[#00FF87]/10 border border-white/10 hover:border-[#00FF87]/30 transition-all text-[#00FF87]">
                 <MessageSquare className="w-3.5 h-3.5" />
               </button>
-              <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-[9px] font-black uppercase italic">
+              <Link 
+                to="/_authenticated/profile" 
+                search={{ id: profile?.id }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-[9px] font-black uppercase italic"
+              >
                 Ver Perfil
                 <ChevronRight className="w-3 h-3" />
-              </button>
+              </Link>
             </>
           ) : (
-            <button className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#00FF87] text-black border border-[#00FF87] hover:shadow-[0_0_15px_rgba(0,255,135,0.4)] transition-all text-[9px] font-black uppercase italic">
-              {isB2C ? 'Enviar Orçamento' : 'Enviar Proposta'}
-              <ChevronRight className="w-3 h-3" />
-            </button>
+            <ProposalModal post={post} userRole={userRole} />
           )}
         </div>
       </div>
-
-      {/* DECORATIVE ELEMENT */}
       <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-[#00FF87]/5 blur-3xl rounded-full"></div>
     </div>
   );
 }
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { useInView } from "react-intersection-observer";
-import { useEffect } from "react";
 
-// Modal de Proposta
 function ProposalModal({ post, userRole }: { post: any, userRole: string }) {
   const [open, setOpen] = useState(false);
   const [price, setPrice] = useState("");
@@ -427,13 +366,13 @@ function ProposalModal({ post, userRole }: { post: any, userRole: string }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#00FF87] text-black border border-[#00FF87] hover:shadow-[0_0_15px_rgba(0,255,135,0.4)] transition-all text-[9px] font-black uppercase italic">
-          {post.post_type === 'Demanda_B2C' ? 'Enviar Orçamento' : 'Enviar Proposta'}
+          {post.feed_type === 'Demanda_Cliente' ? 'Enviar Orçamento' : 'Enviar Proposta'}
           <ChevronRight className="w-3 h-3" />
         </button>
       </DialogTrigger>
       <DialogContent className="bg-[#0A0A0B] border-white/10 text-white">
         <DialogHeader>
-          <DialogTitle className="text-white uppercase italic font-black">Enviar {post.post_type === 'Demanda_B2C' ? 'Orçamento' : 'Proposta'}</DialogTitle>
+          <DialogTitle className="text-white uppercase italic font-black">Enviar {post.feed_type === 'Demanda_Cliente' ? 'Orçamento' : 'Proposta'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
@@ -473,5 +412,36 @@ function ProposalModal({ post, userRole }: { post: any, userRole: string }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function TabChip({ active, onClick, label, icon }: any) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all border flex items-center gap-2 shrink-0 ${
+        active 
+          ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_15px_rgba(0,255,135,0.3)]' 
+          : 'bg-white/5 text-muted-foreground border-white/10 hover:border-white/20'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function CategoryChip({ label, active, onClick }: any) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all shrink-0 border ${
+        active 
+          ? 'bg-white/10 text-[#00FF87] border-[#00FF87]' 
+          : 'bg-black/20 text-muted-foreground border-white/5 hover:border-white/20'
+      }`}
+    >
+      {label}
+    </button>
   );
 }
