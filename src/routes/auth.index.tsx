@@ -31,8 +31,8 @@ function LoginComponent() {
         localStorage.setItem('fixxer_user_role', 'Admin');
         localStorage.setItem('fixxer_authenticated', 'true');
         
-        // Redirecionamento forçado para garantir que o bypass seja ativado
-        window.location.assign('/admin');
+        // Redirecionamento forçado usando window.location para a rota que o layout intercepta
+        window.location.href = '/admin';
       }
       return;
     }
@@ -69,7 +69,7 @@ function LoginComponent() {
         }
 
         if (email.trim() === 'jorgericardosalgado@gmail.com') {
-          window.location.replace('/admin');
+          window.location.href = '/admin';
         } else {
           navigate({ to: '/_authenticated/dashboard' as any });
         }

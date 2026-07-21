@@ -1,10 +1,10 @@
-import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
-import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle } from "lucide-react";
+import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
+import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data: { session } } = await supabase.auth.getSession();
     let storedEmail = null;
     let storedRole = 'user';
@@ -14,10 +14,16 @@ export const Route = createFileRoute("/_authenticated")({
       storedRole = localStorage.getItem('fixxer_user_role') || 'user';
     }
 
+    const isAdmin = (session?.user?.email === 'jorgericardosalgado@gmail.com') || 
+                  (storedEmail === 'jorgericardosalgado@gmail.com') || 
+                  (storedRole.toLowerCase() === 'admin');
+
     return { 
       session, 
       userRole: storedRole,
-      userEmail: session?.user?.email || storedEmail
+      userEmail: session?.user?.email || storedEmail,
+      isAdmin,
+      pathname: location.pathname
     };
   },
   component: AuthenticatedLayout,
@@ -25,33 +31,30 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
+  const location = useLocation();
+  const { isAdmin } = Route.useRouteContext();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
+    // Sincroniza o estado showAdminPanel com a URL ou se for admin master
+    if (isAdmin || location.pathname.includes('admin')) {
+      setShowAdminPanel(true);
+    } else {
+      setShowAdminPanel(false);
+    }
+  }, [isAdmin, location.pathname]);
+
+  useEffect(() => {
     const checkAuth = async () => {
-      const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
-      const storedRole = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
       const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
-      
-      setEmail(storedEmail);
-      setRole(storedRole);
-
-      // Se for o admin master ou a URL contiver 'admin', força a exibição do painel admin
-      if (storedEmail.trim() === 'jorgericardosalgado@gmail.com' || window.location.pathname.includes('admin')) {
-        setShowAdminPanel(true);
-      }
-
       const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
       if (!currentSession && !isAuthenticated) {
         navigate({ to: "/auth" as any });
       }
     };
     checkAuth();
   }, [navigate]);
-
-  const isAdmin = email.trim() === 'jorgericardosalgado@gmail.com' || role.toLowerCase() === 'admin';
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -106,12 +109,22 @@ function AuthenticatedLayout() {
         {/* RENDERIZAÇÃO DIRETA DO PAINEL ADMIN MASTER SE FOR O ADMINISTRADOR */}
         {showAdminPanel && isAdmin ? (
           <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center gap-4 mb-2">
+              <button 
+                onClick={() => setShowAdminPanel(false)}
+                className="p-2 rounded-xl bg-white/5 border border-white/10 text-muted-foreground hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="h-8 w-[1px] bg-white/10" />
+              <div className="flex items-center gap-2 text-[#00FF87]">
+                <ShieldCheck className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-widest">Acesso Privilegiado Master</span>
+              </div>
+            </div>
+
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-card to-background border border-white/10 p-8 shadow-2xl">
               <div className="relative z-10">
-                <div className="flex items-center gap-3 text-[#00FF87] mb-4">
-                  <ShieldCheck className="w-6 h-6" />
-                  <span className="text-sm font-bold uppercase tracking-widest">Acesso Privilegiado Master</span>
-                </div>
                 <h1 className="text-4xl font-black text-white mb-2 tracking-tight">
                   Painel Administrativo Master
                 </h1>
