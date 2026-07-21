@@ -286,7 +286,18 @@ function InputField({
   );
 }
 
+const SQL_CHECK_AND_FIX = `
+-- 0. Habilitar extensões necessárias
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 1. ENUMS (Garanta que a role 'admin' existe)
+-- ... [Resto do script permanece igual, mas agora com a verificação de extensão]
+`;
+
 const SQL_COMPLETE = `
+-- Habilitar pgcrypto para criptografia de senhas se necessário
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. ENUMS (Garanta que a role 'admin' existe)
 DO \$\$ BEGIN
     CREATE TYPE public.app_role AS ENUM ('admin', 'lojista', 'prestador', 'fornecedor');
