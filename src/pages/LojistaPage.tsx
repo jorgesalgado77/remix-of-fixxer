@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Store, 
   PlusCircle, 
@@ -15,7 +15,10 @@ import {
   Menu,
   ShieldCheck,
   User,
-  Info
+  Info,
+  MapPin,
+  Image as ImageIcon,
+  Zap
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
