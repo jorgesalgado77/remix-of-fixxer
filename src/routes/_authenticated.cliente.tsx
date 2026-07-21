@@ -180,7 +180,8 @@ function PublicarNecessidade({ glassClass }: { glassClass: string }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const { error } = await supabase
+      // Inserção com lógica de notificação via trigger no banco
+      const { data: newPost, error } = await supabase
         .from('feed_posts')
         .insert({
           title,
@@ -194,12 +195,14 @@ function PublicarNecessidade({ glassClass }: { glassClass: string }) {
             status: 'active',
             source: 'cliente_portal'
           }
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       toast.success("Necessidade publicada!", {
-        description: "Sua demanda já está visível para os prestadores da sua cidade.",
+        description: `Sua demanda de ${category} em ${city} já está visível para os prestadores.`,
       });
       
       e.target.reset();
@@ -214,6 +217,7 @@ function PublicarNecessidade({ glassClass }: { glassClass: string }) {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
