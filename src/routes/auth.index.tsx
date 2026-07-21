@@ -74,10 +74,12 @@ function LoginComponent() {
     // SE FOR O E-MAIL E SENHA DO ADMINISTRADOR MASTER, LIBERA ACESSO IMEDIATO
     // (Evita travamentos por bloqueio de CORS no preview do Lovable)
     if (email.trim() === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
-      localStorage.setItem('fixxer_user_email', email);
-      localStorage.setItem('fixxer_user_role', 'Admin');
-      localStorage.setItem('fixxer_authenticated', 'true');
-      window.location.replace('/_authenticated/admin');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('fixxer_user_email', email);
+        localStorage.setItem('fixxer_user_role', 'Admin');
+        localStorage.setItem('fixxer_authenticated', 'true');
+        window.location.replace('/_authenticated/admin');
+      }
       return;
     }
 
@@ -98,8 +100,10 @@ function LoginComponent() {
       }
 
       if (data?.session) {
-        localStorage.setItem('fixxer_user_email', email);
-        localStorage.setItem('fixxer_authenticated', 'true');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('fixxer_user_email', email);
+          localStorage.setItem('fixxer_authenticated', 'true');
+        }
         
         // RECUPERA O PERFIL PARA REDIRECIONAMENTO CORRETO
         const { data: profile, error: profileError } = await supabase
@@ -109,7 +113,9 @@ function LoginComponent() {
           .maybeSingle();
         
         const role = profile?.role || 'user';
-        localStorage.setItem('fixxer_user_role', role);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('fixxer_user_role', role);
+        }
 
         // LOG DE AUDITORIA DE REDIRECIONAMENTO
         console.log(`[FIXXER AUTH]: Usuário ${email} logado. Role: ${role}. Redirecionando...`);

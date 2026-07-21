@@ -5,7 +5,16 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    const isAuthenticated = localStorage.getItem('fixxer_authenticated') === 'true';
+    
+    let isAuthenticated = false;
+    let storedEmail = null;
+    let storedRole = 'user';
+
+    if (typeof window !== 'undefined') {
+      isAuthenticated = localStorage.getItem('fixxer_authenticated') === 'true';
+      storedEmail = localStorage.getItem('fixxer_user_email');
+      storedRole = localStorage.getItem('fixxer_user_role') || 'user';
+    }
 
     if (!session && !isAuthenticated) {
       throw redirect({ to: "/auth" });
@@ -13,7 +22,7 @@ export const Route = createFileRoute("/_authenticated")({
 
     // Busca o perfil para injetar o role no contexto
     const userId = session?.user?.id;
-    let userRole = localStorage.getItem('fixxer_user_role') || 'user';
+    let userRole = storedRole;
 
     if (userId) {
       const { data: profile } = await supabase
@@ -23,14 +32,16 @@ export const Route = createFileRoute("/_authenticated")({
         .single();
       if (profile?.role) {
         userRole = profile.role;
-        localStorage.setItem('fixxer_user_role', userRole);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('fixxer_user_role', userRole);
+        }
       }
     }
 
     return { 
       session, 
       userRole,
-      userEmail: session?.user?.email || localStorage.getItem('fixxer_user_email')
+      userEmail: session?.user?.email || storedEmail
     };
   },
   component: AuthenticatedLayout,
