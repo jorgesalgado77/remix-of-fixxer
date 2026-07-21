@@ -471,58 +471,82 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
             </div>
             
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                     <h3 className="font-black text-white uppercase italic text-sm md:text-base">Solicitações no Período</h3>
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="text-[9px] font-bold uppercase italic text-muted-foreground hover:text-white">
-                            Filtrar por Status
-                        </Button>
+                    <div className="flex flex-wrap gap-2">
+                        {['Todos', 'Pendente', 'Concluído', 'Em andamento', 'Atrasado'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`px-3 py-1.5 rounded-full text-[8px] md:text-[9px] font-black uppercase italic transition-all border ${
+                                    statusFilter === status
+                                        ? 'bg-primary text-black border-primary'
+                                        : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'
+                                }`}
+                            >
+                                {status}
+                            </button>
+                        ))}
                     </div>
                 </div>
                 
                 <div className="space-y-3 md:space-y-4">
-                    <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center text-blue-400">
-                               <Briefcase className="w-4 h-4" />
-                           </div>
-                           <div>
-                              <div className="text-xs font-black uppercase italic text-white">Montagem Dormitório</div>
-                              <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-2490 • São Paulo/SP</div>
-                           </div>
+                    {[
+                        { id: 2490, title: 'Montagem Dormitório', location: 'São Paulo/SP', value: 'R$ 450,00', deadline: '15/07', status: 'Concluído', color: 'text-primary', bg: 'bg-primary/10', icon: <Briefcase className="w-4 h-4" /> },
+                        { id: 2491, title: 'Medição Cozinha', location: 'Campinas/SP', value: 'R$ 200,00', deadline: '18/07', status: 'Pendente', color: 'text-orange-400', bg: 'bg-orange-400/10', icon: <Clock className="w-4 h-4" /> },
+                        { id: 2492, title: 'Instalação Cooktop', location: 'Santos/SP', value: 'R$ 150,00', deadline: '20/07', status: 'Em andamento', color: 'text-blue-400', bg: 'bg-blue-400/10', icon: <Activity className="w-4 h-4" /> },
+                        { id: 2493, title: 'Reparo Dobradiças', location: 'Jundiaí/SP', value: 'R$ 80,00', deadline: '10/07', status: 'Atrasado', color: 'text-red-500', bg: 'bg-red-500/10', icon: <AlertCircle className="w-4 h-4" /> }
+                    ]
+                    .filter(s => statusFilter === 'Todos' || s.status === statusFilter)
+                    .map((service) => (
+                        <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20">
+                            <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                   <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color}`}>
+                                       {service.icon}
+                                   </div>
+                                   <div>
+                                      <div className="text-xs font-black uppercase italic text-white">{service.title}</div>
+                                      <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-{service.id} • {service.location}</div>
+                                   </div>
+                                </div>
+                                <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
+                                   <div className="flex flex-col items-end mr-2">
+                                       <span className="font-black text-xs text-white">{service.value}</span>
+                                       <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: {service.deadline}</span>
+                                   </div>
+                                   <span className={`px-3 py-1 ${service.bg} ${service.color} font-bold text-[9px] rounded-full uppercase`}>
+                                       {service.status}
+                                   </span>
+                                   <Button 
+                                       size="icon" 
+                                       variant="ghost" 
+                                       onClick={() => setExpandedServiceId(expandedServiceId === service.id ? null : service.id)}
+                                       className={`h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary transition-transform ${expandedServiceId === service.id ? 'rotate-90' : ''}`}
+                                   >
+                                       <ChevronRight className="w-4 h-4" />
+                                   </Button>
+                                </div>
+                            </div>
+                            
+                            {expandedServiceId === service.id && (
+                                <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                                    <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic">Detalhes do Serviço</div>
+                                            <p className="text-[10px] text-white/70 leading-relaxed">
+                                                Solicitação de {service.title.toLowerCase()} para projeto de alto padrão. Requer profissional com experiência e ferramentas completas.
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-2 justify-end items-end">
+                                            <Button size="sm" className="bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10">Ver O.S. Completa</Button>
+                                            <Button size="sm" className="bg-primary text-black text-[9px] font-black uppercase italic">Atualizar Status</Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
-                           <div className="flex flex-col items-end mr-2">
-                               <span className="font-black text-xs text-white">R$ 450,00</span>
-                               <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: 15/07</span>
-                           </div>
-                           <span className="px-3 py-1 bg-[#00FF87]/10 text-[#00FF87] font-bold text-[9px] rounded-full uppercase">Concluído</span>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary">
-                               <ChevronRight className="w-4 h-4" />
-                           </Button>
-                        </div>
-                    </div>
-                    <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center text-amber-400">
-                               <Clock className="w-4 h-4" />
-                           </div>
-                           <div>
-                              <div className="text-xs font-black uppercase italic text-white">Medição Cozinha</div>
-                              <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-2491 • Campinas/SP</div>
-                           </div>
-                        </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
-                           <div className="flex flex-col items-end mr-2">
-                               <span className="font-black text-xs text-white">R$ 200,00</span>
-                               <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: 18/07</span>
-                           </div>
-                           <span className="px-3 py-1 bg-amber-500/10 text-amber-500 font-bold text-[9px] rounded-full uppercase">Pendente</span>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary">
-                               <ChevronRight className="w-4 h-4" />
-                           </Button>
-                        </div>
-                    </div>
+                    ))}
                 </div>
             </div>
         </div>
