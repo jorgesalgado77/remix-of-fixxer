@@ -143,7 +143,7 @@ export function LojistaDashboard() {
         <div className="p-8 max-w-7xl mx-auto">
             {activeTab === 'dashboard' && <DashboardView />}
             {activeTab === 'create' && <CreateServiceView />}
-            {activeTab === 'profile' && <ProfileView />}
+            {activeTab === 'profile' && <ProfileView setIsProfileComplete={setIsProfileComplete} />}
             {activeTab === 'reviews' && <ReviewsView />}
         </div>
       </main>
