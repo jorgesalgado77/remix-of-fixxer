@@ -56,12 +56,15 @@ function LoginComponent() {
       });
       
       if (error) {
-        toast.error(`Erro no login: ${error.message}`);
+        toast.error(`Erro ao acessar: ${error.message}`);
         setLoading(false);
         return;
       }
 
-      if (data?.user) {
+      if (data?.session) {
+        // Salva indicador de sessão manual para destravar a interface
+        localStorage.setItem('fixxer_authenticated', 'true');
+        
         // Implementar upsert automático do perfil se não existir
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -70,23 +73,21 @@ function LoginComponent() {
           .maybeSingle();
 
         if (!profile && !profileError) {
-          // Criar perfil básico se não existir para evitar travamentos
           await supabase.from('profiles').insert([{
             id: data.user.id,
             email: data.user.email,
-            user_type: 'lojista', // fallback padrão
+            user_type: 'lojista',
             role: 'user'
           }]);
         }
 
-        // Força o redirecionamento imediato para a dashboard via location.href
-        // garantindo que a sessão seja reconhecida pelo middleware
-        window.location.href = "/_authenticated/dashboard";
+        // Força a substituição da rota para a Dashboard
+        window.location.replace('/_authenticated/dashboard');
       }
-    } catch (error: any) {
-      console.error("Erro inesperado:", error);
+    } catch (err) {
+      console.error("Erro no login:", err);
       setLoading(false);
-      toast.error(error.message || "Erro inesperado ao realizar login");
+      toast.error("Erro inesperado ao realizar login");
     }
   };
 
@@ -172,8 +173,16 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-8e6cea4597614cad" className="hidden">
-          Implemente um upsert automático na tabela profiles quando o usuário fizer login e o perfil não existir, garantindo que o redirecionamento para a Dashboard nunca trave.Ajuste o redirecionamento da Dashboard para usar o campo user_type do profiles imediatamente após o login, levando Lojista, Prestador e Parceiro para as rotas corretas.Implemente a restauração automática da sessão na inicialização do app e o redirecionamento correto se o usuário já estiver autenticado.Aprimore o botão Entrar para exibir loading com spinner e desabilitar o submit enquanto a autenticação acontece, evitando cliques duplicados.
+        <div id="ts-visual-edit-probe-b203ae72dfdb4a80" className="hidden">
+          CORREÇÃO EM NÍVEL DE COMPONENTE (DESTRANCAMENTO DE NAVEGAÇÃO):
+
+          O sistema não avança porque o AuthContext / useAuth está interceptando a navegação e bloqueando o redirecionamento após o login. 
+
+          Vamos desativar a trava do AuthContext no login e montar a Dashboard de forma independente:
+
+          1. ALTERAÇÃO NO FORMULÁRIO DE LOGIN (`Login.tsx` / `Auth.tsx`):
+          - Ignore as funções do `useAuth()` para fazer o login. Utilize o cliente direto do Supabase (`import { supabase } from '@/integrations/supabase/client'`).
+          - Altere o método de submissão do formulário para salvar um sinalizador manual no localStorage e redirecionar imediatamente.
         </div>
       </div>
 
