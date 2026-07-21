@@ -15,6 +15,9 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
+import { Route as AuthenticatedPrestadorRouteImport } from './routes/_authenticated.prestador'
+import { Route as AuthenticatedParceiroRouteImport } from './routes/_authenticated.parceiro'
+import { Route as AuthenticatedLojistaRouteImport } from './routes/_authenticated.lojista'
 import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated.feed'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
@@ -51,6 +54,21 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPrestadorRoute = AuthenticatedPrestadorRouteImport.update({
+  id: '/prestador',
+  path: '/prestador',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedParceiroRoute = AuthenticatedParceiroRouteImport.update({
+  id: '/parceiro',
+  path: '/parceiro',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLojistaRoute = AuthenticatedLojistaRouteImport.update({
+  id: '/lojista',
+  path: '/lojista',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedFeedRoute = AuthenticatedFeedRouteImport.update({
@@ -102,6 +120,9 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
+  '/lojista': typeof AuthenticatedLojistaRoute
+  '/parceiro': typeof AuthenticatedParceiroRoute
+  '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/auth/': typeof AuthIndexRoute
   '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
@@ -115,6 +136,9 @@ export interface FileRoutesByTo {
   '/cadastro': typeof CadastroRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
+  '/lojista': typeof AuthenticatedLojistaRoute
+  '/parceiro': typeof AuthenticatedParceiroRoute
+  '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/auth': typeof AuthIndexRoute
   '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
@@ -132,6 +156,9 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/feed': typeof AuthenticatedFeedRoute
+  '/_authenticated/lojista': typeof AuthenticatedLojistaRoute
+  '/_authenticated/parceiro': typeof AuthenticatedParceiroRoute
+  '/_authenticated/prestador': typeof AuthenticatedPrestadorRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
@@ -149,6 +176,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/feed'
+    | '/lojista'
+    | '/parceiro'
+    | '/prestador'
     | '/profile'
     | '/auth/'
     | '/admin/integrations'
@@ -162,6 +192,9 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/dashboard'
     | '/feed'
+    | '/lojista'
+    | '/parceiro'
+    | '/prestador'
     | '/profile'
     | '/auth'
     | '/admin/integrations'
@@ -178,6 +211,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/_authenticated/feed'
+    | '/_authenticated/lojista'
+    | '/_authenticated/parceiro'
+    | '/_authenticated/prestador'
     | '/_authenticated/profile'
     | '/auth/'
     | '/_authenticated/admin/integrations'
@@ -237,6 +273,27 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/prestador': {
+      id: '/_authenticated/prestador'
+      path: '/prestador'
+      fullPath: '/prestador'
+      preLoaderRoute: typeof AuthenticatedPrestadorRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/parceiro': {
+      id: '/_authenticated/parceiro'
+      path: '/parceiro'
+      fullPath: '/parceiro'
+      preLoaderRoute: typeof AuthenticatedParceiroRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/lojista': {
+      id: '/_authenticated/lojista'
+      path: '/lojista'
+      fullPath: '/lojista'
+      preLoaderRoute: typeof AuthenticatedLojistaRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/feed': {
@@ -319,6 +376,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
+  AuthenticatedLojistaRoute: typeof AuthenticatedLojistaRoute
+  AuthenticatedParceiroRoute: typeof AuthenticatedParceiroRoute
+  AuthenticatedPrestadorRoute: typeof AuthenticatedPrestadorRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
@@ -326,6 +386,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeedRoute: AuthenticatedFeedRoute,
+  AuthenticatedLojistaRoute: AuthenticatedLojistaRoute,
+  AuthenticatedParceiroRoute: AuthenticatedParceiroRoute,
+  AuthenticatedPrestadorRoute: AuthenticatedPrestadorRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
 
