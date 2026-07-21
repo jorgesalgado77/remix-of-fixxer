@@ -13,6 +13,7 @@ function LoginComponent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [view, setView] = useState<"login" | "forgot-password">("login");
   const [resetLoading, setResetLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -64,48 +65,37 @@ function LoginComponent() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
 
     try {
-      // 1. Tenta a autenticação direta no Supabase
+      // 1. Chamada de autenticação direta
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        let errorMsg = "Falha na conexão com o banco de dados";
-        if (error?.message) {
-          errorMsg = error.message;
-        } else if (typeof error === 'object' && error !== null && Object.keys(error).length > 0) {
-          errorMsg = JSON.stringify(error);
-        }
-        
-        console.error("Erro Supabase Auth:", error);
-        toast.error(`Falha no login: ${errorMsg}`);
+        setErrorMsg(error.message || "Erro ao realizar login.");
         setLoading(false);
         return;
       }
 
-      // 2. Se autenticou com sucesso, navega DIRETO sem fazer queries no form
-      if (data?.user || data?.session) {
-        // Redirecionamento direto para Admin caso seja o e-mail do gestor
+      // 2. Se a sessão for retornada, força o redirecionamento direto por URL
+      if (data?.session || data?.user) {
+        localStorage.setItem('fixxer_user_email', email);
+
         if (email === 'jorgericardosalgado@gmail.com') {
-          window.location.href = '/admin';
+          window.location.replace('/admin');
         } else {
-          // Redireciona para a dashboard geral (que identificará o tipo de usuário internamente)
-          window.location.href = '/dashboard/lojista';
+          window.location.replace('/dashboard/lojista');
         }
+      } else {
+        setErrorMsg("Não foi possível validar a sessão do usuário.");
+        setLoading(false);
       }
     } catch (err: any) {
-      console.error("Erro inesperado no login:", err);
-      let catchMsg = "Erro de conexão";
-      if (err?.message) {
-        catchMsg = err.message;
-      } else if (typeof err === 'object' && err !== null && Object.keys(err).length > 0) {
-        catchMsg = JSON.stringify(err);
-      }
-      
-      toast.error(`Falha técnica: ${catchMsg}`);
+      console.error("Exceção no login:", err);
+      setErrorMsg(err?.message || "Erro inesperado de comunicação.");
       setLoading(false);
     }
   };
@@ -192,6 +182,70 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
+        <div id="ts-visual-edit-probe-faea4463318a44d5" className="hidden">
+          {`DESEFEITO E RECONSTRUÇÃO DEFINITIVA DO FLUXO DE SUBMIT DO LOGIN
+
+As chaves do Supabase já estão injetadas e o banco está operacional, porém ao clicar no botão "Entrar" com as credenciais corretas, o formulário não executa a navegação nem avança de tela.
+
+Substitua e refatore integralmente a lógica do componente de Login e a tabela de rotas com a seguinte estrutura simplificada e direta:
+
+### 1. REESCRITA DO COMPONENTE DE LOGIN (Login.tsx / Auth.tsx)
+- Certifique-se de que a tag <form> possua o handler onSubmit={handleLogin} e que o botão "Entrar" seja do tipo type="submit".
+- Substitua a função handleLogin pelo seguinte bloco à prova de falhas:
+
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+export const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      // 1. Chamada de autenticação direta
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setErrorMsg(error.message || "Erro ao realizar login.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Se a sessão for retornada, força o redirecionamento direto por URL
+      if (data?.session || data?.user) {
+        localStorage.setItem('fixxer_user_email', email);
+
+        if (email === 'jorgericardosalgado@gmail.com') {
+          window.location.replace('/admin');
+        } else {
+          window.location.replace('/dashboard/lojista');
+        }
+      } else {
+        setErrorMsg("Não foi possível validar a sessão do usuário.");
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Exceção no login:", err);
+      setErrorMsg(err?.message || "Erro inesperado de comunicação.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    // Garanta que o botão exiba estado visual "Entrando..." quando loading = true
+    // e que a mensagem de erro (errorMsg) apareça em texto vermelho caso aconteça algo.
+  );
+};`}
+        </div>
         <div id="ts-visual-edit-probe-2dc08690fee849ec" className="hidden">
           {`INJEÇÃO DIRETA DE CREDENCIAIS DO SUPABASE NO CLIENTE E FIX DE CONEXÃO
 
@@ -264,6 +318,11 @@ Execute essa reestruturação do cliente Supabase agora.`}
 
         <div className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl">
           <form className="space-y-5" onSubmit={handleLogin}>
+            {errorMsg && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold animate-in fade-in slide-in-from-top-2 duration-300">
+                {errorMsg}
+              </div>
+            )}
             <div>
               <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
               <input
