@@ -8,19 +8,25 @@ export function usePerformanceMode() {
   const [isLowEnd, setIsLowEnd] = useState(false);
 
   useEffect(() => {
-    // 1. Check for hardware concurrency or memory if available (Chrome-only mostly)
-    const memory = (navigator as any).deviceMemory;
-    const isLowMemory = memory && memory < 4;
+    if (typeof window === "undefined") return;
 
-    // 2. Check for reduced motion preference
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    try {
+      // 1. Check for hardware concurrency or memory if available (Chrome-only mostly)
+      const memory = (navigator as any).deviceMemory;
+      const isLowMemory = memory && memory < 4;
 
-    // 3. Simple CPU check (coarse)
-    const cores = navigator.hardwareConcurrency || 4;
-    const isLowPower = cores <= 2;
+      // 2. Check for reduced motion preference
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (isLowMemory || prefersReducedMotion || isLowPower) {
-      setIsLowEnd(true);
+      // 3. Simple CPU check (coarse)
+      const cores = navigator.hardwareConcurrency || 4;
+      const isLowPower = cores <= 2;
+
+      if (isLowMemory || prefersReducedMotion || isLowPower) {
+        setIsLowEnd(true);
+      }
+    } catch (e) {
+      console.warn("[FIXXER]: Erro ao detectar modo de performance", e);
     }
   }, []);
 
