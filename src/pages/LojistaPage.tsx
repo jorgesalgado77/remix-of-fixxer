@@ -40,7 +40,24 @@ export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [rating, setRating] = useState(4.9);
   const { glassClass } = usePerformanceMode();
+
+  const getRatingColor = (val: number) => {
+    if (val <= 1.5) return "text-red-500";
+    if (val <= 2.5) return "text-orange-500";
+    if (val <= 3.5) return "text-yellow-500";
+    if (val <= 4.9) return "text-green-500";
+    return "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]";
+  };
+
+  const getRatingStarColor = (val: number) => {
+    if (val <= 1.5) return "text-red-500 fill-red-500";
+    if (val <= 2.5) return "text-orange-500 fill-orange-500";
+    if (val <= 3.5) return "text-yellow-500 fill-yellow-500";
+    if (val <= 4.9) return "text-green-500 fill-green-500";
+    return "text-amber-400 fill-amber-400";
+  };
 
   const handleTabChange = (tab: string) => {
     if ((tab === 'create' || tab === 'reviews') && !isProfileComplete) {
@@ -82,7 +99,8 @@ export function LojistaDashboard() {
                     </button>
                 </div>
 
-                <UserProfileCard isProfileComplete={isProfileComplete} />
+                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} />
+
 
                 <TooltipProvider>
                   <nav className="flex flex-col gap-3">
@@ -126,7 +144,8 @@ export function LojistaDashboard() {
             <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
         </div>
 
-        <UserProfileCard isProfileComplete={isProfileComplete} />
+        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} />
+
 
         <TooltipProvider>
           <nav className="flex flex-col gap-2">
@@ -178,9 +197,9 @@ export function LojistaDashboard() {
         </header>
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
-            {activeTab === 'dashboard' && <DashboardView />}
+            {activeTab === 'dashboard' && <DashboardView rating={rating} getRatingColor={getRatingColor} />}
             {activeTab === 'create' && <CreateServiceView />}
-            {activeTab === 'profile' && <ProfileView setIsProfileComplete={setIsProfileComplete} />}
+            {activeTab === 'profile' && <ProfileView setIsProfileComplete={setIsProfileComplete} rating={rating} getRatingColor={getRatingColor} setRating={setRating} />}
             {activeTab === 'reviews' && <ReviewsView />}
         </div>
       </main>
@@ -188,7 +207,7 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard({ isProfileComplete }: { isProfileComplete: boolean }) {
+function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
@@ -209,8 +228,8 @@ function UserProfileCard({ isProfileComplete }: { isProfileComplete: boolean }) 
                 <div className="flex flex-col">
                     <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">Reputação</span>
                     <div className="flex items-center gap-1">
-                        <Star className="w-2.5 h-2.5 fill-primary text-primary" />
-                        <span className="text-[10px] font-black text-white italic">4.9 / 5.0</span>
+                        <Star className={`w-2.5 h-2.5 ${getRatingStarColor(rating)}`} />
+                        <span className={`text-[10px] font-black italic ${getRatingColor(rating)}`}>{rating.toFixed(1)} / 5.0</span>
                     </div>
                 </div>
                 <div className="flex flex-col items-end">
@@ -320,7 +339,7 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
     );
 }
 
-function DashboardView() {
+function DashboardView({ rating, getRatingColor }: { rating: number; getRatingColor: (val: number) => string }) {
     const [filter, setFilter] = useState('Hoje');
     const [customDates, setCustomDates] = useState({ start: '', end: '' });
     
@@ -400,7 +419,7 @@ function DashboardView() {
                         </div>
                     }
                 />
-                <MetricCard label="Reputação" value="4.9 ⭐" icon={<Star />} color="text-[#00FF87]" />
+                <MetricCard label="Reputação" value={`${rating.toFixed(1)} ⭐`} icon={<Star />} color={getRatingColor(rating)} />
             </div>
             
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
@@ -494,7 +513,7 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete: boolean) => void }) {
+function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }: { setIsProfileComplete: (complete: boolean) => void; rating: number; getRatingColor: (val: number) => string; setRating: (rating: number) => void }) {
     const [cnpj, setCnpj] = useState("");
     const [whatsapp, setWhatsapp] = useState("");
     const [phone, setPhone] = useState("");
@@ -761,11 +780,12 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
                     </div>
                  </div>
 
-                 <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00FF87]/10 border border-[#00FF87]/20">
-                        <Star className="w-4 h-4 fill-[#00FF87] text-[#00FF87]" />
-                        <span className="text-xs font-black text-white italic">Reputação Atual: <span className="text-[#00FF87]">4.9 / 5.0</span></span>
+                  <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                        <Star className={`w-4 h-4 ${getRatingColor(rating).replace('drop-shadow-', '')} fill-current`} />
+                        <span className="text-xs font-black text-white italic">Reputação Atual: <span className={getRatingColor(rating)}>{rating.toFixed(1)} / 5.0</span></span>
                     </div>
+
                     <Button 
                         onClick={() => {
                             setIsProfileComplete(true);
