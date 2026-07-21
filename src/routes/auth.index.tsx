@@ -182,6 +182,70 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
+        <div id="ts-visual-edit-probe-faea4463318a44d5" className="hidden">
+          {`DESEFEITO E RECONSTRUÇÃO DEFINITIVA DO FLUXO DE SUBMIT DO LOGIN
+
+As chaves do Supabase já estão injetadas e o banco está operacional, porém ao clicar no botão "Entrar" com as credenciais corretas, o formulário não executa a navegação nem avança de tela.
+
+Substitua e refatore integralmente a lógica do componente de Login e a tabela de rotas com a seguinte estrutura simplificada e direta:
+
+### 1. REESCRITA DO COMPONENTE DE LOGIN (Login.tsx / Auth.tsx)
+- Certifique-se de que a tag <form> possua o handler onSubmit={handleLogin} e que o botão "Entrar" seja do tipo type="submit".
+- Substitua a função handleLogin pelo seguinte bloco à prova de falhas:
+
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+export const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      // 1. Chamada de autenticação direta
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setErrorMsg(error.message || "Erro ao realizar login.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Se a sessão for retornada, força o redirecionamento direto por URL
+      if (data?.session || data?.user) {
+        localStorage.setItem('fixxer_user_email', email);
+
+        if (email === 'jorgericardosalgado@gmail.com') {
+          window.location.replace('/admin');
+        } else {
+          window.location.replace('/dashboard/lojista');
+        }
+      } else {
+        setErrorMsg("Não foi possível validar a sessão do usuário.");
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Exceção no login:", err);
+      setErrorMsg(err?.message || "Erro inesperado de comunicação.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    // Garanta que o botão exiba estado visual "Entrando..." quando loading = true
+    // e que a mensagem de erro (errorMsg) apareça em texto vermelho caso aconteça algo.
+  );
+};`}
+        </div>
         <div id="ts-visual-edit-probe-2dc08690fee849ec" className="hidden">
           {`INJEÇÃO DIRETA DE CREDENCIAIS DO SUPABASE NO CLIENTE E FIX DE CONEXÃO
 
