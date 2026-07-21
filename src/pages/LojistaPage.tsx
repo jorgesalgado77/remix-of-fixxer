@@ -478,13 +478,31 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
             </div>
             
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                    <h3 className="font-black text-white uppercase italic text-sm md:text-base">Solicitações no Período</h3>
+                <div className="flex flex-col space-y-4 mb-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <h3 className="font-black text-white uppercase italic text-sm md:text-base">Solicitações no Período</h3>
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input 
+                                placeholder="Buscar OS ou título..." 
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="bg-black/40 border-white/10 pl-10 h-10 rounded-xl text-xs"
+                            />
+                        </div>
+                    </div>
+                    
                     <div className="flex flex-wrap gap-2">
                         {['Todos', 'Pendente', 'Concluído', 'Em andamento', 'Atrasado'].map((status) => (
                             <button
                                 key={status}
-                                onClick={() => setStatusFilter(status)}
+                                onClick={() => {
+                                    setStatusFilter(status);
+                                    setCurrentPage(1);
+                                }}
                                 className={`px-3 py-1.5 rounded-full text-[8px] md:text-[9px] font-black uppercase italic transition-all border ${
                                     statusFilter === status
                                         ? 'bg-primary text-black border-primary'
