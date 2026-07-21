@@ -144,7 +144,8 @@ export function LojistaDashboard() {
             <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
         </div>
 
-        <UserProfileCard isProfileComplete={isProfileComplete} />
+        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} />
+
 
         <TooltipProvider>
           <nav className="flex flex-col gap-2">
