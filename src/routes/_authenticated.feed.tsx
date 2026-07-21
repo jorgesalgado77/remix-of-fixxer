@@ -45,8 +45,9 @@ function FeedPage() {
   const [locationFilter, setLocationFilter] = useState("");
 
   const categories = {
-    tecnico: ["Projetista", "Medidor", "Montador", "Supervisor", "Frete Dedicado"],
-    obras: ["Gesso", "Eletricista", "Encanador", "Alvenaria", "Pintura", "Marmoraria", "Vidraçaria", "Limpeza"]
+    tecnico: ["Projetista", "Conferente Técnico", "Montador", "Medidor", "Instalador"],
+    fornecedores: ["Marmoraria", "Vidraçaria", "Ferragens", "Iluminação"],
+    obras: ["Gesso", "Eletricista", "Encanador", "Alvenaria", "Pintura", "Limpeza"]
   };
 
   const { ref, inView } = useInView();
