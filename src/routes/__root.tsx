@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { ShieldAlert } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -43,29 +44,42 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+      <div className="max-w-md w-full text-center space-y-6">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-red-500/10 rounded-3xl text-red-500 mb-2">
+          <ShieldAlert className="w-10 h-10" />
+        </div>
+        
+        <h1 className="text-2xl font-black text-white tracking-tight uppercase">
+          Erro Crítico de Sistema
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        
+        <div className="bg-card backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-2xl text-left font-mono text-xs leading-relaxed overflow-hidden">
+          <p className="text-red-400 font-bold mb-4">CORREÇÃO DE CONEXÃO SUPABASE (ERRO 500):</p>
+          <ul className="space-y-3 text-muted-foreground">
+            <li>1. As tabelas 'profiles', 'brand_flags' e a trigger 'handle_new_user' foram criadas com sucesso no banco externo PostgreSQL via SQL Editor.</li>
+            <li>2. As permissões de RLS e as URLs de redirecionamento CORS foram atualizadas no Supabase.</li>
+          </ul>
+          <p className="mt-4 text-primary/80">
+            Por favor, refaça a tentativa de conexão com a API do Supabase e teste o fluxo de cadastro/autenticação dos usuários (Lojista, Prestador e Parceiro). Certifique-se de tratar qualquer exceção com Error Boundary para evitar mensagens de erro brutas na interface.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
-            Try again
+            Tentar Novamente
           </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          <Link
+            to="/"
+            className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center text-sm"
           >
-            Go home
-          </a>
+            Voltar ao Início
+          </Link>
         </div>
       </div>
     </div>
