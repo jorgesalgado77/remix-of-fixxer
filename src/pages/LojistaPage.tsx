@@ -998,13 +998,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
         }
     };
 
-    const saveMediaOrder = async (type: 'gallery' | 'video') => {
+    const saveMediaOrder = async (type: 'gallery' | 'video', customUrls?: string[]) => {
         const toastId = toast.loading("Salvando nova ordem...");
         try {
             const { data: { user } } = await supabaseExternal.auth.getUser();
             if (!user) throw new Error("Usuário não autenticado");
 
-            const currentUrls = type === 'gallery' ? galleryUrls : videoUrls;
+            const currentUrls = customUrls || (type === 'gallery' ? galleryUrls : videoUrls);
             const updateData = type === 'gallery' ? { gallery_order: currentUrls } : { video_order: currentUrls };
             
             const { error } = await supabaseExternal
