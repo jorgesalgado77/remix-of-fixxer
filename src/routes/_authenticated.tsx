@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
-import { User } from "lucide-react";
+import { User, Rss, LayoutDashboard, ShieldCheck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
@@ -37,51 +37,64 @@ function AuthenticatedLayout() {
       const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
       
       if (!currentSession && !isAuthenticated) {
-        console.log("[FIXXER]: Não autenticado, redirecionando para /auth");
-        navigate({ to: "/auth" });
+        console.log("[FIXXER]: Sessão não encontrada, redirecionando para /auth");
+        navigate({ to: "/auth" as any });
       }
     };
     checkAuth();
   }, [navigate]);
 
+  const dashboardPath = userRole === 'Lojista' ? '/_authenticated/lojista' : '/_authenticated/dashboard';
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <nav className="border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-xl">F</div>
-            <span className="font-bold tracking-tight">FIXXER</span>
+          <Link to={dashboardPath as any} className="flex items-center gap-2 group">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-xl shadow-[0_0_15px_rgba(0,255,135,0.3)] group-hover:scale-110 transition-transform">
+              F
+            </div>
+            <span className="font-bold tracking-tight text-white group-hover:text-primary transition-colors">FIXXER</span>
           </Link>
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-6">
           {(userRole === 'admin' || userRole === 'Admin') && (
             <Link 
-              to="/admin" 
-              className="text-xs font-bold uppercase tracking-widest text-primary hover:shadow-[0_0_10px_rgba(0,255,135,0.4)] transition-all active:scale-95"
+              to="/_authenticated/admin" 
+              className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
             >
+              <ShieldCheck className="w-4 h-4" />
               Admin
             </Link>
           )}
+
           <Link 
-            to="/profile" 
-            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95 flex items-center gap-2"
+            to="/_authenticated/feed" 
+            className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
           >
-            <User className="w-3 h-3" />
-            Perfil
-          </Link>
-          <Link 
-            to="/feed" 
-            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95"
-          >
+            <Rss className="w-4 h-4" />
             Feed
           </Link>
+
           <Link 
-            to="/dashboard" 
-            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95"
+            to={dashboardPath as any}
+            className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
           >
+            <LayoutDashboard className="w-4 h-4" />
             Dashboard
           </Link>
+
+          <Link 
+            to="/_authenticated/profile" 
+            className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+          >
+            <User className="w-4 h-4" />
+            Perfil
+          </Link>
+
           <div className="h-4 w-[1px] bg-white/10 mx-1" />
+
           <button 
             onClick={async () => {
               await supabase.auth.signOut();
@@ -92,12 +105,14 @@ function AuthenticatedLayout() {
               }
               window.location.href = "/auth";
             }}
-            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-red-400 transition-colors active:scale-95"
+            className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-red-400 transition-colors flex items-center gap-1 cursor-pointer"
           >
+            <LogOut className="w-4 h-4" />
             Sair
           </button>
         </div>
       </nav>
+
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
