@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { AdminPage } from "./pages/AdminPage";
 import { Toaster } from "sonner";
 
 export default function App() {
@@ -14,7 +15,7 @@ export default function App() {
         
         {/* Rotas Protegidas */}
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/admin" element={<DashboardPage />} />
+        <Route path="/admin" element={<AdminPage />} />
         
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

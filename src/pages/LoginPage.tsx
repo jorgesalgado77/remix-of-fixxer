@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 
@@ -6,6 +6,15 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    const isAuth = localStorage.getItem("fixxer_authenticated") === "true";
+    if (isAuth) {
+      const role = localStorage.getItem("fixxer_user_role");
+      if (role === "Admin") navigate("/admin");
+      else navigate("/dashboard");
+    }
+  }, [navigate]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
