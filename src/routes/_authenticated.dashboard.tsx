@@ -156,7 +156,11 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction }: { glassClass: st
 
       <div className="relative group overflow-hidden rounded-3xl">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-        <button className="w-full p-8 md:p-12 border-2 border-primary/30 border-dashed rounded-3xl flex flex-col items-center justify-center gap-4 hover:border-primary hover:bg-primary/5 transition-all group">
+        <button 
+          onClick={(e) => onAction(e, "criar nova O.S.")}
+          className="w-full p-8 md:p-12 border-2 border-primary/30 border-dashed rounded-3xl flex flex-col items-center justify-center gap-4 hover:border-primary hover:bg-primary/5 transition-all group"
+        >
+
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500">
             <Plus className="w-8 h-8" />
           </div>
