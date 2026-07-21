@@ -8,6 +8,12 @@ import { MaskedInput } from "@/components/MaskedInput";
 
 
 export const Route = createFileRoute("/_authenticated/profile")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      id: search.id as string | undefined,
+      context: search.context as string | undefined,
+    };
+  },
   component: ProfilePage,
 });
 
