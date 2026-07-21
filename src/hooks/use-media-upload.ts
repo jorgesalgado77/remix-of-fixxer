@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 export interface UploadProgress {
   fileName: string;
   progress: number;
+  error?: boolean;
 }
 
 export function useMediaUpload() {
@@ -54,8 +55,12 @@ export function useMediaUpload() {
           if (error.message?.includes('payload too large')) errorMessage = "Arquivo muito grande para o servidor";
           if (error.status === 403) errorMessage = "Sem permissão para upload";
           
-          toast.error(`Falha crítica no upload: ${file.name}`, {
-            description: `${errorMessage}. Tente novamente mais tarde.`
+          setUploadProgress(prev => 
+            prev.map(p => p.fileName === file.name ? { ...p, error: true, progress: 0 } : p)
+          );
+
+          toast.error(`Falha no upload: ${file.name}`, {
+            description: `${errorMessage}. Você pode tentar reenviar no resumo.`
           });
           break;
         }
