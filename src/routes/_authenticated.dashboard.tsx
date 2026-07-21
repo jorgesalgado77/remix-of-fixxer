@@ -43,8 +43,22 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const { glassClass } = usePerformanceMode();
-  const { session } = Route.useRouteContext();
-  const userRole = Route.useRouteContext().userRole || (typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') : 'user');
+  const context = Route.useRouteContext();
+  const { session } = context;
+  const [userRole, setUserRole] = useState<string>(() => {
+    const contextRole = context.userRole;
+    if (contextRole) return contextRole;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('fixxer_user_role') || 'user';
+    }
+    return 'user';
+  });
+
+  useEffect(() => {
+    if (context.userRole && context.userRole !== userRole) {
+      setUserRole(context.userRole);
+    }
+  }, [context.userRole]);
   
   const { data: profile } = useQuery({
     queryKey: ['profile', session?.user?.id],
