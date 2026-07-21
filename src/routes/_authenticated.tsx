@@ -164,6 +164,7 @@ function AuthenticatedLayout() {
                 </p>
               </div>
               <div id="ts-visual-edit-probe-3f4bcf95f12749b9" className="hidden">corrija o preview</div>
+              <div id="ts-visual-edit-probe-eddb4d1e5f9f4a95" className="hidden">dashboard do lojista continua vazia, cumpra as ordens corretamente do prompt para construção da mesma</div>
             </div>
           </div>
         ) : (
