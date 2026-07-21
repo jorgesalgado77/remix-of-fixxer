@@ -20,7 +20,9 @@ import {
   Image as ImageIcon,
   Zap,
   Globe,
-  Video
+  Video,
+  Phone,
+  MessageCircle
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
@@ -414,8 +416,16 @@ function ProfileView() {
                            <Input type="email" placeholder="contato@fixxer.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">WhatsApp / Telefone Comercial</Label>
-                           <Input placeholder="(11) 99999-9999" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
+                             <MessageCircle className="w-3 h-3 text-[#25D366]" /> WhatsApp (Comercial)
+                           </Label>
+                           <Input placeholder="(11) 99999-9999" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#25D366]/50 transition-all" />
+                        </div>
+                        <div className="space-y-2">
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
+                             <Phone className="w-3 h-3 text-blue-400" /> Telefone Fixo (Opcional)
+                           </Label>
+                           <Input placeholder="(11) 4000-0000" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-blue-400/50 transition-all" />
                         </div>
                     </div>
                  </div>

@@ -47,3 +47,10 @@ ADD COLUMN IF NOT EXISTS instagram TEXT,
 ADD COLUMN IF NOT EXISTS facebook TEXT,
 ADD COLUMN IF NOT EXISTS tiktok TEXT,
 ADD COLUMN IF NOT EXISTS site_oficial TEXT;
+
+-- Separar campos de telefone e whatsapp na tabela de lojista
+ALTER TABLE public.profiles_lojista 
+RENAME COLUMN whatsapp TO whatsapp_comercial;
+
+ALTER TABLE public.profiles_lojista 
+ADD COLUMN IF NOT EXISTS telefone_fixo TEXT;
