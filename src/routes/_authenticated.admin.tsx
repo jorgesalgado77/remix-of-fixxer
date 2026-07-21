@@ -109,7 +109,7 @@ function AdminLayout() {
           />
           <AdminNavItem 
             to="/admin" 
-            icon={<AlertTriangle className="w-4 h-4" />} 
+            icon={<ShieldAlert className="w-4 h-4" />} 
             label="Segurança" 
             isOpen={isSidebarOpen} 
             active={false} 
