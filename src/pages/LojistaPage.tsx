@@ -407,48 +407,48 @@ function DashboardView() {
 
 function CreateServiceView() {
     return (
-        <div className="max-w-3xl animate-in slide-in-from-bottom duration-500">
-          <div className="bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="max-w-3xl mx-auto animate-in slide-in-from-bottom duration-500 pb-20">
+          <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                 <div className="space-y-2">
                     <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Tipo de Profissional</Label>
                     <Select>
-                        <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl">
+                        <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl text-xs md:text-sm">
                             <SelectValue placeholder="Selecione o parceiro..." />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1A1A1B] border-white/10">
-                            <SelectItem value="montador">Montador de Móveis</SelectItem>
-                            <SelectItem value="conferente">Conferente Técnico</SelectItem>
-                            <SelectItem value="projetista">Projetista</SelectItem>
-                            <SelectItem value="medidor">Medidor</SelectItem>
-                            <SelectItem value="instalador">Instalador</SelectItem>
+                        <SelectContent className="bg-[#1A1A1B] border-white/10 z-[100]">
+                            <SelectItem value="montador" className="text-xs md:text-sm">Montador de Móveis</SelectItem>
+                            <SelectItem value="conferente" className="text-xs md:text-sm">Conferente Técnico</SelectItem>
+                            <SelectItem value="projetista" className="text-xs md:text-sm">Projetista</SelectItem>
+                            <SelectItem value="medidor" className="text-xs md:text-sm">Medidor</SelectItem>
+                            <SelectItem value="instalador" className="text-xs md:text-sm">Instalador</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 <div className="space-y-2">
                     <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Título do Serviço</Label>
-                    <Input placeholder="Ex: Medição Técnica Cozinha" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                    <Input placeholder="Ex: Medição Técnica Cozinha" className="bg-black/40 border-white/10 h-12 rounded-xl text-xs md:text-sm" />
                 </div>
             </div>
             
             <div className="space-y-2">
                 <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Descrição Detalhada</Label>
-                <Textarea placeholder="Descreva as especificações técnicas..." className="bg-black/40 border-white/10 min-h-[150px] rounded-xl p-4" />
+                <Textarea placeholder="Descreva as especificações técnicas..." className="bg-black/40 border-white/10 min-h-[120px] md:min-h-[150px] rounded-xl p-4 text-xs md:text-sm" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                 <div className="space-y-2">
                     <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Valor Contrato Final (R$)</Label>
-                    <Input type="number" placeholder="20000.00" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                    <Input type="number" placeholder="20000.00" className="bg-black/40 border-white/10 h-12 rounded-xl text-xs md:text-sm" />
                 </div>
                 <div className="space-y-2">
                     <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Localização (Cidade/UF)</Label>
-                    <Input placeholder="Ex: São Paulo/SP" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                    <Input placeholder="Ex: São Paulo/SP" className="bg-black/40 border-white/10 h-12 rounded-xl text-xs md:text-sm" />
                 </div>
             </div>
 
-            <Button className="w-full bg-[#00FF87] text-black font-black uppercase italic tracking-widest hover:bg-[#00FF87]/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)]">
+            <Button className="w-full bg-[#00FF87] text-black font-black uppercase italic tracking-widest hover:bg-[#00FF87]/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] text-xs md:text-sm">
                 Publicar Serviço no Feed
             </Button>
           </div>
