@@ -64,6 +64,15 @@ export function LojistaDashboard() {
   const [rating, setRating] = useState(4.9);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationFilter, setNotificationFilter] = useState("");
+  const [notificationSettings, setNotificationSettings] = useState({
+    status_change: true,
+    new_proposal: true,
+    review_received: true
+  });
+  const [history, setHistory] = useState<any[]>([]);
+  const [undoStack, setUndoStack] = useState<any[]>([]);
+  
   const { glassClass } = usePerformanceMode();
   
   useEffect(() => {
@@ -76,9 +85,9 @@ export function LojistaDashboard() {
 
     // Mock initial notifications
     setNotifications([
-      { id: 1, title: 'Status Atualizado', message: 'A O.S. #2490 foi concluída com sucesso.', type: 'status', time: '5 min atrás', read: false },
-      { id: 2, title: 'Nova Proposta', message: 'Você recebeu uma nova proposta para a O.S. #2491.', type: 'proposal', time: '1 hora atrás', read: false },
-      { id: 3, title: 'Avaliação Recebida', message: 'Carlos Silva deixou uma avaliação de 5 estrelas.', type: 'review', time: '2 horas atrás', read: true },
+      { id: 1, title: 'Status Atualizado', message: 'A O.S. #2490 foi concluída com sucesso.', type: 'status_change', os_id: '2490', time: '5 min atrás', read: false },
+      { id: 2, title: 'Nova Proposta', message: 'Você recebeu uma nova proposta para a O.S. #2491.', type: 'new_proposal', os_id: '2491', time: '1 hora atrás', read: false },
+      { id: 3, title: 'Avaliação Recebida', message: 'Carlos Silva deixou uma avaliação de 5 estrelas.', type: 'review_received', os_id: '2488', time: '2 horas atrás', read: true },
     ]);
 
     return () => window.removeEventListener('change-tab', handleTabChangeEvent);
@@ -99,6 +108,22 @@ export function LojistaDashboard() {
     setNotifications([]);
     setShowNotifications(false);
     toast.success("Central de notificações limpa");
+  };
+
+  const pushToUndo = (action: string, state: any) => {
+    setUndoStack(prev => [...prev.slice(-4), { action, state }]);
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const lastAction = undoStack[undoStack.length - 1];
+    
+    if (lastAction.action === 'gallery_reorder' || lastAction.action === 'gallery_delete') {
+      setGalleryUrls(lastAction.state);
+      toast.success("Ação desfeita com sucesso!");
+    }
+    
+    setUndoStack(prev => prev.slice(0, -1));
   };
 
   const getRatingColor = (val: number) => {
