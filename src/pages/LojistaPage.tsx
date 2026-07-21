@@ -79,7 +79,7 @@ export function LojistaDashboard() {
                     </button>
                 </div>
 
-                <UserProfileCard />
+                <UserProfileCard isProfileComplete={isProfileComplete} />
 
                 <nav className="flex flex-col gap-3">
                     <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
