@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { 
   Store, 
   PlusCircle, 
@@ -31,7 +31,10 @@ import {
   X,
   Crop,
   Download,
-  History
+  History,
+  Bell,
+  Check,
+  Trash
 } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -59,6 +62,8 @@ export function LojistaDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [rating, setRating] = useState(4.9);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const { glassClass } = usePerformanceMode();
   
   useEffect(() => {
@@ -68,8 +73,33 @@ export function LojistaDashboard() {
       }
     };
     window.addEventListener('change-tab', handleTabChangeEvent);
+
+    // Mock initial notifications
+    setNotifications([
+      { id: 1, title: 'Status Atualizado', message: 'A O.S. #2490 foi concluída com sucesso.', type: 'status', time: '5 min atrás', read: false },
+      { id: 2, title: 'Nova Proposta', message: 'Você recebeu uma nova proposta para a O.S. #2491.', type: 'proposal', time: '1 hora atrás', read: false },
+      { id: 3, title: 'Avaliação Recebida', message: 'Carlos Silva deixou uma avaliação de 5 estrelas.', type: 'review', time: '2 horas atrás', read: true },
+    ]);
+
     return () => window.removeEventListener('change-tab', handleTabChangeEvent);
   }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAsRead = (id: number) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    toast.success("Todas as notificações marcadas como lidas");
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+    setShowNotifications(false);
+    toast.success("Central de notificações limpa");
+  };
 
   const getRatingColor = (val: number) => {
     if (val <= 1.5) return "text-red-500";
@@ -217,6 +247,58 @@ export function LojistaDashboard() {
                </h2>
            </div>
            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className={`relative rounded-xl border border-white/5 hover:bg-white/5 text-muted-foreground hover:text-white transition-all ${showNotifications ? 'bg-white/10 text-white' : ''}`}
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-[#050505]">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+
+                {showNotifications && (
+                  <div className="absolute right-0 mt-3 w-80 bg-[#1A1A1B] border border-white/10 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
+                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                      <h4 className="text-[10px] font-black text-white uppercase italic">Notificações</h4>
+                      <div className="flex gap-2">
+                        <button onClick={markAllAsRead} className="text-[8px] font-bold text-primary uppercase hover:underline">Lidas</button>
+                        <button onClick={clearNotifications} className="text-[8px] font-bold text-red-400 uppercase hover:underline">Limpar</button>
+                      </div>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+                      {notifications.length > 0 ? (
+                        notifications.map(notification => (
+                          <div 
+                            key={notification.id} 
+                            onClick={() => markAsRead(notification.id)}
+                            className={`p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors cursor-pointer relative ${!notification.read ? 'bg-primary/5' : ''}`}
+                          >
+                            {!notification.read && <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary" />}
+                            <div className="pl-3">
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="text-[9px] font-black text-white uppercase italic">{notification.title}</span>
+                                <span className="text-[7px] text-muted-foreground font-bold">{notification.time}</span>
+                              </div>
+                              <p className="text-[10px] text-white/70 leading-tight">{notification.message}</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center">
+                          <Bell className="w-8 h-8 text-white/10 mx-auto mb-2" />
+                          <p className="text-[9px] text-muted-foreground uppercase font-bold italic">Nenhuma notificação</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 <span className="text-[10px] font-black text-primary uppercase italic">Sessão Ativa</span>
@@ -793,6 +875,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     const [bannerUrl, setBannerUrl] = useState<string | null>(null);
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
+    const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
 
     const sensors = useSensors(
@@ -997,6 +1080,39 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
             const mockEvent = { target: { files } } as unknown as React.ChangeEvent<HTMLInputElement>;
             handleFileUpload(mockEvent, type);
         }
+    };
+
+    const toggleMediaSelection = (id: string) => {
+        setSelectedMedia(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const deleteSelectedMedia = async () => {
+        if (selectedMedia.length === 0) return;
+        
+        const count = selectedMedia.length;
+        const toastId = toast.loading(`Excluindo ${count} item(s)...`);
+
+        try {
+            // No mundo real, deletaríamos os arquivos do storage aqui
+            setGalleryUrls(prev => prev.filter(url => !selectedMedia.includes(url)));
+            setVideoUrls(prev => prev.filter(url => !selectedMedia.includes(url)));
+            setSelectedMedia([]);
+            
+            // Salvar a nova ordem no banco
+            await saveMediaOrder('gallery');
+            await saveMediaOrder('video');
+            
+            toast.success(`${count} item(s) removido(s) com sucesso!`, { id: toastId });
+        } catch (err) {
+            console.error('Erro ao excluir em lote:', err);
+            toast.error("Erro ao realizar exclusão em lote", { id: toastId });
+        }
+    };
+
+    const selectAllMedia = () => {
+        setSelectedMedia([...galleryUrls, ...videoUrls]);
     };
 
     return (
@@ -1301,10 +1417,35 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                     )}
                     
                     <div className="space-y-4">
-                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center justify-between">
-                            Galeria de Fotos da Empresa (Arraste para Reordenar)
-                            <span className="text-[8px] opacity-50">{galleryUrls.length}/12</span>
-                        </Label>
+                        <div className="flex items-center justify-between mb-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">
+                                Galeria de Fotos da Empresa (Arraste para Reordenar)
+                            </Label>
+                            <div className="flex items-center gap-3">
+                                {selectedMedia.length > 0 && (
+                                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right duration-300">
+                                        <span className="text-[8px] font-black text-primary uppercase italic">{selectedMedia.length} selecionados</span>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={deleteSelectedMedia}
+                                            className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg text-[8px] font-black uppercase italic"
+                                        >
+                                            <Trash className="w-3 h-3 mr-1.5" /> Excluir Lote
+                                        </Button>
+                                    </div>
+                                )}
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={selectedMedia.length === (galleryUrls.length + videoUrls.length) ? () => setSelectedMedia([]) : selectAllMedia}
+                                    className="h-7 px-2 text-muted-foreground hover:text-white hover:bg-white/5 rounded-lg text-[8px] font-black uppercase italic"
+                                >
+                                    <CheckCircle2 className="w-3 h-3 mr-1.5" /> {selectedMedia.length === (galleryUrls.length + videoUrls.length) ? 'Desmarcar' : 'Selecionar Tudo'}
+                                </Button>
+                                <span className="text-[8px] opacity-50">{galleryUrls.length}/12</span>
+                            </div>
+                        </div>
                         
                         <DndContext 
                             sensors={sensors}
@@ -1319,7 +1460,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                             >
                                 <SortableContext items={galleryUrls} strategy={rectSortingStrategy}>
                                     {galleryUrls.map((url) => (
-                                        <SortableItem key={url} id={url} onRemove={() => confirmRemoval('foto', () => setGalleryUrls(prev => prev.filter(u => u !== url)))} />
+                                        <SortableItem 
+                                            key={url} 
+                                            id={url} 
+                                            isSelected={selectedMedia.includes(url)}
+                                            onToggleSelect={() => toggleMediaSelection(url)}
+                                            onRemove={() => confirmRemoval('foto', () => setGalleryUrls(prev => prev.filter(u => u !== url)))} 
+                                        />
                                     ))}
                                 </SortableContext>
                                 
@@ -1352,7 +1499,14 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                             >
                                 <SortableContext items={videoUrls} strategy={rectSortingStrategy}>
                                     {videoUrls.map((url) => (
-                                        <SortableItem key={url} id={url} isVideo onRemove={() => confirmRemoval('vídeo', () => setVideoUrls(prev => prev.filter(u => u !== url)))} />
+                                        <SortableItem 
+                                            key={url} 
+                                            id={url} 
+                                            isVideo 
+                                            isSelected={selectedMedia.includes(url)}
+                                            onToggleSelect={() => toggleMediaSelection(url)}
+                                            onRemove={() => confirmRemoval('vídeo', () => setVideoUrls(prev => prev.filter(u => u !== url)))} 
+                                        />
                                     ))}
                                 </SortableContext>
                                 
@@ -1396,7 +1550,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     );
 }
 
-function SortableItem({ id, isVideo, onRemove }: { id: string; isVideo?: boolean; onRemove: () => void }) {
+function SortableItem({ id, isVideo, onRemove, isSelected, onToggleSelect }: { id: string; isVideo?: boolean; onRemove: () => void; isSelected?: boolean; onToggleSelect?: () => void }) {
     const {
         attributes,
         listeners,
@@ -1417,20 +1571,26 @@ function SortableItem({ id, isVideo, onRemove }: { id: string; isVideo?: boolean
         <div 
             ref={setNodeRef} 
             style={style} 
-            className={`relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 group touch-none \${isVideo ? 'aspect-video sm:aspect-square' : 'aspect-square'}`}
+            onClick={onToggleSelect}
+            className={`relative rounded-2xl overflow-hidden border transition-all cursor-pointer bg-black/40 group touch-none ${isSelected ? 'border-primary ring-2 ring-primary ring-inset' : 'border-white/10'} ${isVideo ? 'aspect-video sm:aspect-square' : 'aspect-square'}`}
         >
-            <div {...attributes} {...listeners} className="w-full h-full cursor-grab active:cursor-grabbing">
+            <div {...attributes} {...listeners} className="w-full h-full cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
                 {isVideo ? (
                     <video src={id} className="w-full h-full object-cover" />
                 ) : (
                     <img src={id} alt="Gallery" className="w-full h-full object-cover" />
                 )}
             </div>
+            
+            <div className={`absolute top-2 left-2 w-5 h-5 rounded-full border-2 border-white/20 transition-all flex items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-black/40'}`}>
+                {isSelected && <Check className="w-3 h-3 text-black" />}
+            </div>
+
             <button 
                 onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                className="absolute top-1.5 right-1.5 p-1 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
             >
-                <Trash2 className="w-2.5 h-2.5 text-white" />
+                <Trash2 className="w-3 h-3 text-white" />
             </button>
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
         </div>
