@@ -25,6 +25,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated.cliente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
+import { Route as AuthenticatedFeedLojistaRouteImport } from './routes/_authenticated.feed.lojista'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -105,6 +106,12 @@ const ApiPublicSetupDbRoute = ApiPublicSetupDbRouteImport.update({
   path: '/api/public/setup-db',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedFeedLojistaRoute =
+  AuthenticatedFeedLojistaRouteImport.update({
+    id: '/lojista',
+    path: '/lojista',
+    getParentRoute: () => AuthenticatedFeedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -114,13 +121,14 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/feed': typeof AuthenticatedFeedRoute
+  '/feed': typeof AuthenticatedFeedRouteWithChildren
   '/lojista': typeof AuthenticatedLojistaRoute
   '/parceiro': typeof AuthenticatedParceiroRoute
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/auth/': typeof AuthIndexRoute
+  '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
 export interface FileRoutesByTo {
@@ -130,13 +138,14 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/feed': typeof AuthenticatedFeedRoute
+  '/feed': typeof AuthenticatedFeedRouteWithChildren
   '/lojista': typeof AuthenticatedLojistaRoute
   '/parceiro': typeof AuthenticatedParceiroRoute
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/auth': typeof AuthIndexRoute
+  '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
 export interface FileRoutesById {
@@ -149,13 +158,14 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/feed': typeof AuthenticatedFeedRoute
+  '/_authenticated/feed': typeof AuthenticatedFeedRouteWithChildren
   '/_authenticated/lojista': typeof AuthenticatedLojistaRoute
   '/_authenticated/parceiro': typeof AuthenticatedParceiroRoute
   '/_authenticated/prestador': typeof AuthenticatedPrestadorRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/auth/': typeof AuthIndexRoute
+  '/_authenticated/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
 export interface FileRouteTypes {
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/dashboard/lojista'
     | '/auth/'
+    | '/feed/lojista'
     | '/api/public/setup-db'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/dashboard/lojista'
     | '/auth'
+    | '/feed/lojista'
     | '/api/public/setup-db'
   id:
     | '__root__'
@@ -209,6 +221,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/dashboard/lojista'
     | '/auth/'
+    | '/_authenticated/feed/lojista'
     | '/api/public/setup-db'
   fileRoutesById: FileRoutesById
 }
@@ -336,14 +349,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSetupDbRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/feed/lojista': {
+      id: '/_authenticated/feed/lojista'
+      path: '/lojista'
+      fullPath: '/feed/lojista'
+      preLoaderRoute: typeof AuthenticatedFeedLojistaRouteImport
+      parentRoute: typeof AuthenticatedFeedRoute
+    }
   }
 }
+
+interface AuthenticatedFeedRouteChildren {
+  AuthenticatedFeedLojistaRoute: typeof AuthenticatedFeedLojistaRoute
+}
+
+const AuthenticatedFeedRouteChildren: AuthenticatedFeedRouteChildren = {
+  AuthenticatedFeedLojistaRoute: AuthenticatedFeedLojistaRoute,
+}
+
+const AuthenticatedFeedRouteWithChildren =
+  AuthenticatedFeedRoute._addFileChildren(AuthenticatedFeedRouteChildren)
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
+  AuthenticatedFeedRoute: typeof AuthenticatedFeedRouteWithChildren
   AuthenticatedLojistaRoute: typeof AuthenticatedLojistaRoute
   AuthenticatedParceiroRoute: typeof AuthenticatedParceiroRoute
   AuthenticatedPrestadorRoute: typeof AuthenticatedPrestadorRoute
@@ -354,7 +385,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedFeedRoute: AuthenticatedFeedRoute,
+  AuthenticatedFeedRoute: AuthenticatedFeedRouteWithChildren,
   AuthenticatedLojistaRoute: AuthenticatedLojistaRoute,
   AuthenticatedParceiroRoute: AuthenticatedParceiroRoute,
   AuthenticatedPrestadorRoute: AuthenticatedPrestadorRoute,
@@ -387,13 +418,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
