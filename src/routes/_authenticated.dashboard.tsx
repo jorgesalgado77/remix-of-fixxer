@@ -12,16 +12,17 @@ function DashboardRedirect() {
 
   useEffect(() => {
     const resolveRoleAndNavigate = async () => {
-      let role = localStorage.getItem('fixxer_user_role') || '';
-      const email = localStorage.getItem('fixxer_user_email') || '';
+      const email = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
+      let role = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
 
       console.log(`[FIXXER REDIRECT]: Resolvendo rota para ${email} (Role: ${role})`);
 
-      // Regra Prioritária Admin Master
-      if (email.trim() === 'jorgericardosalgado@gmail.com' || role === 'admin' || role === 'Admin') {
+      // Regra Prioritária Admin Master - Verificação Imediata
+      if (email.trim() === 'jorgericardosalgado@gmail.com') {
         navigate({ to: '/_authenticated/admin' as any });
         return;
       }
+
 
       // Se a role não estiver no localStorage, busca no Supabase
       if (!role) {
