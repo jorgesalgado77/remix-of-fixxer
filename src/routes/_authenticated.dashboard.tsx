@@ -611,6 +611,18 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
 }
 
 // --- Helpers: skeletons, empty & error states ---
+function MobileNavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center gap-1 transition-all ${active ? 'text-primary scale-110' : 'text-muted-foreground hover:text-white'}`}
+    >
+      <div className={`${active ? 'shadow-[0_0_15px_rgba(0,255,135,0.3)]' : ''}`}>{icon}</div>
+      <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
+    </button>
+  );
+}
+
 function StatSkeleton({ glassClass }: { glassClass: string }) {
   return <div className={`p-5 rounded-2xl ${glassClass} border border-white/5 h-[110px] animate-pulse`}>
     <div className="w-8 h-8 rounded-lg bg-white/10 mb-4"></div>
