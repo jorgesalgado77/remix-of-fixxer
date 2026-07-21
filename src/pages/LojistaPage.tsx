@@ -386,9 +386,20 @@ function DashboardView() {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <MetricCard label="Serviços" value={(12 * multiplier).toString()} icon={<Briefcase />} color="text-blue-400" />
-                <MetricCard label="Pendentes" value={(5 * multiplier).toString()} icon={<Clock />} color="text-amber-400" />
-                <MetricCard label="Investimento" value={`R$ ${(15.2 * multiplier).toFixed(1)}k`} icon={<DollarSign />} color="text-emerald-400" />
+                <MetricCard label="Serviços Criados" value={(12 * multiplier).toString()} icon={<Briefcase />} color="text-blue-400" />
+                <MetricCard label="Concluídos" value={(7 * multiplier).toString()} icon={<ShieldCheck />} color="text-primary" />
+                <MetricCard 
+                    label="Saldo do Período" 
+                    value={`R$ ${(15.2 * multiplier).toFixed(1)}k`} 
+                    icon={<DollarSign />} 
+                    color="text-emerald-400"
+                    subValue={
+                        <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
+                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ {(12.1 * multiplier).toFixed(1)}k</span></span>
+                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Comissões: <span className="text-white">R$ {(3.1 * multiplier).toFixed(1)}k</span></span>
+                        </div>
+                    }
+                />
                 <MetricCard label="Reputação" value="4.9 ⭐" icon={<Star />} color="text-[#00FF87]" />
             </div>
             
