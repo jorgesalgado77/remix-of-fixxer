@@ -64,13 +64,13 @@ function LoginComponent() {
         console.error("Erro detalhado na autenticação:", error);
         steps[0].status = 'error';
         
-        // Mensagens amigáveis baseadas em códigos de erro comuns do Supabase
-        if (error.status === 400 || error.message?.includes("Invalid login credentials")) {
-          steps[0].detail = "Credenciais inválidas. Verifique seu e-mail e senha.";
-        } else if (error.status === 500 || error.name === "AuthRetryableFetchError") {
-          steps[0].detail = "Erro de conexão (500). Verifique se o banco de dados externo está acessível e se as extensões de Auth estão ativas.";
+        // Diagnóstico preciso para erro 500 (Geralmente falha de conexão ou schema ausente no Supabase externo)
+        if (error.status === 500 || error.name === "AuthRetryableFetchError" || error.message?.includes("fetch")) {
+          steps[0].detail = "ERRO 500: Falha na comunicação com o Supabase. Verifique se o seu banco externo aceita conexões de origens desconhecidas e se o script SQL foi executado com sucesso.";
+        } else if (error.status === 400 || error.message?.includes("Invalid login credentials")) {
+          steps[0].detail = "Credenciais inválidas. O usuário pode não existir no Auth do Supabase externo.";
         } else {
-          steps[0].detail = `Erro: ${error.message || 'Falha na comunicação com o banco'}`;
+          steps[0].detail = `Erro ${error.status || 'desconhecido'}: ${error.message}`;
         }
 
         setDiagnosticSteps([...steps]);
