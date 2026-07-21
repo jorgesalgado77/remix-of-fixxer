@@ -8,6 +8,8 @@ export function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    localStorage.setItem("fixxer_user_role", profile);
+    localStorage.setItem("fixxer_authenticated", "true");
     if (email === "jorgericardosalgado@gmail.com") return navigate("/admin");
     navigate(`/dashboard/${profile.toLowerCase()}`);
   };
