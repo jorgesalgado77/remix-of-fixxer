@@ -844,9 +844,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                     <Button 
                         onClick={() => {
                             setIsProfileComplete(true);
-                            toast.success("Perfil Atualizado", {
-                                description: "Seus dados foram salvos com sucesso. Agora você pode acessar todas as funcionalidades.",
+                            toast.info("Dados Salvos com Sucesso", {
+                                description: "As informações da sua empresa foram atualizadas e a dashboard completa foi liberada.",
                             });
+                            // Pequeno delay para permitir ver o toast antes de voltar
+                            setTimeout(() => {
+                               window.dispatchEvent(new CustomEvent('change-tab', { detail: 'dashboard' }));
+                            }, 800);
                         }}
                         className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98]"
                     >
