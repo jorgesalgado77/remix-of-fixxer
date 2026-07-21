@@ -46,56 +46,67 @@ function LoginComponent() {
     setView("diagnostic");
     
     const steps: DiagnosticStep[] = [
-      { label: "Autenticação Supabase", status: 'loading' },
-      { label: "Verificação de Perfil", status: 'pending' },
-      { label: "Validação de Plano & Roles", status: 'pending' },
-      { label: "Redirecionamento Final", status: 'pending' },
+      { label: "Conectividade Supabase", status: 'loading' },
+      { label: "Autenticação de Usuário", status: 'pending' },
+      { label: "Sincronização de Perfil", status: 'pending' },
+      { label: "Redirecionamento Seguro", status: 'pending' },
     ];
     setDiagnosticSteps([...steps]);
 
-    try {
-      // Passo 1: Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
-      });
-
-      if (error) {
-        console.error("Erro detalhado na autenticação:", error);
-        steps[0].status = 'error';
-        
-        // Diagnóstico preciso para erro 500 (Geralmente falha de conexão ou schema ausente no Supabase externo)
-        if (error.status === 500 || error.name === "AuthRetryableFetchError" || error.message?.includes("fetch")) {
-          steps[0].detail = "ERRO 500: Falha na comunicação com o Supabase. Verifique se o seu banco externo aceita conexões de origens desconhecidas e se o script SQL foi executado com sucesso.";
-        } else if (error.status === 400 || error.message?.includes("Invalid login credentials")) {
-          steps[0].detail = "Credenciais inválidas. O usuário pode não existir no Auth do Supabase externo.";
-        } else {
-          steps[0].detail = `Erro ${error.status || 'desconhecido'}: ${error.message}`;
-        }
-
-        setDiagnosticSteps([...steps]);
-        await logAccess({ 
-          event_type: 'login_attempt', 
-          status: 'failure', 
-          reason: `${error.message} [Code: ${error.status}]`, 
+    // Lógica de Retry com Backoff Exponencial
+    const performAuthWithRetry = async (retries = 3, delay = 1000): Promise<any> => {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
-          metadata: { error_object: error }
+          password: password.trim(),
         });
-        throw error;
+        if (error) throw error;
+        return data;
+      } catch (err: any) {
+        // Retry apenas para erros de rede ou 500
+        if (retries > 0 && (err.status === 500 || err.name === "AuthRetryableFetchError" || err.message?.includes("fetch"))) {
+          console.warn(`Erro 500/Rede detectado. Tentando novamente em ${delay}ms... (${retries} restantes)`);
+          await new Promise(res => setTimeout(res, delay));
+          return performAuthWithRetry(retries - 1, delay * 1.5);
+        }
+        throw err;
       }
+    };
 
+    try {
+      // Passo 1: Checagem de Conectividade pré-login
+      try {
+        const { error: healthError } = await supabase.from('brand_flags').select('count', { count: 'exact', head: true });
+        // Se retornar erro mas o código for 401 ou 403, significa que o banco respondeu (conectividade OK)
+        if (healthError && 'code' in healthError && healthError.code !== 'PGRST301' && healthError.code !== '42501') {
+           throw healthError;
+        }
+      } catch (connErr) {
+        steps[0].status = 'error';
+        steps[0].detail = "Falha de conexão com o Supabase externo. Verifique sua URL/Key ou rede.";
+        setDiagnosticSteps([...steps]);
+        throw connErr;
+      }
+      
       steps[0].status = 'success';
       steps[1].status = 'loading';
       setDiagnosticSteps([...steps]);
 
-      // Passo 2: Profile
-      console.log("Login realizado. Buscando perfil para user id:", data.user.id);
+      // Passo 2: Auth com Retry e Timeout
+      const authPromise = performAuthWithRetry();
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout na autenticação")), 15000));
       
+      const data = await Promise.race([authPromise, timeoutPromise]) as any;
+      
+      steps[1].status = 'success';
+      steps[2].status = 'loading';
+      setDiagnosticSteps([...steps]);
+
+      // Passo 3: Sincronização de Perfil (aguarda o trigger do banco)
       let profile = null;
       let retryCount = 0;
       const maxRetries = 5;
 
-      // Loop de retry para aguardar o trigger do Supabase criar o perfil
       while (retryCount < maxRetries) {
         const { data: p, error: profileError } = await supabase
           .from('profiles')
@@ -107,69 +118,47 @@ function LoginComponent() {
           profile = p;
           break;
         }
-
-        if (profileError) {
-          console.error("Erro ao buscar perfil:", profileError);
-          // Não paramos aqui, tentamos novamente se for um erro transitório
-        }
-
-        console.log(`Perfil não encontrado, tentativa ${retryCount + 1}/${maxRetries}...`);
+        console.log(`Aguardando perfil... tentativa ${retryCount + 1}/${maxRetries}`);
         retryCount++;
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
 
       if (!profile) {
-        steps[1].status = 'error';
-        steps[1].detail = "Perfil não encontrado após várias tentativas. O trigger do Supabase pode ter falhado.";
+        steps[2].status = 'error';
+        steps[2].detail = "Perfil não encontrado. Execute o script SQL no seu Supabase.";
         setDiagnosticSteps([...steps]);
-        throw new Error("Perfil não sincronizado. Verifique os triggers no Supabase.");
+        throw new Error("Perfil não sincronizado.");
       }
 
-      steps[1].status = 'success';
-      steps[1].detail = `Perfil encontrado: ${profile.role}`;
-      steps[2].status = 'loading';
-      setDiagnosticSteps([...steps]);
-
-      // Passo 3: Role & Plan Validation
-      const role = profile.role || 'lojista';
-      
       steps[2].status = 'success';
-      steps[2].detail = `Role: ${role.toUpperCase()} | Plano: ${profile.plan_id ? 'Ativo' : 'Teste Gratuito'}`;
       steps[3].status = 'loading';
       setDiagnosticSteps([...steps]);
 
+      const role = profile.role || 'lojista';
+      
       await logAccess({ 
         event_type: 'login_attempt', 
         status: 'success', 
         user_id: data.user.id,
         email: email.trim(),
-        metadata: { role, plan_id: profile.plan_id, method: 'diagnostic_success' }
+        metadata: { role, method: 'secured_flow' }
       });
 
-      // Passo 4: Redirect
-      console.log("Validando Role para redirecionamento:", role);
       steps[3].status = 'success';
       setDiagnosticSteps([...steps]);
       
-      // Verificação explícita de Role antes do redirecionamento
-      if (role === 'admin') {
-        toast.success("Acesso Administrativo Confirmado");
-        await new Promise(resolve => setTimeout(resolve, 800));
-        window.location.href = "/admin";
-      } else {
-        toast.success(`Bem-vindo, ${role}!`);
-        await new Promise(resolve => setTimeout(resolve, 800));
-        window.location.href = "/dashboard";
-      }
+      // Pequeno delay para visualização do diagnóstico antes do redirect
+      setTimeout(() => {
+        window.location.href = role === 'admin' ? "/admin" : "/dashboard";
+      }, 1000);
 
     } catch (error: any) {
       setLoading(false);
-      // Mantém a tela de diagnóstico se houve erro para que o usuário veja onde falhou
-      if (steps.some(s => s.status === 'error')) {
-         toast.error("Falha no diagnóstico de login");
-      } else {
-        setView("login");
-        toast.error(error.message || "Erro no processo de login");
+      // Se já marcou algum erro no diagnóstico, não sobrescreve com toast genérico
+      if (!steps.some(s => s.status === 'error')) {
+        steps[1].status = 'error';
+        steps[1].detail = error.message || "Erro desconhecido durante o login.";
+        setDiagnosticSteps([...steps]);
       }
     }
   };
