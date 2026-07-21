@@ -55,8 +55,9 @@ function LoginComponent() {
       }
 
       if (data?.session) {
+        const normalizedEmail = email.trim().toLowerCase();
         if (typeof window !== 'undefined') {
-          localStorage.setItem('fixxer_user_email', email);
+          localStorage.setItem('fixxer_user_email', normalizedEmail);
           localStorage.setItem('fixxer_authenticated', 'true');
         }
         
@@ -66,15 +67,30 @@ function LoginComponent() {
           .eq('id', data.session.user.id)
           .maybeSingle();
         
-        const role = profile?.role || 'user';
+        let role = profile?.role || 'user';
         if (typeof window !== 'undefined') {
           localStorage.setItem('fixxer_user_role', role);
+          
+          // Mapeamento de categoria para redirecionamento
+          let category = role.toLowerCase();
+          if (normalizedEmail === 'jorgericardosalgado@gmail.com') category = 'admin';
+          else if (category.includes('lojista')) category = 'lojista';
+          else if (category.includes('prestador')) category = 'prestador';
+          else if (category.includes('parceiro') || category.includes('fornecedor')) category = 'parceiro';
+          else if (category.includes('cliente') || category.includes('casual')) category = 'casual';
+          
+          localStorage.setItem('fixxer_user_category', category);
         }
 
-        if (email.trim() === 'jorgericardosalgado@gmail.com') {
+        if (normalizedEmail === 'jorgericardosalgado@gmail.com') {
           window.location.replace('/admin');
         } else {
-          navigate({ to: '/_authenticated/dashboard' as any });
+          const storedCategory = localStorage.getItem('fixxer_user_category');
+          if (storedCategory === 'casual') window.location.replace('/dashboard/cliente');
+          else if (storedCategory === 'lojista') window.location.replace('/dashboard/lojista');
+          else if (storedCategory === 'prestador') window.location.replace('/dashboard/prestador');
+          else if (storedCategory === 'parceiro') window.location.replace('/dashboard/parceiro');
+          else navigate({ to: '/cadastro' as any });
         }
       }
     } catch (err: any) {

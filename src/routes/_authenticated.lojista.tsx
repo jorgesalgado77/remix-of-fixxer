@@ -30,16 +30,31 @@ function LojistaDashboard() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
-            <Store className="w-6 h-6 text-[#00FF87]" />
-            PAINEL <span className="text-[#00FF87]">LOJISTA</span>
-          </h1>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Gestão de Demandas Técnicas e O.S.</p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
+            <Store className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                PAINEL <span className="text-[#00FF87]">LOJISTA</span>
+              </h1>
+              <span className="px-2 py-0.5 rounded-md bg-[#00FF87]/10 border border-[#00FF87]/20 text-[8px] font-bold text-[#00FF87] uppercase tracking-widest">Verificado</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Gestão de Demandas Técnicas e O.S.</p>
+          </div>
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
-          <PlusCircle className="w-4 h-4" /> Nova Demanda B2B
-        </button>
+        <div className="flex items-center gap-3">
+          <Link 
+            to="/_authenticated/feed" 
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all"
+          >
+            <Activity className="w-4 h-4" /> Acessar Feed da Categoria
+          </Link>
+          <Link to="/_authenticated/profile" className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
+            <User className="w-5 h-5" />
+          </Link>
+        </div>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

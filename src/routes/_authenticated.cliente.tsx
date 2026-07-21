@@ -37,19 +37,27 @@ function ClientePortal() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-24 animate-in fade-in duration-500">
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
-            <Home className="w-6 h-6 text-[#00FF87]" />
-            Portal do <span className="text-[#00FF87]">Cliente</span>
-          </h1>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Acompanhe sua reforma e contrate profissionais</p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
+            <Home className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+              PORTAL DO <span className="text-[#00FF87]">CLIENTE</span>
+            </h1>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Acompanhe sua reforma e contrate profissionais</p>
+          </div>
         </div>
         
-        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
           <TabButton active={activeTab === 'jornada'} onClick={() => setActiveTab('jornada')} label="Minha Obra" icon={<Clock className="w-3 h-3" />} />
-          <Link to="/_authenticated/feed" className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all border flex items-center gap-2 shrink-0 bg-white/5 text-muted-foreground border-white/10 hover:border-white/20`}><Search className="w-3 h-3" /> Ver Feed Geral</Link>
-          <TabButton active={activeTab === 'publicar'} onClick={() => setActiveTab('publicar')} label="Pedir Serviço" icon={<PlusCircle className="w-3 h-3" />} />
+          <Link to="/_authenticated/feed" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-[10px] tracking-widest hover:shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all">
+             <Search className="w-3 h-3" /> Acessar Feed da Categoria
+          </Link>
           <TabButton active={activeTab === 'contratacoes'} onClick={() => setActiveTab('contratacoes')} label="Contratações" icon={<ShieldCheck className="w-3 h-3" />} />
+          <Link to="/_authenticated/profile" className="p-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all shrink-0">
+            <User className="w-4 h-4" />
+          </Link>
         </div>
       </header>
 

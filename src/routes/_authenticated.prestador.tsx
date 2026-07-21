@@ -30,16 +30,30 @@ function PrestadorDashboard() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
-            <User className="w-6 h-6 text-[#00FF87]" />
-            MEU <span className="text-[#00FF87]">PAINEL</span>
-          </h1>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Controle de Agendas, O.S. e Reputação</p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
+            <Hammer className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                MEU <span className="text-[#00FF87]">PAINEL</span>
+              </h1>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-500 uppercase">
+                <Star className="w-2 h-2 fill-current" /> 4.9
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Controle de Agendas, O.S. e Reputação</p>
+          </div>
         </div>
-        <Link to="/_authenticated/feed" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
-          <Briefcase className="w-4 h-4" /> Ver Oportunidades
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link to="/_authenticated/feed" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
+            <Briefcase className="w-4 h-4" /> Acessar Feed da Categoria
+          </Link>
+          <Link to="/_authenticated/profile" className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
+            <User className="w-5 h-5" />
+          </Link>
+        </div>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
