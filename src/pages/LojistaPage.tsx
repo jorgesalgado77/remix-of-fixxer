@@ -121,28 +121,6 @@ export function LojistaDashboard() {
   const [emergencySetGallery, setEmergencySetGallery] = useState<any>(null);
   const [failedUploads, setFailedUploads] = useState<File[]>([]);
 
-  const retryFailedUpload = async (fileName: string) => {
-    const file = failedUploads.find(f => f.name === fileName);
-    if (file) {
-      // Remover da lista de erros visual primeiro
-      setUploadProgress(prev => prev.filter(p => p.fileName !== fileName));
-      // Iniciar novo upload
-      const type = file.type.startsWith('video/') ? 'video' : 'gallery';
-      await handleFileUpload({ target: { files: [file] } } as any, type);
-    }
-  };
-
-  const retryAllFailed = async () => {
-    const filesToRetry = [...failedUploads];
-    setFailedUploads([]);
-    setUploadProgress(prev => prev.filter(p => !p.error));
-    
-    for (const file of filesToRetry) {
-      const type = file.type.startsWith('video/') ? 'video' : 'gallery';
-      handleFileUpload({ target: { files: [file] } } as any, type);
-    }
-  };
-
   const handleUndo = () => {
     if (undoStack.length === 0) return;
     const lastAction = undoStack[undoStack.length - 1];
