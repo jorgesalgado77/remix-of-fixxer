@@ -419,7 +419,7 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                         </div>
                     }
                 />
-                <MetricCard label="Reputação" value="4.9 ⭐" icon={<Star />} color="text-[#00FF87]" />
+                <MetricCard label="Reputação" value={`${rating.toFixed(1)} ⭐`} icon={<Star />} color={getRatingColor(rating)} />
             </div>
             
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
