@@ -40,7 +40,24 @@ export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [rating, setRating] = useState(4.9);
   const { glassClass } = usePerformanceMode();
+
+  const getRatingColor = (val: number) => {
+    if (val <= 1.5) return "text-red-500";
+    if (val <= 2.5) return "text-orange-500";
+    if (val <= 3.5) return "text-yellow-500";
+    if (val <= 4.9) return "text-green-500";
+    return "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]";
+  };
+
+  const getRatingStarColor = (val: number) => {
+    if (val <= 1.5) return "text-red-500 fill-red-500";
+    if (val <= 2.5) return "text-orange-500 fill-orange-500";
+    if (val <= 3.5) return "text-yellow-500 fill-yellow-500";
+    if (val <= 4.9) return "text-green-500 fill-green-500";
+    return "text-amber-400 fill-amber-400";
+  };
 
   const handleTabChange = (tab: string) => {
     if ((tab === 'create' || tab === 'reviews') && !isProfileComplete) {
