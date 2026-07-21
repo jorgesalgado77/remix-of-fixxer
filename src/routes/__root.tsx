@@ -8,7 +8,6 @@ import {
   Scripts,
   useLocation,
 } from "@tanstack/react-router";
-import { AuthenticatedLayout } from "./_authenticated";
 import { useEffect, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 
@@ -16,25 +15,6 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
-  const location = useLocation();
-  
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const userEmail = localStorage.getItem('fixxer_user_email') || 'anonymous';
-      console.error(`[FIXXER 404]: Rota não encontrada acessada por ${userEmail}: ${window.location.pathname}`);
-    } catch (e) {
-      console.error(`[FIXXER 404]: Rota não encontrada: ${window.location.pathname}`);
-    }
-  }, []);
-
-  // Se o usuário estiver autenticado no localStorage, exibe o painel mesmo se a rota falhar
-  const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
-  
-  if (isAuthenticated) {
-    return <AuthenticatedLayout />;
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-black px-4">
       <div className="max-w-md w-full bg-[#111] border border-white/10 p-10 rounded-[2.5rem] shadow-2xl text-center space-y-6">
@@ -42,17 +22,17 @@ function NotFoundComponent() {
           <AlertTriangle className="w-10 h-10" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">Sessão não encontrada</h1>
+          <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">404</h1>
           <p className="mt-4 text-sm text-gray-400 leading-relaxed">
-            Sua sessão expirou ou você tentou acessar uma rota inválida sem estar logado.
+            Página não encontrada ou link expirado.
           </p>
         </div>
         <div className="pt-4 flex flex-col gap-3">
           <Link
-            to="/auth"
+            to="/"
             className="w-full bg-[#00FF87] text-black font-black py-4 rounded-xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:scale-[1.02] active:scale-95 transition-all text-sm uppercase tracking-widest"
           >
-            Ir para o Login
+            Voltar para o Início
           </Link>
         </div>
       </div>
@@ -68,9 +48,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
-  // Fallback silencioso: se houver um erro, tentamos renderizar o Outlet mesmo assim
-  // para não travar a aplicação em uma tela de erro cheia.
-  // Se o erro for persistente no nível do Root, mostramos uma notificação simples.
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl text-center space-y-6">
@@ -93,12 +70,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all"
           >
             Tentar Recuperar Agora
-          </button>
-          <button
-            onClick={() => window.location.href = "/"}
-            className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all text-xs uppercase tracking-widest"
-          >
-            Voltar ao Início
           </button>
         </div>
         
@@ -160,7 +131,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
   );
