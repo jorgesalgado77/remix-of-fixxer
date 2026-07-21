@@ -176,7 +176,7 @@ export function LojistaDashboard() {
            </div>
         </header>
 
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {activeTab === 'dashboard' && <DashboardView />}
             {activeTab === 'create' && <CreateServiceView />}
             {activeTab === 'profile' && <ProfileView setIsProfileComplete={setIsProfileComplete} />}
@@ -302,13 +302,17 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
     }
 
     return (
-        <Tooltip>
+        <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
-                <div>
+                <div className="w-full touch-none">
                     <SidebarButton icon={icon} label={label} active={active} onClick={onClick} disabled={disabled} />
                 </div>
             </TooltipTrigger>
-            <TooltipContent side="right" className="bg-[#00FF87] text-black font-bold uppercase text-[10px] italic">
+            <TooltipContent 
+                side="right" 
+                align="center"
+                className="bg-[#00FF87] text-black font-bold uppercase text-[9px] md:text-[10px] italic shadow-[0_0_20px_rgba(0,255,135,0.4)] z-[100] max-w-[200px] text-center"
+            >
                 Preencha o perfil completo para habilitar
             </TooltipContent>
         </Tooltip>
@@ -316,46 +320,83 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
 }
 
 function DashboardView() {
+    const [filter, setFilter] = useState('Hoje');
+    
+    // Simulação de filtragem global (poderia ser baseada em dados reais)
+    const getMultiplier = () => {
+        switch(filter) {
+            case 'Hoje': return 1;
+            case '7 dias': return 4;
+            case '30 dias': return 15;
+            default: return 1;
+        }
+    };
+
+    const multiplier = getMultiplier();
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard label="Serviços" value="12" icon={<Briefcase />} color="text-blue-400" />
-                <MetricCard label="Pendentes" value="5" icon={<Clock />} color="text-amber-400" />
-                <MetricCard label="Investimento" value="R$ 15.2k" icon={<DollarSign />} color="text-emerald-400" />
+            {/* Filtros Globais - Agora Responsivos */}
+            <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <h3 className="font-black text-white uppercase italic text-xs md:text-sm tracking-widest">Filtro de Período Global</h3>
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                        {['Hoje', '7 dias', '30 dias', 'Personalizado'].map(period => (
+                            <button 
+                                key={period} 
+                                onClick={() => setFilter(period)}
+                                className={`flex-1 sm:flex-none px-3 py-2 rounded-xl text-[9px] md:text-[10px] font-bold uppercase border transition-all ${
+                                    filter === period 
+                                    ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_15px_rgba(0,255,135,0.3)]' 
+                                    : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
+                                }`}
+                            >
+                                {period}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                <MetricCard label="Serviços" value={(12 * multiplier).toString()} icon={<Briefcase />} color="text-blue-400" />
+                <MetricCard label="Pendentes" value={(5 * multiplier).toString()} icon={<Clock />} color="text-amber-400" />
+                <MetricCard label="Investimento" value={`R$ ${(15.2 * multiplier).toFixed(1)}k`} icon={<DollarSign />} color="text-emerald-400" />
                 <MetricCard label="Reputação" value="4.9 ⭐" icon={<Star />} color="text-[#00FF87]" />
             </div>
             
-            <div className="bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="font-black text-white uppercase italic">Últimas Solicitações</h3>
-                  <div className="flex gap-2">
-                     {['Hoje', '7 dias', '30 dias', 'Personalizado'].map(period => (
-                       <button key={period} className="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white/5 border border-white/5 hover:bg-[#00FF87] hover:text-black transition-colors">
-                         {period}
-                       </button>
-                     ))}
-                  </div>
-                </div>
+            <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
+                <h3 className="font-black text-white uppercase italic mb-6 text-sm md:text-base">Solicitações no Período</h3>
                 
-                <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
-                        <div>
-                           <div className="text-xs font-black uppercase italic text-white">Montagem Dormitório</div>
-                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">OS-2490 • São Paulo/SP</div>
+                <div className="space-y-3 md:space-y-4">
+                    <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center text-blue-400">
+                               <Briefcase className="w-4 h-4" />
+                           </div>
+                           <div>
+                              <div className="text-xs font-black uppercase italic text-white">Montagem Dormitório</div>
+                              <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-2490 • São Paulo/SP</div>
+                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
                            <span className="font-black text-xs text-white">R$ 450,00</span>
-                           <span className="px-3 py-1 bg-[#00FF87]/10 text-[#00FF87] font-bold text-[10px] rounded-full uppercase">Concluído</span>
+                           <span className="px-3 py-1 bg-[#00FF87]/10 text-[#00FF87] font-bold text-[9px] rounded-full uppercase">Concluído</span>
                         </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
-                        <div>
-                           <div className="text-xs font-black uppercase italic text-white">Medição Cozinha</div>
-                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">OS-2491 • Campinas/SP</div>
+                    <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center text-amber-400">
+                               <Clock className="w-4 h-4" />
+                           </div>
+                           <div>
+                              <div className="text-xs font-black uppercase italic text-white">Medição Cozinha</div>
+                              <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-2491 • Campinas/SP</div>
+                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
                            <span className="font-black text-xs text-white">R$ 200,00</span>
-                           <span className="px-3 py-1 bg-amber-500/10 text-amber-500 font-bold text-[10px] rounded-full uppercase">Pendente</span>
+                           <span className="px-3 py-1 bg-amber-500/10 text-amber-500 font-bold text-[9px] rounded-full uppercase">Pendente</span>
                         </div>
                     </div>
                 </div>
@@ -366,48 +407,48 @@ function DashboardView() {
 
 function CreateServiceView() {
     return (
-        <div className="max-w-3xl animate-in slide-in-from-bottom duration-500">
-          <div className="bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="max-w-3xl mx-auto animate-in slide-in-from-bottom duration-500 pb-20">
+          <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                 <div className="space-y-2">
                     <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Tipo de Profissional</Label>
                     <Select>
-                        <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl">
+                        <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl text-xs md:text-sm">
                             <SelectValue placeholder="Selecione o parceiro..." />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1A1A1B] border-white/10">
-                            <SelectItem value="montador">Montador de Móveis</SelectItem>
-                            <SelectItem value="conferente">Conferente Técnico</SelectItem>
-                            <SelectItem value="projetista">Projetista</SelectItem>
-                            <SelectItem value="medidor">Medidor</SelectItem>
-                            <SelectItem value="instalador">Instalador</SelectItem>
+                        <SelectContent className="bg-[#1A1A1B] border-white/10 z-[100]">
+                            <SelectItem value="montador" className="text-xs md:text-sm">Montador de Móveis</SelectItem>
+                            <SelectItem value="conferente" className="text-xs md:text-sm">Conferente Técnico</SelectItem>
+                            <SelectItem value="projetista" className="text-xs md:text-sm">Projetista</SelectItem>
+                            <SelectItem value="medidor" className="text-xs md:text-sm">Medidor</SelectItem>
+                            <SelectItem value="instalador" className="text-xs md:text-sm">Instalador</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 <div className="space-y-2">
                     <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Título do Serviço</Label>
-                    <Input placeholder="Ex: Medição Técnica Cozinha" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                    <Input placeholder="Ex: Medição Técnica Cozinha" className="bg-black/40 border-white/10 h-12 rounded-xl text-xs md:text-sm" />
                 </div>
             </div>
             
             <div className="space-y-2">
                 <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Descrição Detalhada</Label>
-                <Textarea placeholder="Descreva as especificações técnicas..." className="bg-black/40 border-white/10 min-h-[150px] rounded-xl p-4" />
+                <Textarea placeholder="Descreva as especificações técnicas..." className="bg-black/40 border-white/10 min-h-[120px] md:min-h-[150px] rounded-xl p-4 text-xs md:text-sm" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                 <div className="space-y-2">
                     <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Valor Contrato Final (R$)</Label>
-                    <Input type="number" placeholder="20000.00" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                    <Input type="number" placeholder="20000.00" className="bg-black/40 border-white/10 h-12 rounded-xl text-xs md:text-sm" />
                 </div>
                 <div className="space-y-2">
                     <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Localização (Cidade/UF)</Label>
-                    <Input placeholder="Ex: São Paulo/SP" className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                    <Input placeholder="Ex: São Paulo/SP" className="bg-black/40 border-white/10 h-12 rounded-xl text-xs md:text-sm" />
                 </div>
             </div>
 
-            <Button className="w-full bg-[#00FF87] text-black font-black uppercase italic tracking-widest hover:bg-[#00FF87]/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)]">
+            <Button className="w-full bg-[#00FF87] text-black font-black uppercase italic tracking-widest hover:bg-[#00FF87]/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] text-xs md:text-sm">
                 Publicar Serviço no Feed
             </Button>
           </div>
@@ -456,8 +497,8 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
     };
 
     return (
-        <div className="max-w-4xl space-y-8 animate-in fade-in duration-500 pb-20">
-            <div className="bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl space-y-8 shadow-2xl">
+        <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
+            <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/5">
                      <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,255,135,0.1)]">
                          <Building2 className="w-8 h-8" />
@@ -682,10 +723,11 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
 
 function MetricCard({ label, value, icon, color }: any) {
     return (
-        <div className="bg-[#1A1A1B] border border-white/10 p-6 rounded-3xl space-y-2 relative overflow-hidden">
-            <div className={`${color} opacity-80 mb-2`}>{icon}</div>
-            <div className="text-xs font-bold text-muted-foreground uppercase">{label}</div>
-            <div className="text-2xl font-black text-white italic">{value}</div>
+        <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl space-y-1 md:space-y-2 relative overflow-hidden group hover:border-primary/30 transition-all">
+            <div className={`${color} opacity-80 mb-1 md:mb-2 group-hover:scale-110 transition-transform`}>{icon}</div>
+            <div className="text-[9px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider">{label}</div>
+            <div className="text-lg md:text-2xl font-black text-white italic truncate">{value}</div>
+            <div className={`absolute top-0 right-0 w-12 h-12 ${color} opacity-[0.03] -mr-6 -mt-6 rounded-full`} />
         </div>
     )
 }
