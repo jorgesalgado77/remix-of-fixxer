@@ -1460,7 +1460,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                             >
                                 <SortableContext items={galleryUrls} strategy={rectSortingStrategy}>
                                     {galleryUrls.map((url) => (
-                                        <SortableItem key={url} id={url} onRemove={() => confirmRemoval('foto', () => setGalleryUrls(prev => prev.filter(u => u !== url)))} />
+                                        <SortableItem 
+                                            key={url} 
+                                            id={url} 
+                                            isSelected={selectedMedia.includes(url)}
+                                            onToggleSelect={() => toggleMediaSelection(url)}
+                                            onRemove={() => confirmRemoval('foto', () => setGalleryUrls(prev => prev.filter(u => u !== url)))} 
+                                        />
                                     ))}
                                 </SortableContext>
                                 
