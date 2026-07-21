@@ -18,6 +18,17 @@ function LoginComponent() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Restauração automática da sessão e redirecionamento se já autenticado
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        window.location.href = "/_authenticated/dashboard";
+      }
+    };
+    checkSession();
+  }, []);
+
   const logAccess = async (data: { event_type: string, status: string, reason?: string, metadata?: any, email?: string, user_id?: string }) => {
     try {
       await supabase.from('access_logs').insert([{
@@ -51,8 +62,25 @@ function LoginComponent() {
       }
 
       if (data?.user) {
+        // Implementar upsert automático do perfil se não existir
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_type, role')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        if (!profile && !profileError) {
+          // Criar perfil básico se não existir para evitar travamentos
+          await supabase.from('profiles').insert([{
+            id: data.user.id,
+            email: data.user.email,
+            user_type: 'lojista', // fallback padrão
+            role: 'user'
+          }]);
+        }
+
         // Força o redirecionamento imediato para a dashboard via location.href
-        // conforme instrução para garantir o avanço do sistema
+        // garantindo que a sessão seja reconhecida pelo middleware
         window.location.href = "/_authenticated/dashboard";
       }
     } catch (error: any) {
@@ -144,20 +172,8 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-a8a3e28643e048ae" className="hidden">
-          CORREÇÃO CRÍTICA: BOTÃO DE LOGIN NÃO REDIRECIONA / DESTRANCAMENTO DE ROTAS
-
-          O login no Supabase ocorre com sucesso, mas ao clicar em "Entrar" o sistema não avança nem muda de tela. Isso ocorre devido a um bloqueio no `ProtectedRoute` ou à ausência da rota declarada no roteador. 
-
-          Corrija o fluxo de rotas e o evento de login aplicando EXATAMENTE estas 3 alterações:
-
-          1. DECLARAÇÃO E LIBERAÇÃO DAS ROTAS (`App.tsx`):
-          - Certifique-se de que a rota `/dashboard` existe e está devidamente mapeada para o componente da Dashboard.
-          - Para testes de desenvolvimento, DESATIVE temporariamente qualquer trava de verificação no componente `ProtectedRoute` que esteja redirecionando de volta para o login. Permita que a rota `/dashboard` seja acessível diretamente pós-login.
-
-          2. EVENTO DE SUBMIT NO FORMULÁRIO DE LOGIN (`Login.tsx`):
-          - Adicione um estado de carregamento visual (`loading`) no botão "Entrar" (ex: texto "Acessando..." com spinner esmeralda) para que o usuário saiba que o clique foi registrado.
-          - Trate o evento de login com o seguinte fluxo direto.
+        <div id="ts-visual-edit-probe-8e6cea4597614cad" className="hidden">
+          Implemente um upsert automático na tabela profiles quando o usuário fizer login e o perfil não existir, garantindo que o redirecionamento para a Dashboard nunca trave.Ajuste o redirecionamento da Dashboard para usar o campo user_type do profiles imediatamente após o login, levando Lojista, Prestador e Parceiro para as rotas corretas.Implemente a restauração automática da sessão na inicialização do app e o redirecionamento correto se o usuário já estiver autenticado.Aprimore o botão Entrar para exibir loading com spinner e desabilitar o submit enquanto a autenticação acontece, evitando cliques duplicados.
         </div>
       </div>
 
