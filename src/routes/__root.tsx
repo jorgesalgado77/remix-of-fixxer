@@ -12,6 +12,7 @@ import { AlertTriangle, RefreshCcw } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { fixAuthAndPreview } from "../lib/preview-fixer";
 
 function NotFoundComponent() {
   useEffect(() => {
@@ -154,6 +155,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    fixAuthAndPreview();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
