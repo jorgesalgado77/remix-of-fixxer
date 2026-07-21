@@ -19,7 +19,8 @@ function LoginComponent() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Restauração automática da sessão e redirecionamento se já autenticado
+    // DESATIVADO PARA EVITAR LOOPS DE REDIRECIONAMENTO
+    /*
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -27,6 +28,7 @@ function LoginComponent() {
       }
     };
     checkSession();
+    */
   }, []);
 
   const logAccess = async (data: { event_type: string, status: string, reason?: string, metadata?: any, email?: string, user_id?: string }) => {
@@ -158,26 +160,32 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-9b309939d6ed4850" className="hidden">
-          {`CORREÇÃO CRÍTICA: LOOP DE REDIRECIONAMENTO PÓS-LOGIN (TELA PISCA E VOLTA AO LOGIN)
+        <div id="ts-visual-edit-probe-959423c973c94e4f" className="hidden">
+          {`ATUAÇÃO DE EMERGÊNCIA: CORREÇÃO COMPLETA DE AUTENTICAÇÃO, DESTRAVAMENTO DE ROTAS E PAINEL ADMIN (FIXXER)
 
-O formulário autentica com sucesso no Supabase, mas a tela pisca e retorna ao '/login' devido a um 'ProtectedRoute' ou 'AuthContext' que está interceptando a rota e redirecionando de volta ao detectar a mudança de URL.
+O sistema de login está em loop: ao clicar em "Entrar", a tela pisca e retorna para o formulário limpo '/login'. Isso acontece porque o guardião de rotas (ProtectedRoute/AuthContext) rejeita a mudança de página antes que o estado do Supabase seja atualizado na memória.
 
-Aplique as seguintes correções para destravar a navegação imediatamente:
+Reescreva e corrija o fluxo de autenticação e rotas de ponta a ponta seguindo as instruções abaixo:
 
-### 1. REMOÇÃO DE MIDDLEWARES BLOQUEANTES NAS ROTAS (App.tsx)
+### 1. REMOÇÃO DE MIDDLEWARES E LIBERAÇÃO DAS ROTAS (App.tsx / routes.tsx)
 
-- Abra o arquivo de rotas (App.tsx ou routes.tsx).
+- Abra o arquivo principal de rotas e REMOVA COMPLETAMENTE qualquer componente envolvente de proteção (<ProtectedRoute>, <RequireAuth>, ou similares).
 
-- Remova o componente envolvente de proteção (<ProtectedRoute>) das rotas /admin e /dashboard/lojista.
-
-- Deixe as rotas diretas e públicas temporariamente para desenvolvimento:
+- Declare as rotas como componentes públicos e diretos para garantir que nenhuma checagem assíncrona bloqueie a navegação:
 
   \`\`\`tsx
+
+  <Route element={<Login path="/"/>} />
+
+  <Route element={<Login path="/login"/>} />
 
   <Route element={<AdminDashboard path="/admin"/>} />
 
   <Route element={<LojistaDashboard path="/dashboard/lojista"/>} />
+
+  <Route element={<PrestadorDashboard path="/dashboard/prestador"/>} />
+
+  <Route element={<ParceiroDashboard path="/dashboard/parceiro"/>} />
   \`\`\``}
         </div>
       </div>

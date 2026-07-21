@@ -3,71 +3,9 @@ import { User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async ({ location }) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    // DESATIVADO TEMPORARIAMENTE PARA TESTES DE DESENVOLVIMENTO
-    // Permite que o sistema avance mesmo se houver delay na sincronização da sessão
-    /*
-    if (!session) {
-      throw redirect({
-        to: "/auth",
-        search: {
-          redirect: location.href,
-        },
-      });
-    }
-    */
-
-    // Buscar o perfil e papel do usuário com retry (importante para o primeiro acesso)
-    let profile = null;
-    let role = 'lojista';
-
-    if (session) {
-      let retryCount = 0;
-      while (retryCount < 3 && !profile) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .maybeSingle();
-        
-        if (data) {
-          profile = data;
-          break;
-        }
-        retryCount++;
-        if (!profile) await new Promise(res => setTimeout(res, 500));
-      }
-
-      role = profile?.role || 'lojista';
-
-      // Bloqueio explícito para rotas de admin - DESATIVADO PARA DESENVOLVIMENTO
-      /*
-      if (location.pathname.startsWith('/admin') && role !== 'admin') {
-        console.warn("Acesso negado: Usuário não é administrador.");
-        
-        // Registrar tentativa de acesso não autorizado
-        await supabase.from('access_logs').insert([{
-          user_id: session.user.id,
-          email: session.user.email,
-          event_type: 'redirect_block',
-          status: 'blocked',
-          reason: `Tentativa de acesso a ${location.pathname} com role ${role}`,
-          metadata: { path: location.pathname, role }
-        }]);
-
-        throw redirect({
-          to: "/dashboard",
-        });
-      }
-      */
-    }
-
-    return { 
-      session,
-      userRole: role
-    };
+  beforeLoad: async () => {
+    // DESATIVADO TOTALMENTE PARA DESTRAVAMENTO DE NAVEGAÇÃO
+    return {};
   },
   component: AuthenticatedLayout,
 });
