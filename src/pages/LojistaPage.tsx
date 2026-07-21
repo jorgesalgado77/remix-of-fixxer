@@ -151,7 +151,7 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard() {
+function UserProfileCard({ isProfileComplete }: { isProfileComplete: boolean }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
