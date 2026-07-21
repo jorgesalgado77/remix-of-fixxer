@@ -34,6 +34,7 @@ import { Label } from "@/components/ui/label";
 import { EscrowBadge } from "@/components/EscrowBadge";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { IMaskInput } from "react-imask";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -457,6 +458,9 @@ function CreateServiceView() {
 }
 
 function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete: boolean) => void }) {
+    const [cnpj, setCnpj] = useState("");
+    const [whatsapp, setWhatsapp] = useState("");
+    const [phone, setPhone] = useState("");
     const [cep, setCep] = useState("");
     const [address, setAddress] = useState({
         logradouro: "",
@@ -469,13 +473,13 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
     const [isLoadingCep, setIsLoadingCep] = useState(false);
 
     useEffect(() => {
-        if (cep.replace(/\D/g, '').length === 8) {
-            handleCepLookup(cep);
+        const cleanCep = cep.replace(/\D/g, '');
+        if (cleanCep.length === 8) {
+            handleCepLookup(cleanCep);
         }
     }, [cep]);
 
-    const handleCepLookup = async (value: string) => {
-        const cleanCep = value.replace(/\D/g, '');
+    const handleCepLookup = async (cleanCep: string) => {
         setIsLoadingCep(true);
         try {
             const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
@@ -524,7 +528,14 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ *</Label>
-                           <Input required placeholder="00.000.000/0001-00" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <IMaskInput
+                             mask="00.000.000/0000-00"
+                             value={cnpj}
+                             onAccept={(value) => setCnpj(value)}
+                             required 
+                             placeholder="00.000.000/0001-00" 
+                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary/50 transition-all" 
+                           />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório) *</Label>
@@ -538,13 +549,26 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
                              <MessageCircle className="w-3 h-3 text-[#25D366]" /> WhatsApp (Comercial) *
                            </Label>
-                           <Input required placeholder="(11) 99999-9999" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#25D366]/50 transition-all" />
+                           <IMaskInput
+                             mask="(00) 00000-0000"
+                             value={whatsapp}
+                             onAccept={(value) => setWhatsapp(value)}
+                             required 
+                             placeholder="(11) 99999-9999" 
+                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-[#25D366]/50 transition-all" 
+                           />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
                              <Phone className="w-3 h-3 text-blue-400" /> Telefone Fixo (Opcional)
                            </Label>
-                           <Input placeholder="(11) 4000-0000" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-blue-400/50 transition-all" />
+                           <IMaskInput
+                             mask="(00) 0000-0000"
+                             value={phone}
+                             onAccept={(value) => setPhone(value)}
+                             placeholder="(11) 4000-0000" 
+                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-blue-400/50 transition-all" 
+                           />
                         </div>
                     </div>
                  </div>
@@ -588,12 +612,13 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2 relative">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CEP *</Label>
-                           <Input 
+                           <IMaskInput 
+                             mask="00000-000"
+                             value={cep}
+                             onAccept={(value) => setCep(value)}
                              required
-                             value={cep} 
-                             onChange={(e) => setCep(e.target.value)}
                              placeholder="00000-000" 
-                             className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" 
+                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary/50 transition-all" 
                            />
                            {isLoadingCep && <div className="absolute right-3 bottom-3 animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />}
                         </div>
