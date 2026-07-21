@@ -1499,7 +1499,14 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                             >
                                 <SortableContext items={videoUrls} strategy={rectSortingStrategy}>
                                     {videoUrls.map((url) => (
-                                        <SortableItem key={url} id={url} isVideo onRemove={() => confirmRemoval('vídeo', () => setVideoUrls(prev => prev.filter(u => u !== url)))} />
+                                        <SortableItem 
+                                            key={url} 
+                                            id={url} 
+                                            isVideo 
+                                            isSelected={selectedMedia.includes(url)}
+                                            onToggleSelect={() => toggleMediaSelection(url)}
+                                            onRemove={() => confirmRemoval('vídeo', () => setVideoUrls(prev => prev.filter(u => u !== url)))} 
+                                        />
                                     ))}
                                 </SortableContext>
                                 
