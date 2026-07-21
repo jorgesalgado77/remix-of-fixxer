@@ -19,7 +19,7 @@ function DashboardRedirect() {
 
       // Regra Prioritária Admin Master - Verificação Imediata
       if (email.trim() === 'jorgericardosalgado@gmail.com') {
-        navigate({ to: '/_authenticated/admin' as any });
+        navigate({ to: '/admin' as any });
         return;
       }
 
@@ -48,7 +48,7 @@ function DashboardRedirect() {
       } else if (normalizedRole.includes('parceiro') || normalizedRole.includes('fornecedor')) {
         navigate({ to: '/_authenticated/parceiro' as any });
       } else if (normalizedRole.includes('admin')) {
-        navigate({ to: '/_authenticated/admin' as any });
+        navigate({ to: '/admin' as any });
       } else if (normalizedRole.includes('cliente')) {
         navigate({ to: '/_authenticated/cliente' as any });
       } else {
