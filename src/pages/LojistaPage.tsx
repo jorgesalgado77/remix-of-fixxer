@@ -490,9 +490,15 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                               <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-2491 • Campinas/SP</div>
                            </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
-                           <span className="font-black text-xs text-white">R$ 200,00</span>
+                        <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
+                           <div className="flex flex-col items-end mr-2">
+                               <span className="font-black text-xs text-white">R$ 200,00</span>
+                               <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: 18/07</span>
+                           </div>
                            <span className="px-3 py-1 bg-amber-500/10 text-amber-500 font-bold text-[9px] rounded-full uppercase">Pendente</span>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary">
+                               <ChevronRight className="w-4 h-4" />
+                           </Button>
                         </div>
                     </div>
                 </div>
