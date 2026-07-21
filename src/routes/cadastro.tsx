@@ -180,25 +180,25 @@ function RegisterComponent() {
             <RoleCard 
               icon={<User className="w-6 h-6 text-primary" />}
               title="Casual (Cliente Final)"
-              description="Contrate montagens, assistências e soluções para sua casa"
+              description="Pesquise por lojas e prestadores de serviços para suas necessidades"
               onClick={() => handleRoleSelect("casual")}
             />
             <RoleCard 
               icon={<Store className="w-6 h-6 text-primary" />}
               title="Lojista"
-              description="Gerencie sua marcenaria, loja e projetos de móveis"
+              description="Procure por prestadores de serviço e parceiros fornecedores"
               onClick={() => handleRoleSelect("lojista")}
             />
             <RoleCard 
               icon={<Hammer className="w-6 h-6 text-primary" />}
               title="Prestador"
-              description="Receba ordens de serviço e execute montagens ou assistências"
+              description="Veja todas as propostas enviadas por lojistas e clientes finais"
               onClick={() => handleRoleSelect("prestador")}
             />
             <RoleCard 
               icon={<Truck className="w-6 h-6 text-primary" />}
               title="Parceiro Fornecedor"
-              description="Ofereça serviços de vidraçaria, marmoraria, ferragens e insumos"
+              description="Ofereça diretamente aos lojistas e clientes finais seus produtos e serviços"
               onClick={() => handleRoleSelect("fornecedor")}
             />
           </div>
@@ -360,6 +360,9 @@ function RegisterComponent() {
 
       <div id="ts-visual-edit-probe-afadfb2c3e9f46ad" className="hidden">
         AJUSTE DE CATEGORIAS NA TELA DE CADASTRO
+      </div>
+      <div id="ts-visual-edit-probe-a5046340f86144b0" className="hidden">
+        ALTERE OS SUBTITULOS
       </div>
     </div>
   );
