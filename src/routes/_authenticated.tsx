@@ -42,7 +42,8 @@ export const Route = createFileRoute("/_authenticated")({
 
       role = profile?.role || 'lojista';
 
-      // Bloqueio explícito para rotas de admin
+      // Bloqueio explícito para rotas de admin - DESATIVADO PARA DESENVOLVIMENTO
+      /*
       if (location.pathname.startsWith('/admin') && role !== 'admin') {
         console.warn("Acesso negado: Usuário não é administrador.");
         
@@ -60,6 +61,7 @@ export const Route = createFileRoute("/_authenticated")({
           to: "/dashboard",
         });
       }
+      */
     }
 
     return { 
