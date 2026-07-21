@@ -338,9 +338,13 @@ function FornecedorDashboard({ glassClass, isFreePlan, onAction }: { glassClass:
                   </div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Solicitado por: Todeschini Vila Olimpia</p>
                 </div>
-                <button className="px-6 py-3 rounded-xl bg-primary text-black text-[10px] font-black uppercase hover:opacity-90 transition-all shadow-lg active:scale-95">
+                <button 
+                  onClick={(e) => onAction(e, "oferecer orçamentos")}
+                  className="px-6 py-3 rounded-xl bg-primary text-black text-[10px] font-black uppercase hover:opacity-90 transition-all shadow-lg active:scale-95"
+                >
                   Oferecer Orçamento
                 </button>
+
               </div>
             ))}
           </div>
