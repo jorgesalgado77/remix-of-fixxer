@@ -655,26 +655,86 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
         }
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery' | 'video') => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
+    const [cropImage, setCropImage] = useState<string | null>(null);
+    const [cropType, setCropType] = useState<'logo' | 'banner' | 'gallery' | 'video' | null>(null);
 
-        const file = files[0];
-        const folder = type === 'video' ? 'videos' : type === 'gallery' ? 'gallery' : 'branding';
-        
-        const url = await uploadFile(file, 'media', folder);
-        
-        if (url) {
-            if (type === 'logo') setLogoUrl(url);
-            else if (type === 'banner') setBannerUrl(url);
-            else if (type === 'gallery') setGalleryUrls(prev => [...prev, url]);
-            else if (type === 'video') setVideoUrls(prev => [...prev.slice(-2), url]);
-            
-            toast.success("Upload realizado!", {
-                description: "O arquivo foi enviado e salvo com sucesso."
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery' | 'video') => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        // Limite para galeria
+        if (type === 'gallery' && (galleryUrls.length + files.length) > 12) {
+            toast.error("Limite da Galeria", {
+                description: "Você pode ter no máximo 12 fotos na galeria."
             });
+            return;
         }
+
+        for (const file of files) {
+            // Validações
+            const isVideo = type === 'video';
+            const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024; // 50MB video, 5MB image
+            const allowedTypes = isVideo ? ['video/mp4', 'video/quicktime'] : ['image/jpeg', 'image/png', 'image/webp'];
+
+            if (!allowedTypes.includes(file.type)) {
+                toast.error("Formato inválido", {
+                    description: `${file.name} não é um formato suportado (${allowedTypes.join(', ')}).`
+                });
+                continue;
+            }
+
+            if (file.size > maxSize) {
+                toast.error("Arquivo muito grande", {
+                    description: `${file.name} excede o limite de ${maxSize / (1024 * 1024)}MB.`
+                });
+                continue;
+            }
+
+            // Preview para Logo
+            if (type === 'logo' && !cropImage) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    setCropImage(reader.result as string);
+                    setCropType('logo');
+                };
+                reader.readAsDataURL(file);
+                return;
+            }
+
+            const folder = type === 'video' ? 'videos' : type === 'gallery' ? 'gallery' : 'branding';
+            const url = await uploadFile(file, 'media', folder);
+            
+            if (url) {
+                if (type === 'logo') setLogoUrl(url);
+                else if (type === 'banner') setBannerUrl(url);
+                else if (type === 'gallery') setGalleryUrls(prev => [...prev, url]);
+                else if (type === 'video') setVideoUrls(prev => [...prev.slice(-2), url]);
+                
+                toast.success("Upload realizado!", {
+                    description: `${file.name} enviado com sucesso.`
+                });
+            }
+        }
+        
+        // Limpar input
+        e.target.value = '';
     };
+
+    const confirmRemoval = (type: string, onConfirm: () => void) => {
+        toast("Confirmar Remoção", {
+            description: `Tem certeza que deseja remover este ${type}?`,
+            action: {
+                label: "Remover",
+                onClick: onConfirm,
+            },
+            cancel: {
+                label: "Cancelar",
+                onClick: () => {},
+            },
+            duration: 5000,
+        });
+    };
+
 
 
     return (
