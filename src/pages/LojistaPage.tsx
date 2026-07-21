@@ -176,7 +176,7 @@ export function LojistaDashboard() {
            </div>
         </header>
 
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {activeTab === 'dashboard' && <DashboardView />}
             {activeTab === 'create' && <CreateServiceView />}
             {activeTab === 'profile' && <ProfileView setIsProfileComplete={setIsProfileComplete} />}
