@@ -31,6 +31,7 @@ import {
   X,
   Crop
 } from "lucide-react";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
