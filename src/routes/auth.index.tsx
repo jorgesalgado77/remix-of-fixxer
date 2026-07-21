@@ -102,20 +102,31 @@ function LoginComponent() {
         localStorage.setItem('fixxer_authenticated', 'true');
         
         // RECUPERA O PERFIL PARA REDIRECIONAMENTO CORRETO
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', data.session.user.id)
-          .single();
+          .maybeSingle();
         
         const role = profile?.role || 'user';
         localStorage.setItem('fixxer_user_role', role);
 
+        // LOG DE AUDITORIA DE REDIRECIONAMENTO
+        console.log(`[FIXXER AUTH]: Usuário ${email} logado. Role: ${role}. Redirecionando...`);
+        await logAccess({
+          event_type: 'login_redirect',
+          status: 'success',
+          email: email,
+          user_id: data.session.user.id,
+          metadata: { role, destination: email.trim() === 'jorgericardosalgado@gmail.com' ? '/admin' : '/dashboard' }
+        });
+
         // REGRA DE OURO: Apenas jorgericardosalgado@gmail.com acessa o /admin
-        if (email.trim() === 'jorgericardosalgado@gmail.com' && (role === 'admin' || role === 'Admin')) {
+        if (email.trim() === 'jorgericardosalgado@gmail.com' && (role.toLowerCase() === 'admin')) {
+          console.log("[FIXXER AUTH]: Redirecionando para ADMIN");
           window.location.replace('/_authenticated/admin');
         } else {
-          // Garante que o redirecionamento vá para a rota exata registrada
+          console.log("[FIXXER AUTH]: Redirecionando para DASHBOARD");
           window.location.replace('/_authenticated/dashboard');
         }
       }
