@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import InputMask from "react-input-mask";
 
-export const Route = createFileRoute("/auth/register")({
+export const Route = createFileRoute("/cadastro")({
   validateSearch: (search: Record<string, unknown>) => ({
     email: (search.email as string) || "",
   }),
