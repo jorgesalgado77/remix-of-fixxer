@@ -157,7 +157,7 @@ function LoginComponent() {
       // Se já marcou algum erro no diagnóstico, não sobrescreve com toast genérico
       if (!steps.some(s => s.status === 'error')) {
         steps[1].status = 'error';
-        steps[1].detail = error.message || "Erro desconhecido durante o login.";
+        steps[1].detail = error.message || "Erro de autenticação. Verifique suas credenciais.";
         setDiagnosticSteps([...steps]);
       }
     }
