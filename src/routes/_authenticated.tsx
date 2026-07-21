@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data: { session } } = await supabase.auth.getSession();
     let storedEmail = null;
     let storedRole = 'user';
@@ -14,10 +14,16 @@ export const Route = createFileRoute("/_authenticated")({
       storedRole = localStorage.getItem('fixxer_user_role') || 'user';
     }
 
+    const isAdmin = (session?.user?.email === 'jorgericardosalgado@gmail.com') || 
+                  (storedEmail === 'jorgericardosalgado@gmail.com') || 
+                  (storedRole.toLowerCase() === 'admin');
+
     return { 
       session, 
       userRole: storedRole,
-      userEmail: session?.user?.email || storedEmail
+      userEmail: session?.user?.email || storedEmail,
+      isAdmin,
+      pathname: location.pathname
     };
   },
   component: AuthenticatedLayout,
@@ -25,33 +31,29 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
+  const { isAdmin, pathname } = Route.useRouteContext();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
+    // Sincroniza o estado showAdminPanel com a URL ou se for admin master
+    if (isAdmin || pathname.includes('admin')) {
+      setShowAdminPanel(true);
+    } else {
+      setShowAdminPanel(false);
+    }
+  }, [isAdmin, pathname]);
+
+  useEffect(() => {
     const checkAuth = async () => {
-      const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
-      const storedRole = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
       const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
-      
-      setEmail(storedEmail);
-      setRole(storedRole);
-
-      // Se for o admin master ou a URL contiver 'admin', força a exibição do painel admin
-      if (storedEmail.trim() === 'jorgericardosalgado@gmail.com' || window.location.pathname.includes('admin')) {
-        setShowAdminPanel(true);
-      }
-
       const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
       if (!currentSession && !isAuthenticated) {
         navigate({ to: "/auth" as any });
       }
     };
     checkAuth();
   }, [navigate]);
-
-  const isAdmin = email.trim() === 'jorgericardosalgado@gmail.com' || role.toLowerCase() === 'admin';
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
