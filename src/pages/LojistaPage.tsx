@@ -1417,10 +1417,35 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                     )}
                     
                     <div className="space-y-4">
-                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center justify-between">
-                            Galeria de Fotos da Empresa (Arraste para Reordenar)
-                            <span className="text-[8px] opacity-50">{galleryUrls.length}/12</span>
-                        </Label>
+                        <div className="flex items-center justify-between mb-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">
+                                Galeria de Fotos da Empresa (Arraste para Reordenar)
+                            </Label>
+                            <div className="flex items-center gap-3">
+                                {selectedMedia.length > 0 && (
+                                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right duration-300">
+                                        <span className="text-[8px] font-black text-primary uppercase italic">{selectedMedia.length} selecionados</span>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={deleteSelectedMedia}
+                                            className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg text-[8px] font-black uppercase italic"
+                                        >
+                                            <Trash className="w-3 h-3 mr-1.5" /> Excluir Lote
+                                        </Button>
+                                    </div>
+                                )}
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={selectedMedia.length === (galleryUrls.length + videoUrls.length) ? () => setSelectedMedia([]) : selectAllMedia}
+                                    className="h-7 px-2 text-muted-foreground hover:text-white hover:bg-white/5 rounded-lg text-[8px] font-black uppercase italic"
+                                >
+                                    <CheckCircle2 className="w-3 h-3 mr-1.5" /> {selectedMedia.length === (galleryUrls.length + videoUrls.length) ? 'Desmarcar' : 'Selecionar Tudo'}
+                                </Button>
+                                <span className="text-[8px] opacity-50">{galleryUrls.length}/12</span>
+                            </div>
+                        </div>
                         
                         <DndContext 
                             sensors={sensors}
