@@ -15,6 +15,8 @@ import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
+    // DESATIVADO TEMPORARIAMENTE PARA TESTES DE DESENVOLVIMENTO
+    /*
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw redirect({ to: "/auth" });
 
@@ -29,6 +31,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
     }
     
     return { profile };
+    */
+    return {};
   },
   component: AdminLayout,
 });
