@@ -549,13 +549,26 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
                              <MessageCircle className="w-3 h-3 text-[#25D366]" /> WhatsApp (Comercial) *
                            </Label>
-                           <Input required placeholder="(11) 99999-9999" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#25D366]/50 transition-all" />
+                           <IMaskInput
+                             mask="(00) 00000-0000"
+                             value={whatsapp}
+                             onAccept={(value) => setWhatsapp(value)}
+                             required 
+                             placeholder="(11) 99999-9999" 
+                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-[#25D366]/50 transition-all" 
+                           />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
                              <Phone className="w-3 h-3 text-blue-400" /> Telefone Fixo (Opcional)
                            </Label>
-                           <Input placeholder="(11) 4000-0000" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-blue-400/50 transition-all" />
+                           <IMaskInput
+                             mask="(00) 0000-0000"
+                             value={phone}
+                             onAccept={(value) => setPhone(value)}
+                             placeholder="(11) 4000-0000" 
+                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-blue-400/50 transition-all" 
+                           />
                         </div>
                     </div>
                  </div>
