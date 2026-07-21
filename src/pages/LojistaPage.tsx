@@ -118,13 +118,17 @@ export function LojistaDashboard() {
     setUndoStack(prev => [...prev.slice(-4), { action, state }]);
   };
 
+  const [emergencySetGallery, setEmergencySetGallery] = useState<any>(null);
+
   const handleUndo = () => {
     if (undoStack.length === 0) return;
     const lastAction = undoStack[undoStack.length - 1];
     
     if (lastAction.action === 'gallery_reorder' || lastAction.action === 'gallery_delete') {
-      setGalleryUrls(lastAction.state);
-      toast.success("Ação desfeita com sucesso!");
+      if (emergencySetGallery) {
+        emergencySetGallery(lastAction.state);
+        toast.success("Ação desfeita com sucesso!");
+      }
     }
     
     setUndoStack(prev => prev.slice(0, -1));
@@ -346,11 +350,49 @@ export function LojistaDashboard() {
                     setRating={setRating} 
                     undoStack={undoStack}
                     pushToUndo={pushToUndo}
+                    setEmergencySetGallery={setEmergencySetGallery}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
         </div>
       </main>
+      
+      {/* Barra de ações fixa inferior Mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around">
+        <button onClick={() => handleTabChange('dashboard')} className={`flex flex-col items-center gap-1 ${activeTab === 'dashboard' ? 'text-primary' : 'text-muted-foreground'}`}>
+            <Activity className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase italic">Painel</span>
+        </button>
+        <button 
+            onClick={() => handleTabChange('create')} 
+            disabled={!isProfileComplete}
+            className={`flex flex-col items-center gap-1 ${activeTab === 'create' ? 'text-primary' : 'text-muted-foreground'} ${!isProfileComplete ? 'opacity-30' : ''}`}
+        >
+            <PlusCircle className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase italic">Criar</span>
+        </button>
+        <div className="flex flex-col items-center gap-1 relative">
+            <button 
+                onClick={() => handleTabChange('profile')} 
+                className={`w-12 h-12 -mt-6 bg-black border border-white/20 rounded-full flex items-center justify-center shadow-2xl transition-all ${activeTab === 'profile' ? 'border-primary text-primary' : 'text-white'}`}
+            >
+                <Store className="w-6 h-6" />
+            </button>
+            <span className="text-[8px] font-black uppercase italic mt-1">Perfil</span>
+        </div>
+        <button 
+            onClick={() => handleTabChange('reviews')} 
+            disabled={!isProfileComplete}
+            className={`flex flex-col items-center gap-1 ${activeTab === 'reviews' ? 'text-primary' : 'text-muted-foreground'} ${!isProfileComplete ? 'opacity-30' : ''}`}
+        >
+            <Star className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase italic">Votos</span>
+        </button>
+        <button onClick={() => setMobileMenuOpen(true)} className="flex flex-col items-center gap-1 text-muted-foreground">
+            <Menu className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase italic">Menu</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -903,13 +945,14 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo }: { 
+function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo, setEmergencySetGallery }: { 
     setIsProfileComplete: (complete: boolean) => void; 
     rating: number; 
     getRatingColor: (val: number) => string; 
     setRating: (rating: number) => void;
     undoStack: any[];
     pushToUndo: (action: string, state: any) => void;
+    setEmergencySetGallery: (fn: any) => void;
 }) {
     const [cnpj, setCnpj] = useState("");
     const [whatsapp, setWhatsapp] = useState("");
@@ -921,6 +964,10 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
     const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
+
+    useEffect(() => {
+        setEmergencySetGallery(() => setGalleryUrls);
+    }, [setEmergencySetGallery]);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
 
     const sensors = useSensors(
