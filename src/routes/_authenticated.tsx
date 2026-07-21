@@ -21,41 +21,45 @@ export const Route = createFileRoute("/_authenticated")({
 
     // Buscar o perfil e papel do usuário com retry (importante para o primeiro acesso)
     let profile = null;
-    let retryCount = 0;
-    while (retryCount < 3 && !profile) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      
-      if (data) {
-        profile = data;
-        break;
+    let role = 'lojista';
+
+    if (session) {
+      let retryCount = 0;
+      while (retryCount < 3 && !profile) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        
+        if (data) {
+          profile = data;
+          break;
+        }
+        retryCount++;
+        if (!profile) await new Promise(res => setTimeout(res, 500));
       }
-      retryCount++;
-      if (!profile) await new Promise(res => setTimeout(res, 500));
-    }
 
-    const role = profile?.role || 'lojista';
+      role = profile?.role || 'lojista';
 
-    // Bloqueio explícito para rotas de admin
-    if (location.pathname.startsWith('/admin') && role !== 'admin') {
-      console.warn("Acesso negado: Usuário não é administrador.");
-      
-      // Registrar tentativa de acesso não autorizado
-      await supabase.from('access_logs').insert([{
-        user_id: session.user.id,
-        email: session.user.email,
-        event_type: 'redirect_block',
-        status: 'blocked',
-        reason: `Tentativa de acesso a ${location.pathname} com role ${role}`,
-        metadata: { path: location.pathname, role }
-      }]);
+      // Bloqueio explícito para rotas de admin
+      if (location.pathname.startsWith('/admin') && role !== 'admin') {
+        console.warn("Acesso negado: Usuário não é administrador.");
+        
+        // Registrar tentativa de acesso não autorizado
+        await supabase.from('access_logs').insert([{
+          user_id: session.user.id,
+          email: session.user.email,
+          event_type: 'redirect_block',
+          status: 'blocked',
+          reason: `Tentativa de acesso a ${location.pathname} com role ${role}`,
+          metadata: { path: location.pathname, role }
+        }]);
 
-      throw redirect({
-        to: "/dashboard",
-      });
+        throw redirect({
+          to: "/dashboard",
+        });
+      }
     }
 
     return { 
