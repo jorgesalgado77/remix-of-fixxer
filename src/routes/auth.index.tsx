@@ -25,13 +25,16 @@ function LoginComponent() {
     setErrorMsg('');
 
     // SE FOR O E-MAIL E SENHA DO ADMINISTRADOR MASTER, LIBERA ACESSO IMEDIATO
-    if (email.trim() === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
+    // 2. Normaliza o e-mail e verifica Administrador Master
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('fixxer_user_email', email.trim());
+        localStorage.setItem('fixxer_user_email', normalizedEmail);
         localStorage.setItem('fixxer_user_role', 'Admin');
+        localStorage.setItem('fixxer_user_category', 'admin');
         localStorage.setItem('fixxer_authenticated', 'true');
         
-        // Redirecionamento forçado para garantir que o bypass seja ativado
+        // Redirecionamento imediato para /admin
         window.location.assign('/admin');
       }
       return;
