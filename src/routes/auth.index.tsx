@@ -26,13 +26,21 @@ function LoginComponent() {
     // SE FOR O E-MAIL E SENHA DO ADMINISTRADOR MASTER, LIBERA ACESSO IMEDIATO
     if (email.trim() === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('fixxer_user_email', email);
+        localStorage.setItem('fixxer_user_email', email.trim());
         localStorage.setItem('fixxer_user_role', 'Admin');
         localStorage.setItem('fixxer_authenticated', 'true');
-        window.location.replace('/admin');
+        // Usamos pushState + dispatchEvent para forçar o router a reagir
+        window.history.pushState({}, '', '/admin');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        setTimeout(() => {
+          if (window.location.pathname !== '/admin') {
+            window.location.href = '/admin';
+          }
+        }, 100);
       }
       return;
     }
+
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
