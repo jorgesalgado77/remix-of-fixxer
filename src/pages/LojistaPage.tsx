@@ -396,8 +396,12 @@ function ProfileView() {
                            <Input placeholder="FIXXER Móveis Planejados" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social / CNPJ</Label>
-                           <Input placeholder="FIXXER LTDA / 00.000.000/0001-00" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social</Label>
+                           <Input placeholder="FIXXER LTDA" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                        </div>
+                        <div className="space-y-2">
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ</Label>
+                           <Input placeholder="00.000.000/0001-00" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório)</Label>
@@ -511,6 +515,18 @@ function ProfileView() {
                                 <PlusCircle className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
                                 <span className="text-[8px] font-black text-primary uppercase">Adicionar</span>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Vídeos da Empresa (Até 3 vídeos)</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="h-40 rounded-2xl border-2 border-dashed border-white/10 flex items-center justify-center hover:border-primary/30 transition-all cursor-pointer bg-black/20 group">
+                                    <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary/50" />
+                                    <span className="text-[10px] font-black text-muted-foreground uppercase ml-2">Vídeo {i}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                  </div>
