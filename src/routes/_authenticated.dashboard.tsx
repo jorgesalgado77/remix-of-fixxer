@@ -7,7 +7,7 @@ import {
   Users, 
   Settings, 
   MessageSquare, 
-  TrendingUp,
+  Package,
   Package,
   Clock,
   Plus,
