@@ -780,11 +780,12 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                     </div>
                  </div>
 
-                 <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00FF87]/10 border border-[#00FF87]/20">
-                        <Star className="w-4 h-4 fill-[#00FF87] text-[#00FF87]" />
-                        <span className="text-xs font-black text-white italic">Reputação Atual: <span className="text-[#00FF87]">4.9 / 5.0</span></span>
+                  <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                        <Star className={`w-4 h-4 ${getRatingColor(rating).replace('drop-shadow-', '')} fill-current`} />
+                        <span className="text-xs font-black text-white italic">Reputação Atual: <span className={getRatingColor(rating)}>{rating.toFixed(1)} / 5.0</span></span>
                     </div>
+
                     <Button 
                         onClick={() => {
                             setIsProfileComplete(true);
