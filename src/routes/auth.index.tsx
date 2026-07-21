@@ -61,16 +61,18 @@ function LoginComponent() {
       });
 
       if (error) {
+        console.error("Erro detalhado na autenticação:", error);
         steps[0].status = 'error';
         steps[0].detail = error.message === "Invalid login credentials" 
-          ? "Credenciais inválidas. Se você ainda não se cadastrou, use a tela de cadastro primeiro."
-          : error.message;
+          ? "Credenciais inválidas. Certifique-se de que o usuário administrador foi criado no SQL Editor do Supabase."
+          : `Erro Supabase: ${error.message} (${error.status || 'sem status'})`;
         setDiagnosticSteps([...steps]);
         await logAccess({ 
           event_type: 'login_attempt', 
           status: 'failure', 
-          reason: error.message, 
-          email: email.trim() 
+          reason: `${error.message} [Code: ${error.status}]`, 
+          email: email.trim(),
+          metadata: { error_object: JSON.parse(JSON.stringify(error)) }
         });
         throw error;
       }
