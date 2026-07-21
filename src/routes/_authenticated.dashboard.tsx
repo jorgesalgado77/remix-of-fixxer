@@ -816,6 +816,8 @@ function ProposalModal({ draft, onChange, onClose, onSubmit, isSubmitting, glass
 // --- PRESTADOR DASHBOARD ---
 function PrestadorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: string, isFreePlan: boolean, onAction: (e: any, action: string) => boolean }) {
   const [isAvailable, setIsAvailable] = useState(true);
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'os' | 'profile'>('overview');
+
 
   return (
     <div className="space-y-6">
