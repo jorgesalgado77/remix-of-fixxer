@@ -308,7 +308,7 @@ function PrestadorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: 
 }
 
 // --- FORNECEDOR DASHBOARD ---
-function FornecedorDashboard({ glassClass, isFreePlan }: { glassClass: string, isFreePlan: boolean }) {
+function FornecedorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: string, isFreePlan: boolean, onAction: (e: any, action: string) => boolean }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
