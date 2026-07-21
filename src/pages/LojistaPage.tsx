@@ -513,7 +513,7 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete: boolean) => void }) {
+function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }: { setIsProfileComplete: (complete: boolean) => void; rating: number; getRatingColor: (val: number) => string; setRating: (rating: number) => void }) {
     const [cnpj, setCnpj] = useState("");
     const [whatsapp, setWhatsapp] = useState("");
     const [phone, setPhone] = useState("");
