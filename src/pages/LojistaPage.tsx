@@ -423,6 +423,8 @@ export function LojistaDashboard() {
                     pushToUndo={pushToUndo}
                     setEmergencySetGallery={setEmergencySetGallery}
                     handleUndo={handleUndo}
+                    failedUploads={failedUploads}
+                    setFailedUploads={setFailedUploads}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
@@ -1017,7 +1019,7 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo, setEmergencySetGallery, handleUndo }: { 
+function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo, setEmergencySetGallery, handleUndo, failedUploads, setFailedUploads }: { 
     setIsProfileComplete: (complete: boolean) => void; 
     rating: number; 
     getRatingColor: (val: number) => string; 
@@ -1026,6 +1028,8 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     pushToUndo: (action: string, state: any) => void;
     setEmergencySetGallery: (fn: any) => void;
     handleUndo: () => void;
+    failedUploads: File[];
+    setFailedUploads: React.Dispatch<React.SetStateAction<File[]>>;
 }) {
     const [cnpj, setCnpj] = useState("");
     const [whatsapp, setWhatsapp] = useState("");
@@ -1095,6 +1099,24 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
 
     
     const { uploadFile, isUploading, uploadProgress } = useMediaUpload();
+
+    const retryFailedUpload = async (fileName: string) => {
+        const file = failedUploads.find(f => f.name === fileName);
+        if (file) {
+            setFailedUploads(prev => prev.filter(f => f.name !== fileName));
+            const type = file.type.startsWith('video/') ? 'video' : 'gallery';
+            handleFileUpload({ target: { files: [file] } } as any, type);
+        }
+    };
+
+    const retryAllFailed = async () => {
+        const filesToRetry = [...failedUploads];
+        setFailedUploads([]);
+        for (const file of filesToRetry) {
+            const type = file.type.startsWith('video/') ? 'video' : 'gallery';
+            handleFileUpload({ target: { files: [file] } } as any, type);
+        }
+    };
 
     useEffect(() => {
         const loadMediaOrder = async () => {
@@ -1210,6 +1232,8 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                 toast.success("Upload concluído", {
                     description: `${file.name} está pronto.`
                 });
+            } else {
+                setFailedUploads(prev => [...prev, file]);
             }
             return url;
         });
