@@ -1,7 +1,9 @@
 import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
@@ -38,7 +40,6 @@ function AuthenticatedLayout() {
       setEmail(storedEmail);
       setRole(storedRole);
 
-      // Se for o admin master ou a URL contiver 'admin', força a exibição do painel admin
       if (storedEmail.trim() === 'jorgericardosalgado@gmail.com' || window.location.pathname.includes('admin')) {
         setShowAdminPanel(true);
       }
@@ -49,6 +50,32 @@ function AuthenticatedLayout() {
       }
     };
     checkAuth();
+
+    // Notificações Realtime para mudança de status
+    const channel = supabaseExternal
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'service_orders', // ou o nome correto da tabela de O.S.
+        },
+        (payload) => {
+          if (payload.new && payload.old && payload.new.status !== payload.old.status) {
+            toast.info("Status Atualizado!", {
+              description: `A O.S. #${payload.new.id} mudou para ${payload.new.status}`,
+              duration: 5000,
+              icon: <Activity className="w-4 h-4" />
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseExternal.removeChannel(channel);
+    };
   }, [navigate]);
 
   const isAdmin = email.trim() === 'jorgericardosalgado@gmail.com' || role.toLowerCase() === 'admin';
