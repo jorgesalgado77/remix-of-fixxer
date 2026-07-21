@@ -247,6 +247,58 @@ export function LojistaDashboard() {
                </h2>
            </div>
            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className={`relative rounded-xl border border-white/5 hover:bg-white/5 text-muted-foreground hover:text-white transition-all ${showNotifications ? 'bg-white/10 text-white' : ''}`}
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-[#050505]">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+
+                {showNotifications && (
+                  <div className="absolute right-0 mt-3 w-80 bg-[#1A1A1B] border border-white/10 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
+                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                      <h4 className="text-[10px] font-black text-white uppercase italic">Notificações</h4>
+                      <div className="flex gap-2">
+                        <button onClick={markAllAsRead} className="text-[8px] font-bold text-primary uppercase hover:underline">Lidas</button>
+                        <button onClick={clearNotifications} className="text-[8px] font-bold text-red-400 uppercase hover:underline">Limpar</button>
+                      </div>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+                      {notifications.length > 0 ? (
+                        notifications.map(notification => (
+                          <div 
+                            key={notification.id} 
+                            onClick={() => markAsRead(notification.id)}
+                            className={`p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors cursor-pointer relative ${!notification.read ? 'bg-primary/5' : ''}`}
+                          >
+                            {!notification.read && <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary" />}
+                            <div className="pl-3">
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="text-[9px] font-black text-white uppercase italic">{notification.title}</span>
+                                <span className="text-[7px] text-muted-foreground font-bold">{notification.time}</span>
+                              </div>
+                              <p className="text-[10px] text-white/70 leading-tight">{notification.message}</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center">
+                          <Bell className="w-8 h-8 text-white/10 mx-auto mb-2" />
+                          <p className="text-[9px] text-muted-foreground uppercase font-bold italic">Nenhuma notificação</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 <span className="text-[10px] font-black text-primary uppercase italic">Sessão Ativa</span>
