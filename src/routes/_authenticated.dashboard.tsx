@@ -611,6 +611,18 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
 }
 
 // --- Helpers: skeletons, empty & error states ---
+function MobileNavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center gap-1 transition-all ${active ? 'text-primary scale-110' : 'text-muted-foreground hover:text-white'}`}
+    >
+      <div className={`${active ? 'shadow-[0_0_15px_rgba(0,255,135,0.3)]' : ''}`}>{icon}</div>
+      <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
+    </button>
+  );
+}
+
 function StatSkeleton({ glassClass }: { glassClass: string }) {
   return <div className={`p-5 rounded-2xl ${glassClass} border border-white/5 h-[110px] animate-pulse`}>
     <div className="w-8 h-8 rounded-lg bg-white/10 mb-4"></div>
@@ -816,6 +828,9 @@ function ProposalModal({ draft, onChange, onClose, onSubmit, isSubmitting, glass
 // --- PRESTADOR DASHBOARD ---
 function PrestadorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: string, isFreePlan: boolean, onAction: (e: any, action: string) => boolean }) {
   const [isAvailable, setIsAvailable] = useState(true);
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'os' | 'profile'>('overview');
+
+
 
   return (
     <div className="space-y-6">
@@ -898,12 +913,23 @@ function PrestadorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: 
           </div>
         </div>
       </div>
+      
+      {/* Bottom Nav Mobile for Prestador */}
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 h-20 border-t border-white/10 flex items-center justify-around px-6 z-50 ${glassClass} backdrop-blur-xl`}>
+        <MobileNavItem icon={<LayoutDashboard />} label="Início" active={activeSubTab === 'overview'} onClick={() => setActiveSubTab('overview')} />
+        <MobileNavItem icon={<TrendingUp />} label="Feed" active={window.location.pathname === '/feed'} onClick={() => window.location.href = '/feed'} />
+        <MobileNavItem icon={<MessageSquare />} label="Chat" active={activeSubTab === 'os'} onClick={() => setActiveSubTab('os')} />
+        <MobileNavItem icon={<User />} label="Perfil" active={activeSubTab === 'profile'} onClick={() => setActiveSubTab('profile')} />
+      </div>
     </div>
   );
 }
 
 // --- FORNECEDOR DASHBOARD ---
 function FornecedorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: string, isFreePlan: boolean, onAction: (e: any, action: string) => boolean }) {
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'os' | 'profile'>('overview');
+
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -913,6 +939,7 @@ function FornecedorDashboard({ glassClass, isFreePlan, onAction }: { glassClass:
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
+
         <div className={`md:col-span-2 p-6 rounded-3xl ${glassClass}`}>
           <h2 className="text-lg font-black text-white uppercase italic flex items-center gap-2 mb-6">
             <TrendingUp className="w-5 h-5 text-primary" />
@@ -973,6 +1000,14 @@ function FornecedorDashboard({ glassClass, isFreePlan, onAction }: { glassClass:
 
           </div>
         </div>
+      </div>
+      
+      {/* Bottom Nav Mobile for Fornecedor */}
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 h-20 border-t border-white/10 flex items-center justify-around px-6 z-50 ${glassClass} backdrop-blur-xl`}>
+        <MobileNavItem icon={<LayoutDashboard />} label="Início" active={activeSubTab === 'overview'} onClick={() => setActiveSubTab('overview')} />
+        <MobileNavItem icon={<TrendingUp />} label="Feed" active={window.location.pathname === '/feed'} onClick={() => window.location.href = '/feed'} />
+        <MobileNavItem icon={<MessageSquare />} label="Chat" active={activeSubTab === 'os'} onClick={() => setActiveSubTab('os')} />
+        <MobileNavItem icon={<User />} label="Perfil" active={activeSubTab === 'profile'} onClick={() => setActiveSubTab('profile')} />
       </div>
     </div>
   );

@@ -65,6 +65,12 @@ function AuthenticatedLayout() {
             Perfil
           </Link>
           <Link 
+            to="/feed" 
+            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95"
+          >
+            Feed
+          </Link>
+          <Link 
             to="/dashboard" 
             className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95"
           >
