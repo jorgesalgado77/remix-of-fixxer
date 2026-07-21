@@ -458,6 +458,9 @@ function CreateServiceView() {
 }
 
 function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete: boolean) => void }) {
+    const [cnpj, setCnpj] = useState("");
+    const [whatsapp, setWhatsapp] = useState("");
+    const [phone, setPhone] = useState("");
     const [cep, setCep] = useState("");
     const [address, setAddress] = useState({
         logradouro: "",
@@ -470,13 +473,13 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
     const [isLoadingCep, setIsLoadingCep] = useState(false);
 
     useEffect(() => {
-        if (cep.replace(/\D/g, '').length === 8) {
-            handleCepLookup(cep);
+        const cleanCep = cep.replace(/\D/g, '');
+        if (cleanCep.length === 8) {
+            handleCepLookup(cleanCep);
         }
     }, [cep]);
 
-    const handleCepLookup = async (value: string) => {
-        const cleanCep = value.replace(/\D/g, '');
+    const handleCepLookup = async (cleanCep: string) => {
         setIsLoadingCep(true);
         try {
             const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
