@@ -468,8 +468,9 @@ function ProfileView() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2 relative">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CEP</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CEP *</Label>
                            <Input 
+                             required
                              value={cep} 
                              onChange={(e) => setCep(e.target.value)}
                              placeholder="00000-000" 
@@ -478,8 +479,9 @@ function ProfileView() {
                            {isLoadingCep && <div className="absolute right-3 bottom-3 animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />}
                         </div>
                         <div className="md:col-span-2 space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logradouro / Rua</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logradouro / Rua *</Label>
                            <Input 
+                             required
                              value={address.logradouro} 
                              onChange={(e) => setAddress({...address, logradouro: e.target.value})}
                              placeholder="Rua, Avenida..." 
@@ -487,8 +489,9 @@ function ProfileView() {
                            />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Bairro</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Bairro *</Label>
                            <Input 
+                             required
                              value={address.bairro} 
                              onChange={(e) => setAddress({...address, bairro: e.target.value})}
                              placeholder="Bairro" 
@@ -496,8 +499,9 @@ function ProfileView() {
                            />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Cidade</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Cidade *</Label>
                            <Input 
+                             required
                              value={address.localidade} 
                              onChange={(e) => setAddress({...address, localidade: e.target.value})}
                              placeholder="Cidade" 
@@ -505,8 +509,9 @@ function ProfileView() {
                            />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Estado / UF</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Estado / UF *</Label>
                            <Input 
+                             required
                              value={address.uf} 
                              onChange={(e) => setAddress({...address, uf: e.target.value})}
                              placeholder="UF" 
@@ -514,8 +519,8 @@ function ProfileView() {
                            />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Número</Label>
-                           <Input placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Número *</Label>
+                           <Input required placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="md:col-span-2 space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Complemento</Label>
