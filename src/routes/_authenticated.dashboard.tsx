@@ -30,7 +30,8 @@ import {
   DollarSign,
   ChevronRight,
   Filter,
-  Trash2
+  Trash2,
+  TrendingUp
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
