@@ -297,25 +297,61 @@ export function LojistaDashboard() {
 
                 {showNotifications && (
                   <div className="absolute right-0 mt-3 w-80 bg-[#1A1A1B] border border-white/10 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
-                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                      <h4 className="text-[10px] font-black text-white uppercase italic">Notificações</h4>
-                      <div className="flex gap-2">
-                        <button onClick={markAllAsRead} className="text-[8px] font-bold text-primary uppercase hover:underline">Lidas</button>
-                        <button onClick={clearNotifications} className="text-[8px] font-bold text-red-400 uppercase hover:underline">Limpar</button>
+                    <div className="p-4 border-b border-white/5 flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[10px] font-black text-white uppercase italic">Notificações</h4>
+                        <div className="flex gap-2">
+                          <button onClick={markAllAsRead} className="text-[8px] font-bold text-primary uppercase hover:underline">Lidas</button>
+                          <button onClick={clearNotifications} className="text-[8px] font-bold text-red-400 uppercase hover:underline">Limpar</button>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                        <Input 
+                            placeholder="FILTRAR POR ID DA O.S..." 
+                            value={notificationFilter}
+                            onChange={(e) => setNotificationFilter(e.target.value)}
+                            className="h-7 bg-black/40 border-white/10 text-[8px] pl-7 uppercase font-black italic"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                        <span className="text-[8px] font-black text-muted-foreground uppercase italic">Alerta de Status</span>
+                        <button 
+                            onClick={() => setNotificationSettings(s => ({...s, status_change: !s.status_change}))}
+                            className={`w-8 h-4 rounded-full transition-all relative ${notificationSettings.status_change ? 'bg-primary' : 'bg-white/10'}`}
+                        >
+                            <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${notificationSettings.status_change ? 'right-0.5' : 'left-0.5'}`} />
+                        </button>
                       </div>
                     </div>
                     <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
-                      {notifications.length > 0 ? (
-                        notifications.map(notification => (
+                      {notifications.filter(n => {
+                          const matchesFilter = !notificationFilter || n.os_id?.includes(notificationFilter);
+                          const matchesSettings = notificationSettings[n.type as keyof typeof notificationSettings];
+                          return matchesFilter && matchesSettings;
+                      }).length > 0 ? (
+                        notifications.filter(n => {
+                            const matchesFilter = !notificationFilter || n.os_id?.includes(notificationFilter);
+                            const matchesSettings = notificationSettings[n.type as keyof typeof notificationSettings];
+                            return matchesFilter && matchesSettings;
+                        }).map(notification => (
                           <div 
                             key={notification.id} 
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => {
+                                markAsRead(notification.id);
+                                if (notification.os_id) {
+                                    toast.info(`Abrindo O.S. #${notification.os_id}`);
+                                }
+                            }}
                             className={`p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors cursor-pointer relative ${!notification.read ? 'bg-primary/5' : ''}`}
                           >
                             {!notification.read && <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary" />}
                             <div className="pl-3">
                               <div className="flex justify-between items-start mb-1">
-                                <span className="text-[9px] font-black text-white uppercase italic">{notification.title}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] font-black text-white uppercase italic">{notification.title}</span>
+                                    {notification.os_id && <span className="text-[7px] text-primary font-black uppercase italic">O.S. #{notification.os_id}</span>}
+                                </div>
                                 <span className="text-[7px] text-muted-foreground font-bold">{notification.time}</span>
                               </div>
                               <p className="text-[10px] text-white/70 leading-tight">{notification.message}</p>
@@ -325,7 +361,7 @@ export function LojistaDashboard() {
                       ) : (
                         <div className="p-8 text-center">
                           <Bell className="w-8 h-8 text-white/10 mx-auto mb-2" />
-                          <p className="text-[9px] text-muted-foreground uppercase font-bold italic">Nenhuma notificação</p>
+                          <p className="text-[9px] text-muted-foreground uppercase font-bold italic">Nenhum alerta compatível</p>
                         </div>
                       )}
                     </div>
@@ -1099,7 +1135,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
             return;
         }
 
-        for (const file of files) {
+        const uploadPromises = files.map(async (file) => {
             // Validações
             const isVideo = type === 'video';
             const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024; // 50MB video, 5MB image
@@ -1109,17 +1145,17 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                 toast.error("Formato inválido", {
                     description: `${file.name} não é um formato suportado (${allowedTypes.join(', ')}).`
                 });
-                continue;
+                return null;
             }
 
             if (file.size > maxSize) {
                 toast.error("Arquivo muito grande", {
                     description: `${file.name} excede o limite de ${maxSize / (1024 * 1024)}MB.`
                 });
-                continue;
+                return null;
             }
 
-            // Preview para Logo
+            // Preview para Logo (apenas se for arquivo único ou o primeiro da lista)
             if (type === 'logo' && !cropImage) {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -1127,21 +1163,34 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     setCropType('logo');
                 };
                 reader.readAsDataURL(file);
-                return;
+                return null;
             }
 
             const folder = type === 'video' ? 'videos' : type === 'gallery' ? 'gallery' : 'branding';
             const url = await uploadFile(file, 'media', folder);
             
             if (url) {
-                if (type === 'logo') setLogoUrl(url);
-                else if (type === 'banner') setBannerUrl(url);
-                else if (type === 'gallery') setGalleryUrls(prev => [...prev, url]);
-                else if (type === 'video') setVideoUrls(prev => [...prev.slice(-2), url]);
-                
-                toast.success("Upload realizado!", {
-                    description: `${file.name} enviado com sucesso.`
+                toast.success("Upload concluído", {
+                    description: `${file.name} está pronto.`
                 });
+            }
+            return url;
+        });
+
+        const urls = (await Promise.all(uploadPromises)).filter(url => url !== null) as string[];
+        
+        if (urls.length > 0) {
+            if (type === 'logo') setLogoUrl(urls[0]);
+            else if (type === 'banner') setBannerUrl(urls[0]);
+            else if (type === 'gallery') {
+                const newGallery = [...galleryUrls, ...urls];
+                setGalleryUrls(newGallery);
+                saveMediaOrder('gallery', newGallery);
+            }
+            else if (type === 'video') {
+                const newVideos = [...videoUrls.slice(-(2 - urls.length)), ...urls];
+                setVideoUrls(newVideos);
+                saveMediaOrder('video', newVideos);
             }
         }
         
@@ -1184,19 +1233,24 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
         if (selectedMedia.length === 0) return;
         
         const count = selectedMedia.length;
+        pushToUndo('gallery_delete', galleryUrls);
         const toastId = toast.loading(`Excluindo ${count} item(s)...`);
 
         try {
-            // No mundo real, deletaríamos os arquivos do storage aqui
             setGalleryUrls(prev => prev.filter(url => !selectedMedia.includes(url)));
             setVideoUrls(prev => prev.filter(url => !selectedMedia.includes(url)));
             setSelectedMedia([]);
             
-            // Salvar a nova ordem no banco
             await saveMediaOrder('gallery');
             await saveMediaOrder('video');
             
-            toast.success(`${count} item(s) removido(s) com sucesso!`, { id: toastId });
+            toast.success(`${count} item(s) removido(s) com sucesso!`, { 
+                id: toastId,
+                action: {
+                    label: "Desfazer",
+                    onClick: handleUndo
+                }
+            });
         } catch (err) {
             console.error('Erro ao excluir em lote:', err);
             toast.error("Erro ao realizar exclusão em lote", { id: toastId });
