@@ -212,6 +212,7 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
   const { data: osList, isLoading: osLoading, isError: osError, refetch: refetchOs } = useQuery({
     queryKey: ['lojista-os', lojistaId],
     queryFn: async () => {
+      // Tenta buscar por lojista_id ou client_id para garantir compatibilidade
       const { data, error } = await supabase
         .from('orders_of_service')
         .select('*')
