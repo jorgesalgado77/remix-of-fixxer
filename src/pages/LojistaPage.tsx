@@ -43,7 +43,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { IMaskInput } from "react-imask";
 import { useMediaUpload } from "@/hooks/use-media-upload";
 import { Progress } from "@/components/ui/progress";
-
+import { ActivitySelect } from "@/components/ActivitySelect";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy } from "@dnd-kit/sortable";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -539,8 +543,15 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                                             </p>
                                         </div>
                                         <div className="flex gap-2 justify-end items-end">
-                                            <Button size="sm" className="bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10">Ver O.S. Completa</Button>
-                                            <Button size="sm" className="bg-primary text-black text-[9px] font-black uppercase italic">Atualizar Status</Button>
+                                            <Link 
+                                                to="/_authenticated/feed" 
+                                                search={{ context: service.id }}
+                                                className="bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2 rounded-lg"
+                                            >
+                                                Ver Detalhes O.S.
+                                            </Link>
+                                            <Button size="sm" className="bg-primary text-black text-[9px] font-black uppercase italic">Avançar Status</Button>
+
                                         </div>
                                     </div>
                                 </div>
@@ -609,10 +620,40 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     const [whatsapp, setWhatsapp] = useState("");
     const [phone, setPhone] = useState("");
     const [cep, setCep] = useState("");
+    const [activityBranch, setActivityBranch] = useState("");
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [bannerUrl, setBannerUrl] = useState<string | null>(null);
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: any, type: 'gallery' | 'video') => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            if (type === 'gallery') {
+                setGalleryUrls((items) => {
+                    const oldIndex = items.indexOf(active.id);
+                    const newIndex = items.indexOf(over.id);
+                    return arrayMove(items, oldIndex, newIndex);
+                });
+            } else {
+                setVideoUrls((items) => {
+                    const oldIndex = items.indexOf(active.id);
+                    const newIndex = items.indexOf(over.id);
+                    return arrayMove(items, oldIndex, newIndex);
+                });
+            }
+            toast.success("Ordem atualizada!");
+        }
+    };
+
     
     const { uploadFile, isUploading, uploadProgress } = useMediaUpload();
 
@@ -735,9 +776,18 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
         });
     };
 
-
+    const handleDrop = async (e: React.DragEvent, type: 'gallery' | 'video') => {
+        e.preventDefault();
+        setIsDraggingOver(false);
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            const mockEvent = { target: { files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+            handleFileUpload(mockEvent, type);
+        }
+    };
 
     return (
+
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
             <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/5">
@@ -810,10 +860,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                     </div>
                  </div>
 
-                 <div className="space-y-6 pt-6 border-t border-white/5">
+                  <div className="space-y-6 pt-6 border-t border-white/5">
+                    <ActivitySelect value={activityBranch} onChange={setActivityBranch} />
+
                     <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
                         <Globe className="w-3 h-3" /> Redes Sociais e Site
                     </h4>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
@@ -1016,53 +1069,73 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                         </div>
                     )}
                     
-                    <div className="space-y-2">
-                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Galeria de Fotos da Empresa (Até 12 fotos)</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {galleryUrls.map((url, i) => (
-                                <div key={i} className="aspect-square rounded-2xl border border-white/10 overflow-hidden relative group">
-                                    <img src={url} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
-                                    <button 
-                                        onClick={() => confirmRemoval('Foto', () => setGalleryUrls(prev => prev.filter((_, idx) => idx !== i)))}
-                                        className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 className="w-3 h-3 text-white" />
-                                    </button>
-                                </div>
-                            ))}
-                            {galleryUrls.length < 12 && (
-                                <label className="aspect-square rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-1 bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group">
-                                    <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'gallery')} />
-                                    <PlusCircle className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-                                    <span className="text-[8px] font-black text-primary uppercase">Adicionar</span>
-                                </label>
-                            )}
-                        </div>
+                    <div className="space-y-4">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center justify-between">
+                            Galeria de Fotos da Empresa (Arraste para Reordenar)
+                            <span className="text-[8px] opacity-50">{galleryUrls.length}/12</span>
+                        </Label>
+                        
+                        <DndContext 
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(e) => handleDragEnd(e, 'gallery')}
+                        >
+                            <div 
+                                className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-4 rounded-3xl border-2 border-dashed transition-all ${isDraggingOver ? 'border-primary bg-primary/5' : 'border-white/10 bg-black/20'}`}
+                                onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                                onDragLeave={() => setIsDraggingOver(false)}
+                                onDrop={(e) => handleDrop(e, 'gallery')}
+                            >
+                                <SortableContext items={galleryUrls} strategy={rectSortingStrategy}>
+                                    {galleryUrls.map((url) => (
+                                        <SortableItem key={url} id={url} onRemove={() => confirmRemoval('foto', () => setGalleryUrls(prev => prev.filter(u => u !== url)))} />
+                                    ))}
+                                </SortableContext>
+                                
+                                {galleryUrls.length < 12 && (
+                                    <label className="aspect-square rounded-2xl border border-white/5 bg-white/5 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all cursor-pointer group">
+                                        <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'gallery')} />
+                                        <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <span className="text-[8px] font-black uppercase text-muted-foreground group-hover:text-primary tracking-tighter">Add Foto</span>
+                                    </label>
+                                )}
+                            </div>
+                        </DndContext>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Vídeos da Empresa (Até 3 vídeos)</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {videoUrls.map((url, i) => (
-                                <div key={i} className="h-40 rounded-2xl border border-white/10 bg-black/40 overflow-hidden relative group">
-                                    <video src={url} className="w-full h-full object-cover" controls />
-                                    <button 
-                                        onClick={() => confirmRemoval('Vídeo', () => setVideoUrls(prev => prev.filter((_, idx) => idx !== i)))}
-                                        className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 className="w-3 h-3 text-white" />
-                                    </button>
-                                </div>
-                            ))}
-                            {videoUrls.length < 3 && (
-                                <label className="h-40 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center hover:border-primary/30 transition-all cursor-pointer bg-black/20 group">
-                                    <input type="file" className="hidden" accept="video/*" multiple onChange={(e) => handleFileUpload(e, 'video')} />
-                                    <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary/50" />
-                                    <span className="text-[10px] font-black text-muted-foreground uppercase ml-2">Adicionar Vídeos</span>
-                                </label>
-                            )}
-                        </div>
+                    <div className="space-y-4 pt-6 border-t border-white/5">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center justify-between">
+                            Vídeos da Empresa (Até 3 vídeos)
+                            <span className="text-[8px] opacity-50">{videoUrls.length}/3</span>
+                        </Label>
+                        
+                        <DndContext 
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(e) => handleDragEnd(e, 'video')}
+                        >
+                            <div 
+                                className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-3xl border-2 border-dashed border-white/10 bg-black/20"
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => handleDrop(e, 'video')}
+                            >
+                                <SortableContext items={videoUrls} strategy={rectSortingStrategy}>
+                                    {videoUrls.map((url) => (
+                                        <SortableItem key={url} id={url} isVideo onRemove={() => confirmRemoval('vídeo', () => setVideoUrls(prev => prev.filter(u => u !== url)))} />
+                                    ))}
+                                </SortableContext>
+                                
+                                {videoUrls.length < 3 && (
+                                    <label className="aspect-video sm:aspect-square rounded-2xl border border-white/5 bg-white/5 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all cursor-pointer group">
+                                        <input type="file" className="hidden" accept="video/mp4,video/quicktime" multiple onChange={(e) => handleFileUpload(e, 'video')} />
+                                        <Video className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <span className="text-[8px] font-black uppercase text-muted-foreground group-hover:text-primary tracking-tighter">Add Vídeo</span>
+                                    </label>
+                                )}
+                            </div>
+                        </DndContext>
                     </div>
+
                  </div>
 
                   <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -1089,8 +1162,50 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                  </div>
             </div>
         </div>
-    )
+    );
 }
+
+function SortableItem({ id, isVideo, onRemove }: { id: string; isVideo?: boolean; onRemove: () => void }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 0,
+        opacity: isDragging ? 0.5 : 1
+    };
+
+    return (
+        <div 
+            ref={setNodeRef} 
+            style={style} 
+            className={`relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 group touch-none \${isVideo ? 'aspect-video sm:aspect-square' : 'aspect-square'}`}
+        >
+            <div {...attributes} {...listeners} className="w-full h-full cursor-grab active:cursor-grabbing">
+                {isVideo ? (
+                    <video src={id} className="w-full h-full object-cover" />
+                ) : (
+                    <img src={id} alt="Gallery" className="w-full h-full object-cover" />
+                )}
+            </div>
+            <button 
+                onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                className="absolute top-1.5 right-1.5 p-1 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+                <Trash2 className="w-2.5 h-2.5 text-white" />
+            </button>
+            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        </div>
+    );
+}
+
 
 function MetricCard({ label, value, icon, color, subValue }: any) {
     return (
