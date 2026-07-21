@@ -622,6 +622,28 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
         }
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery' | 'video') => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        const folder = type === 'video' ? 'videos' : type === 'gallery' ? 'gallery' : 'branding';
+        
+        const url = await uploadFile(file, 'media', folder);
+        
+        if (url) {
+            if (type === 'logo') setLogoUrl(url);
+            else if (type === 'banner') setBannerUrl(url);
+            else if (type === 'gallery') setGalleryUrls(prev => [...prev, url]);
+            else if (type === 'video') setVideoUrls(prev => [...prev.slice(-2), url]);
+            
+            toast.success("Upload realizado!", {
+                description: "O arquivo foi enviado e salvo com sucesso."
+            });
+        }
+    };
+
+
     return (
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
             <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
