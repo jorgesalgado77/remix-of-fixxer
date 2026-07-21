@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft, Terminal, Eye, EyeOff, ShieldAlert, CheckCircle2, Search } from "lucide-react";
+import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft, Terminal, Eye, EyeOff, AlertTriangle, CheckCircle2, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -252,7 +252,7 @@ function LoginComponent() {
                 <div className="mt-0.5">
                   {step.status === 'loading' && <Loader2 className="w-5 h-5 text-primary animate-spin" />}
                   {step.status === 'success' && <CheckCircle2 className="w-5 h-5 text-primary" />}
-                  {step.status === 'error' && <ShieldAlert className="w-5 h-5 text-red-500" />}
+                  {step.status === 'error' && <AlertTriangle className="w-5 h-5 text-red-500" />}
                   {step.status === 'pending' && <div className="w-5 h-5 rounded-full border-2 border-white/10" />}
                 </div>
                 <div className="flex-1">
