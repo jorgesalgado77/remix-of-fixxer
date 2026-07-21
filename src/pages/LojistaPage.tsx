@@ -36,7 +36,21 @@ import { toast } from "sonner";
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
   const { glassClass } = usePerformanceMode();
+
+  const handleTabChange = (tab: string) => {
+    if ((tab === 'create' || tab === 'reviews') && !isProfileComplete) {
+      toast.error("Perfil Incompleto", {
+        description: "Você precisa preencher todos os campos obrigatórios e enviar o logo da empresa no menu Perfil antes de acessar esta funcionalidade.",
+        duration: 5000,
+      });
+      setActiveTab('profile');
+      return;
+    }
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+  };
 
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
