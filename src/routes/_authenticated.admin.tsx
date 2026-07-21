@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
     if (!userEmail || userEmail !== 'jorgericardosalgado@gmail.com') {
       console.warn("[FIXXER SECURITY]: Acesso negado ao painel admin para:", userEmail);
-      throw redirect({ to: "/_authenticated/dashboard" });
+      throw redirect({ to: "/dashboard" });
     }
 
     return { userEmail };
