@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     full_name TEXT,
     role public.app_role NOT NULL DEFAULT 'lojista',
-    plan_id UUID REFERENCES public.subscription_plans(id),
+    plan_id UUID, -- A FK será adicionada depois para evitar erros de ordem
     company_name TEXT,
     cnpj_cpf TEXT,
     specialty TEXT,
@@ -39,6 +39,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Garantir que a coluna plan_id existe caso a tabela já tenha sido criada antes
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='profiles' AND column_name='plan_id') THEN
+        ALTER TABLE public.profiles ADD COLUMN plan_id UUID REFERENCES public.subscription_plans(id);
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
