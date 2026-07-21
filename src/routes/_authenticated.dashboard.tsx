@@ -156,10 +156,22 @@ function Dashboard() {
 }
 
 // --- LOJISTA DASHBOARD ---
+type ProposalDraft = {
+  providerId: string | null;
+  providerName: string;
+  title: string;
+  description: string;
+  value: string;
+};
+
 function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glassClass: string, isFreePlan: boolean, onAction: (e: any, action: string) => boolean, profile: any }) {
   const [activeTab, setActiveTab] = useState<'overview' | 'marketplace' | 'os' | 'profile'>('overview');
   const [osFilter, setOsFilter] = useState<'sent' | 'executing' | 'finished'>('sent');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [proposalModal, setProposalModal] = useState<ProposalDraft | null>(null);
+  const queryClient = useQueryClient();
+
+  const lojistaId = profile?.id;
 
   const categories = [
     "Projetos & Modulação",
@@ -175,21 +187,160 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
     "Decoração"
   ];
 
+  // --- Fetch OS list ---
+  const { data: osList, isLoading: osLoading, isError: osError, refetch: refetchOs } = useQuery({
+    queryKey: ['lojista-os', lojistaId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders_of_service')
+        .select('*')
+        .eq('lojista_id', lojistaId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!lojistaId,
+    retry: 1,
+  });
+
+  // --- Fetch providers (marketplace) ---
+  const { data: providers, isLoading: providersLoading, isError: providersError, refetch: refetchProviders } = useQuery({
+    queryKey: ['marketplace-providers', selectedCategory],
+    queryFn: async () => {
+      let q = supabase.from('profiles').select('id, full_name, company_name, avatar_url, karma_score, specialty').eq('role', 'prestador').limit(20);
+      if (selectedCategory) q = q.eq('specialty', selectedCategory);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+    retry: 1,
+  });
+
+  // --- Notifications (latest messages on user's OS) ---
+  const { data: notifications, isLoading: notifLoading, isError: notifError } = useQuery({
+    queryKey: ['lojista-notifications', lojistaId],
+    queryFn: async () => {
+      const ids = (osList ?? []).map((o: any) => o.id);
+      if (!ids.length) return [];
+      const { data, error } = await supabase
+        .from('os_messages')
+        .select('id, content, created_at, os_id')
+        .in('os_id', ids)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!lojistaId && !!osList,
+    retry: 1,
+  });
+
+  // --- Metrics ---
+  const metrics = useMemo(() => {
+    const list = osList ?? [];
+    const finalizedStatus = ['concluida', 'finalizada'];
+    return {
+      active: list.filter((o: any) => !finalizedStatus.includes(o.status) && o.status !== 'pendente').length,
+      pending: list.filter((o: any) => o.status === 'pendente').length,
+      finished: list.filter((o: any) => finalizedStatus.includes(o.status)).length,
+    };
+  }, [osList]);
+
+  const filteredOs = useMemo(() => {
+    const list = osList ?? [];
+    if (osFilter === 'sent') return list.filter((o: any) => o.status === 'pendente');
+    if (osFilter === 'finished') return list.filter((o: any) => ['concluida', 'finalizada'].includes(o.status));
+    return list.filter((o: any) => !['pendente', 'concluida', 'finalizada'].includes(o.status));
+  }, [osList, osFilter]);
+
+  // --- Send proposal mutation ---
+  const sendProposal = useMutation({
+    mutationFn: async (draft: ProposalDraft) => {
+      if (!lojistaId) throw new Error("Usuário não identificado");
+      const value = parseFloat((draft.value || '0').replace(/\./g, '').replace(',', '.'));
+      if (!draft.title.trim()) throw new Error("Informe o título da O.S.");
+      if (!value || value <= 0) throw new Error("Valor inválido");
+
+      const { data: os, error: osErr } = await supabase
+        .from('orders_of_service')
+        .insert({
+          lojista_id: lojistaId,
+          title: draft.title.trim(),
+          description: draft.description.trim() || null,
+          contract_value: value,
+          status: 'pendente',
+          current_professional_id: draft.providerId,
+        })
+        .select()
+        .single();
+      if (osErr) throw osErr;
+
+      if (draft.providerId) {
+        const { error: propErr } = await supabase
+          .from('proposals')
+          .insert({
+            os_id: os.id,
+            prestador_id: draft.providerId,
+            value,
+            status: 'pendente',
+          });
+        if (propErr) throw propErr;
+      }
+      return os;
+    },
+    onSuccess: () => {
+      toast.success("Proposta enviada!", { description: "A O.S. foi movida para a aba 'Enviadas'." });
+      queryClient.invalidateQueries({ queryKey: ['lojista-os', lojistaId] });
+      setProposalModal(null);
+      setActiveTab('os');
+      setOsFilter('sent');
+    },
+    onError: (err: any) => {
+      toast.error("Falha ao enviar proposta", { description: err?.message || "Tente novamente." });
+    },
+  });
+
+  const openProposal = (provider?: any) => {
+    if (!onAction({ preventDefault: () => {} } as any, "enviar proposta")) return;
+    setProposalModal({
+      providerId: provider?.id ?? null,
+      providerName: provider?.company_name || provider?.full_name || '',
+      title: '',
+      description: '',
+      value: '',
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-[60vh] pb-20 md:pb-0">
       <div className="flex-1 space-y-6">
         {activeTab === 'overview' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard icon={<Package className="text-primary" />} label="O.S. Ativas" value="12" glassClass={glassClass} />
-              <StatCard icon={<RefreshCcw className="text-primary" />} label="Aguardando Aceite" value="08" glassClass={glassClass} />
-              <StatCard icon={<CheckCircle2 className="text-primary" />} label="Finalizados" value="48" glassClass={glassClass} />
-              <StatCard icon={<Star className="text-amber-500" />} label="Reputação" value={profile?.karma_score?.toFixed(1) || "5.0"} glassClass={glassClass} color="amber" />
+              {osLoading ? (
+                <>
+                  <StatSkeleton glassClass={glassClass} />
+                  <StatSkeleton glassClass={glassClass} />
+                  <StatSkeleton glassClass={glassClass} />
+                  <StatSkeleton glassClass={glassClass} />
+                </>
+              ) : osError ? (
+                <div className="col-span-2 md:col-span-4">
+                  <ErrorState glassClass={glassClass} onRetry={() => refetchOs()} message="Falha ao carregar métricas." />
+                </div>
+              ) : (
+                <>
+                  <StatCard icon={<Package className="text-primary" />} label="O.S. Ativas" value={String(metrics.active).padStart(2, '0')} glassClass={glassClass} />
+                  <StatCard icon={<RefreshCcw className="text-primary" />} label="Aguardando Aceite" value={String(metrics.pending).padStart(2, '0')} glassClass={glassClass} />
+                  <StatCard icon={<CheckCircle2 className="text-primary" />} label="Finalizados" value={String(metrics.finished).padStart(2, '0')} glassClass={glassClass} />
+                  <StatCard icon={<Star className="text-amber-500" />} label="Reputação" value={profile?.karma_score?.toFixed(1) || "5.0"} glassClass={glassClass} color="amber" />
+                </>
+              )}
             </div>
 
             <div className="relative group overflow-hidden rounded-3xl">
               <button 
-                onClick={(e) => onAction(e, "criar nova O.S.")}
+                onClick={(e) => { if (onAction(e, "criar nova O.S.")) openProposal(); }}
                 className="w-full p-6 md:p-10 border-2 border-primary/30 border-dashed rounded-3xl flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-all group"
               >
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -207,19 +358,30 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
                 <Clock className="w-4 h-4 text-primary" />
                 Notificações Recentes
               </h2>
-              <div className="space-y-3">
-                {[1, 2].map(i => (
-                  <div key={i} className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <MessageSquare className="w-4 h-4 text-primary" />
+              {notifLoading ? (
+                <div className="space-y-3">
+                  <RowSkeleton />
+                  <RowSkeleton />
+                </div>
+              ) : notifError ? (
+                <ErrorState compact message="Não foi possível carregar notificações." />
+              ) : !notifications?.length ? (
+                <EmptyState icon={<MessageSquare className="w-6 h-6" />} title="Nenhuma notificação" hint="Mensagens sobre suas O.S. aparecerão aqui." />
+              ) : (
+                <div className="space-y-3">
+                  {notifications.map((n: any) => (
+                    <div key={n.id} className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <MessageSquare className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black text-white uppercase italic truncate">Nova mensagem em O.S. #{String(n.os_id).slice(0, 6)}</p>
+                        <p className="text-[9px] text-muted-foreground font-medium mt-0.5 line-clamp-2">{n.content}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black text-white uppercase italic">Novo Comentário na O.S. #2839</p>
-                      <p className="text-[9px] text-muted-foreground font-medium mt-0.5 line-clamp-1">"O projeto já foi verificado e está pronto para montagem..."</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -241,31 +403,51 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
               </div>
             </div>
 
-            <div className="grid gap-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className={`p-4 rounded-2xl ${glassClass} border border-white/10 flex items-center gap-4`}>
-                  <div className="w-14 h-14 rounded-xl bg-secondary border border-white/10 overflow-hidden shrink-0">
-                    <img src={`https://i.pravatar.cc/150?u=${i}`} alt="Prestador" className="w-full h-full object-cover opacity-80" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-xs font-black text-white uppercase truncate italic">Carlos Montador Profissional</h4>
-                      <div className="flex items-center gap-0.5 text-[10px] font-black text-primary">
-                        <Star className="w-3 h-3 fill-primary" /> 4.9
+            {providersLoading ? (
+              <div className="grid gap-4">
+                <RowSkeleton tall />
+                <RowSkeleton tall />
+                <RowSkeleton tall />
+              </div>
+            ) : providersError ? (
+              <ErrorState glassClass={glassClass} onRetry={() => refetchProviders()} message="Falha ao carregar prestadores." />
+            ) : !providers?.length ? (
+              <EmptyState icon={<Users className="w-6 h-6" />} title="Nenhum prestador encontrado" hint="Ajuste a categoria ou volte mais tarde." />
+            ) : (
+              <div className="grid gap-4">
+                {providers.map((p: any) => {
+                  const name = p.company_name || p.full_name || 'Prestador';
+                  const initial = (name[0] || 'P').toUpperCase();
+                  return (
+                    <div key={p.id} className={`p-4 rounded-2xl ${glassClass} border border-white/10 flex items-center gap-4`}>
+                      <div className="w-14 h-14 rounded-xl bg-secondary border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
+                        {p.avatar_url ? (
+                          <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl font-black text-primary">{initial}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-xs font-black text-white uppercase truncate italic">{name}</h4>
+                          <div className="flex items-center gap-0.5 text-[10px] font-black text-primary">
+                            <Star className="w-3 h-3 fill-primary" /> {(p.karma_score ?? 5).toFixed(1)}
+                          </div>
+                        </div>
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5 truncate">{p.specialty || 'Prestador de Serviço'}</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[8px] font-black uppercase tracking-tighter">Disponível</span>
+                          <div className="flex gap-1 ml-auto">
+                            <button className="px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-tighter hover:bg-white/10 transition-all">Perfil</button>
+                            <button onClick={() => openProposal(p)} className="px-3 py-1.5 rounded-lg bg-primary text-black text-[8px] font-black uppercase tracking-tighter hover:opacity-90 transition-all">Contratar</button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Montagem Especializada • 1.2km</p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[8px] font-black uppercase tracking-tighter">Disponível Hoje</span>
-                      <div className="flex gap-1 ml-auto">
-                        <button className="px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-tighter hover:bg-white/10 transition-all">Perfil</button>
-                        <button onClick={(e) => onAction(e, "enviar proposta")} className="px-3 py-1.5 rounded-lg bg-primary text-black text-[8px] font-black uppercase tracking-tighter hover:opacity-90 transition-all">Contratar</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -283,44 +465,45 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
               ))}
             </div>
 
-            <div className="space-y-4">
-              {[1, 2].map(i => (
-                <div key={i} className={`p-5 rounded-2xl ${glassClass} border border-white/10 space-y-4`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <h4 className="text-xs font-black text-white uppercase italic">Apto {i}02 - Ed. Horizonte</h4>
-                      <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1">Cozinha & Dormitório</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-black text-primary">R$ 2.450,00</p>
-                      <p className="text-[8px] font-bold text-muted-foreground uppercase mt-0.5 italic">Início: 25/07</p>
-                    </div>
-                  </div>
-                  
-                  {osFilter === 'executing' && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">
-                        <span>Evolução da Montagem</span>
-                        <span className="text-primary">65%</span>
+            {osLoading ? (
+              <div className="space-y-4">
+                <RowSkeleton tall />
+                <RowSkeleton tall />
+              </div>
+            ) : osError ? (
+              <ErrorState glassClass={glassClass} onRetry={() => refetchOs()} message="Falha ao carregar O.S." />
+            ) : !filteredOs.length ? (
+              <EmptyState 
+                icon={<FileText className="w-6 h-6" />} 
+                title="Nenhuma O.S. nesta aba"
+                hint={osFilter === 'sent' ? "Envie sua primeira proposta pelo marketplace." : "Nada por aqui ainda."}
+                action={osFilter === 'sent' ? { label: "Nova Proposta", onClick: () => openProposal() } : undefined}
+              />
+            ) : (
+              <div className="space-y-4">
+                {filteredOs.map((os: any) => (
+                  <div key={os.id} className={`p-5 rounded-2xl ${glassClass} border border-white/10 space-y-4`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-black text-white uppercase italic truncate">{os.title}</h4>
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1 truncate">{os.description || 'Sem descrição'}</p>
                       </div>
-                      <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: '65%' }}></div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-black text-primary">{formatCurrency(os.contract_value)}</p>
+                        <p className="text-[8px] font-bold text-muted-foreground uppercase mt-0.5 italic">{new Date(os.created_at).toLocaleDateString('pt-BR')}</p>
                       </div>
                     </div>
-                  )}
 
-                  <div className="pt-3 border-t border-white/5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-secondary border border-white/10 flex items-center justify-center text-[8px] font-bold">PM</div>
-                      <span className="text-[9px] font-black text-muted-foreground uppercase italic tracking-tighter">Paulo Montador</span>
+                    <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[8px] font-black text-muted-foreground uppercase tracking-widest">{os.status}</span>
+                      <button className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-tighter hover:bg-white/10 transition-all flex items-center gap-2 italic">
+                        <MessageSquare className="w-3 h-3" /> Suporte
+                      </button>
                     </div>
-                    <button className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-tighter hover:bg-white/10 transition-all flex items-center gap-2 italic">
-                      <MessageSquare className="w-3 h-3" /> Suporte
-                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -338,14 +521,11 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
                         </div>
                       )}
                    </div>
-                   <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-black flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all">
-                      <Camera className="w-4 h-4" />
-                   </button>
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-white uppercase italic tracking-tight">{profile?.company_name || 'Sua Loja'}</h3>
                   <div className="flex items-center justify-center gap-2 mt-1">
-                    <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Sócio Elite</span>
+                    <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Lojista</span>
                     <div className="flex items-center gap-0.5 text-[10px] font-black text-amber-500">
                       <Star className="w-3 h-3 fill-amber-500" /> {profile?.karma_score?.toFixed(1) || "5.0"}
                     </div>
@@ -354,83 +534,192 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
              </div>
 
              <div className="grid gap-3">
-                <button className={`w-full p-4 rounded-2xl ${glassClass} border border-white/5 flex items-center justify-between group hover:border-primary/50 transition-all`}>
+                <Link to="/profile" className={`w-full p-4 rounded-2xl ${glassClass} border border-white/5 flex items-center justify-between group hover:border-primary/50 transition-all`}>
                    <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                         <Camera className="w-5 h-5" />
+                         <Settings className="w-5 h-5" />
                       </div>
                       <div className="text-left">
-                         <p className="text-[10px] font-black text-white uppercase italic">Portfólio de Projetos</p>
-                         <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">12 Ambientes entregues</p>
+                         <p className="text-[10px] font-black text-white uppercase italic">Editar Perfil</p>
+                         <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Dados, mídia e endereço</p>
                       </div>
                    </div>
                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                </button>
-
-                <button className={`w-full p-4 rounded-2xl ${glassClass} border border-white/5 flex items-center justify-between group hover:border-primary/50 transition-all`}>
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                         <MessageSquare className="w-5 h-5" />
-                      </div>
-                      <div className="text-left">
-                         <p className="text-[10px] font-black text-white uppercase italic">Mural de Avaliações</p>
-                         <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Ver o que dizem de você</p>
-                      </div>
-                   </div>
-                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                </button>
-
-                <button className={`w-full p-4 rounded-2xl ${glassClass} border border-white/5 flex items-center justify-between group hover:border-primary/50 transition-all`}>
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                         <MapPin className="w-5 h-5" />
-                      </div>
-                      <div className="text-left">
-                         <p className="text-[10px] font-black text-white uppercase italic">Unidades & Filiais</p>
-                         <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Gerenciar endereços</p>
-                      </div>
-                   </div>
-                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                </button>
+                </Link>
              </div>
           </div>
         )}
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className={`fixed bottom-0 left-0 right-0 h-16 md:hidden ${glassClass} border-t border-white/10 px-4 flex items-center justify-between z-50 backdrop-blur-2xl`}>
-        <button 
-          onClick={() => setActiveTab('overview')}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'overview' ? 'text-primary' : 'text-muted-foreground'}`}
-        >
+      <nav className={`fixed bottom-0 left-0 right-0 h-16 md:hidden ${glassClass} border-t border-white/10 px-4 flex items-center justify-between z-40 backdrop-blur-2xl`}>
+        <button onClick={() => setActiveTab('overview')} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'overview' ? 'text-primary' : 'text-muted-foreground'}`}>
           <LayoutDashboard className={`w-5 h-5 ${activeTab === 'overview' ? 'scale-110' : ''}`} />
           <span className="text-[8px] font-black uppercase tracking-tighter">Início</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('marketplace')}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'marketplace' ? 'text-primary' : 'text-muted-foreground'}`}
-        >
+        <button onClick={() => setActiveTab('marketplace')} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'marketplace' ? 'text-primary' : 'text-muted-foreground'}`}>
           <Users className={`w-5 h-5 ${activeTab === 'marketplace' ? 'scale-110' : ''}`} />
           <span className="text-[8px] font-black uppercase tracking-tighter">Contratar</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('os')}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'os' ? 'text-primary' : 'text-muted-foreground'}`}
-        >
+        <button onClick={() => setActiveTab('os')} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'os' ? 'text-primary' : 'text-muted-foreground'}`}>
           <FileText className={`w-5 h-5 ${activeTab === 'os' ? 'scale-110' : ''}`} />
           <span className="text-[8px] font-black uppercase tracking-tighter">Minhas O.S.</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('profile')}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'profile' ? 'text-primary' : 'text-muted-foreground'}`}
-        >
+        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'profile' ? 'text-primary' : 'text-muted-foreground'}`}>
           <User className={`w-5 h-5 ${activeTab === 'profile' ? 'scale-110' : ''}`} />
           <span className="text-[8px] font-black uppercase tracking-tighter">Perfil</span>
         </button>
       </nav>
+
+      {/* Proposal Modal */}
+      {proposalModal && (
+        <ProposalModal
+          draft={proposalModal}
+          onChange={setProposalModal}
+          onClose={() => setProposalModal(null)}
+          onSubmit={() => sendProposal.mutate(proposalModal)}
+          isSubmitting={sendProposal.isPending}
+          glassClass={glassClass}
+        />
+      )}
     </div>
   );
 }
+
+// --- Helpers: skeletons, empty & error states ---
+function StatSkeleton({ glassClass }: { glassClass: string }) {
+  return <div className={`p-5 rounded-2xl ${glassClass} border border-white/5 h-[110px] animate-pulse`}>
+    <div className="w-8 h-8 rounded-lg bg-white/10 mb-4"></div>
+    <div className="h-6 w-16 bg-white/10 rounded mb-2"></div>
+    <div className="h-2 w-24 bg-white/5 rounded"></div>
+  </div>;
+}
+
+function RowSkeleton({ tall = false }: { tall?: boolean }) {
+  return <div className={`rounded-2xl border border-white/5 bg-white/5 animate-pulse ${tall ? 'h-24' : 'h-14'}`}></div>;
+}
+
+function EmptyState({ icon, title, hint, action }: { icon: React.ReactNode, title: string, hint?: string, action?: { label: string, onClick: () => void } }) {
+  return (
+    <div className="py-8 px-4 flex flex-col items-center justify-center text-center border border-dashed border-white/10 rounded-2xl">
+      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-muted-foreground mb-3">{icon}</div>
+      <p className="text-xs font-black text-white uppercase italic">{title}</p>
+      {hint && <p className="text-[10px] text-muted-foreground mt-1">{hint}</p>}
+      {action && (
+        <button onClick={action.onClick} className="mt-4 px-4 py-2 rounded-xl bg-primary text-black text-[10px] font-black uppercase tracking-tighter hover:opacity-90 transition-all">
+          {action.label}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ErrorState({ message, onRetry, glassClass, compact }: { message: string, onRetry?: () => void, glassClass?: string, compact?: boolean }) {
+  return (
+    <div className={`${compact ? 'p-4' : 'p-6'} rounded-2xl border border-red-500/20 bg-red-500/5 flex items-center gap-3 ${glassClass || ''}`}>
+      <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-black text-white uppercase italic">Falha de rede</p>
+        <p className="text-[10px] text-muted-foreground">{message}</p>
+      </div>
+      {onRetry && (
+        <button onClick={onRetry} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-tighter hover:bg-white/10 transition-all flex items-center gap-1">
+          <RefreshCcw className="w-3 h-3" /> Tentar novamente
+        </button>
+      )}
+    </div>
+  );
+}
+
+function formatCurrency(value: number | null | undefined) {
+  if (value == null) return 'R$ 0,00';
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value));
+}
+
+// --- Proposal modal ---
+function ProposalModal({ draft, onChange, onClose, onSubmit, isSubmitting, glassClass }: {
+  draft: ProposalDraft;
+  onChange: (d: ProposalDraft) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  glassClass: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+      <div
+        className={`w-full md:max-w-md ${glassClass} border-t md:border border-white/10 rounded-t-3xl md:rounded-3xl p-6 space-y-4 animate-in slide-in-from-bottom-4 duration-300`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-black text-white uppercase italic">Enviar Proposta</h3>
+            {draft.providerName && (
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-0.5">Para: {draft.providerName}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center">
+            <XCircle className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <label className="block">
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Título da O.S.</span>
+            <input
+              type="text"
+              value={draft.title}
+              onChange={(e) => onChange({ ...draft, title: e.target.value })}
+              placeholder="Ex: Montagem Cozinha Apt 302"
+              className="mt-1 w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none transition-colors"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Descrição</span>
+            <textarea
+              value={draft.description}
+              onChange={(e) => onChange({ ...draft, description: e.target.value })}
+              rows={3}
+              placeholder="Detalhe o serviço solicitado..."
+              className="mt-1 w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none transition-colors resize-none"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Valor Oferecido (R$)</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={draft.value}
+              onChange={(e) => onChange({ ...draft, value: e.target.value.replace(/[^\d.,]/g, '') })}
+              placeholder="0,00"
+              className="mt-1 w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none transition-colors"
+            />
+          </label>
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-tighter hover:bg-white/10 transition-all disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={isSubmitting}
+            className="flex-1 py-3 rounded-xl bg-primary text-black text-[10px] font-black uppercase tracking-tighter hover:opacity-90 transition-all shadow-[0_0_20px_rgba(0,255,135,0.3)] disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? <><RefreshCcw className="w-3 h-3 animate-spin" /> Enviando</> : 'Enviar Proposta'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 
 // --- PRESTADOR DASHBOARD ---
