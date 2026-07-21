@@ -54,9 +54,15 @@ function LoginComponent() {
       });
 
       if (error) {
-        // Exibe a mensagem real em texto, nunca um objeto {}
-        const msg = error.message || JSON.stringify(error);
-        alert(`Falha no login: ${msg}`);
+        let errorMsg = "Falha na conexão com o banco de dados";
+        if (error?.message) {
+          errorMsg = error.message;
+        } else if (typeof error === 'object' && error !== null && Object.keys(error).length > 0) {
+          errorMsg = JSON.stringify(error);
+        }
+        
+        console.error("Erro Supabase Auth:", error);
+        toast.error(`Falha no login: ${errorMsg}`);
         setLoading(false);
         return;
       }
@@ -72,8 +78,15 @@ function LoginComponent() {
         }
       }
     } catch (err: any) {
-      console.error("Erro no login:", err);
-      alert(`Erro de conexão: ${err?.message || 'Verifique sua internet'}`);
+      console.error("Erro inesperado no login:", err);
+      let catchMsg = "Erro de conexão";
+      if (err?.message) {
+        catchMsg = err.message;
+      } else if (typeof err === 'object' && err !== null && Object.keys(err).length > 0) {
+        catchMsg = JSON.stringify(err);
+      }
+      
+      toast.error(`Falha técnica: ${catchMsg}`);
       setLoading(false);
     }
   };
@@ -160,33 +173,32 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-959423c973c94e4f" className="hidden">
-          {`ATUAÇÃO DE EMERGÊNCIA: CORREÇÃO COMPLETA DE AUTENTICAÇÃO, DESTRAVAMENTO DE ROTAS E PAINEL ADMIN (FIXXER)
+        <div id="ts-visual-edit-probe-c56a2acee0c0415f" className="hidden">
+          {`CORREÇÃO DEFINITIVA DE FALHA DE LOGIN E EXCEÇÃO DE CONEXÃO SUPABASE
 
-O sistema de login está em loop: ao clicar em "Entrar", a tela pisca e retorna para o formulário limpo '/login'. Isso acontece porque o guardião de rotas (ProtectedRoute/AuthContext) rejeita a mudança de página antes que o estado do Supabase seja atualizado na memória.
+O formulário de login continua exibindo a mensagem nativa "Falha no login: {}" e travando no estado "Acessando...". Isso acontece porque o cliente do Supabase está disparando uma exceção de rede/CORS ou tentando ler variáveis de ambiente de URL/Key indefinidas, gerando um erro de exceção vazia.
 
-Reescreva e corrija o fluxo de autenticação e rotas de ponta a ponta seguindo as instruções abaixo:
+Aplique IMEDIATAMENTE as seguintes refatorações para resolver o problema de ponta a ponta:
 
-### 1. REMOÇÃO DE MIDDLEWARES E LIBERAÇÃO DAS ROTAS (App.tsx / routes.tsx)
+### 1. ELIMINAÇÃO DE ALERTS NATIVOS E TRATAMENTO DE ERRO REAL
 
-- Abra o arquivo principal de rotas e REMOVA COMPLETAMENTE qualquer componente envolvente de proteção (<ProtectedRoute>, <RequireAuth>, ou similares).
+- REMOVA completamente todas as chamadas alert() do navegador.
 
-- Declare as rotas como componentes públicos e diretos para garantir que nenhuma checagem assíncrona bloqueie a navegação:
+- No arquivo de Login (Login.tsx / Auth.tsx), trate o erro serializando corretamente a resposta:
 
-  \`\`\`tsx
+\`\`\`typescript
 
-  <Route element={<Login path="/"/>} />
+let errorMsg = "Falha na conexão com o banco de dados";
 
-  <Route element={<Login path="/login"/>} />
+if (error?.message) {
 
-  <Route element={<AdminDashboard path="/admin"/>} />
+  errorMsg = error.message;
 
-  <Route element={<LojistaDashboard path="/dashboard/lojista"/>} />
+} else if (typeof error === 'object' && Object.keys(error).length > 0) {
 
-  <Route element={<PrestadorDashboard path="/dashboard/prestador"/>} />
+  errorMsg = JSON.stringify(error);
 
-  <Route element={<ParceiroDashboard path="/dashboard/parceiro"/>} />
-  \`\`\``}
+}\`\`\``}
         </div>
       </div>
 
