@@ -5,12 +5,16 @@ import {
   LayoutDashboard, 
   Users, 
   Settings, 
-  AlertTriangle,
+  ShieldAlert,
   Menu,
   X,
   CreditCard,
   ChevronRight,
-  Database
+  Database,
+  Activity,
+  Layers,
+  FileText,
+  DollarSign
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
