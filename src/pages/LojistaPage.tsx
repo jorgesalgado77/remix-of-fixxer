@@ -19,8 +19,6 @@ import {
   MapPin,
   Image as ImageIcon,
   Zap,
-  Instagram,
-  Facebook,
   Globe,
   Video
 } from "lucide-react";
@@ -429,13 +427,13 @@ function ProfileView() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
-                             <Instagram className="w-3 h-3 text-[#E4405F]" /> Instagram
+                             <div className="w-3 h-3 rounded-sm bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600" /> Instagram
                            </Label>
-                           <Input placeholder="@suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#E4405F]/50 transition-all" />
+                           <Input placeholder="@suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-pink-500/50 transition-all" />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
-                             <Facebook className="w-3 h-3 text-[#1877F2]" /> Facebook
+                             <div className="w-3 h-3 rounded-full bg-[#1877F2] flex items-center justify-center text-[8px] font-bold">f</div> Facebook
                            </Label>
                            <Input placeholder="facebook.com/suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#1877F2]/50 transition-all" />
                         </div>
