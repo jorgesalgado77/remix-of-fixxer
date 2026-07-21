@@ -896,8 +896,26 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     };
 
     return (
-
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
+            {isUploading && (
+                <div className="fixed bottom-10 right-10 z-[100] w-72 bg-[#1A1A1B] border border-primary/30 p-4 rounded-2xl shadow-2xl animate-in slide-in-from-right duration-300">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                            <Activity className="w-4 h-4 animate-spin" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase text-white italic">Enviando Arquivos...</span>
+                    </div>
+                    {uploadProgress.map((p, i) => (
+                        <div key={i} className="space-y-1 mb-2 last:mb-0">
+                            <div className="flex justify-between text-[8px] font-bold text-muted-foreground uppercase">
+                                <span className="truncate max-w-[150px]">{p.fileName}</span>
+                                <span>{p.progress}%</span>
+                            </div>
+                            <Progress value={p.progress} className="h-1 bg-white/5" />
+                        </div>
+                    ))}
+                </div>
+            )}
             <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/5">
                      <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,255,135,0.1)]">
