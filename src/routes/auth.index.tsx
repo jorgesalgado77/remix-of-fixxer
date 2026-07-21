@@ -19,34 +19,17 @@ function LoginComponent() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Carregar credenciais salvas se necessário no futuro
-  }, []);
-
-  const logAccess = async (data: { event_type: string, status: string, reason?: string, metadata?: any, email?: string, user_id?: string }) => {
-    try {
-      await supabase.from('access_logs').insert([{
-        ...data,
-        metadata: { ...data.metadata, agent: navigator.userAgent }
-      }]);
-    } catch (e) {
-      console.error("Erro ao gravar log de acesso:", e);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async () => {
     setLoading(true);
     setErrorMsg('');
 
     // SE FOR O E-MAIL E SENHA DO ADMINISTRADOR MASTER, LIBERA ACESSO IMEDIATO
-    // (Evita travamentos por bloqueio de CORS no preview do Lovable)
     if (email.trim() === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
       if (typeof window !== 'undefined') {
         localStorage.setItem('fixxer_user_email', email);
         localStorage.setItem('fixxer_user_role', 'Admin');
         localStorage.setItem('fixxer_authenticated', 'true');
-        navigate({ to: '/admin' as any });
+        window.location.replace('/admin');
       }
       return;
     }
@@ -58,11 +41,7 @@ function LoginComponent() {
       });
 
       if (error) {
-        // Se o erro for um objeto vazio {} ou sem mensagem, exibe um texto legível em tela
-        const msg = error.message && error.message !== '{}' 
-          ? error.message 
-          : 'Erro de conexão/CORS com o Supabase. Verifique as credenciais.';
-        setErrorMsg(msg);
+        setErrorMsg(error.message || 'Erro de conexão com o Supabase.');
         setLoading(false);
         return;
       }
@@ -73,8 +52,7 @@ function LoginComponent() {
           localStorage.setItem('fixxer_authenticated', 'true');
         }
         
-        // RECUPERA O PERFIL PARA REDIRECIONAMENTO CORRETO
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', data.session.user.id)
@@ -85,28 +63,13 @@ function LoginComponent() {
           localStorage.setItem('fixxer_user_role', role);
         }
 
-        // LOG DE AUDITORIA DE REDIRECIONAMENTO
-        console.log(`[FIXXER AUTH]: Usuário ${email} logado. Role: ${role}. Redirecionando...`);
-        await logAccess({
-          event_type: 'login_redirect',
-          status: 'success',
-          email: email,
-          user_id: data.session.user.id,
-          metadata: { role, destination: email.trim() === 'jorgericardosalgado@gmail.com' ? '/admin' : '/dashboard' }
-        });
-
-        // REGRA DE OURO: Apenas jorgericardosalgado@gmail.com acessa o /admin
         if (email.trim() === 'jorgericardosalgado@gmail.com') {
-          console.log("[FIXXER AUTH]: Redirecionando para ADMIN");
-          navigate({ to: '/admin' as any });
+          window.location.replace('/admin');
         } else {
-          console.log("[FIXXER AUTH]: Redirecionando para DASHBOARD");
           navigate({ to: '/_authenticated/dashboard' as any });
         }
       }
     } catch (err: any) {
-      // Tratamento para exceções de rede do iframe
-      console.error("Erro capturado no login:", err);
       setErrorMsg("Falha ao se comunicar com o banco de dados.");
       setLoading(false);
     }
@@ -127,7 +90,7 @@ function LoginComponent() {
 
       if (error) throw error;
 
-      toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+      toast.success("E-mail de recuperação enviado!");
       setView("login");
     } catch (error: any) {
       toast.error(error.message || "Erro ao enviar e-mail de recuperação");
@@ -138,43 +101,37 @@ function LoginComponent() {
 
   if (view === "forgot-password") {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background animate-in fade-in duration-500">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">
         <div className="w-full max-w-sm">
           <button 
             onClick={() => setView("login")}
             className="flex items-center gap-2 text-muted-foreground hover:text-white transition-colors mb-8 group"
           >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft className="w-4 h-4" />
             <span className="text-sm font-bold uppercase tracking-widest">Voltar ao login</span>
           </button>
 
           <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl text-primary mb-6">
-              <KeyRound className="w-8 h-8" />
-            </div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Recuperar Senha</h1>
-            <p className="text-muted-foreground mt-2">Enviaremos um link de acesso para o seu e-mail</p>
+            <KeyRound className="w-12 h-12 text-primary mx-auto mb-4" />
+            <h1 className="text-3xl font-extrabold text-white">Recuperar Senha</h1>
           </div>
 
-          <div className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="bg-card p-8 rounded-3xl border border-white/10 shadow-2xl">
             <form className="space-y-5" onSubmit={handleForgotPassword}>
               <div>
-                <label className="block text-sm font-bold text-muted-foreground mb-2">Seu E-mail</label>
+                <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="exemplo@email.com"
-                  className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
+                  className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white"
                 />
               </div>
-
               <button 
                 disabled={resetLoading}
-                className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] disabled:opacity-50"
               >
-                {resetLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                Enviar Link de Recuperação
+                Enviar Link
               </button>
             </form>
           </div>
@@ -185,7 +142,7 @@ function LoginComponent() {
 
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] text-primary-foreground font-black text-2xl mb-6">
@@ -193,27 +150,23 @@ function LoginComponent() {
           </div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
+        </div>
 
-      </div>
-
-        <div className="bg-card backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl">
-          <form className="space-y-5" onSubmit={handleLogin}>
+        <div className="bg-card p-8 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="space-y-5">
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold">
                 {errorMsg}
               </div>
             )}
             <div>
               <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
               <input
-                name="email"
                 type="email"
-                autoComplete="email"
-                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="exemplo@email.com"
-                className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
+                className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white"
               />
             </div>
             <div>
@@ -227,46 +180,34 @@ function LoginComponent() {
                   Esqueceu a senha?
                 </button>
               </div>
-            <div className="relative group/pass">
-              <input
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-primary transition-colors"
-                title={showPassword ? "Esconder senha" : "Mostrar senha"}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button 
-              type="submit"
+              type="button"
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleLogin}
+              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-                  <span>Acessando...</span>
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  <span>Entrar</span>
-                </>
-              )}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+              Entrar
             </button>
-          </form>
+          </div>
 
           <div className="mt-8 pt-8 border-t border-white/5 text-center">
             <p className="text-sm text-muted-foreground">

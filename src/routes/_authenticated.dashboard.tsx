@@ -20,6 +20,8 @@ function DashboardRedirect() {
       // Regra Prioritária Admin Master - Verificação Imediata
       if (email.trim() === 'jorgericardosalgado@gmail.com') {
         navigate({ to: '/admin' as any });
+
+
         return;
       }
 

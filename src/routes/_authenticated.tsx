@@ -15,14 +15,23 @@ function AuthenticatedLayout() {
   const [isPathAdmin, setIsPathAdmin] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const email = localStorage.getItem('fixxer_user_email') || '';
-      const role = localStorage.getItem('fixxer_user_role') || '';
-      setUserEmail(email);
-      setUserRole(role);
-      setIsPathAdmin(window.location.pathname.includes('/admin'));
-    }
+    const handleLocationChange = () => {
+      if (typeof window !== 'undefined') {
+        const email = localStorage.getItem('fixxer_user_email') || '';
+        const role = localStorage.getItem('fixxer_user_role') || '';
+        setUserEmail(email);
+        setUserRole(role);
+        setIsPathAdmin(window.location.pathname.includes('/admin'));
+      }
+    };
+
+    handleLocationChange();
+    
+    // Escuta mudanças de navegação para garantir que o bypass reaja
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
   }, []);
+
 
   const getDashboardPath = (role: string) => {
     const r = role.toLowerCase();
