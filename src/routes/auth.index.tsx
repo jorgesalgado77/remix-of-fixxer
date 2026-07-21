@@ -174,15 +174,15 @@ function LoginComponent() {
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
         <div id="ts-visual-edit-probe-b203ae72dfdb4a80" className="hidden">
-          CORREÇÃO EM NÍVEL DE COMPONENTE (DESTRANCAMENTO DE NAVEGAÇÃO):
+          {`CORREÇÃO EM NÍVEL DE COMPONENTE (DESTRANCAMENTO DE NAVEGAÇÃO):
 
           O sistema não avança porque o AuthContext / useAuth está interceptando a navegação e bloqueando o redirecionamento após o login. 
 
           Vamos desativar a trava do AuthContext no login e montar a Dashboard de forma independente:
 
-          1. ALTERAÇÃO NO FORMULÁRIO DE LOGIN (`Login.tsx` / `Auth.tsx`):
-          - Ignore as funções do `useAuth()` para fazer o login. Utilize o cliente direto do Supabase (`import { supabase } from '@/integrations/supabase/client'`).
-          - Altere o método de submissão do formulário para salvar um sinalizador manual no localStorage e redirecionar imediatamente.
+          1. ALTERAÇÃO NO FORMULÁRIO DE LOGIN (Login.tsx / Auth.tsx):
+          - Ignore as funções do useAuth() para fazer o login. Utilize o cliente direto do Supabase.
+          - Altere o método de submissão do formulário para salvar um sinalizador manual no localStorage e redirecionar imediatamente.`}
         </div>
       </div>
 
