@@ -43,16 +43,22 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const { glassClass } = usePerformanceMode();
-  const { session, userRole } = Route.useRouteContext();
+  const { session } = Route.useRouteContext();
+  const userRole = Route.useRouteContext().userRole || (typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') : 'user');
   
   const { data: profile } = useQuery({
     queryKey: ['profile', session?.user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*, subscription_plans(*)')
         .eq('id', session?.user?.id)
-        .single();
+        .maybeSingle();
+      
+      if (error) {
+        console.error("[DASHBOARD PROFILE ERROR]:", error);
+        throw error;
+      }
       return data;
     },
     enabled: !!session?.user?.id
@@ -113,7 +119,7 @@ function Dashboard() {
               </div>
               <div className="h-3 w-[1px] bg-white/10"></div>
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                {userRole === 'lojista' ? 'Módulo Gestão' : userRole === 'prestador' ? 'Módulo Operacional' : 'Módulo Parceiro'}
+                {userRole?.toLowerCase() === 'lojista' ? 'Módulo Gestão' : userRole?.toLowerCase() === 'prestador' ? 'Módulo Operacional' : 'Módulo Parceiro'}
               </p>
             </div>
           </div>
@@ -139,9 +145,9 @@ function Dashboard() {
       </header>
 
       {/* Render Categorized Dashboard */}
-      {userRole === 'lojista' && <LojistaDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} profile={profile} />}
-      {userRole === 'prestador' && <PrestadorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
-      {userRole === 'fornecedor' && <FornecedorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
+      {userRole?.toLowerCase() === 'lojista' && <LojistaDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} profile={profile} />}
+      {userRole?.toLowerCase() === 'prestador' && <PrestadorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
+      {userRole?.toLowerCase() === 'fornecedor' && <FornecedorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
 
       {userRole === 'admin' && (
         <div className={`p-12 rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center text-center ${glassClass}`}>
@@ -195,9 +201,12 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
       const { data, error } = await supabase
         .from('orders_of_service')
         .select('*')
-        .eq('lojista_id', lojistaId)
+        .or(`lojista_id.eq.${lojistaId},client_id.eq.${lojistaId}`)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error("[DASHBOARD OS ERROR]:", error);
+        throw error;
+      }
       return data ?? [];
     },
     enabled: !!lojistaId,
