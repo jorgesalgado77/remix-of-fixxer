@@ -132,64 +132,6 @@ function LoginComponent() {
     );
   }
 
-  if (view === "diagnostic") {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background animate-in zoom-in-95 duration-300">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl text-primary mb-4 animate-pulse">
-              <Search className="w-8 h-8" />
-            </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Diagnóstico de Acesso</h1>
-            <p className="text-muted-foreground text-sm">Validando permissões e integridade do banco...</p>
-          </div>
-
-          <div className="bg-card backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-2xl space-y-4">
-            {diagnosticSteps.map((step, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-2xl bg-white/5 border border-white/5">
-                <div className="mt-0.5">
-                  {step.status === 'loading' && <Loader2 className="w-5 h-5 text-primary animate-spin" />}
-                  {step.status === 'success' && <CheckCircle2 className="w-5 h-5 text-primary" />}
-                  {step.status === 'error' && <AlertTriangle className="w-5 h-5 text-red-500" />}
-                  {step.status === 'pending' && <div className="w-5 h-5 rounded-full border-2 border-white/10" />}
-                </div>
-                <div className="flex-1">
-                  <p className={`text-sm font-bold ${step.status === 'error' ? 'text-red-400' : 'text-white'}`}>
-                    {step.label}
-                  </p>
-                  {step.detail && (
-                    <p className="text-xs text-muted-foreground mt-1 font-mono leading-relaxed">
-                      {step.detail}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-            
-            {diagnosticSteps.some(s => s.status === 'error') && (
-              <div className="space-y-3">
-                <button 
-                  onClick={() => setView("login")}
-                  className="w-full mt-4 bg-primary text-primary-foreground font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
-                >
-                  Tentar novamente
-                </button>
-                {diagnosticSteps[0].status === 'error' && (
-                  <Link
-                    to="/auth/register"
-                    search={{ email }}
-                    className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
-                  >
-                    Primeiro Acesso? Cadastre-se aqui
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background animate-in fade-in duration-500">
