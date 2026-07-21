@@ -612,12 +612,13 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2 relative">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CEP *</Label>
-                           <Input 
+                           <IMaskInput 
+                             mask="00000-000"
+                             value={cep}
+                             onAccept={(value) => setCep(value)}
                              required
-                             value={cep} 
-                             onChange={(e) => setCep(e.target.value)}
                              placeholder="00000-000" 
-                             className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" 
+                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary/50 transition-all" 
                            />
                            {isLoadingCep && <div className="absolute right-3 bottom-3 animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />}
                         </div>
