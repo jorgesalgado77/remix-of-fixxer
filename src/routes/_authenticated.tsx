@@ -4,8 +4,34 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
-    // DESATIVADO TOTALMENTE PARA DESTRAVAMENTO DE NAVEGAÇÃO
-    return {};
+    const { data: { session } } = await supabase.auth.getSession();
+    const isAuthenticated = localStorage.getItem('fixxer_authenticated') === 'true';
+
+    if (!session && !isAuthenticated) {
+      throw redirect({ to: "/auth" });
+    }
+
+    // Busca o perfil para injetar o role no contexto
+    const userId = session?.user?.id;
+    let userRole = localStorage.getItem('fixxer_user_role') || 'user';
+
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      if (profile?.role) {
+        userRole = profile.role;
+        localStorage.setItem('fixxer_user_role', userRole);
+      }
+    }
+
+    return { 
+      session, 
+      userRole,
+      userEmail: session?.user?.email || localStorage.getItem('fixxer_user_email')
+    };
   },
   component: AuthenticatedLayout,
 });
