@@ -70,7 +70,7 @@ function LoginComponent() {
         }
 
         if (email.trim() === 'jorgericardosalgado@gmail.com') {
-          window.location.href = '/admin';
+          window.location.href = '/_authenticated';
         } else {
           navigate({ to: '/_authenticated/dashboard' as any });
         }
