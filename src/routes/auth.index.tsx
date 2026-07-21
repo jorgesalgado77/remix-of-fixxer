@@ -42,52 +42,44 @@ function LoginComponent() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Preencha todos os campos");
-      return;
-    }
-
     setLoading(true);
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
+        email,
+        password,
       });
-      
+
       if (error) {
-        toast.error(`Erro ao acessar: ${error.message}`);
+        alert(`Erro no login: ${error.message}`);
         setLoading(false);
         return;
       }
 
-      if (data?.session) {
-        // Salva indicador de sessão manual para destravar a interface
-        localStorage.setItem('fixxer_authenticated', 'true');
-        
-        // Implementar upsert automático do perfil se não existir
-        const { data: profile, error: profileError } = await supabase
+      if (data?.user) {
+        // Busca a role no perfil para redirecionamento correto
+        const { data: profile } = await supabase
           .from('profiles')
-          .select('user_type, role')
+          .select('user_type')
           .eq('id', data.user.id)
           .maybeSingle();
 
-        if (!profile && !profileError) {
-          await supabase.from('profiles').insert([{
-            id: data.user.id,
-            email: data.user.email,
-            user_type: 'lojista',
-            role: 'user'
-          }]);
-        }
+        const role = profile?.user_type || data.user.user_metadata?.user_type || 'Lojista';
 
-        // Força a substituição da rota para a Dashboard
-        window.location.replace('/_authenticated/dashboard');
+        // Força o redirecionamento imediato via window.location para evitar travamentos do React Router
+        if (role === 'Admin' || email === 'jorgericardosalgado@gmail.com') {
+          window.location.href = '/admin';
+        } else if (role === 'Prestador') {
+          window.location.href = '/dashboard/prestador';
+        } else if (role === 'Parceiro') {
+          window.location.href = '/dashboard/parceiro';
+        } else {
+          window.location.href = '/dashboard/lojista';
+        }
       }
-    } catch (err) {
-      console.error("Erro no login:", err);
+    } catch (err: any) {
+      alert(`Erro inesperado: ${err.message || 'Falha de conexão'}`);
       setLoading(false);
-      toast.error("Erro inesperado ao realizar login");
     }
   };
 
