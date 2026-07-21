@@ -77,8 +77,8 @@ function LoginComponent() {
       // Passo 1: Checagem de Conectividade pré-login
       try {
         const { error: healthError } = await supabase.from('brand_flags').select('count', { count: 'exact', head: true });
-        // Se retornar 401/403 está ok (significa que o banco respondeu, mas não estamos logados)
-        if (healthError && healthError.status !== 401 && healthError.status !== 403) {
+        // Se retornar erro mas o código for 401 ou 403, significa que o banco respondeu (conectividade OK)
+        if (healthError && 'code' in healthError && healthError.code !== 'PGRST301' && healthError.code !== '42501') {
            throw healthError;
         }
       } catch (connErr) {
