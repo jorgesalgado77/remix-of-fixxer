@@ -370,7 +370,8 @@ function ProfilePage() {
                   <input 
                     value={profile?.company_name || ''} 
                     onChange={e => setProfile({...profile, company_name: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
+                    readOnly={!!profileId}
+                    className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
