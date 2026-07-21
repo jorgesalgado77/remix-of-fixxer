@@ -192,6 +192,34 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
+        <div id="ts-visual-edit-probe-2dc08690fee849ec" className="hidden">
+          {`INJEÇÃO DIRETA DE CREDENCIAIS DO SUPABASE NO CLIENTE E FIX DE CONEXÃO
+
+Preciso garantir a conexão imediata do FIXXER com o meu projeto do Supabase sem depender unicamente de variáveis de ambiente do preview.
+
+Reescreva o arquivo do cliente Supabase (src/integrations/supabase/client.ts ou src/lib/supabase.ts) definindo as credenciais diretamente no código com os seguintes dados:
+
+### 1. DADOS DE CONEXÃO FIXOS (HARDCODED FALLBACK)
+Configure as constantes de conexão com estes valores exatos:
+- SUPABASE_URL: "https://rnhgpxembtgupxnrohxo.supabase.co"
+- SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuaGdweGVtYnRndXB4bnJvaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTk3NjQsImV4cCI6MjEwMDEzNTc2NH0.qqZxpJKYzuK48EawEDMamXA2Cy2YVOB0RV0-CgsSwMA"
+
+### 2. CÓDIGO DO CLIENTE SUPABASE
+Certifique-se de que a inicialização do cliente esteja estruturada assim:
+
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://rnhgpxembtgupxnrohxo.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuaGdweGVtYnRndXB4bnJvaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTk3NjQsImV4cCI6MjEwMDEzNTc2NH0.qqZxpJKYzuK48EawEDMamXA2Cy2YVOB0RV0-CgsSwMA';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});`}
+        </div>
         <div id="ts-visual-edit-probe-f1dc2eaa215a4f53" className="hidden">
           Adicione toasts/notifications claros no Painel Admin e no fluxo de login para informar quando a conexão com o Supabase estiver ativa ou inativa.
         </div>
