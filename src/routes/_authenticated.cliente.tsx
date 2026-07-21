@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -15,7 +15,8 @@ import {
   ArrowRight,
   Sparkles,
   MapPin,
-  Calendar
+  Calendar,
+  Search
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -42,6 +43,7 @@ function ClientePortal() {
         
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
           <TabButton active={activeTab === 'jornada'} onClick={() => setActiveTab('jornada')} label="Minha Obra" icon={<Clock className="w-3 h-3" />} />
+          <Link to="/_authenticated/feed" className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all border flex items-center gap-2 shrink-0 bg-white/5 text-muted-foreground border-white/10 hover:border-white/20`}><Search className="w-3 h-3" /> Ver Feed Geral</Link>
           <TabButton active={activeTab === 'publicar'} onClick={() => setActiveTab('publicar')} label="Pedir Serviço" icon={<PlusCircle className="w-3 h-3" />} />
           <TabButton active={activeTab === 'contratacoes'} onClick={() => setActiveTab('contratacoes')} label="Contratações" icon={<ShieldCheck className="w-3 h-3" />} />
         </div>

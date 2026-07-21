@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { 
   Briefcase, 
@@ -52,7 +52,7 @@ function LojistaDashboard() {
               <h2 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
                 <Activity className="w-5 h-5 text-primary" /> Demandas em Aberto
               </h2>
-              <button className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Ver Todas</button>
+              <Link to="/_authenticated/feed" className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Ver Todas</Link>
             </div>
             <div className="space-y-4">
                <DemandaItem id="OS-2490" title="Montagem Dormitório" city="São Paulo/SP" price="R$ 450,00" proposals={8} />

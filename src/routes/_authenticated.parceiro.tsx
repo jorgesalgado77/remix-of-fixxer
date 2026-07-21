@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { 
   Store, 
@@ -32,9 +32,9 @@ function ParceiroDashboard() {
           </h1>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Gestão de Vitrine e Fornecimento B2B</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
-          <PlusCircle className="w-4 h-4" /> Novo Anúncio
-        </button>
+        <Link to="/_authenticated/feed" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
+          <TrendingUp className="w-4 h-4" /> Ver Feed B2B
+        </Link>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

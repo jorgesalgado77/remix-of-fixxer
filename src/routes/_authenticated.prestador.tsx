@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { 
   Briefcase, 
@@ -33,9 +33,9 @@ function PrestadorDashboard() {
           </h1>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Controle de Agendas, O.S. e Reputação</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs tracking-widest hover:bg-white/10 transition-all">
-          <Clock className="w-4 h-4" /> Minha Agenda
-        </button>
+        <Link to="/_authenticated/feed" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
+          <Briefcase className="w-4 h-4" /> Ver Oportunidades
+        </Link>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

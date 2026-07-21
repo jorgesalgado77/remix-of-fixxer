@@ -45,8 +45,9 @@ function FeedPage() {
   const [locationFilter, setLocationFilter] = useState("");
 
   const categories = {
-    tecnico: ["Projetista", "Medidor", "Montador", "Supervisor", "Frete Dedicado"],
-    obras: ["Gesso", "Eletricista", "Encanador", "Alvenaria", "Pintura", "Marmoraria", "Vidraçaria", "Limpeza"]
+    tecnico: ["Projetista", "Conferente Técnico", "Montador", "Medidor", "Instalador"],
+    fornecedores: ["Marmoraria", "Vidraçaria", "Ferragens", "Iluminação"],
+    obras: ["Gesso", "Eletricista", "Encanador", "Alvenaria", "Pintura", "Limpeza"]
   };
 
   const { ref, inView } = useInView();
@@ -183,9 +184,19 @@ function FeedPage() {
                   <CategoryChip key={cat} label={cat} active={selectedCategory === cat} onClick={() => setSelectedCategory(cat)} />
                 ))}
              </div>
+             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <span className="shrink-0 text-[8px] font-bold text-emerald-400/50 uppercase self-center mr-1">Fornecedores:</span>
+                {categories.fornecedores.map(cat => (
+                  <CategoryChip key={cat} label={cat} active={selectedCategory === cat} onClick={() => setSelectedCategory(cat)} />
+                ))}
+             </div>
           </div>
         </div>
       </header>
+
+      <div id="ts-visual-edit-probe-9505567992f14f28" className="hidden">
+        REGRAS ESTRITAS DE EXECUÇÃO E ESTABILIDADE
+      </div>
 
       <main className="space-y-4">
         {isLoading ? (
