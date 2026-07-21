@@ -41,27 +41,51 @@ function ProfilePage() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!profile?.id) {
+      toast.error("Perfil não carregado. Recarregue a página.");
+      return;
+    }
 
+    const toastId = toast.loading(`Enviando ${type === 'avatar' ? 'foto de perfil' : 'banner'}...`);
     try {
-      const compressed = await compressImage(file);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}-${type}-${Math.random()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
+      let processed: File = file;
+      try {
+        processed = await compressImage(file, type === 'banner' ? 1600 : 800, 0.8);
+      } catch (err) {
+        console.warn("Compressão falhou, usando original:", err);
+      }
+
+      const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const filePath = `profiles/${profile.id}/${type}-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('media')
-        .upload(filePath, compressed);
+        .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage.from('media').getPublicUrl(filePath);
 
-      setProfile({ ...profile, [type === 'avatar' ? 'avatar_url' : 'banner_url']: publicUrl });
-      toast.success("Mídia atualizada!");
+      const field = type === 'avatar' ? 'avatar_url' : 'banner_url';
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ [field]: publicUrl })
+        .eq('id', profile.id);
+      if (updateError) throw updateError;
+
+      setProfile({ ...profile, [field]: publicUrl });
+      toast.success("Mídia atualizada!", { id: toastId });
     } catch (error: any) {
-      toast.error("Erro no upload: " + error.message);
+      console.error("Upload error:", error);
+      const msg = error?.message || String(error);
+      toast.error(
+        msg.includes('Bucket') || msg.includes('not found') || msg.includes('row-level')
+          ? "Bucket 'media' não configurado. Crie um bucket público chamado 'media' no Supabase Storage."
+          : "Erro no upload: " + msg,
+        { id: toastId }
+      );
+    } finally {
+      e.target.value = '';
     }
   };
 
