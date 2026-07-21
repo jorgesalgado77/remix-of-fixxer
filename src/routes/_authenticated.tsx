@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect, Link } from "@tanstack/react-router";
+import { User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -81,6 +82,13 @@ function AuthenticatedLayout() {
               Admin
             </Link>
           )}
+          <Link 
+            to="/_authenticated/profile" 
+            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95 flex items-center gap-2"
+          >
+            <User className="w-3 h-3" />
+            Perfil
+          </Link>
           <Link 
             to="/dashboard" 
             className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors active:scale-95"
