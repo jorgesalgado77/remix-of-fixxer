@@ -44,7 +44,16 @@ function AuthenticatedLayout() {
     checkAuth();
   }, [navigate]);
 
-  const dashboardPath = userRole === 'Lojista' ? '/_authenticated/lojista' : '/_authenticated/dashboard';
+  const getDashboardPath = (role: string) => {
+    const r = role.toLowerCase();
+    if (r.includes('lojista')) return '/_authenticated/lojista';
+    if (r.includes('admin')) return '/_authenticated/admin';
+    if (r.includes('parceiro') || r.includes('fornecedor')) return '/_authenticated/parceiro';
+    if (r.includes('cliente')) return '/_authenticated/cliente';
+    return '/_authenticated/prestador';
+  };
+
+  const dashboardPath = getDashboardPath(userRole);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
