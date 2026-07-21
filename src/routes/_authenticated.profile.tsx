@@ -2,8 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase } from "lucide-react";
+import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
 import { compressImage } from "@/utils/image-compression";
+import { MaskedInput } from "@/components/MaskedInput";
+
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -16,6 +18,8 @@ function ProfilePage() {
   const [brands, setBrands] = useState<string[]>([]);
   const [newBrand, setNewBrand] = useState("");
   const [isAddingBrand, setIsAddingBrand] = useState(false);
+  const [lightbox, setLightbox] = useState<{ isOpen: boolean; type: string; url: string; index: number }>({ isOpen: false, type: '', url: '', index: 0 });
+
 
   useEffect(() => {
     async function loadData() {
@@ -60,6 +64,70 @@ function ProfilePage() {
       toast.error("Erro no upload: " + error.message);
     }
   };
+
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document') => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      setSaving(true);
+      const newMedia = [];
+      const newDocs = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        let processedFile = file;
+        
+        if (type === 'image') {
+          processedFile = await compressImage(file);
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
+        const filePath = `${type}s/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('media')
+          .upload(filePath, processedFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('media')
+          .getPublicUrl(filePath);
+
+        const item = { 
+          name: file.name, 
+          url: publicUrl, 
+          type, 
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          created_at: new Date().toISOString()
+        };
+
+        if (type === 'document') {
+          newDocs.push(item);
+        } else {
+          newMedia.push(item);
+        }
+      }
+
+      const updatedPortfolio = [...(profile.portfolio_media || []), ...newMedia];
+      const updatedDocs = [...(profile.documents || []), ...newDocs];
+      
+      setProfile({ 
+        ...profile, 
+        portfolio_media: updatedPortfolio, 
+        documents: updatedDocs 
+      });
+      
+      toast.success(`${files.length} arquivo(s) carregado(s) com sucesso!`);
+    } catch (error: any) {
+      toast.error("Erro no upload: " + error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
 
   const handleAddNewBrand = async () => {
     if (!newBrand.trim()) return;
@@ -418,40 +486,173 @@ function ProfilePage() {
           </div>
 
           <div className="space-y-8">
-            {/* CENTRAL DE MÍDIA COMPACTA */}
+            {/* CENTRAL DE MÍDIA COMPACTA - REFORMULADA */}
             <section className="bg-card/30 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] shadow-2xl space-y-6">
               <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                 <Upload className="w-5 h-5 text-primary" />
                 <h3 className="text-lg font-black uppercase tracking-tighter">Mídia & Documentos</h3>
               </div>
               
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all group cursor-pointer">
-                  <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-all" />
-                  <div className="text-center">
-                    <p className="text-xs font-bold text-white">Upload de Arquivos</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">PDF, Excel, Imagens</p>
+              <div className="space-y-8">
+                {/* DOCUMENTOS */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                    <FileText className="w-3 h-3" /> Documentos (PDF, DOC, XLS)
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {profile?.documents?.filter((f: any) => f.type === 'document').map((doc: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 transition-all">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center text-primary flex-shrink-0">
+                            <File className="w-4 h-4" />
+                          </div>
+                          <div className="truncate">
+                            <p className="text-[11px] font-bold text-white truncate">{doc.name}</p>
+                            <p className="text-[9px] text-muted-foreground uppercase">{doc.size || 'N/A'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <a href={doc.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                          <button onClick={() => {
+                            const next = profile.documents.filter((_: any, idx: number) => idx !== i);
+                            setProfile({...profile, documents: next});
+                          }} className="text-muted-foreground hover:text-red-500 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <label className="border-2 border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group">
+                      <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                      <span className="text-[9px] font-black uppercase text-muted-foreground group-hover:text-primary">Novo Documento</span>
+                      <input type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" onChange={(e) => handleMediaUpload(e, 'document')} />
+                    </label>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center text-primary font-bold text-[10px]">PDF</div>
-                      <div>
-                        <p className="text-[11px] font-bold text-white leading-tight">Catalogo_2024.pdf</p>
-                        <p className="text-[9px] text-muted-foreground uppercase">2.4 MB</p>
+                {/* IMAGENS / GALERIA PINTEREST */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                    <Camera className="w-3 h-3" /> Galeria de Imagens
+                  </h4>
+                  <div className="columns-2 gap-3 space-y-3">
+                    {profile?.portfolio_media?.filter((f: any) => f.type === 'image').map((img: any, i: number) => (
+                      <div key={i} className="relative group rounded-xl overflow-hidden cursor-pointer break-inside-avoid shadow-lg" onClick={() => setLightbox({ isOpen: true, type: 'image', url: img.url, index: i })}>
+                        <img src={img.url} alt="Portfolio" className="w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                          <button onClick={(e) => { e.stopPropagation(); /* edit logic */ }} className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-primary hover:text-black"><Save className="w-4 h-4" /></button>
+                          <button onClick={(e) => {
+                            e.stopPropagation();
+                            const next = profile.portfolio_media.filter((_: any, idx: number) => idx !== i);
+                            setProfile({...profile, portfolio_media: next});
+                          }} className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-red-500"><Trash2 className="w-4 h-4" /></button>
+                        </div>
                       </div>
-                    </div>
-                    <button className="text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    ))}
+                    <label className="w-full aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group break-inside-avoid">
+                      <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+                      <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleMediaUpload(e, 'image')} />
+                    </label>
+                  </div>
+                </div>
+
+                {/* VÍDEOS */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                    <Play className="w-3 h-3" /> Vídeos & Demonstrações
+                  </h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    {profile?.portfolio_media?.filter((f: any) => f.type === 'video').map((vid: any, i: number) => (
+                      <div key={i} className="relative group rounded-2xl overflow-hidden bg-black aspect-video border border-white/5">
+                        <video src={vid.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" controls />
+                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                           <button onClick={() => {
+                            const next = profile.portfolio_media.filter((_: any, idx: number) => idx !== i);
+                            setProfile({...profile, portfolio_media: next});
+                          }} className="bg-black/60 p-2 rounded-xl backdrop-blur-md hover:bg-red-500"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                    ))}
+                    <label className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer group">
+                      <Play className="w-8 h-8 text-muted-foreground group-hover:text-primary" />
+                      <span className="text-xs font-bold uppercase text-muted-foreground group-hover:text-primary">Upload de Vídeo</span>
+                      <input type="file" className="hidden" accept="video/*" onChange={(e) => handleMediaUpload(e, 'video')} />
+                    </label>
+                  </div>
+                </div>
+
+                {/* DEPOIMENTOS */}
+                <div className="pt-4 border-t border-white/5 space-y-4">
+                  <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                    <MessageSquare className="w-3 h-3" /> Depoimentos Recebidos
+                  </h4>
+                  <div className="space-y-3">
+                    {profile?.testimonials?.length > 0 ? (
+                      profile.testimonials.map((t: any, i: number) => (
+                        <div key={i} className="bg-white/5 border border-white/5 p-4 rounded-2xl">
+                          <p className="text-xs italic text-muted-foreground mb-2">"{t.content}"</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black text-primary uppercase">{t.author}</span>
+                            <div className="flex gap-1 text-primary">
+                              {[...Array(5)].map((_, j) => <Star key={j} className={`w-2 h-2 ${j < t.rating ? 'fill-primary' : 'opacity-20'}`} />)}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center p-6 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Nenhum depoimento ainda</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </section>
+
           </div>
         </div>
       </div>
+
+      {/* LIGHTBOX / CARROSSEL */}
+      {lightbox.isOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <button onClick={() => setLightbox({ ...lightbox, isOpen: false })} className="absolute top-6 right-6 text-white/60 hover:text-white bg-white/10 p-3 rounded-2xl transition-all">
+            <X className="w-6 h-6" />
+          </button>
+          
+          <div className="relative max-w-5xl w-full h-[80vh] flex items-center justify-center">
+            {lightbox.type === 'image' && (
+              <img src={lightbox.url} className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-500" alt="Full view" />
+            )}
+            
+            <button 
+              onClick={() => {
+                const media = profile.portfolio_media.filter((f: any) => f.type === lightbox.type);
+                const nextIdx = (lightbox.index - 1 + media.length) % media.length;
+                setLightbox({ ...lightbox, index: nextIdx, url: media[nextIdx].url });
+              }}
+              className="absolute left-0 bg-white/5 hover:bg-primary hover:text-black p-4 rounded-2xl border border-white/10 transition-all"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            
+            <button 
+              onClick={() => {
+                const media = profile.portfolio_media.filter((f: any) => f.type === lightbox.type);
+                const nextIdx = (lightbox.index + 1) % media.length;
+                setLightbox({ ...lightbox, index: nextIdx, url: media[nextIdx].url });
+              }}
+              className="absolute right-0 bg-white/5 hover:bg-primary hover:text-black p-4 rounded-2xl border border-white/10 transition-all"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
