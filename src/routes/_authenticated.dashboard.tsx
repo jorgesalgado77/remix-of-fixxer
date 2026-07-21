@@ -262,7 +262,9 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
       return data ?? [];
     },
     enabled: !!lojistaId && !!osList,
-    retry: 2,
+    staleTime: 1000 * 60 * 2,
+    retry: 3,
+
   });
 
   // --- Metrics ---
