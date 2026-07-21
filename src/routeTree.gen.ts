@@ -23,9 +23,6 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated.cliente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
-import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated.admin.users'
-import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated.admin.plans'
-import { Route as AuthenticatedAdminIntegrationsRouteImport } from './routes/_authenticated.admin.integrations'
 
 const CadastroRoute = CadastroRouteImport.update({
   id: '/cadastro',
@@ -96,28 +93,12 @@ const ApiPublicSetupDbRoute = ApiPublicSetupDbRouteImport.update({
   path: '/api/public/setup-db',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AuthenticatedAdminRoute,
-} as any)
-const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
-  id: '/plans',
-  path: '/plans',
-  getParentRoute: () => AuthenticatedAdminRoute,
-} as any)
-const AuthenticatedAdminIntegrationsRoute =
-  AuthenticatedAdminIntegrationsRouteImport.update({
-    id: '/integrations',
-    path: '/integrations',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/admin': typeof AuthenticatedAdminRoute
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
@@ -126,15 +107,12 @@ export interface FileRoutesByFullPath {
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/auth/': typeof AuthIndexRoute
-  '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
-  '/admin/plans': typeof AuthenticatedAdminPlansRoute
-  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/admin': typeof AuthenticatedAdminRoute
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
@@ -143,9 +121,6 @@ export interface FileRoutesByTo {
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/auth': typeof AuthIndexRoute
-  '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
-  '/admin/plans': typeof AuthenticatedAdminPlansRoute
-  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
 export interface FileRoutesById {
@@ -154,7 +129,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/feed': typeof AuthenticatedFeedRoute
@@ -163,9 +138,6 @@ export interface FileRoutesById {
   '/_authenticated/prestador': typeof AuthenticatedPrestadorRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/auth/': typeof AuthIndexRoute
-  '/_authenticated/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
-  '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
-  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
 export interface FileRouteTypes {
@@ -183,9 +155,6 @@ export interface FileRouteTypes {
     | '/prestador'
     | '/profile'
     | '/auth/'
-    | '/admin/integrations'
-    | '/admin/plans'
-    | '/admin/users'
     | '/api/public/setup-db'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -200,9 +169,6 @@ export interface FileRouteTypes {
     | '/prestador'
     | '/profile'
     | '/auth'
-    | '/admin/integrations'
-    | '/admin/plans'
-    | '/admin/users'
     | '/api/public/setup-db'
   id:
     | '__root__'
@@ -219,9 +185,6 @@ export interface FileRouteTypes {
     | '/_authenticated/prestador'
     | '/_authenticated/profile'
     | '/auth/'
-    | '/_authenticated/admin/integrations'
-    | '/_authenticated/admin/plans'
-    | '/_authenticated/admin/users'
     | '/api/public/setup-db'
   fileRoutesById: FileRoutesById
 }
@@ -333,47 +296,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSetupDbRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin/users': {
-      id: '/_authenticated/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/plans': {
-      id: '/_authenticated/admin/plans'
-      path: '/plans'
-      fullPath: '/admin/plans'
-      preLoaderRoute: typeof AuthenticatedAdminPlansRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/integrations': {
-      id: '/_authenticated/admin/integrations'
-      path: '/integrations'
-      fullPath: '/admin/integrations'
-      preLoaderRoute: typeof AuthenticatedAdminIntegrationsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
   }
 }
 
-interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminIntegrationsRoute: typeof AuthenticatedAdminIntegrationsRoute
-  AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
-  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
-}
-
-const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminIntegrationsRoute: AuthenticatedAdminIntegrationsRoute,
-  AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
-  AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
-}
-
-const AuthenticatedAdminRouteWithChildren =
-  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
-
 interface AuthenticatedRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
@@ -384,7 +311,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeedRoute: AuthenticatedFeedRoute,

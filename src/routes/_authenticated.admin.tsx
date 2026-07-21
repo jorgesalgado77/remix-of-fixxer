@@ -6,10 +6,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminDashboardComponent,
 });
 
-export { AdminDashboardComponent };
-
-function AdminDashboardComponent() {
-
+export function AdminDashboardComponent() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +16,7 @@ function AdminDashboardComponent() {
       const role = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
       
       if (email.trim() !== 'jorgericardosalgado@gmail.com' && role.toLowerCase() !== 'admin') {
-        console.warn("[ADMIN SECURITY]: Acesso negado a não-administrador. Redirecionando...");
+        console.warn("[ADMIN SECURITY]: Acesso negado. Redirecionando...");
         navigate({ to: '/_authenticated/dashboard' as any });
         return;
       }
@@ -132,7 +129,7 @@ function AdminDashboardComponent() {
               Infraestrutura Operacional
             </h2>
             <p className="text-gray-400 leading-relaxed">
-              Rota registrada com sucesso. Você tem controle total do sistema.
+              Rota única configurada com sucesso. Você tem controle total do sistema.
             </p>
           </div>
         </div>
