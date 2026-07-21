@@ -1069,53 +1069,73 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                         </div>
                     )}
                     
-                    <div className="space-y-2">
-                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Galeria de Fotos da Empresa (Até 12 fotos)</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {galleryUrls.map((url, i) => (
-                                <div key={i} className="aspect-square rounded-2xl border border-white/10 overflow-hidden relative group">
-                                    <img src={url} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
-                                    <button 
-                                        onClick={() => confirmRemoval('Foto', () => setGalleryUrls(prev => prev.filter((_, idx) => idx !== i)))}
-                                        className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 className="w-3 h-3 text-white" />
-                                    </button>
-                                </div>
-                            ))}
-                            {galleryUrls.length < 12 && (
-                                <label className="aspect-square rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-1 bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group">
-                                    <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'gallery')} />
-                                    <PlusCircle className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-                                    <span className="text-[8px] font-black text-primary uppercase">Adicionar</span>
-                                </label>
-                            )}
-                        </div>
+                    <div className="space-y-4">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center justify-between">
+                            Galeria de Fotos da Empresa (Arraste para Reordenar)
+                            <span className="text-[8px] opacity-50">{galleryUrls.length}/12</span>
+                        </Label>
+                        
+                        <DndContext 
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(e) => handleDragEnd(e, 'gallery')}
+                        >
+                            <div 
+                                className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-4 rounded-3xl border-2 border-dashed transition-all ${isDraggingOver ? 'border-primary bg-primary/5' : 'border-white/10 bg-black/20'}`}
+                                onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                                onDragLeave={() => setIsDraggingOver(false)}
+                                onDrop={(e) => handleDrop(e, 'gallery')}
+                            >
+                                <SortableContext items={galleryUrls} strategy={rectSortingStrategy}>
+                                    {galleryUrls.map((url) => (
+                                        <SortableItem key={url} id={url} onRemove={() => confirmRemoval('foto', () => setGalleryUrls(prev => prev.filter(u => u !== url)))} />
+                                    ))}
+                                </SortableContext>
+                                
+                                {galleryUrls.length < 12 && (
+                                    <label className="aspect-square rounded-2xl border border-white/5 bg-white/5 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all cursor-pointer group">
+                                        <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'gallery')} />
+                                        <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <span className="text-[8px] font-black uppercase text-muted-foreground group-hover:text-primary tracking-tighter">Add Foto</span>
+                                    </label>
+                                )}
+                            </div>
+                        </DndContext>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Vídeos da Empresa (Até 3 vídeos)</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {videoUrls.map((url, i) => (
-                                <div key={i} className="h-40 rounded-2xl border border-white/10 bg-black/40 overflow-hidden relative group">
-                                    <video src={url} className="w-full h-full object-cover" controls />
-                                    <button 
-                                        onClick={() => confirmRemoval('Vídeo', () => setVideoUrls(prev => prev.filter((_, idx) => idx !== i)))}
-                                        className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 className="w-3 h-3 text-white" />
-                                    </button>
-                                </div>
-                            ))}
-                            {videoUrls.length < 3 && (
-                                <label className="h-40 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center hover:border-primary/30 transition-all cursor-pointer bg-black/20 group">
-                                    <input type="file" className="hidden" accept="video/*" multiple onChange={(e) => handleFileUpload(e, 'video')} />
-                                    <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary/50" />
-                                    <span className="text-[10px] font-black text-muted-foreground uppercase ml-2">Adicionar Vídeos</span>
-                                </label>
-                            )}
-                        </div>
+                    <div className="space-y-4 pt-6 border-t border-white/5">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center justify-between">
+                            Vídeos da Empresa (Até 3 vídeos)
+                            <span className="text-[8px] opacity-50">{videoUrls.length}/3</span>
+                        </Label>
+                        
+                        <DndContext 
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(e) => handleDragEnd(e, 'video')}
+                        >
+                            <div 
+                                className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-3xl border-2 border-dashed border-white/10 bg-black/20"
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => handleDrop(e, 'video')}
+                            >
+                                <SortableContext items={videoUrls} strategy={rectSortingStrategy}>
+                                    {videoUrls.map((url) => (
+                                        <SortableItem key={url} id={url} isVideo onRemove={() => confirmRemoval('vídeo', () => setVideoUrls(prev => prev.filter(u => u !== url)))} />
+                                    ))}
+                                </SortableContext>
+                                
+                                {videoUrls.length < 3 && (
+                                    <label className="aspect-video sm:aspect-square rounded-2xl border border-white/5 bg-white/5 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all cursor-pointer group">
+                                        <input type="file" className="hidden" accept="video/mp4,video/quicktime" multiple onChange={(e) => handleFileUpload(e, 'video')} />
+                                        <Video className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <span className="text-[8px] font-black uppercase text-muted-foreground group-hover:text-primary tracking-tighter">Add Vídeo</span>
+                                    </label>
+                                )}
+                            </div>
+                        </DndContext>
                     </div>
+
                  </div>
 
                   <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
