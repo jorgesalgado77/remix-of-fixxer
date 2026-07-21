@@ -1,6 +1,9 @@
 -- SCHEMA COMPLETO E IDEMPOTENTE PARA O WEBAPP FIXXER
 -- Este script pode ser executado múltiplas vezes sem causar erros
 
+-- 0. HABILITAR EXTENSÕES
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. ENUMS
 DO $$ BEGIN
     CREATE TYPE public.app_role AS ENUM ('admin', 'lojista', 'prestador', 'fornecedor');
