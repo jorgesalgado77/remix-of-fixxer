@@ -220,7 +220,7 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction }: { glassClass: st
 }
 
 // --- PRESTADOR DASHBOARD ---
-function PrestadorDashboard({ glassClass, isFreePlan }: { glassClass: string, isFreePlan: boolean }) {
+function PrestadorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: string, isFreePlan: boolean, onAction: (e: any, action: string) => boolean }) {
   const [isAvailable, setIsAvailable] = useState(true);
 
   return (
