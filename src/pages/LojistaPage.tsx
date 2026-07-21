@@ -31,11 +31,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { EscrowBadge } from "@/components/EscrowBadge";
+import { toast } from "sonner";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
   const { glassClass } = usePerformanceMode();
+
+  const handleTabChange = (tab: string) => {
+    if ((tab === 'create' || tab === 'reviews') && !isProfileComplete) {
+      toast.error("Perfil Incompleto", {
+        description: "Você precisa preencher todos os campos obrigatórios e enviar o logo da empresa no menu Perfil antes de acessar esta funcionalidade.",
+        duration: 5000,
+      });
+      setActiveTab('profile');
+      return;
+    }
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+  };
 
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
@@ -64,13 +79,13 @@ export function LojistaDashboard() {
                     </button>
                 </div>
 
-                <UserProfileCard />
+                <UserProfileCard isProfileComplete={isProfileComplete} />
 
                 <nav className="flex flex-col gap-3">
-                    <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} />
-                    <SidebarButton icon={<PlusCircle className="w-5 h-5"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => { setActiveTab('create'); setMobileMenuOpen(false); }} />
-                    <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => { setActiveTab('profile'); setMobileMenuOpen(false); }} />
-                    <SidebarButton icon={<Star className="w-5 h-5"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => { setActiveTab('reviews'); setMobileMenuOpen(false); }} />
+                    <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                    <SidebarButton icon={<PlusCircle className="w-5 h-5"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => handleTabChange('create')} />
+                    <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
+                    <SidebarButton icon={<Star className="w-5 h-5"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => handleTabChange('reviews')} />
                 </nav>
                 <div className="mt-auto pt-6 flex flex-col gap-4">
                     <Link to="/_authenticated/feed" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs shadow-[0_0_15px_rgba(255,255,255,0.05)]">
@@ -91,13 +106,13 @@ export function LojistaDashboard() {
             <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
         </div>
 
-        <UserProfileCard />
+        <UserProfileCard isProfileComplete={isProfileComplete} />
 
         <nav className="flex flex-col gap-2">
-            <SidebarButton icon={<Activity className="w-4 h-4"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-            <SidebarButton icon={<PlusCircle className="w-4 h-4"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => setActiveTab('create')} />
-            <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
-            <SidebarButton icon={<Star className="w-4 h-4"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} />
+            <SidebarButton icon={<Activity className="w-4 h-4"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+            <SidebarButton icon={<PlusCircle className="w-4 h-4"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => handleTabChange('create')} />
+            <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
+            <SidebarButton icon={<Star className="w-4 h-4"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => handleTabChange('reviews')} />
         </nav>
         <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-2">
             <Link to="/_authenticated/feed" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider">
@@ -128,7 +143,7 @@ export function LojistaDashboard() {
         <div className="p-8 max-w-7xl mx-auto">
             {activeTab === 'dashboard' && <DashboardView />}
             {activeTab === 'create' && <CreateServiceView />}
-            {activeTab === 'profile' && <ProfileView />}
+            {activeTab === 'profile' && <ProfileView setIsProfileComplete={setIsProfileComplete} />}
             {activeTab === 'reviews' && <ReviewsView />}
         </div>
       </main>
@@ -136,7 +151,7 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard() {
+function UserProfileCard({ isProfileComplete }: { isProfileComplete: boolean }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
@@ -153,7 +168,7 @@ function UserProfileCard() {
                 </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+            <div className={`grid grid-cols-2 gap-2 pt-2 border-t border-white/5 ${!isProfileComplete ? 'opacity-50 grayscale' : ''}`}>
                 <div className="flex flex-col">
                     <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">Reputação</span>
                     <div className="flex items-center gap-1">
@@ -337,7 +352,7 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView() {
+function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete: boolean) => void }) {
     const [cep, setCep] = useState("");
     const [address, setAddress] = useState({
         logradouro: "",
@@ -396,30 +411,30 @@ function ProfileView() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome Fantasia da Empresa</Label>
-                           <Input placeholder="FIXXER Móveis Planejados" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome Fantasia da Empresa *</Label>
+                           <Input required placeholder="FIXXER Móveis Planejados" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social</Label>
-                           <Input placeholder="FIXXER LTDA" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social *</Label>
+                           <Input required placeholder="FIXXER LTDA" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ</Label>
-                           <Input placeholder="00.000.000/0001-00" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ *</Label>
+                           <Input required placeholder="00.000.000/0001-00" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório)</Label>
-                           <Input placeholder="Digite o nome do responsável" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório) *</Label>
+                           <Input required placeholder="Digite o nome do responsável" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">E-mail de Contato Principal</Label>
-                           <Input type="email" placeholder="contato@fixxer.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">E-mail de Contato Principal *</Label>
+                           <Input required type="email" placeholder="contato@fixxer.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
-                             <MessageCircle className="w-3 h-3 text-[#25D366]" /> WhatsApp (Comercial)
+                             <MessageCircle className="w-3 h-3 text-[#25D366]" /> WhatsApp (Comercial) *
                            </Label>
-                           <Input placeholder="(11) 99999-9999" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#25D366]/50 transition-all" />
+                           <Input required placeholder="(11) 99999-9999" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#25D366]/50 transition-all" />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
@@ -468,8 +483,9 @@ function ProfileView() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2 relative">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CEP</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CEP *</Label>
                            <Input 
+                             required
                              value={cep} 
                              onChange={(e) => setCep(e.target.value)}
                              placeholder="00000-000" 
@@ -478,8 +494,9 @@ function ProfileView() {
                            {isLoadingCep && <div className="absolute right-3 bottom-3 animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />}
                         </div>
                         <div className="md:col-span-2 space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logradouro / Rua</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logradouro / Rua *</Label>
                            <Input 
+                             required
                              value={address.logradouro} 
                              onChange={(e) => setAddress({...address, logradouro: e.target.value})}
                              placeholder="Rua, Avenida..." 
@@ -487,8 +504,9 @@ function ProfileView() {
                            />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Bairro</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Bairro *</Label>
                            <Input 
+                             required
                              value={address.bairro} 
                              onChange={(e) => setAddress({...address, bairro: e.target.value})}
                              placeholder="Bairro" 
@@ -496,8 +514,9 @@ function ProfileView() {
                            />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Cidade</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Cidade *</Label>
                            <Input 
+                             required
                              value={address.localidade} 
                              onChange={(e) => setAddress({...address, localidade: e.target.value})}
                              placeholder="Cidade" 
@@ -505,8 +524,9 @@ function ProfileView() {
                            />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Estado / UF</Label>
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Estado / UF *</Label>
                            <Input 
+                             required
                              value={address.uf} 
                              onChange={(e) => setAddress({...address, uf: e.target.value})}
                              placeholder="UF" 
@@ -514,8 +534,8 @@ function ProfileView() {
                            />
                         </div>
                         <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Número</Label>
-                           <Input placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Número *</Label>
+                           <Input required placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="md:col-span-2 space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Complemento</Label>
@@ -530,7 +550,7 @@ function ProfileView() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logo da Empresa</Label>
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logo da Empresa *</Label>
                             <div className="h-40 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 group relative overflow-hidden shadow-inner">
                                 <PlusCircle className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
                                 <span className="text-[10px] font-black uppercase text-muted-foreground group-hover:text-primary transition-colors">Upload Logo</span>
@@ -580,7 +600,15 @@ function ProfileView() {
                         <Star className="w-4 h-4 fill-[#00FF87] text-[#00FF87]" />
                         <span className="text-xs font-black text-white italic">Reputação Atual: <span className="text-[#00FF87]">4.9 / 5.0</span></span>
                     </div>
-                    <Button className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98]">
+                    <Button 
+                        onClick={() => {
+                            setIsProfileComplete(true);
+                            toast.success("Perfil Atualizado", {
+                                description: "Seus dados foram salvos com sucesso. Agora você pode acessar todas as funcionalidades.",
+                            });
+                        }}
+                        className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98]"
+                    >
                         Salvar Todas as Alterações
                     </Button>
                  </div>
