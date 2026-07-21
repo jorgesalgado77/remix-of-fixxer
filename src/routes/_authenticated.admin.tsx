@@ -70,18 +70,30 @@ export function AdminDashboardComponent() {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00FF87]/10 border border-[#00FF87]/20 text-[#00FF87] text-[10px] font-black uppercase tracking-tighter italic">
             <ShieldCheck className="w-3 h-3" />
-            FIXXER Master Admin Feed
+            FIXXER Master Admin Dashboard
           </div>
           <div className="flex flex-col">
-            <h1 className="text-3xl font-black text-white tracking-tighter uppercase italic italic">
-              AUDITORIA <span className="text-[#00FF87]">GLOBAL</span>
+            <h1 className="text-3xl font-black text-white tracking-tighter uppercase italic">
+              PAINEL <span className="text-[#00FF87]">ADMINISTRATIVO</span>
             </h1>
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest max-w-md">
-              Visão consolidada de todas as operações e tráfego da plataforma.
+              Gestão global de usuários, auditoria de O.S. e controle da plataforma.
             </p>
           </div>
         </div>
+        
+        <button 
+          onClick={() => {
+            const el = document.getElementById('admin-feed-section');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all group"
+        >
+          <Activity className="w-4 h-4 group-hover:animate-pulse" />
+          Acessar Feed de Auditoria
+        </button>
       </div>
+
 
       {/* Cards de Métricas Rápidas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
