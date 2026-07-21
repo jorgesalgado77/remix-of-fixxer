@@ -127,9 +127,10 @@ function Dashboard() {
       </header>
 
       {/* Render Categorized Dashboard */}
-      {userRole === 'lojista' && <LojistaDashboard glassClass={glassClass} isFreePlan={isFreePlan} />}
-      {userRole === 'prestador' && <PrestadorDashboard glassClass={glassClass} isFreePlan={isFreePlan} />}
-      {userRole === 'fornecedor' && <FornecedorDashboard glassClass={glassClass} isFreePlan={isFreePlan} />}
+      {userRole === 'lojista' && <LojistaDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
+      {userRole === 'prestador' && <PrestadorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
+      {userRole === 'fornecedor' && <FornecedorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
+
       {userRole === 'admin' && (
         <div className={`p-12 rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center text-center ${glassClass}`}>
           <LayoutDashboard className="w-12 h-12 text-primary mb-4 opacity-20" />
