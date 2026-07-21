@@ -27,6 +27,7 @@ import { EscrowBadge } from "@/components/EscrowBadge";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { glassClass } = usePerformanceMode();
 
   return (
