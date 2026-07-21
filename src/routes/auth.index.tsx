@@ -42,52 +42,44 @@ function LoginComponent() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Preencha todos os campos");
-      return;
-    }
-
     setLoading(true);
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
+        email,
+        password,
       });
-      
+
       if (error) {
-        toast.error(`Erro ao acessar: ${error.message}`);
+        alert(`Erro no login: ${error.message}`);
         setLoading(false);
         return;
       }
 
-      if (data?.session) {
-        // Salva indicador de sessão manual para destravar a interface
-        localStorage.setItem('fixxer_authenticated', 'true');
-        
-        // Implementar upsert automático do perfil se não existir
-        const { data: profile, error: profileError } = await supabase
+      if (data?.user) {
+        // Busca a role no perfil para redirecionamento correto
+        const { data: profile } = await supabase
           .from('profiles')
-          .select('user_type, role')
+          .select('user_type')
           .eq('id', data.user.id)
           .maybeSingle();
 
-        if (!profile && !profileError) {
-          await supabase.from('profiles').insert([{
-            id: data.user.id,
-            email: data.user.email,
-            user_type: 'lojista',
-            role: 'user'
-          }]);
-        }
+        const role = profile?.user_type || data.user.user_metadata?.user_type || 'Lojista';
 
-        // Força a substituição da rota para a Dashboard
-        window.location.replace('/_authenticated/dashboard');
+        // Força o redirecionamento imediato via window.location para evitar travamentos do React Router
+        if (role === 'Admin' || email === 'jorgericardosalgado@gmail.com') {
+          window.location.href = '/admin';
+        } else if (role === 'Prestador') {
+          window.location.href = '/dashboard/prestador';
+        } else if (role === 'Parceiro') {
+          window.location.href = '/dashboard/parceiro';
+        } else {
+          window.location.href = '/dashboard/lojista';
+        }
       }
-    } catch (err) {
-      console.error("Erro no login:", err);
+    } catch (err: any) {
+      alert(`Erro inesperado: ${err.message || 'Falha de conexão'}`);
       setLoading(false);
-      toast.error("Erro inesperado ao realizar login");
     }
   };
 
@@ -173,16 +165,59 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-b203ae72dfdb4a80" className="hidden">
-          {`CORREÇÃO EM NÍVEL DE COMPONENTE (DESTRANCAMENTO DE NAVEGAÇÃO):
+        <div id="ts-visual-edit-probe-d26a1b15ce9a4eb5" className="hidden">
+          {`CORREÇÃO CRÍTICA DE FRONT-END: AÇÃO DO BOTÃO "ENTRAR" E ROTEAMENTO
 
-          O sistema não avança porque o AuthContext / useAuth está interceptando a navegação e bloqueando o redirecionamento após o login. 
+O banco externo Supabase já possui o usuário Administrador registrado e validado, mas o botão "Entrar" no front-end não dispara a navegação pós-login. 
 
-          Vamos desativar a trava do AuthContext no login e montar a Dashboard de forma independente:
+Corrija e reescreva imediatamente o manipulador de login e a tabela de rotas do React Router com as seguintes regras de execução direta:
 
-          1. ALTERAÇÃO NO FORMULÁRIO DE LOGIN (Login.tsx / Auth.tsx):
-          - Ignore as funções do useAuth() para fazer o login. Utilize o cliente direto do Supabase.
-          - Altere o método de submissão do formulário para salvar um sinalizador manual no localStorage e redirecionar imediatamente.`}
+1. REESCRITA DO HANDLER DE LOGIN (Login.tsx / Auth.tsx):
+- Adicione um indicador visual instantâneo no botão ao clicar: substitua o texto por "Acessando..." com um spinner esmeralda (#00FF87).
+- Execute o login direto sem interceptações de contexto global:
+
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert(\`Erro no login: \${error.message}\`);
+      setLoading(false);
+      return;
+    }
+
+    if (data?.user) {
+      // Busca a role no perfil para redirecionamento correto
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      const role = profile?.user_type || data.user.user_metadata?.user_type || 'Lojista';
+
+      // Força o redirecionamento imediato via window.location para evitar travamentos do React Router
+      if (role === 'Admin' || email === 'jorgericardosalgado@gmail.com') {
+        window.location.href = '/admin';
+      } else if (role === 'Prestador') {
+        window.location.href = '/dashboard/prestador';
+      } else if (role === 'Parceiro') {
+        window.location.href = '/dashboard/parceiro';
+      } else {
+        window.location.href = '/dashboard/lojista';
+      }
+    }
+  } catch (err: any) {
+    alert(\`Erro inesperado: \${err.message || 'Falha de conexão'}\`);
+    setLoading(false);
+  }
+};`}
         </div>
       </div>
 
