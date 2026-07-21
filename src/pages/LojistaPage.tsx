@@ -106,7 +106,7 @@ export function LojistaDashboard() {
             <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
         </div>
 
-        <UserProfileCard />
+        <UserProfileCard isProfileComplete={isProfileComplete} />
 
         <nav className="flex flex-col gap-2">
             <SidebarButton icon={<Activity className="w-4 h-4"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
