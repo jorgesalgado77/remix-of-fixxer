@@ -90,6 +90,29 @@ function ProfilePage() {
     setSaving(false);
   };
 
+  const handleCepLookup = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return;
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+      if (!data.erro) {
+        setProfile({
+          ...profile,
+          cep: cleanCep,
+          street: data.logradouro,
+          neighborhood: data.bairro,
+          city: data.localidade,
+          state: data.uf
+        });
+        toast.success("Endereço preenchido via CEP!");
+      }
+    } catch (e) {
+      console.error("Erro CEP:", e);
+    }
+  };
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[80vh] gap-4">
       <Loader2 className="animate-spin text-primary w-12 h-12" />
