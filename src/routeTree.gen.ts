@@ -20,6 +20,7 @@ import { Route as AuthenticatedParceiroRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedLojistaRouteImport } from './routes/_authenticated.lojista'
 import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated.feed'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated.cliente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
 import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
@@ -81,6 +82,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedClienteRoute = AuthenticatedClienteRouteImport.update({
+  id: '/cliente',
+  path: '/cliente',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
   '/lojista': typeof AuthenticatedLojistaRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
+  '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
   '/lojista': typeof AuthenticatedLojistaRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/feed': typeof AuthenticatedFeedRoute
   '/_authenticated/lojista': typeof AuthenticatedLojistaRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cadastro'
     | '/admin'
+    | '/cliente'
     | '/dashboard'
     | '/feed'
     | '/lojista'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/cadastro'
+    | '/cliente'
     | '/dashboard'
     | '/feed'
     | '/lojista'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cadastro'
     | '/_authenticated/admin'
+    | '/_authenticated/cliente'
     | '/_authenticated/dashboard'
     | '/_authenticated/feed'
     | '/_authenticated/lojista'
@@ -310,6 +322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/cliente': {
+      id: '/_authenticated/cliente'
+      path: '/cliente'
+      fullPath: '/cliente'
+      preLoaderRoute: typeof AuthenticatedClienteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -374,6 +393,7 @@ const AuthenticatedAdminRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
   AuthenticatedLojistaRoute: typeof AuthenticatedLojistaRoute
@@ -384,6 +404,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedClienteRoute: AuthenticatedClienteRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeedRoute: AuthenticatedFeedRoute,
   AuthenticatedLojistaRoute: AuthenticatedLojistaRoute,
