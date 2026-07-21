@@ -21,22 +21,30 @@ function ProfilePage() {
   const [lightbox, setLightbox] = useState<{ isOpen: boolean; type: string; url: string; index: number }>({ isOpen: false, type: '', url: '', index: 0 });
 
 
+  const { id: profileId, context: postId } = Route.useSearch() as { id?: string; context?: string };
+  const [targetPost, setTargetPost] = useState<any>(null);
+
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      
+      // Se tiver ID na URL, carrega esse perfil. Se não, carrega o do usuário logado.
+      const idToLoad = profileId || user?.id;
+      if (!idToLoad) return;
 
-      const [profileRes, brandsRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('brand_flags').select('name').order('name', { ascending: true })
+      const [profileRes, brandsRes, postRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', idToLoad).single(),
+        supabase.from('brand_flags').select('name').order('name', { ascending: true }),
+        postId ? supabase.from('feed_posts').select('*').eq('id', postId).single() : Promise.resolve({ data: null })
       ]);
       
       if (profileRes.data) setProfile(profileRes.data);
       if (brandsRes.data) setBrands(brandsRes.data.map(b => b.name));
+      if (postRes?.data) setTargetPost(postRes.data);
       setLoading(false);
     }
     loadData();
-  }, []);
+  }, [profileId, postId]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
     const file = e.target.files?.[0];
