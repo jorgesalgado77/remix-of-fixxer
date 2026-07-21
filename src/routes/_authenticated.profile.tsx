@@ -349,7 +349,22 @@ function ProfilePage() {
             </div>
           </div>
 
-          {!profileId && (
+          {profileId ? (
+            <div className="flex flex-col gap-2 mb-4">
+              <button 
+                className="bg-[#00FF87] text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] flex items-center gap-2 uppercase tracking-tighter"
+              >
+                <MessageSquare className="w-5 h-5" />
+                Chat com {profile?.full_name?.split(' ')[0]}
+              </button>
+              {targetPost && (
+                <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
+                  <p className="text-[8px] font-black text-muted-foreground uppercase mb-1">Contexto do Anúncio</p>
+                  <p className="text-[10px] font-bold text-white truncate">{targetPost.title}</p>
+                </div>
+              )}
+            </div>
+          ) : (
             <button 
               onClick={handleSave}
               disabled={saving}
