@@ -184,9 +184,19 @@ function FeedPage() {
                   <CategoryChip key={cat} label={cat} active={selectedCategory === cat} onClick={() => setSelectedCategory(cat)} />
                 ))}
              </div>
+             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <span className="shrink-0 text-[8px] font-bold text-emerald-400/50 uppercase self-center mr-1">Fornecedores:</span>
+                {categories.fornecedores.map(cat => (
+                  <CategoryChip key={cat} label={cat} active={selectedCategory === cat} onClick={() => setSelectedCategory(cat)} />
+                ))}
+             </div>
           </div>
         </div>
       </header>
+
+      <div id="ts-visual-edit-probe-9505567992f14f28" className="hidden">
+        REGRAS ESTRITAS DE EXECUÇÃO E ESTABILIDADE
+      </div>
 
       <main className="space-y-4">
         {isLoading ? (
