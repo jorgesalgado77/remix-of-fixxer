@@ -528,7 +528,14 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ *</Label>
-                           <Input required placeholder="00.000.000/0001-00" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <IMaskInput
+                             mask="00.000.000/0000-00"
+                             value={cnpj}
+                             onAccept={(value) => setCnpj(value)}
+                             required 
+                             placeholder="00.000.000/0001-00" 
+                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary/50 transition-all" 
+                           />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório) *</Label>
