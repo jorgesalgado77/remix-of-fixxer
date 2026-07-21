@@ -352,7 +352,7 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView() {
+function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete: boolean) => void }) {
     const [cep, setCep] = useState("");
     const [address, setAddress] = useState({
         logradouro: "",
