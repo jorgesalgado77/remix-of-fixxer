@@ -114,8 +114,10 @@ function AdminLayout() {
       </aside>
 
       {/* Área de Conteúdo */}
-      <main className="flex-1 overflow-auto p-8">
-        <Outlet />
+      <main className="flex-1 overflow-auto p-4 md:p-8 bg-[#0a0a0c]">
+        <div className="max-w-7xl mx-auto">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
