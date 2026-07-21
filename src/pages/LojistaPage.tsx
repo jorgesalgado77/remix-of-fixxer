@@ -35,6 +35,9 @@ import { EscrowBadge } from "@/components/EscrowBadge";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { IMaskInput } from "react-imask";
+import { useMediaUpload } from "@/hooks/use-media-upload";
+import { Progress } from "@/components/ui/progress";
+
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
