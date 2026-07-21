@@ -723,10 +723,11 @@ function ProfileView({ setIsProfileComplete }: { setIsProfileComplete: (complete
 
 function MetricCard({ label, value, icon, color }: any) {
     return (
-        <div className="bg-[#1A1A1B] border border-white/10 p-6 rounded-3xl space-y-2 relative overflow-hidden">
-            <div className={`${color} opacity-80 mb-2`}>{icon}</div>
-            <div className="text-xs font-bold text-muted-foreground uppercase">{label}</div>
-            <div className="text-2xl font-black text-white italic">{value}</div>
+        <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl space-y-1 md:space-y-2 relative overflow-hidden group hover:border-primary/30 transition-all">
+            <div className={`${color} opacity-80 mb-1 md:mb-2 group-hover:scale-110 transition-transform`}>{icon}</div>
+            <div className="text-[9px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider">{label}</div>
+            <div className="text-lg md:text-2xl font-black text-white italic truncate">{value}</div>
+            <div className={`absolute top-0 right-0 w-12 h-12 ${color} opacity-[0.03] -mr-6 -mt-6 rounded-full`} />
         </div>
     )
 }
