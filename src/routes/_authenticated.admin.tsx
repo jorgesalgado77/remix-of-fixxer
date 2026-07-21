@@ -142,9 +142,10 @@ export function AdminDashboardComponent() {
           </div>
         </div>
 
-        <div id="ts-visual-edit-probe-f6903356d77d4b86" className="hidden">
-          REGRAS ESTRITAS DE EXECUÇÃO E ESTABILIDADE
+        <div id="ts-visual-edit-probe-b218f2b25fc14b9a" className="hidden">
+          onde esta o acesso ao feed do administrador, dentro do painel administrativo ? crie o botão para esse acesso
         </div>
+
 
         {/* Listagem de Conteúdo do Admin */}
         <div className="space-y-4">
