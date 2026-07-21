@@ -168,7 +168,7 @@ function UserProfileCard() {
                 </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+            <div className={`grid grid-cols-2 gap-2 pt-2 border-t border-white/5 ${!isProfileComplete ? 'opacity-50 grayscale' : ''}`}>
                 <div className="flex flex-col">
                     <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">Reputação</span>
                     <div className="flex items-center gap-1">
