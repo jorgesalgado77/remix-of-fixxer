@@ -449,7 +449,14 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
             </div>
             
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
-                <h3 className="font-black text-white uppercase italic mb-6 text-sm md:text-base">Solicitações no Período</h3>
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-black text-white uppercase italic text-sm md:text-base">Solicitações no Período</h3>
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" className="text-[9px] font-bold uppercase italic text-muted-foreground hover:text-white">
+                            Filtrar por Status
+                        </Button>
+                    </div>
+                </div>
                 
                 <div className="space-y-3 md:space-y-4">
                     <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
