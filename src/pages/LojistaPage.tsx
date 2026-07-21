@@ -819,12 +819,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     };
 
     const saveMediaOrder = async (type: 'gallery' | 'video') => {
+        const toastId = toast.loading("Salvando nova ordem...");
         try {
             const { data: { user } } = await supabaseExternal.auth.getUser();
-            if (!user) return;
+            if (!user) throw new Error("Usuário não autenticado");
 
-            const updateData = type === 'gallery' ? { gallery_order: galleryUrls } : { video_order: videoUrls };
-            console.log('Salvando ordem no banco:', updateData);
+            const currentUrls = type === 'gallery' ? galleryUrls : videoUrls;
+            const updateData = type === 'gallery' ? { gallery_order: currentUrls } : { video_order: currentUrls };
             
             const { error } = await supabaseExternal
                 .from('user_profiles')
@@ -832,8 +833,10 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                 .eq('user_id', user.id);
 
             if (error) throw error;
+            toast.success("Ordem salva permanentemente!", { id: toastId });
         } catch (err) {
             console.error('Erro ao salvar ordem:', err);
+            toast.error("Erro ao salvar ordem no banco", { id: toastId });
         }
     };
 
