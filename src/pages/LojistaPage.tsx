@@ -207,7 +207,7 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard({ isProfileComplete }: { isProfileComplete: boolean }) {
+function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
@@ -228,8 +228,8 @@ function UserProfileCard({ isProfileComplete }: { isProfileComplete: boolean }) 
                 <div className="flex flex-col">
                     <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">Reputação</span>
                     <div className="flex items-center gap-1">
-                        <Star className="w-2.5 h-2.5 fill-primary text-primary" />
-                        <span className="text-[10px] font-black text-white italic">4.9 / 5.0</span>
+                        <Star className={`w-2.5 h-2.5 ${getRatingStarColor(rating)}`} />
+                        <span className={`text-[10px] font-black italic ${getRatingColor(rating)}`}>{rating.toFixed(1)} / 5.0</span>
                     </div>
                 </div>
                 <div className="flex flex-col items-end">
