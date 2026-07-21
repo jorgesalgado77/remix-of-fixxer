@@ -41,17 +41,22 @@ function AuthenticatedLayout() {
 
       // Se for o admin master ou a URL contiver 'admin', força a exibição do painel admin
       const isPathAdmin = window.location.pathname.includes('/admin');
-      if (storedEmail.trim() === 'jorgericardosalgado@gmail.com' || isPathAdmin) {
+      const isAdmin = storedEmail.trim() === 'jorgericardosalgado@gmail.com' || storedRole.toLowerCase() === 'admin';
+
+      if (isAdmin && isPathAdmin) {
         setShowAdminPanel(true);
+      } else if (!isPathAdmin) {
+        // Se sair da rota admin e não tiver clicado explicitamente no toggle, volta para dashboard normal
+        // No entanto, para evitar flickering, mantemos se isAdmin for true e showAdminPanel já estiver true (toggle manual)
       }
 
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession && !isAuthenticated) {
-        navigate({ to: "/auth" as any });
+        window.location.href = "/auth/";
       }
     };
     checkAuth();
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const isAdmin = email.trim() === 'jorgericardosalgado@gmail.com' || role.toLowerCase() === 'admin';
 
