@@ -8,6 +8,12 @@ import { MaskedInput } from "@/components/MaskedInput";
 
 
 export const Route = createFileRoute("/_authenticated/profile")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      id: search.id as string | undefined,
+      context: search.context as string | undefined,
+    };
+  },
   component: ProfilePage,
 });
 
@@ -21,22 +27,30 @@ function ProfilePage() {
   const [lightbox, setLightbox] = useState<{ isOpen: boolean; type: string; url: string; index: number }>({ isOpen: false, type: '', url: '', index: 0 });
 
 
+  const { id: profileId, context: postId } = Route.useSearch() as { id?: string; context?: string };
+  const [targetPost, setTargetPost] = useState<any>(null);
+
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      
+      // Se tiver ID na URL, carrega esse perfil. Se não, carrega o do usuário logado.
+      const idToLoad = profileId || user?.id;
+      if (!idToLoad) return;
 
-      const [profileRes, brandsRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('brand_flags').select('name').order('name', { ascending: true })
+      const [profileRes, brandsRes, postRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', idToLoad).single(),
+        supabase.from('brand_flags').select('name').order('name', { ascending: true }),
+        postId ? supabase.from('feed_posts').select('*').eq('id', postId).single() : Promise.resolve({ data: null })
       ]);
       
       if (profileRes.data) setProfile(profileRes.data);
       if (brandsRes.data) setBrands(brandsRes.data.map(b => b.name));
+      if (postRes?.data) setTargetPost(postRes.data);
       setLoading(false);
     }
     loadData();
-  }, []);
+  }, [profileId, postId]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
     const file = e.target.files?.[0];
@@ -335,14 +349,31 @@ function ProfilePage() {
             </div>
           </div>
 
-          <button 
-            onClick={handleSave}
-            disabled={saving}
-            className="mb-4 bg-primary text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:shadow-[0_0_30px_rgba(0,255,135,0.5)] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 uppercase tracking-tighter"
-          >
-            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-            Salvar Perfil
-          </button>
+          {profileId ? (
+            <div className="flex flex-col gap-2 mb-4">
+              <button 
+                className="bg-[#00FF87] text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] flex items-center gap-2 uppercase tracking-tighter"
+              >
+                <MessageSquare className="w-5 h-5" />
+                Chat com {profile?.full_name?.split(' ')[0]}
+              </button>
+              {targetPost && (
+                <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
+                  <p className="text-[8px] font-black text-muted-foreground uppercase mb-1">Contexto do Anúncio</p>
+                  <p className="text-[10px] font-bold text-white truncate">{targetPost.title}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button 
+              onClick={handleSave}
+              disabled={saving}
+              className="mb-4 bg-primary text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:shadow-[0_0_30px_rgba(0,255,135,0.5)] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 uppercase tracking-tighter"
+            >
+              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              Salvar Perfil
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -360,7 +391,8 @@ function ProfilePage() {
                   <input 
                     value={profile?.company_name || ''} 
                     onChange={e => setProfile({...profile, company_name: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
+                    readOnly={!!profileId}
+                    className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
