@@ -1082,6 +1082,39 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
         }
     };
 
+    const toggleMediaSelection = (id: string) => {
+        setSelectedMedia(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const deleteSelectedMedia = async () => {
+        if (selectedMedia.length === 0) return;
+        
+        const count = selectedMedia.length;
+        const toastId = toast.loading(`Excluindo ${count} item(s)...`);
+
+        try {
+            // No mundo real, deletaríamos os arquivos do storage aqui
+            setGalleryUrls(prev => prev.filter(url => !selectedMedia.includes(url)));
+            setVideoUrls(prev => prev.filter(url => !selectedMedia.includes(url)));
+            setSelectedMedia([]);
+            
+            // Salvar a nova ordem no banco
+            await saveMediaOrder('gallery');
+            await saveMediaOrder('video');
+            
+            toast.success(`${count} item(s) removido(s) com sucesso!`, { id: toastId });
+        } catch (err) {
+            console.error('Erro ao excluir em lote:', err);
+            toast.error("Erro ao realizar exclusão em lote", { id: toastId });
+        }
+    };
+
+    const selectAllMedia = () => {
+        setSelectedMedia([...galleryUrls, ...videoUrls]);
+    };
+
     return (
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
             {isUploading && (
