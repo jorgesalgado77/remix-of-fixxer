@@ -278,10 +278,83 @@ BEGIN
 
 END $$;
 
--- 9. SCRIPT DE DIAGNÓSTICO
+-- 9. TABELAS DE NEGÓCIO (O.S., PROPOSTAS, CHAT)
+CREATE TABLE IF NOT EXISTS public.orders_of_service (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lojista_id UUID REFERENCES public.profiles(id),
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'pendente', -- pendente, projetista, medidor, conferente, fretista, montador, supervisor, concluida
+    contract_value DECIMAL(12, 2),
+    is_contract_verified BOOLEAN DEFAULT FALSE,
+    current_professional_id UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.proposals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    os_id UUID REFERENCES public.orders_of_service(id) ON DELETE CASCADE,
+    prestador_id UUID REFERENCES public.profiles(id),
+    value DECIMAL(12, 2) NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pendente', -- pendente, aceita, recusada, contraproposta
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.os_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    os_id UUID REFERENCES public.orders_of_service(id) ON DELETE CASCADE,
+    sender_id UUID REFERENCES public.profiles(id),
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.lead_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    requester_id UUID REFERENCES public.profiles(id),
+    title TEXT NOT NULL,
+    description TEXT,
+    category TEXT, -- Marmoraria, Vidraçaria, etc.
+    location TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.advertisements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    fornecedor_id UUID REFERENCES public.profiles(id),
+    title TEXT NOT NULL,
+    image_url TEXT,
+    performance_clicks INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- RLS para novas tabelas
+ALTER TABLE public.orders_of_service ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.os_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lead_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.advertisements ENABLE ROW LEVEL SECURITY;
+
+-- Políticas simplificadas (Admin vê tudo, usuários vêem o que lhes pertence)
+CREATE POLICY "Users Manage Own OS" ON public.orders_of_service FOR ALL TO authenticated USING (auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Prestadores View Relevant OS" ON public.orders_of_service FOR SELECT TO authenticated USING (status = 'pendente' OR current_professional_id = auth.uid());
+
+CREATE POLICY "Users Manage Own Proposals" ON public.proposals FOR ALL TO authenticated USING (prestador_id = auth.uid() OR EXISTS (SELECT 1 FROM public.orders_of_service WHERE id = os_id AND lojista_id = auth.uid()) OR public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Users Chat OS" ON public.os_messages FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM public.orders_of_service WHERE id = os_id AND (lojista_id = auth.uid() OR current_professional_id = auth.uid())) OR public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Public Read Leads" ON public.lead_requests FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users Manage Own Leads" ON public.lead_requests FOR ALL TO authenticated USING (requester_id = auth.uid() OR public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Public Read Ads" ON public.advertisements FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Fornecedores Manage Own Ads" ON public.advertisements FOR ALL TO authenticated USING (fornecedor_id = auth.uid() OR public.has_role(auth.uid(), 'admin'));
+
+-- 10. SCRIPT DE DIAGNÓSTICO
 SELECT u.email, u.id, p.role as profile_role, r.role as role_table
 FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 LEFT JOIN public.user_roles r ON u.id = r.user_id
 WHERE u.email = 'jorgericardosalgado@gmail.com';
+
 
