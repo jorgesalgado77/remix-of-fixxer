@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { EscrowBadge } from "@/components/EscrowBadge";
+import { toast } from "sonner";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
