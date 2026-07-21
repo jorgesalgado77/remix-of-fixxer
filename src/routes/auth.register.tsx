@@ -341,29 +341,51 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS \$\$
 DECLARE
     default_role public.app_role;
+    target_plan_id UUID;
 BEGIN
-    -- Define a role baseada no email master ou metadados
+    -- Determinar a role com fallback seguro
     IF new.email = 'jorgericardosalgado@gmail.com' THEN
         default_role := 'admin';
     ELSE
-        default_role := COALESCE((new.raw_user_meta_data->>'role')::public.app_role, 'lojista');
+        BEGIN
+            default_role := (new.raw_user_meta_data->>'role')::public.app_role;
+        EXCEPTION WHEN OTHERS THEN
+            default_role := 'lojista';
+        END;
     END IF;
 
-    -- Cria o perfil
-    INSERT INTO public.profiles (id, full_name, role, plan_id)
-    VALUES (
-        new.id, 
-        COALESCE(new.raw_user_meta_data->>'full_name', ''), 
-        default_role,
-        (SELECT id FROM public.subscription_plans WHERE category = default_role AND price = 0 LIMIT 1)
-    )
-    ON CONFLICT (id) DO UPDATE SET 
-        role = EXCLUDED.role;
+    -- Buscar o plano padrão (gratuito) para a categoria
+    SELECT id INTO target_plan_id 
+    FROM public.subscription_plans 
+    WHERE category = default_role 
+    AND price = 0 
+    LIMIT 1;
+
+    -- Criação do perfil com tratamento de erro
+    BEGIN
+        INSERT INTO public.profiles (id, full_name, role, plan_id)
+        VALUES (
+            new.id, 
+            COALESCE(new.raw_user_meta_data->>'full_name', ''), 
+            default_role,
+            target_plan_id
+        )
+        ON CONFLICT (id) DO UPDATE SET 
+            role = EXCLUDED.role,
+            plan_id = EXCLUDED.plan_id;
+    EXCEPTION WHEN OTHERS THEN
+        -- Log ou ignore para não quebrar o login
+        NULL;
+    END;
     
-    -- Cria a user_role
-    INSERT INTO public.user_roles (user_id, role)
-    VALUES (new.id, default_role)
-    ON CONFLICT (user_id, role) DO NOTHING;
+    -- Criação da role com tratamento de erro
+    BEGIN
+        INSERT INTO public.user_roles (user_id, role)
+        VALUES (new.id, default_role)
+        ON CONFLICT (user_id, role) DO NOTHING;
+    EXCEPTION WHEN OTHERS THEN
+        NULL;
+    END;
     
     RETURN NEW;
 END;
