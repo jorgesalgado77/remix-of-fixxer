@@ -158,53 +158,27 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-b7f63f474cc54f5a" className="hidden">
-          {`CORREÇÃO DEFINITIVA DO ALERTA DE ERRO VAZIO \`{}\` E DESTRAVAMENTO DE LOGIN
+        <div id="ts-visual-edit-probe-9b309939d6ed4850" className="hidden">
+          {`CORREÇÃO CRÍTICA: LOOP DE REDIRECIONAMENTO PÓS-LOGIN (TELA PISCA E VOLTA AO LOGIN)
 
-O formulário de login está disparando um \`alert("Erro no login: {}")\` após a autenticação. Isso ocorre porque o código tenta fazer requisições à tabela 'profiles' dentro da função de submit do login e captura um objeto de erro não serializado.
+O formulário autentica com sucesso no Supabase, mas a tela pisca e retorna ao '/login' devido a um 'ProtectedRoute' ou 'AuthContext' que está interceptando a rota e redirecionando de volta ao detectar a mudança de URL.
 
-Remova esse alerta e aplique esta lógica direta e infalível no arquivo de Login (\`Login.tsx\` / \`Auth.tsx\`):
+Aplique as seguintes correções para destravar a navegação imediatamente:
 
-### 1. REESCRITA DO SUBMIT DE LOGIN (SEM CONSULTAS BLOQUEANTES)
-Substitua o manipulador do formulário de login por este código limpo:
+### 1. REMOÇÃO DE MIDDLEWARES BLOQUEANTES NAS ROTAS (App.tsx)
 
-\`\`\`typescript
-const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+- Abra o arquivo de rotas (App.tsx ou routes.tsx).
 
-  try {
-    // 1. Tenta a autenticação direta no Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+- Remova o componente envolvente de proteção (<ProtectedRoute>) das rotas /admin e /dashboard/lojista.
 
-    if (error) {
-      // Exibe a mensagem real em texto, nunca um objeto {}
-      const msg = error.message || JSON.stringify(error);
-      alert(\`Falha no login: \${msg}\`);
-      setLoading(false);
-      return;
-    }
+- Deixe as rotas diretas e públicas temporariamente para desenvolvimento:
 
-    // 2. Se autenticou com sucesso, navega DIRETO sem fazer queries no form
-    if (data?.user || data?.session) {
-      // Redirecionamento direto para Admin caso seja o e-mail do gestor
-      if (email === 'jorgericardosalgado@gmail.com') {
-        window.location.href = '/admin';
-      } else {
-        // Redireciona para a dashboard geral (que identificará o tipo de usuário internamente)
-        window.location.href = '/dashboard/lojista';
-      }
-    }
-  } catch (err: any) {
-    console.error("Erro no login:", err);
-    alert(\`Erro de conexão: \${err?.message || 'Verifique sua internet'}\`);
-    setLoading(false);
-  }
-};
-\`\`\``}
+  \`\`\`tsx
+
+  <Route element={<AdminDashboard path="/admin"/>} />
+
+  <Route element={<LojistaDashboard path="/dashboard/lojista"/>} />
+  \`\`\``}
         </div>
       </div>
 
