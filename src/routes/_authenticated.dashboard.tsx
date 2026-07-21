@@ -241,7 +241,9 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
       if (error) throw error;
       return data ?? [];
     },
-    retry: 2,
+    staleTime: 1000 * 60 * 10,
+    retry: 3,
+
   });
 
   // --- Notifications (latest messages on user's OS) ---
