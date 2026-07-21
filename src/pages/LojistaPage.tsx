@@ -31,6 +31,7 @@ import {
   X,
   Crop
 } from "lucide-react";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -365,6 +366,9 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
 function DashboardView({ rating, getRatingColor }: { rating: number; getRatingColor: (val: number) => string }) {
     const [filter, setFilter] = useState('Hoje');
     const [statusFilter, setStatusFilter] = useState('Todos');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 3;
     const [customDates, setCustomDates] = useState({ start: '', end: '' });
     const [expandedServiceId, setExpandedServiceId] = useState<number | null>(null);
 
@@ -475,13 +479,31 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
             </div>
             
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                    <h3 className="font-black text-white uppercase italic text-sm md:text-base">Solicitações no Período</h3>
+                <div className="flex flex-col space-y-4 mb-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <h3 className="font-black text-white uppercase italic text-sm md:text-base">Solicitações no Período</h3>
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input 
+                                placeholder="Buscar OS ou título..." 
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="bg-black/40 border-white/10 pl-10 h-10 rounded-xl text-xs"
+                            />
+                        </div>
+                    </div>
+                    
                     <div className="flex flex-wrap gap-2">
                         {['Todos', 'Pendente', 'Concluído', 'Em andamento', 'Atrasado'].map((status) => (
                             <button
                                 key={status}
-                                onClick={() => setStatusFilter(status)}
+                                onClick={() => {
+                                    setStatusFilter(status);
+                                    setCurrentPage(1);
+                                }}
                                 className={`px-3 py-1.5 rounded-full text-[8px] md:text-[9px] font-black uppercase italic transition-all border ${
                                     statusFilter === status
                                         ? 'bg-primary text-black border-primary'
@@ -495,69 +517,141 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                 </div>
                 
                 <div className="space-y-3 md:space-y-4">
-                    {[
-                        { id: 2490, title: 'Montagem Dormitório', location: 'São Paulo/SP', value: 'R$ 450,00', deadline: '15/07', status: 'Concluído', color: 'text-primary', bg: 'bg-primary/10', icon: <Briefcase className="w-4 h-4" /> },
-                        { id: 2491, title: 'Medição Cozinha', location: 'Campinas/SP', value: 'R$ 200,00', deadline: '18/07', status: 'Pendente', color: 'text-orange-400', bg: 'bg-orange-400/10', icon: <Clock className="w-4 h-4" /> },
-                        { id: 2492, title: 'Instalação Cooktop', location: 'Santos/SP', value: 'R$ 150,00', deadline: '20/07', status: 'Em andamento', color: 'text-blue-400', bg: 'bg-blue-400/10', icon: <Activity className="w-4 h-4" /> },
-                        { id: 2493, title: 'Reparo Dobradiças', location: 'Jundiaí/SP', value: 'R$ 80,00', deadline: '10/07', status: 'Atrasado', color: 'text-red-500', bg: 'bg-red-500/10', icon: <AlertCircle className="w-4 h-4" /> }
-                    ]
-                    .filter(s => statusFilter === 'Todos' || s.status === statusFilter)
-                    .map((service) => (
-                        <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20">
-                            <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                   <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color}`}>
-                                       {service.icon}
-                                   </div>
-                                   <div>
-                                      <div className="text-xs font-black uppercase italic text-white">{service.title}</div>
-                                      <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-{service.id} • {service.location}</div>
-                                   </div>
-                                </div>
-                                <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
-                                   <div className="flex flex-col items-end mr-2">
-                                       <span className="font-black text-xs text-white">{service.value}</span>
-                                       <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: {service.deadline}</span>
-                                   </div>
-                                   <span className={`px-3 py-1 ${service.bg} ${service.color} font-bold text-[9px] rounded-full uppercase`}>
-                                       {service.status}
-                                   </span>
-                                   <Button 
-                                       size="icon" 
-                                       variant="ghost" 
-                                       onClick={() => setExpandedServiceId(expandedServiceId === service.id ? null : service.id)}
-                                       className={`h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary transition-transform ${expandedServiceId === service.id ? 'rotate-90' : ''}`}
-                                   >
-                                       <ChevronRight className="w-4 h-4" />
-                                   </Button>
-                                </div>
-                            </div>
-                            
-                            {expandedServiceId === service.id && (
-                                <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
-                                    <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic">Detalhes do Serviço</div>
-                                            <p className="text-[10px] text-white/70 leading-relaxed">
-                                                Solicitação de {service.title.toLowerCase()} para projeto de alto padrão. Requer profissional com experiência e ferramentas completas.
-                                            </p>
-                                        </div>
-                                        <div className="flex gap-2 justify-end items-end">
-                                            <Link 
-                                                to="/_authenticated/feed" 
-                                                search={{ context: service.id }}
-                                                className="bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2 rounded-lg"
-                                            >
-                                                Ver Detalhes O.S.
-                                            </Link>
-                                            <Button size="sm" className="bg-primary text-black text-[9px] font-black uppercase italic">Avançar Status</Button>
+                    {(() => {
+                        const services = [
+                            { id: 2490, title: 'Montagem Dormitório', location: 'São Paulo/SP', value: 'R$ 450,00', deadline: '15/07', status: 'Concluído', color: 'text-primary', bg: 'bg-primary/10', icon: <Briefcase className="w-4 h-4" /> },
+                            { id: 2491, title: 'Medição Cozinha', location: 'Campinas/SP', value: 'R$ 200,00', deadline: '18/07', status: 'Pendente', color: 'text-orange-400', bg: 'bg-orange-400/10', icon: <Clock className="w-4 h-4" /> },
+                            { id: 2492, title: 'Instalação Cooktop', location: 'Santos/SP', value: 'R$ 150,00', deadline: '20/07', status: 'Em andamento', color: 'text-blue-400', bg: 'bg-blue-400/10', icon: <Activity className="w-4 h-4" /> },
+                            { id: 2493, title: 'Reparo Dobradiças', location: 'Jundiaí/SP', value: 'R$ 80,00', deadline: '10/07', status: 'Atrasado', color: 'text-red-500', bg: 'bg-red-500/10', icon: <AlertCircle className="w-4 h-4" /> },
+                            { id: 2494, title: 'Ajuste Portas', location: 'Osasco/SP', value: 'R$ 120,00', deadline: '22/07', status: 'Pendente', color: 'text-orange-400', bg: 'bg-orange-400/10', icon: <Clock className="w-4 h-4" /> }
+                        ];
 
+                        const filtered = services.filter(s => {
+                            const matchesStatus = statusFilter === 'Todos' || s.status === statusFilter;
+                            const matchesSearch = s.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                                s.id.toString().includes(searchTerm);
+                            return matchesStatus && matchesSearch;
+                        });
+
+                        const totalPages = Math.ceil(filtered.length / itemsPerPage);
+                        const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+                        return (
+                            <>
+                                {paginated.length > 0 ? paginated.map((service) => (
+                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20">
+                                        <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color}`}>
+                                                {service.icon}
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-black uppercase italic text-white">{service.title}</div>
+                                                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-{service.id} • {service.location}</div>
+                                            </div>
+                                            </div>
+                                            <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
+                                            <div className="flex flex-col items-end mr-2">
+                                                <span className="font-black text-xs text-white">{service.value}</span>
+                                                <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: {service.deadline}</span>
+                                            </div>
+                                            <span className={`px-3 py-1 ${service.bg} ${service.color} font-bold text-[9px] rounded-full uppercase`}>
+                                                {service.status}
+                                            </span>
+                                            <Button 
+                                                size="icon" 
+                                                variant="ghost" 
+                                                onClick={() => setExpandedServiceId(expandedServiceId === service.id ? null : service.id)}
+                                                className={`h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary transition-transform ${expandedServiceId === service.id ? 'rotate-90' : ''}`}
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Button>
+                                            </div>
                                         </div>
+                                        
+                                        {expandedServiceId === service.id && (
+                                            <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                                                <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="space-y-4">
+                                                        <div className="space-y-2">
+                                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic">Detalhes do Serviço</div>
+                                                            <p className="text-[10px] text-white/70 leading-relaxed">
+                                                                Solicitação de {service.title.toLowerCase()} para projeto de alto padrão. Requer profissional com experiência e ferramentas completas.
+                                                            </p>
+                                                        </div>
+                                                        
+                                                        <div className="space-y-3">
+                                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic flex items-center gap-2">
+                                                                <Clock className="w-2.5 h-2.5" /> Linha do Tempo / Histórico
+                                                            </div>
+                                                            <div className="space-y-3 pl-2 border-l border-white/10">
+                                                                <div className="relative pl-4">
+                                                                    <div className="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-primary" />
+                                                                    <div className="text-[9px] font-black text-white uppercase italic">Status alterado para {service.status}</div>
+                                                                    <div className="text-[7px] text-muted-foreground uppercase font-bold">Hoje às 14:30 • Por Sistema</div>
+                                                                </div>
+                                                                <div className="relative pl-4">
+                                                                    <div className="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-white/20" />
+                                                                    <div className="text-[9px] font-black text-white/50 uppercase italic">OS Criada</div>
+                                                                    <div className="text-[7px] text-muted-foreground/50 uppercase font-bold">10/07 às 09:15 • Por Marcenaria Inovamad</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-3 justify-end items-end">
+                                                        <div className="w-full p-3 rounded-xl bg-white/5 border border-white/5">
+                                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic mb-2">Ações Rápidas</div>
+                                                            <div className="flex gap-2">
+                                                                <Link 
+                                                                    to="/_authenticated/feed" 
+                                                                    search={{ context: service.id }}
+                                                                    className="flex-1 text-center bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2.5 rounded-lg transition-all"
+                                                                >
+                                                                    Ver Detalhes O.S.
+                                                                </Link>
+                                                                <Button size="sm" className="flex-1 bg-primary text-black text-[9px] font-black uppercase italic h-10 rounded-lg shadow-[0_0_15px_rgba(0,255,135,0.2)]">Avançar Status</Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                )) : (
+                                    <div className="py-8 text-center text-muted-foreground text-xs uppercase font-bold italic">
+                                        Nenhuma solicitação encontrada
+                                    </div>
+                                )}
+
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-center gap-2 mt-4">
+                                        <Button 
+                                            size="sm" 
+                                            variant="ghost" 
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(prev => prev - 1)}
+                                            className="h-8 text-[9px] uppercase font-black"
+                                        >
+                                            Anterior
+                                        </Button>
+                                        <span className="text-[9px] font-black text-white px-2">
+                                            Página {currentPage} de {totalPages}
+                                        </span>
+                                        <Button 
+                                            size="sm" 
+                                            variant="ghost" 
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage(prev => prev + 1)}
+                                            className="h-8 text-[9px] uppercase font-black"
+                                        >
+                                            Próxima
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
                 </div>
             </div>
         </div>
@@ -651,11 +745,53 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                 });
             }
             toast.success("Ordem atualizada!");
+            saveMediaOrder(type);
+        }
+    };
+
+    const saveMediaOrder = async (type: 'gallery' | 'video') => {
+        try {
+            const { data: { user } } = await supabaseExternal.auth.getUser();
+            if (!user) return;
+
+            const updateData = type === 'gallery' ? { gallery_order: galleryUrls } : { video_order: videoUrls };
+            console.log('Salvando ordem no banco:', updateData);
+            
+            const { error } = await supabaseExternal
+                .from('user_profiles')
+                .update(updateData)
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+        } catch (err) {
+            console.error('Erro ao salvar ordem:', err);
         }
     };
 
     
     const { uploadFile, isUploading, uploadProgress } = useMediaUpload();
+
+    useEffect(() => {
+        const loadMediaOrder = async () => {
+            try {
+                const { data: { user } } = await supabaseExternal.auth.getUser();
+                if (!user) return;
+
+                const { data, error } = await supabaseExternal
+                    .from('user_profiles')
+                    .select('gallery_order, video_order')
+                    .eq('user_id', user.id)
+                    .single();
+
+                if (error) throw error;
+                if (data.gallery_order) setGalleryUrls(data.gallery_order);
+                if (data.video_order) setVideoUrls(data.video_order);
+            } catch (err) {
+                console.error('Erro ao carregar ordem:', err);
+            }
+        };
+        loadMediaOrder();
+    }, []);
 
     const [address, setAddress] = useState({
         logradouro: "",
@@ -787,8 +923,26 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     };
 
     return (
-
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
+            {isUploading && (
+                <div className="fixed bottom-10 right-10 z-[100] w-72 bg-[#1A1A1B] border border-primary/30 p-4 rounded-2xl shadow-2xl animate-in slide-in-from-right duration-300">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                            <Activity className="w-4 h-4 animate-spin" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase text-white italic">Enviando Arquivos...</span>
+                    </div>
+                    {uploadProgress.map((p, i) => (
+                        <div key={i} className="space-y-1 mb-2 last:mb-0">
+                            <div className="flex justify-between text-[8px] font-bold text-muted-foreground uppercase">
+                                <span className="truncate max-w-[150px]">{p.fileName}</span>
+                                <span>{p.progress}%</span>
+                            </div>
+                            <Progress value={p.progress} className="h-1 bg-white/5" />
+                        </div>
+                    ))}
+                </div>
+            )}
             <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/5">
                      <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,255,135,0.1)]">
