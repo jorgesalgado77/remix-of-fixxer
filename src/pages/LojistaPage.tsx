@@ -769,9 +769,18 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
         });
     };
 
-
+    const handleDrop = async (e: React.DragEvent, type: 'gallery' | 'video') => {
+        e.preventDefault();
+        setIsDraggingOver(false);
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            const mockEvent = { target: { files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+            handleFileUpload(mockEvent, type);
+        }
+    };
 
     return (
+
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
             <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/5">
