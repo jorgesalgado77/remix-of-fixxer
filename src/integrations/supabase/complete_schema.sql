@@ -89,6 +89,23 @@ DO $$ BEGIN
     END IF;
 END $$;
 
+-- Colunas de veículo e disponibilidade do prestador
+ALTER TABLE public.profiles
+    ADD COLUMN IF NOT EXISTS has_vehicle BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS vehicle_type TEXT,
+    ADD COLUMN IF NOT EXISTS vehicle_description TEXT,
+    ADD COLUMN IF NOT EXISTS available_for_transport BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS freight_rate NUMERIC(12, 2),
+    ADD COLUMN IF NOT EXISTS km_rate NUMERIC(12, 2),
+    ADD COLUMN IF NOT EXISTS toll_policy TEXT,
+    ADD COLUMN IF NOT EXISTS working_days JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS work_start_time TEXT,
+    ADD COLUMN IF NOT EXISTS work_end_time TEXT,
+    ADD COLUMN IF NOT EXISTS receive_off_hours_notifications BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS contact_email TEXT,
+    ADD COLUMN IF NOT EXISTS responsible_name TEXT,
+    ADD COLUMN IF NOT EXISTS testimonials JSONB DEFAULT '[]'::jsonb;
+
 CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
