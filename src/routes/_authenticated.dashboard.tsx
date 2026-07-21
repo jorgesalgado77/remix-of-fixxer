@@ -138,7 +138,7 @@ function Dashboard() {
       </header>
 
       {/* Render Categorized Dashboard */}
-      {userRole === 'lojista' && <LojistaDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
+      {userRole === 'lojista' && <LojistaDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} profile={profile} />}
       {userRole === 'prestador' && <PrestadorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
       {userRole === 'fornecedor' && <FornecedorDashboard glassClass={glassClass} isFreePlan={isFreePlan} onAction={handlePaywallAction} />}
 
@@ -150,6 +150,7 @@ function Dashboard() {
           <Link to="/admin" className="px-6 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all">Ir para Painel Admin</Link>
         </div>
       )}
+
     </div>
   );
 }
