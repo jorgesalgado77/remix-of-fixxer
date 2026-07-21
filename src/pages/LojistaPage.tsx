@@ -537,62 +537,94 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
 
                         return (
                             <>
-                                {paginated.map((service) => (
-                        <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20">
-                            <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                   <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color}`}>
-                                       {service.icon}
-                                   </div>
-                                   <div>
-                                      <div className="text-xs font-black uppercase italic text-white">{service.title}</div>
-                                      <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-{service.id} • {service.location}</div>
-                                   </div>
-                                </div>
-                                <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
-                                   <div className="flex flex-col items-end mr-2">
-                                       <span className="font-black text-xs text-white">{service.value}</span>
-                                       <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: {service.deadline}</span>
-                                   </div>
-                                   <span className={`px-3 py-1 ${service.bg} ${service.color} font-bold text-[9px] rounded-full uppercase`}>
-                                       {service.status}
-                                   </span>
-                                   <Button 
-                                       size="icon" 
-                                       variant="ghost" 
-                                       onClick={() => setExpandedServiceId(expandedServiceId === service.id ? null : service.id)}
-                                       className={`h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary transition-transform ${expandedServiceId === service.id ? 'rotate-90' : ''}`}
-                                   >
-                                       <ChevronRight className="w-4 h-4" />
-                                   </Button>
-                                </div>
-                            </div>
-                            
-                            {expandedServiceId === service.id && (
-                                <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
-                                    <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <div className="text-[8px] font-black uppercase text-muted-foreground italic">Detalhes do Serviço</div>
-                                            <p className="text-[10px] text-white/70 leading-relaxed">
-                                                Solicitação de {service.title.toLowerCase()} para projeto de alto padrão. Requer profissional com experiência e ferramentas completas.
-                                            </p>
-                                        </div>
-                                        <div className="flex gap-2 justify-end items-end">
-                                            <Link 
-                                                to="/_authenticated/feed" 
-                                                search={{ context: service.id }}
-                                                className="bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2 rounded-lg"
+                                {paginated.length > 0 ? paginated.map((service) => (
+                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20">
+                                        <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color}`}>
+                                                {service.icon}
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-black uppercase italic text-white">{service.title}</div>
+                                                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-{service.id} • {service.location}</div>
+                                            </div>
+                                            </div>
+                                            <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
+                                            <div className="flex flex-col items-end mr-2">
+                                                <span className="font-black text-xs text-white">{service.value}</span>
+                                                <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: {service.deadline}</span>
+                                            </div>
+                                            <span className={`px-3 py-1 ${service.bg} ${service.color} font-bold text-[9px] rounded-full uppercase`}>
+                                                {service.status}
+                                            </span>
+                                            <Button 
+                                                size="icon" 
+                                                variant="ghost" 
+                                                onClick={() => setExpandedServiceId(expandedServiceId === service.id ? null : service.id)}
+                                                className={`h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary transition-transform ${expandedServiceId === service.id ? 'rotate-90' : ''}`}
                                             >
-                                                Ver Detalhes O.S.
-                                            </Link>
-                                            <Button size="sm" className="bg-primary text-black text-[9px] font-black uppercase italic">Avançar Status</Button>
-
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Button>
+                                            </div>
                                         </div>
+                                        
+                                        {expandedServiceId === service.id && (
+                                            <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                                                <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <div className="text-[8px] font-black uppercase text-muted-foreground italic">Detalhes do Serviço</div>
+                                                        <p className="text-[10px] text-white/70 leading-relaxed">
+                                                            Solicitação de {service.title.toLowerCase()} para projeto de alto padrão. Requer profissional com experiência e ferramentas completas.
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex gap-2 justify-end items-end">
+                                                        <Link 
+                                                            to="/_authenticated/feed" 
+                                                            search={{ context: service.id }}
+                                                            className="bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2 rounded-lg"
+                                                        >
+                                                            Ver Detalhes O.S.
+                                                        </Link>
+                                                        <Button size="sm" className="bg-primary text-black text-[9px] font-black uppercase italic">Avançar Status</Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                )) : (
+                                    <div className="py-8 text-center text-muted-foreground text-xs uppercase font-bold italic">
+                                        Nenhuma solicitação encontrada
+                                    </div>
+                                )}
+
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-center gap-2 mt-4">
+                                        <Button 
+                                            size="sm" 
+                                            variant="ghost" 
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(prev => prev - 1)}
+                                            className="h-8 text-[9px] uppercase font-black"
+                                        >
+                                            Anterior
+                                        </Button>
+                                        <span className="text-[9px] font-black text-white px-2">
+                                            Página {currentPage} de {totalPages}
+                                        </span>
+                                        <Button 
+                                            size="sm" 
+                                            variant="ghost" 
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage(prev => prev + 1)}
+                                            className="h-8 text-[9px] uppercase font-black"
+                                        >
+                                            Próxima
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
                 </div>
             </div>
         </div>
