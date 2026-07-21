@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2, Eye, EyeOff, ShieldCheck, Copy } from "lucide-react";
+import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2, Eye, EyeOff, ShieldCheck, Copy, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/cadastro")({
 });
 
 type Step = "role" | "details";
-type Role = "lojista" | "prestador" | "fornecedor";
+type Role = "casual" | "lojista" | "prestador" | "fornecedor";
 
 function RegisterComponent() {
   const { email: initialEmail } = Route.useSearch();
@@ -140,7 +140,8 @@ function RegisterComponent() {
         setTimeout(() => {
           if (authData.session) {
              const isAdmin = (role as string) === 'admin';
-             const redirectPath = isAdmin ? '/admin' : '/dashboard';
+             const isCasual = (role as string) === 'casual';
+             const redirectPath = isAdmin ? '/admin' : isCasual ? '/dashboard/cliente' : `/dashboard/${role}`;
              console.log("Redirecionando para:", redirectPath);
              window.location.href = redirectPath;
           } else {
@@ -177,21 +178,27 @@ function RegisterComponent() {
 
           <div className="grid gap-4">
             <RoleCard 
+              icon={<User className="w-6 h-6 text-primary" />}
+              title="Casual (Cliente Final)"
+              description="Contrate montagens, assistências e soluções para sua casa"
+              onClick={() => handleRoleSelect("casual")}
+            />
+            <RoleCard 
               icon={<Store className="w-6 h-6 text-primary" />}
               title="Lojista"
-              description="Gerencie sua marcenaria e projetos"
+              description="Gerencie sua marcenaria, loja e projetos de móveis"
               onClick={() => handleRoleSelect("lojista")}
             />
             <RoleCard 
               icon={<Hammer className="w-6 h-6 text-primary" />}
               title="Prestador"
-              description="Receba ordens de serviço e execute montagens"
+              description="Receba ordens de serviço e execute montagens ou assistências"
               onClick={() => handleRoleSelect("prestador")}
             />
             <RoleCard 
               icon={<Truck className="w-6 h-6 text-primary" />}
               title="Parceiro Fornecedor"
-              description="Ofereça serviços de vidraçaria, marmoraria e mais"
+              description="Ofereça serviços de vidraçaria, marmoraria, ferragens e insumos"
               onClick={() => handleRoleSelect("fornecedor")}
             />
           </div>
