@@ -57,8 +57,8 @@ function AuthenticatedLayout() {
             <div 
               onClick={() => {
                 setIsPathAdmin(true);
-                window.history.pushState({}, '', '/_authenticated/admin');
-                navigate({ to: '/_authenticated/admin' as any });
+                window.history.pushState({}, '', '/admin');
+                navigate({ to: '/admin' as any });
               }}
               className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors ${isPathAdmin ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-[#00FF87]'}`}
             >
