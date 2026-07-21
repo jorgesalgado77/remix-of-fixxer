@@ -31,14 +31,53 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     full_name TEXT,
     role public.app_role NOT NULL DEFAULT 'lojista',
-    plan_id UUID, -- A FK será adicionada depois para evitar erros de ordem
+    plan_id UUID,
     company_name TEXT,
     cnpj_cpf TEXT,
-    specialty TEXT,
-    portfolio_url TEXT,
+    phone TEXT,
+    whatsapp TEXT,
+    -- Endereço
+    cep TEXT,
+    street TEXT,
+    number TEXT,
+    complement TEXT,
+    neighborhood TEXT,
+    city TEXT,
+    state TEXT,
+    -- Atividade e Especialidade
+    business_category TEXT, -- Para fornecedor
+    specialty TEXT, -- Para prestador
+    description TEXT,
+    -- Lojista especifico
+    brand_flag TEXT,
+    -- Prestador especifico
+    service_types JSONB DEFAULT '[]'::jsonb,
+    commission_rate DECIMAL(5, 2),
+    fixed_rates JSONB DEFAULT '[]'::jsonb,
+    is_medidor_conferente BOOLEAN DEFAULT FALSE,
+    -- Mídia e Reputação
+    avatar_url TEXT,
+    banner_url TEXT,
+    karma_score DECIMAL(3, 2) DEFAULT 5.00,
+    portfolio_media JSONB DEFAULT '[]'::jsonb,
+    documents JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Tabela de Bandeiras Dinâmicas
+CREATE TABLE IF NOT EXISTS public.brand_flags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Inserir bandeiras iniciais
+INSERT INTO public.brand_flags (name) VALUES 
+('Casa Brasileira'), ('Criare'), ('DalMobile'), ('Dellanno'), ('Fabrillis'), 
+('Favorita'), ('Florense'), ('Incolar'), ('Italinea'), ('My Box'), 
+('New'), ('Predilecta'), ('Romanzza'), ('Todeschini')
+ON CONFLICT (name) DO NOTHING;
 
 -- Garantir que a coluna plan_id existe caso a tabela já tenha sido criada antes
 DO $$ BEGIN
