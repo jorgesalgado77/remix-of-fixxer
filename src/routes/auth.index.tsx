@@ -99,7 +99,25 @@ function LoginComponent() {
 
       if (data?.session) {
         localStorage.setItem('fixxer_user_email', email);
-        window.location.replace('/admin');
+        localStorage.setItem('fixxer_authenticated', 'true');
+        
+        // RECUPERA O PERFIL PARA REDIRECIONAMENTO CORRETO
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.session.user.id)
+          .single();
+        
+        const role = profile?.role || 'user';
+        localStorage.setItem('fixxer_user_role', role);
+
+        // REGRA DE OURO: Apenas jorgericardosalgado@gmail.com acessa o /admin
+        if (email.trim() === 'jorgericardosalgado@gmail.com' && role === 'admin') {
+          window.location.replace('/admin');
+        } else {
+          // Todos os outros usuários vão para o Dashboard operacional
+          window.location.replace('/_authenticated/dashboard');
+        }
       }
     } catch (err: any) {
       // Tratamento para exceções de rede do iframe

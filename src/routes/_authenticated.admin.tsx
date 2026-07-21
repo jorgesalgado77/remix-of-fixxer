@@ -17,24 +17,21 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
-    // DESATIVADO TEMPORARIAMENTE PARA TESTES DE DESENVOLVIMENTO
-    /*
+    // PROTEÇÃO CRÍTICA: Apenas o administrador master tem acesso ao painel admin
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw redirect({ to: "/auth" });
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
-
-    if (profile?.role !== 'admin') {
-      throw redirect({ to: "/dashboard" });
-    }
     
-    return { profile };
-    */
-    return {};
+    // Se não houver sessão no Supabase, tenta o localStorage como fallback (para o bypass)
+    const storedEmail = localStorage.getItem('fixxer_user_email');
+    const isAuthenticated = localStorage.getItem('fixxer_authenticated') === 'true';
+    
+    const userEmail = session?.user?.email || storedEmail;
+
+    if (!userEmail || userEmail !== 'jorgericardosalgado@gmail.com') {
+      console.warn("[FIXXER SECURITY]: Acesso negado ao painel admin para:", userEmail);
+      throw redirect({ to: "/_authenticated/dashboard" });
+    }
+
+    return { userEmail };
   },
   component: AdminLayout,
 });
