@@ -365,6 +365,34 @@ function ProfilePage() {
                   )}
                 </div>
               )}
+              {/* CAMPOS ESPECÍFICOS: FORNECEDOR */}
+              {profile?.role === 'fornecedor' && (
+                <div className="pt-8 space-y-6">
+                  <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                    <Briefcase className="w-6 h-6 text-primary" />
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Ramo de Atuação</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {['Marmoraria', 'Vidraçaria', 'Eletricista', 'Serralheria', 'Pintor', 'Gesseiro', 'Automação', 'Loja de Ferragens'].map(ramo => (
+                      <label key={ramo} className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer hover:border-primary/30 transition-all">
+                        <input 
+                          type="checkbox" 
+                          checked={profile?.business_category?.includes(ramo)}
+                          onChange={(e) => {
+                            const current = profile?.business_category?.split(',') || [];
+                            const next = e.target.checked 
+                              ? [...current.filter(Boolean), ramo]
+                              : current.filter((s: string) => s !== ramo);
+                            setProfile({...profile, business_category: next.join(',')});
+                          }}
+                          className="w-5 h-5 accent-primary bg-black border-white/20 rounded-md" 
+                        />
+                        <span className="text-xs font-bold">{ramo}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           </div>
 
