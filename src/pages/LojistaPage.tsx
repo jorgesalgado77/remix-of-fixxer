@@ -62,6 +62,8 @@ export function LojistaDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [rating, setRating] = useState(4.9);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const { glassClass } = usePerformanceMode();
   
   useEffect(() => {
