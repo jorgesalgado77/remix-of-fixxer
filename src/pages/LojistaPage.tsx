@@ -42,6 +42,16 @@ export function LojistaDashboard() {
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [rating, setRating] = useState(4.9);
   const { glassClass } = usePerformanceMode();
+  
+  useEffect(() => {
+    const handleTabChangeEvent = (e: any) => {
+      if (e.detail) {
+        setActiveTab(e.detail);
+      }
+    };
+    window.addEventListener('change-tab', handleTabChangeEvent);
+    return () => window.removeEventListener('change-tab', handleTabChangeEvent);
+  }, []);
 
   const getRatingColor = (val: number) => {
     if (val <= 1.5) return "text-red-500";
