@@ -79,16 +79,16 @@ function AdminLayout() {
             active={location.pathname === '/admin/plans'} 
           />
           <AdminNavItem 
-            to="/admin" 
-            icon={<AlertTriangle className="w-4 h-4" />} 
-            label="Segurança" 
+            to="/admin/integrations" 
+            icon={<Settings className="w-4 h-4" />} 
+            label="Integrações" 
             isOpen={isSidebarOpen} 
-            active={false} 
+            active={location.pathname === '/admin/integrations'} 
           />
           <AdminNavItem 
             to="/admin" 
-            icon={<Settings className="w-4 h-4" />} 
-            label="Configurações" 
+            icon={<AlertTriangle className="w-4 h-4" />} 
+            label="Segurança" 
             isOpen={isSidebarOpen} 
             active={false} 
           />

@@ -173,32 +173,42 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-c56a2acee0c0415f" className="hidden">
-          {`CORREÇÃO DEFINITIVA DE FALHA DE LOGIN E EXCEÇÃO DE CONEXÃO SUPABASE
+        <div id="ts-visual-edit-probe-c8dc31aafde64dfd" className="hidden">
+          {`CONFIGURAÇÃO E MAPEAMENTO COMPLETO DAS CHAVES DA API DO SUPABASE EXTERNO
 
-O formulário de login continua exibindo a mensagem nativa "Falha no login: {}" e travando no estado "Acessando...". Isso acontece porque o cliente do Supabase está disparando uma exceção de rede/CORS ou tentando ler variáveis de ambiente de URL/Key indefinidas, gerando um erro de exceção vazia.
+Preciso garantir a conexão e autenticação perfeita do FIXXER com o banco de dados Supabase. Mapeie e configure o cliente de integração do Supabase (src/integrations/supabase/client.ts ou equivalente) com tratamento rigoroso de variáveis de ambiente.
 
-Aplique IMEDIATAMENTE as seguintes refatorações para resolver o problema de ponta a ponta:
+Siga exatamente estas etapas de configuração:
 
-### 1. ELIMINAÇÃO DE ALERTS NATIVOS E TRATAMENTO DE ERRO REAL
+### 1. MAPEAMENTO DE VARIÁVEIS DE AMBIENTE (.env e .env.example)
 
-- REMOVA completamente todas as chamadas alert() do navegador.
+Crie/atualize o arquivo .env na raiz do projeto contendo a estrutura abaixo para armazenar as chaves de conexão:
 
-- No arquivo de Login (Login.tsx / Auth.tsx), trate o erro serializando corretamente a resposta:
+- VITE_SUPABASE_URL: URL do projeto no Supabase (ex: https://xxx.supabase.co)
 
-\`\`\`typescript
+- VITE_SUPABASE_ANON_KEY: Chave anônima (public anon key) do Supabase
 
-let errorMsg = "Falha na conexão com o banco de dados";
+### 2. REFATORAÇÃO DO CLIENTE SUPABASE (src/integrations/supabase/client.ts)
 
-if (error?.message) {
+Reescreva a inicialização do cliente Supabase para garantir que a aplicação nunca quebre com erro 500 ou objetos vazios {} caso alguma chave falhe na leitura:
 
-  errorMsg = error.message;
+- Adicione verificação prévia das variáveis import.meta.env.VITE_SUPABASE_URL e import.meta.env.VITE_SUPABASE_ANON_KEY.
 
-} else if (typeof error === 'object' && Object.keys(error).length > 0) {
+- Se as variáveis não estiverem definidas, exiba um log amigável e legível no console: [FIXXER Supabase Error]: Chaves de API do Supabase não encontradas no arquivo .env.
 
-  errorMsg = JSON.stringify(error);
+- Adicione tratamento para que as requisições de Autenticação, SELECT, INSERT e UPDATE utilizem persistence no localStorage por padrão (auth: { persistSession: true, autoRefreshToken: true }).
 
-}\`\`\``}
+### 3. INTERFACE DE DESTAQUE NO PAINEL ADMIN PARA GERENCIAMENTO DE CHAVES
+
+No Painel Administrativo (/admin), crie a aba "Configurações do Sistema / Integrações":
+
+- Adicione um formulário visual em Glassmorphism Dark Metal com detalhes em Verde Esmeralda Neon (#00FF87) permitindo ao administrador visualizar o status da conexão do Supabase (Ativo/Inativo), testar a conectividade e visualizar as chaves configuradas.
+
+### 4. INSTRUÇÕES PARA O USUÁRIO
+
+Ao concluir a implementação, forneça a lista exata donde devo inserir minhas chaves reais no painel do Lovable (ex: na aba Project Settings -> Secrets / Environment Variables).
+
+Execute essa reestruturação do cliente Supabase agora.`}
         </div>
       </div>
 
