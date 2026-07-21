@@ -157,6 +157,10 @@ CREATE POLICY "Read Config" ON public.admin_config FOR SELECT TO authenticated U
 CREATE POLICY "Admin Access Logs" ON public.access_logs FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "System Insert Logs" ON public.access_logs FOR INSERT TO authenticated, anon WITH CHECK (true);
 
+CREATE POLICY "Public Read Brands" ON public.brand_flags FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users Add Brands" ON public.brand_flags FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Admin Manage Brands" ON public.brand_flags FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin'));
+
 -- 5. GRANTS
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 GRANT SELECT ON public.subscription_plans, public.plan_features TO authenticated;
