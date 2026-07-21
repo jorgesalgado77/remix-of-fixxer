@@ -31,13 +31,12 @@ function Index() {
             F
           </div>
           
-          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-6 leading-[1.1]">
-            A evolução da <br />
-            <span className="text-primary">gestão em marcenaria</span>
+          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-6 leading-[1.1]" id="ts-visual-edit-probe-865d1f469f544aac">
+            O que você quer fazer primeiro neste remix do FIXXER?
           </h1>
           
           <p className="text-muted-foreground text-lg leading-relaxed mb-10 px-4">
-            A plataforma definitiva para lojistas, prestadores e fornecedores do setor moveleiro.
+            Conectar meu próprio Supabase
           </p>
 
           <div className="flex flex-col gap-4 w-full">
