@@ -543,8 +543,15 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
                                             </p>
                                         </div>
                                         <div className="flex gap-2 justify-end items-end">
-                                            <Button size="sm" className="bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10">Ver O.S. Completa</Button>
-                                            <Button size="sm" className="bg-primary text-black text-[9px] font-black uppercase italic">Atualizar Status</Button>
+                                            <Link 
+                                                to="/_authenticated/feed" 
+                                                search={{ context: service.id }}
+                                                className="bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2 rounded-lg"
+                                            >
+                                                Ver Detalhes O.S.
+                                            </Link>
+                                            <Button size="sm" className="bg-primary text-black text-[9px] font-black uppercase italic">Avançar Status</Button>
+
                                         </div>
                                     </div>
                                 </div>
@@ -853,10 +860,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
                     </div>
                  </div>
 
-                 <div className="space-y-6 pt-6 border-t border-white/5">
+                  <div className="space-y-6 pt-6 border-t border-white/5">
+                    <ActivitySelect value={activityBranch} onChange={setActivityBranch} />
+
                     <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
                         <Globe className="w-3 h-3" /> Redes Sociais e Site
                     </h4>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
