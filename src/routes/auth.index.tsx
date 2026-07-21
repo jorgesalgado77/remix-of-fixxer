@@ -63,16 +63,23 @@ function LoginComponent() {
       if (error) {
         console.error("Erro detalhado na autenticação:", error);
         steps[0].status = 'error';
-        steps[0].detail = error.message === "Invalid login credentials" 
-          ? "Credenciais inválidas. Certifique-se de que o usuário administrador foi criado no SQL Editor do Supabase."
-          : `corrija Erro Supabase: ${error.message || 'Erro desconhecido'} (Status: ${error.status || '500'}). Detalhes: ${JSON.stringify(error) === '{}' ? '{"name":"AuthRetryableFetchError","message":"{}","status":500}' : JSON.stringify(error)}. Se o erro persistir, verifique a conectividade e se as tabelas de Auth existem no banco externo.  verifique a conectividade completa com o banco de dados externo https://rnhgpxembtgupxnrohxo.supabase.co`;
+        
+        // Mensagens amigáveis baseadas em códigos de erro comuns do Supabase
+        if (error.status === 400 || error.message?.includes("Invalid login credentials")) {
+          steps[0].detail = "Credenciais inválidas. Verifique seu e-mail e senha.";
+        } else if (error.status === 500 || error.name === "AuthRetryableFetchError") {
+          steps[0].detail = "Erro de conexão (500). Verifique se o banco de dados externo está acessível e se as extensões de Auth estão ativas.";
+        } else {
+          steps[0].detail = `Erro: ${error.message || 'Falha na comunicação com o banco'}`;
+        }
+
         setDiagnosticSteps([...steps]);
         await logAccess({ 
           event_type: 'login_attempt', 
           status: 'failure', 
           reason: `${error.message} [Code: ${error.status}]`, 
           email: email.trim(),
-          metadata: { error_object: JSON.parse(JSON.stringify(error)) }
+          metadata: { error_object: error }
         });
         throw error;
       }
