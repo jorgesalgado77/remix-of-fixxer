@@ -729,6 +729,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
             if (!user) return;
 
             const updateData = type === 'gallery' ? { gallery_order: galleryUrls } : { video_order: videoUrls };
+            console.log('Salvando ordem no banco:', updateData);
             
             const { error } = await supabaseExternal
                 .from('user_profiles')
