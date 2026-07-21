@@ -576,6 +576,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     const [whatsapp, setWhatsapp] = useState("");
     const [phone, setPhone] = useState("");
     const [cep, setCep] = useState("");
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+    const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+    const [videoUrls, setVideoUrls] = useState<string[]>([]);
+    
+    const { uploadFile, isUploading, uploadProgress } = useMediaUpload();
+
     const [address, setAddress] = useState({
         logradouro: "",
         bairro: "",
@@ -585,6 +592,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
         complemento: ""
     });
     const [isLoadingCep, setIsLoadingCep] = useState(false);
+
 
     useEffect(() => {
         const cleanCep = cep.replace(/\D/g, '');
