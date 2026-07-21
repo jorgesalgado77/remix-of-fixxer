@@ -46,7 +46,7 @@ function LoginComponent() {
         localStorage.setItem('fixxer_user_email', email);
         localStorage.setItem('fixxer_user_role', 'Admin');
         localStorage.setItem('fixxer_authenticated', 'true');
-        navigate({ to: '/_authenticated/admin' as any });
+        navigate({ to: '/admin' as any });
       }
       return;
     }
@@ -98,7 +98,7 @@ function LoginComponent() {
         // REGRA DE OURO: Apenas jorgericardosalgado@gmail.com acessa o /admin
         if (email.trim() === 'jorgericardosalgado@gmail.com') {
           console.log("[FIXXER AUTH]: Redirecionando para ADMIN");
-          navigate({ to: '/_authenticated/admin' as any });
+          navigate({ to: '/admin' as any });
         } else {
           console.log("[FIXXER AUTH]: Redirecionando para DASHBOARD");
           navigate({ to: '/_authenticated/dashboard' as any });
