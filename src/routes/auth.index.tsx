@@ -31,9 +31,9 @@ function LoginComponent() {
         localStorage.setItem('fixxer_user_role', 'Admin');
         localStorage.setItem('fixxer_authenticated', 'true');
         
-        // Redirecionamento forçado usando window.location para a rota que o layout intercepta
+        // Força o navegador a carregar o aplicativo direto sem passar pelas falhas de estado do TanStack Router:
         localStorage.setItem('fixxer_last_login', new Date().toISOString());
-        window.location.replace('/admin');
+        window.location.href = '/_authenticated';
       }
       return;
     }
@@ -70,7 +70,7 @@ function LoginComponent() {
         }
 
         if (email.trim() === 'jorgericardosalgado@gmail.com') {
-          window.location.href = '/admin';
+          window.location.href = '/_authenticated';
         } else {
           navigate({ to: '/_authenticated/dashboard' as any });
         }
