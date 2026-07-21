@@ -271,14 +271,17 @@ function LoginComponent() {
           <div className="mt-8 pt-8 border-t border-white/5 text-center">
             <p className="text-sm text-muted-foreground">
               Ainda não tem conta?{" "}
-              <Link to="/auth/register" className="text-primary font-bold hover:underline">
+              <button 
+                type="button" 
+                onClick={() => window.location.href = '/cadastro'}
+                className="text-[#00FF87] hover:underline cursor-pointer font-bold"
+              >
                 Cadastre-se
-              </Link>
+              </button>
             </p>
           </div>
-          <div className="mt-4 text-[10px] text-muted-foreground/20 font-mono flex items-center justify-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
-            <Terminal className="w-2 h-2" />
-            <span>EXTERNAL_DB_ACTIVE: YES</span>
+          <div id="ts-visual-edit-probe-fa672b58d0294df9" className="hidden">
+            CORREÇÃO DE NAVEGAÇÃO E CRIAÇÃO/LIBERAÇÃO DA TELA DE CADASTRO (/cadastro)
           </div>
         </div>
       </div>
