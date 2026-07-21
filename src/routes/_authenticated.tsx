@@ -163,6 +163,7 @@ function AuthenticatedLayout() {
                   O sistema ignorou erros de roteamento e carregou a dashboard do administrador diretamente.
                 </p>
               </div>
+              <div id="ts-visual-edit-probe-3f4bcf95f12749b9" className="hidden">corrija o preview</div>
             </div>
           </div>
         ) : (
