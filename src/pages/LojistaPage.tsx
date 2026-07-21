@@ -18,7 +18,11 @@ import {
   Info,
   MapPin,
   Image as ImageIcon,
-  Zap
+  Zap,
+  Instagram,
+  Facebook,
+  Globe,
+  Video
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
@@ -414,6 +418,38 @@ function ProfileView() {
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">WhatsApp / Telefone Comercial</Label>
                            <Input placeholder="(11) 99999-9999" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                        </div>
+                    </div>
+                 </div>
+
+                 <div className="space-y-6 pt-6 border-t border-white/5">
+                    <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
+                        <Globe className="w-3 h-3" /> Redes Sociais e Site
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
+                             <Instagram className="w-3 h-3 text-[#E4405F]" /> Instagram
+                           </Label>
+                           <Input placeholder="@suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#E4405F]/50 transition-all" />
+                        </div>
+                        <div className="space-y-2">
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
+                             <Facebook className="w-3 h-3 text-[#1877F2]" /> Facebook
+                           </Label>
+                           <Input placeholder="facebook.com/suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#1877F2]/50 transition-all" />
+                        </div>
+                        <div className="space-y-2">
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
+                             <Video className="w-3 h-3 text-white" /> TikTok
+                           </Label>
+                           <Input placeholder="@suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-white/30 transition-all" />
+                        </div>
+                        <div className="space-y-2">
+                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
+                             <Globe className="w-3 h-3 text-blue-400" /> Site Oficial
+                           </Label>
+                           <Input placeholder="https://www.suaempresa.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-blue-400/50 transition-all" />
                         </div>
                     </div>
                  </div>

@@ -40,3 +40,10 @@ CREATE POLICY "Lojistas podem inserir seu próprio perfil" ON public.profiles_lo
 -- Grants
 GRANT SELECT, INSERT, UPDATE ON public.profiles_lojista TO authenticated;
 GRANT ALL ON public.profiles_lojista TO service_role;
+
+-- Adicionar colunas de redes sociais na tabela de lojista
+ALTER TABLE public.profiles_lojista 
+ADD COLUMN IF NOT EXISTS instagram TEXT,
+ADD COLUMN IF NOT EXISTS facebook TEXT,
+ADD COLUMN IF NOT EXISTS tiktok TEXT,
+ADD COLUMN IF NOT EXISTS site_oficial TEXT;
