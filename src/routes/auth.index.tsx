@@ -67,35 +67,40 @@ function LoginComponent() {
     setLoading(true);
     setErrorMsg('');
 
+    // SE FOR O E-MAIL E SENHA DO ADMINISTRADOR MASTER, LIBERA ACESSO IMEDIATO
+    // (Evita travamentos por bloqueio de CORS no preview do Lovable)
+    if (email.trim() === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
+      localStorage.setItem('fixxer_user_email', email);
+      localStorage.setItem('fixxer_user_role', 'Admin');
+      localStorage.setItem('fixxer_authenticated', 'true');
+      window.location.replace('/admin');
+      return;
+    }
+
     try {
-      // 1. Chamada de autenticação direta
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        setErrorMsg(error.message || "Erro ao realizar login.");
+        // Se o erro for um objeto vazio {} ou sem mensagem, exibe um texto legível em tela
+        const msg = error.message && error.message !== '{}' 
+          ? error.message 
+          : 'Erro de conexão/CORS com o Supabase. Verifique as credenciais.';
+        setErrorMsg(msg);
         setLoading(false);
         return;
       }
 
-      // 2. Se a sessão for retornada, força o redirecionamento direto por URL
-      if (data?.session || data?.user) {
+      if (data?.session) {
         localStorage.setItem('fixxer_user_email', email);
-
-        if (email === 'jorgericardosalgado@gmail.com') {
-          window.location.replace('/admin');
-        } else {
-          window.location.replace('/dashboard/lojista');
-        }
-      } else {
-        setErrorMsg("Não foi possível validar a sessão do usuário.");
-        setLoading(false);
+        window.location.replace('/admin');
       }
     } catch (err: any) {
-      console.error("Exceção no login:", err);
-      setErrorMsg(err?.message || "Erro inesperado de comunicação.");
+      // Tratamento para exceções de rede do iframe
+      console.error("Erro capturado no login:", err);
+      setErrorMsg("Falha ao se comunicar com o banco de dados.");
       setLoading(false);
     }
   };
@@ -182,6 +187,60 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
+        <div id="ts-visual-edit-probe-3c247348da414fbf" className="hidden">
+          {`CORREÇÃO DEFINITIVA DO ERRO DE CORS/REDE \`{}\` E BYPASS AUTOMÁTICO DO ADMIN
+
+O erro \`{}\` continua acontecendo porque a requisição de rede para 'https://rnhgpxembtgupxnrohxo.supabase.co' está sendo bloqueada por CORS/Iframe dentro do preview do Lovable, gerando uma exceção de rede sem corpo que o Supabase JS retransmite como um objeto vazio \`{}\`.
+
+Remova esse travamento e aplique a seguinte refatoração de emergência no formulário de login (\`Login.tsx\` / \`Auth.tsx\`):
+
+### 1. CAPTURA DE EXCEÇÃO E FALLBACK DE ADMIN
+Substitua o manipulador \`handleLogin\` no formulário por este código imune a erros de rede:
+
+\`\`\`typescript
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setErrorMsg('');
+
+  // SE FOR O E-MAIL E SENHA DO ADMINISTRADOR MASTER, LIBERA ACESSO IMEDIATO
+  // (Evita travamentos por bloqueio de CORS no preview do Lovable)
+  if (email.trim() === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
+    localStorage.setItem('fixxer_user_email', email);
+    localStorage.setItem('fixxer_user_role', 'Admin');
+    localStorage.setItem('fixxer_authenticated', 'true');
+    window.location.replace('/admin');
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      // Se o erro for um objeto vazio {} ou sem mensagem, exibe um texto legível em tela
+      const msg = error.message && error.message !== '{}' 
+        ? error.message 
+        : 'Erro de conexão/CORS com o Supabase. Verifique as credenciais.';
+      setErrorMsg(msg);
+      setLoading(false);
+      return;
+    }
+
+    if (data?.session) {
+      localStorage.setItem('fixxer_user_email', email);
+      window.location.replace('/admin');
+    }
+  } catch (err: any) {
+    // Tratamento para exceções de rede do iframe
+    console.error("Erro capturado no login:", err);
+    setErrorMsg("Falha ao se comunicar com o banco de dados.");
+    setLoading(false);
+  }
+};\`\`\``}
+        </div>
         <div id="ts-visual-edit-probe-faea4463318a44d5" className="hidden">
           {`DESEFEITO E RECONSTRUÇÃO DEFINITIVA DO FLUXO DE SUBMIT DO LOGIN
 
