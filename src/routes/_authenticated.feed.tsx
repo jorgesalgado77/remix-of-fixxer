@@ -293,7 +293,7 @@ function FeedCard({ post, glassClass }: { post: any, glassClass: string }) {
               </span>
               {isVitrine && (
                 <span className="text-[8px] font-black text-amber-500 flex items-center gap-1">
-                  <Star className="w-2.5 h-2.5 fill-current" /> {profile?.karma_score?.toFixed(1) || '5.0'}
+                  <Star className="w-2.5 h-2.5 fill-current" /> {profile?.karma_score ? Number(profile.karma_score).toFixed(1) : '5.0'}
                 </span>
               )}
             </div>
