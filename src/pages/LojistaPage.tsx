@@ -1537,7 +1537,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating }
     );
 }
 
-function SortableItem({ id, isVideo, onRemove }: { id: string; isVideo?: boolean; onRemove: () => void }) {
+function SortableItem({ id, isVideo, onRemove, isSelected, onToggleSelect }: { id: string; isVideo?: boolean; onRemove: () => void; isSelected?: boolean; onToggleSelect?: () => void }) {
     const {
         attributes,
         listeners,
