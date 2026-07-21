@@ -96,14 +96,37 @@ function DashboardView() {
             </div>
             
             <div className="bg-[#1A1A1B] border border-white/10 p-8 rounded-3xl">
-                <h3 className="font-black text-white uppercase italic mb-6">Últimas O.S.</h3>
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="font-black text-white uppercase italic">Últimas Solicitações</h3>
+                  <div className="flex gap-2">
+                     {['Hoje', '7 dias', '30 dias', 'Personalizado'].map(period => (
+                       <button key={period} className="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white/5 border border-white/5 hover:bg-[#00FF87] hover:text-black transition-colors">
+                         {period}
+                       </button>
+                     ))}
+                  </div>
+                </div>
+                
                 <div className="space-y-4">
                     <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
                         <div>
                            <div className="text-xs font-black uppercase italic text-white">Montagem Dormitório</div>
-                           <div className="text-[10px] text-muted-foreground uppercase">OS-2490 • São Paulo/SP</div>
+                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">OS-2490 • São Paulo/SP</div>
                         </div>
-                        <span className="px-3 py-1 bg-[#00FF87]/10 text-[#00FF87] font-bold text-[10px] rounded-full uppercase">Concluído</span>
+                        <div className="flex items-center gap-4">
+                           <span className="font-black text-xs text-white">R$ 450,00</span>
+                           <span className="px-3 py-1 bg-[#00FF87]/10 text-[#00FF87] font-bold text-[10px] rounded-full uppercase">Concluído</span>
+                        </div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
+                        <div>
+                           <div className="text-xs font-black uppercase italic text-white">Medição Cozinha</div>
+                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">OS-2491 • Campinas/SP</div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                           <span className="font-black text-xs text-white">R$ 200,00</span>
+                           <span className="px-3 py-1 bg-amber-500/10 text-amber-500 font-bold text-[10px] rounded-full uppercase">Pendente</span>
+                        </div>
                     </div>
                 </div>
             </div>
