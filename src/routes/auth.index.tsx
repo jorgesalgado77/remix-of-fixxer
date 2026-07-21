@@ -77,7 +77,7 @@ function LoginComponent() {
       localStorage.setItem('fixxer_user_email', email);
       localStorage.setItem('fixxer_user_role', 'Admin');
       localStorage.setItem('fixxer_authenticated', 'true');
-      window.location.replace('/admin');
+      window.location.replace('/_authenticated/admin');
       return;
     }
 
@@ -113,7 +113,7 @@ function LoginComponent() {
 
         // REGRA DE OURO: Apenas jorgericardosalgado@gmail.com acessa o /admin
         if (email.trim() === 'jorgericardosalgado@gmail.com' && (role === 'admin' || role === 'Admin')) {
-          window.location.replace('/admin');
+          window.location.replace('/_authenticated/admin');
         } else {
           // Garante que o redirecionamento vá para a rota exata registrada
           window.location.replace('/_authenticated/dashboard');

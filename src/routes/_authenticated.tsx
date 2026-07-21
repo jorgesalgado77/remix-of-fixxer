@@ -51,7 +51,7 @@ function AuthenticatedLayout() {
         <div className="flex items-center gap-4">
           {userRole === 'admin' && (
             <Link 
-              to="/admin" 
+              to="/_authenticated/admin" 
               className="text-xs font-bold uppercase tracking-widest text-primary hover:shadow-[0_0_10px_rgba(0,255,135,0.4)] transition-all active:scale-95"
             >
               Admin
