@@ -13,9 +13,8 @@ function LoginComponent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState<"login" | "forgot-password" | "diagnostic">("login");
+  const [view, setView] = useState<"login" | "forgot-password">("login");
   const [resetLoading, setResetLoading] = useState(false);
-  const [diagnosticSteps, setDiagnosticSteps] = useState<DiagnosticStep[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
