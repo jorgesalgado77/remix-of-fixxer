@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { 
   ShieldCheck, 
@@ -15,7 +15,8 @@ import {
   MapPin,
   Star,
   MoreVertical,
-  CheckCircle2
+  CheckCircle2,
+  User
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 
