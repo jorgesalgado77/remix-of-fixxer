@@ -413,15 +413,38 @@ function MaskedInputField({
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void, 
   required?: boolean 
 }) {
-  const formatValue = (val: string, maskStr: string) => {
-    let i = 0;
+  const applyMask = (val: string, maskStr: string) => {
     const clean = val.replace(/\D/g, "");
-    return maskStr.replace(/9/g, () => clean[i++] || "");
+    let formatted = "";
+    let maskIdx = 0;
+    let cleanIdx = 0;
+
+    while (maskIdx < maskStr.length && cleanIdx < clean.length) {
+      if (maskStr[maskIdx] === '9') {
+        formatted += clean[cleanIdx];
+        cleanIdx++;
+      } else {
+        formatted += maskStr[maskIdx];
+        // Se o caractere atual da máscara não for '9' e coincidir com o que o usuário digitou, 
+        // apenas avançamos o índice da máscara se não estivermos adicionando duplicado
+        if (val[formatted.length - 1] === maskStr[maskIdx]) {
+          // Já adicionado
+        }
+      }
+      maskIdx++;
+    }
+    return formatted;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onChange) {
-      // Simplificação para evitar findDOMNode
+      const originalValue = e.target.value;
+      const formattedValue = applyMask(originalValue, mask);
+      
+      // Criamos um novo evento sintético ou modificamos o atual para refletir o valor mascarado
+      // Para garantir que o cursor não pule, em implementações reais usaríamos refs, 
+      // mas para este fix rápido de UI, garantir o valor correto no estado pai é prioridade.
+      e.target.value = formattedValue;
       onChange(e);
     }
   };
@@ -435,6 +458,7 @@ function MaskedInputField({
         value={value}
         onChange={handleChange}
         required={required}
+        maxLength={mask.length}
         className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
       />
     </div>

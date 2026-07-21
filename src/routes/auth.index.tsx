@@ -280,8 +280,8 @@ function LoginComponent() {
               </button>
             </p>
           </div>
-          <div id="ts-visual-edit-probe-c2ee3b5864a4405c" className="hidden">
-            CORREÇÃO CRÍTICA DE RUNTIME ERROR NO REGISTRO: REMOÇÃO DE DEPRECADOS 'findDOMNode' (REACT 19 COMPATIBILITY)
+          <div id="ts-visual-edit-probe-4734473525d94a60" className="hidden">
+            VEJA AS IMAGENS, AO PREENCHER OS CAMPOS AS MASCARAS NÃO FICAM CORRETAS EM CNPJ, CPF, TELEFONE, CORRIJA
           </div>
         </div>
       </div>
