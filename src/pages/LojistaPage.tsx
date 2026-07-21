@@ -376,6 +376,65 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
     const [customDates, setCustomDates] = useState({ start: '', end: '' });
     const [expandedServiceId, setExpandedServiceId] = useState<number | null>(null);
 
+    const exportToPDF = (service: any) => {
+        const doc = new jsPDF();
+        
+        // Header
+        doc.setFillColor(0, 255, 135); // Primary color
+        doc.rect(0, 0, 210, 40, 'F');
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.text("FIXXER - RELATÓRIO DE O.S.", 105, 20, { align: "center" });
+        
+        doc.setFontSize(10);
+        doc.text(`Exportado em: ${new Date().toLocaleString()}`, 105, 30, { align: "center" });
+
+        // Service Info
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(14);
+        doc.text(`O.S. #${service.id} - ${service.title}`, 15, 55);
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        const details = [
+            ["Status Atual:", service.status],
+            ["Localização:", service.location],
+            ["Valor:", service.value],
+            ["Prazo:", service.deadline],
+        ];
+
+        autoTable(doc, {
+            startY: 65,
+            head: [['Campo', 'Valor']],
+            body: details,
+            theme: 'striped',
+            headStyles: { fillStyle: 'F', fillColor: [0, 255, 135], textColor: [0, 0, 0] }
+        });
+
+        // History
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("Histórico de Status", 15, (doc as any).lastAutoTable.finalY + 15);
+
+        const history = [
+            ["Hoje às 14:30", service.status, "Por Sistema"],
+            ["10/07 às 09:15", "OS Criada", "Por Marcenaria Inovamad"]
+        ];
+
+        autoTable(doc, {
+            startY: (doc as any).lastAutoTable.finalY + 20,
+            head: [['Data/Hora', 'Status', 'Responsável']],
+            body: history,
+            theme: 'grid',
+            headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255] }
+        });
+
+        doc.save(`FIXXER_OS_${service.id}.pdf`);
+        toast.success("PDF gerado com sucesso!");
+    };
+
     
     // Simulação de filtragem global (poderia ser baseada em dados reais)
     const getMultiplier = () => {
