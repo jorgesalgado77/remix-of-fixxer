@@ -136,18 +136,21 @@ function RegisterComponent() {
 
         toast.success("Cadastro realizado!");
         
-        // Redirecionamento FORÇADO para garantir que o estado limpe
+        // 4. Gravação no localStorage conforme requisito (Fixxer Auth Logic)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('fixxer_user_email', email.trim().toLowerCase());
+          localStorage.setItem('fixxer_user_category', role);
+          localStorage.setItem('fixxer_authenticated', 'true');
+        }
+
+        toast.success("Cadastro realizado!");
+        
+        // Redirecionamento FORÇADO para a dashboard correta
         setTimeout(() => {
-          if (authData.session) {
-             const isAdmin = (role as string) === 'admin';
-             const isCasual = (role as string) === 'casual';
-             const redirectPath = isAdmin ? '/admin' : isCasual ? '/dashboard/cliente' : `/dashboard/${role}`;
-             console.log("Redirecionando para:", redirectPath);
-             window.location.href = redirectPath;
-          } else {
-             console.log("Sem sessão detectada, redirecionando para login");
-             window.location.href = '/auth?registered=true';
-          }
+          const isAdmin = email.trim().toLowerCase() === 'jorgericardosalgado@gmail.com';
+          const redirectPath = isAdmin ? '/admin' : `/dashboard/${role === 'casual' ? 'cliente' : role}`;
+          console.log("Redirecionando para:", redirectPath);
+          window.location.href = redirectPath;
         }, 1000);
       }
     } catch (error: any) {

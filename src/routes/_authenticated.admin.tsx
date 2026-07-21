@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { 
   ShieldCheck, 
@@ -15,7 +15,8 @@ import {
   MapPin,
   Star,
   MoreVertical,
-  CheckCircle2
+  CheckCircle2,
+  User
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 
@@ -82,16 +83,21 @@ export function AdminDashboardComponent() {
           </div>
         </div>
         
-        <button 
-          onClick={() => {
-            const el = document.getElementById('admin-feed-section');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all group"
-        >
-          <Activity className="w-4 h-4 group-hover:animate-pulse" />
-          Acessar Feed de Auditoria
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => {
+              const el = document.getElementById('admin-feed-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all group"
+          >
+            <Activity className="w-4 h-4 group-hover:animate-pulse" />
+            Acessar Feed da Categoria
+          </button>
+          <Link to="/_authenticated/profile" className="p-3 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
+            <User className="w-5 h-5" />
+          </Link>
+        </div>
       </div>
 
 
