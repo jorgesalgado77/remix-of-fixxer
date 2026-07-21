@@ -310,9 +310,9 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
                 </div>
             </TooltipTrigger>
             <TooltipContent 
-                side="right" 
+                side="bottom" 
                 align="center"
-                className="bg-[#00FF87] text-black font-bold uppercase text-[9px] md:text-[10px] italic shadow-[0_0_20px_rgba(0,255,135,0.4)] z-[100] max-w-[200px] text-center"
+                className="bg-[#00FF87] text-black font-bold uppercase text-[9px] md:text-[10px] italic shadow-[0_0_20px_rgba(0,255,135,0.4)] z-[100] max-w-[200px] text-center md:side-right"
             >
                 Preencha o perfil completo para habilitar
             </TooltipContent>
