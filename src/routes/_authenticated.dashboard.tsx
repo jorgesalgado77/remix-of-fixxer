@@ -935,6 +935,7 @@ function FornecedorDashboard({ glassClass, isFreePlan, onAction }: { glassClass:
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
+
         <div className={`md:col-span-2 p-6 rounded-3xl ${glassClass}`}>
           <h2 className="text-lg font-black text-white uppercase italic flex items-center gap-2 mb-6">
             <TrendingUp className="w-5 h-5 text-primary" />
