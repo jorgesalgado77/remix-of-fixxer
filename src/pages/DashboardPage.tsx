@@ -108,6 +108,3 @@ export function DashboardPage() {
   );
 }
 
-// REMOVED OLD RETURN
-const OldReturn = () => {
-}
