@@ -177,23 +177,48 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
     default_role public.app_role;
+    target_plan_id UUID;
 BEGIN
+    -- Determinar a role com fallback seguro
     IF new.email = 'jorgericardosalgado@gmail.com' OR EXISTS (SELECT 1 FROM public.admin_config WHERE email = new.email) THEN
         default_role := 'admin';
     ELSE
-        default_role := COALESCE((new.raw_user_meta_data->>'role')::public.app_role, 'lojista');
+        BEGIN
+            default_role := (new.raw_user_meta_data->>'role')::public.app_role;
+        EXCEPTION WHEN OTHERS THEN
+            default_role := 'lojista';
+        END;
     END IF;
 
-    INSERT INTO public.profiles (id, full_name, role, plan_id)
-    VALUES (
-        new.id, 
-        COALESCE(new.raw_user_meta_data->>'full_name', ''), 
-        default_role,
-        (SELECT id FROM public.subscription_plans WHERE category = default_role AND price = 0 LIMIT 1)
-    ) ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
+    -- Buscar o plano padrão (gratuito) para a categoria
+    SELECT id INTO target_plan_id 
+    FROM public.subscription_plans 
+    WHERE category = default_role 
+    AND price = 0 
+    LIMIT 1;
+
+    -- Criação do perfil com tratamento de erro (SECURITY DEFINER permite escrever no public mesmo vindo do auth)
+    BEGIN
+        INSERT INTO public.profiles (id, full_name, role, plan_id)
+        VALUES (
+            new.id, 
+            COALESCE(new.raw_user_meta_data->>'full_name', ''), 
+            default_role,
+            target_plan_id
+        ) ON CONFLICT (id) DO UPDATE SET 
+            role = EXCLUDED.role,
+            plan_id = EXCLUDED.plan_id;
+    EXCEPTION WHEN OTHERS THEN
+        NULL;
+    END;
     
-    INSERT INTO public.user_roles (user_id, role)
-    VALUES (new.id, default_role) ON CONFLICT DO NOTHING;
+    -- Criação da role
+    BEGIN
+        INSERT INTO public.user_roles (user_id, role)
+        VALUES (new.id, default_role) ON CONFLICT DO NOTHING;
+    EXCEPTION WHEN OTHERS THEN
+        NULL;
+    END;
     
     RETURN NEW;
 END;
