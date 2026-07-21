@@ -375,3 +375,103 @@ function FeedCard({ post, glassClass }: { post: any, glassClass: string }) {
     </div>
   );
 }
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInView } from "react-intersection-observer";
+import { useEffect } from "react";
+
+// Modal de Proposta
+function ProposalModal({ post, userRole }: { post: any, userRole: string }) {
+  const [open, setOpen] = useState(false);
+  const [price, setPrice] = useState("");
+  const [desc, setDesc] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!price) return toast.error("Informe um valor");
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { error } = await supabase
+        .from('proposals')
+        .insert({
+          post_id: post.id,
+          user_id: user.id,
+          price_value: parseFloat(price),
+          description: desc,
+          status: 'Pendente'
+        });
+
+      if (error) throw error;
+      
+      toast.success("Proposta enviada com sucesso!");
+      setOpen(false);
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#00FF87] text-black border border-[#00FF87] hover:shadow-[0_0_15px_rgba(0,255,135,0.4)] transition-all text-[9px] font-black uppercase italic">
+          {post.post_type === 'Demanda_B2C' ? 'Enviar Orçamento' : 'Enviar Proposta'}
+          <ChevronRight className="w-3 h-3" />
+        </button>
+      </DialogTrigger>
+      <DialogContent className="bg-[#0A0A0B] border-white/10 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-white uppercase italic font-black">Enviar {post.post_type === 'Demanda_B2C' ? 'Orçamento' : 'Proposta'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase text-muted-foreground">Valor da Proposta (R$)</label>
+            <input 
+              type="number" 
+              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[#00FF87]"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="0,00"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase text-muted-foreground">Mensagem / Detalhes</label>
+            <textarea 
+              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[#00FF87] min-h-[100px]"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="Descreva sua experiência, prazos ou detalhes técnicos..."
+            />
+          </div>
+          <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+             <p className="text-[9px] text-blue-400 font-bold uppercase leading-tight">
+               <AlertCircle className="w-3 h-3 inline mr-1 mb-0.5" />
+               Atenção: É proibido o compartilhamento de contatos antes da aceitação da proposta. O descumprimento pode levar ao banimento.
+             </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <button 
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs hover:opacity-90 disabled:opacity-50"
+          >
+            {loading ? "Enviando..." : "Confirmar Envio"}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
