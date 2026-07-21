@@ -22,7 +22,8 @@ import {
   Globe,
   Video,
   Phone,
-  MessageCircle
+  MessageCircle,
+  Lock
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { EscrowBadge } from "@/components/EscrowBadge";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -81,12 +83,29 @@ export function LojistaDashboard() {
 
                 <UserProfileCard isProfileComplete={isProfileComplete} />
 
-                <nav className="flex flex-col gap-3">
-                    <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
-                    <SidebarButton icon={<PlusCircle className="w-5 h-5"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => handleTabChange('create')} />
-                    <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
-                    <SidebarButton icon={<Star className="w-5 h-5"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => handleTabChange('reviews')} />
-                </nav>
+                <TooltipProvider>
+                  <nav className="flex flex-col gap-3">
+                      <SidebarButton icon={<Activity className="w-5 h-5"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                      
+                      <NavButtonWithTooltip 
+                        icon={<PlusCircle className="w-5 h-5"/>} 
+                        label="Criar Serviço" 
+                        active={activeTab === 'create'} 
+                        onClick={() => handleTabChange('create')}
+                        disabled={!isProfileComplete}
+                      />
+
+                      <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
+
+                      <NavButtonWithTooltip 
+                        icon={<Star className="w-5 h-5"/>} 
+                        label="Avaliações" 
+                        active={activeTab === 'reviews'} 
+                        onClick={() => handleTabChange('reviews')}
+                        disabled={!isProfileComplete}
+                      />
+                  </nav>
+                </TooltipProvider>
                 <div className="mt-auto pt-6 flex flex-col gap-4">
                     <Link to="/_authenticated/feed" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs shadow-[0_0_15px_rgba(255,255,255,0.05)]">
                         <Search className="w-4 h-4" /> Ir para o Feed
@@ -108,12 +127,29 @@ export function LojistaDashboard() {
 
         <UserProfileCard isProfileComplete={isProfileComplete} />
 
-        <nav className="flex flex-col gap-2">
-            <SidebarButton icon={<Activity className="w-4 h-4"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
-            <SidebarButton icon={<PlusCircle className="w-4 h-4"/>} label="Criar Serviço" active={activeTab === 'create'} onClick={() => handleTabChange('create')} />
-            <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
-            <SidebarButton icon={<Star className="w-4 h-4"/>} label="Avaliações" active={activeTab === 'reviews'} onClick={() => handleTabChange('reviews')} />
-        </nav>
+        <TooltipProvider>
+          <nav className="flex flex-col gap-2">
+              <SidebarButton icon={<Activity className="w-4 h-4"/>} label="Visão Geral" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+              
+              <NavButtonWithTooltip 
+                icon={<PlusCircle className="w-4 h-4"/>} 
+                label="Criar Serviço" 
+                active={activeTab === 'create'} 
+                onClick={() => handleTabChange('create')}
+                disabled={!isProfileComplete}
+              />
+
+              <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
+              
+              <NavButtonWithTooltip 
+                icon={<Star className="w-4 h-4"/>} 
+                label="Avaliações" 
+                active={activeTab === 'reviews'} 
+                onClick={() => handleTabChange('reviews')}
+                disabled={!isProfileComplete}
+              />
+          </nav>
+        </TooltipProvider>
         <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-2">
             <Link to="/_authenticated/feed" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider">
                 <Search className="w-4 h-4 text-primary" /> Ir para o Feed
@@ -241,14 +277,41 @@ function ReviewsView() {
     )
 }
 
-function SidebarButton({ icon, label, active, onClick }: any) {
+function SidebarButton({ icon, label, active, onClick, disabled }: any) {
     return (
         <button 
             onClick={onClick}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all w-full text-sm font-black uppercase italic tracking-wider ${active ? 'bg-[#00FF87] text-black' : 'hover:bg-white/5 text-muted-foreground'}`}
+            disabled={disabled}
+            className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all w-full text-sm font-black uppercase italic tracking-wider ${
+                active ? 'bg-[#00FF87] text-black' : 
+                disabled ? 'bg-white/5 text-muted-foreground/30 cursor-not-allowed grayscale opacity-60' : 
+                'hover:bg-white/5 text-muted-foreground'
+            }`}
         >
-            {icon} {label}
+            <div className="flex items-center gap-3">
+                {icon} {label}
+            </div>
+            {disabled && <Lock className="w-3 h-3 opacity-50" />}
         </button>
+    );
+}
+
+function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
+    if (!disabled) {
+        return <SidebarButton icon={icon} label={label} active={active} onClick={onClick} />;
+    }
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <div>
+                    <SidebarButton icon={icon} label={label} active={active} onClick={onClick} disabled={disabled} />
+                </div>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="bg-[#00FF87] text-black font-bold uppercase text-[10px] italic">
+                Preencha o perfil completo para habilitar
+            </TooltipContent>
+        </Tooltip>
     );
 }
 
