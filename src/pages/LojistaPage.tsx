@@ -387,6 +387,7 @@ export function LojistaDashboard() {
                     undoStack={undoStack}
                     pushToUndo={pushToUndo}
                     setEmergencySetGallery={setEmergencySetGallery}
+                    handleUndo={handleUndo}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
@@ -981,7 +982,7 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo, setEmergencySetGallery }: { 
+function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo, setEmergencySetGallery, handleUndo }: { 
     setIsProfileComplete: (complete: boolean) => void; 
     rating: number; 
     getRatingColor: (val: number) => string; 
@@ -989,6 +990,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     undoStack: any[];
     pushToUndo: (action: string, state: any) => void;
     setEmergencySetGallery: (fn: any) => void;
+    handleUndo: () => void;
 }) {
     const [cnpj, setCnpj] = useState("");
     const [whatsapp, setWhatsapp] = useState("");
