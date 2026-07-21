@@ -236,19 +236,44 @@ function LojistaDashboard({ glassClass, isFreePlan, onAction, profile }: { glass
   useEffect(() => {
     if (!lojistaId) return;
 
+    console.log(`[DASHBOARD REALTIME]: Subscribing for lojistaId: ${lojistaId}`);
+    
     const channel = supabase
-      .channel('dashboard-updates')
+      .channel(`dashboard-updates-${lojistaId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders_of_service', filter: `lojista_id=eq.${lojistaId}` },
-        () => queryClient.invalidateQueries({ queryKey: ['lojista-os', lojistaId] })
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders_of_service', 
+          filter: `lojista_id=eq.${lojistaId}` 
+        },
+        (payload) => {
+          console.log('[DASHBOARD REALTIME] Change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['lojista-os', lojistaId] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders_of_service', 
+          filter: `client_id=eq.${lojistaId}` 
+        },
+        (payload) => {
+          console.log('[DASHBOARD REALTIME] Change detected (client):', payload);
+          queryClient.invalidateQueries({ queryKey: ['lojista-os', lojistaId] });
+        }
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'os_messages' },
         () => queryClient.invalidateQueries({ queryKey: ['lojista-notifications', lojistaId] })
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[DASHBOARD REALTIME] Subscription status: ${status}`);
+      });
 
     return () => {
       supabase.removeChannel(channel);
