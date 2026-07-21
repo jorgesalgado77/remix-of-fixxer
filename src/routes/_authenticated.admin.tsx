@@ -20,9 +20,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
     // PROTEÇÃO CRÍTICA: Apenas o administrador master tem acesso ao painel admin
     const { data: { session } } = await supabase.auth.getSession();
     
-    // Se não houver sessão no Supabase, tenta o localStorage como fallback (para o bypass)
-    const storedEmail = localStorage.getItem('fixxer_user_email');
-    const isAuthenticated = localStorage.getItem('fixxer_authenticated') === 'true';
+    let storedEmail = null;
+    if (typeof window !== 'undefined') {
+      storedEmail = localStorage.getItem('fixxer_user_email');
+    }
     
     const userEmail = session?.user?.email || storedEmail;
 
