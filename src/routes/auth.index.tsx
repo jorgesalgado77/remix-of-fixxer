@@ -317,8 +317,22 @@ function LoginComponent() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Login</h1>
           <p className="text-muted-foreground mt-2">Acesse sua conta para continuar</p>
 
-        <div id="ts-visual-edit-probe-61018f6a6dc240da" className="hidden">
-          Implementar uma verificação de conectividade e um tratamento de erros padronizado para chamadas ao Supabase, exibindo mensagens claras ao usuário e logs seguros no servidor. Verificar e validar as policies de RLS e as tabelas exigidas para Auth (incluindo profiles, brand_flags e trigger handle_new_user) no Supabase externo para garantir acesso correto. Rodar uma checagem de build e garantir que não há erros TypeScript pendentes relacionados ao auth e ao tratamento de PostgrestError.
+        <div id="ts-visual-edit-probe-92cad893586e4871" className="hidden">
+          CORREÇÃO CRÍTICA DE AUTENTICAÇÃO E DIAGNÓSTICO DE ACESSO:
+          O fluxo de login está travando na etapa "Autenticação de Usuário" retornando um objeto de erro vazio `{}`. Refatore o código do diagnóstico e da autenticação imediatamente com as seguintes regras:
+          1. TRATAMENTO DE ERROS DE AUTH (SUPABASE):
+          - O método `supabase.auth.signInWithPassword()` deve tratar explicitamente os cenários de retorno:
+          * Se o erro for "Email not confirmed", exiba uma mensagem amigável: "Por favor, confirme seu e-mail para acessar."
+          * Se as credenciais estiverem incorretas, exiba: "E-mail ou senha inválidos."
+          * Trate qualquer erro extra garantindo que `error.message` seja convertido para texto visível, e nunca exiba `{}` no diagnóstico.
+          2. FLUXO DE LOGIN E REDIRECIONAMENTO DIRETO:
+          - Quando o usuário fizer login com sucesso no formulário de login, obtenha a sessão ativa imediatamente (`supabase.auth.getSession()`).
+          - Busque o perfil do usuário na tabela `profiles` pelo `id` do usuário logado.
+          - Se a sessão e o perfil forem válidos, redirecione DIRETO para a Dashboard correspondente (Lojista, Prestador ou Parceiro) com base no campo `user_type` cadastrado no perfil.
+          - Se o perfil não existir na tabela `profiles`, execute um upsert/fallback automático criando o perfil básico com o `user_type` correspondente antes de redirecionar, evitando travamento na sincronização.
+          3. REMOÇÃO DE TELAS DE DIAGNÓSTICO INTERMEDIÁRIAS DESNECESSÁRIAS:
+          - A tela "Diagnóstico de Acesso" não deve travar o fluxo do usuário final. Se os dados forem válidos, o login deve levar o usuário instantaneamente para a aplicação sem telas intermediárias lentas, mantendo o foco em carregamento instantâneo para mobile (conforme as Regras de Ouro).
+          Refatore esta rotina de autenticação e teste o login novamente.
         </div>
       </div>
 
