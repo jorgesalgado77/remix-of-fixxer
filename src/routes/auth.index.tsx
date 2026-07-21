@@ -65,7 +65,7 @@ function LoginComponent() {
         steps[0].status = 'error';
         steps[0].detail = error.message === "Invalid login credentials" 
           ? "Credenciais inválidas. Certifique-se de que o usuário administrador foi criado no SQL Editor do Supabase."
-          : `Erro Supabase: ${error.message || 'Erro desconhecido'} (Status: ${error.status || '500'}). Detalhes: ${JSON.stringify(error) === '{}' ? 'Objeto vazio (verifique logs do console ou triggers do banco)' : JSON.stringify(error)}. Se o erro persistir, verifique a conectividade e se as tabelas de Auth existem no banco externo.`;
+          : `corrija Erro Supabase: ${error.message || 'Erro desconhecido'} (Status: ${error.status || '500'}). Detalhes: ${JSON.stringify(error) === '{}' ? '{"name":"AuthRetryableFetchError","message":"{}","status":500}' : JSON.stringify(error)}. Se o erro persistir, verifique a conectividade e se as tabelas de Auth existem no banco externo.  verifique a conectividade completa com o banco de dados externo https://rnhgpxembtgupxnrohxo.supabase.co`;
         setDiagnosticSteps([...steps]);
         await logAccess({ 
           event_type: 'login_attempt', 
