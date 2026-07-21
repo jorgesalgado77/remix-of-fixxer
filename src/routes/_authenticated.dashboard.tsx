@@ -272,10 +272,11 @@ function PrestadorDashboard({ glassClass, isFreePlan, onAction }: { glassClass: 
                   <p className="text-lg font-black text-primary">R$ 850,00</p>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  <button className="py-2 rounded-lg bg-primary text-black text-[9px] font-black uppercase hover:opacity-90 transition-all">Aceitar</button>
-                  <button className="py-2 rounded-lg bg-white/5 border border-white/10 text-white text-[9px] font-black uppercase hover:bg-white/10 transition-all">Contra</button>
-                  <button className="py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-[9px] font-black uppercase hover:bg-red-500/20 transition-all">Recusar</button>
+                  <button onClick={(e) => onAction(e, "aceitar propostas")} className="py-2 rounded-lg bg-primary text-black text-[9px] font-black uppercase hover:opacity-90 transition-all">Aceitar</button>
+                  <button onClick={(e) => onAction(e, "enviar contrapropostas")} className="py-2 rounded-lg bg-white/5 border border-white/10 text-white text-[9px] font-black uppercase hover:bg-white/10 transition-all">Contra</button>
+                  <button onClick={(e) => onAction(e, "recusar serviços")} className="py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-[9px] font-black uppercase hover:bg-red-500/20 transition-all">Recusar</button>
                 </div>
+
               </div>
             ))}
           </div>
