@@ -73,8 +73,33 @@ export function LojistaDashboard() {
       }
     };
     window.addEventListener('change-tab', handleTabChangeEvent);
+
+    // Mock initial notifications
+    setNotifications([
+      { id: 1, title: 'Status Atualizado', message: 'A O.S. #2490 foi concluída com sucesso.', type: 'status', time: '5 min atrás', read: false },
+      { id: 2, title: 'Nova Proposta', message: 'Você recebeu uma nova proposta para a O.S. #2491.', type: 'proposal', time: '1 hora atrás', read: false },
+      { id: 3, title: 'Avaliação Recebida', message: 'Carlos Silva deixou uma avaliação de 5 estrelas.', type: 'review', time: '2 horas atrás', read: true },
+    ]);
+
     return () => window.removeEventListener('change-tab', handleTabChangeEvent);
   }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAsRead = (id: number) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    toast.success("Todas as notificações marcadas como lidas");
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+    setShowNotifications(false);
+    toast.success("Central de notificações limpa");
+  };
 
   const getRatingColor = (val: number) => {
     if (val <= 1.5) return "text-red-500";
