@@ -1650,11 +1650,11 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Número *</Label>
-                           <Input required placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Input required value={address.numero} onChange={(e) => setAddress({...address, numero: e.target.value})} placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="md:col-span-2 space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Complemento</Label>
-                           <Input placeholder="Sala, Bloco, etc." className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Input value={address.complemento} onChange={(e) => setAddress({...address, complemento: e.target.value})} placeholder="Sala, Bloco, etc." className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                     </div>
                  </div>
