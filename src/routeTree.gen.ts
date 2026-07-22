@@ -15,6 +15,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as PerfilLojistaRouteImport } from './routes/perfil.lojista'
+import { Route as LojistaIdRouteImport } from './routes/lojista.$id'
 import { Route as DashboardLojistaRouteImport } from './routes/dashboard.lojista'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPrestadorRouteImport } from './routes/_authenticated.prestador'
@@ -55,6 +57,16 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthRoute,
+} as any)
+const PerfilLojistaRoute = PerfilLojistaRouteImport.update({
+  id: '/perfil/lojista',
+  path: '/perfil/lojista',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LojistaIdRoute = LojistaIdRouteImport.update({
+  id: '/lojista/$id',
+  path: '/lojista/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardLojistaRoute = DashboardLojistaRouteImport.update({
   id: '/dashboard/lojista',
@@ -127,6 +139,8 @@ export interface FileRoutesByFullPath {
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
+  '/lojista/$id': typeof LojistaIdRoute
+  '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth/': typeof AuthIndexRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
@@ -144,6 +158,8 @@ export interface FileRoutesByTo {
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
+  '/lojista/$id': typeof LojistaIdRoute
+  '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth': typeof AuthIndexRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
@@ -164,6 +180,8 @@ export interface FileRoutesById {
   '/_authenticated/prestador': typeof AuthenticatedPrestadorRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
+  '/lojista/$id': typeof LojistaIdRoute
+  '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
@@ -184,6 +202,8 @@ export interface FileRouteTypes {
     | '/prestador'
     | '/profile'
     | '/dashboard/lojista'
+    | '/lojista/$id'
+    | '/perfil/lojista'
     | '/auth/'
     | '/feed/lojista'
     | '/api/public/setup-db'
@@ -201,6 +221,8 @@ export interface FileRouteTypes {
     | '/prestador'
     | '/profile'
     | '/dashboard/lojista'
+    | '/lojista/$id'
+    | '/perfil/lojista'
     | '/auth'
     | '/feed/lojista'
     | '/api/public/setup-db'
@@ -220,6 +242,8 @@ export interface FileRouteTypes {
     | '/_authenticated/prestador'
     | '/_authenticated/profile'
     | '/dashboard/lojista'
+    | '/lojista/$id'
+    | '/perfil/lojista'
     | '/auth/'
     | '/_authenticated/feed/lojista'
     | '/api/public/setup-db'
@@ -232,6 +256,8 @@ export interface RootRouteChildren {
   CadastroRoute: typeof CadastroRoute
   TermsRoute: typeof TermsRoute
   DashboardLojistaRoute: typeof DashboardLojistaRoute
+  LojistaIdRoute: typeof LojistaIdRoute
+  PerfilLojistaRoute: typeof PerfilLojistaRoute
   ApiPublicSetupDbRoute: typeof ApiPublicSetupDbRoute
 }
 
@@ -278,6 +304,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/'
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/perfil/lojista': {
+      id: '/perfil/lojista'
+      path: '/perfil/lojista'
+      fullPath: '/perfil/lojista'
+      preLoaderRoute: typeof PerfilLojistaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lojista/$id': {
+      id: '/lojista/$id'
+      path: '/lojista/$id'
+      fullPath: '/lojista/$id'
+      preLoaderRoute: typeof LojistaIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/lojista': {
       id: '/dashboard/lojista'
@@ -413,6 +453,8 @@ const rootRouteChildren: RootRouteChildren = {
   CadastroRoute: CadastroRoute,
   TermsRoute: TermsRoute,
   DashboardLojistaRoute: DashboardLojistaRoute,
+  LojistaIdRoute: LojistaIdRoute,
+  PerfilLojistaRoute: PerfilLojistaRoute,
   ApiPublicSetupDbRoute: ApiPublicSetupDbRoute,
 }
 export const routeTree = rootRouteImport
