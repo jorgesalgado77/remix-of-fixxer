@@ -390,7 +390,7 @@ export function LojistaDashboard() {
         </header>
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
-            {activeTab === 'dashboard' && <DashboardView rating={rating} getRatingColor={getRatingColor} />}
+            {activeTab === 'dashboard' && <DashboardView rating={rating} getRatingColor={getRatingColor} handleTabChange={handleTabChange} isProfileComplete={isProfileComplete} />}
             {activeTab === 'create' && <CreateServiceView />}
             {activeTab === 'profile' && (
                 <ProfileView 
@@ -582,7 +582,7 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
     );
 }
 
-function DashboardView({ rating, getRatingColor }: { rating: number; getRatingColor: (val: number) => string }) {
+function DashboardView({ rating, getRatingColor, handleTabChange, isProfileComplete }: { rating: number; getRatingColor: (val: number) => string; handleTabChange: (tab: string) => void; isProfileComplete: boolean }) {
     const [filter, setFilter] = useState('Hoje');
     const [statusFilter, setStatusFilter] = useState('Todos');
     const [searchTerm, setSearchTerm] = useState('');
@@ -764,7 +764,17 @@ function DashboardView({ rating, getRatingColor }: { rating: number; getRatingCo
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
                 <div className="flex flex-col space-y-4 mb-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <h3 className="font-black text-white uppercase italic text-sm md:text-base">Solicitações no Período</h3>
+                        <div className="flex items-center gap-3">
+                            <h3 className="font-black text-white uppercase italic text-sm md:text-base">Solicitações no Período</h3>
+                            <Button 
+                                onClick={() => handleTabChange('create')}
+                                disabled={!isProfileComplete}
+                                size="sm"
+                                className="h-7 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[9px] font-black uppercase italic shadow-[0_0_15px_rgba(0,255,135,0.1)] transition-all hover:shadow-[0_0_20px_rgba(0,255,135,0.2)]"
+                            >
+                                <PlusCircle className="w-3 h-3 mr-1.5" /> Novo Serviço
+                            </Button>
+                        </div>
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input 
