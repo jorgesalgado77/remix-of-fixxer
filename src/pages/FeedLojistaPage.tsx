@@ -126,6 +126,26 @@ export default function FeedLojistaPage() {
             </button>
           </div>
         </article>
+
+        <div id="ts-visual-edit-probe-9bb6a71926824687" className="mt-20 p-6 bg-black/50 border border-[#00FF87]/30 rounded-2xl text-xs text-[#00FF87]/80 font-mono space-y-4">
+          <p className="font-bold text-white text-sm">4. REGISTRO DA ROTA NO src/App.tsx</p>
+          <p>Garanta a inclusão da rota no App.tsx:</p>
+          <div className="bg-black p-3 rounded-lg border border-white/10">
+            <span className="text-purple-400">import</span> FeedLojistaPage <span className="text-purple-400">from</span> <span className="text-green-400">"./pages/FeedLojistaPage"</span>;
+            <br />
+            <span className="text-gray-500">// ...</span>
+            <br />
+            &lt;<span className="text-blue-400">Route</span> element="&#123;&lt;<span className="text-yellow-400">FeedLojistaPage</span>" path=<span className="text-green-400">"/feed/lojista"</span>/&#125; /&gt;
+          </div>
+          <div className="space-y-2 pt-4 border-t border-white/10">
+            <p className="font-bold text-white">AUDITORIA PÓS-EXECUÇÃO OBRIGATÓRIA:</p>
+            <p>[ ] O Feed do Lojista renderiza com a rota /feed/lojista sem erros?</p>
+            <p>[ ] As publicações de Clientes Finais aparecem em destaque no topo?</p>
+            <p>[ ] A nota de reputação 0.0 a 5.0 estrelas está visível em cada card?</p>
+            <p>[ ] A barra de ações (Chat, Proposta, Salvar) e o menu de 3 pontinhos estão posicionados?</p>
+            <p>[ ] O layout mobile possui rolagem invisível (scrollbar-none) e performance fluida?</p>
+          </div>
+        </div>
       </main>
     </div>
   );
