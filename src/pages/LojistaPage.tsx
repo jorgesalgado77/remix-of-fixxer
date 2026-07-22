@@ -60,6 +60,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy } from "@dnd-kit/sortable";
+import { compressImage } from "@/utils/image-compression";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -1328,7 +1329,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     const [cropImage, setCropImage] = useState<string | null>(null);
     const [cropType, setCropType] = useState<'logo' | 'banner' | 'gallery' | 'video' | 'document' | null>(null);
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document') => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: File[] } }, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document') => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
 
@@ -1340,7 +1341,8 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
             return;
         }
 
-        const uploadPromises = files.map(async (file) => {
+        const uploadPromises = files.map(async (originalFile) => {
+            let file = originalFile;
             // Validações
             const isVideo = type === 'video';
             const isDoc = type === 'document';
@@ -1359,6 +1361,16 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     description: `${file.name} excede o limite de ${maxSize / (1024 * 1024)}MB.`
                 });
                 return null;
+            }
+
+            // Compressão de imagem antes do upload (exceto para vídeos e documentos)
+            if (type !== 'video' && type !== 'document' && file.type.startsWith('image/')) {
+                try {
+                    file = await compressImage(file, 1200, 0.8);
+                } catch (err) {
+                    console.error("Erro na compressão:", err);
+                    // Mantém o arquivo original se falhar
+                }
             }
 
             // Preview para Logo (apenas se for arquivo único ou o primeiro da lista)
@@ -1411,8 +1423,10 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
             }
         }
         
-        // Limpar input
-        e.target.value = '';
+        // Limpar input se for um evento de mudança real
+        if ('target' in e && e.target instanceof HTMLInputElement) {
+            e.target.value = '';
+        }
     };
 
     const confirmRemoval = (type: string, onConfirm: () => void) => {
@@ -1430,13 +1444,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
         });
     };
 
-    const handleDrop = async (e: React.DragEvent, type: 'gallery' | 'video' | 'document') => {
+    const handleDrop = async (e: React.DragEvent, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document') => {
         e.preventDefault();
         setIsDraggingOver(false);
         const files = Array.from(e.dataTransfer.files);
         if (files.length > 0) {
-            const mockEvent = { target: { files } } as unknown as React.ChangeEvent<HTMLInputElement>;
-            handleFileUpload(mockEvent, type);
+            const mockEvent = { target: { files } };
+            handleFileUpload(mockEvent as any, type);
         }
     };
 
@@ -1681,7 +1695,12 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         <div className="space-y-2">
                             <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logo da Empresa *</Label>
                             <div className="relative h-40 group">
-                                <label className="h-full w-full rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 overflow-hidden shadow-inner block">
+                                <label 
+                                    className={`h-full w-full rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 overflow-hidden shadow-inner block ${isDraggingOver ? 'border-primary ring-2 ring-primary/20' : 'border-white/10'}`}
+                                    onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                                    onDragLeave={() => setIsDraggingOver(false)}
+                                    onDrop={(e) => handleDrop(e, 'logo')}
+                                >
                                     <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logo')} />
                                     {logoUrl ? (
                                         <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-4" />
@@ -1706,7 +1725,12 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         <div className="space-y-2">
                             <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Banner da Empresa</Label>
                             <div className="relative h-40 group">
-                                <label className="h-full w-full rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 overflow-hidden shadow-inner block">
+                                <label 
+                                    className={`h-full w-full rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer bg-black/20 overflow-hidden shadow-inner block ${isDraggingOver ? 'border-primary ring-2 ring-primary/20' : 'border-white/10'}`}
+                                    onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                                    onDragLeave={() => setIsDraggingOver(false)}
+                                    onDrop={(e) => handleDrop(e, 'banner')}
+                                >
                                     <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner')} />
                                     {bannerUrl ? (
                                         <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
@@ -1948,8 +1972,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                                     </Button>
                                 </div>
                             ))}
-                            <label className="flex items-center justify-center gap-3 p-4 rounded-2xl border-2 border-dashed border-white/10 hover:border-primary/50 bg-black/20 transition-all cursor-pointer group">
-                                <input type="file" className="hidden" accept="application/pdf" multiple onChange={(e) => handleFileUpload(e, 'document')} />
+                                <label 
+                                    className={`flex items-center justify-center gap-3 p-4 rounded-2xl border-2 border-dashed hover:border-primary/50 bg-black/20 transition-all cursor-pointer group ${isDraggingOver ? 'border-primary ring-2 ring-primary/20' : 'border-white/10'}`}
+                                    onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                                    onDragLeave={() => setIsDraggingOver(false)}
+                                    onDrop={(e) => handleDrop(e, 'document')}
+                                >
+                                    <input type="file" className="hidden" accept="application/pdf" multiple onChange={(e) => handleFileUpload(e, 'document')} />
                                 <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
                                 <span className="text-[10px] font-black uppercase text-muted-foreground group-hover:text-primary italic">Adicionar PDF</span>
                             </label>
