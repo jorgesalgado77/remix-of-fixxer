@@ -1096,6 +1096,11 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     failedUploads: File[];
     setFailedUploads: React.Dispatch<React.SetStateAction<File[]>>;
 }) {
+    const [userEmail, setUserEmail] = useState("");
+    const [companyName, setCompanyName] = useState("");
+    const [socialName, setSocialName] = useState("");
+    const [responsibleName, setResponsibleName] = useState("");
+    const [emailContact, setEmailContact] = useState("");
     const [cnpj, setCnpj] = useState("");
     const [whatsapp, setWhatsapp] = useState("");
     const [phone, setPhone] = useState("");
@@ -1106,8 +1111,80 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
     const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data: { user } } = await supabaseExternal.auth.getUser();
+                if (!user) return;
+                
+                setUserEmail(user.email || "");
+
+                // 1. Tentar carregar do LocalStorage primeiro (fallback/cache rápido)
+                const cachedData = localStorage.getItem(`fixxer_profile_${user.email}`);
+                if (cachedData) {
+                    const parsed = JSON.parse(cachedData);
+                    setCompanyName(parsed.companyName || "");
+                    setSocialName(parsed.socialName || "");
+                    setCnpj(parsed.cnpj || "");
+                    setResponsibleName(parsed.responsibleName || "");
+                    setEmailContact(parsed.emailContact || "");
+                    setWhatsapp(parsed.whatsapp || "");
+                    setPhone(parsed.phone || "");
+                    setCep(parsed.cep || "");
+                    setActivityBranch(parsed.activityBranch || "");
+                    setLogoUrl(parsed.logoUrl || null);
+                    setBannerUrl(parsed.bannerUrl || null);
+                    setGalleryUrls(parsed.galleryUrls || []);
+                    setVideoUrls(parsed.videoUrls || []);
+                }
+
+                // 2. Buscar dados reais do Supabase
+                const { data, error } = await supabaseExternal
+                    .from('store_profiles')
+                    .select('*')
+                    .eq('user_email', user.email)
+                    .single();
+
+                if (data && !error) {
+                    setCompanyName(data.company_name || "");
+                    setSocialName(data.social_name || "");
+                    setCnpj(data.cnpj || "");
+                    setResponsibleName(data.responsible_name || "");
+                    setEmailContact(data.email_contact || user.email || "");
+                    setWhatsapp(data.whatsapp || "");
+                    setPhone(data.phone || "");
+                    setCep(data.zipcode || "");
+                    setActivityBranch(data.activity_branch || "");
+                    setLogoUrl(data.logo_url || null);
+                    setBannerUrl(data.banner_url || null);
+                    setGalleryUrls(data.gallery_urls || []);
+                    setVideoUrls(data.video_urls || []);
+                    
+                    // Atualizar o cache com dados frescos do banco
+                    localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
+                        companyName: data.company_name,
+                        socialName: data.social_name,
+                        cnpj: data.cnpj,
+                        responsibleName: data.responsible_name,
+                        emailContact: data.email_contact,
+                        whatsapp: data.whatsapp,
+                        phone: data.phone,
+                        cep: data.zipcode,
+                        activityBranch: data.activity_branch,
+                        logoUrl: data.logo_url,
+                        bannerUrl: data.banner_url,
+                        galleryUrls: data.gallery_urls,
+                        videoUrls: data.video_urls
+                    }));
+                }
+            } catch (err) {
+                console.error("Erro ao carregar perfil:", err);
+            }
+        };
+
+        fetchProfile();
         setEmergencySetGallery(() => setGalleryUrls);
     }, [setEmergencySetGallery]);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -1426,30 +1503,30 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome Fantasia da Empresa *</Label>
-                           <Input required placeholder="FIXXER Móveis Planejados" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social *</Label>
-                           <Input required placeholder="FIXXER LTDA" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ *</Label>
-                           <IMaskInput
-                             mask="00.000.000/0000-00"
-                             value={cnpj}
-                             onAccept={(value) => setCnpj(value)}
-                             required 
-                             placeholder="00.000.000/0001-00" 
-                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary/50 transition-all" 
-                           />
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório) *</Label>
-                           <Input required placeholder="Digite o nome do responsável" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">E-mail de Contato Principal *</Label>
-                           <Input required type="email" placeholder="contato@fixxer.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                            <Input required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="FIXXER Móveis Planejados" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social *</Label>
+                            <Input required value={socialName} onChange={(e) => setSocialName(e.target.value)} placeholder="FIXXER LTDA" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ *</Label>
+                            <IMaskInput
+                              mask="00.000.000/0000-00"
+                              value={cnpj}
+                              onAccept={(value) => setCnpj(value)}
+                              required 
+                              placeholder="00.000.000/0001-00" 
+                              className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary/50 transition-all" 
+                            />
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório) *</Label>
+                            <Input required value={responsibleName} onChange={(e) => setResponsibleName(e.target.value)} placeholder="Digite o nome do responsável" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">E-mail de Contato Principal *</Label>
+                            <Input required type="email" value={emailContact} onChange={(e) => setEmailContact(e.target.value)} placeholder="contato@fixxer.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
@@ -1573,11 +1650,11 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Número *</Label>
-                           <Input required placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Input required value={address.numero} onChange={(e) => setAddress({...address, numero: e.target.value})} placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="md:col-span-2 space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Complemento</Label>
-                           <Input placeholder="Sala, Bloco, etc." className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                           <Input value={address.complemento} onChange={(e) => setAddress({...address, complemento: e.target.value})} placeholder="Sala, Bloco, etc." className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                     </div>
                  </div>
@@ -1840,19 +1917,72 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     </div>
 
                     <Button 
-                        onClick={() => {
-                            setIsProfileComplete(true);
-                            toast.info("Dados Salvos com Sucesso", {
-                                description: "As informações da sua empresa foram atualizadas e a dashboard completa foi liberada.",
-                            });
-                            // Pequeno delay para permitir ver o toast antes de voltar
-                            setTimeout(() => {
-                               window.dispatchEvent(new CustomEvent('change-tab', { detail: 'dashboard' }));
-                            }, 800);
+                        disabled={isSaving}
+                        onClick={async () => {
+                            setIsSaving(true);
+                            const toastId = toast.loading("Salvando perfil...");
+                            try {
+                                const { data: { user } } = await supabaseExternal.auth.getUser();
+                                if (!user) throw new Error("Usuário não logado");
+
+                                const formData = {
+                                    user_id: user.id,
+                                    user_email: user.email,
+                                    company_name: companyName,
+                                    social_name: socialName,
+                                    cnpj: cnpj,
+                                    responsible_name: responsibleName,
+                                    email_contact: emailContact,
+                                    whatsapp: whatsapp,
+                                    phone: phone,
+                                    zipcode: cep,
+                                    address: address.logradouro,
+                                    neighborhood: address.bairro,
+                                    city: address.localidade,
+                                    state: address.uf,
+                                    address_number: address.numero,
+                                    address_complement: address.complemento,
+                                    activity_branch: activityBranch,
+                                    logo_url: logoUrl,
+                                    banner_url: bannerUrl,
+                                    gallery_urls: galleryUrls,
+                                    video_urls: videoUrls,
+                                    updated_at: new Date().toISOString()
+                                };
+
+                                const { error } = await supabaseExternal
+                                    .from('store_profiles')
+                                    .upsert(formData, { onConflict: 'user_id' });
+
+                                if (error) throw error;
+
+                                // Salvar no LocalStorage como garantia
+                                localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
+                                    companyName, socialName, cnpj, responsibleName, emailContact,
+                                    whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
+                                    galleryUrls, videoUrls
+                                }));
+
+                                setIsProfileComplete(true);
+                                toast.success("Dados do perfil salvos com sucesso!", {
+                                    id: toastId,
+                                    description: "Suas informações já estão atualizadas na plataforma.",
+                                    icon: "✅"
+                                });
+
+                                setTimeout(() => {
+                                   window.dispatchEvent(new CustomEvent('change-tab', { detail: 'dashboard' }));
+                                }, 800);
+                            } catch (err) {
+                                console.error(err);
+                                toast.error("Erro ao salvar perfil. Tente novamente.", { id: toastId });
+                            } finally {
+                                setIsSaving(false);
+                            }
                         }}
-                        className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98]"
+                        className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98] disabled:opacity-50"
                     >
-                        Salvar Todas as Alterações
+                        {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
                     </Button>
                  </div>
             </div>
