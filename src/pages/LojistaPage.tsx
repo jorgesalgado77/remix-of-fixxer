@@ -1111,6 +1111,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
     const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
+    const [documents, setDocuments] = useState<{name: string, url: string, size: number}[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
@@ -1138,6 +1139,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     setBannerUrl(parsed.bannerUrl || null);
                     setGalleryUrls(parsed.galleryUrls || []);
                     setVideoUrls(parsed.videoUrls || []);
+                    setDocuments(parsed.documents || []);
                 }
 
                 // 2. Buscar dados reais do Supabase
@@ -1161,6 +1163,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     setBannerUrl(data.banner_url || null);
                     setGalleryUrls(data.gallery_urls || []);
                     setVideoUrls(data.video_urls || []);
+                    setDocuments(data.documents || []);
                     
                     // Atualizar o cache com dados frescos do banco
                     localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
@@ -1176,7 +1179,8 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         logoUrl: data.logo_url,
                         bannerUrl: data.banner_url,
                         galleryUrls: data.gallery_urls,
-                        videoUrls: data.video_urls
+                        videoUrls: data.video_urls,
+                        documents: data.documents
                     }));
                 }
             } catch (err) {
@@ -1322,9 +1326,9 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     };
 
     const [cropImage, setCropImage] = useState<string | null>(null);
-    const [cropType, setCropType] = useState<'logo' | 'banner' | 'gallery' | 'video' | null>(null);
+    const [cropType, setCropType] = useState<'logo' | 'banner' | 'gallery' | 'video' | 'document' | null>(null);
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery' | 'video') => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document') => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
 
@@ -1339,8 +1343,9 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
         const uploadPromises = files.map(async (file) => {
             // Validações
             const isVideo = type === 'video';
-            const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024; // 50MB video, 5MB image
-            const allowedTypes = isVideo ? ['video/mp4', 'video/quicktime'] : ['image/jpeg', 'image/png', 'image/webp'];
+            const isDoc = type === 'document';
+            const maxSize = isVideo ? 50 * 1024 * 1024 : (isDoc ? 10 * 1024 * 1024 : 5 * 1024 * 1024);
+            const allowedTypes = isVideo ? ['video/mp4', 'video/quicktime'] : (isDoc ? ['application/pdf'] : ['image/jpeg', 'image/png', 'image/webp']);
 
             if (!allowedTypes.includes(file.type)) {
                 toast.error("Formato inválido", {
@@ -1367,33 +1372,42 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                 return null;
             }
 
-            const folder = type === 'video' ? 'videos' : type === 'gallery' ? 'gallery' : 'branding';
+            const folder = type === 'video' ? 'videos' : type === 'gallery' ? 'gallery' : type === 'document' ? 'documents' : 'branding';
             const url = await uploadFile(file, 'media', folder);
             
             if (url) {
                 toast.success("Upload concluído", {
                     description: `${file.name} está pronto.`
                 });
+                if (type === 'document') {
+                    return { name: file.name, url, size: file.size };
+                }
             } else {
                 setFailedUploads(prev => [...prev, file]);
             }
             return url;
         });
 
-        const urls = (await Promise.all(uploadPromises)).filter(url => url !== null) as string[];
+        const results = (await Promise.all(uploadPromises)).filter(res => res !== null);
         
-        if (urls.length > 0) {
-            if (type === 'logo') setLogoUrl(urls[0]);
-            else if (type === 'banner') setBannerUrl(urls[0]);
+        if (results.length > 0) {
+            if (type === 'logo') setLogoUrl(results[0] as string);
+            else if (type === 'banner') setBannerUrl(results[0] as string);
             else if (type === 'gallery') {
+                const urls = results as string[];
                 const newGallery = [...galleryUrls, ...urls];
                 setGalleryUrls(newGallery);
                 saveMediaOrder('gallery', newGallery);
             }
             else if (type === 'video') {
+                const urls = results as string[];
                 const newVideos = [...videoUrls.slice(-(2 - urls.length)), ...urls];
                 setVideoUrls(newVideos);
                 saveMediaOrder('video', newVideos);
+            }
+            else if (type === 'document') {
+                const newDocs = results as {name: string, url: string, size: number}[];
+                setDocuments(prev => [...prev, ...newDocs]);
             }
         }
         
@@ -1416,7 +1430,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
         });
     };
 
-    const handleDrop = async (e: React.DragEvent, type: 'gallery' | 'video') => {
+    const handleDrop = async (e: React.DragEvent, type: 'gallery' | 'video' | 'document') => {
         e.preventDefault();
         setIsDraggingOver(false);
         const files = Array.from(e.dataTransfer.files);
@@ -1907,6 +1921,40 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                             </div>
                         </DndContext>
                     </div>
+                    
+                    <div className="space-y-4 pt-6 border-t border-white/5">
+                        <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center justify-between">
+                            Documentos e Catálogos (PDF)
+                        </Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {documents.map((doc, index) => (
+                                <div key={index} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400">
+                                            <Download className="w-5 h-5" />
+                                        </div>
+                                        <div className="overflow-hidden">
+                                            <p className="text-[10px] font-black text-white uppercase italic truncate max-w-[150px]">{doc.name}</p>
+                                            <p className="text-[8px] text-muted-foreground font-bold uppercase">{(doc.size / 1024 / 1024).toFixed(2)} MB</p>
+                                        </div>
+                                    </div>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={() => confirmRemoval('documento', () => setDocuments(prev => prev.filter((_, i) => i !== index)))}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <label className="flex items-center justify-center gap-3 p-4 rounded-2xl border-2 border-dashed border-white/10 hover:border-primary/50 bg-black/20 transition-all cursor-pointer group">
+                                <input type="file" className="hidden" accept="application/pdf" multiple onChange={(e) => handleFileUpload(e, 'document')} />
+                                <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                                <span className="text-[10px] font-black uppercase text-muted-foreground group-hover:text-primary italic">Adicionar PDF</span>
+                            </label>
+                        </div>
+                    </div>
 
                  </div>
 
@@ -1947,6 +1995,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                                     banner_url: bannerUrl,
                                     gallery_urls: galleryUrls,
                                     video_urls: videoUrls,
+                                    documents: documents,
                                     updated_at: new Date().toISOString()
                                 };
 
@@ -1960,7 +2009,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                                 localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
                                     companyName, socialName, cnpj, responsibleName, emailContact,
                                     whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
-                                    galleryUrls, videoUrls
+                                    galleryUrls, videoUrls, documents
                                 }));
 
                                 setIsProfileComplete(true);
