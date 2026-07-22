@@ -1503,30 +1503,30 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome Fantasia da Empresa *</Label>
-                           <Input required placeholder="FIXXER Móveis Planejados" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social *</Label>
-                           <Input required placeholder="FIXXER LTDA" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ *</Label>
-                           <IMaskInput
-                             mask="00.000.000/0000-00"
-                             value={cnpj}
-                             onAccept={(value) => setCnpj(value)}
-                             required 
-                             placeholder="00.000.000/0001-00" 
-                             className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary/50 transition-all" 
-                           />
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório) *</Label>
-                           <Input required placeholder="Digite o nome do responsável" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">E-mail de Contato Principal *</Label>
-                           <Input required type="email" placeholder="contato@fixxer.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                            <Input required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="FIXXER Móveis Planejados" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social *</Label>
+                            <Input required value={socialName} onChange={(e) => setSocialName(e.target.value)} placeholder="FIXXER LTDA" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ *</Label>
+                            <IMaskInput
+                              mask="00.000.000/0000-00"
+                              value={cnpj}
+                              onAccept={(value) => setCnpj(value)}
+                              required 
+                              placeholder="00.000.000/0001-00" 
+                              className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary/50 transition-all" 
+                            />
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório) *</Label>
+                            <Input required value={responsibleName} onChange={(e) => setResponsibleName(e.target.value)} placeholder="Digite o nome do responsável" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">E-mail de Contato Principal *</Label>
+                            <Input required type="email" value={emailContact} onChange={(e) => setEmailContact(e.target.value)} placeholder="contato@fixxer.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
