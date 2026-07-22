@@ -1096,6 +1096,11 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     failedUploads: File[];
     setFailedUploads: React.Dispatch<React.SetStateAction<File[]>>;
 }) {
+    const [userEmail, setUserEmail] = useState("");
+    const [companyName, setCompanyName] = useState("");
+    const [socialName, setSocialName] = useState("");
+    const [responsibleName, setResponsibleName] = useState("");
+    const [emailContact, setEmailContact] = useState("");
     const [cnpj, setCnpj] = useState("");
     const [whatsapp, setWhatsapp] = useState("");
     const [phone, setPhone] = useState("");
@@ -1106,8 +1111,80 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
     const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data: { user } } = await supabaseExternal.auth.getUser();
+                if (!user) return;
+                
+                setUserEmail(user.email || "");
+
+                // 1. Tentar carregar do LocalStorage primeiro (fallback/cache rápido)
+                const cachedData = localStorage.getItem(`fixxer_profile_${user.email}`);
+                if (cachedData) {
+                    const parsed = JSON.parse(cachedData);
+                    setCompanyName(parsed.companyName || "");
+                    setSocialName(parsed.socialName || "");
+                    setCnpj(parsed.cnpj || "");
+                    setResponsibleName(parsed.responsibleName || "");
+                    setEmailContact(parsed.emailContact || "");
+                    setWhatsapp(parsed.whatsapp || "");
+                    setPhone(parsed.phone || "");
+                    setCep(parsed.cep || "");
+                    setActivityBranch(parsed.activityBranch || "");
+                    setLogoUrl(parsed.logoUrl || null);
+                    setBannerUrl(parsed.bannerUrl || null);
+                    setGalleryUrls(parsed.galleryUrls || []);
+                    setVideoUrls(parsed.videoUrls || []);
+                }
+
+                // 2. Buscar dados reais do Supabase
+                const { data, error } = await supabaseExternal
+                    .from('store_profiles')
+                    .select('*')
+                    .eq('user_email', user.email)
+                    .single();
+
+                if (data && !error) {
+                    setCompanyName(data.company_name || "");
+                    setSocialName(data.social_name || "");
+                    setCnpj(data.cnpj || "");
+                    setResponsibleName(data.responsible_name || "");
+                    setEmailContact(data.email_contact || user.email || "");
+                    setWhatsapp(data.whatsapp || "");
+                    setPhone(data.phone || "");
+                    setCep(data.zipcode || "");
+                    setActivityBranch(data.activity_branch || "");
+                    setLogoUrl(data.logo_url || null);
+                    setBannerUrl(data.banner_url || null);
+                    setGalleryUrls(data.gallery_urls || []);
+                    setVideoUrls(data.video_urls || []);
+                    
+                    // Atualizar o cache com dados frescos do banco
+                    localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
+                        companyName: data.company_name,
+                        socialName: data.social_name,
+                        cnpj: data.cnpj,
+                        responsibleName: data.responsible_name,
+                        emailContact: data.email_contact,
+                        whatsapp: data.whatsapp,
+                        phone: data.phone,
+                        cep: data.zipcode,
+                        activityBranch: data.activity_branch,
+                        logoUrl: data.logo_url,
+                        bannerUrl: data.banner_url,
+                        galleryUrls: data.gallery_urls,
+                        videoUrls: data.video_urls
+                    }));
+                }
+            } catch (err) {
+                console.error("Erro ao carregar perfil:", err);
+            }
+        };
+
+        fetchProfile();
         setEmergencySetGallery(() => setGalleryUrls);
     }, [setEmergencySetGallery]);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
