@@ -1328,7 +1328,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     const [cropImage, setCropImage] = useState<string | null>(null);
     const [cropType, setCropType] = useState<'logo' | 'banner' | 'gallery' | 'video' | 'document' | null>(null);
 
-    const const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document') => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document') => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
 
@@ -1388,20 +1388,26 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
             return url;
         });
 
-        const urls = (await Promise.all(uploadPromises)).filter(url => url !== null) as string[];
+        const results = (await Promise.all(uploadPromises)).filter(res => res !== null);
         
-        if (urls.length > 0) {
-            if (type === 'logo') setLogoUrl(urls[0]);
-            else if (type === 'banner') setBannerUrl(urls[0]);
+        if (results.length > 0) {
+            if (type === 'logo') setLogoUrl(results[0] as string);
+            else if (type === 'banner') setBannerUrl(results[0] as string);
             else if (type === 'gallery') {
+                const urls = results as string[];
                 const newGallery = [...galleryUrls, ...urls];
                 setGalleryUrls(newGallery);
                 saveMediaOrder('gallery', newGallery);
             }
             else if (type === 'video') {
+                const urls = results as string[];
                 const newVideos = [...videoUrls.slice(-(2 - urls.length)), ...urls];
                 setVideoUrls(newVideos);
                 saveMediaOrder('video', newVideos);
+            }
+            else if (type === 'document') {
+                const newDocs = results as {name: string, url: string, size: number}[];
+                setDocuments(prev => [...prev, ...newDocs]);
             }
         }
         
@@ -1424,7 +1430,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
         });
     };
 
-    const handleDrop = async (e: React.DragEvent, type: 'gallery' | 'video') => {
+    const handleDrop = async (e: React.DragEvent, type: 'gallery' | 'video' | 'document') => {
         e.preventDefault();
         setIsDraggingOver(false);
         const files = Array.from(e.dataTransfer.files);
