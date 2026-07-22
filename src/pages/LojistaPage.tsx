@@ -1917,19 +1917,72 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     </div>
 
                     <Button 
-                        onClick={() => {
-                            setIsProfileComplete(true);
-                            toast.info("Dados Salvos com Sucesso", {
-                                description: "As informações da sua empresa foram atualizadas e a dashboard completa foi liberada.",
-                            });
-                            // Pequeno delay para permitir ver o toast antes de voltar
-                            setTimeout(() => {
-                               window.dispatchEvent(new CustomEvent('change-tab', { detail: 'dashboard' }));
-                            }, 800);
+                        disabled={isSaving}
+                        onClick={async () => {
+                            setIsSaving(true);
+                            const toastId = toast.loading("Salvando perfil...");
+                            try {
+                                const { data: { user } } = await supabaseExternal.auth.getUser();
+                                if (!user) throw new Error("Usuário não logado");
+
+                                const formData = {
+                                    user_id: user.id,
+                                    user_email: user.email,
+                                    company_name: companyName,
+                                    social_name: socialName,
+                                    cnpj: cnpj,
+                                    responsible_name: responsibleName,
+                                    email_contact: emailContact,
+                                    whatsapp: whatsapp,
+                                    phone: phone,
+                                    zipcode: cep,
+                                    address: address.logradouro,
+                                    neighborhood: address.bairro,
+                                    city: address.localidade,
+                                    state: address.uf,
+                                    address_number: address.numero,
+                                    address_complement: address.complemento,
+                                    activity_branch: activityBranch,
+                                    logo_url: logoUrl,
+                                    banner_url: bannerUrl,
+                                    gallery_urls: galleryUrls,
+                                    video_urls: videoUrls,
+                                    updated_at: new Date().toISOString()
+                                };
+
+                                const { error } = await supabaseExternal
+                                    .from('store_profiles')
+                                    .upsert(formData, { onConflict: 'user_id' });
+
+                                if (error) throw error;
+
+                                // Salvar no LocalStorage como garantia
+                                localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
+                                    companyName, socialName, cnpj, responsibleName, emailContact,
+                                    whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
+                                    galleryUrls, videoUrls
+                                }));
+
+                                setIsProfileComplete(true);
+                                toast.success("Dados do perfil salvos com sucesso!", {
+                                    id: toastId,
+                                    description: "Suas informações já estão atualizadas na plataforma.",
+                                    icon: "✅"
+                                });
+
+                                setTimeout(() => {
+                                   window.dispatchEvent(new CustomEvent('change-tab', { detail: 'dashboard' }));
+                                }, 800);
+                            } catch (err) {
+                                console.error(err);
+                                toast.error("Erro ao salvar perfil. Tente novamente.", { id: toastId });
+                            } finally {
+                                setIsSaving(false);
+                            }
                         }}
-                        className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98]"
+                        className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98] disabled:opacity-50"
                     >
-                        Salvar Todas as Alterações
+                        {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
                     </Button>
                  </div>
             </div>
