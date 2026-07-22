@@ -582,7 +582,7 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
     );
 }
 
-function DashboardView({ rating, getRatingColor }: { rating: number; getRatingColor: (val: number) => string }) {
+function DashboardView({ rating, getRatingColor, handleTabChange, isProfileComplete }: { rating: number; getRatingColor: (val: number) => string; handleTabChange: (tab: string) => void; isProfileComplete: boolean }) {
     const [filter, setFilter] = useState('Hoje');
     const [statusFilter, setStatusFilter] = useState('Todos');
     const [searchTerm, setSearchTerm] = useState('');
