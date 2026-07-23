@@ -350,6 +350,119 @@ const MOCK_REQUESTS: B2BRequest[] = [
     deadline: "Início em 10 dias",
     paymentTerms: "45 dias fora mês",
   },
+  // ============ SERVIÇOS EM ANDAMENTO — LOJISTAS & PRESTADORES ============
+  {
+    id: "b2b-013",
+    store: { id: "store-planejados-sorocaba", name: "Design Planejados Sorocaba", initials: "DP", verified: true },
+    requesterType: "lojista",
+    city: "Sorocaba", state: "SP", rating: 4.85, postedAt: "há 30 min",
+    status: "em_andamento", sector: "Ferragens & Insumos",
+    title: "Reposição URGENTE de Corrediças Blum — Obra em Execução",
+    description:
+      "Obra iniciada na segunda, faltaram 12 pares de corrediças Blum Tandem 55cm. Preciso hoje para não parar a montagem.",
+    specs: [
+      "Corrediça Blum Tandem 55cm — 12 pares",
+      "Push-open integrado",
+      "Retirada em Sorocaba ou entrega hoje",
+    ],
+    quantity: "12 pares",
+    deadline: "Entrega hoje até 17h",
+    paymentTerms: "PIX à vista",
+  },
+  {
+    id: "b2b-014",
+    store: { id: "prest-carlos-conf", name: "Carlos Silva — Conferente Técnico", initials: "CS", verified: true },
+    requesterType: "prestador",
+    city: "Sorocaba", state: "SP", rating: 4.9, postedAt: "há 1 h",
+    status: "em_andamento", sector: "Ferragens & Insumos",
+    title: "Kit de Ferragens Complementar — O.S. em Execução (Alphaville)",
+    description:
+      "Estou executando conferência em Alphaville e identifiquei falta de dobradiças caneco 35mm curvas. Preciso fornecedor com entrega direta na obra amanhã cedo.",
+    specs: [
+      "Dobradiça caneco 35mm curva — 24 un.",
+      "Amortecedor hidráulico Blum — 24 un.",
+      "Parafusos 4x16 chip — 200 un.",
+      "Entrega direta no canteiro",
+    ],
+    quantity: "Kit completo",
+    deadline: "Entrega amanhã 8h",
+    paymentTerms: "Faturado 15 dias (nota do prestador)",
+  },
+  {
+    id: "b2b-015",
+    store: { id: "prest-bruno-mont", name: "Bruno Montador Pro", initials: "BM", verified: true },
+    requesterType: "prestador",
+    city: "Jundiaí", state: "SP", rating: 4.95, postedAt: "há 2 h",
+    status: "em_andamento", sector: "Vidraçaria & Espelhos",
+    title: "Espelho Bronze 4mm Bisotê — Substituição em Obra Aberta",
+    description:
+      "Estou finalizando montagem de closet e o espelho chegou com defeito de fábrica. Preciso reposição rápida com corte já feito.",
+    specs: [
+      "Espelho Bronze 4mm 1.80m x 0.60m — 1 peça",
+      "Bisotê 2cm nas 4 bordas",
+      "Furação para roldana Blum",
+    ],
+    quantity: "1 peça",
+    deadline: "Entrega em 48h",
+    paymentTerms: "PIX na entrega",
+    attachment:
+      "https://images.unsplash.com/photo-1616627547584-bf28cee262db?auto=format&fit=crop&w=1200&q=70",
+  },
+  {
+    id: "b2b-016",
+    store: { id: "prest-ana-proj", name: "Ana Projetos — Projetista 3D", initials: "AP", verified: true },
+    requesterType: "prestador",
+    city: "Itu", state: "SP", rating: 4.8, postedAt: "há 4 h",
+    status: "em_andamento", sector: "Softwares & Maquinário",
+    title: "Licença Adicional Promob — Projeto em Curso para Lojista",
+    description:
+      "Assumi 3 projetos executivos para uma marcenaria de Itu e preciso de uma estação Promob extra por 30 dias para paralelizar entregas.",
+    specs: [
+      "Licença Promob Plus — 30 dias",
+      "Biblioteca de ferragens Blum atualizada",
+      "Suporte técnico dedicado",
+    ],
+    quantity: "1 licença mensal",
+    deadline: "Ativação imediata",
+    paymentTerms: "Cartão em 3x sem juros",
+  },
+  {
+    id: "b2b-017",
+    store: { id: "prest-lucia-3d", name: "Lúcia Interiores 3D", initials: "LI", verified: true },
+    requesterType: "prestador",
+    city: "Sorocaba", state: "SP", rating: 4.85, postedAt: "há 6 h",
+    status: "em_andamento", sector: "Iluminação LED",
+    title: "Fita LED COB p/ Nichos — Projeto em Instalação Final",
+    description:
+      "Finalizando instalação de home theater. Cliente pediu upgrade de iluminação nos nichos: fita COB alta densidade + fonte compatível.",
+    specs: [
+      "Fita LED COB 24V 3000K — 8 metros",
+      "Fonte 24V 60W — 1 un.",
+      "Perfil embutir alumínio — 8m",
+      "Difusor opalino",
+    ],
+    quantity: "Kit iluminação nichos",
+    deadline: "Retirada em 3 dias",
+    paymentTerms: "PIX à vista 5% desc.",
+  },
+  {
+    id: "b2b-018",
+    store: { id: "prest-pedro-inst", name: "Pedro Transportes & Instalações", initials: "PT" },
+    requesterType: "prestador",
+    city: "Campinas", state: "SP", rating: 4.7, postedAt: "há 12 h",
+    status: "em_andamento", sector: "Ferragens & Insumos",
+    title: "Puxadores Alumínio Escovado — Complemento para O.S. Ativa",
+    description:
+      "Cliente final aprovou troca de puxadores durante montagem. Preciso 18 unidades 128mm alumínio escovado com entrega até amanhã.",
+    specs: [
+      "Puxador tubular 128mm — 18 un.",
+      "Acabamento alumínio escovado",
+      "Fixação inclusa",
+    ],
+    quantity: "18 un.",
+    deadline: "Entrega amanhã",
+    paymentTerms: "Boleto 7 dias",
+  },
 ];
 
 const PAGE_SIZE = 4;
