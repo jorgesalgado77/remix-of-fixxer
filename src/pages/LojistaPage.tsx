@@ -74,6 +74,13 @@ export function LojistaDashboard() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [profileSummary, setProfileSummary] = useState<{
+    id?: string;
+    companyName?: string;
+    logoUrl?: string | null;
+    city?: string;
+    state?: string;
+  }>({});
   const [rating, setRating] = useState(4.9);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -88,6 +95,112 @@ export function LojistaDashboard() {
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
+
+  // Carrega dados do perfil do lojista para calcular completude e alimentar o card do usuário
+  useEffect(() => {
+    let cancelled = false;
+
+    const evaluate = (data: any) => {
+      if (!data) return;
+      const required = [
+        data.company_name,
+        data.cnpj,
+        data.responsible_name,
+        data.email_contact,
+        data.whatsapp,
+        data.phone,
+        data.zipcode,
+        data.activity_branch,
+        data.logo_url,
+      ];
+      const complete = required.every((v) => typeof v === "string" && v.trim().length > 0);
+      if (cancelled) return;
+      setIsProfileComplete(complete);
+      setProfileSummary({
+        id: data.id,
+        companyName: data.company_name || "",
+        logoUrl: data.logo_url || null,
+        city: data.city || "",
+        state: data.state || "",
+      });
+      if (data.id) {
+        try { localStorage.setItem("fixxer_lojista_id", data.id); } catch {}
+      }
+    };
+
+    (async () => {
+      try {
+        const { data: { user } } = await supabaseExternal.auth.getUser();
+        if (!user?.email) return;
+
+        // Fallback do cache local para evitar flicker
+        const cached = localStorage.getItem(`fixxer_profile_${user.email}`);
+        if (cached) {
+          try {
+            const p = JSON.parse(cached);
+            evaluate({
+              id: localStorage.getItem("fixxer_lojista_id") || undefined,
+              company_name: p.companyName,
+              cnpj: p.cnpj,
+              responsible_name: p.responsibleName,
+              email_contact: p.emailContact,
+              whatsapp: p.whatsapp,
+              phone: p.phone,
+              zipcode: p.cep,
+              activity_branch: p.activityBranch,
+              logo_url: p.logoUrl,
+              city: p.city,
+              state: p.state,
+            });
+          } catch {}
+        }
+
+        const { data, error } = await supabaseExternal
+          .from("store_profiles")
+          .select("*")
+          .eq("user_email", user.email)
+          .maybeSingle();
+
+        if (!error && data) evaluate(data);
+      } catch (err) {
+        console.warn("[LojistaDashboard] falha ao verificar completude do perfil:", err);
+      }
+    })();
+
+    const onProfileSaved = () => {
+      // Recarrega quando o ProfileView emite evento após salvar
+      (async () => {
+        try {
+          const { data: { user } } = await supabaseExternal.auth.getUser();
+          if (!user?.email) return;
+          const { data } = await supabaseExternal
+            .from("store_profiles")
+            .select("*")
+            .eq("user_email", user.email)
+            .maybeSingle();
+          if (data) evaluate(data);
+        } catch {}
+      })();
+    };
+    window.addEventListener("fixxer:profile-saved", onProfileSaved);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("fixxer:profile-saved", onProfileSaved);
+    };
+  }, []);
+
+  const openPublicProfile = () => {
+    const id = profileSummary.id || (typeof window !== "undefined" ? localStorage.getItem("fixxer_lojista_id") : null);
+    if (!id) {
+      toast.error("Perfil público indisponível", {
+        description: "Salve o perfil da empresa ao menos uma vez para gerar o link público.",
+      });
+      setActiveTab("profile");
+      return;
+    }
+    window.open(`/lojista/${id}`, "_blank", "noopener,noreferrer");
+  };
 
   const loadFavorites = async () => {
     setLoadingFavorites(true);
@@ -332,7 +445,7 @@ export function LojistaDashboard() {
                     </button>
                 </div>
 
-                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} />
+                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} />
 
 
                 <TooltipProvider>
@@ -361,7 +474,7 @@ export function LojistaDashboard() {
                         disabled={!isProfileComplete}
                       />
 
-                      <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
+                      <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={false} onClick={() => { setMobileMenuOpen(false); openPublicProfile(); }} />
 
                       <SidebarButton 
                         icon={<Heart className="w-5 h-5 text-red-500 fill-red-500/20"/>} 
@@ -403,7 +516,7 @@ export function LojistaDashboard() {
             <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
         </div>
 
-        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} />
+        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} />
 
 
         <TooltipProvider>
@@ -422,7 +535,7 @@ export function LojistaDashboard() {
                 disabled={!isProfileComplete}
               />
 
-              <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
+              <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={false} onClick={openPublicProfile} />
 
               <SidebarButton 
                 icon={<Heart className="w-4 h-4 text-red-500 fill-red-500/20"/>} 
@@ -634,19 +747,31 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string }) {
+function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string } }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full border-2 border-primary/50 p-0.5 shadow-[0_0_15px_rgba(0,255,135,0.2)]">
                     <div className="w-full h-full rounded-full bg-black/40 flex items-center justify-center text-primary overflow-hidden">
-                        <Store className="w-6 h-6" />
+                        {profile?.logoUrl ? (
+                            <img src={profile.logoUrl} alt={profile.companyName || "Logo"} className="w-full h-full object-cover" />
+                        ) : (
+                            <Store className="w-6 h-6" />
+                        )}
                     </div>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                    <div className="text-[11px] font-black text-white uppercase italic truncate">Marcenaria & Design Inovamad</div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="text-[11px] font-black text-white uppercase italic truncate">
+                        {profile?.companyName || "Complete seu perfil"}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black uppercase">🏪 Lojista</span>
+                        {(profile?.city || profile?.state) && (
+                            <span className="flex items-center gap-0.5 text-[8px] font-bold text-muted-foreground uppercase italic truncate">
+                                <MapPin className="w-2.5 h-2.5" />
+                                {[profile?.city, profile?.state].filter(Boolean).join(" / ")}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -2448,6 +2573,9 @@ function ProfileView({
                                 }
 
                                 setIsProfileComplete(true);
+                                if (typeof window !== 'undefined') {
+                                    window.dispatchEvent(new CustomEvent('fixxer:profile-saved'));
+                                }
                                 toast.success("Dados do perfil salvos com sucesso!", {
                                     id: toastId,
                                     description: "Suas informações já estão atualizadas na plataforma.",
