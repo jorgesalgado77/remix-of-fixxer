@@ -1405,8 +1405,23 @@ function ProfileView({
         }
     };
 
-    
+
     const { uploadFile, isUploading, uploadProgress } = useMediaUpload();
+
+    // Autosave defensivo: preserva tudo que foi preenchido, mesmo se algo desmontar a tela
+    useEffect(() => {
+        if (!userEmail) return;
+        const t = setTimeout(() => {
+            try {
+                localStorage.setItem(`fixxer_profile_${userEmail}`, JSON.stringify({
+                    companyName, socialName, cnpj, responsibleName, emailContact,
+                    whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
+                    galleryUrls, videoUrls, documents, socialLinks,
+                }));
+            } catch (e) { /* quota, ignora */ }
+        }, 400);
+        return () => clearTimeout(t);
+    }, [userEmail, companyName, socialName, cnpj, responsibleName, emailContact, whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl, galleryUrls, videoUrls, documents, socialLinks]);
 
     const retryFailedUpload = async (fileName: string) => {
         const file = failedUploads.find(f => f.name === fileName);
