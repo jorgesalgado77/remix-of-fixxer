@@ -20,7 +20,11 @@ import {
   Award,
   User as UserIcon,
   Sparkles,
+  ArrowUpDown,
+  ClipboardList,
+  ChevronDown,
 } from "lucide-react";
+
 
 // =============================================================================
 // TIPOS
@@ -166,6 +170,23 @@ const MOCK_VENDORS: Vendor[] = [
 
 const PAGE_SIZE = 4;
 
+type SortKey = "relevance" | "reputation" | "nearest";
+
+const SORT_LABELS: Record<SortKey, string> = {
+  relevance: "Mais relevantes",
+  reputation: "Melhor reputação",
+  nearest: "Mais perto",
+};
+
+type MyNeed = {
+  id: string;
+  title: string;
+  category: string | null;
+  location: string | null;
+  created_at: string;
+  metadata: any;
+};
+
 // =============================================================================
 // COMPONENTE PRINCIPAL
 // =============================================================================
@@ -181,10 +202,29 @@ export default function FeedClientePage() {
   const [lightbox, setLightbox] = useState<{ vendor: Vendor; index: number } | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userCity, setUserCity] = useState<string>("");
+
+  const [sortBy, setSortBy] = useState<SortKey>("relevance");
+  const [sortOpen, setSortOpen] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(false);
+
+  const [myNeeds, setMyNeeds] = useState<MyNeed[]>([]);
+  const [needsOpen, setNeedsOpen] = useState(false);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // Load session + saved favorites
+  const loadMyNeeds = useCallback(async (uid: string) => {
+    const { data, error } = await supabaseExternal
+      .from("feed_posts")
+      .select("id,title,category,location,created_at,metadata")
+      .eq("author_id", uid)
+      .eq("type", "b2c")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (!error && data) setMyNeeds(data as MyNeed[]);
+  }, []);
+
+  // Load session + saved favorites + user city + my needs
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -193,23 +233,25 @@ export default function FeedClientePage() {
       const uid = data.user?.id ?? null;
       setUserId(uid);
       if (uid) {
-        const { data: rows, error } = await supabaseExternal
-          .from("feed_post_saves")
-          .select("post_id")
-          .eq("user_id", uid);
-        if (!error && rows) {
-          setSaved(new Set(rows.map((r: any) => r.post_id)));
-        }
+        const [{ data: rows }, { data: profile }] = await Promise.all([
+          supabaseExternal.from("feed_post_saves").select("post_id").eq("user_id", uid),
+          supabaseExternal.from("profiles").select("city").eq("id", uid).maybeSingle(),
+        ]);
+        if (!mounted) return;
+        if (rows) setSaved(new Set(rows.map((r: any) => r.post_id)));
+        if (profile?.city) setUserCity(String(profile.city));
+        await loadMyNeeds(uid);
       }
     })();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [loadMyNeeds]);
 
   const filtered = useMemo(() => {
-    return MOCK_VENDORS.filter((v) => {
+    let list = MOCK_VENDORS.filter((v) => {
       if (solution !== "Todas as Opções" && !v.solutions.includes(solution)) return false;
+      if (savedOnly && !saved.has(v.id)) return false;
       if (query.trim()) {
         const q = query.toLowerCase();
         return (
@@ -220,14 +262,30 @@ export default function FeedClientePage() {
       }
       return true;
     });
-  }, [query, solution]);
+
+    if (sortBy === "reputation") {
+      list = [...list].sort(
+        (a, b) => b.rating - a.rating || b.reviews - a.reviews,
+      );
+    } else if (sortBy === "nearest") {
+      const city = userCity.trim().toLowerCase();
+      list = [...list].sort((a, b) => {
+        const aMatch = city && a.city.toLowerCase() === city ? 0 : 1;
+        const bMatch = city && b.city.toLowerCase() === city ? 0 : 1;
+        if (aMatch !== bMatch) return aMatch - bMatch;
+        return a.city.localeCompare(b.city);
+      });
+    }
+    return list;
+  }, [query, solution, savedOnly, saved, sortBy, userCity]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
+  const savedCount = saved.size;
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [query, solution]);
+  }, [query, solution, sortBy, savedOnly]);
 
   useEffect(() => {
     if (!hasMore) return;
@@ -303,6 +361,11 @@ export default function FeedClientePage() {
     [navigate],
   );
 
+  const handlePublished = useCallback(async () => {
+    if (userId) await loadMyNeeds(userId);
+    setNeedsOpen(true);
+  }, [userId, loadMyNeeds]);
+
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
@@ -354,7 +417,69 @@ export default function FeedClientePage() {
           </div>
         </button>
 
-        {/* FILTROS */}
+        {/* MINHAS NECESSIDADES */}
+        {userId && myNeeds.length > 0 && (
+          <section className={`${glassClass} border border-white/10 rounded-2xl bg-[#1A1A1B] overflow-hidden`}>
+            <button
+              onClick={() => setNeedsOpen((v) => !v)}
+              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#00FF87]/15 border border-[#00FF87]/30 flex items-center justify-center shrink-0">
+                <ClipboardList className="w-4 h-4 text-[#00FF87]" />
+              </div>
+              <div className="flex-1 text-left">
+                <div className="text-[10px] font-black uppercase tracking-widest text-white">
+                  Minhas Necessidades
+                </div>
+                <div className="text-[9px] text-muted-foreground font-bold">
+                  {myNeeds.length} publicada{myNeeds.length > 1 ? "s" : ""}
+                </div>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 text-muted-foreground transition-transform ${needsOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {needsOpen && (
+              <ul className="border-t border-white/5 divide-y divide-white/5">
+                {myNeeds.map((n) => {
+                  const status = (n.metadata?.status as string) || "active";
+                  const statusLabel =
+                    status === "active"
+                      ? "Ativa"
+                      : status === "closed"
+                        ? "Encerrada"
+                        : status === "paused"
+                          ? "Pausada"
+                          : status;
+                  const statusColor =
+                    status === "active"
+                      ? "bg-[#00FF87]/15 text-[#00FF87] border-[#00FF87]/30"
+                      : status === "closed"
+                        ? "bg-white/10 text-muted-foreground border-white/20"
+                        : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
+                  return (
+                    <li key={n.id} className="px-4 py-3 flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-white truncate">{n.title}</div>
+                        <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
+                          {n.category || "—"}
+                          {n.location ? ` · ${n.location}` : ""}
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${statusColor}`}
+                      >
+                        {statusLabel}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* FILTROS DE SOLUÇÃO */}
         <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
           {SOLUTIONS.map((s) => (
             <button
@@ -371,11 +496,73 @@ export default function FeedClientePage() {
           ))}
         </div>
 
+        {/* ORDENAÇÃO + FAVORITOS */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setSortOpen((v) => !v)}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+            >
+              <ArrowUpDown className="w-3 h-3" />
+              {SORT_LABELS[sortBy]}
+              <ChevronDown className={`w-3 h-3 transition-transform ${sortOpen ? "rotate-180" : ""}`} />
+            </button>
+            {sortOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                <div className="absolute left-0 top-full mt-2 z-20 w-48 bg-[#1A1A1B] border border-white/10 rounded-xl overflow-hidden shadow-xl">
+                  {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                    <button
+                      key={k}
+                      onClick={() => {
+                        setSortBy(k);
+                        setSortOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-colors ${
+                        sortBy === k ? "text-[#00FF87]" : "text-white"
+                      }`}
+                    >
+                      {SORT_LABELS[k]}
+                      {k === "nearest" && !userCity && (
+                        <span className="ml-2 text-[8px] font-bold text-muted-foreground normal-case">
+                          (defina sua cidade)
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <button
+            onClick={() => setSavedOnly((v) => !v)}
+            className={`ml-auto px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${
+              savedOnly
+                ? "bg-[#00FF87]/20 border-[#00FF87] text-[#00FF87]"
+                : "bg-white/5 border-white/10 hover:border-white/20 text-white"
+            }`}
+            aria-pressed={savedOnly}
+          >
+            <Bookmark className={`w-3 h-3 ${savedOnly ? "fill-current" : ""}`} />
+            Salvos
+            <span
+              className={`px-1.5 py-0.5 rounded-md text-[9px] font-black ${
+                savedOnly ? "bg-[#00FF87] text-black" : "bg-white/10 text-white"
+              }`}
+            >
+              {savedCount}
+            </span>
+          </button>
+        </div>
+
         {/* LISTA */}
         <div className="space-y-4 pt-2">
           {visible.length === 0 && (
             <div className="text-center py-16 text-muted-foreground text-xs font-medium">
-              Nenhum resultado encontrado.
+              {savedOnly
+                ? "Você ainda não salvou nenhum favorito."
+                : "Nenhum resultado encontrado."}
             </div>
           )}
           {visible.map((vendor) => (
@@ -417,12 +604,14 @@ export default function FeedClientePage() {
         <PublishModal
           userId={userId}
           onClose={() => setPublishOpen(false)}
+          onPublished={handlePublished}
           glassClass={glassClass}
         />
       )}
     </div>
   );
 }
+
 
 // =============================================================================
 // CARD
@@ -644,10 +833,12 @@ function Lightbox({
 function PublishModal({
   userId,
   onClose,
+  onPublished,
   glassClass,
 }: {
   userId: string | null;
   onClose: () => void;
+  onPublished?: () => void | Promise<void>;
   glassClass: string;
 }) {
   const [title, setTitle] = useState("");
@@ -680,6 +871,7 @@ function PublishModal({
       toast.success("Necessidade publicada!", {
         description: "Você receberá orçamentos em breve.",
       });
+      await onPublished?.();
       onClose();
     } catch (err: any) {
       console.error("[FeedCliente] publish error", err);
