@@ -428,6 +428,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       console.log("[CreateAdModal] payload =>", payload);
       await new Promise((r) => setTimeout(r, 600));
       toast.success("Serviço publicado com sucesso!");
+      discardDraft();
       resetForm();
       onClose();
     } catch (err: any) {
