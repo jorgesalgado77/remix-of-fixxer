@@ -78,7 +78,13 @@ function FeedPage() {
 
   const { ref, inView } = useInView();
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery<
+    FeedPost[],
+    Error,
+    InfiniteData<FeedPost[], number>,
+    [string, string, string, string | null, string],
+    number
+  >({
     queryKey: ["feed-posts-infinite", activeTab, searchQuery, selectedCategory, locationFilter],
     queryFn: async ({ pageParam = 0 }) => {
       const pageSize = 10;
