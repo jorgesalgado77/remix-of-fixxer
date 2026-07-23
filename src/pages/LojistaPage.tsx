@@ -2573,6 +2573,9 @@ function ProfileView({
                                 }
 
                                 setIsProfileComplete(true);
+                                if (typeof window !== 'undefined') {
+                                    window.dispatchEvent(new CustomEvent('fixxer:profile-saved'));
+                                }
                                 toast.success("Dados do perfil salvos com sucesso!", {
                                     id: toastId,
                                     description: "Suas informações já estão atualizadas na plataforma.",
