@@ -1127,7 +1127,22 @@ function CreateServiceView() {
     )
 }
 
-function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, undoStack, pushToUndo, setEmergencySetGallery, handleUndo, failedUploads, setFailedUploads }: { 
+function ProfileView({ 
+    setIsProfileComplete, 
+    rating, 
+    getRatingColor, 
+    setRating, 
+    undoStack, 
+    pushToUndo, 
+    setEmergencySetGallery, 
+    handleUndo, 
+    failedUploads, 
+    setFailedUploads,
+    activeSettingsTab,
+    setActiveSettingsTab,
+    notificationSettings,
+    setNotificationSettings
+}: { 
     setIsProfileComplete: (complete: boolean) => void; 
     rating: number; 
     getRatingColor: (val: number) => string; 
@@ -1138,6 +1153,10 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     handleUndo: () => void;
     failedUploads: File[];
     setFailedUploads: React.Dispatch<React.SetStateAction<File[]>>;
+    activeSettingsTab: string;
+    setActiveSettingsTab: (tab: string) => void;
+    notificationSettings: any;
+    setNotificationSettings: React.Dispatch<React.SetStateAction<any>>;
 }) {
     const [userEmail, setUserEmail] = useState("");
     const [companyName, setCompanyName] = useState("");
