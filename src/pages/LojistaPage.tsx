@@ -1553,6 +1553,54 @@ function ProfileView({
         }
     };
 
+    // === Especialidades: helpers ===
+    const MAX_FEATURED = 3;
+    const featuredCount = useMemo(
+        () => specialties.filter((s) => s.featured).length,
+        [specialties]
+    );
+    const normalizeTitle = (t: string) => t.trim().toLowerCase();
+    const duplicateTitleIds = useMemo(() => {
+        const seen = new Map<string, string>();
+        const dups = new Set<string>();
+        for (const s of specialties) {
+            const key = normalizeTitle(s.title);
+            if (!key) continue;
+            if (seen.has(key)) {
+                dups.add(s.id);
+                dups.add(seen.get(key)!);
+            } else {
+                seen.set(key, s.id);
+            }
+        }
+        return dups;
+    }, [specialties]);
+
+    const handleSpecialtiesDragEnd = (event: any) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        setSpecialties((items) => {
+            const oldIndex = items.findIndex((i) => i.id === active.id);
+            const newIndex = items.findIndex((i) => i.id === over.id);
+            if (oldIndex < 0 || newIndex < 0) return items;
+            return arrayMove(items, oldIndex, newIndex);
+        });
+        toast.success("Ordem das especialidades atualizada!");
+    };
+
+    const toggleFeatured = (id: string) => {
+        setSpecialties((prev) => {
+            const target = prev.find((s) => s.id === id);
+            if (!target) return prev;
+            if (!target.featured && prev.filter((s) => s.featured).length >= MAX_FEATURED) {
+                toast.warning(`Você pode destacar até ${MAX_FEATURED} especialidades no perfil público.`);
+                return prev;
+            }
+            return prev.map((s) => (s.id === id ? { ...s, featured: !s.featured } : s));
+        });
+    };
+
+
     const saveMediaOrder = async (type: 'gallery' | 'video', customUrls?: string[]) => {
         const toastId = toast.loading("Salvando nova ordem...");
         try {
