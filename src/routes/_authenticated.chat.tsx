@@ -359,8 +359,8 @@ function ChatInboxPage() {
     );
   }, [conversations, query, showArchived, role]);
 
-  const totalUnread = conversations.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
-  const archivedCount = conversations.filter((c) => c.archived).length;
+  const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
+  const archivedCount = conversationsWithMock.filter((c) => c.archived).length;
 
   const handleMarkUnread = async (c: Conversation) => {
     if (!userId) return;
