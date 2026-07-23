@@ -818,3 +818,62 @@ function ConversationPage() {
     </div>
   );
 }
+
+function AttachmentBlock({
+  url,
+  type,
+  name,
+  mine,
+  state,
+  onDownload,
+}: {
+  url: string;
+  type?: string | null;
+  name: string;
+  mine: boolean;
+  messageId: string;
+  state?: { pct: number; loading: boolean };
+  onDownload: () => void;
+}) {
+  const image = isImageType(type);
+  return (
+    <div className="mb-1 space-y-1">
+      {image ? (
+        <img src={url} alt={name} className="rounded-lg max-h-64 object-cover" />
+      ) : (
+        <div
+          className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${
+            mine ? "bg-black/20" : "bg-white/5 border border-white/10"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span className="truncate max-w-[200px]">{name}</span>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={onDownload}
+        disabled={state?.loading}
+        className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${
+          mine ? "bg-black/25 hover:bg-black/40" : "bg-white/10 hover:bg-white/20"
+        } disabled:opacity-60`}
+      >
+        {state?.loading ? (
+          <>
+            <Loader2 className="w-3 h-3 animate-spin" /> {state.pct}%
+          </>
+        ) : (
+          <>
+            <Download className="w-3 h-3" /> Baixar
+          </>
+        )}
+      </button>
+      {state?.loading && (
+        <div className="w-full bg-black/30 rounded-full h-1 overflow-hidden">
+          <div className="h-full bg-white/80 transition-all" style={{ width: `${state.pct}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
