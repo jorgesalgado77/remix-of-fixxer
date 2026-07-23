@@ -585,14 +585,18 @@ function Lightbox({ job, index, onClose }: { job: JobPost; index: number; onClos
 function JobCard({
   job,
   saved,
+  applied,
   onToggleSave,
   onApply,
+  onChat,
   onLightbox,
 }: {
   job: JobPost;
   saved: boolean;
+  applied: boolean;
   onToggleSave: (id: string) => void;
   onApply: (job: JobPost) => void;
+  onChat: (job: JobPost) => void;
   onLightbox: (job: JobPost, index: number) => void;
 }) {
   const navigate = useNavigate();
