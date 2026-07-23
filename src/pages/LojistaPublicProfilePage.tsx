@@ -46,6 +46,11 @@ interface StoreProfile {
   video_urls?: string[];
   activity_branch?: string;
   specialties?: { id: string; title: string; description: string; featured?: boolean }[];
+  photo_sections?: {
+    showroom?: (string | { url: string; thumbUrl?: string })[];
+    assemblies?: (string | { url: string; thumbUrl?: string })[];
+    custom?: { id: string; name: string; photos: (string | { url: string; thumbUrl?: string })[] }[];
+  } | null;
   created_at?: string;
 }
 
