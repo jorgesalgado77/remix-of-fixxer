@@ -2596,6 +2596,7 @@ function ProfileView({
                                     setGalleryUrls(Array.isArray(saved.gallery_urls) ? saved.gallery_urls : []);
                                     setVideoUrls(Array.isArray(saved.video_urls) ? saved.video_urls : []);
                                     setDocuments(Array.isArray(saved.documents) ? saved.documents : []);
+                                    setSpecialties(Array.isArray(saved.specialties) ? saved.specialties : []);
                                     setSocialLinks({
                                         instagram: saved.instagram || "",
                                         facebook: saved.facebook || "",
