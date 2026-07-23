@@ -308,7 +308,7 @@ function FeedPage() {
           </div>
         ) : (
           <>
-            {posts.map((post: any) => (
+            {posts.map((post) => (
               <FeedCard key={post.id} post={post} glassClass={glassClass} userRole={userRole} />
             ))}
 
@@ -335,7 +335,7 @@ function FeedCard({
   glassClass,
   userRole,
 }: {
-  post: any;
+  post: FeedPost;
   glassClass: string;
   userRole: string;
 }) {
@@ -490,7 +490,7 @@ function FeedCard({
   );
 }
 
-function ProposalModal({ post, userRole }: { post: any; userRole: string }) {
+function ProposalModal({ post, userRole }: { post: FeedPost; userRole: string }) {
   const [open, setOpen] = useState(false);
   const [price, setPrice] = useState("");
   const [desc, setDesc] = useState("");
@@ -517,8 +517,8 @@ function ProposalModal({ post, userRole }: { post: any; userRole: string }) {
 
       toast.success("Proposta enviada com sucesso!");
       setOpen(false);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Erro ao enviar proposta.");
     } finally {
       setLoading(false);
     }
@@ -584,7 +584,7 @@ function ProposalModal({ post, userRole }: { post: any; userRole: string }) {
   );
 }
 
-function TabChip({ active, onClick, label, icon }: any) {
+function TabChip({ active, onClick, label, icon }: { active: boolean; onClick: () => void; label: string; icon: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
@@ -600,7 +600,7 @@ function TabChip({ active, onClick, label, icon }: any) {
   );
 }
 
-function CategoryChip({ label, active, onClick }: any) {
+function CategoryChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
