@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -15,7 +15,9 @@ import {
   Truck,
   FileText,
   DollarSign,
+  CheckCircle2,
 } from "lucide-react";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 
 // =============================================================================
 // TIPOS
@@ -33,6 +35,7 @@ type B2BStatus = "aberto" | "urgente" | "negociando";
 type B2BRequest = {
   id: string;
   store: {
+    id: string;
     name: string;
     initials: string;
     verified?: boolean;
@@ -52,6 +55,10 @@ type B2BRequest = {
   attachment?: string;
 };
 
+type QuoteStatus = "pendente" | "aceita" | "recusada";
+
+const SAVES_STORAGE_KEY = "fixxer_parceiro_saves_v1";
+
 // =============================================================================
 // MOCK DATA — DEMANDAS B2B
 // =============================================================================
@@ -68,7 +75,7 @@ const SECTORS: Array<"Todas as Demandas" | Sector> = [
 const MOCK_REQUESTS: B2BRequest[] = [
   {
     id: "b2b-001",
-    store: { name: "Marcenaria Premium", initials: "MP", verified: true },
+    store: { id: "store-marcenaria-premium", name: "Marcenaria Premium", initials: "MP", verified: true },
     city: "Sorocaba",
     state: "SP",
     rating: 4.9,
@@ -93,7 +100,7 @@ const MOCK_REQUESTS: B2BRequest[] = [
   },
   {
     id: "b2b-002",
-    store: { name: "Lojas Inovamad", initials: "LI", verified: true },
+    store: { id: "store-inovamad", name: "Lojas Inovamad", initials: "LI", verified: true },
     city: "Votorantim",
     state: "SP",
     rating: 4.7,
@@ -117,7 +124,7 @@ const MOCK_REQUESTS: B2BRequest[] = [
   },
   {
     id: "b2b-003",
-    store: { name: "Ferragens Norte Design", initials: "FN" },
+    store: { id: "store-ferragens-norte", name: "Ferragens Norte Design", initials: "FN" },
     city: "Curitiba",
     state: "PR",
     rating: 4.5,
@@ -139,7 +146,7 @@ const MOCK_REQUESTS: B2BRequest[] = [
   },
   {
     id: "b2b-004",
-    store: { name: "Studio Iluminar", initials: "SI", verified: true },
+    store: { id: "store-studio-iluminar", name: "Studio Iluminar", initials: "SI", verified: true },
     city: "São Paulo",
     state: "SP",
     rating: 4.8,
@@ -164,7 +171,7 @@ const MOCK_REQUESTS: B2BRequest[] = [
   },
   {
     id: "b2b-005",
-    store: { name: "Fábrica Modular Sul", initials: "FS", verified: true },
+    store: { id: "store-fabrica-modular", name: "Fábrica Modular Sul", initials: "FS", verified: true },
     city: "Joinville",
     state: "SC",
     rating: 4.6,
@@ -185,7 +192,165 @@ const MOCK_REQUESTS: B2BRequest[] = [
     deadline: "Envio imediato após pedido",
     paymentTerms: "Boleto 21 dias",
   },
+  {
+    id: "b2b-006",
+    store: { id: "store-marmore-arte", name: "Mármore & Arte", initials: "MA", verified: true },
+    city: "Belo Horizonte",
+    state: "MG",
+    rating: 4.8,
+    postedAt: "há 2 dias",
+    status: "aberto",
+    sector: "Marmoria & Pedras",
+    title: "Placas de Granito Preto São Gabriel — Escadaria",
+    description:
+      "Fornecimento de placas polidas para escadaria interna. Necessário rodapé e acabamento anti-derrapante nos degraus.",
+    specs: [
+      "Granito Preto São Gabriel 20mm",
+      "22 degraus 1.20m x 0.30m",
+      "22 espelhos 1.20m x 0.18m",
+      "Acabamento flameado nos degraus",
+    ],
+    quantity: "22 conjuntos",
+    deadline: "Entrega em 15 dias",
+    paymentTerms: "40% entrada + 60% entrega",
+  },
+  {
+    id: "b2b-007",
+    store: { id: "store-vidros-central", name: "Vidros Central", initials: "VC" },
+    city: "Campinas",
+    state: "SP",
+    rating: 4.4,
+    postedAt: "há 3 dias",
+    status: "aberto",
+    sector: "Vidraçaria & Espelhos",
+    title: "Vidros Temperados 10mm para Boxes de Banheiro",
+    description:
+      "Contrato recorrente para vidraçaria que atende construtoras. Precisamos de parceiro com corte digital e entrega semanal.",
+    specs: [
+      "Vidro temperado incolor 10mm",
+      "Corte digital com CNC",
+      "Furações padrão para ferragens",
+      "Entrega semanal — 40 peças",
+    ],
+    quantity: "40 peças/semana",
+    deadline: "Início imediato",
+    paymentTerms: "30 dias — boleto",
+    attachment:
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=70",
+  },
+  {
+    id: "b2b-008",
+    store: { id: "store-hardware-plus", name: "Hardware Plus", initials: "HP", verified: true },
+    city: "Porto Alegre",
+    state: "RS",
+    rating: 4.7,
+    postedAt: "há 3 dias",
+    status: "negociando",
+    sector: "Ferragens & Insumos",
+    title: "Puxadores em Alumínio Escovado — Linha Premium",
+    description:
+      "Reposição mensal para nossa vitrine premium. Priorizo fornecedores com catálogo próprio e MOQ flexível.",
+    specs: [
+      "Puxador tubular 128mm — 300 un.",
+      "Puxador tubular 192mm — 200 un.",
+      "Puxador cava embutida 96mm — 400 un.",
+      "Acabamento alumínio escovado",
+    ],
+    quantity: "900 un./mês",
+    deadline: "Reposição mensal dia 10",
+    paymentTerms: "35 dias — boleto",
+  },
+  {
+    id: "b2b-009",
+    store: { id: "store-luz-ambiente", name: "Luz & Ambiente", initials: "LA" },
+    city: "Rio de Janeiro",
+    state: "RJ",
+    rating: 4.6,
+    postedAt: "há 4 dias",
+    status: "urgente",
+    sector: "Iluminação LED",
+    title: "Spots Embutidos LED 7W + Trilhos Bifásicos",
+    description:
+      "Obra corporativa iminente. Necessário estoque imediato e nota fiscal com CST configurado para prefeitura.",
+    specs: [
+      "Spot embutido LED 7W 4000K — 120 un.",
+      "Trilho bifásico 2m preto — 30 un.",
+      "Spot para trilho GU10 — 90 un.",
+      "IRC ≥ 90",
+    ],
+    quantity: "240 itens totais",
+    deadline: "Entrega em 5 dias",
+    paymentTerms: "À vista PIX 3% desc.",
+  },
+  {
+    id: "b2b-010",
+    store: { id: "store-cnc-experts", name: "CNC Experts", initials: "CE", verified: true },
+    city: "São José dos Campos",
+    state: "SP",
+    rating: 4.9,
+    postedAt: "há 5 dias",
+    status: "aberto",
+    sector: "Softwares & Maquinário",
+    title: "Manutenção Preventiva Router CNC + Kit Fresas",
+    description:
+      "Contrato anual de manutenção preventiva com peças e insumos inclusos. Também interessados em curso técnico para operadores.",
+    specs: [
+      "Manutenção trimestral in loco",
+      "Kit fresas compactadas 6mm — 30 un.",
+      "Substituição de escovas anual",
+      "Curso técnico para 3 operadores",
+    ],
+    quantity: "Contrato anual",
+    deadline: "Início em 20 dias",
+    paymentTerms: "12x no boleto",
+  },
+  {
+    id: "b2b-011",
+    store: { id: "store-glass-design", name: "Glass Design", initials: "GD", verified: true },
+    city: "Florianópolis",
+    state: "SC",
+    rating: 4.7,
+    postedAt: "há 6 dias",
+    status: "aberto",
+    sector: "Vidraçaria & Espelhos",
+    title: "Espelhos Extra-Grandes com Moldura em Alumínio",
+    description:
+      "Projeto de hotelaria — 40 quartos. Precisamos de peças únicas com moldura fina cor champagne e fixação embutida.",
+    specs: [
+      "Espelho cristal 5mm 1.80m x 0.90m",
+      "Moldura alumínio champagne 12mm",
+      "Fixação embutida sem visíveis",
+      "40 peças idênticas",
+    ],
+    quantity: "40 peças",
+    deadline: "Entrega em 30 dias",
+    paymentTerms: "50/50 — boleto",
+  },
+  {
+    id: "b2b-012",
+    store: { id: "store-marmores-elite", name: "Mármores Elite", initials: "ME" },
+    city: "Vitória",
+    state: "ES",
+    rating: 4.5,
+    postedAt: "há 1 semana",
+    status: "aberto",
+    sector: "Marmoria & Pedras",
+    title: "Blocos de Mármore Branco Piguês — Corte sob Medida",
+    description:
+      "Compra recorrente para revenda. Solicito parceria com marmoraria capaz de fornecer blocos brutos + corte por encomenda.",
+    specs: [
+      "Mármore Branco Piguês bruto",
+      "Blocos 3m x 1.5m x 0.5m",
+      "Corte sob medida em pedidos",
+      "Contrato de 12 meses",
+    ],
+    quantity: "8 blocos/mês",
+    deadline: "Início em 10 dias",
+    paymentTerms: "45 dias fora mês",
+  },
 ];
+
+const PAGE_SIZE = 4;
 
 // =============================================================================
 // PÁGINA
@@ -200,25 +365,88 @@ export default function FeedParceiroPage() {
   const [saved, setSaved] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
     try {
-      const raw = window.localStorage.getItem("fixxer:parceiro:saved");
+      const raw = window.localStorage.getItem(SAVES_STORAGE_KEY);
       return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
     } catch {
       return new Set();
     }
   });
+  const [savesRemote, setSavesRemote] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [quotesByRequest, setQuotesByRequest] = useState<Record<string, QuoteStatus>>({});
+  const [quotesRemote, setQuotesRemote] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [quoteOpen, setQuoteOpen] = useState<B2BRequest | null>(null);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  // Persistência local imediata dos favoritos
   useEffect(() => {
     try {
       window.localStorage.setItem(
-        "fixxer:parceiro:saved",
+        SAVES_STORAGE_KEY,
         JSON.stringify(Array.from(saved)),
       );
     } catch {
       /* ignore */
     }
   }, [saved]);
+
+  // Sincronizar com Supabase (favoritos + cotações)
+  useEffect(() => {
+    (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabaseExternal.auth.getUser();
+        if (!user) return;
+        setUserId(user.id);
+
+        // Favoritos
+        const { data: savesData, error: savesErr } = await supabaseExternal
+          .from("feed_post_saves")
+          .select("post_id")
+          .eq("user_id", user.id);
+        if (!savesErr && savesData) {
+          setSavesRemote(true);
+          const remote = new Set<string>(savesData.map((r: { post_id: string }) => r.post_id));
+          setSaved((prev) => {
+            const missing = [...prev].filter((id) => !remote.has(id));
+            if (missing.length > 0) {
+              void supabaseExternal
+                .from("feed_post_saves")
+                .upsert(
+                  missing.map((post_id) => ({ user_id: user.id, post_id })),
+                  { onConflict: "user_id,post_id" },
+                );
+            }
+            return new Set([...prev, ...remote]);
+          });
+        } else if (savesErr) {
+          console.warn("[feed] feed_post_saves indisponível:", savesErr.message);
+        }
+
+        // Cotações B2B enviadas
+        const { data: quotesData, error: quotesErr } = await supabaseExternal
+          .from("b2b_quotes")
+          .select("request_id,status")
+          .eq("supplier_id", user.id);
+        if (!quotesErr && quotesData) {
+          setQuotesRemote(true);
+          const map: Record<string, QuoteStatus> = {};
+          for (const q of quotesData as Array<{ request_id: string; status: QuoteStatus }>) {
+            map[q.request_id] = q.status ?? "pendente";
+          }
+          setQuotesByRequest(map);
+        } else if (quotesErr) {
+          console.warn("[feed] b2b_quotes indisponível:", quotesErr.message);
+        }
+      } catch (err) {
+        console.warn("[feed] falha ao sincronizar dados B2B:", err);
+      }
+    })();
+  }, []);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -236,23 +464,128 @@ export default function FeedParceiroPage() {
     });
   }, [search, activeSector]);
 
+  const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  const hasMore = paged.length < filtered.length;
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, activeSector]);
+
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore || loadingMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setLoadingMore(true);
+          setTimeout(() => {
+            setPage((p) => p + 1);
+            setLoadingMore(false);
+          }, 350);
+        }
+      },
+      { rootMargin: "120px" },
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore]);
+
+  const persistSave = useCallback(
+    async (postId: string, willSave: boolean) => {
+      if (!userId || !savesRemote) return;
+      try {
+        if (willSave) {
+          await supabaseExternal
+            .from("feed_post_saves")
+            .upsert({ user_id: userId, post_id: postId }, { onConflict: "user_id,post_id" });
+        } else {
+          await supabaseExternal
+            .from("feed_post_saves")
+            .delete()
+            .eq("user_id", userId)
+            .eq("post_id", postId);
+        }
+      } catch (err) {
+        console.warn("[feed] falha ao persistir favorito:", err);
+      }
+    },
+    [userId, savesRemote],
+  );
+
   const toggleSaved = (id: string) => {
     setSaved((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
+      const willSave = !next.has(id);
+      if (willSave) {
+        next.add(id);
+        toast.success("Oportunidade salva no seu mural", {
+          description: savesRemote
+            ? "Disponível em qualquer dispositivo."
+            : "Faça login para sincronizar entre dispositivos.",
+        });
+      } else {
         next.delete(id);
         toast("Oportunidade removida dos salvos");
-      } else {
-        next.add(id);
-        toast.success("Oportunidade salva no seu mural");
       }
+      void persistSave(id, willSave);
       return next;
     });
   };
 
   const openChat = (r: B2BRequest) => {
-    toast.success(`Abrindo canal B2B com ${r.store.name}...`);
-    navigate({ to: "/chat" }).catch(() => undefined);
+    const peerId = r.store.id;
+    if (!peerId) {
+      toast.error("Loja sem canal B2B disponível.");
+      return;
+    }
+    toast(`Abrindo canal B2B com ${r.store.name}...`);
+    navigate({ to: "/chat/$peerId", params: { peerId } }).catch(() => {
+      navigate({ to: "/chat" }).catch(() => undefined);
+    });
+  };
+
+  const handleQuoteSubmit = async (
+    request: B2BRequest,
+    payload: { price: string; payment: string; delivery: string; notes: string },
+  ) => {
+    // Otimista
+    setQuotesByRequest((prev) => ({ ...prev, [request.id]: "pendente" }));
+
+    try {
+      const {
+        data: { user },
+      } = await supabaseExternal.auth.getUser();
+      if (!user) {
+        toast.warning("Cotação registrada localmente", {
+          description: "Faça login para enviar ao lojista.",
+        });
+        return;
+      }
+      const row = {
+        supplier_id: user.id,
+        request_id: request.id,
+        store_id: request.store.id,
+        price: payload.price,
+        payment_terms: payload.payment,
+        delivery_terms: payload.delivery,
+        notes: payload.notes || null,
+        status: "pendente" as QuoteStatus,
+      };
+      const { error } = await supabaseExternal
+        .from("b2b_quotes")
+        .upsert(row, { onConflict: "supplier_id,request_id" });
+      if (error) {
+        console.warn("[feed] b2b_quotes indisponível:", error.message);
+        toast.warning("Cotação registrada localmente", {
+          description: "Sincronização com o banco pendente.",
+        });
+      } else {
+        setQuotesRemote(true);
+        toast.success(`Cotação enviada para ${request.store.name}`);
+      }
+    } catch (err) {
+      console.warn("[feed] falha ao enviar cotação:", err);
+      toast.error("Não foi possível enviar a cotação agora.");
+    }
   };
 
   return (
@@ -320,141 +653,181 @@ export default function FeedParceiroPage() {
           </div>
         ) : (
           <ul className="space-y-4">
-            {filtered.map((r) => (
-              <li
-                key={r.id}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-[#1A1A1B]"
-              >
-                {/* Cabeçalho */}
-                <div className="flex items-start gap-3 p-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#0A0A0B] text-sm font-semibold text-[#00FF87]">
-                    {r.store.initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 text-sm font-semibold">
-                      <span className="truncate">{r.store.name}</span>
-                      {r.store.verified && (
-                        <span className="rounded-full bg-[#00FF87]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#00FF87]">
-                          ✓
+            {paged.map((r) => {
+              const quoteStatus = quotesByRequest[r.id];
+              return (
+                <li
+                  key={r.id}
+                  className="overflow-hidden rounded-2xl border border-white/10 bg-[#1A1A1B]"
+                >
+                  {/* Cabeçalho */}
+                  <div className="flex items-start gap-3 p-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#0A0A0B] text-sm font-semibold text-[#00FF87]">
+                      {r.store.initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 text-sm font-semibold">
+                        <span className="truncate">{r.store.name}</span>
+                        {r.store.verified && (
+                          <span className="rounded-full bg-[#00FF87]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#00FF87]">
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/50">
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {r.city}/{r.state}
                         </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          {r.rating.toFixed(1)}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {r.postedAt}
+                        </span>
+                      </div>
+                    </div>
+                    <StatusBadge status={r.status} />
+                  </div>
+
+                  {/* Título + descrição */}
+                  <div className="px-4 pb-3">
+                    <h3 className="text-base font-semibold leading-snug">
+                      {r.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-white/70">{r.description}</p>
+                  </div>
+
+                  {/* Anexo/desenho técnico */}
+                  {r.attachment && (
+                    <button
+                      type="button"
+                      onClick={() => setLightbox(r.attachment!)}
+                      className="group relative block w-full overflow-hidden border-y border-white/10 bg-black"
+                    >
+                      <img
+                        src={r.attachment}
+                        alt="Anexo técnico"
+                        loading="lazy"
+                        className="h-56 w-full object-cover transition group-hover:opacity-90"
+                      />
+                      <span className="absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-medium text-white/80">
+                        Ver ampliado
+                      </span>
+                    </button>
+                  )}
+
+                  {/* Especificações */}
+                  <div className="border-t border-white/5 px-4 py-3">
+                    <div className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#00FF87]">
+                      <FileText className="h-3.5 w-3.5" />
+                      Especificações
+                    </div>
+                    <ul className="space-y-1 text-sm text-white/80">
+                      {r.specs.map((s, i) => (
+                        <li key={i} className="flex gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00FF87]/70" />
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Meta B2B */}
+                  <div className="grid grid-cols-3 gap-2 border-t border-white/5 px-4 py-3 text-[11px]">
+                    <MetaCell
+                      icon={<Package className="h-3.5 w-3.5" />}
+                      label="Quantidade"
+                      value={r.quantity}
+                    />
+                    <MetaCell
+                      icon={<Truck className="h-3.5 w-3.5" />}
+                      label="Prazo"
+                      value={r.deadline}
+                    />
+                    <MetaCell
+                      icon={<DollarSign className="h-3.5 w-3.5" />}
+                      label="Pagamento"
+                      value={r.paymentTerms}
+                    />
+                  </div>
+
+                  {/* Status da cotação */}
+                  {quoteStatus && (
+                    <div className="border-t border-white/5 px-4 py-2">
+                      <QuoteStatusPill status={quoteStatus} />
+                    </div>
+                  )}
+
+                  {/* Barra de ações */}
+                  <div className="flex items-center gap-2 border-t border-white/10 bg-[#0F0F10] p-3">
+                    <button
+                      type="button"
+                      onClick={() => setQuoteOpen(r)}
+                      className={`flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                        quoteStatus
+                          ? "border border-[#00FF87]/40 bg-[#00FF87]/10 text-[#00FF87] hover:bg-[#00FF87]/15"
+                          : "bg-[#00FF87] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] hover:brightness-110"
+                      }`}
+                    >
+                      {quoteStatus ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" />
+                          Revisar cotação
+                        </>
+                      ) : (
+                        <>
+                          <Package className="h-4 w-4" />
+                          Enviar cotação B2B
+                        </>
                       )}
-                    </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/50">
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {r.city}/{r.state}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        {r.rating.toFixed(1)}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {r.postedAt}
-                      </span>
-                    </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openChat(r)}
+                      className="rounded-full border border-white/10 bg-[#1A1A1B] p-2.5 text-white/80 transition hover:border-[#00FF87]/40 hover:text-[#00FF87]"
+                      aria-label="Chat direto B2B"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSaved(r.id)}
+                      className={`rounded-full border p-2.5 transition ${
+                        saved.has(r.id)
+                          ? "border-[#00FF87]/50 bg-[#00FF87]/10 text-[#00FF87]"
+                          : "border-white/10 bg-[#1A1A1B] text-white/80 hover:border-[#00FF87]/40 hover:text-[#00FF87]"
+                      }`}
+                      aria-label="Salvar oportunidade"
+                    >
+                      <Bookmark
+                        className={`h-4 w-4 ${saved.has(r.id) ? "fill-current" : ""}`}
+                      />
+                    </button>
                   </div>
-                  <StatusBadge status={r.status} />
-                </div>
-
-                {/* Título + descrição */}
-                <div className="px-4 pb-3">
-                  <h3 className="text-base font-semibold leading-snug">
-                    {r.title}
-                  </h3>
-                  <p className="mt-1 text-sm text-white/70">{r.description}</p>
-                </div>
-
-                {/* Anexo/desenho técnico */}
-                {r.attachment && (
-                  <button
-                    type="button"
-                    onClick={() => setLightbox(r.attachment!)}
-                    className="group relative block w-full overflow-hidden border-y border-white/10 bg-black"
-                  >
-                    <img
-                      src={r.attachment}
-                      alt="Anexo técnico"
-                      loading="lazy"
-                      className="h-56 w-full object-cover transition group-hover:opacity-90"
-                    />
-                    <span className="absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-medium text-white/80">
-                      Ver ampliado
-                    </span>
-                  </button>
-                )}
-
-                {/* Especificações */}
-                <div className="border-t border-white/5 px-4 py-3">
-                  <div className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#00FF87]">
-                    <FileText className="h-3.5 w-3.5" />
-                    Especificações
-                  </div>
-                  <ul className="space-y-1 text-sm text-white/80">
-                    {r.specs.map((s, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00FF87]/70" />
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Meta B2B */}
-                <div className="grid grid-cols-3 gap-2 border-t border-white/5 px-4 py-3 text-[11px]">
-                  <MetaCell
-                    icon={<Package className="h-3.5 w-3.5" />}
-                    label="Quantidade"
-                    value={r.quantity}
-                  />
-                  <MetaCell
-                    icon={<Truck className="h-3.5 w-3.5" />}
-                    label="Prazo"
-                    value={r.deadline}
-                  />
-                  <MetaCell
-                    icon={<DollarSign className="h-3.5 w-3.5" />}
-                    label="Pagamento"
-                    value={r.paymentTerms}
-                  />
-                </div>
-
-                {/* Barra de ações */}
-                <div className="flex items-center gap-2 border-t border-white/10 bg-[#0F0F10] p-3">
-                  <button
-                    type="button"
-                    onClick={() => setQuoteOpen(r)}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#00FF87] px-4 py-2.5 text-sm font-semibold text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition hover:brightness-110"
-                  >
-                    <Package className="h-4 w-4" />
-                    Enviar cotação B2B
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openChat(r)}
-                    className="rounded-full border border-white/10 bg-[#1A1A1B] p-2.5 text-white/80 transition hover:border-[#00FF87]/40 hover:text-[#00FF87]"
-                    aria-label="Chat direto B2B"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleSaved(r.id)}
-                    className={`rounded-full border p-2.5 transition ${
-                      saved.has(r.id)
-                        ? "border-[#00FF87]/50 bg-[#00FF87]/10 text-[#00FF87]"
-                        : "border-white/10 bg-[#1A1A1B] text-white/80 hover:border-[#00FF87]/40 hover:text-[#00FF87]"
-                    }`}
-                    aria-label="Salvar oportunidade"
-                  >
-                    <Bookmark
-                      className={`h-4 w-4 ${saved.has(r.id) ? "fill-current" : ""}`}
-                    />
-                  </button>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
+        )}
+
+        {/* Sentinela do scroll infinito */}
+        {filtered.length > 0 && (
+          <div ref={sentinelRef} className="py-6 text-center">
+            {loadingMore && (
+              <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-white/50">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#00FF87] border-t-transparent" />
+                Carregando mais demandas...
+              </div>
+            )}
+            {!hasMore && !loadingMore && (
+              <span className="text-[11px] uppercase tracking-widest text-white/40">
+                — Fim das demandas —
+              </span>
+            )}
+          </div>
         )}
       </main>
 
@@ -483,10 +856,12 @@ export default function FeedParceiroPage() {
       {quoteOpen && (
         <QuoteModal
           request={quoteOpen}
+          existingStatus={quotesByRequest[quoteOpen.id]}
           onClose={() => setQuoteOpen(null)}
-          onSubmit={() => {
-            toast.success(`Cotação enviada para ${quoteOpen.store.name}`);
+          onSubmit={async (payload) => {
+            const req = quoteOpen;
             setQuoteOpen(null);
+            await handleQuoteSubmit(req, payload);
           }}
         />
       )}
@@ -524,6 +899,32 @@ function StatusBadge({ status }: { status: B2BStatus }) {
   );
 }
 
+function QuoteStatusPill({ status }: { status: QuoteStatus }) {
+  const map: Record<QuoteStatus, { label: string; className: string }> = {
+    pendente: {
+      label: "Cotação enviada — aguardando lojista",
+      className: "border-[#00FF87]/40 bg-[#00FF87]/10 text-[#00FF87]",
+    },
+    aceita: {
+      label: "Cotação aceita",
+      className: "border-emerald-400/50 bg-emerald-400/10 text-emerald-200",
+    },
+    recusada: {
+      label: "Cotação recusada",
+      className: "border-red-500/40 bg-red-500/10 text-red-300",
+    },
+  };
+  const s = map[status];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${s.className}`}
+    >
+      <CheckCircle2 className="h-3 w-3" />
+      {s.label}
+    </span>
+  );
+}
+
 function MetaCell({
   icon,
   label,
@@ -548,25 +949,38 @@ function MetaCell({
 
 function QuoteModal({
   request,
+  existingStatus,
   onClose,
   onSubmit,
 }: {
   request: B2BRequest;
+  existingStatus?: QuoteStatus;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (payload: {
+    price: string;
+    payment: string;
+    delivery: string;
+    notes: string;
+  }) => void | Promise<void>;
 }) {
   const [price, setPrice] = useState("");
   const [payment, setPayment] = useState("");
   const [delivery, setDelivery] = useState("");
   const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!price.trim() || !payment.trim() || !delivery.trim()) {
       toast.error("Preencha preço, condições e prazo.");
       return;
     }
-    onSubmit();
+    setSubmitting(true);
+    try {
+      await onSubmit({ price, payment, delivery, notes });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -588,6 +1002,13 @@ function QuoteModal({
             <X className="h-4 w-4" />
           </button>
         </div>
+        {existingStatus && (
+          <div className="border-b border-white/10 bg-[#0F0F10] px-4 py-2 text-[11px] text-white/70">
+            Você já possui uma cotação{" "}
+            <span className="font-semibold text-[#00FF87]">{existingStatus}</span>{" "}
+            para esta demanda. Enviar novamente irá atualizar os valores.
+          </div>
+        )}
         <form onSubmit={submit} className="space-y-3 p-4">
           <Field
             label="Preço total (R$)"
@@ -621,9 +1042,17 @@ function QuoteModal({
           </div>
           <button
             type="submit"
-            className="w-full rounded-full bg-[#00FF87] px-4 py-3 text-sm font-semibold text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition hover:brightness-110"
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#00FF87] px-4 py-3 text-sm font-semibold text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition hover:brightness-110 disabled:opacity-70"
           >
-            Enviar cotação
+            {submitting ? (
+              <>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+                Enviando...
+              </>
+            ) : (
+              "Enviar cotação"
+            )}
           </button>
         </form>
       </div>
