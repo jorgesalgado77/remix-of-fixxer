@@ -1,7 +1,28 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { MessageCircle, Search, ChevronRight } from "lucide-react";
+import {
+  MessageCircle,
+  Search,
+  ChevronRight,
+  Archive,
+  ArchiveRestore,
+  BellOff,
+  Bell,
+  MailOpen,
+  MoreVertical,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { toast } from "sonner";
+import {
+  canSeeConversationWith,
+  getArchivedSet,
+  getMutedSet,
+  isConversationArchived,
+  isConversationMuted,
+  setCachedPeerRoles,
+  setConversationArchived,
+  setConversationMuted,
+} from "@/lib/chat-preferences";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatInboxPage,
@@ -16,24 +37,39 @@ type MessageRow = {
   read: boolean | null;
 };
 
+type PeerInfo = { name: string; avatar: string | null; role: string | null };
+
 type Conversation = {
   peerId: string;
   peerName: string;
   peerAvatar: string | null;
+  peerRole: string | null;
   lastMessage: string;
+  lastMessageId: string | null;
   lastAt: string;
   unread: number;
+  archived: boolean;
+  muted: boolean;
 };
+
+function getStoredRole(): string {
+  if (typeof window === "undefined") return "";
+  return (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
+}
 
 function ChatInboxPage() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
+  const [role, setRole] = useState<string>(getStoredRole);
   const [messages, setMessages] = useState<MessageRow[]>([]);
-  const [peers, setPeers] = useState<Record<string, { name: string; avatar: string | null }>>({});
+  const [peers, setPeers] = useState<Record<string, PeerInfo>>({});
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [prefsVersion, setPrefsVersion] = useState(0);
 
-  // Marca todas as mensagens do usuário como lidas
+  // Marca todas mensagens do usuário como lidas
   const markAllAsRead = async (uid: string) => {
     try {
       await supabaseExternal
@@ -41,11 +77,8 @@ function ChatInboxPage() {
         .update({ read: true })
         .eq("recipient_id", uid)
         .eq("read", false);
-      // Dispara evento local para o GlobalActionBar zerar o badge imediatamente
       window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
-    } catch {
-      /* tabela pode não existir; segue silenciosamente */
-    }
+    } catch {}
   };
 
   const loadMessages = async (uid: string) => {
@@ -55,7 +88,7 @@ function ChatInboxPage() {
         .select("id, sender_id, recipient_id, content, created_at, read")
         .or(`sender_id.eq.${uid},recipient_id.eq.${uid}`)
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(300);
       if (!error && data) setMessages(data as MessageRow[]);
     } catch {
       setMessages([]);
@@ -64,7 +97,7 @@ function ChatInboxPage() {
     }
   };
 
-  // Setup inicial: pega o usuário, carrega mensagens e marca como lidas
+  // Bootstrap: usuário + carga inicial + zera badge
   useEffect(() => {
     let cancelled = false;
     let channel: any = null;
@@ -90,27 +123,32 @@ function ChatInboxPage() {
             { event: "*", schema: "public", table: "messages" },
             async () => {
               await loadMessages(uid);
-              // se estamos com a caixa aberta, novas mensagens também já são "vistas"
               await markAllAsRead(uid);
             },
           )
           .subscribe();
-      } catch {
-        /* Realtime indisponível */
-      }
+      } catch {}
     })();
+
+    // Reage a mudanças de role no localStorage
+    const syncRole = () => setRole(getStoredRole());
+    window.addEventListener("storage", syncRole);
+    window.addEventListener("fixxer:role-changed", syncRole as any);
+    const onPrefs = () => setPrefsVersion((v) => v + 1);
+    window.addEventListener("fixxer:chat-prefs-changed", onPrefs as any);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("storage", syncRole);
+      window.removeEventListener("fixxer:role-changed", syncRole as any);
+      window.removeEventListener("fixxer:chat-prefs-changed", onPrefs as any);
       if (channel) {
-        try {
-          supabaseExternal.removeChannel(channel);
-        } catch {}
+        try { supabaseExternal.removeChannel(channel); } catch {}
       }
     };
   }, []);
 
-  // Carrega dados dos participantes (nomes/avatares) a partir de profiles
+  // Carrega perfis dos peers (nome, avatar, role)
   useEffect(() => {
     if (!userId || messages.length === 0) return;
     const peerIds = Array.from(
@@ -124,23 +162,32 @@ function ChatInboxPage() {
       try {
         const { data } = await supabaseExternal
           .from("profiles")
-          .select("id, full_name, avatar_url")
+          .select("id, full_name, avatar_url, role")
           .in("id", peerIds);
         if (data) {
-          const map: Record<string, { name: string; avatar: string | null }> = {};
+          const map: Record<string, PeerInfo> = {};
+          const roleCache: Record<string, string> = {};
           for (const p of data as any[]) {
-            map[p.id] = { name: p.full_name || "Usuário", avatar: p.avatar_url ?? null };
+            map[p.id] = {
+              name: p.full_name || "Usuário",
+              avatar: p.avatar_url ?? null,
+              role: (p.role as string) ?? null,
+            };
+            if (p.role) roleCache[p.id] = p.role;
           }
           setPeers(map);
+          setCachedPeerRoles(roleCache);
         }
       } catch {
-        /* profiles pode não existir com essas colunas; usa fallback */
+        /* profiles pode não ter todas as colunas; segue com fallback */
       }
     })();
   }, [messages, userId]);
 
   const conversations: Conversation[] = useMemo(() => {
     if (!userId) return [];
+    const archivedSet = getArchivedSet(userId);
+    const mutedSet = getMutedSet(userId);
     const byPeer = new Map<string, Conversation>();
     for (const m of messages) {
       const peerId = m.sender_id === userId ? m.recipient_id : m.sender_id;
@@ -153,14 +200,19 @@ function ChatInboxPage() {
           peerId,
           peerName: info?.name || "Usuário",
           peerAvatar: info?.avatar ?? null,
+          peerRole: info?.role ?? null,
           lastMessage: m.content || "",
+          lastMessageId: m.id,
           lastAt: m.created_at,
           unread: isUnreadIncoming ? 1 : 0,
+          archived: archivedSet.has(peerId),
+          muted: mutedSet.has(peerId),
         });
       } else {
         if (isUnreadIncoming) existing.unread += 1;
         if (new Date(m.created_at) > new Date(existing.lastAt)) {
           existing.lastMessage = m.content || "";
+          existing.lastMessageId = m.id;
           existing.lastAt = m.created_at;
         }
       }
@@ -168,20 +220,66 @@ function ChatInboxPage() {
     return Array.from(byPeer.values()).sort(
       (a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime(),
     );
-  }, [messages, peers, userId]);
+    // prefsVersion no deps garante reflow ao mudar arquivar/silenciar
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, peers, userId, prefsVersion]);
 
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
-
-  const filtered = query.trim()
-    ? conversations.filter(
+  // Regra de acesso por role + filtro de arquivadas + busca
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return conversations
+      .filter((c) => (showArchived ? c.archived : !c.archived))
+      .filter((c) => canSeeConversationWith(role, c.peerRole))
+      .filter(
         (c) =>
-          c.peerName.toLowerCase().includes(query.toLowerCase()) ||
-          c.lastMessage.toLowerCase().includes(query.toLowerCase()),
-      )
-    : conversations;
+          !q ||
+          c.peerName.toLowerCase().includes(q) ||
+          c.lastMessage.toLowerCase().includes(q),
+      );
+  }, [conversations, query, showArchived, role]);
+
+  const totalUnread = visible.reduce((sum, c) => sum + (c.muted ? 0 : c.unread), 0);
+  const archivedCount = conversations.filter((c) => c.archived).length;
+
+  // Ações rápidas
+  const handleMarkUnread = async (c: Conversation) => {
+    if (!userId) return;
+    const lastIncoming = [...messages]
+      .filter((m) => m.sender_id === c.peerId && m.recipient_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+    if (!lastIncoming) {
+      toast.info("Sem mensagens recebidas para marcar como não lida");
+      return;
+    }
+    try {
+      await supabaseExternal.from("messages").update({ read: false }).eq("id", lastIncoming.id);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === lastIncoming.id ? { ...m, read: false } : m)),
+      );
+      toast.success("Marcada como não lida");
+    } catch (e: any) {
+      toast.error("Falha ao marcar como não lida", { description: e?.message });
+    } finally {
+      setOpenMenu(null);
+    }
+  };
+
+  const handleToggleArchive = (c: Conversation) => {
+    if (!userId) return;
+    setConversationArchived(userId, c.peerId, !c.archived);
+    toast.success(!c.archived ? "Conversa arquivada" : "Conversa desarquivada");
+    setOpenMenu(null);
+  };
+
+  const handleToggleMute = (c: Conversation) => {
+    if (!userId) return;
+    setConversationMuted(userId, c.peerId, !c.muted);
+    toast.success(!c.muted ? "Notificações silenciadas" : "Notificações reativadas");
+    setOpenMenu(null);
+  };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pb-32">
+    <div className="min-h-screen bg-black text-white p-6 pb-32" onClick={() => setOpenMenu(null)}>
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -192,9 +290,23 @@ function ChatInboxPage() {
             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
               {totalUnread > 0
                 ? `${totalUnread} não lida${totalUnread > 1 ? "s" : ""}`
-                : "Nenhuma mensagem nova"}
+                : "Tudo em dia"}
             </p>
           </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowArchived((v) => !v);
+            }}
+            className={`px-3 h-9 rounded-xl border text-[10px] font-black uppercase italic tracking-widest flex items-center gap-2 ${
+              showArchived
+                ? "bg-primary/10 border-primary/40 text-primary"
+                : "bg-white/5 border-white/10 text-muted-foreground hover:text-white"
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5" />
+            {showArchived ? "Ativas" : `Arquivadas${archivedCount ? ` · ${archivedCount}` : ""}`}
+          </button>
         </div>
 
         <div className="relative mb-4">
@@ -202,7 +314,8 @@ function ChatInboxPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar conversas..."
+            onClick={(e) => e.stopPropagation()}
+            placeholder="Buscar por contato ou mensagem..."
             className="w-full bg-[#1A1A1B] border border-white/10 rounded-2xl pl-10 pr-4 py-3 text-sm outline-none focus:border-primary/50"
           />
         </div>
@@ -211,34 +324,39 @@ function ChatInboxPage() {
           <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center text-sm text-muted-foreground">
             Carregando conversas...
           </div>
-        ) : filtered.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center">
             <MessageCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <h2 className="font-black uppercase italic text-lg mb-2">
-              Nenhuma conversa {query ? "encontrada" : "ainda"}
+              {showArchived ? "Nenhuma conversa arquivada" : query ? "Nada encontrado" : "Nenhuma conversa ainda"}
             </h2>
             <p className="text-sm text-muted-foreground">
               {query
                 ? "Tente outro termo de busca."
+                : showArchived
+                ? "Conversas que você arquivar aparecem aqui."
                 : "Quando você iniciar um contato com um lojista, prestador ou parceiro, as mensagens aparecem aqui."}
             </p>
           </div>
         ) : (
           <ul className="space-y-2">
-            {filtered.map((c) => (
-              <li key={c.peerId}>
+            {visible.map((c) => (
+              <li key={c.peerId} className="relative">
                 <button
-                  onClick={() =>
-                    navigate({ to: "/chat" as any, search: { peer: c.peerId } as any })
-                  }
+                  onClick={() => navigate({ to: "/chat/$peerId" as any, params: { peerId: c.peerId } })}
                   className="w-full flex items-center gap-3 bg-[#1A1A1B] border border-white/10 hover:border-primary/40 rounded-2xl p-4 text-left transition-colors"
                 >
-                  <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 relative">
                     {c.peerAvatar ? (
                       <img src={c.peerAvatar} alt={c.peerName} className="w-full h-full object-cover" />
                     ) : (
                       <span className="font-black italic text-primary">
                         {c.peerName.slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                    {c.muted && (
+                      <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-black border border-white/20 flex items-center justify-center">
+                        <BellOff className="w-3 h-3 text-muted-foreground" />
                       </span>
                     )}
                   </div>
@@ -254,13 +372,54 @@ function ChatInboxPage() {
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{c.lastMessage || "—"}</p>
                   </div>
-                  {c.unread > 0 && (
+                  {c.unread > 0 && !c.muted && (
                     <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">
                       {c.unread > 99 ? "99+" : c.unread}
                     </span>
                   )}
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setOpenMenu(openMenu === c.peerId ? null : c.peerId);
+                    }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10"
+                    aria-label="Ações"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </button>
+
+                {openMenu === c.peerId && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute right-4 top-full mt-1 z-20 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[220px]"
+                  >
+                    <button
+                      onClick={() => handleMarkUnread(c)}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest hover:bg-white/5"
+                    >
+                      <MailOpen className="w-4 h-4" /> Marcar como não lida
+                    </button>
+                    <button
+                      onClick={() => handleToggleMute(c)}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest hover:bg-white/5"
+                    >
+                      {c.muted ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                      {c.muted ? "Reativar notificações" : "Silenciar notificações"}
+                    </button>
+                    <button
+                      onClick={() => handleToggleArchive(c)}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest hover:bg-white/5 border-t border-white/5"
+                    >
+                      {c.archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+                      {c.archived ? "Desarquivar" : "Arquivar conversa"}
+                    </button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
