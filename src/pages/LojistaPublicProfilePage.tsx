@@ -373,7 +373,14 @@ export function LojistaPublicProfilePage() {
       });
     });
     if (gallerySort === "section") {
-      items.sort((a, b) => a.sectionName.localeCompare(b.sectionName, "pt-BR") || a.order - b.order);
+      items.sort((a, b) => {
+        const sec = a.sectionName.localeCompare(b.sectionName, "pt-BR");
+        if (sec !== 0) return sec;
+        // Dentro da mesma seção, ordena por data de upload real (mais recente primeiro)
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : a.order;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : b.order;
+        return tb - ta;
+      });
     } else if (gallerySort === "oldest") {
       items.sort((a, b) => {
         const ta = a.createdAt ? new Date(a.createdAt).getTime() : a.order;
