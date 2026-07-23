@@ -759,6 +759,30 @@ export default function FeedParceiroPage() {
             );
           })}
         </div>
+
+        <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-[10px] uppercase tracking-widest text-white/40 font-black shrink-0">
+            Status:
+          </span>
+          {STATUS_FILTERS.map((s) => {
+            const active = statusFilter === s.key;
+            const color = s.key === "todos" ? "#A855F7" : FEED_STATUS_COLOR[s.key];
+            return (
+              <button
+                key={s.key}
+                onClick={() => setStatusFilter(s.key)}
+                className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap tracking-widest border transition-all"
+                style={
+                  active
+                    ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
+                    : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                }
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       {/* FEED */}
