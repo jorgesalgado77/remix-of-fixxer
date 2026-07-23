@@ -15,7 +15,7 @@ export type PhotoSectionsValue = {
 
 export const EMPTY_PHOTO_SECTIONS: PhotoSectionsValue = { showroom: [], assemblies: [], custom: [] };
 
-const IMG_ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+const IMG_ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 const IMG_MAX_MB = 5;
 const MAX_SHOWROOM = 20;
 const MAX_ASSEMBLIES = 20;
