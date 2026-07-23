@@ -433,22 +433,71 @@ export function LojistaPublicProfilePage() {
           </>
         )}
 
-        {activeTab === "oportunidades" && (
-          <section className="space-y-4">
-            <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
-              <Zap className="w-4 h-4" /> Ordens de Serviço em Aberto
-            </h2>
-            {orders.length > 0 ? (
-              <div className="space-y-4">
-                {orders.map((os) => (
-                  <OrderCard key={os.id} order={os} />
-                ))}
+        {activeTab === "oportunidades" && (() => {
+          const specialtyTitles = (profile?.specialties ?? []).map((s) => s.title).filter(Boolean);
+          const filteredOrders = orders.filter((os) => {
+            const q = oppSearch.trim().toLowerCase();
+            const hay = `${os.title ?? ""} ${os.description ?? ""} ${os.code ?? ""} ${os.city ?? ""}`.toLowerCase();
+            if (q && !hay.includes(q)) return false;
+            if (oppSpecialty !== "Todas") {
+              const specHay = `${os.title ?? ""} ${os.description ?? ""}`.toLowerCase();
+              if (!specHay.includes(oppSpecialty.toLowerCase())) return false;
+            }
+            return true;
+          });
+          return (
+            <section className="space-y-4">
+              <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
+                <Zap className="w-4 h-4" /> Ordens de Serviço em Aberto
+              </h2>
+
+              {/* Busca + Filtro por Especialidade */}
+              <div className="flex flex-col md:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    value={oppSearch}
+                    onChange={(e) => setOppSearch(e.target.value)}
+                    placeholder="Buscar por título, descrição, cidade..."
+                    className="pl-9 h-10 bg-black/40 border-white/10 text-xs"
+                  />
+                </div>
+                {specialtyTitles.length > 0 && (
+                  <select
+                    value={oppSpecialty}
+                    onChange={(e) => setOppSpecialty(e.target.value)}
+                    className="h-10 bg-black/40 border border-white/10 rounded-md px-3 text-xs font-bold text-white uppercase italic outline-none focus:border-primary md:w-64"
+                  >
+                    <option value="Todas">Todas as Especialidades</option>
+                    {specialtyTitles.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                )}
               </div>
-            ) : (
-              <EmptyState label="Nenhuma O.S. pendente no momento." />
-            )}
-          </section>
-        )}
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                {filteredOrders.length} de {orders.length} oportunidade(s)
+              </p>
+
+              {filteredOrders.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredOrders.map((os) => (
+                    <OrderCard key={os.id} order={os} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  label={
+                    orders.length === 0
+                      ? "Nenhuma O.S. pendente no momento."
+                      : "Nenhuma oportunidade encontrada com esses filtros."
+                  }
+                />
+              )}
+            </section>
+          );
+        })()}
+
 
         {activeTab === "avaliacoes" && (
           <section className="space-y-4">
