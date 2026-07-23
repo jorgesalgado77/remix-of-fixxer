@@ -122,7 +122,7 @@ function ProfilePage() {
     const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
     const MAX_DOC_SIZE = 10 * 1024 * 1024; // 10MB
 
-    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
     const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
     const allowedDocTypes = [
       'application/pdf', 
