@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+
 import {
   ArrowLeft,
   Search,
