@@ -10,7 +10,7 @@ function DashboardPrestadorRedirect() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate({ to: "/_authenticated/prestador" });
+    navigate({ to: "/prestador" });
   }, [navigate]);
 
   return (

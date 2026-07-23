@@ -15,13 +15,13 @@ function FeedRedirect() {
         ? (localStorage.getItem("fixxer_user_role") || "").toLowerCase()
         : "";
 
-    let target = "/_authenticated/feed/prestador";
-    if (role.includes("lojista")) target = "/_authenticated/feed/lojista";
+    let target = "/feed/prestador";
+    if (role.includes("lojista")) target = "/feed/lojista";
     else if (role.includes("parceiro") || role.includes("fornec"))
-      target = "/_authenticated/feed/parceiro";
+      target = "/feed/parceiro";
     else if (role.includes("cliente") || role.includes("casual"))
-      target = "/_authenticated/feed/cliente";
-    else if (role.includes("prestador")) target = "/_authenticated/feed/prestador";
+      target = "/feed/cliente";
+    else if (role.includes("prestador")) target = "/feed/prestador";
 
     navigate({ to: target as any, replace: true });
   }, [navigate]);

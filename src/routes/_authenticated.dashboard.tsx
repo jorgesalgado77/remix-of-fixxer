@@ -46,15 +46,15 @@ function DashboardRedirect() {
       // Normalização do redirecionamento por perfil
       const normalizedRole = role.toLowerCase();
       if (normalizedRole.includes('lojista')) {
-        navigate({ to: '/_authenticated/lojista' as any });
+        navigate({ to: '/lojista' as any });
       } else if (normalizedRole.includes('parceiro') || normalizedRole.includes('fornecedor')) {
-        navigate({ to: '/_authenticated/parceiro' as any });
+        navigate({ to: '/parceiro' as any });
       } else if (normalizedRole.includes('admin')) {
         navigate({ to: '/admin' as any });
       } else if (normalizedRole.includes('cliente')) {
-        navigate({ to: '/_authenticated/cliente' as any });
+        navigate({ to: '/cliente' as any });
       } else {
-        navigate({ to: '/_authenticated/prestador' as any });
+        navigate({ to: '/prestador' as any });
       }
     };
 
