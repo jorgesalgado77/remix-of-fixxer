@@ -858,6 +858,15 @@ export default function FeedClientePage() {
           glassClass={glassClass}
         />
       )}
+
+      {editingNeed && (
+        <EditNeedModal
+          need={editingNeed}
+          onClose={() => setEditingNeed(null)}
+          onSave={saveEditedNeed}
+          glassClass={glassClass}
+        />
+      )}
     </div>
   );
 }
