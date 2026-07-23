@@ -33,6 +33,7 @@ import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-
 import { Route as AuthenticatedFeedPrestadorRouteImport } from './routes/_authenticated.feed.prestador'
 import { Route as AuthenticatedFeedParceiroRouteImport } from './routes/_authenticated.feed.parceiro'
 import { Route as AuthenticatedFeedLojistaRouteImport } from './routes/_authenticated.feed.lojista'
+import { Route as AuthenticatedFeedClienteRouteImport } from './routes/_authenticated.feed.cliente'
 import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authenticated.chat.$peerId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -157,6 +158,12 @@ const AuthenticatedFeedLojistaRoute =
     path: '/lojista',
     getParentRoute: () => AuthenticatedFeedRoute,
   } as any)
+const AuthenticatedFeedClienteRoute =
+  AuthenticatedFeedClienteRouteImport.update({
+    id: '/cliente',
+    path: '/cliente',
+    getParentRoute: () => AuthenticatedFeedRoute,
+  } as any)
 const AuthenticatedChatPeerIdRoute = AuthenticatedChatPeerIdRouteImport.update({
   id: '/$peerId',
   path: '/$peerId',
@@ -183,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth/': typeof AuthIndexRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
+  '/feed/cliente': typeof AuthenticatedFeedClienteRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
@@ -207,6 +215,7 @@ export interface FileRoutesByTo {
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth': typeof AuthIndexRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
+  '/feed/cliente': typeof AuthenticatedFeedClienteRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
@@ -235,6 +244,7 @@ export interface FileRoutesById {
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
+  '/_authenticated/feed/cliente': typeof AuthenticatedFeedClienteRoute
   '/_authenticated/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/_authenticated/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/_authenticated/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/perfil/lojista'
     | '/auth/'
     | '/chat/$peerId'
+    | '/feed/cliente'
     | '/feed/lojista'
     | '/feed/parceiro'
     | '/feed/prestador'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/perfil/lojista'
     | '/auth'
     | '/chat/$peerId'
+    | '/feed/cliente'
     | '/feed/lojista'
     | '/feed/parceiro'
     | '/feed/prestador'
@@ -314,6 +326,7 @@ export interface FileRouteTypes {
     | '/perfil/lojista'
     | '/auth/'
     | '/_authenticated/chat/$peerId'
+    | '/_authenticated/feed/cliente'
     | '/_authenticated/feed/lojista'
     | '/_authenticated/feed/parceiro'
     | '/_authenticated/feed/prestador'
@@ -504,6 +517,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFeedLojistaRouteImport
       parentRoute: typeof AuthenticatedFeedRoute
     }
+    '/_authenticated/feed/cliente': {
+      id: '/_authenticated/feed/cliente'
+      path: '/cliente'
+      fullPath: '/feed/cliente'
+      preLoaderRoute: typeof AuthenticatedFeedClienteRouteImport
+      parentRoute: typeof AuthenticatedFeedRoute
+    }
     '/_authenticated/chat/$peerId': {
       id: '/_authenticated/chat/$peerId'
       path: '/$peerId'
@@ -526,6 +546,7 @@ const AuthenticatedChatRouteWithChildren =
   AuthenticatedChatRoute._addFileChildren(AuthenticatedChatRouteChildren)
 
 interface AuthenticatedFeedRouteChildren {
+  AuthenticatedFeedClienteRoute: typeof AuthenticatedFeedClienteRoute
   AuthenticatedFeedLojistaRoute: typeof AuthenticatedFeedLojistaRoute
   AuthenticatedFeedParceiroRoute: typeof AuthenticatedFeedParceiroRoute
   AuthenticatedFeedPrestadorRoute: typeof AuthenticatedFeedPrestadorRoute
@@ -533,6 +554,7 @@ interface AuthenticatedFeedRouteChildren {
 }
 
 const AuthenticatedFeedRouteChildren: AuthenticatedFeedRouteChildren = {
+  AuthenticatedFeedClienteRoute: AuthenticatedFeedClienteRoute,
   AuthenticatedFeedLojistaRoute: AuthenticatedFeedLojistaRoute,
   AuthenticatedFeedParceiroRoute: AuthenticatedFeedParceiroRoute,
   AuthenticatedFeedPrestadorRoute: AuthenticatedFeedPrestadorRoute,
