@@ -112,7 +112,7 @@ export function LojistaPublicProfilePage() {
           const { data: osData } = await supabaseExternal
             .from("service_orders")
             .select("*")
-            .eq("store_id", storeId)
+            .eq("lojista_id", storeId)
             .eq("status", "PENDENTE")
             .order("created_at", { ascending: false });
           if (osData) setOrders(osData as ServiceOrder[]);
@@ -120,7 +120,7 @@ export function LojistaPublicProfilePage() {
           const { data: revData } = await supabaseExternal
             .from("store_reviews")
             .select("*")
-            .eq("store_id", storeId)
+            .eq("lojista_id", storeId)
             .order("created_at", { ascending: false });
           if (revData) setReviews(revData as Review[]);
         }
@@ -188,7 +188,7 @@ export function LojistaPublicProfilePage() {
     try {
       const { data: { user } } = await supabaseExternal.auth.getUser();
       const payload = {
-        store_id: storeId,
+        lojista_id: storeId,
         reviewer_id: user?.id,
         reviewer_name: user?.email?.split("@")[0] || "Anônimo",
         reviewer_category: "cliente" as const,
