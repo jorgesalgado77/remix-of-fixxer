@@ -118,6 +118,122 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ---------- Draft (rascunho) ----------
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+  const dataUrlToFile = (dataUrl: string, name: string, type: string): File => {
+    const [meta, b64] = dataUrl.split(",");
+    const mime = type || (meta.match(/data:(.*?);/)?.[1] ?? "application/octet-stream");
+    const bstr = atob(b64);
+    const u8 = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8[i] = bstr.charCodeAt(i);
+    return new File([u8], name, { type: mime });
+  };
+
+  const saveDraft = async () => {
+    try {
+      const filesPayload: any[] = [];
+      let skipped = 0;
+      for (const f of files) {
+        if (f.file.size > DRAFT_MAX_FILE_SIZE) {
+          skipped++;
+          continue;
+        }
+        try {
+          const dataUrl = await fileToDataUrl(f.file);
+          filesPayload.push({
+            name: f.file.name,
+            type: f.file.type,
+            size: f.file.size,
+            kind: f.kind,
+            dataUrl,
+          });
+        } catch {
+          skipped++;
+        }
+      }
+      const draft = {
+        v: 1,
+        savedAt: new Date().toISOString(),
+        category: defaultCategory,
+        serviceTypes, rooms, title, startDate, deadline, priority,
+        description, notes, techSpecs, otherChecked, otherText,
+        priceType, fixedValue, contractValue, commissionPct,
+        files: filesPayload,
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      toast.success(
+        skipped > 0
+          ? `Rascunho salvo. ${skipped} arquivo(s) não couberam no rascunho.`
+          : "Rascunho salvo. Você pode continuar depois.",
+      );
+    } catch (e: any) {
+      toast.error("Não foi possível salvar o rascunho (armazenamento cheio).");
+    }
+  };
+
+  const loadDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      setServiceTypes(d.serviceTypes || []);
+      setRooms(d.rooms || 1);
+      setTitle(d.title || "");
+      setStartDate(d.startDate || "");
+      setDeadline(d.deadline || "");
+      setPriority(d.priority || "media");
+      setDescription(d.description || "");
+      setNotes(d.notes || "");
+      setTechSpecs(d.techSpecs || []);
+      setOtherChecked(!!d.otherChecked);
+      setOtherText(d.otherText || "");
+      setPriceType(d.priceType || "fixo");
+      setFixedValue(d.fixedValue || "");
+      setContractValue(d.contractValue || "");
+      setCommissionPct(d.commissionPct || "");
+      const restored: UploadItem[] = (d.files || []).map((f: any) => {
+        const file = dataUrlToFile(f.dataUrl, f.name, f.type);
+        return {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          file,
+          url: URL.createObjectURL(file),
+          kind: f.kind || "image",
+          progress: 100,
+        };
+      });
+      setFiles(restored);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {}
+  };
+
+  // Auto-load draft ao abrir
+  useEffect(() => {
+    if (!open) return;
+    const hasDraft = !!localStorage.getItem(DRAFT_KEY);
+    if (hasDraft && files.length === 0 && !title && !description) {
+      const ok = loadDraft();
+      if (ok) toast.info("Rascunho anterior restaurado.", { duration: 2500 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+
+
   const toggleServiceType = (t: string) => {
     setServiceTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   };
