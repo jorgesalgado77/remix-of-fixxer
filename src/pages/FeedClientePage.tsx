@@ -20,7 +20,11 @@ import {
   Award,
   User as UserIcon,
   Sparkles,
+  ArrowUpDown,
+  ClipboardList,
+  ChevronDown,
 } from "lucide-react";
+
 
 // =============================================================================
 // TIPOS
