@@ -1250,6 +1250,50 @@ export default function FeedPrestadorPage() {
       {lightbox && (
         <Lightbox job={lightbox.job} index={lightbox.index} onClose={() => setLightbox(null)} />
       )}
+
+      <FeedDetailsModal
+        data={
+          detailsFor
+            ? ({
+                id: detailsFor.id,
+                title: detailsFor.title,
+                description: detailsFor.description,
+                category: detailsFor.type === "cliente_final" ? "cliente" : "lojista",
+                status: getFeedStatus(detailsFor.id),
+                author: {
+                  id: detailsFor.contractor.id,
+                  name: detailsFor.contractor.name,
+                  initials: detailsFor.contractor.initials,
+                },
+                authorHref:
+                  detailsFor.type === "cliente_final"
+                    ? `/cliente/${detailsFor.contractor.id}`
+                    : `/lojista/${detailsFor.contractor.id}`,
+                city: `${detailsFor.city}/${detailsFor.state}`,
+                postedAt: detailsFor.postedAt,
+                rating: detailsFor.rating,
+                badges: [detailsFor.subcategory],
+                metaRows: [
+                  { label: "Valor", value: detailsFor.value },
+                  { label: "Local", value: `${detailsFor.city}/${detailsFor.state}` },
+                  { label: "Publicado", value: detailsFor.postedAt },
+                ],
+                media: detailsFor.media,
+                ctaLabel: applied.has(detailsFor.id) ? "Candidatado" : "Candidatar-se",
+              } satisfies FeedDetailsData)
+            : null
+        }
+        isSaved={detailsFor ? saved.has(detailsFor.id) : false}
+        onSave={() => detailsFor && toggleSave(detailsFor.id)}
+        onChat={() => {
+          if (detailsFor) {
+            const j = detailsFor;
+            setDetailsFor(null);
+            openChatWith(j);
+          }
+        }}
+        onClose={() => setDetailsFor(null)}
+      />
     </div>
   );
 }
