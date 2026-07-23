@@ -14,6 +14,9 @@ import {
   Image as ImageIcon,
   RotateCcw,
   AlertCircle,
+  Download,
+  Check,
+  CheckCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -25,9 +28,12 @@ import {
   markConversationReadLocal,
   setConversationArchived,
   setConversationMuted,
+  fetchPeerLastReadAt,
+  subscribePeerReadReceipts,
 } from "@/lib/chat-preferences";
 import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
+import { downloadAttachment } from "@/lib/attachment-download";
 
 export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
@@ -43,9 +49,11 @@ type MessageRow = {
   attachment_url?: string | null;
   attachment_type?: string | null;
   attachment_name?: string | null;
+  client_message_id?: string | null;
   // Cliente apenas:
   _pending?: boolean;
   _failed?: boolean;
+  _clientId?: string;
   _draftText?: string;
   _draftFile?: File | null;
 };
@@ -55,6 +63,13 @@ const PAGE_SIZE = 30;
 function isImageType(t?: string | null) {
   return !!t && t.startsWith("image/");
 }
+
+function newClientId(): string {
+  const g: any = typeof globalThis !== "undefined" ? globalThis : {};
+  if (g.crypto?.randomUUID) return g.crypto.randomUUID();
+  return `cmid-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 
 function ConversationPage() {
   const { peerId } = Route.useParams();
@@ -70,12 +85,14 @@ function ConversationPage() {
   const [hasMore, setHasMore] = useState(true);
   const [muted, setMuted] = useState(false);
   const [archived, setArchived] = useState(false);
+  const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
 
   // Anexos + progresso
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [downloads, setDownloads] = useState<Record<string, { pct: number; loading: boolean }>>({});
 
   // Presença + typing
   const [peerOnline, setPeerOnline] = useState(false);
@@ -90,7 +107,8 @@ function ConversationPage() {
   const idSetRef = useRef<Set<string>>(new Set());
 
   const selectCols =
-    "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name";
+    "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name, client_message_id";
+
 
   const loadPage = useCallback(
     async (uid: string, beforeIso?: string): Promise<MessageRow[]> => {
@@ -140,6 +158,7 @@ function ConversationPage() {
     let cancelled = false;
     let channel: any = null;
     let presenceChannel: any = null;
+    let unsubPeerRead: (() => void) | null = null;
     let expireTimer: ReturnType<typeof setInterval> | null = null;
     let lastPeerHeartbeat = 0;
 
@@ -176,6 +195,15 @@ function ConversationPage() {
       }
       await markIncomingRead(uid);
 
+      // Read receipts do peer (quando ele visualizou minhas mensagens)
+      const initialPeerRead = await fetchPeerLastReadAt(uid, peerId);
+      if (!cancelled) setPeerLastReadAt(initialPeerRead);
+      unsubPeerRead = subscribePeerReadReceipts(uid, peerId, (at) => {
+        setPeerLastReadAt((prev) => (!prev || new Date(at) > new Date(prev) ? at : prev));
+      });
+
+
+
       // Canal de INSERT/UPDATE de mensagens
       try {
         const channelName = `chat-conv-${Math.random().toString(36).slice(2)}`;
@@ -183,7 +211,7 @@ function ConversationPage() {
           .channel(channelName)
           .on(
             "postgres_changes" as any,
-            { event: "INSERT", schema: "public", table: "messages" },
+            { event: "*", schema: "public", table: "messages" },
             (payload: any) => {
               const m = payload?.new as MessageRow | undefined;
               if (!m) return;
@@ -191,14 +219,37 @@ function ConversationPage() {
                 (m.sender_id === uid && m.recipient_id === peerId) ||
                 (m.sender_id === peerId && m.recipient_id === uid);
               if (!inConv) return;
-              if (idSetRef.current.has(m.id)) return;
-              idSetRef.current.add(m.id);
-              setMessages((prev) => [...prev, m]);
-              if (m.recipient_id === uid) markIncomingRead(uid);
+              // Idempotência: se veio da minha própria escrita otimista,
+              // atualiza a linha em vez de duplicar (match por client_message_id).
+              if (m.client_message_id) {
+                setMessages((prev) => {
+                  const idx = prev.findIndex(
+                    (x) => x._clientId === m.client_message_id || x.id === m.client_message_id,
+                  );
+                  if (idx >= 0) {
+                    idSetRef.current.add(m.id);
+                    const next = prev.slice();
+                    next[idx] = { ...m, _clientId: m.client_message_id ?? next[idx]._clientId };
+                    return next;
+                  }
+                  if (idSetRef.current.has(m.id)) {
+                    return prev.map((x) => (x.id === m.id ? { ...x, ...m } : x));
+                  }
+                  idSetRef.current.add(m.id);
+                  return [...prev, m];
+                });
+              } else if (idSetRef.current.has(m.id)) {
+                setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+              } else {
+                idSetRef.current.add(m.id);
+                setMessages((prev) => [...prev, m]);
+              }
+              if (m.recipient_id === uid && payload?.eventType !== "UPDATE") markIncomingRead(uid);
             },
           )
           .subscribe();
       } catch {}
+
 
       // Canal de presença + typing (broadcast) — chave estável por par
       try {
@@ -259,6 +310,7 @@ function ConversationPage() {
       try { sendTypingStop(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
       if (presenceChannel) { try { supabaseExternal.removeChannel(presenceChannel); } catch {} }
+      if (unsubPeerRead) { try { unsubPeerRead(); } catch {} }
       presenceRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -324,27 +376,62 @@ function ConversationPage() {
     }
   };
 
+  /**
+   * Persistência idempotente: usa `client_message_id` como chave de conflito
+   * para que retries após falha parcial de rede não criem duplicatas.
+   */
   const persistMessage = async (
-    tmpId: string,
+    clientId: string,
     text: string,
     attachment: { url: string; type: string; name: string } | null,
   ) => {
-    const payload: any = { sender_id: userId, recipient_id: peerId, content: text || null, read: false };
+    const payload: any = {
+      sender_id: userId,
+      recipient_id: peerId,
+      content: text || null,
+      read: false,
+      client_message_id: clientId,
+    };
     if (attachment) {
       payload.attachment_url = attachment.url;
       payload.attachment_type = attachment.type;
       payload.attachment_name = attachment.name;
     }
-    const { data, error } = await supabaseExternal
-      .from("messages")
-      .insert(payload)
-      .select(selectCols)
-      .maybeSingle();
-    if (error) throw error;
-    if (data) {
-      const row = data as unknown as MessageRow;
+
+    const tryUpsert = async (cols: string) =>
+      supabaseExternal
+        .from("messages")
+        .upsert(payload, { onConflict: "client_message_id", ignoreDuplicates: false })
+        .select(cols)
+        .maybeSingle();
+
+    let row: MessageRow | null = null;
+    try {
+      const { data, error } = await tryUpsert(selectCols);
+      if (error) throw error;
+      row = (data as unknown as MessageRow) ?? null;
+    } catch (err: any) {
+      // Fallback quando client_message_id ainda não existe no schema
+      const msg = String(err?.message || "");
+      if (msg.includes("client_message_id") || err?.code === "42703") {
+        delete payload.client_message_id;
+        const { data, error } = await supabaseExternal
+          .from("messages")
+          .insert(payload)
+          .select("id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name")
+          .maybeSingle();
+        if (error) throw error;
+        row = (data as unknown as MessageRow) ?? null;
+      } else {
+        throw err;
+      }
+    }
+
+    if (row) {
       idSetRef.current.add(row.id);
-      setMessages((prev) => prev.map((m) => (m.id === tmpId ? row : m)));
+      setMessages((prev) =>
+        prev.map((m) => (m._clientId === clientId || m.id === clientId ? { ...row!, _clientId: clientId } : m)),
+      );
     }
   };
 
@@ -355,15 +442,16 @@ function ConversationPage() {
     sendTypingStop();
 
     const draftFile = pendingFile;
-    const tmpId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const clientId = newClientId();
     const optimistic: MessageRow = {
-      id: tmpId,
+      id: clientId,
       sender_id: userId,
       recipient_id: peerId,
       content: text || null,
       created_at: new Date().toISOString(),
       read: false,
       _pending: true,
+      _clientId: clientId,
       _draftText: text,
       _draftFile: draftFile,
     };
@@ -377,11 +465,11 @@ function ConversationPage() {
         attachment = await doUpload(draftFile);
         if (!attachment) throw new Error("Upload cancelado");
       }
-      await persistMessage(tmpId, text, attachment);
+      await persistMessage(clientId, text, attachment);
     } catch (e: any) {
       toast.error("Falha ao enviar", { description: e?.message });
       setMessages((prev) =>
-        prev.map((m) => (m.id === tmpId ? { ...m, _pending: false, _failed: true } : m)),
+        prev.map((m) => (m._clientId === clientId ? { ...m, _pending: false, _failed: true } : m)),
       );
     } finally {
       setSending(false);
@@ -390,21 +478,25 @@ function ConversationPage() {
 
   const retrySend = async (m: MessageRow) => {
     if (!userId) return;
-    setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, _pending: true, _failed: false } : x)));
+    const clientId = m._clientId || m.id;
+    setMessages((prev) =>
+      prev.map((x) => (x._clientId === clientId || x.id === clientId ? { ...x, _pending: true, _failed: false } : x)),
+    );
     try {
       let attachment: { url: string; type: string; name: string } | null = null;
       if (m._draftFile) {
         attachment = await doUpload(m._draftFile);
         if (!attachment) throw new Error("Upload cancelado");
       }
-      await persistMessage(m.id, m._draftText || "", attachment);
+      await persistMessage(clientId, m._draftText || "", attachment);
     } catch (e: any) {
       toast.error("Retentativa falhou", { description: e?.message });
       setMessages((prev) =>
-        prev.map((x) => (x.id === m.id ? { ...x, _pending: false, _failed: true } : x)),
+        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true } : x)),
       );
     }
   };
+
 
   const discardFailed = (id: string) => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
@@ -553,25 +645,31 @@ function ConversationPage() {
                       } ${m._pending ? "opacity-70" : ""}`}
                     >
                       {m.attachment_url && (
-                        <div className="mb-1">
-                          {isImageType(m.attachment_type) ? (
-                            <a href={m.attachment_url} target="_blank" rel="noreferrer">
-                              <img src={m.attachment_url} alt={m.attachment_name || "Anexo"} className="rounded-lg max-h-64 object-cover" />
-                            </a>
-                          ) : (
-                            <a
-                              href={m.attachment_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${
-                                mine ? "bg-black/20" : "bg-white/5 border border-white/10"
-                              }`}
-                            >
-                              <FileText className="w-4 h-4" />
-                              <span className="truncate max-w-[200px]">{m.attachment_name || "Anexo"}</span>
-                            </a>
-                          )}
-                        </div>
+                        <AttachmentBlock
+                          url={m.attachment_url}
+                          type={m.attachment_type}
+                          name={m.attachment_name || "anexo"}
+                          mine={mine}
+                          messageId={m.id}
+                          state={downloads[m.id]}
+                          onDownload={async () => {
+                            setDownloads((s) => ({ ...s, [m.id]: { pct: 0, loading: true } }));
+                            try {
+                              await downloadAttachment(m.attachment_url!, m.attachment_name || "anexo", (p) =>
+                                setDownloads((s) => ({ ...s, [m.id]: { pct: p.percent, loading: true } })),
+                              );
+                              toast.success("Download concluído");
+                            } catch (err: any) {
+                              toast.error("Falha no download", { description: err?.message });
+                            } finally {
+                              setDownloads((s) => {
+                                const next = { ...s };
+                                delete next[m.id];
+                                return next;
+                              });
+                            }
+                          }}
+                        />
                       )}
                       {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
                       {m._pending && uploading && m._draftFile && (
@@ -581,7 +679,28 @@ function ConversationPage() {
                       )}
                       <p className={`text-[9px] mt-1 flex items-center gap-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
                         {new Date(m.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                        {mine && !m._pending && !m._failed && (m.read ? " · Lida" : " · Enviada")}
+                        {mine && !m._pending && !m._failed && (() => {
+                          const seenAt =
+                            peerLastReadAt && new Date(m.created_at) <= new Date(peerLastReadAt)
+                              ? peerLastReadAt
+                              : null;
+                          const isRead = !!m.read || !!seenAt;
+                          return (
+                            <span className="inline-flex items-center gap-0.5">
+                              {" · "}
+                              {isRead ? (
+                                <CheckCheck className="w-3 h-3 text-sky-300 inline" />
+                              ) : (
+                                <Check className="w-3 h-3 inline" />
+                              )}
+                              {isRead
+                                ? seenAt
+                                  ? `Visto ${new Date(seenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                                  : "Visto"
+                                : "Enviada"}
+                            </span>
+                          );
+                        })()}
                         {m._pending && <> · <Loader2 className="w-2.5 h-2.5 animate-spin inline" /> enviando</>}
                         {m._failed && (
                           <>
@@ -602,6 +721,7 @@ function ConversationPage() {
                           </>
                         )}
                       </p>
+
                     </div>
                   </div>
                 );
@@ -698,3 +818,62 @@ function ConversationPage() {
     </div>
   );
 }
+
+function AttachmentBlock({
+  url,
+  type,
+  name,
+  mine,
+  state,
+  onDownload,
+}: {
+  url: string;
+  type?: string | null;
+  name: string;
+  mine: boolean;
+  messageId: string;
+  state?: { pct: number; loading: boolean };
+  onDownload: () => void;
+}) {
+  const image = isImageType(type);
+  return (
+    <div className="mb-1 space-y-1">
+      {image ? (
+        <img src={url} alt={name} className="rounded-lg max-h-64 object-cover" />
+      ) : (
+        <div
+          className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${
+            mine ? "bg-black/20" : "bg-white/5 border border-white/10"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span className="truncate max-w-[200px]">{name}</span>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={onDownload}
+        disabled={state?.loading}
+        className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${
+          mine ? "bg-black/25 hover:bg-black/40" : "bg-white/10 hover:bg-white/20"
+        } disabled:opacity-60`}
+      >
+        {state?.loading ? (
+          <>
+            <Loader2 className="w-3 h-3 animate-spin" /> {state.pct}%
+          </>
+        ) : (
+          <>
+            <Download className="w-3 h-3" /> Baixar
+          </>
+        )}
+      </button>
+      {state?.loading && (
+        <div className="w-full bg-black/30 rounded-full h-1 overflow-hidden">
+          <div className="h-full bg-white/80 transition-all" style={{ width: `${state.pct}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
