@@ -1,10 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
 import { compressImage } from "@/utils/image-compression";
 import { MaskedInput } from "@/components/MaskedInput";
+import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+
+function roleToCategory(role?: string | null): CategoryKey {
+  const r = (role || "").toLowerCase();
+  if (r === "admin") return "admin";
+  if (r === "lojista") return "lojista";
+  if (r === "prestador") return "prestador";
+  if (r === "parceiro" || r === "fornecedor") return "fornecedor";
+  if (r === "cliente" || r === "casual") return "cliente";
+  return "cliente";
+}
 
 
 export const Route = createFileRoute("/_authenticated/profile")({
