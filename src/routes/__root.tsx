@@ -159,15 +159,24 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     fixAuthAndPreview();
   }, []);
 
+  // Rotas públicas/marketing/auth onde a barra não deve aparecer
+  const hideBar =
+    pathname === "/" ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/cadastro") ||
+    pathname.startsWith("/terms");
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      {!hideBar && <GlobalActionBar />}
       <Toaster closeButton duration={2000} />
     </QueryClientProvider>
   );
