@@ -1081,7 +1081,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                                                             <div className="text-[8px] font-black uppercase text-muted-foreground italic mb-3">Ações Rápidas</div>
                                                             <div className="flex flex-wrap gap-2 w-full">
                                                                 <Link 
-                                                                    to="/_authenticated/feed" 
+                                                                    to="/_authenticated/feed/lojista" 
                                                                     search={{ context: service.id }}
                                                                     className="flex-1 min-w-[110px] flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2.5 rounded-lg transition-all"
                                                                 >

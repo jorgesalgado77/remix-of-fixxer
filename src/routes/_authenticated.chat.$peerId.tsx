@@ -38,6 +38,16 @@ import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
+import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+
+function roleToCategory(role: string | null | undefined): CategoryKey {
+  const r = (role || "").toLowerCase();
+  if (r.includes("lojista")) return "lojista";
+  if (r.includes("fornec") || r.includes("parceiro")) return "fornecedor";
+  if (r.includes("cliente") || r.includes("casual")) return "cliente";
+  if (r.includes("admin")) return "admin";
+  return "prestador";
+}
 import {
   clearDraft,
   getDraftFiles,
@@ -110,6 +120,7 @@ function ConversationPage() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [peerName, setPeerName] = useState<string>("Conversa");
   const [peerAvatar, setPeerAvatar] = useState<string | null>(null);
+  const [peerRole, setPeerRole] = useState<string | null>(null);
   const [content, setContent] = useState<string>(() => getDraftText(peerId));
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -211,6 +222,7 @@ function ConversationPage() {
         if (mock) {
           setPeerName(mock.peerName);
           setPeerAvatar(mock.peerAvatar);
+          setPeerRole(mock.peerRole);
           setPeerOnline(!!mock.online);
           const mockRows: MessageRow[] = mock.messages.map((m) => ({
             id: `${peerId}-${m.id}`,
@@ -238,12 +250,13 @@ function ConversationPage() {
       try {
         const { data: p } = await supabaseExternal
           .from("profiles")
-          .select("id, full_name, avatar_url")
+          .select("id, full_name, avatar_url, role")
           .eq("id", peerId)
           .maybeSingle();
         if (p && !cancelled) {
           setPeerName((p as any).full_name || "Conversa");
           setPeerAvatar((p as any).avatar_url ?? null);
+          setPeerRole((p as any).role ?? null);
         }
       } catch {}
 
@@ -680,9 +693,14 @@ function ConversationPage() {
 
   const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
 
+  const peerTheme = getCategoryTheme(roleToCategory(peerRole));
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col pb-32">
-      <header className="sticky top-0 z-10 bg-black/85 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center gap-3">
+      <header
+        className="sticky top-0 z-10 bg-black/85 backdrop-blur-xl border-b-2 px-4 py-3 flex items-center gap-3"
+        style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)` }}
+      >
         <button
           onClick={() => navigate({ to: "/chat" as any })}
           className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
@@ -690,11 +708,14 @@ function ConversationPage() {
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0 relative">
+        <div
+          className="w-10 h-10 rounded-full bg-white/5 border-2 overflow-hidden flex items-center justify-center shrink-0 relative"
+          style={{ borderColor: peerTheme.hex, boxShadow: `0 0 12px rgba(${peerTheme.rgb}, 0.45)` }}
+        >
           {peerAvatar ? (
             <img src={peerAvatar} alt={peerName} className="w-full h-full object-cover" />
           ) : (
-            <span className="font-black italic text-primary">{peerName.slice(0, 1).toUpperCase()}</span>
+            <span className="font-black italic" style={{ color: peerTheme.hex }}>{peerName.slice(0, 1).toUpperCase()}</span>
           )}
           {peerOnline && (
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-black" />
@@ -702,9 +723,17 @@ function ConversationPage() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold flex items-center gap-1">
-            {markingRead && <Loader2 className="w-3 h-3 animate-spin" />}
-            {statusLine}
+          <p className="text-[10px] uppercase tracking-widest font-bold flex items-center gap-2">
+            <span
+              className="px-1.5 py-0.5 rounded font-black"
+              style={{ backgroundColor: `rgba(${peerTheme.rgb}, 0.15)`, color: peerTheme.hex }}
+            >
+              {peerTheme.label}
+            </span>
+            <span className="text-muted-foreground flex items-center gap-1">
+              {markingRead && <Loader2 className="w-3 h-3 animate-spin" />}
+              {statusLine}
+            </span>
           </p>
         </div>
         <button
