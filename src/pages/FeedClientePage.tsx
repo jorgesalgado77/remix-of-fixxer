@@ -550,7 +550,7 @@ export default function FeedClientePage() {
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0A0A0B]/90 border-b border-white/10">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link
-            to="/_authenticated/cliente"
+            to="/cliente"
             className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:border-[#00FF87]/50 transition-all shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />

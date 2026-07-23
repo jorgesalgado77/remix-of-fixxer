@@ -103,7 +103,7 @@ export function AdminDashboardComponent() {
             <Activity className="w-4 h-4 group-hover:animate-pulse" />
             Acessar Feed da Categoria
           </button>
-          <Link to="/_authenticated/profile" className="p-3 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
+          <Link to="/profile" className="p-3 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
             <User className="w-5 h-5" />
           </Link>
         </div>

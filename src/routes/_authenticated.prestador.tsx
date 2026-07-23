@@ -48,10 +48,10 @@ function PrestadorDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/_authenticated/feed/prestador" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
+          <Link to="/feed/prestador" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
             <Briefcase className="w-4 h-4" /> Acessar Feed da Categoria
           </Link>
-          <Link to="/_authenticated/profile" className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
+          <Link to="/profile" className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
             <User className="w-5 h-5" />
           </Link>
         </div>

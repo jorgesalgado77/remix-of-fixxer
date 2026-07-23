@@ -51,11 +51,11 @@ function ClientePortal() {
         
         <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
           <TabButton active={activeTab === 'jornada'} onClick={() => setActiveTab('jornada')} label="Minha Obra" icon={<Clock className="w-3 h-3" />} />
-          <Link to="/_authenticated/feed/cliente" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-[10px] tracking-widest hover:shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all">
+          <Link to="/feed/cliente" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-[10px] tracking-widest hover:shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all">
              <Search className="w-3 h-3" /> Acessar Feed da Categoria
           </Link>
           <TabButton active={activeTab === 'contratacoes'} onClick={() => setActiveTab('contratacoes')} label="Contratações" icon={<ShieldCheck className="w-3 h-3" />} />
-          <Link to="/_authenticated/profile" className="p-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all shrink-0">
+          <Link to="/profile" className="p-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all shrink-0">
             <User className="w-4 h-4" />
           </Link>
         </div>
