@@ -398,9 +398,17 @@ export function LojistaPublicProfilePage() {
     return items;
   }, [photoSections, photoFilter, mediaTypeFilter, gallerySearch, gallerySort]);
 
+  // Reseta a paginação quando filtros/ordem/busca mudam
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [photoFilter, mediaTypeFilter, gallerySearch, gallerySort]);
+
+  const pagedMedia = useMemo(() => visibleMedia.slice(0, visibleCount), [visibleMedia, visibleCount]);
+  const hasMore = visibleCount < visibleMedia.length;
+
   const visiblePhotos = useMemo(
-    () => visibleMedia.filter((i) => i.kind === "photo"),
-    [visibleMedia],
+    () => pagedMedia.filter((i) => i.kind === "photo"),
+    [pagedMedia],
   );
   const gallery = useMemo(() => visiblePhotos.map((i) => i.url), [visiblePhotos]);
   const videos = profile?.video_urls || [];
