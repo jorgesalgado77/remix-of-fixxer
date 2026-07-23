@@ -1024,6 +1024,51 @@ export default function FeedLojistaPage() {
           </div>
         </ModalShell>
       )}
+      {/* Modal de Detalhes do Post */}
+      <FeedDetailsModal
+        data={
+          detailsFor
+            ? ({
+                id: detailsFor.id,
+                title: detailsFor.title,
+                description: detailsFor.description,
+                category: detailsFor.category,
+                status: getFeedStatus(detailsFor.id),
+                author: {
+                  id: detailsFor.author.id,
+                  name: detailsFor.author.name,
+                  initials: detailsFor.author.avatarInitials,
+                },
+                authorHref: authorHref(detailsFor),
+                city: detailsFor.city,
+                postedAt: detailsFor.postedAt,
+                rating: detailsFor.rating,
+                badges: [
+                  categoryBadge(detailsFor.category).label,
+                  ...(detailsFor.specialty ? [detailsFor.specialty] : []),
+                  ...(detailsFor.radiusKm ? [`Raio ${detailsFor.radiusKm} km`] : []),
+                ],
+                metaRows: [
+                  ...(detailsFor.budget ? [{ label: "Orçamento", value: detailsFor.budget }] : []),
+                  { label: "Publicado", value: detailsFor.postedAt },
+                  { label: "Local", value: detailsFor.city },
+                ],
+                media: detailsFor.media,
+                ctaLabel: "Entrar em contato",
+              } satisfies FeedDetailsData)
+            : null
+        }
+        isSaved={detailsFor ? saved.has(detailsFor.id) : false}
+        onSave={() => detailsFor && toggleSaved(detailsFor.id)}
+        onChat={() => {
+          if (detailsFor) {
+            const p = detailsFor;
+            setDetailsFor(null);
+            openChat(p);
+          }
+        }}
+        onClose={() => setDetailsFor(null)}
+      />
     </div>
   );
 }
