@@ -1229,3 +1229,134 @@ function PublishModal({
     </div>
   );
 }
+
+// =============================================================================
+// EDIT NEED MODAL
+// =============================================================================
+
+function EditNeedModal({
+  need,
+  onClose,
+  onSave,
+  glassClass,
+}: {
+  need: MyNeed;
+  onClose: () => void;
+  onSave: (u: {
+    id: string;
+    title: string;
+    category: string;
+    location: string;
+    content?: string;
+    status: string;
+  }) => Promise<void>;
+  glassClass: string;
+}) {
+  const [title, setTitle] = useState(need.title);
+  const [category, setCategory] = useState(need.category ?? "Montagem");
+  const [location, setLocation] = useState(need.location ?? "");
+  const [status, setStatus] = useState<string>((need.metadata?.status as string) || "active");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      toast.error("Informe um título.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave({ id: need.id, title, category, location, status });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`${glassClass} w-full max-w-md border border-white/10 rounded-3xl p-6 space-y-4 bg-[#1A1A1B]`}
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
+            <Pencil className="w-4 h-4 text-[#00FF87]" />
+            Editar Necessidade
+          </h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+              Título
+            </label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none font-medium"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+                Categoria
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none font-medium appearance-none"
+              >
+                <option>Montagem</option>
+                <option>Planejados</option>
+                <option>Assistência Técnica</option>
+                <option>Reforma</option>
+                <option>Outros</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+                Cidade
+              </label>
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none font-medium"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+              Status
+            </label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none font-medium appearance-none"
+            >
+              <option value="active">Ativa</option>
+              <option value="paused">Pausada</option>
+              <option value="closed">Encerrada</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {saving ? "Salvando..." : "Salvar Alterações"}
+          {!saving && <Check className="w-3 h-3" />}
+        </button>
+      </div>
+    </div>
+  );
+}
