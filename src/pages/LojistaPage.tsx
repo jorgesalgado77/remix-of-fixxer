@@ -1672,7 +1672,8 @@ function ProfileView({
                     ))}
                 </div>
             )}
-            <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
+            <div id="settings-section" className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl scroll-mt-24">
+
                  <div className="flex flex-col gap-4 mb-4 pb-4 border-b border-white/5">
                      <div className="flex items-center gap-4">
                          <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,255,135,0.1)]">
