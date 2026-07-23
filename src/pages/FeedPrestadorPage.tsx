@@ -323,16 +323,16 @@ function UrgencyBadge({ urgency }: { urgency: JobPost["urgency"] }) {
 }
 
 function TypeBadge({ type }: { type: ContractType }) {
-  if (type === "lojista") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 text-[#FF9F0A] text-[8px] font-black uppercase tracking-widest">
-        <Store className="w-2.5 h-2.5" /> Lojista
-      </span>
-    );
-  }
+  const cat = type === "lojista" ? "lojista" : "cliente";
+  const theme = getCategoryTheme(cat);
+  const Icon = type === "lojista" ? Store : User;
+  const label = type === "lojista" ? "Lojista" : "Cliente Final";
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-black uppercase tracking-widest">
-      <User className="w-2.5 h-2.5" /> Cliente Final
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest"
+      style={{ ...theme.bgSoft, ...theme.borderSoft, ...theme.color }}
+    >
+      <Icon className="w-2.5 h-2.5" /> {label}
     </span>
   );
 }
