@@ -1399,7 +1399,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
             }
 
             // Preview para Logo (apenas se for arquivo único ou o primeiro da lista)
-            if (type === 'logo' && !cropImage) {
+            if (type === 'logo') {
                 const reader = new FileReader();
                 reader.onload = () => {
                     setCropImage(reader.result as string);
