@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Expand,
+  GripVertical,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,24 @@ import { useMediaUpload } from '@/hooks/use-media-upload';
 import { processImage } from '@/utils/image-compression';
 import { validateImage } from '@/utils/image-validation';
 import { supabaseExternal } from '@/lib/supabaseExternal';
+import { ImageEditorModal } from '@/components/ImageEditorModal';
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export type CustomPhotoSection = { id: string; name: string; photos: PhotoItem[] };
 export type PhotoItem = { url: string; thumbUrl?: string } | string;
@@ -32,8 +51,8 @@ export const EMPTY_PHOTO_SECTIONS: PhotoSectionsValue = { showroom: [], assembli
 
 // ---------- Limites configuráveis ----------
 export interface PhotoLimits {
-  imgMaxMB: number;         // tamanho máximo por arquivo
-  sectionTotalMaxMB: number;// tamanho total acumulado por seção (estimativa client-side)
+  imgMaxMB: number;
+  sectionTotalMaxMB: number;
   maxShowroom: number;
   maxAssemblies: number;
   maxCustomSections: number;
@@ -54,7 +73,6 @@ const BUCKET = 'media';
 const getUrl = (p: PhotoItem): string => (typeof p === 'string' ? p : p.url);
 const getThumb = (p: PhotoItem): string => (typeof p === 'string' ? p : (p.thumbUrl || p.url));
 
-// Extrai o path relativo dentro do bucket a partir da URL pública do Supabase Storage.
 function extractStoragePath(url: string): string | null {
   const marker = `/storage/v1/object/public/${BUCKET}/`;
   const idx = url.indexOf(marker);
@@ -100,7 +118,17 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
-  // Lightbox global (todas as fotos, todas as seções)
+  // Editor de imagem (fila de arquivos para rotacionar/recortar antes do upload)
+  const [editorFiles, setEditorFiles] = useState<File[] | null>(null);
+  const editorTargetRef = useRef<((files: File[]) => Promise<void>) | null>(null);
+
+  const openEditor = (files: File[], onConfirm: (edited: File[]) => Promise<void>) => {
+    if (!files.length) return;
+    editorTargetRef.current = onConfirm;
+    setEditorFiles(files);
+  };
+
+  // Lightbox global
   const flatPhotos = useMemo(() => {
     const list: { url: string; thumb: string; sectionName: string }[] = [];
     safe.showroom.forEach((p) => list.push({ url: getUrl(p), thumb: getThumb(p), sectionName: 'Show Room' }));
@@ -124,8 +152,7 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
       toast.error('Limite de fotos atingido', { description: `Esta seção só permite ${limit} fotos.` });
       return [];
     }
-    let list = files.slice(0, remaining);
-    // Limite de tamanho total (estimado apenas para o lote atual)
+    const list = files.slice(0, remaining);
     const totalBytes = list.reduce((s, f) => s + f.size, 0);
     if (totalBytes > L.sectionTotalMaxMB * 1024 * 1024) {
       toast.error('Tamanho total excedido', {
@@ -172,31 +199,37 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
     return uploaded;
   };
 
-  // -------- add handlers --------
-  const handleAddShowroom = async (files: File[]) => {
-    setBusyKey('showroom');
-    const urls = await uploadImages(files, 'showroom', L.maxShowroom, safe.showroom);
-    if (urls.length) onChange({ ...safe, showroom: [...safe.showroom, ...urls] });
-    setBusyKey(null);
+  // -------- add handlers (abrem editor primeiro) --------
+  const handleAddShowroom = (files: File[]) => {
+    openEditor(files, async (edited) => {
+      setBusyKey('showroom');
+      const urls = await uploadImages(edited, 'showroom', L.maxShowroom, safe.showroom);
+      if (urls.length) onChange({ ...safe, showroom: [...safe.showroom, ...urls] });
+      setBusyKey(null);
+    });
   };
-  const handleAddAssemblies = async (files: File[]) => {
-    setBusyKey('assemblies');
-    const urls = await uploadImages(files, 'assemblies', L.maxAssemblies, safe.assemblies);
-    if (urls.length) onChange({ ...safe, assemblies: [...safe.assemblies, ...urls] });
-    setBusyKey(null);
+  const handleAddAssemblies = (files: File[]) => {
+    openEditor(files, async (edited) => {
+      setBusyKey('assemblies');
+      const urls = await uploadImages(edited, 'assemblies', L.maxAssemblies, safe.assemblies);
+      if (urls.length) onChange({ ...safe, assemblies: [...safe.assemblies, ...urls] });
+      setBusyKey(null);
+    });
   };
-  const handleAddCustom = async (sectionId: string, files: File[]) => {
-    const section = safe.custom.find((s) => s.id === sectionId);
-    if (!section) return;
-    setBusyKey(sectionId);
-    const urls = await uploadImages(files, `custom-${sectionId}`, L.maxCustomPhotos, section.photos);
-    if (urls.length) {
-      onChange({
-        ...safe,
-        custom: safe.custom.map((s) => (s.id === sectionId ? { ...s, photos: [...s.photos, ...urls] } : s)),
-      });
-    }
-    setBusyKey(null);
+  const handleAddCustom = (sectionId: string, files: File[]) => {
+    openEditor(files, async (edited) => {
+      const section = safe.custom.find((s) => s.id === sectionId);
+      if (!section) return;
+      setBusyKey(sectionId);
+      const urls = await uploadImages(edited, `custom-${sectionId}`, L.maxCustomPhotos, section.photos);
+      if (urls.length) {
+        onChange({
+          ...safe,
+          custom: safe.custom.map((s) => (s.id === sectionId ? { ...s, photos: [...s.photos, ...urls] } : s)),
+        });
+      }
+      setBusyKey(null);
+    });
   };
 
   // -------- remove & replace --------
@@ -279,6 +312,15 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
     }).finally(() => setBusyKey(null));
   };
 
+  // -------- reorder handlers --------
+  const reorderShowroom = (next: PhotoItem[]) => onChange({ ...safe, showroom: next });
+  const reorderAssemblies = (next: PhotoItem[]) => onChange({ ...safe, assemblies: next });
+  const reorderCustom = (sectionId: string, next: PhotoItem[]) =>
+    onChange({
+      ...safe,
+      custom: safe.custom.map((s) => (s.id === sectionId ? { ...s, photos: next } : s)),
+    });
+
   // -------- section CRUD --------
   const addSection = () => {
     if (safe.custom.length >= L.maxCustomSections) {
@@ -306,6 +348,7 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
   };
 
   const inProgress = uploadProgress.filter((p) => !p.error && p.progress < 100);
+  const errorList = uploadProgress.filter((p) => p.error);
 
   return (
     <div className="space-y-8 pt-6 border-t border-white/5">
@@ -317,9 +360,10 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
         onAdd={handleAddShowroom}
         onRemove={removeShowroom}
         onReplace={replaceShowroom}
+        onReorder={reorderShowroom}
         onOpen={openLightbox}
         busy={busyKey === 'showroom'}
-        progressList={busyKey === 'showroom' ? inProgress : []}
+        progressList={busyKey === 'showroom' ? [...inProgress, ...errorList] : []}
       />
       <PhotoBlock
         title="Montagens Realizadas"
@@ -329,9 +373,10 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
         onAdd={handleAddAssemblies}
         onRemove={removeAssemblies}
         onReplace={replaceAssemblies}
+        onReorder={reorderAssemblies}
         onOpen={openLightbox}
         busy={busyKey === 'assemblies'}
-        progressList={busyKey === 'assemblies' ? inProgress : []}
+        progressList={busyKey === 'assemblies' ? [...inProgress, ...errorList] : []}
       />
 
       <div className="space-y-4">
@@ -416,13 +461,30 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
               onAdd={(files) => handleAddCustom(section.id, files)}
               onRemove={(item) => removeCustom(section.id, item)}
               onReplace={(item, file) => replaceCustom(section.id, item, file)}
+              onReorder={(next) => reorderCustom(section.id, next)}
               onOpen={openLightbox}
               busy={busyKey === section.id}
-              progressList={busyKey === section.id ? inProgress : []}
+              progressList={busyKey === section.id ? [...inProgress, ...errorList] : []}
             />
           </div>
         ))}
       </div>
+
+      {editorFiles && (
+        <ImageEditorModal
+          files={editorFiles}
+          onDone={async (edited) => {
+            const target = editorTargetRef.current;
+            setEditorFiles(null);
+            editorTargetRef.current = null;
+            if (target && edited.length) await target(edited);
+          }}
+          onCancel={() => {
+            setEditorFiles(null);
+            editorTargetRef.current = null;
+          }}
+        />
+      )}
 
       {lightboxIndex !== null && flatPhotos.length > 0 && (
         <Lightbox
@@ -436,6 +498,9 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
               return next;
             });
           }}
+          onJump={(target) => {
+            setLightboxIndex(target);
+          }}
         />
       )}
     </div>
@@ -444,18 +509,7 @@ export function PhotoSectionsManager({ value, onChange, limits }: Props) {
 
 // ---------- Sub-componentes ----------
 
-function PhotoBlock({
-  title,
-  icon,
-  photos,
-  max,
-  onAdd,
-  onRemove,
-  onReplace,
-  onOpen,
-  busy,
-  progressList,
-}: {
+function PhotoBlock(props: {
   title: string;
   icon: React.ReactNode;
   photos: PhotoItem[];
@@ -463,6 +517,7 @@ function PhotoBlock({
   onAdd: (files: File[]) => void;
   onRemove: (item: PhotoItem) => void;
   onReplace: (item: PhotoItem, file: File) => void;
+  onReorder: (next: PhotoItem[]) => void;
   onOpen: (url: string) => void;
   busy: boolean;
   progressList: { fileName: string; progress: number; error?: boolean }[];
@@ -471,22 +526,13 @@ function PhotoBlock({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
-          {icon} {title}
+          {props.icon} {props.title}
         </h4>
         <span className="text-[9px] text-muted-foreground">
-          {photos.length}/{max}
+          {props.photos.length}/{props.max}
         </span>
       </div>
-      <PhotoGrid
-        photos={photos}
-        max={max}
-        onAdd={onAdd}
-        onRemove={onRemove}
-        onReplace={onReplace}
-        onOpen={onOpen}
-        busy={busy}
-        progressList={progressList}
-      />
+      <PhotoGrid {...props} />
     </div>
   );
 }
@@ -497,6 +543,7 @@ function PhotoGrid({
   onAdd,
   onRemove,
   onReplace,
+  onReorder,
   onOpen,
   busy,
   progressList,
@@ -506,6 +553,7 @@ function PhotoGrid({
   onAdd: (files: File[]) => void;
   onRemove: (item: PhotoItem) => void;
   onReplace: (item: PhotoItem, file: File) => void;
+  onReorder: (next: PhotoItem[]) => void;
   onOpen: (url: string) => void;
   busy: boolean;
   progressList: { fileName: string; progress: number; error?: boolean }[];
@@ -515,9 +563,13 @@ function PhotoGrid({
   const [replacingItem, setReplacingItem] = useState<PhotoItem | null>(null);
   const canAdd = photos.length < max;
 
-  // Drag & drop
   const [isDragOver, setIsDragOver] = useState(false);
   const dragDepthRef = useRef(0);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -535,8 +587,17 @@ function PhotoGrid({
 
   const openReplacePicker = (item: PhotoItem) => {
     setReplacingItem(item);
-    // Trigger em microtask para garantir o input existir
     setTimeout(() => replaceInputRef.current?.click(), 0);
+  };
+
+  const ids = photos.map((p) => getUrl(p));
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    onReorder(arrayMove(photos, oldIndex, newIndex));
   };
 
   return (
@@ -557,81 +618,53 @@ function PhotoGrid({
           if (dragDepthRef.current === 0) setIsDragOver(false);
         }}
         onDrop={handleDrop}
-        className={`relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-3 rounded-2xl border-2 border-dashed transition-all ${
+        className={`relative rounded-2xl border-2 border-dashed transition-all p-3 ${
           isDragOver
             ? 'border-primary bg-primary/10 ring-2 ring-primary/40'
             : 'border-white/10 bg-black/20'
         }`}
       >
-        {photos.map((item) => {
-          const url = getUrl(item);
-          const thumb = getThumb(item);
-          return (
-            <div
-              key={url}
-              className="relative aspect-square rounded-xl overflow-hidden group border border-white/10 bg-black/40"
-            >
-              <button
-                type="button"
-                onClick={() => onOpen(url)}
-                className="w-full h-full block"
-                title="Expandir"
-              >
-                <SmartImage src={url} fallbackSrc={thumb} className="w-full h-full object-cover" />
-              </button>
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition">
-                <button
-                  onClick={() => onOpen(url)}
-                  className="w-6 h-6 rounded-full bg-black/60 text-white/90 hover:text-primary flex items-center justify-center"
-                  title="Expandir"
-                >
-                  <Expand className="w-3 h-3" />
-                </button>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => openReplacePicker(item)}
-                    className="w-6 h-6 rounded-full bg-black/60 text-white/90 hover:text-primary flex items-center justify-center"
-                    title="Substituir"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={() => onRemove(item)}
-                    className="w-6 h-6 rounded-full bg-black/60 text-red-400 hover:text-red-300 flex items-center justify-center"
-                    title="Remover"
-                  >
-                    <Trash className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={ids} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {photos.map((item) => (
+                <SortablePhoto
+                  key={getUrl(item)}
+                  id={getUrl(item)}
+                  item={item}
+                  onOpen={onOpen}
+                  onReplace={openReplacePicker}
+                  onRemove={onRemove}
+                />
+              ))}
 
-        {canAdd && (
-          <label
-            className={`aspect-square rounded-xl border border-white/5 bg-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-white/10 transition ${
-              busy ? 'opacity-60 pointer-events-none' : ''
-            }`}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              className="hidden"
-              accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
-              multiple
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                if (files.length) onAdd(files);
-                if (inputRef.current) inputRef.current.value = '';
-              }}
-            />
-            <PlusCircle className="w-5 h-5 text-muted-foreground" />
-            <span className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter text-center px-1">
-              {busy ? 'Enviando...' : 'Add / Arraste'}
-            </span>
-          </label>
-        )}
+              {canAdd && (
+                <label
+                  className={`aspect-square rounded-xl border border-white/5 bg-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-white/10 transition ${
+                    busy ? 'opacity-60 pointer-events-none' : ''
+                  }`}
+                >
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length) onAdd(files);
+                      if (inputRef.current) inputRef.current.value = '';
+                    }}
+                  />
+                  <PlusCircle className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter text-center px-1">
+                    {busy ? 'Enviando...' : 'Add / Arraste'}
+                  </span>
+                </label>
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         {isDragOver && (
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center rounded-2xl">
@@ -656,7 +689,7 @@ function PhotoGrid({
       </div>
 
       {progressList.length > 0 && (
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" role="status" aria-live="polite">
           {progressList.map((p) => (
             <div key={p.fileName} className="space-y-1">
               <div className="flex items-center justify-between text-[10px] text-muted-foreground">
@@ -673,6 +706,87 @@ function PhotoGrid({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function SortablePhoto({
+  id,
+  item,
+  onOpen,
+  onReplace,
+  onRemove,
+}: {
+  id: string;
+  item: PhotoItem;
+  onOpen: (url: string) => void;
+  onReplace: (item: PhotoItem) => void;
+  onRemove: (item: PhotoItem) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const url = getUrl(item);
+  const thumb = getThumb(item);
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : undefined,
+    opacity: isDragging ? 0.85 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative aspect-square rounded-xl overflow-hidden group border border-white/10 bg-black/40"
+    >
+      <button
+        type="button"
+        onClick={() => onOpen(url)}
+        className="w-full h-full block"
+        aria-label="Expandir foto"
+      >
+        <SmartImage src={url} fallbackSrc={thumb} className="w-full h-full object-cover" />
+      </button>
+
+      {/* Alça de arraste (para toque/teclado) */}
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label="Arrastar para reordenar"
+        className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-black/70 text-white/90 hover:text-primary flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+        title="Arrastar para reordenar"
+      >
+        <GripVertical className="w-3 h-3" />
+      </button>
+
+      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition">
+        <button
+          onClick={() => onOpen(url)}
+          className="w-6 h-6 rounded-full bg-black/60 text-white/90 hover:text-primary flex items-center justify-center"
+          aria-label="Expandir foto"
+          title="Expandir"
+        >
+          <Expand className="w-3 h-3" />
+        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onReplace(item)}
+            className="w-6 h-6 rounded-full bg-black/60 text-white/90 hover:text-primary flex items-center justify-center"
+            aria-label="Substituir foto"
+            title="Substituir"
+          >
+            <RefreshCw className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => onRemove(item)}
+            className="w-6 h-6 rounded-full bg-black/60 text-red-400 hover:text-red-300 flex items-center justify-center"
+            aria-label="Remover foto"
+            title="Remover"
+          >
+            <Trash className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -712,47 +826,107 @@ function SmartImage({
   );
 }
 
-// ---------- Lightbox ----------
+// ---------- Lightbox (com foco controlado, teclado completo e ARIA) ----------
 function Lightbox({
   items,
   index,
   onClose,
   onNavigate,
+  onJump,
 }: {
   items: { url: string; thumb: string; sectionName: string }[];
   index: number;
   onClose: () => void;
   onNavigate: (dir: 1 | -1) => void;
+  onJump: (target: number) => void;
 }) {
   const current = items[index];
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const titleId = 'lightbox-title';
+  const descId = 'lightbox-desc';
 
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowRight') onNavigate(1);
-      else if (e.key === 'ArrowLeft') onNavigate(-1);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        onNavigate(1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        onNavigate(-1);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        onJump(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        onJump(items.length - 1);
+      } else if (e.key === 'Tab') {
+        // Foco preso dentro do diálogo
+        const root = dialogRef.current;
+        if (!root) return;
+        const focusables = root.querySelectorAll<HTMLElement>(
+          'button, [href], [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     },
-    [onClose, onNavigate],
+    [onClose, onNavigate, onJump, items.length],
   );
+
   useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    // foca o botão de fechar ao abrir
+    setTimeout(() => closeBtnRef.current?.focus(), 0);
     window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+      document.body.style.overflow = prevOverflow;
+      previousFocusRef.current?.focus?.();
+    };
   }, [handleKey]);
 
   if (!current) return null;
 
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-describedby={descId}
       className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center"
       onClick={onClose}
     >
+      <h2 id={titleId} className="sr-only">
+        Visualizador de fotos em tela cheia
+      </h2>
+      <p id={descId} className="sr-only">
+        Use as setas para navegar, Home e End para ir ao início ou fim, Escape para fechar.
+      </p>
+
       <button
+        ref={closeBtnRef}
         onClick={(e) => {
           e.stopPropagation();
           onClose();
         }}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
-        title="Fechar"
+        aria-label="Fechar visualizador"
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <X className="w-5 h-5" />
       </button>
@@ -762,8 +936,8 @@ function Lightbox({
           e.stopPropagation();
           onNavigate(-1);
         }}
-        className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
-        title="Anterior"
+        aria-label="Foto anterior"
+        className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
@@ -772,8 +946,8 @@ function Lightbox({
           e.stopPropagation();
           onNavigate(1);
         }}
-        className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
-        title="Próxima"
+        aria-label="Próxima foto"
+        className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
@@ -785,9 +959,13 @@ function Lightbox({
         <SmartImage
           src={current.url}
           fallbackSrc={current.thumb}
+          alt={`Foto ${index + 1} de ${items.length} — seção ${current.sectionName}`}
           className="max-w-[92vw] max-h-[78vh] object-contain rounded-xl"
         />
-        <div className="flex items-center gap-3 text-[10px] uppercase font-black italic tracking-wider text-white/80">
+        <div
+          className="flex items-center gap-3 text-[10px] uppercase font-black italic tracking-wider text-white/80"
+          aria-live="polite"
+        >
           <span className="px-2 py-1 rounded-md bg-primary/20 text-primary">{current.sectionName}</span>
           <span>
             {index + 1} / {items.length}
