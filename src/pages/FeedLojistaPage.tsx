@@ -779,6 +779,31 @@ export default function FeedLojistaPage() {
             );
           })}
         </div>
+
+        {/* Filtros por Status */}
+        <div className="max-w-3xl mx-auto flex items-center gap-2 overflow-x-auto pt-2 pb-0.5 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
+          <span className="text-[10px] uppercase tracking-widest text-white/40 font-black shrink-0 mr-1">
+            Status:
+          </span>
+          {STATUS_FILTERS.map((s) => {
+            const active = statusFilter === s.key;
+            const color = s.key === "todos" ? "#00E5FF" : FEED_STATUS_COLOR[s.key];
+            return (
+              <button
+                key={s.key}
+                onClick={() => setStatusFilter(s.key)}
+                className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase whitespace-nowrap tracking-wide border transition-all"
+                style={
+                  active
+                    ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
+                    : { backgroundColor: "#1A1A1B", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                }
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       {/* Feed */}
