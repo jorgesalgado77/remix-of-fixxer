@@ -163,12 +163,13 @@ export function LojistaPublicProfilePage() {
         if (found) setProfile(found as StoreProfile);
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
 
-        // O.S. pendentes deste lojista
-        if (storeId) {
+        // O.S. pendentes deste lojista — usa o user_id resolvido do perfil (ou storeId como fallback)
+        const lojistaKey = (found as any)?.user_id || storeId;
+        if (lojistaKey) {
           const { data: osData } = await supabaseExternal
             .from("service_orders")
             .select("*")
-            .eq("lojista_id", storeId)
+            .eq("lojista_id", lojistaKey)
             .eq("status", "PENDENTE")
             .order("created_at", { ascending: false });
           if (osData) setOrders(osData as ServiceOrder[]);
@@ -176,7 +177,7 @@ export function LojistaPublicProfilePage() {
           const { data: revData } = await supabaseExternal
             .from("store_reviews")
             .select("*")
-            .eq("lojista_id", storeId)
+            .eq("lojista_id", lojistaKey)
             .order("created_at", { ascending: false });
           if (revData) setReviews(revData as Review[]);
         }
