@@ -12,12 +12,14 @@ import {
   X,
   FileText,
   Image as ImageIcon,
+  Video as VideoIcon,
   RotateCcw,
   AlertCircle,
   Download,
   Check,
   CheckCheck,
   UserCircle2,
+  Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -38,12 +40,16 @@ import { downloadAttachment } from "@/lib/attachment-download";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
 import {
   clearDraft,
-  getDraftFile,
+  getDraftFiles,
   getDraftText,
   markMockConversationSeen,
-  setDraftFile,
+  setDraftFiles,
   setDraftText,
 } from "@/lib/chat-drafts";
+
+const MAX_FILES = 6;
+const MAX_FILE_MB = 15;
+const ACCEPTED_HINT = "image/*,video/*,application/pdf";
 
 export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
