@@ -122,9 +122,37 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = getCategoryTheme(defaultCategory);
 
-  // Cache de arquivos codificados em base64 (para auto-save leve)
-  const filesCacheRef = useRef<Map<string, { name: string; type: string; size: number; kind: UploadItem["kind"]; dataUrl: string }>>(new Map());
-  const hydratedRef = useRef(false);
+  // Perfil do autor (nome + reputação) para exibir na prévia
+  const [authorProfile, setAuthorProfile] = useState<{ name: string; logoUrl?: string | null; rating: number }>({
+    name: "Sua Empresa",
+    logoUrl: null,
+    rating: 4.9,
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabaseExternal.auth.getSession();
+        const uid = session?.user?.id;
+        if (!uid) return;
+        const { data } = await supabaseExternal
+          .from("store_profiles")
+          .select("company_name, logo_url, rating")
+          .eq("user_id", uid)
+          .maybeSingle();
+        if (cancelled || !data) return;
+        setAuthorProfile({
+          name: data.company_name || session.user.email?.split("@")[0] || "Sua Empresa",
+          logoUrl: data.logo_url || null,
+          rating: typeof data.rating === "number" ? data.rating : 4.9,
+        });
+      } catch { /* silencioso — mantém fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
 
   useEffect(() => {
     return () => {
