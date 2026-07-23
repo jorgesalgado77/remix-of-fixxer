@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
-export const Route = createFileRoute("/feed/")({
+export const Route = createFileRoute("/_authenticated/feed/")({
   component: FeedRedirect,
 });
 
