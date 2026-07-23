@@ -519,6 +519,10 @@ export function LojistaDashboard() {
                     handleUndo={handleUndo}
                     failedUploads={failedUploads}
                     setFailedUploads={setFailedUploads}
+                    activeSettingsTab={activeSettingsTab}
+                    setActiveSettingsTab={setActiveSettingsTab}
+                    notificationSettings={notificationSettings}
+                    setNotificationSettings={setNotificationSettings}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
