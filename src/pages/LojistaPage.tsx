@@ -1229,6 +1229,7 @@ function ProfileView({
     loadingFavorites: boolean;
     filteredFavorites: any[];
 }) {
+    const navigate = useNavigate();
     const [userEmail, setUserEmail] = useState("");
     const [companyName, setCompanyName] = useState("");
     const [socialName, setSocialName] = useState("");
