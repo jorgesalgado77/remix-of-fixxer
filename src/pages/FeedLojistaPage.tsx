@@ -620,7 +620,7 @@ export default function FeedLojistaPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por palavra-chave, cidade ou especialidade..."
-              className="w-full bg-[#1A1A1B] border border-white/10 rounded-xl pl-9 pr-9 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00FF87]"
+              className="w-full bg-[#1A1A1B] border border-white/10 rounded-xl pl-9 pr-9 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00E5FF]"
             />
             {search && (
               <button
@@ -644,7 +644,7 @@ export default function FeedLojistaPage() {
                 onClick={() => setFilter(f.key)}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase whitespace-nowrap tracking-wide flex items-center gap-1.5 transition-all ${
                   active
-                    ? "bg-[#00FF87] text-black shadow-[0_0_12px_rgba(0,255,135,0.35)]"
+                    ? "bg-[#00E5FF] text-black shadow-[0_0_12px_rgba(0,229,255,0.35)]"
                     : "bg-[#1A1A1B] text-white/60 border border-white/10 hover:text-white"
                 }`}
               >
@@ -725,7 +725,7 @@ export default function FeedLojistaPage() {
                 ref={sentinelRef}
                 className="py-6 flex items-center justify-center text-white/50 text-[11px] font-bold uppercase tracking-wide"
               >
-                <div className="w-4 h-4 border-2 border-white/20 border-t-[#00FF87] rounded-full animate-spin mr-2" />
+                <div className="w-4 h-4 border-2 border-white/20 border-t-[#00E5FF] rounded-full animate-spin mr-2" />
                 Carregando mais publicações...
               </div>
             ) : (
@@ -786,7 +786,7 @@ export default function FeedLojistaPage() {
         <ModalShell onClose={() => setProposalFor(null)} title="Enviar Proposta">
           <p className="text-xs text-white/60 mb-4">
             Para: <span className="text-white font-bold">{proposalFor.author.name}</span> ·{" "}
-            <span className="text-[#00FF87]">{proposalFor.title}</span>
+            <span className="text-[#00E5FF]">{proposalFor.title}</span>
           </p>
           <label className="block text-[10px] uppercase tracking-widest font-black text-white/60 mb-1">
             Valor da proposta
@@ -795,7 +795,7 @@ export default function FeedLojistaPage() {
             value={proposalValue}
             onChange={(e) => setProposalValue(e.target.value)}
             placeholder="R$ 0,00"
-            className="w-full bg-[#0A0A0B] border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#00FF87] mb-3"
+            className="w-full bg-[#0A0A0B] border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#00E5FF] mb-3"
           />
           <label className="block text-[10px] uppercase tracking-widest font-black text-white/60 mb-1">
             Mensagem (opcional)
@@ -805,7 +805,7 @@ export default function FeedLojistaPage() {
             onChange={(e) => setProposalMsg(e.target.value)}
             rows={3}
             placeholder="Prazo, condições, escopo..."
-            className="w-full bg-[#0A0A0B] border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#00FF87] resize-none mb-4"
+            className="w-full bg-[#0A0A0B] border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#00E5FF] resize-none mb-4"
           />
           <div className="flex gap-2">
             <button
@@ -816,7 +816,7 @@ export default function FeedLojistaPage() {
             </button>
             <button
               onClick={submitProposal}
-              className="flex-1 py-2.5 rounded-xl bg-[#00FF87] text-black text-xs font-black uppercase shadow-[0_0_12px_rgba(0,255,135,0.35)]"
+              className="flex-1 py-2.5 rounded-xl bg-[#00E5FF] text-black text-xs font-black uppercase shadow-[0_0_12px_rgba(0,229,255,0.35)]"
             >
               Enviar
             </button>
@@ -945,12 +945,12 @@ function PostCard({
     <article
       className={`relative bg-[#1A1A1B] rounded-3xl p-4 sm:p-5 space-y-4 transition-all ${
         isClient
-          ? "border-2 border-[#00FF87] shadow-[0_0_22px_rgba(0,255,135,0.18)]"
+          ? "border-2 border-[#00E5FF] shadow-[0_0_22px_rgba(0,229,255,0.18)]"
           : "border border-white/10"
       }`}
     >
       {isClient && (
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00FF87]/10 text-[#00FF87] text-[10px] font-black uppercase border border-[#00FF87]/30 tracking-widest">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00E5FF]/10 text-[#00E5FF] text-[10px] font-black uppercase border border-[#00E5FF]/30 tracking-widest">
           <Flame className="w-3.5 h-3.5 animate-pulse" />
           Oportunidade · Cliente Final
         </div>
@@ -961,7 +961,7 @@ function PostCard({
         <div
           className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center font-black text-sm ${
             isClient
-              ? "bg-[#0A0A0B] border border-[#00FF87] text-[#00FF87]"
+              ? "bg-[#0A0A0B] border border-[#00E5FF] text-[#00E5FF]"
               : "bg-[#0A0A0B] border border-white/10 text-white/80"
           }`}
         >
@@ -983,12 +983,12 @@ function PostCard({
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/50 mt-0.5">
             <span
               className={`font-bold flex items-center gap-1 ${
-                isClient ? "text-[#00FF87]" : "text-yellow-300"
+                isClient ? "text-[#00E5FF]" : "text-yellow-300"
               }`}
             >
               <Star
                 className={`w-3 h-3 ${
-                  isClient ? "fill-[#00FF87] text-[#00FF87]" : "fill-yellow-300 text-yellow-300"
+                  isClient ? "fill-[#00E5FF] text-[#00E5FF]" : "fill-yellow-300 text-yellow-300"
                 }`}
               />
               {post.rating.toFixed(1)}
@@ -1071,7 +1071,7 @@ function PostCard({
         </h3>
         <p className="text-xs sm:text-[13px] text-white/70 leading-relaxed">{post.description}</p>
         {post.budget && (
-          <div className="inline-flex items-center gap-1.5 mt-1 px-3 py-1 rounded-full bg-[#00FF87]/10 border border-[#00FF87]/30 text-[#00FF87] text-[11px] font-black uppercase tracking-widest">
+          <div className="inline-flex items-center gap-1.5 mt-1 px-3 py-1 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] text-[11px] font-black uppercase tracking-widest">
             {post.budget}
           </div>
         )}
@@ -1105,7 +1105,7 @@ function PostCard({
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-[#00FF87] text-black flex items-center justify-center shadow-[0_0_15px_rgba(0,255,135,0.5)]">
+                    <div className="w-12 h-12 rounded-full bg-[#00E5FF] text-black flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.5)]">
                       <Play className="w-5 h-5 ml-0.5" fill="currentColor" />
                     </div>
                   </div>
@@ -1127,7 +1127,7 @@ function PostCard({
       <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
         <button
           onClick={onChat}
-          className="flex-1 bg-[#00FF87] hover:bg-[#00FF87]/90 text-black font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
+          className="flex-1 bg-[#00E5FF] hover:bg-[#00E5FF]/90 text-black font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
         >
           <MessageSquare className="w-4 h-4" /> Chat Direto
         </button>
@@ -1135,7 +1135,7 @@ function PostCard({
           onClick={onPropose}
           className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
         >
-          <Send className="w-4 h-4 text-[#00FF87]" /> Enviar Proposta
+          <Send className="w-4 h-4 text-[#00E5FF]" /> Enviar Proposta
         </button>
         <button
           onClick={onSave}
@@ -1143,11 +1143,11 @@ function PostCard({
           aria-label={isSaved ? "Remover dos salvos" : "Salvar publicação"}
           className={`p-2.5 rounded-xl border transition-colors ${
             isSaved
-              ? "bg-[#00FF87]/10 border-[#00FF87]/40 text-[#00FF87]"
+              ? "bg-[#00E5FF]/10 border-[#00E5FF]/40 text-[#00E5FF]"
               : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10"
           }`}
         >
-          <Bookmark className={`w-4 h-4 ${isSaved ? "fill-[#00FF87]" : ""}`} />
+          <Bookmark className={`w-4 h-4 ${isSaved ? "fill-[#00E5FF]" : ""}`} />
         </button>
       </div>
     </article>
