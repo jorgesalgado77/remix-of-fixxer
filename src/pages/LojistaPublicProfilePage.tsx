@@ -87,6 +87,27 @@ interface Review {
 
 const getPhotoUrl = (p: any): string => (typeof p === "string" ? p : p?.url ?? "");
 const getPhotoThumb = (p: any): string => (typeof p === "string" ? p : (p?.thumbUrl || p?.url || ""));
+const getPhotoCreatedAt = (p: any): string | undefined =>
+  typeof p === "string" ? undefined : p?.createdAt;
+
+const IMAGE_EXT = /\.(jpe?g|png|webp|avif|gif|bmp|svg)(\?.*)?$/i;
+const VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv|avi|mkv)(\?.*)?$/i;
+const DOC_EXT = /\.(pdf|docx?|xlsx?|pptx?|txt|csv|zip|rar)(\?.*)?$/i;
+type MediaKind = "photo" | "video" | "document";
+const detectKind = (url: string): MediaKind => {
+  if (VIDEO_EXT.test(url)) return "video";
+  if (DOC_EXT.test(url)) return "document";
+  return "photo";
+};
+const basename = (url: string): string => {
+  try {
+    const u = url.split("?")[0];
+    const p = u.substring(u.lastIndexOf("/") + 1);
+    return decodeURIComponent(p);
+  } catch {
+    return url;
+  }
+};
 
 export function LojistaPublicProfilePage() {
   const params = useParams({ strict: false }) as { id?: string };
@@ -106,14 +127,20 @@ export function LojistaPublicProfilePage() {
   } as React.CSSProperties;
 
   const storeId = params?.id;
+  const prefsKey = storeId ? `fixxer:gallery-prefs:${storeId}` : "fixxer:gallery-prefs:default";
 
   const [profile, setProfile] = useState<StoreProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("sobre");
   const [photoFilter, setPhotoFilter] = useState("Todas");
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<"Todos" | "Fotos" | "Vídeos" | "Documentos">("Todos");
+  const [gallerySearch, setGallerySearch] = useState("");
+  const [gallerySort, setGallerySort] = useState<"recent" | "oldest" | "section">("recent");
+  const [prefsHydrated, setPrefsHydrated] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [lightboxVideo, setLightboxVideo] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
 
   // O.S.
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
