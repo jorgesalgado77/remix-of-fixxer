@@ -2617,6 +2617,24 @@ function ProfileView({
                                 return;
                             }
 
+                            // 1.b) Validação de especialidades
+                            if (specialties.length > 10) {
+                                toast.error("Você excedeu o limite de 10 especialidades.");
+                                return;
+                            }
+                            if (duplicateTitleIds.size > 0) {
+                                toast.error("Existem especialidades com títulos duplicados.", {
+                                    description: "Renomeie ou remova os cards em destaque vermelho antes de salvar.",
+                                    duration: 8000,
+                                });
+                                return;
+                            }
+                            if (featuredCount > MAX_FEATURED) {
+                                toast.error(`Selecione no máximo ${MAX_FEATURED} especialidades em destaque.`);
+                                return;
+                            }
+
+
                             setIsSaving(true);
                             const toastId = toast.loading("Salvando perfil...");
                             try {
