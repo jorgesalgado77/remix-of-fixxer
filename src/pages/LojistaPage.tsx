@@ -2613,7 +2613,7 @@ function ProfileView({
                                     localStorage.setItem(`fixxer_profile_${userEmailLocal}`, JSON.stringify({
                                         companyName, socialName, cnpj, responsibleName, emailContact,
                                         whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
-                                        galleryUrls, videoUrls, documents, socialLinks, address
+                                        galleryUrls, videoUrls, documents, specialties, socialLinks, address
                                     }));
                                 }
 
