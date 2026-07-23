@@ -46,6 +46,11 @@ interface StoreProfile {
   video_urls?: string[];
   activity_branch?: string;
   specialties?: { id: string; title: string; description: string; featured?: boolean }[];
+  photo_sections?: {
+    showroom?: (string | { url: string; thumbUrl?: string })[];
+    assemblies?: (string | { url: string; thumbUrl?: string })[];
+    custom?: { id: string; name: string; photos: (string | { url: string; thumbUrl?: string })[] }[];
+  } | null;
   created_at?: string;
 }
 
@@ -75,7 +80,8 @@ interface Review {
   store_reply?: string | null;
 }
 
-const PHOTO_FILTERS = ["Todas", "Cozinhas", "Dormitórios", "Showroom"];
+const getPhotoUrl = (p: any): string => (typeof p === "string" ? p : p?.url ?? "");
+const getPhotoThumb = (p: any): string => (typeof p === "string" ? p : (p?.thumbUrl || p?.url || ""));
 
 export function LojistaPublicProfilePage() {
   const params = useParams({ strict: false }) as { id?: string };
@@ -211,7 +217,55 @@ export function LojistaPublicProfilePage() {
     load();
   }, [storeId]);
 
-  const gallery = profile?.gallery_urls || [];
+  // Realtime: reflete alterações do perfil (fotos/vídeos/seções) em tempo real
+  useEffect(() => {
+    const key = profile?.user_id;
+    if (!key || (storeId && isMockPeerId(storeId))) return;
+    const channel = supabaseExternal
+      .channel(`store-profile-${key}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "store_profiles", filter: `user_id=eq.${key}` },
+        (payload: any) => {
+          if (payload?.new) setProfile((prev) => ({ ...(prev ?? {}), ...(payload.new as StoreProfile) }));
+        },
+      )
+      .subscribe();
+    return () => {
+      supabaseExternal.removeChannel(channel);
+    };
+  }, [profile?.user_id, storeId]);
+
+  // Seções de fotos dinâmicas a partir de profile.photo_sections + galeria legada
+  const photoSections = useMemo(() => {
+    const sections: { key: string; name: string; photos: (string | { url: string; thumbUrl?: string })[] }[] = [];
+    const ps = profile?.photo_sections;
+    if (ps?.showroom && ps.showroom.length) sections.push({ key: "showroom", name: "Show Room", photos: ps.showroom });
+    if (ps?.assemblies && ps.assemblies.length) sections.push({ key: "assemblies", name: "Montagens Realizadas", photos: ps.assemblies });
+    (ps?.custom ?? []).forEach((c) => {
+      if (c?.photos?.length) sections.push({ key: `custom:${c.id}`, name: c.name || "Seção", photos: c.photos });
+    });
+    const legacy = profile?.gallery_urls ?? [];
+    if (legacy.length) sections.push({ key: "legacy", name: "Galeria", photos: legacy });
+    return sections;
+  }, [profile?.photo_sections, profile?.gallery_urls]);
+
+  const photoFilters = useMemo(() => ["Todas", ...photoSections.map((s) => s.name)], [photoSections]);
+
+  useEffect(() => {
+    if (!photoFilters.includes(photoFilter)) setPhotoFilter("Todas");
+  }, [photoFilters, photoFilter]);
+
+  const visiblePhotos = useMemo(() => {
+    const items: { url: string; thumb: string; sectionName: string }[] = [];
+    photoSections.forEach((s) => {
+      if (photoFilter !== "Todas" && s.name !== photoFilter) return;
+      s.photos.forEach((p) => items.push({ url: getPhotoUrl(p), thumb: getPhotoThumb(p), sectionName: s.name }));
+    });
+    return items.filter((i) => i.url);
+  }, [photoSections, photoFilter]);
+
+  const gallery = useMemo(() => visiblePhotos.map((i) => i.url), [visiblePhotos]);
   const videos = profile?.video_urls || [];
 
   const avgRating = useMemo(() => {
@@ -461,10 +515,10 @@ export function LojistaPublicProfilePage() {
             <section className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
-                  <Filter className="w-4 h-4" /> Galeria de Projetos
+                  <Filter className="w-4 h-4" /> Galeria de Fotos
                 </h2>
                 <div className="flex gap-1.5 flex-wrap">
-                  {PHOTO_FILTERS.map((f) => (
+                  {photoFilters.map((f) => (
                     <button
                       key={f}
                       onClick={() => setPhotoFilter(f)}
@@ -477,15 +531,19 @@ export function LojistaPublicProfilePage() {
                   ))}
                 </div>
               </div>
-              {gallery.length > 0 ? (
+              {visiblePhotos.length > 0 ? (
                 <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory">
-                  {gallery.map((url, i) => (
+                  {visiblePhotos.map((item, i) => (
                     <button
-                      key={url}
-                      onClick={() => openImageLightbox(url, i)}
+                      key={`${item.url}-${i}`}
+                      onClick={() => openImageLightbox(item.url, i)}
                       className="shrink-0 w-40 h-40 md:w-56 md:h-56 rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all snap-start group relative"
+                      title={item.sectionName}
                     >
-                      <img src={url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <img src={item.thumb || item.url} alt={item.sectionName} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
+                        {item.sectionName}
+                      </span>
                     </button>
                   ))}
                 </div>
