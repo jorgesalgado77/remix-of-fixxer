@@ -442,10 +442,107 @@ export default function FeedClientePage() {
     [navigate],
   );
 
-  const handlePublished = useCallback(async () => {
-    if (userId) await loadMyNeeds(userId);
-    setNeedsOpen(true);
-  }, [userId, loadMyNeeds]);
+  const handlePublished = useCallback(
+    async (created?: { title?: string }) => {
+      if (userId) await loadMyNeeds(userId);
+      setNeedsOpen(true);
+      toast.success("Necessidade publicada com sucesso!", {
+        description: created?.title
+          ? `"${created.title}" está ATIVA e visível para os profissionais.`
+          : "Status: ATIVA — visível para os profissionais.",
+      });
+    },
+    [userId, loadMyNeeds],
+  );
+
+  const updateNeedStatus = useCallback(
+    async (need: MyNeed, nextStatus: "active" | "paused" | "closed") => {
+      if (!userId) return;
+      const prev = myNeeds;
+      const nextMeta = { ...(need.metadata ?? {}), status: nextStatus };
+      setMyNeeds((list) =>
+        list.map((n) => (n.id === need.id ? { ...n, metadata: nextMeta } : n)),
+      );
+      const { error } = await supabaseExternal
+        .from("feed_posts")
+        .update({ metadata: nextMeta })
+        .eq("id", need.id)
+        .eq("author_id", userId);
+      if (error) {
+        setMyNeeds(prev);
+        toast.error("Não foi possível atualizar o status.");
+      } else {
+        toast.success(
+          nextStatus === "active"
+            ? "Necessidade reativada."
+            : nextStatus === "paused"
+              ? "Necessidade pausada."
+              : "Necessidade encerrada.",
+        );
+      }
+    },
+    [userId, myNeeds],
+  );
+
+  const deleteNeed = useCallback(
+    async (need: MyNeed) => {
+      if (!userId) return;
+      if (!confirm(`Excluir "${need.title}"? Esta ação não pode ser desfeita.`)) return;
+      const prev = myNeeds;
+      setMyNeeds((list) => list.filter((n) => n.id !== need.id));
+      const { error } = await supabaseExternal
+        .from("feed_posts")
+        .delete()
+        .eq("id", need.id)
+        .eq("author_id", userId);
+      if (error) {
+        setMyNeeds(prev);
+        toast.error("Não foi possível excluir.");
+      } else {
+        toast.success("Necessidade excluída.");
+      }
+    },
+    [userId, myNeeds],
+  );
+
+  const saveEditedNeed = useCallback(
+    async (updated: { id: string; title: string; category: string; location: string; content?: string; status: string }) => {
+      if (!userId) return;
+      const current = myNeeds.find((n) => n.id === updated.id);
+      const nextMeta = { ...(current?.metadata ?? {}), status: updated.status };
+      const { error } = await supabaseExternal
+        .from("feed_posts")
+        .update({
+          title: updated.title,
+          category: updated.category,
+          location: updated.location,
+          content: updated.content,
+          metadata: nextMeta,
+        })
+        .eq("id", updated.id)
+        .eq("author_id", userId);
+      if (error) {
+        toast.error("Não foi possível salvar as alterações.");
+        return;
+      }
+      setMyNeeds((list) =>
+        list.map((n) =>
+          n.id === updated.id
+            ? {
+                ...n,
+                title: updated.title,
+                category: updated.category,
+                location: updated.location,
+                metadata: nextMeta,
+              }
+            : n,
+        ),
+      );
+      toast.success("Necessidade atualizada.");
+      setEditingNeed(null);
+    },
+    [userId, myNeeds],
+  );
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
