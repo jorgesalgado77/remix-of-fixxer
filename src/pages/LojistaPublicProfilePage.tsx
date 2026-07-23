@@ -217,7 +217,55 @@ export function LojistaPublicProfilePage() {
     load();
   }, [storeId]);
 
-  const gallery = profile?.gallery_urls || [];
+  // Realtime: reflete alterações do perfil (fotos/vídeos/seções) em tempo real
+  useEffect(() => {
+    const key = profile?.user_id;
+    if (!key || (storeId && isMockPeerId(storeId))) return;
+    const channel = supabaseExternal
+      .channel(`store-profile-${key}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "store_profiles", filter: `user_id=eq.${key}` },
+        (payload: any) => {
+          if (payload?.new) setProfile((prev) => ({ ...(prev ?? {}), ...(payload.new as StoreProfile) }));
+        },
+      )
+      .subscribe();
+    return () => {
+      supabaseExternal.removeChannel(channel);
+    };
+  }, [profile?.user_id, storeId]);
+
+  // Seções de fotos dinâmicas a partir de profile.photo_sections + galeria legada
+  const photoSections = useMemo(() => {
+    const sections: { key: string; name: string; photos: (string | { url: string; thumbUrl?: string })[] }[] = [];
+    const ps = profile?.photo_sections;
+    if (ps?.showroom && ps.showroom.length) sections.push({ key: "showroom", name: "Show Room", photos: ps.showroom });
+    if (ps?.assemblies && ps.assemblies.length) sections.push({ key: "assemblies", name: "Montagens Realizadas", photos: ps.assemblies });
+    (ps?.custom ?? []).forEach((c) => {
+      if (c?.photos?.length) sections.push({ key: `custom:${c.id}`, name: c.name || "Seção", photos: c.photos });
+    });
+    const legacy = profile?.gallery_urls ?? [];
+    if (legacy.length) sections.push({ key: "legacy", name: "Galeria", photos: legacy });
+    return sections;
+  }, [profile?.photo_sections, profile?.gallery_urls]);
+
+  const photoFilters = useMemo(() => ["Todas", ...photoSections.map((s) => s.name)], [photoSections]);
+
+  useEffect(() => {
+    if (!photoFilters.includes(photoFilter)) setPhotoFilter("Todas");
+  }, [photoFilters, photoFilter]);
+
+  const visiblePhotos = useMemo(() => {
+    const items: { url: string; thumb: string; sectionName: string }[] = [];
+    photoSections.forEach((s) => {
+      if (photoFilter !== "Todas" && s.name !== photoFilter) return;
+      s.photos.forEach((p) => items.push({ url: getPhotoUrl(p), thumb: getPhotoThumb(p), sectionName: s.name }));
+    });
+    return items.filter((i) => i.url);
+  }, [photoSections, photoFilter]);
+
+  const gallery = useMemo(() => visiblePhotos.map((i) => i.url), [visiblePhotos]);
   const videos = profile?.video_urls || [];
 
   const avgRating = useMemo(() => {
