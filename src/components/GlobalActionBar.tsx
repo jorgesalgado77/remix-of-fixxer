@@ -16,6 +16,7 @@ export function GlobalActionBar() {
   const path = location.pathname;
   const hash = location.hash;
   const [unreadCount, setUnreadCount] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const isActive = (target: string) => path.startsWith(target);
   const isHash = (h: string) => path.startsWith("/dashboard/lojista") && hash === h;
