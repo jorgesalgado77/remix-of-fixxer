@@ -483,6 +483,42 @@ function ConversationPage() {
     setContent("");
     setPendingFile(null);
 
+    // === MODO MOCK: sem persistência, com auto-resposta simulada ===
+    if (isMockPeerId(peerId)) {
+      setTimeout(() => {
+        setMessages((prev) =>
+          prev.map((m) => (m._clientId === clientId ? { ...m, _pending: false, read: true } : m)),
+        );
+      }, 400);
+      const replies = [
+        "Perfeito, anotado! 👍",
+        "Combinado. Assim que fechar, te aviso por aqui.",
+        "Legal! Posso te mandar uma proposta em instantes.",
+        "Show, vou verificar e já retorno.",
+      ];
+      const reply = replies[Math.floor(Math.random() * replies.length)];
+      setTimeout(() => {
+        setPeerTyping(true);
+      }, 900);
+      setTimeout(() => {
+        setPeerTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `${peerId}-reply-${Date.now()}`,
+            sender_id: peerId,
+            recipient_id: userId,
+            content: reply,
+            created_at: new Date().toISOString(),
+            read: true,
+          },
+        ]);
+      }, 2200);
+      setSending(false);
+      return;
+    }
+
+
     try {
       let attachment: { url: string; type: string; name: string } | null = null;
       if (draftFile) {
