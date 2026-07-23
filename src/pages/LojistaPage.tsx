@@ -1453,6 +1453,7 @@ function ProfileView({
                     setGalleryUrls(parsed.galleryUrls || []);
                     setVideoUrls(parsed.videoUrls || []);
                     setDocuments(parsed.documents || []);
+                    setSpecialties(Array.isArray(parsed.specialties) ? parsed.specialties : []);
                     setSocialLinks(parsed.socialLinks || { instagram: "", facebook: "", tiktok: "", site: "" });
                 }
 
