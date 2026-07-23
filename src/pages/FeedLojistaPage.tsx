@@ -493,6 +493,18 @@ function categoryBadge(cat: FeedCategory) {
 const PAGE_SIZE = 4;
 const SAVES_STORAGE_KEY = "fixxer_feed_saves_v1";
 
+const AUTHOR_ROUTE: Record<FeedCategory, string> = {
+  lojista: "/lojista",
+  prestador: "/prestador",
+  fornecedor: "/parceiro",
+  cliente: "/cliente",
+};
+
+function authorHref(post: FeedPost) {
+  return `${AUTHOR_ROUTE[post.category]}/${post.author.id}`;
+}
+
+
 export default function FeedLojistaPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"todos" | FeedCategory>("todos");
