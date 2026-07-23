@@ -11,6 +11,7 @@ import {
   MoreVertical,
   Loader2,
   Paperclip,
+  UserCircle2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
