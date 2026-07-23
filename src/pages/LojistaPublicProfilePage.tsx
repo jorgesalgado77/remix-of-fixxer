@@ -303,14 +303,6 @@ export function LojistaPublicProfilePage() {
                   <MetricCard label="Satisfação" value="99%" suffix="Positivo" />
                   <MetricCard label="Tempo Resposta" value="<15" suffix="min" />
                 </div>
-
-                {/* CTA */}
-                <Button
-                  onClick={handleContactWhatsApp}
-                  className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
-                </Button>
               </div>
             </div>
           </div>
