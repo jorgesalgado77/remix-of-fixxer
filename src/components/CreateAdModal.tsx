@@ -28,6 +28,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getCategoryTheme, CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+import { Star, MapPin } from "lucide-react";
+
 
 interface CreateAdModalProps {
   open: boolean;
