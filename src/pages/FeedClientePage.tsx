@@ -227,6 +227,8 @@ export default function FeedClientePage() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string>("");
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "granted" | "denied">("idle");
 
   const [sortBy, setSortBy] = useState<SortKey>("relevance");
   const [sortOpen, setSortOpen] = useState(false);
@@ -234,6 +236,7 @@ export default function FeedClientePage() {
 
   const [myNeeds, setMyNeeds] = useState<MyNeed[]>([]);
   const [needsOpen, setNeedsOpen] = useState(false);
+  const [editingNeed, setEditingNeed] = useState<MyNeed | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
