@@ -341,13 +341,21 @@ export default function FeedClientePage() {
         (a, b) => b.rating - a.rating || b.reviews - a.reviews,
       );
     } else if (sortBy === "nearest") {
-      const city = userCity.trim().toLowerCase();
-      list = [...list].sort((a, b) => {
-        const aMatch = city && a.city.toLowerCase() === city ? 0 : 1;
-        const bMatch = city && b.city.toLowerCase() === city ? 0 : 1;
-        if (aMatch !== bMatch) return aMatch - bMatch;
-        return a.city.localeCompare(b.city);
-      });
+      if (userCoords) {
+        const dist = (v: Vendor) => {
+          const c = CITY_COORDS[v.city.toLowerCase()];
+          return c ? haversineKm(userCoords, c) : Number.POSITIVE_INFINITY;
+        };
+        list = [...list].sort((a, b) => dist(a) - dist(b));
+      } else {
+        const city = userCity.trim().toLowerCase();
+        list = [...list].sort((a, b) => {
+          const aMatch = city && a.city.toLowerCase() === city ? 0 : 1;
+          const bMatch = city && b.city.toLowerCase() === city ? 0 : 1;
+          if (aMatch !== bMatch) return aMatch - bMatch;
+          return a.city.localeCompare(b.city);
+        });
+      }
     }
     return list;
   }, [query, solution, savedOnly, saved, sortBy, userCity]);
