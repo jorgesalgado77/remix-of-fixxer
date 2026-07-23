@@ -753,13 +753,25 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
             <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full border-2 border-primary/50 p-0.5 shadow-[0_0_15px_rgba(0,255,135,0.2)]">
                     <div className="w-full h-full rounded-full bg-black/40 flex items-center justify-center text-primary overflow-hidden">
-                        <Store className="w-6 h-6" />
+                        {profile?.logoUrl ? (
+                            <img src={profile.logoUrl} alt={profile.companyName || "Logo"} className="w-full h-full object-cover" />
+                        ) : (
+                            <Store className="w-6 h-6" />
+                        )}
                     </div>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                    <div className="text-[11px] font-black text-white uppercase italic truncate">Marcenaria & Design Inovamad</div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="text-[11px] font-black text-white uppercase italic truncate">
+                        {profile?.companyName || "Complete seu perfil"}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black uppercase">🏪 Lojista</span>
+                        {(profile?.city || profile?.state) && (
+                            <span className="flex items-center gap-0.5 text-[8px] font-bold text-muted-foreground uppercase italic truncate">
+                                <MapPin className="w-2.5 h-2.5" />
+                                {[profile?.city, profile?.state].filter(Boolean).join(" / ")}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
