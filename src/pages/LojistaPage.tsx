@@ -81,6 +81,7 @@ export function LojistaDashboard() {
     review_received: true
   });
   const [history, setHistory] = useState<any[]>([]);
+  const { branches } = useActivityBranches();
   const [undoStack, setUndoStack] = useState<any[]>([]);
   
   const { glassClass } = usePerformanceMode();
