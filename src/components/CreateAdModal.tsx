@@ -14,6 +14,13 @@ import {
   ZoomOut,
   ChevronLeft,
   ChevronRight,
+  Save,
+  RotateCcw,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Video as VideoIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +42,7 @@ interface UploadItem {
   id: string;
   file: File;
   url: string;
-  kind: "image" | "pdf";
+  kind: "image" | "pdf" | "video";
   progress: number;
   error?: string;
 }
@@ -65,9 +72,14 @@ const PRIORITIES: { id: Priority; label: string }[] = [
 const MAX_FILES = 6;
 const MAX_SIZE_IMG = 5 * 1024 * 1024;
 const MAX_SIZE_PDF = 10 * 1024 * 1024;
+const MAX_SIZE_VIDEO = 50 * 1024 * 1024;
 const ACCEPTED_IMG = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const ACCEPTED_PDF = ["application/pdf"];
-const ACCEPTED_ALL = [...ACCEPTED_IMG, ...ACCEPTED_PDF];
+const ACCEPTED_VIDEO = ["video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-matroska"];
+const ACCEPTED_ALL = [...ACCEPTED_IMG, ...ACCEPTED_PDF, ...ACCEPTED_VIDEO];
+
+const DRAFT_KEY = "fixxer:create-ad-draft:v1";
+const DRAFT_MAX_FILE_SIZE = 8 * 1024 * 1024; // ignora arquivos maiores para caber no localStorage
 
 const formatBRL = (v: string | number) => {
   const n = typeof v === "number" ? v : Number(v);
@@ -105,6 +117,122 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ---------- Draft (rascunho) ----------
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+  const dataUrlToFile = (dataUrl: string, name: string, type: string): File => {
+    const [meta, b64] = dataUrl.split(",");
+    const mime = type || (meta.match(/data:(.*?);/)?.[1] ?? "application/octet-stream");
+    const bstr = atob(b64);
+    const u8 = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8[i] = bstr.charCodeAt(i);
+    return new File([u8], name, { type: mime });
+  };
+
+  const saveDraft = async () => {
+    try {
+      const filesPayload: any[] = [];
+      let skipped = 0;
+      for (const f of files) {
+        if (f.file.size > DRAFT_MAX_FILE_SIZE) {
+          skipped++;
+          continue;
+        }
+        try {
+          const dataUrl = await fileToDataUrl(f.file);
+          filesPayload.push({
+            name: f.file.name,
+            type: f.file.type,
+            size: f.file.size,
+            kind: f.kind,
+            dataUrl,
+          });
+        } catch {
+          skipped++;
+        }
+      }
+      const draft = {
+        v: 1,
+        savedAt: new Date().toISOString(),
+        category: defaultCategory,
+        serviceTypes, rooms, title, startDate, deadline, priority,
+        description, notes, techSpecs, otherChecked, otherText,
+        priceType, fixedValue, contractValue, commissionPct,
+        files: filesPayload,
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      toast.success(
+        skipped > 0
+          ? `Rascunho salvo. ${skipped} arquivo(s) não couberam no rascunho.`
+          : "Rascunho salvo. Você pode continuar depois.",
+      );
+    } catch (e: any) {
+      toast.error("Não foi possível salvar o rascunho (armazenamento cheio).");
+    }
+  };
+
+  const loadDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      setServiceTypes(d.serviceTypes || []);
+      setRooms(d.rooms || 1);
+      setTitle(d.title || "");
+      setStartDate(d.startDate || "");
+      setDeadline(d.deadline || "");
+      setPriority(d.priority || "media");
+      setDescription(d.description || "");
+      setNotes(d.notes || "");
+      setTechSpecs(d.techSpecs || []);
+      setOtherChecked(!!d.otherChecked);
+      setOtherText(d.otherText || "");
+      setPriceType(d.priceType || "fixo");
+      setFixedValue(d.fixedValue || "");
+      setContractValue(d.contractValue || "");
+      setCommissionPct(d.commissionPct || "");
+      const restored: UploadItem[] = (d.files || []).map((f: any) => {
+        const file = dataUrlToFile(f.dataUrl, f.name, f.type);
+        return {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          file,
+          url: URL.createObjectURL(file),
+          kind: f.kind || "image",
+          progress: 100,
+        };
+      });
+      setFiles(restored);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {}
+  };
+
+  // Auto-load draft ao abrir
+  useEffect(() => {
+    if (!open) return;
+    const hasDraft = !!localStorage.getItem(DRAFT_KEY);
+    if (hasDraft && files.length === 0 && !title && !description) {
+      const ok = loadDraft();
+      if (ok) toast.info("Rascunho anterior restaurado.", { duration: 2500 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+
 
   const toggleServiceType = (t: string) => {
     setServiceTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -153,11 +281,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       }
       const isImg = ACCEPTED_IMG.includes(file.type);
       const isPdf = ACCEPTED_PDF.includes(file.type);
-      if (!isImg && !isPdf) {
+      const isVideo = ACCEPTED_VIDEO.includes(file.type) || file.type.startsWith("video/");
+      if (!isImg && !isPdf && !isVideo) {
         rejType++;
         continue;
       }
-      const maxSize = isPdf ? MAX_SIZE_PDF : MAX_SIZE_IMG;
+      const maxSize = isVideo ? MAX_SIZE_VIDEO : isPdf ? MAX_SIZE_PDF : MAX_SIZE_IMG;
       if (file.size > maxSize) {
         rejSize++;
         continue;
@@ -167,7 +296,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         id,
         file,
         url: URL.createObjectURL(file),
-        kind: isPdf ? "pdf" : "image",
+        kind: isVideo ? "video" : isPdf ? "pdf" : "image",
         progress: 0,
       });
     }
@@ -299,6 +428,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       console.log("[CreateAdModal] payload =>", payload);
       await new Promise((r) => setTimeout(r, 600));
       toast.success("Serviço publicado com sucesso!");
+      discardDraft();
       resetForm();
       onClose();
     } catch (err: any) {
@@ -570,14 +700,14 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
-            {/* Arquivos (imagens + PDF) */}
+            {/* Arquivos (imagens + PDF + vídeo) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                   Anexos ({files.length}/{MAX_FILES})
                 </Label>
                 <span className="text-[9px] text-white/40 uppercase font-bold">
-                  JPG, PNG, WEBP (5MB) · PDF (10MB)
+                  JPG/PNG/WEBP (5MB) · PDF (10MB) · MP4/WEBM/MOV (50MB)
                 </span>
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
@@ -588,6 +718,30 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   >
                     {f.kind === "image" ? (
                       <img src={f.url} alt="" className="w-full h-full object-cover" />
+                    ) : f.kind === "video" ? (
+                      <div className="relative w-full h-full bg-black">
+                        <video
+                          src={f.url}
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{ background: theme.hex }}
+                          >
+                            <Play className="w-5 h-5 text-black fill-black" />
+                          </div>
+                        </div>
+                        <span
+                          className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[8px] uppercase font-black"
+                          style={{ ...theme.bgSoft, color: theme.hex }}
+                        >
+                          Vídeo
+                        </span>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 text-center bg-red-950/30">
                         <FileText className="w-8 h-8" style={{ color: theme.hex }} />
@@ -597,6 +751,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                         <span className="text-[8px] uppercase font-black text-red-400">PDF</span>
                       </div>
                     )}
+
 
                     {f.progress < 100 && !f.error && (
                       <div className="absolute inset-x-0 bottom-0 h-1 bg-black/40">
@@ -875,25 +1030,55 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             </div>
 
             {/* Ações */}
-            <div className="flex gap-2 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onClose}
-                className="flex-1 text-white/70 hover:text-white uppercase italic font-black text-xs h-12"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 uppercase italic font-black text-xs h-12 border-0 text-black"
-                style={{ background: theme.hex, ...theme.glowStrong }}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                {submitting ? "Publicando..." : "Publicar Serviço"}
-              </Button>
+            <div className="space-y-2 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={saveDraft}
+                  className="flex-1 border-white/15 bg-white/5 text-white hover:bg-white/10 uppercase italic font-black text-xs h-11"
+                >
+                  <Save className="w-4 h-4 mr-2" style={{ color: theme.hex }} />
+                  Salvar Rascunho
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    discardDraft();
+                    resetForm();
+                    toast.success("Rascunho descartado.");
+                  }}
+                  className="flex-1 text-white/50 hover:text-white uppercase italic font-black text-xs h-11"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Descartar Rascunho
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onClose}
+                  className="flex-1 text-white/70 hover:text-white uppercase italic font-black text-xs h-12"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 uppercase italic font-black text-xs h-12 border-0 text-black"
+                  style={{ background: theme.hex, ...theme.glowStrong }}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {submitting ? "Publicando..." : "Publicar Serviço"}
+                </Button>
+              </div>
+              <p className="text-[9px] text-white/40 text-center italic">
+                Rascunhos ficam salvos localmente neste navegador.
+              </p>
             </div>
+
           </form>
 
           {/* PRÉVIA */}
@@ -983,13 +1168,22 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 className="transition-transform max-w-none"
                 style={{ transform: `scale(${viewer.zoom})` }}
               />
+            ) : currentViewerFile.kind === "video" ? (
+              <FixxerVideoPlayer
+                key={currentViewerFile.id}
+                src={currentViewerFile.url}
+                title={currentViewerFile.file.name}
+                themeHex={theme.hex}
+                onClose={closeViewer}
+              />
             ) : (
               <iframe
-                src={currentViewerFile.url}
+                src={`${currentViewerFile.url}#toolbar=1&navpanes=1&view=FitH`}
                 title={currentViewerFile.file.name}
                 className="w-full h-full bg-white"
               />
             )}
+
             {files.length > 1 && (
               <button
                 onClick={() => stepViewer(1)}
@@ -1002,6 +1196,224 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// FixxerVideoPlayer — player leve com controles customizados (sem download)
+// ============================================================================
+interface FixxerVideoPlayerProps {
+  src: string;
+  title?: string;
+  themeHex: string;
+  onClose: () => void;
+}
+
+function FixxerVideoPlayer({ src, title, themeHex, onClose }: FixxerVideoPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [current, setCurrent] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const hideTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onLoaded = () => setDuration(v.duration || 0);
+    const onTime = () => setCurrent(v.currentTime);
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    v.addEventListener("loadedmetadata", onLoaded);
+    v.addEventListener("timeupdate", onTime);
+    v.addEventListener("play", onPlay);
+    v.addEventListener("pause", onPause);
+    return () => {
+      v.removeEventListener("loadedmetadata", onLoaded);
+      v.removeEventListener("timeupdate", onTime);
+      v.removeEventListener("play", onPlay);
+      v.removeEventListener("pause", onPause);
+    };
+  }, []);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) v.play();
+    else v.pause();
+  };
+
+  const seek = (t: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = Math.max(0, Math.min(duration, t));
+  };
+
+  const toggleMute = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setMuted(v.muted);
+  };
+
+  const changeVolume = (val: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.volume = val;
+    v.muted = val === 0;
+    setVolume(val);
+    setMuted(val === 0);
+  };
+
+  const toggleFullscreen = async () => {
+    const el = wrapRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      await el.requestFullscreen?.();
+    } else {
+      await document.exitFullscreen?.();
+    }
+  };
+
+  const fmt = (s: number) => {
+    if (!isFinite(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const kickHideTimer = () => {
+    setShowControls(true);
+    if (hideTimer.current) window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => {
+      if (playing) setShowControls(false);
+    }, 2500);
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      className="relative w-full h-full max-h-[92vh] flex items-center justify-center bg-black group"
+      onMouseMove={kickHideTimer}
+      onMouseLeave={() => playing && setShowControls(false)}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <video
+        ref={videoRef}
+        src={src}
+        className="max-w-full max-h-full outline-none"
+        playsInline
+        onClick={togglePlay}
+        controlsList="nodownload noremoteplayback noplaybackrate"
+        disablePictureInPicture
+      />
+
+      {/* Botão fechar */}
+      <button
+        onClick={onClose}
+        className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur flex items-center justify-center text-white transition"
+        aria-label="Fechar"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
+      {/* Título */}
+      {title && (
+        <div
+          className={`absolute top-3 left-3 right-16 z-10 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur text-white text-xs font-bold truncate transition-opacity ${
+            showControls ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {title}
+        </div>
+      )}
+
+      {/* Play central quando pausado */}
+      {!playing && (
+        <button
+          onClick={togglePlay}
+          className="absolute inset-0 flex items-center justify-center z-10"
+          aria-label="Reproduzir"
+        >
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110"
+            style={{ background: themeHex }}
+          >
+            <Play className="w-9 h-9 text-black fill-black ml-1" />
+          </div>
+        </button>
+      )}
+
+      {/* Barra de controles */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 z-10 px-4 pt-8 pb-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity ${
+          showControls ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {/* Barra de progresso */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-white text-[10px] font-bold w-10 text-right tabular-nums">{fmt(current)}</span>
+          <input
+            type="range"
+            min={0}
+            max={duration || 0}
+            step={0.1}
+            value={current}
+            onChange={(e) => seek(Number(e.target.value))}
+            className="flex-1 h-1 rounded-full appearance-none cursor-pointer"
+            style={{
+              background: `linear-gradient(to right, ${themeHex} 0%, ${themeHex} ${(current / (duration || 1)) * 100}%, rgba(255,255,255,0.2) ${(current / (duration || 1)) * 100}%, rgba(255,255,255,0.2) 100%)`,
+              accentColor: themeHex,
+            }}
+          />
+          <span className="text-white/70 text-[10px] font-bold w-10 tabular-nums">{fmt(duration)}</span>
+        </div>
+
+        {/* Controles inferiores */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={togglePlay}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+            aria-label={playing ? "Pausar" : "Reproduzir"}
+          >
+            {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMute}
+              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+              aria-label={muted ? "Ativar som" : "Silenciar"}
+            >
+              {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={muted ? 0 : volume}
+              onChange={(e) => changeVolume(Number(e.target.value))}
+              className="w-20 h-1 rounded-full cursor-pointer"
+              style={{ accentColor: themeHex }}
+            />
+          </div>
+
+          <div className="flex-1" />
+
+          <button
+            onClick={toggleFullscreen}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+            aria-label="Tela cheia"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
