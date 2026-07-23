@@ -171,6 +171,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     return "";
   }, [priceType, fixedValue, contractValue, commission]);
 
+  if (!open) return null;
+
   const buildPayload = () => {
     const base = {
       category,
