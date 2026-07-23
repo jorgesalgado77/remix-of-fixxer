@@ -891,6 +891,11 @@ function StatusBadge({ status }: { status: B2BStatus }) {
       label: "Negociando",
       className: "border-amber-400/40 bg-amber-400/10 text-amber-300",
     },
+    em_andamento: {
+      label: "Em Andamento",
+      className:
+        "border-emerald-400/40 bg-emerald-400/10 text-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.25)]",
+    },
   };
   const s = map[status];
   return (
