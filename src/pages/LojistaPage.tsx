@@ -1948,42 +1948,91 @@ function ProfileView({
                     </div>
                     
                     {cropImage && (
-                        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-                            <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6 md:p-8 max-w-xl w-full my-auto flex flex-col max-h-[calc(100dvh-2rem)]">
-                                <div className="flex justify-between items-center shrink-0 mb-4">
-                                    <h3 className="text-sm font-black text-white uppercase italic">Ajustar Imagem</h3>
-                                    <button onClick={() => setCropImage(null)} className="text-muted-foreground hover:text-white"><X className="w-5 h-5" /></button>
+                        <div
+                            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto"
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget && !cropSaving) setCropImage(null);
+                            }}
+                        >
+                            <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-4 sm:p-6 md:p-8 max-w-xl w-full my-auto flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)]">
+                                <div className="flex justify-between items-center shrink-0 mb-3 sm:mb-4">
+                                    <div>
+                                        <h3 className="text-sm font-black text-white uppercase italic">Ajustar Imagem</h3>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
+                                            Máx. {LOGO_MAX_MB}MB · JPG, PNG ou WEBP
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setCropImage(null)}
+                                        disabled={cropSaving}
+                                        className="text-muted-foreground hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
                                 </div>
                                 <div className="flex-1 min-h-0 overflow-y-auto">
-                                    <div className="aspect-square bg-black/40 rounded-2xl overflow-hidden border border-white/5 relative flex items-center justify-center">
-                                        <img src={cropImage} alt="Crop preview" className="max-w-full max-h-full" />
+                                    <div className="aspect-square max-h-[55vh] mx-auto bg-black/40 rounded-2xl overflow-hidden border border-white/5 relative flex items-center justify-center">
+                                        <img src={cropImage} alt="Prévia do ajuste" className="max-w-full max-h-full" />
                                         <div className="absolute inset-0 border-2 border-primary border-dashed opacity-50 pointer-events-none rounded-full m-4" />
+                                        {cropSaving && (
+                                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+                                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                                <span className="text-[10px] uppercase font-bold text-white tracking-wider">Enviando...</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="flex gap-4 shrink-0 mt-4 pb-[env(safe-area-inset-bottom)]">
-                                    <Button variant="ghost" onClick={() => setCropImage(null)} className="flex-1 uppercase font-bold">Cancelar</Button>
-                                    <Button 
+                                <div className="flex gap-3 sm:gap-4 shrink-0 mt-3 sm:mt-4 pb-[env(safe-area-inset-bottom)]">
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setCropImage(null)}
+                                        disabled={cropSaving}
+                                        className="flex-1 uppercase font-bold"
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        disabled={cropSaving}
                                         onClick={async () => {
+                                            if (cropSaving) return;
                                             const toastId = toast.loading("Finalizando ajuste do logo...");
+                                            setCropSaving(true);
                                             try {
-                                                const file = await (await fetch(cropImage)).blob();
-                                                const folder = 'branding';
-                                                const url = await uploadFile(new File([file], `logo_${Date.now()}.png`, { type: 'image/png' }), 'media', folder);
-                                                
+                                                const blob = await (await fetch(cropImage)).blob();
+
+                                                // Validação de formato e tamanho ANTES de enviar
+                                                const mime = blob.type || 'image/png';
+                                                if (!LOGO_ALLOWED_MIME.includes(mime)) {
+                                                    toast.error("Formato inválido", {
+                                                        id: toastId,
+                                                        description: `Envie JPG, PNG ou WEBP. Recebido: ${mime}.`,
+                                                    });
+                                                    return;
+                                                }
+                                                if (blob.size > LOGO_MAX_MB * 1024 * 1024) {
+                                                    toast.error("Imagem muito grande", {
+                                                        id: toastId,
+                                                        description: `Máximo permitido: ${LOGO_MAX_MB}MB. Escolha uma imagem menor.`,
+                                                    });
+                                                    return;
+                                                }
+
+                                                const ext = mime.split('/')[1] || 'png';
+                                                const fileToUpload = new File([blob], `logo_${Date.now()}.${ext}`, { type: mime });
+                                                const url = await uploadFile(fileToUpload, 'media', 'branding');
+
                                                 if (url) {
                                                     setLogoUrl(url);
                                                     setCropImage(null);
-                                                    toast.success("Logo ajustado e aplicado com sucesso!", { id: toastId });
-                                                    
-                                                    // Salvar imediatamente no banco externo para garantir persistência
+                                                    toast.success("Logo aplicado com sucesso!", { id: toastId });
+
                                                     const { data: { user } } = await supabaseExternal.auth.getUser();
                                                     if (user) {
                                                         await supabaseExternal
                                                             .from('store_profiles')
                                                             .update({ logo_url: url, updated_at: new Date().toISOString() })
                                                             .eq('user_id', user.id);
-                                                        
-                                                        // Atualizar cache local
+
                                                         const cached = localStorage.getItem(`fixxer_profile_${user.email}`);
                                                         if (cached) {
                                                             const parsed = JSON.parse(cached);
@@ -1992,22 +2041,39 @@ function ProfileView({
                                                         }
                                                     }
                                                 } else {
-                                                    toast.error("Falha no upload do logo ajustado.", { id: toastId });
-                                                    setFailedUploads(prev => [...prev, new File([file], 'cropped_logo.png', { type: 'image/png' })]);
+                                                    toast.error("Falha no upload do logo", {
+                                                        id: toastId,
+                                                        description: "Verifique sua conexão e permissões e tente novamente. O modal permanece aberto.",
+                                                    });
+                                                    setFailedUploads(prev => [...prev, fileToUpload]);
                                                 }
-                                            } catch (err) {
+                                            } catch (err: any) {
                                                 console.error("Erro ao salvar logo ajustado:", err);
-                                                toast.error("Erro técnico ao processar imagem.", { id: toastId });
+                                                toast.error("Erro ao processar imagem", {
+                                                    id: toastId,
+                                                    description: err?.message || "Tente novamente em instantes.",
+                                                });
+                                            } finally {
+                                                setCropSaving(false);
                                             }
                                         }}
-                                        className="flex-1 bg-primary text-black uppercase font-black"
+                                        className="flex-1 bg-primary text-black uppercase font-black disabled:opacity-70"
                                     >
-                                        <Crop className="w-4 h-4 mr-2" /> Salvar Ajuste
+                                        {cropSaving ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Crop className="w-4 h-4 mr-2" /> Salvar Ajuste
+                                            </>
+                                        )}
                                     </Button>
                                 </div>
                             </div>
                         </div>
                     )}
+
 
                     
                     {uploadProgress.length > 0 && (
