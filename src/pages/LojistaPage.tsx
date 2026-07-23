@@ -88,6 +88,15 @@ export function LojistaDashboard() {
     city?: string;
     state?: string;
   }>({});
+  const [profileMissing, setProfileMissing] = useState<string[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [userRole, setUserRole] = useState<CategoryKey>(() => {
+    if (typeof window === "undefined") return "lojista";
+    const r = (localStorage.getItem("fixxer_user_role") || "lojista").toLowerCase();
+    return (["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(r)
+      ? r
+      : "lojista") as CategoryKey;
+  });
   const [rating, setRating] = useState(4.9);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
