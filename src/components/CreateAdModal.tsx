@@ -592,30 +592,113 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   if (!open) return null;
 
   const firstImage = files.find((f) => f.kind === "image");
+  const firstVideo = files.find((f) => f.kind === "video");
+  const firstPdf = files.find((f) => f.kind === "pdf" || /pdf$/i.test(f.file.type));
+  const fallbackFile = firstImage ?? firstVideo ?? firstPdf ?? files[0];
+
+  const locationLine = [neighborhood, city, uf].filter(Boolean).join(" • ");
+
+  const renderStars = (rating: number) => {
+    const rounded = Math.round(rating * 2) / 2;
+    return (
+      <div className="flex items-center gap-0.5">
+        {Array.from({ length: 5 }).map((_, i) => {
+          const filled = i + 1 <= Math.floor(rounded);
+          const half = !filled && i + 0.5 === rounded;
+          return (
+            <Star
+              key={i}
+              className="w-3 h-3"
+              style={{
+                color: theme.hex,
+                fill: filled || half ? theme.hex : "transparent",
+                opacity: filled || half ? 1 : 0.35,
+              }}
+            />
+          );
+        })}
+        <span className="text-[10px] font-bold text-white/70 ml-1">{rating.toFixed(1)}</span>
+      </div>
+    );
+  };
+
+  const PreviewMedia = () => {
+    if (firstImage) {
+      return (
+        <div className="relative aspect-video bg-black">
+          <img src={firstImage.url} alt="preview" className="w-full h-full object-cover" />
+        </div>
+      );
+    }
+    if (firstVideo) {
+      return (
+        <div className="relative aspect-video bg-black">
+          <video src={firstVideo.url} className="w-full h-full object-cover" muted playsInline />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+            <div
+              className="rounded-full w-12 h-12 flex items-center justify-center text-black font-black"
+              style={{ backgroundColor: theme.hex }}
+            >
+              ▶
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (firstPdf) {
+      return (
+        <div
+          className="relative aspect-video flex flex-col items-center justify-center gap-2"
+          style={{ background: `rgba(${theme.rgb}, 0.08)` }}
+        >
+          <div
+            className="w-14 h-16 rounded-md flex items-center justify-center text-black font-black text-xs"
+            style={{ backgroundColor: theme.hex }}
+          >
+            PDF
+          </div>
+          <span className="text-[10px] uppercase font-bold text-white/70 line-clamp-1 px-3 text-center">
+            {firstPdf.file.name}
+          </span>
+        </div>
+      );
+    }
+    if (fallbackFile) {
+      return (
+        <div
+          className="relative aspect-video flex flex-col items-center justify-center gap-2"
+          style={{ background: `rgba(${theme.rgb}, 0.08)` }}
+        >
+          <span className="text-[10px] uppercase font-black text-white/70 px-3 text-center">
+            {fallbackFile.file.name}
+          </span>
+        </div>
+      );
+    }
+    return (
+      <div
+        className="aspect-video flex items-center justify-center text-white/30 text-xs uppercase font-bold"
+        style={{ background: `rgba(${theme.rgb}, 0.06)` }}
+      >
+        Sem imagem
+      </div>
+    );
+  };
 
   const PreviewCard = (
     <div
       className="rounded-2xl overflow-hidden border bg-[#0F0F10]"
       style={{ borderColor: `rgba(${theme.rgb}, 0.35)`, ...theme.glow }}
     >
-      {firstImage ? (
-        <div className="relative aspect-video bg-black">
-          <img src={firstImage.url} alt="preview" className="w-full h-full object-cover" />
-          <div
-            className="absolute top-2 right-2 px-2 py-1 rounded-md text-[9px] uppercase font-black italic"
-            style={{ ...theme.bgSoft, color: theme.hex }}
-          >
-            {CATEGORY_LABEL[defaultCategory]}
-          </div>
-        </div>
-      ) : (
+      <div className="relative">
+        <PreviewMedia />
         <div
-          className="aspect-video flex items-center justify-center text-white/30 text-xs uppercase font-bold"
-          style={{ background: `rgba(${theme.rgb}, 0.06)` }}
+          className="absolute top-2 right-2 px-2 py-1 rounded-md text-[9px] uppercase font-black italic"
+          style={{ ...theme.bgSoft, color: theme.hex }}
         >
-          Sem imagem
+          {CATEGORY_LABEL[defaultCategory]}
         </div>
-      )}
+      </div>
       <div className="p-4 space-y-2">
         <h3 className="text-white font-black text-base leading-tight line-clamp-2">
           {title || "Título do serviço"}
@@ -633,6 +716,36 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             ))}
           </div>
         )}
+        {locationLine && (
+          <div className="flex items-center gap-1 text-[11px] text-white/70">
+            <MapPin className="w-3 h-3" style={{ color: theme.hex }} />
+            <span className="truncate">{locationLine}</span>
+          </div>
+        )}
+        <div
+          className="flex items-center gap-2 pt-1"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 8 }}
+        >
+          {authorProfile.logoUrl ? (
+            <img
+              src={authorProfile.logoUrl}
+              alt={authorProfile.name}
+              className="w-7 h-7 rounded-full object-cover border"
+              style={{ borderColor: `rgba(${theme.rgb}, 0.45)` }}
+            />
+          ) : (
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black text-black"
+              style={{ backgroundColor: theme.hex }}
+            >
+              {(authorProfile.name || "?").charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-bold text-white truncate">{authorProfile.name}</div>
+            {renderStars(authorProfile.rating)}
+          </div>
+        </div>
         <p className="text-white/60 text-xs line-clamp-3">
           {description || "Descrição do serviço aparecerá aqui..."}
         </p>
@@ -654,6 +767,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       </div>
     </div>
   );
+
 
   const currentViewerFile = viewer ? files[viewer.index] : null;
 
