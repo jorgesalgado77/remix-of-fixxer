@@ -711,7 +711,7 @@ function ConversationPage() {
           onClick={() => {
             // Preserva o rascunho (texto + anexo) antes de sair para o perfil.
             setDraftText(peerId, content);
-            setDraftFile(peerId, pendingFile);
+            setDraftFiles(peerId, pendingFiles);
             const path = `/lojista/${encodeURIComponent(peerId)}`;
             try {
               navigate({ to: path as any });
