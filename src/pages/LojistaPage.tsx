@@ -516,7 +516,7 @@ export function LojistaDashboard() {
             <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
         </div>
 
-        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} />
+        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} />
 
 
         <TooltipProvider>
