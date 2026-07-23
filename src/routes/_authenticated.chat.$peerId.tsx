@@ -113,10 +113,10 @@ function ConversationPage() {
     try {
       const { data, error } = await runQuery(selectCols);
       if (error) throw error;
-      return ((data as MessageRow[]) ?? []).reverse();
+      return ((data as unknown as MessageRow[]) ?? []).reverse();
     } catch {
       const { data } = await runQuery("id, sender_id, recipient_id, content, created_at, read");
-      return ((data as MessageRow[]) ?? []).reverse();
+      return ((data as unknown as MessageRow[]) ?? []).reverse();
     }
   };
 
