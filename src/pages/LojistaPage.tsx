@@ -2611,15 +2611,35 @@ function ProfileView({
                                     }));
                                 }
 
-                                setIsProfileComplete(true);
+                                // Recalcula completude usando a mesma regra da sidebar/menu
+                                const completeness = evaluateProfileCompleteness('lojista', saved ?? {
+                                    company_name: companyName,
+                                    cnpj,
+                                    responsible_name: responsibleName,
+                                    email_contact: emailContact,
+                                    whatsapp,
+                                    phone,
+                                    zipcode: cep,
+                                    activity_branch: activityBranch,
+                                    logo_url: logoUrl,
+                                });
+                                setIsProfileComplete(completeness.complete);
                                 if (typeof window !== 'undefined') {
                                     window.dispatchEvent(new CustomEvent('fixxer:profile-saved'));
                                 }
-                                toast.success("Dados do perfil salvos com sucesso!", {
-                                    id: toastId,
-                                    description: "Suas informações já estão atualizadas na plataforma.",
-                                    icon: "✅"
-                                });
+                                if (completeness.complete) {
+                                    toast.success("Perfil completo! Funções liberadas.", {
+                                        id: toastId,
+                                        description: "Criar Serviço e Avaliações agora estão disponíveis.",
+                                        icon: "✅"
+                                    });
+                                } else {
+                                    toast.warning("Perfil salvo, mas ainda incompleto.", {
+                                        id: toastId,
+                                        description: describeMissing(completeness),
+                                        duration: 8000,
+                                    });
+                                }
                             } catch (err: any) {
                                 console.error('[Perfil Lojista] erro ao salvar:', err);
                                 const msg = err?.message || 'Erro desconhecido ao salvar.';
