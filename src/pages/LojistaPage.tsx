@@ -40,7 +40,8 @@ import {
   XCircle,
   Eye,
   Heart,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 
 import jsPDF from 'jspdf';
