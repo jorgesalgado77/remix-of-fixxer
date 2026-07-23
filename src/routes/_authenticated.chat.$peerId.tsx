@@ -511,6 +511,7 @@ function ConversationPage() {
     setMessages((prev) => [...prev, optimistic]);
     setContent("");
     setPendingFile(null);
+    clearDraft(peerId);
 
     // === MODO MOCK: sem persistência, com auto-resposta simulada ===
     if (isMockPeerId(peerId)) {
@@ -861,7 +862,7 @@ function ConversationPage() {
               )}
               <span className="truncate flex-1">{pendingFile.name}</span>
               <span className="text-muted-foreground">{Math.round(pendingFile.size / 1024)} KB</span>
-              <button onClick={() => setPendingFile(null)} className="w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center" aria-label="Remover">
+              <button onClick={() => { setPendingFile(null); setDraftFile(peerId, null); }} className="w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center" aria-label="Remover">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
