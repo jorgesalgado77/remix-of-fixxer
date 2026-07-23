@@ -775,10 +775,13 @@ export default function FeedPrestadorPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [applied, setApplied] = useState<Set<string>>(new Set());
   const [applyFor, setApplyFor] = useState<JobPost | null>(null);
   const [lightbox, setLightbox] = useState<{ job: JobPost; index: number } | null>(null);
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [savesRemote, setSavesRemote] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Debounce de busca
@@ -787,7 +790,7 @@ export default function FeedPrestadorPage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  // Carregar salvos
+  // Carregar salvos (localStorage instantâneo + sync Supabase)
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SAVES_STORAGE_KEY);
@@ -795,9 +798,57 @@ export default function FeedPrestadorPage() {
     } catch {
       // ignore
     }
+
+    (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabaseExternal.auth.getUser();
+        if (!user) return;
+        setUserId(user.id);
+
+        // Salvos remotos (reusa feed_post_saves)
+        const { data: savesData, error: savesErr } = await supabaseExternal
+          .from("feed_post_saves")
+          .select("post_id")
+          .eq("user_id", user.id);
+        if (!savesErr && savesData) {
+          setSavesRemote(true);
+          const remote = new Set<string>(savesData.map((r: { post_id: string }) => r.post_id));
+          setSaved((prev) => {
+            const merged = new Set([...prev, ...remote]);
+            const missing = [...prev].filter((id) => !remote.has(id));
+            if (missing.length > 0) {
+              void supabaseExternal
+                .from("feed_post_saves")
+                .upsert(
+                  missing.map((post_id) => ({ user_id: user.id, post_id })),
+                  { onConflict: "user_id,post_id" },
+                );
+            }
+            return merged;
+          });
+        } else if (savesErr) {
+          console.warn("[feed] feed_post_saves indisponível, usando localStorage.", savesErr.message);
+        }
+
+        // Candidaturas do usuário
+        const { data: appsData, error: appsErr } = await supabaseExternal
+          .from("service_applications")
+          .select("job_id")
+          .eq("provider_id", user.id);
+        if (!appsErr && appsData) {
+          setApplied(new Set(appsData.map((r: { job_id: string }) => r.job_id)));
+        } else if (appsErr) {
+          console.warn("[feed] service_applications indisponível:", appsErr.message);
+        }
+      } catch (err) {
+        console.warn("[feed] falha ao sincronizar dados do prestador:", err);
+      }
+    })();
   }, []);
 
-  // Persistir salvos
+  // Persistir salvos localmente
   useEffect(() => {
     try {
       localStorage.setItem(SAVES_STORAGE_KEY, JSON.stringify([...saved]));
@@ -845,19 +896,64 @@ export default function FeedPrestadorPage() {
     return () => observer.disconnect();
   }, [hasMore, loadingMore]);
 
-  const toggleSave = useCallback((id: string) => {
-    setSaved((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        toast.success("Vaga removida dos salvos");
-      } else {
-        next.add(id);
-        toast.success("Vaga salva com sucesso");
+  const persistSave = useCallback(
+    async (postId: string, nextSaved: boolean) => {
+      if (!userId || !savesRemote) return;
+      try {
+        if (nextSaved) {
+          await supabaseExternal
+            .from("feed_post_saves")
+            .upsert({ user_id: userId, post_id: postId }, { onConflict: "user_id,post_id" });
+        } else {
+          await supabaseExternal
+            .from("feed_post_saves")
+            .delete()
+            .eq("user_id", userId)
+            .eq("post_id", postId);
+        }
+      } catch (err) {
+        console.warn("[feed] falha ao persistir favorito:", err);
       }
-      return next;
-    });
-  }, []);
+    },
+    [userId, savesRemote],
+  );
+
+  const toggleSave = useCallback(
+    (id: string) => {
+      setSaved((prev) => {
+        const next = new Set(prev);
+        const willSave = !next.has(id);
+        if (willSave) {
+          next.add(id);
+          toast.success("Vaga salva", {
+            description: savesRemote
+              ? "Disponível em qualquer dispositivo."
+              : "Faça login para sincronizar entre dispositivos.",
+          });
+        } else {
+          next.delete(id);
+          toast("Vaga removida dos salvos");
+        }
+        void persistSave(id, willSave);
+        return next;
+      });
+    },
+    [persistSave, savesRemote],
+  );
+
+  const openChatWith = useCallback(
+    (job: JobPost) => {
+      const peerId = job.contractor.id;
+      if (!peerId) {
+        toast.error("Contratante sem canal de chat disponível.");
+        return;
+      }
+      navigate({ to: "/chat/$peerId", params: { peerId } }).catch(() => {
+        navigate({ to: "/chat" }).catch(() => undefined);
+      });
+    },
+    [navigate],
+  );
 
   const searching = search !== debouncedSearch;
 
