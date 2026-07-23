@@ -403,7 +403,29 @@ function ChatInboxPage() {
       markConversationReadLocal(userId, peerId);
       window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
     }
-    navigate({ to: "/chat/$peerId" as any, params: { peerId } as any });
+    setOpenMenu(null);
+    try {
+      navigate({ to: "/chat/$peerId" as any, params: { peerId } as any });
+    } catch {
+      window.location.href = `/chat/${encodeURIComponent(peerId)}`;
+    }
+  };
+
+  const handleViewProfile = (c: Conversation) => {
+    setOpenMenu(null);
+    const role = (c.peerRole || "").toLowerCase();
+    // Rotas públicas conhecidas por role
+    const path =
+      role === "lojista"
+        ? `/lojista/${encodeURIComponent(c.peerId)}`
+        : role === "prestador"
+        ? `/prestador/${encodeURIComponent(c.peerId)}`
+        : `/lojista/${encodeURIComponent(c.peerId)}`;
+    try {
+      navigate({ to: path as any });
+    } catch {
+      window.location.href = path;
+    }
   };
 
   return (
