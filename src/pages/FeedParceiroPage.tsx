@@ -1048,6 +1048,59 @@ export default function FeedParceiroPage() {
           }}
         />
       )}
+
+      {/* MODAL DE DETALHES */}
+      <FeedDetailsModal
+        data={
+          detailsFor
+            ? ({
+                id: detailsFor.id,
+                title: detailsFor.title,
+                description: detailsFor.description,
+                category: "fornecedor",
+                status: getFeedStatus(detailsFor.id),
+                author: {
+                  id: detailsFor.store.id,
+                  name: detailsFor.store.name,
+                  initials: detailsFor.store.initials,
+                },
+                authorHref:
+                  detailsFor.requesterType === "prestador"
+                    ? `/prestador/${detailsFor.store.id}`
+                    : `/lojista/${detailsFor.store.id}`,
+                city: `${detailsFor.city}/${detailsFor.state}`,
+                postedAt: detailsFor.postedAt,
+                rating: detailsFor.rating,
+                badges: [detailsFor.sector],
+                metaRows: [
+                  { label: "Setor", value: detailsFor.sector },
+                  { label: "Local", value: `${detailsFor.city}/${detailsFor.state}` },
+                  { label: "Publicado", value: detailsFor.postedAt },
+                ],
+                media: detailsFor.attachment ? [detailsFor.attachment] : [],
+                ctaLabel: "Enviar cotação",
+              } satisfies FeedDetailsData)
+            : null
+        }
+        isSaved={detailsFor ? saved.has(detailsFor.id) : false}
+        onSave={() =>
+          detailsFor &&
+          setSaved((prev) => {
+            const next = new Set(prev);
+            if (next.has(detailsFor.id)) next.delete(detailsFor.id);
+            else next.add(detailsFor.id);
+            return next;
+          })
+        }
+        onChat={() => {
+          if (detailsFor) {
+            const req = detailsFor;
+            setDetailsFor(null);
+            setQuoteOpen(req);
+          }
+        }}
+        onClose={() => setDetailsFor(null)}
+      />
     </div>
   );
 }
