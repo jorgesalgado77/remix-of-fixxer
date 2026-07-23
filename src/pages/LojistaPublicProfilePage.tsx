@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams } from "@tanstack/react-router";
+import { useParams, useLocation } from "@tanstack/react-router";
+import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+
 import {
   MapPin,
   Star,
