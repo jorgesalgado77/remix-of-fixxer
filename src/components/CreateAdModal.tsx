@@ -705,6 +705,40 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
+            {/* Local de Execução */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                Local de Execução do Trabalho
+              </Label>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_90px] gap-2">
+                <Input
+                  value={neighborhood}
+                  onChange={(e) => setNeighborhood(e.target.value)}
+                  placeholder="Bairro"
+                  maxLength={80}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <Input
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Cidade"
+                  maxLength={80}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <select
+                  value={uf}
+                  onChange={(e) => setUf(e.target.value)}
+                  className="h-10 rounded-md bg-white/5 border border-white/10 text-white px-2 text-sm uppercase"
+                >
+                  <option value="" className="bg-neutral-900">UF</option>
+                  {UF_LIST.map((u) => (
+                    <option key={u} value={u} className="bg-neutral-900">{u}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[9px] text-white/40">Informe o endereço onde o serviço será executado.</p>
+            </div>
+
             {/* Quantidade de ambientes */}
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
