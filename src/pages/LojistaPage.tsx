@@ -48,6 +48,13 @@ import autoTable from 'jspdf-autotable';
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
+import { CreateAdModal } from "@/components/CreateAdModal";
+import type { CategoryKey } from "@/lib/category-colors";
+import {
+  evaluateProfileCompleteness,
+  describeMissing,
+  type ProfileCompletenessResult,
+} from "@/lib/profile-completeness";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
