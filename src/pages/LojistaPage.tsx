@@ -1418,6 +1418,7 @@ function ProfileView({
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
     const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
     const [documents, setDocuments] = useState<{name: string, url: string, size: number}[]>([]);
+    const [specialties, setSpecialties] = useState<{id: string, title: string, description: string}[]>([]);
     const [socialLinks, setSocialLinks] = useState({
         instagram: "",
         facebook: "",
