@@ -29,7 +29,7 @@ function AuthenticatedLayout() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     const checkAuth = async () => {
