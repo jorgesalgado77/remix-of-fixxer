@@ -134,10 +134,34 @@ export function LojistaPublicProfilePage() {
           return;
         }
 
-        let query = supabaseExternal.from("store_profiles").select("*");
-        if (storeId) query = query.eq("user_id", storeId);
-        const { data } = await query.limit(1).maybeSingle();
-        if (data) setProfile(data as StoreProfile);
+        // Tenta primeiro por user_id (id de autenticação); se não achar, tenta pelo id da linha (PK).
+        // Isso garante compatibilidade com URLs antigas que usavam o PK da tabela.
+        let found: any = null;
+        if (storeId) {
+          const byUser = await supabaseExternal
+            .from("store_profiles")
+            .select("*")
+            .eq("user_id", storeId)
+            .maybeSingle();
+          if (byUser.data) found = byUser.data;
+          if (!found) {
+            const byId = await supabaseExternal
+              .from("store_profiles")
+              .select("*")
+              .eq("id", storeId)
+              .maybeSingle();
+            if (byId.data) found = byId.data;
+          }
+        } else {
+          const anyRow = await supabaseExternal
+            .from("store_profiles")
+            .select("*")
+            .limit(1)
+            .maybeSingle();
+          if (anyRow.data) found = anyRow.data;
+        }
+        if (found) setProfile(found as StoreProfile);
+        else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
 
         // O.S. pendentes deste lojista
         if (storeId) {
