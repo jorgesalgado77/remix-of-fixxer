@@ -31,6 +31,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedFeedIndexRouteImport } from './routes/_authenticated.feed.index'
 import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
 import { Route as AuthenticatedFeedPrestadorRouteImport } from './routes/_authenticated.feed.prestador'
+import { Route as AuthenticatedFeedParceiroRouteImport } from './routes/_authenticated.feed.parceiro'
 import { Route as AuthenticatedFeedLojistaRouteImport } from './routes/_authenticated.feed.lojista'
 import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authenticated.chat.$peerId'
 
@@ -144,6 +145,12 @@ const AuthenticatedFeedPrestadorRoute =
     path: '/prestador',
     getParentRoute: () => AuthenticatedFeedRoute,
   } as any)
+const AuthenticatedFeedParceiroRoute =
+  AuthenticatedFeedParceiroRouteImport.update({
+    id: '/parceiro',
+    path: '/parceiro',
+    getParentRoute: () => AuthenticatedFeedRoute,
+  } as any)
 const AuthenticatedFeedLojistaRoute =
   AuthenticatedFeedLojistaRouteImport.update({
     id: '/lojista',
@@ -177,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/auth/': typeof AuthIndexRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
+  '/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/feed/': typeof AuthenticatedFeedIndexRoute
@@ -200,6 +208,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
+  '/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/feed': typeof AuthenticatedFeedIndexRoute
@@ -227,6 +236,7 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/_authenticated/feed/lojista': typeof AuthenticatedFeedLojistaRoute
+  '/_authenticated/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/_authenticated/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/_authenticated/feed/': typeof AuthenticatedFeedIndexRoute
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/chat/$peerId'
     | '/feed/lojista'
+    | '/feed/parceiro'
     | '/feed/prestador'
     | '/api/public/setup-db'
     | '/feed/'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/chat/$peerId'
     | '/feed/lojista'
+    | '/feed/parceiro'
     | '/feed/prestador'
     | '/api/public/setup-db'
     | '/feed'
@@ -303,6 +315,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/_authenticated/chat/$peerId'
     | '/_authenticated/feed/lojista'
+    | '/_authenticated/feed/parceiro'
     | '/_authenticated/feed/prestador'
     | '/api/public/setup-db'
     | '/_authenticated/feed/'
@@ -477,6 +490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFeedPrestadorRouteImport
       parentRoute: typeof AuthenticatedFeedRoute
     }
+    '/_authenticated/feed/parceiro': {
+      id: '/_authenticated/feed/parceiro'
+      path: '/parceiro'
+      fullPath: '/feed/parceiro'
+      preLoaderRoute: typeof AuthenticatedFeedParceiroRouteImport
+      parentRoute: typeof AuthenticatedFeedRoute
+    }
     '/_authenticated/feed/lojista': {
       id: '/_authenticated/feed/lojista'
       path: '/lojista'
@@ -507,12 +527,14 @@ const AuthenticatedChatRouteWithChildren =
 
 interface AuthenticatedFeedRouteChildren {
   AuthenticatedFeedLojistaRoute: typeof AuthenticatedFeedLojistaRoute
+  AuthenticatedFeedParceiroRoute: typeof AuthenticatedFeedParceiroRoute
   AuthenticatedFeedPrestadorRoute: typeof AuthenticatedFeedPrestadorRoute
   AuthenticatedFeedIndexRoute: typeof AuthenticatedFeedIndexRoute
 }
 
 const AuthenticatedFeedRouteChildren: AuthenticatedFeedRouteChildren = {
   AuthenticatedFeedLojistaRoute: AuthenticatedFeedLojistaRoute,
+  AuthenticatedFeedParceiroRoute: AuthenticatedFeedParceiroRoute,
   AuthenticatedFeedPrestadorRoute: AuthenticatedFeedPrestadorRoute,
   AuthenticatedFeedIndexRoute: AuthenticatedFeedIndexRoute,
 }
