@@ -34,6 +34,7 @@ import {
 import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
+import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
 
 export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
@@ -168,6 +169,29 @@ function ConversationPage() {
       if (cancelled) return;
       setUserId(uid);
       if (!uid) { setLoading(false); return; }
+
+      // === MODO MOCK (peerId "mock-*") ===
+      if (isMockPeerId(peerId)) {
+        const mock = getMockConversation(peerId);
+        if (mock) {
+          setPeerName(mock.peerName);
+          setPeerAvatar(mock.peerAvatar);
+          setPeerOnline(!!mock.online);
+          const mockRows: MessageRow[] = mock.messages.map((m) => ({
+            id: `${peerId}-${m.id}`,
+            sender_id: m.fromMe ? uid : peerId,
+            recipient_id: m.fromMe ? peerId : uid,
+            content: m.content,
+            created_at: mockMessageIsoAt(m.minutesAgo),
+            read: true,
+          }));
+          setMessages(mockRows);
+          setHasMore(false);
+          setLoading(false);
+          return;
+        }
+      }
+
 
       await hydrateChatPreferences(uid);
 
@@ -458,6 +482,42 @@ function ConversationPage() {
     setMessages((prev) => [...prev, optimistic]);
     setContent("");
     setPendingFile(null);
+
+    // === MODO MOCK: sem persistência, com auto-resposta simulada ===
+    if (isMockPeerId(peerId)) {
+      setTimeout(() => {
+        setMessages((prev) =>
+          prev.map((m) => (m._clientId === clientId ? { ...m, _pending: false, read: true } : m)),
+        );
+      }, 400);
+      const replies = [
+        "Perfeito, anotado! 👍",
+        "Combinado. Assim que fechar, te aviso por aqui.",
+        "Legal! Posso te mandar uma proposta em instantes.",
+        "Show, vou verificar e já retorno.",
+      ];
+      const reply = replies[Math.floor(Math.random() * replies.length)];
+      setTimeout(() => {
+        setPeerTyping(true);
+      }, 900);
+      setTimeout(() => {
+        setPeerTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `${peerId}-reply-${Date.now()}`,
+            sender_id: peerId,
+            recipient_id: userId,
+            content: reply,
+            created_at: new Date().toISOString(),
+            read: true,
+          },
+        ]);
+      }, 2200);
+      setSending(false);
+      return;
+    }
+
 
     try {
       let attachment: { url: string; type: string; name: string } | null = null;
