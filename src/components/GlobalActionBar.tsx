@@ -2,28 +2,33 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Activity, PlusCircle, Store, Star, Menu } from "lucide-react";
 
 /**
- * Barra de ações global inferior (mobile).
+ * Barra de ações global inferior — visível em mobile e desktop.
  * Presente em todas as telas do sistema para navegação rápida.
  */
 export function GlobalActionBar() {
   const navigate = useNavigate();
   const { location } = useRouterState();
   const path = location.pathname;
+  const hash = location.hash;
 
   const isActive = (target: string) => path.startsWith(target);
+  const isHash = (h: string) => path.startsWith("/dashboard/lojista") && hash === h;
 
   const goToMyProfile = () => {
     const profileId =
-      (typeof window !== "undefined" && localStorage.getItem("fixxer_lojista_id")) ||
-      "meu-perfil";
-    navigate({ to: `/lojista/${profileId}` as any });
+      (typeof window !== "undefined" && localStorage.getItem("fixxer_lojista_id")) || "";
+    if (profileId) {
+      navigate({ to: "/lojista/$id" as any, params: { id: profileId } });
+    } else {
+      navigate({ to: "/perfil/lojista" as any });
+    }
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/85 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around pb-safe">
+    <div className="fixed bottom-0 left-0 right-0 bg-black/85 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around pb-safe">
       <button
         onClick={() => navigate({ to: "/dashboard/lojista" as any })}
-        className={`flex flex-col items-center gap-1 ${isActive("/dashboard") ? "text-primary" : "text-muted-foreground"}`}
+        className={`flex flex-col items-center gap-1 ${isActive("/dashboard") && !hash ? "text-primary" : "text-muted-foreground"}`}
       >
         <Activity className="w-5 h-5" />
         <span className="text-[8px] font-black uppercase italic">Painel</span>
@@ -46,14 +51,14 @@ export function GlobalActionBar() {
       </div>
       <button
         onClick={() => navigate({ to: "/dashboard/lojista" as any, hash: "reviews" })}
-        className="flex flex-col items-center gap-1 text-muted-foreground"
+        className={`flex flex-col items-center gap-1 ${isHash("reviews") ? "text-primary" : "text-muted-foreground"}`}
       >
         <Star className="w-5 h-5" />
         <span className="text-[8px] font-black uppercase italic">Votos</span>
       </button>
       <button
         onClick={() => navigate({ to: "/dashboard/lojista" as any, hash: "menu" })}
-        className="flex flex-col items-center gap-1 text-muted-foreground"
+        className={`flex flex-col items-center gap-1 ${isHash("menu") ? "text-primary" : "text-muted-foreground"}`}
       >
         <Menu className="w-5 h-5" />
         <span className="text-[8px] font-black uppercase italic">Menu</span>
