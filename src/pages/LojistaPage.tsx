@@ -194,6 +194,23 @@ export function LojistaDashboard() {
       cancelled = true;
       window.removeEventListener("fixxer:profile-saved", onProfileSaved);
     };
+  }, [userRole]);
+
+  // Sincroniza o papel do usuário se ele mudar em outro lugar (auth, admin, etc.)
+  useEffect(() => {
+    const syncRole = () => {
+      if (typeof window === "undefined") return;
+      const r = (localStorage.getItem("fixxer_user_role") || "lojista").toLowerCase();
+      if (["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(r)) {
+        setUserRole(r as CategoryKey);
+      }
+    };
+    window.addEventListener("storage", syncRole);
+    window.addEventListener("fixxer:role-changed", syncRole as any);
+    return () => {
+      window.removeEventListener("storage", syncRole);
+      window.removeEventListener("fixxer:role-changed", syncRole as any);
+    };
   }, []);
 
   const openPublicProfile = () => {
