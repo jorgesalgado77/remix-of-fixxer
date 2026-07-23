@@ -194,6 +194,17 @@ function ConversationPage() {
       }
       await markIncomingRead(uid);
 
+      // Read receipts do peer (quando o outro lado visualizou minhas mensagens)
+      const initialPeerRead = await fetchPeerLastReadAt(uid, peerId);
+      if (!cancelled) setPeerLastReadAt(initialPeerRead);
+      const unsubPeerRead = subscribePeerReadReceipts(uid, peerId, (at) => {
+        setPeerLastReadAt((prev) => (!prev || new Date(at) > new Date(prev) ? at : prev));
+      });
+      // guarda no closure para cleanup abaixo
+      (channel as any)?.__unsubPeerRead && (channel as any).__unsubPeerRead();
+      (globalThis as any).__fixxerUnsubPeerRead = unsubPeerRead;
+
+
       // Canal de INSERT/UPDATE de mensagens
       try {
         const channelName = `chat-conv-${Math.random().toString(36).slice(2)}`;
