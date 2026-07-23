@@ -1794,17 +1794,40 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                                     <Button variant="ghost" onClick={() => setCropImage(null)} className="flex-1 uppercase font-bold">Cancelar</Button>
                                     <Button 
                                         onClick={async () => {
-                                            // Simular crop/ajuste e salvar
-                                            const file = await (await fetch(cropImage)).blob();
-                                            const folder = cropType === 'video' ? 'videos' : cropType === 'gallery' ? 'gallery' : 'branding';
-                                            const url = await uploadFile(new File([file], 'cropped.png', { type: 'image/png' }), 'media', folder);
-                                            if (url) {
-                                                if (cropType === 'logo') setLogoUrl(url);
-                                                setCropImage(null);
-                                                toast.success("Logo ajustado com sucesso!");
-                                            } else {
-                                                // Se falhar, adicionar aos falhados se necessário
-                                                setFailedUploads(prev => [...prev, new File([file], 'cropped.png', { type: 'image/png' })]);
+                                            const toastId = toast.loading("Finalizando ajuste do logo...");
+                                            try {
+                                                const file = await (await fetch(cropImage)).blob();
+                                                const folder = 'branding';
+                                                const url = await uploadFile(new File([file], `logo_${Date.now()}.png`, { type: 'image/png' }), 'media', folder);
+                                                
+                                                if (url) {
+                                                    setLogoUrl(url);
+                                                    setCropImage(null);
+                                                    toast.success("Logo ajustado e aplicado com sucesso!", { id: toastId });
+                                                    
+                                                    // Salvar imediatamente no banco externo para garantir persistência
+                                                    const { data: { user } } = await supabaseExternal.auth.getUser();
+                                                    if (user) {
+                                                        await supabaseExternal
+                                                            .from('store_profiles')
+                                                            .update({ logo_url: url, updated_at: new Date().toISOString() })
+                                                            .eq('user_id', user.id);
+                                                        
+                                                        // Atualizar cache local
+                                                        const cached = localStorage.getItem(`fixxer_profile_${user.email}`);
+                                                        if (cached) {
+                                                            const parsed = JSON.parse(cached);
+                                                            parsed.logoUrl = url;
+                                                            localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify(parsed));
+                                                        }
+                                                    }
+                                                } else {
+                                                    toast.error("Falha no upload do logo ajustado.", { id: toastId });
+                                                    setFailedUploads(prev => [...prev, new File([file], 'cropped_logo.png', { type: 'image/png' })]);
+                                                }
+                                            } catch (err) {
+                                                console.error("Erro ao salvar logo ajustado:", err);
+                                                toast.error("Erro técnico ao processar imagem.", { id: toastId });
                                             }
                                         }}
                                         className="flex-1 bg-primary text-black uppercase font-black"
