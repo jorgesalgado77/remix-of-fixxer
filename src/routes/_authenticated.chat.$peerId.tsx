@@ -250,12 +250,13 @@ function ConversationPage() {
       try {
         const { data: p } = await supabaseExternal
           .from("profiles")
-          .select("id, full_name, avatar_url")
+          .select("id, full_name, avatar_url, role")
           .eq("id", peerId)
           .maybeSingle();
         if (p && !cancelled) {
           setPeerName((p as any).full_name || "Conversa");
           setPeerAvatar((p as any).avatar_url ?? null);
+          setPeerRole((p as any).role ?? null);
         }
       } catch {}
 
