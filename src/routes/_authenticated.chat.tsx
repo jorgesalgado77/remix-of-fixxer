@@ -525,17 +525,23 @@ function ChatInboxPage() {
         ) : (
           <>
             <ul className="space-y-2">
-              {visible.map((c) => (
+              {visible.map((c) => {
+                const theme = getCategoryTheme(roleToCategory(c.peerRole));
+                return (
                 <li key={c.peerId} className="relative">
                   <button
                     onClick={() => openConversation(c.peerId)}
-                    className="w-full flex items-center gap-3 bg-[#1A1A1B] border border-white/10 hover:border-primary/40 rounded-2xl p-4 text-left transition-colors"
+                    className="w-full flex items-center gap-3 bg-[#1A1A1B] border-2 rounded-2xl p-4 text-left transition-all hover:bg-white/[0.03]"
+                    style={{ borderColor: `rgba(${theme.rgb}, 0.35)`, boxShadow: `0 0 14px rgba(${theme.rgb}, 0.10)` }}
                   >
-                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 relative">
+                    <div
+                      className="w-12 h-12 rounded-full bg-white/5 border-2 flex items-center justify-center overflow-hidden shrink-0 relative"
+                      style={{ borderColor: theme.hex, boxShadow: `0 0 10px rgba(${theme.rgb}, 0.35)` }}
+                    >
                       {c.peerAvatar ? (
                         <img src={c.peerAvatar} alt={c.peerName} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="font-black italic text-primary">{c.peerName.slice(0, 1).toUpperCase()}</span>
+                        <span className="font-black italic" style={{ color: theme.hex }}>{c.peerName.slice(0, 1).toUpperCase()}</span>
                       )}
                       {c.muted && (
                         <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-black border border-white/20 flex items-center justify-center">
@@ -550,7 +556,15 @@ function ChatInboxPage() {
                           {new Date(c.lastAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
+                          style={{ backgroundColor: `rgba(${theme.rgb}, 0.15)`, color: theme.hex }}
+                        >
+                          {theme.label}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                         {c.lastAttachmentType && <Paperclip className="w-3 h-3 shrink-0" />}
                         {c.lastMessage || (c.lastAttachmentType ? "Anexo" : "—")}
                       </p>
