@@ -67,25 +67,31 @@ export async function hydrateChatPreferences(userId: string): Promise<void> {
   try {
     const { data, error } = await supabaseExternal
       .from("chat_conversation_state")
-      .select("peer_id, archived, muted")
+      .select("peer_id, archived, muted, last_read_at")
       .eq("user_id", userId);
-    if (error) return; // tabela pode não existir; segue com localStorage
+    if (error) return;
     const arch = new Set<string>();
     const mut = new Set<string>();
+    const reads: Record<string, string> = {};
     for (const row of (data as any[]) ?? []) {
       if (row.archived) arch.add(row.peer_id);
       if (row.muted) mut.add(row.peer_id);
+      if (row.last_read_at) reads[row.peer_id] = row.last_read_at;
     }
     memArchived.set(userId, arch);
     memMuted.set(userId, mut);
+    memLastRead.set(userId, reads);
     writeSetLS(ARCHIVED_KEY, userId, arch);
     writeSetLS(MUTED_KEY, userId, mut);
-  } catch {
-    /* silencioso */
-  }
+    try { localStorage.setItem(`${LAST_READ_KEY}:${userId}`, JSON.stringify(reads)); } catch {}
+  } catch {}
 }
 
-async function upsertState(userId: string, peerId: string, patch: { archived?: boolean; muted?: boolean }) {
+async function upsertState(
+  userId: string,
+  peerId: string,
+  patch: { archived?: boolean; muted?: boolean; last_read_at?: string },
+) {
   try {
     await supabaseExternal
       .from("chat_conversation_state")
@@ -93,9 +99,34 @@ async function upsertState(userId: string, peerId: string, patch: { archived?: b
         { user_id: userId, peer_id: peerId, ...patch, updated_at: new Date().toISOString() },
         { onConflict: "user_id,peer_id" },
       );
-  } catch {
-    /* funciona só localmente se tabela não existir */
+  } catch {}
+}
+
+export function getLastReadAt(userId: string, peerId: string): string | null {
+  let map = memLastRead.get(userId);
+  if (!map) {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(`${LAST_READ_KEY}:${userId}`) : null;
+      map = raw ? JSON.parse(raw) : {};
+    } catch { map = {}; }
+    memLastRead.set(userId, map!);
   }
+  return (map && map[peerId]) || null;
+}
+
+export function markConversationReadLocal(userId: string, peerId: string, at: string = new Date().toISOString()) {
+  const map = { ...(memLastRead.get(userId) || {}) };
+  const prev = map[peerId];
+  if (prev && new Date(prev).getTime() >= new Date(at).getTime()) return;
+  map[peerId] = at;
+  memLastRead.set(userId, map);
+  try {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`${LAST_READ_KEY}:${userId}`, JSON.stringify(map));
+      window.dispatchEvent(new CustomEvent("fixxer:chat-prefs-changed"));
+    }
+  } catch {}
+  void upsertState(userId, peerId, { last_read_at: at });
 }
 
 export function isConversationArchived(userId: string, peerId: string): boolean {
