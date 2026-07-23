@@ -1137,6 +1137,12 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
     const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
     const [documents, setDocuments] = useState<{name: string, url: string, size: number}[]>([]);
+    const [socialLinks, setSocialLinks] = useState({
+        instagram: "",
+        facebook: "",
+        tiktok: "",
+        site: ""
+    });
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
@@ -1165,6 +1171,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     setGalleryUrls(parsed.galleryUrls || []);
                     setVideoUrls(parsed.videoUrls || []);
                     setDocuments(parsed.documents || []);
+                    setSocialLinks(parsed.socialLinks || { instagram: "", facebook: "", tiktok: "", site: "" });
                 }
 
                 // 2. Buscar dados reais do Supabase
@@ -1189,6 +1196,12 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                     setGalleryUrls(data.gallery_urls || []);
                     setVideoUrls(data.video_urls || []);
                     setDocuments(data.documents || []);
+                    setSocialLinks({
+                        instagram: data.instagram || "",
+                        facebook: data.facebook || "",
+                        tiktok: data.tiktok || "",
+                        site: data.site_url || ""
+                    });
                     
                     // Atualizar o cache com dados frescos do banco
                     localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
@@ -1205,7 +1218,13 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         bannerUrl: data.banner_url,
                         galleryUrls: data.gallery_urls,
                         videoUrls: data.video_urls,
-                        documents: data.documents
+                        documents: data.documents,
+                        socialLinks: {
+                            instagram: data.instagram,
+                            facebook: data.facebook,
+                            tiktok: data.tiktok,
+                            site: data.site_url
+                        }
                     }));
                     if (data.id) localStorage.setItem('fixxer_lojista_id', data.id);
                 }
@@ -1621,25 +1640,25 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
                              <div className="w-3 h-3 rounded-sm bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600" /> Instagram
                            </Label>
-                           <Input placeholder="@suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-pink-500/50 transition-all" />
+                           <Input value={socialLinks.instagram} onChange={(e) => setSocialLinks(prev => ({...prev, instagram: e.target.value}))} placeholder="@suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-pink-500/50 transition-all" />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
                              <div className="w-3 h-3 rounded-full bg-[#1877F2] flex items-center justify-center text-[8px] font-bold">f</div> Facebook
                            </Label>
-                           <Input placeholder="facebook.com/suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#1877F2]/50 transition-all" />
+                           <Input value={socialLinks.facebook} onChange={(e) => setSocialLinks(prev => ({...prev, facebook: e.target.value}))} placeholder="facebook.com/suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-[#1877F2]/50 transition-all" />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
                              <Video className="w-3 h-3 text-white" /> TikTok
                            </Label>
-                           <Input placeholder="@suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-white/30 transition-all" />
+                           <Input value={socialLinks.tiktok} onChange={(e) => setSocialLinks(prev => ({...prev, tiktok: e.target.value}))} placeholder="@suaempresa" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-white/30 transition-all" />
                         </div>
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
                              <Globe className="w-3 h-3 text-blue-400" /> Site Oficial
                            </Label>
-                           <Input placeholder="https://www.suaempresa.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-blue-400/50 transition-all" />
+                           <Input value={socialLinks.site} onChange={(e) => setSocialLinks(prev => ({...prev, site: e.target.value}))} placeholder="https://www.suaempresa.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-blue-400/50 transition-all" />
                         </div>
                     </div>
                  </div>
@@ -2068,6 +2087,10 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                                     address_number: address.numero,
                                     address_complement: address.complemento,
                                     activity_branch: activityBranch,
+                                    instagram: socialLinks.instagram,
+                                    facebook: socialLinks.facebook,
+                                    tiktok: socialLinks.tiktok,
+                                    site_url: socialLinks.site,
                                     logo_url: logoUrl,
                                     banner_url: bannerUrl,
                                     gallery_urls: galleryUrls,
@@ -2097,7 +2120,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                                 localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
                                     companyName, socialName, cnpj, responsibleName, emailContact,
                                     whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
-                                    galleryUrls, videoUrls, documents
+                                    galleryUrls, videoUrls, documents, socialLinks, address
                                 }));
 
                                 setIsProfileComplete(true);
