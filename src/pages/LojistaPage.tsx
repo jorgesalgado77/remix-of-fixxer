@@ -1479,6 +1479,7 @@ function ProfileView({
                     setGalleryUrls(data.gallery_urls || []);
                     setVideoUrls(data.video_urls || []);
                     setDocuments(data.documents || []);
+                    setSpecialties(Array.isArray(data.specialties) ? data.specialties : []);
                     setSocialLinks({
                         instagram: data.instagram || "",
                         facebook: data.facebook || "",
