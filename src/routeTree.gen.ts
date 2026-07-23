@@ -28,6 +28,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated.cliente'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
+import { Route as AuthenticatedFeedIndexRouteImport } from './routes/_authenticated.feed.index'
 import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
 import { Route as AuthenticatedFeedPrestadorRouteImport } from './routes/_authenticated.feed.prestador'
 import { Route as AuthenticatedFeedLojistaRouteImport } from './routes/_authenticated.feed.lojista'
@@ -127,6 +128,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedFeedIndexRoute = AuthenticatedFeedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedFeedRoute,
+} as any)
 const ApiPublicSetupDbRoute = ApiPublicSetupDbRouteImport.update({
   id: '/api/public/setup-db',
   path: '/api/public/setup-db',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
+  '/feed/': typeof AuthenticatedFeedIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -182,7 +189,6 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/feed': typeof AuthenticatedFeedRouteWithChildren
   '/lojista': typeof AuthenticatedLojistaRoute
   '/parceiro': typeof AuthenticatedParceiroRoute
   '/prestador': typeof AuthenticatedPrestadorRoute
@@ -196,6 +202,7 @@ export interface FileRoutesByTo {
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
+  '/feed': typeof AuthenticatedFeedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -222,6 +229,7 @@ export interface FileRoutesById {
   '/_authenticated/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/_authenticated/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
+  '/_authenticated/feed/': typeof AuthenticatedFeedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -248,6 +256,7 @@ export interface FileRouteTypes {
     | '/feed/lojista'
     | '/feed/prestador'
     | '/api/public/setup-db'
+    | '/feed/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -257,7 +266,6 @@ export interface FileRouteTypes {
     | '/chat'
     | '/cliente'
     | '/dashboard'
-    | '/feed'
     | '/lojista'
     | '/parceiro'
     | '/prestador'
@@ -271,6 +279,7 @@ export interface FileRouteTypes {
     | '/feed/lojista'
     | '/feed/prestador'
     | '/api/public/setup-db'
+    | '/feed'
   id:
     | '__root__'
     | '/'
@@ -296,6 +305,7 @@ export interface FileRouteTypes {
     | '/_authenticated/feed/lojista'
     | '/_authenticated/feed/prestador'
     | '/api/public/setup-db'
+    | '/_authenticated/feed/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -446,6 +456,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/feed/': {
+      id: '/_authenticated/feed/'
+      path: '/'
+      fullPath: '/feed/'
+      preLoaderRoute: typeof AuthenticatedFeedIndexRouteImport
+      parentRoute: typeof AuthenticatedFeedRoute
+    }
     '/api/public/setup-db': {
       id: '/api/public/setup-db'
       path: '/api/public/setup-db'
@@ -491,11 +508,13 @@ const AuthenticatedChatRouteWithChildren =
 interface AuthenticatedFeedRouteChildren {
   AuthenticatedFeedLojistaRoute: typeof AuthenticatedFeedLojistaRoute
   AuthenticatedFeedPrestadorRoute: typeof AuthenticatedFeedPrestadorRoute
+  AuthenticatedFeedIndexRoute: typeof AuthenticatedFeedIndexRoute
 }
 
 const AuthenticatedFeedRouteChildren: AuthenticatedFeedRouteChildren = {
   AuthenticatedFeedLojistaRoute: AuthenticatedFeedLojistaRoute,
   AuthenticatedFeedPrestadorRoute: AuthenticatedFeedPrestadorRoute,
+  AuthenticatedFeedIndexRoute: AuthenticatedFeedIndexRoute,
 }
 
 const AuthenticatedFeedRouteWithChildren =

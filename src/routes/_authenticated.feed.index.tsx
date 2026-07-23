@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/feed")({
+export const Route = createFileRoute("/_authenticated/feed/")({
   component: FeedPage,
 });
 
