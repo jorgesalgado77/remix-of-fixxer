@@ -252,10 +252,19 @@ function categoryBadge(cat: FeedCategory) {
   }
 }
 
+const PAGE_SIZE = 4;
+const SAVES_STORAGE_KEY = "fixxer_feed_saves_v1";
+
 export default function FeedLojistaPage() {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<"todos" | FeedCategory>("todos");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searching, setSearching] = useState(false);
   const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [savesLoaded, setSavesLoaded] = useState(false);
+  const [savesRemote, setSavesRemote] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ post: FeedPost; index: number } | null>(null);
   const [proposalFor, setProposalFor] = useState<FeedPost | null>(null);
@@ -264,9 +273,76 @@ export default function FeedLojistaPage() {
   const [proposalValue, setProposalValue] = useState("");
   const [proposalMsg, setProposalMsg] = useState("");
 
+  // Paginação por scroll infinito
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Debounce da busca — evita filtrar a cada tecla e mostra "buscando..."
+  useEffect(() => {
+    setSearching(true);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setSearching(false);
+    }, 220);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Carregar favoritos: primeiro do localStorage (instantâneo),
+  // depois sincronizar com Supabase se logado + tabela existir.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVES_STORAGE_KEY);
+      if (raw) setSaved(new Set(JSON.parse(raw)));
+    } catch {}
+    setSavesLoaded(true);
+
+    (async () => {
+      try {
+        const { data: { user } } = await supabaseExternal.auth.getUser();
+        if (!user) return;
+        setUserId(user.id);
+        const { data, error } = await supabaseExternal
+          .from("feed_post_saves")
+          .select("post_id")
+          .eq("user_id", user.id);
+        if (error) {
+          // Tabela não existe: mantém localStorage como fallback silencioso.
+          console.warn("[feed] feed_post_saves indisponível, usando localStorage.", error.message);
+          return;
+        }
+        setSavesRemote(true);
+        const remote = new Set<string>((data || []).map((r: any) => r.post_id));
+        // Merge local + remoto e reconcilia no servidor.
+        const local = new Set(saved);
+        const missing = [...local].filter((id) => !remote.has(id));
+        if (missing.length > 0) {
+          await supabaseExternal
+            .from("feed_post_saves")
+            .upsert(missing.map((post_id) => ({ user_id: user.id, post_id })), {
+              onConflict: "user_id,post_id",
+            });
+          missing.forEach((id) => remote.add(id));
+        }
+        setSaved(remote);
+        localStorage.setItem(SAVES_STORAGE_KEY, JSON.stringify([...remote]));
+      } catch (err) {
+        console.warn("[feed] falha ao sincronizar favoritos:", err);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persiste local sempre que muda
+  useEffect(() => {
+    if (!savesLoaded) return;
+    try {
+      localStorage.setItem(SAVES_STORAGE_KEY, JSON.stringify([...saved]));
+    } catch {}
+  }, [saved, savesLoaded]);
+
   const visible = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    // Clientes Finais sempre no topo quando exibidos
+    const q = debouncedSearch.trim().toLowerCase();
     const byCategory = MOCK_POSTS.filter((p) => filter === "todos" || p.category === filter);
     const filtered = q
       ? byCategory.filter((p) => {
@@ -288,24 +364,82 @@ export default function FeedLojistaPage() {
       if (b.category === "cliente" && a.category !== "cliente") return 1;
       return 0;
     });
-  }, [filter, search]);
+  }, [filter, debouncedSearch]);
+
+  const paged = useMemo(() => visible.slice(0, page * PAGE_SIZE), [visible, page]);
+  const hasMore = paged.length < visible.length;
+
+  // Reset da paginação quando filtro/busca muda
+  useEffect(() => {
+    setPage(1);
+  }, [filter, debouncedSearch]);
+
+  // IntersectionObserver para scroll infinito
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !loadingMore) {
+          setLoadingMore(true);
+          // Pequeno delay para simular carga em rede e evitar flicker
+          setTimeout(() => {
+            setPage((p) => p + 1);
+            setLoadingMore(false);
+          }, 350);
+        }
+      },
+      { rootMargin: "400px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, loadingMore, paged.length]);
+
+  const persistSave = useCallback(
+    async (postId: string, nextSaved: boolean) => {
+      if (!userId || !savesRemote) return;
+      try {
+        if (nextSaved) {
+          await supabaseExternal
+            .from("feed_post_saves")
+            .upsert({ user_id: userId, post_id: postId }, { onConflict: "user_id,post_id" });
+        } else {
+          await supabaseExternal
+            .from("feed_post_saves")
+            .delete()
+            .eq("user_id", userId)
+            .eq("post_id", postId);
+        }
+      } catch (err) {
+        console.warn("[feed] falha ao persistir favorito:", err);
+      }
+    },
+    [userId, savesRemote],
+  );
 
   const toggleSaved = (id: string) => {
     setSaved((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
+      const willSave = !next.has(id);
+      if (willSave) {
+        next.add(id);
+        toast.success("Publicação salva", {
+          description: savesRemote ? "Disponível em qualquer dispositivo." : "Faça login para sincronizar entre dispositivos.",
+        });
+      } else {
         next.delete(id);
         toast("Publicação removida dos salvos");
-      } else {
-        next.add(id);
-        toast.success("Publicação salva");
       }
+      persistSave(id, willSave);
       return next;
     });
   };
 
   const openChat = (post: FeedPost) => {
-    toast(`Abrindo chat com ${post.author.name}...`);
+    // Abre a conversa direta com o autor (cria-a on-demand ao enviar a 1ª mensagem)
+    navigate({ to: "/chat/$peerId", params: { peerId: post.author.id } });
   };
 
   const submitProposal = () => {
@@ -332,6 +466,7 @@ export default function FeedLojistaPage() {
     toast.success("Publicação removida");
     setDeleteFor(null);
   };
+
 
   return (
     <div
