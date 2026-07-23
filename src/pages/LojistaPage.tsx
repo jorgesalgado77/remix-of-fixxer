@@ -2297,7 +2297,7 @@ function ProfileView({
                                 className="w-full h-12 bg-black/40 border-white/10 rounded-xl pl-10 pr-4 text-xs font-black uppercase italic text-white appearance-none cursor-pointer outline-none focus:border-primary/50"
                             >
                                 <option value="todas">Todas as Categorias</option>
-                                {branches.map(b => (
+                                {branches.map((b: string) => (
                                     <option key={b} value={b}>{b}</option>
                                 ))}
                             </select>
