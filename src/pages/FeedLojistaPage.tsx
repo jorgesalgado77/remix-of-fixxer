@@ -508,6 +508,8 @@ function authorHref(post: FeedPost) {
 export default function FeedLojistaPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"todos" | FeedCategory>("todos");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
+  const [detailsFor, setDetailsFor] = useState<FeedPost | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [searching, setSearching] = useState(false);
