@@ -14,6 +14,9 @@ import {
   Image as ImageIcon,
   RotateCcw,
   AlertCircle,
+  Download,
+  Check,
+  CheckCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -25,9 +28,12 @@ import {
   markConversationReadLocal,
   setConversationArchived,
   setConversationMuted,
+  fetchPeerLastReadAt,
+  subscribePeerReadReceipts,
 } from "@/lib/chat-preferences";
 import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
+import { downloadAttachment } from "@/lib/attachment-download";
 
 export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
@@ -43,9 +49,11 @@ type MessageRow = {
   attachment_url?: string | null;
   attachment_type?: string | null;
   attachment_name?: string | null;
+  client_message_id?: string | null;
   // Cliente apenas:
   _pending?: boolean;
   _failed?: boolean;
+  _clientId?: string;
   _draftText?: string;
   _draftFile?: File | null;
 };
@@ -55,6 +63,13 @@ const PAGE_SIZE = 30;
 function isImageType(t?: string | null) {
   return !!t && t.startsWith("image/");
 }
+
+function newClientId(): string {
+  const g: any = typeof globalThis !== "undefined" ? globalThis : {};
+  if (g.crypto?.randomUUID) return g.crypto.randomUUID();
+  return `cmid-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 
 function ConversationPage() {
   const { peerId } = Route.useParams();
