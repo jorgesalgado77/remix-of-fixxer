@@ -2746,8 +2746,9 @@ function ProfileView({
                                         tiktok: saved.tiktok || "",
                                         site: saved.site_url || "",
                                     });
-                                    if (saved.id && typeof window !== 'undefined') {
-                                        localStorage.setItem('fixxer_lojista_id', saved.id);
+                                    if (typeof window !== 'undefined') {
+                                        const publicKey = (saved as any).user_id || saved.id;
+                                        if (publicKey) localStorage.setItem('fixxer_lojista_id', publicKey);
                                     }
                                 }
 
