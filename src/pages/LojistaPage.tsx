@@ -2262,7 +2262,7 @@ function ProfileView({
                                 <div key={setting.id} className="flex items-center justify-between p-4 rounded-2xl bg-black/40 border border-white/5">
                                     <span className="text-[10px] font-black uppercase italic text-white">{setting.label}</span>
                                     <button 
-                                        onClick={() => setNotificationSettings(prev => ({ ...prev, [setting.id]: !prev[setting.id as keyof typeof notificationSettings] }))}
+                                        onClick={() => setNotificationSettings((prev: any) => ({ ...prev, [setting.id]: !prev[setting.id as keyof typeof notificationSettings] }))}
                                         className={`w-10 h-5 rounded-full transition-all relative ${notificationSettings[setting.id as keyof typeof notificationSettings] ? 'bg-primary' : 'bg-white/10'}`}
                                     >
                                         <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${notificationSettings[setting.id as keyof typeof notificationSettings] ? 'right-1' : 'left-1'}`} />
