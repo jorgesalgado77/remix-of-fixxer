@@ -424,6 +424,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     files.forEach((i) => URL.revokeObjectURL(i.url));
     setFiles([]);
     setServiceTypes([]);
+    setNeighborhood("");
+    setCity("");
+    setUf("");
     setRooms(1);
     setTitle("");
     setStartDate("");
@@ -438,10 +441,14 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setContractValue("");
     setCommissionPct("");
     setPriceType("fixo");
+    filesCacheRef.current.clear();
   };
 
   const validate = (): string | null => {
     if (serviceTypes.length === 0) return "Selecione ao menos um tipo de serviço.";
+    if (!neighborhood.trim()) return "Informe o bairro do local de execução.";
+    if (!city.trim()) return "Informe a cidade do local de execução.";
+    if (!uf.trim() || uf.trim().length !== 2) return "Informe a UF (2 letras) do local de execução.";
     if (!title.trim()) return "Informe o título do serviço.";
     if (!description.trim()) return "Descreva o serviço.";
     if (rooms < 1 || rooms > 25) return "Quantidade de ambientes deve ser entre 1 e 25.";
