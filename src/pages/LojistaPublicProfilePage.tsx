@@ -268,37 +268,142 @@ export function LojistaPublicProfilePage() {
     };
   }, [profile?.user_id, storeId]);
 
-  // Seções de fotos dinâmicas a partir de profile.photo_sections + galeria legada
+  // Hidrata preferências de galeria por lojista
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(prefsKey);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (typeof p.photoFilter === "string") setPhotoFilter(p.photoFilter);
+        if (typeof p.mediaTypeFilter === "string") setMediaTypeFilter(p.mediaTypeFilter);
+        if (typeof p.gallerySearch === "string") setGallerySearch(p.gallerySearch);
+        if (typeof p.gallerySort === "string") setGallerySort(p.gallerySort);
+      }
+    } catch {}
+    setPrefsHydrated(true);
+  }, [prefsKey]);
+
+  // Persiste preferências
+  useEffect(() => {
+    if (!prefsHydrated) return;
+    try {
+      localStorage.setItem(
+        prefsKey,
+        JSON.stringify({ photoFilter, mediaTypeFilter, gallerySearch, gallerySort }),
+      );
+    } catch {}
+  }, [prefsHydrated, prefsKey, photoFilter, mediaTypeFilter, gallerySearch, gallerySort]);
+
+  // Seções dinâmicas — cada item vem com kind (foto/vídeo/documento) detectado pela extensão
+  type MediaItem = {
+    url: string;
+    thumb: string;
+    sectionName: string;
+    kind: MediaKind;
+    createdAt?: string;
+    order: number;
+  };
   const photoSections = useMemo(() => {
-    const sections: { key: string; name: string; photos: (string | { url: string; thumbUrl?: string })[] }[] = [];
+    const sections: { key: string; name: string; items: MediaItem[] }[] = [];
     const ps = profile?.photo_sections;
-    if (ps?.showroom && ps.showroom.length) sections.push({ key: "showroom", name: "Show Room", photos: ps.showroom });
-    if (ps?.assemblies && ps.assemblies.length) sections.push({ key: "assemblies", name: "Montagens Realizadas", photos: ps.assemblies });
+    let orderCounter = 0;
+    const toItems = (name: string, arr: (string | { url: string; thumbUrl?: string; createdAt?: string })[]) =>
+      arr
+        .map((p) => {
+          const url = getPhotoUrl(p);
+          if (!url) return null;
+          return {
+            url,
+            thumb: getPhotoThumb(p),
+            sectionName: name,
+            kind: detectKind(url),
+            createdAt: getPhotoCreatedAt(p),
+            order: orderCounter++,
+          } as MediaItem;
+        })
+        .filter(Boolean) as MediaItem[];
+    if (ps?.showroom && ps.showroom.length) sections.push({ key: "showroom", name: "Show Room", items: toItems("Show Room", ps.showroom) });
+    if (ps?.assemblies && ps.assemblies.length) sections.push({ key: "assemblies", name: "Montagens Realizadas", items: toItems("Montagens Realizadas", ps.assemblies) });
     (ps?.custom ?? []).forEach((c) => {
-      if (c?.photos?.length) sections.push({ key: `custom:${c.id}`, name: c.name || "Seção", photos: c.photos });
+      if (c?.photos?.length) sections.push({ key: `custom:${c.id}`, name: c.name || "Seção", items: toItems(c.name || "Seção", c.photos) });
     });
     const legacy = profile?.gallery_urls ?? [];
-    if (legacy.length) sections.push({ key: "legacy", name: "Galeria", photos: legacy });
+    if (legacy.length) sections.push({ key: "legacy", name: "Galeria", items: toItems("Galeria", legacy) });
+    // Adiciona vídeos e documentos separados como pseudo-seções para permanecerem filtráveis
+    const flatVideos = (profile?.video_urls ?? []).map((url) => ({
+      url,
+      thumb: url,
+      sectionName: "Vídeos",
+      kind: "video" as const,
+      order: orderCounter++,
+    }));
+    if (flatVideos.length) sections.push({ key: "videos", name: "Vídeos", items: flatVideos });
+    const flatDocs = (profile?.document_urls ?? []).map((url) => ({
+      url,
+      thumb: url,
+      sectionName: "Documentos",
+      kind: "document" as const,
+      order: orderCounter++,
+    }));
+    if (flatDocs.length) sections.push({ key: "documents", name: "Documentos", items: flatDocs });
     return sections;
-  }, [profile?.photo_sections, profile?.gallery_urls]);
+  }, [profile?.photo_sections, profile?.gallery_urls, profile?.video_urls, profile?.document_urls]);
 
+  // Filtro por seção usa exatamente as seções existentes no perfil atual
   const photoFilters = useMemo(() => ["Todas", ...photoSections.map((s) => s.name)], [photoSections]);
 
+  // Se a seção selecionada não existir mais (removida em tempo real), volta pra "Todas"
   useEffect(() => {
     if (!photoFilters.includes(photoFilter)) setPhotoFilter("Todas");
   }, [photoFilters, photoFilter]);
 
-  const visiblePhotos = useMemo(() => {
-    const items: { url: string; thumb: string; sectionName: string }[] = [];
+  const visibleMedia = useMemo(() => {
+    const q = gallerySearch.trim().toLowerCase();
+    const kindMap: Record<typeof mediaTypeFilter, MediaKind | null> = {
+      Todos: null,
+      Fotos: "photo",
+      Vídeos: "video",
+      Documentos: "document",
+    };
+    const targetKind = kindMap[mediaTypeFilter];
+    const items: MediaItem[] = [];
     photoSections.forEach((s) => {
       if (photoFilter !== "Todas" && s.name !== photoFilter) return;
-      s.photos.forEach((p) => items.push({ url: getPhotoUrl(p), thumb: getPhotoThumb(p), sectionName: s.name }));
+      s.items.forEach((it) => {
+        if (targetKind && it.kind !== targetKind) return;
+        if (q) {
+          const hay = `${it.sectionName} ${basename(it.url)}`.toLowerCase();
+          if (!hay.includes(q)) return;
+        }
+        items.push(it);
+      });
     });
-    return items.filter((i) => i.url);
-  }, [photoSections, photoFilter]);
+    if (gallerySort === "section") {
+      items.sort((a, b) => a.sectionName.localeCompare(b.sectionName, "pt-BR") || a.order - b.order);
+    } else if (gallerySort === "oldest") {
+      items.sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : a.order;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : b.order;
+        return ta - tb;
+      });
+    } else {
+      // recent — mais novos primeiro (createdAt DESC ou ordem reversa)
+      items.sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : a.order;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : b.order;
+        return tb - ta;
+      });
+    }
+    return items;
+  }, [photoSections, photoFilter, mediaTypeFilter, gallerySearch, gallerySort]);
 
+  const visiblePhotos = useMemo(
+    () => visibleMedia.filter((i) => i.kind === "photo"),
+    [visibleMedia],
+  );
   const gallery = useMemo(() => visiblePhotos.map((i) => i.url), [visiblePhotos]);
   const videos = profile?.video_urls || [];
+
 
   const avgRating = useMemo(() => {
     if (reviews.length === 0) return 5.0;
