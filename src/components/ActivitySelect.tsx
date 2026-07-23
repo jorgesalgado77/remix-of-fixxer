@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,10 +14,18 @@ export function ActivitySelect({ value, onChange }: ActivitySelectProps) {
   const [isOther, setIsOther] = useState(false);
   const [otherValue, setOtherValue] = useState("");
 
+  // Garante que o valor atual sempre aparece como opção no Select,
+  // mesmo antes do banco confirmar a inserção via realtime.
+  const options = useMemo(() => {
+    const set = new Set(branches);
+    if (value && value.trim()) set.add(value.trim());
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [branches, value]);
+
   const handleSelect = (val: string) => {
-    if (val === "Outro") {
+    if (val === "__OUTRO__") {
       setIsOther(true);
-      onChange("");
+      setOtherValue("");
     } else {
       setIsOther(false);
       onChange(val);
@@ -25,47 +33,47 @@ export function ActivitySelect({ value, onChange }: ActivitySelectProps) {
   };
 
   const handleOtherSubmit = async () => {
-    if (otherValue.trim()) {
-      await addBranch(otherValue.trim());
-      onChange(otherValue.trim());
-      setIsOther(false);
-      setOtherValue("");
-    }
+    const v = otherValue.trim();
+    if (!v) return;
+    await addBranch(v);   // otimista + persistente
+    onChange(v);          // já seleciona o novo valor imediatamente
+    setIsOther(false);
+    setOtherValue("");
   };
 
   return (
     <div className="space-y-2">
       <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Ramo de Atividade *</Label>
       {!isOther ? (
-        <Select value={branches.includes(value) ? value : (value ? "Outro" : "")} onValueChange={handleSelect}>
+        <Select value={value || undefined} onValueChange={handleSelect}>
           <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all">
             <SelectValue placeholder="Selecione o ramo..." />
           </SelectTrigger>
           <SelectContent className="bg-[#1A1A1B] border-white/10 z-[100]">
-            {branches.map(b => (
+            {options.map(b => (
               <SelectItem key={b} value={b} className="text-xs">{b}</SelectItem>
             ))}
-            <SelectItem value="Outro" className="text-xs font-bold text-primary">Outro...</SelectItem>
+            <SelectItem value="__OUTRO__" className="text-xs font-bold text-primary">Outro...</SelectItem>
           </SelectContent>
         </Select>
       ) : (
         <div className="flex gap-2">
-          <Input 
+          <Input
             autoFocus
-            placeholder="Digite o novo ramo..." 
+            placeholder="Digite o novo ramo..."
             value={otherValue}
             onChange={(e) => setOtherValue(e.target.value)}
             className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50"
             onKeyDown={(e) => e.key === 'Enter' && handleOtherSubmit()}
           />
-          <button 
+          <button
             onClick={handleOtherSubmit}
             className="px-4 bg-primary text-black rounded-xl font-bold text-xs"
           >
             Add
           </button>
-          <button 
-            onClick={() => setIsOther(false)}
+          <button
+            onClick={() => { setIsOther(false); setOtherValue(""); }}
             className="px-4 bg-white/5 text-white rounded-xl font-bold text-xs"
           >
             Voltar
