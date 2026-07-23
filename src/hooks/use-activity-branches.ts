@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseExternal } from '@/lib/supabaseExternal';
 
 export function useActivityBranches() {
   const [branches, setBranches] = useState<string[]>(["Móveis Planejados", "Marcenaria"]);
