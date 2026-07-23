@@ -500,6 +500,8 @@ export default function FeedParceiroPage() {
   const [quotesRemote, setQuotesRemote] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [quoteOpen, setQuoteOpen] = useState<B2BRequest | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
+  const [detailsFor, setDetailsFor] = useState<B2BRequest | null>(null);
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
