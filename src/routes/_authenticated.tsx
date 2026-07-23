@@ -40,9 +40,8 @@ function AuthenticatedLayout() {
       setEmail(storedEmail);
       setRole(storedRole);
 
-      if (storedEmail.trim() === 'jorgericardosalgado@gmail.com' || window.location.pathname.includes('admin')) {
-        setShowAdminPanel(true);
-      }
+      // Admin panel agora é derivado do pathname — nada a setar aqui
+
 
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession && !isAuthenticated) {
