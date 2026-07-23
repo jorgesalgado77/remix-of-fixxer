@@ -48,6 +48,13 @@ import autoTable from 'jspdf-autotable';
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
+import { CreateAdModal } from "@/components/CreateAdModal";
+import type { CategoryKey } from "@/lib/category-colors";
+import {
+  evaluateProfileCompleteness,
+  describeMissing,
+  type ProfileCompletenessResult,
+} from "@/lib/profile-completeness";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -81,6 +88,15 @@ export function LojistaDashboard() {
     city?: string;
     state?: string;
   }>({});
+  const [profileMissing, setProfileMissing] = useState<string[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [userRole, setUserRole] = useState<CategoryKey>(() => {
+    if (typeof window === "undefined") return "lojista";
+    const r = (localStorage.getItem("fixxer_user_role") || "lojista").toLowerCase();
+    return (["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(r)
+      ? r
+      : "lojista") as CategoryKey;
+  });
   const [rating, setRating] = useState(4.9);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -102,20 +118,10 @@ export function LojistaDashboard() {
 
     const evaluate = (data: any) => {
       if (!data) return;
-      const required = [
-        data.company_name,
-        data.cnpj,
-        data.responsible_name,
-        data.email_contact,
-        data.whatsapp,
-        data.phone,
-        data.zipcode,
-        data.activity_branch,
-        data.logo_url,
-      ];
-      const complete = required.every((v) => typeof v === "string" && v.trim().length > 0);
+      const result: ProfileCompletenessResult = evaluateProfileCompleteness(userRole, data);
       if (cancelled) return;
-      setIsProfileComplete(complete);
+      setIsProfileComplete(result.complete);
+      setProfileMissing(result.missingLabels);
       setProfileSummary({
         id: data.id,
         companyName: data.company_name || "",
@@ -187,6 +193,23 @@ export function LojistaDashboard() {
     return () => {
       cancelled = true;
       window.removeEventListener("fixxer:profile-saved", onProfileSaved);
+    };
+  }, [userRole]);
+
+  // Sincroniza o papel do usuário se ele mudar em outro lugar (auth, admin, etc.)
+  useEffect(() => {
+    const syncRole = () => {
+      if (typeof window === "undefined") return;
+      const r = (localStorage.getItem("fixxer_user_role") || "lojista").toLowerCase();
+      if (["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(r)) {
+        setUserRole(r as CategoryKey);
+      }
+    };
+    window.addEventListener("storage", syncRole);
+    window.addEventListener("fixxer:role-changed", syncRole as any);
+    return () => {
+      window.removeEventListener("storage", syncRole);
+      window.removeEventListener("fixxer:role-changed", syncRole as any);
     };
   }, []);
 
@@ -320,11 +343,22 @@ export function LojistaDashboard() {
 
   const handleTabChange = (tab: string) => {
     if ((tab === 'create' || tab === 'reviews') && !isProfileComplete) {
+      const details = profileMissing.length
+        ? `Preencha para liberar: ${profileMissing.join(", ")}.`
+        : "Preencha os campos obrigatórios do Perfil para liberar esta função.";
+      console.warn("[LojistaDashboard] tentativa de acesso a função bloqueada:", { tab, missing: profileMissing });
       toast.error("Perfil Incompleto", {
-        description: "Você precisa preencher todos os campos obrigatórios e enviar o logo da empresa no menu Perfil antes de acessar esta funcionalidade.",
-        duration: 5000,
+        description: details,
+        duration: 6000,
       });
       setActiveTab('profile');
+      setMobileMenuOpen(false);
+      return;
+    }
+    if (tab === 'create') {
+      // "Criar Serviço" da sidebar/dashboard abre o mesmo modal do botão global "Criar".
+      setShowCreateModal(true);
+      setMobileMenuOpen(false);
       return;
     }
     setActiveTab(tab);
@@ -743,6 +777,11 @@ export function LojistaDashboard() {
             <span className="text-[8px] font-black uppercase italic">Menu</span>
         </button>
       </div>
+      <CreateAdModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        defaultCategory={userRole}
+      />
     </div>
   );
 }
@@ -2572,15 +2611,35 @@ function ProfileView({
                                     }));
                                 }
 
-                                setIsProfileComplete(true);
+                                // Recalcula completude usando a mesma regra da sidebar/menu
+                                const completeness = evaluateProfileCompleteness('lojista', saved ?? {
+                                    company_name: companyName,
+                                    cnpj,
+                                    responsible_name: responsibleName,
+                                    email_contact: emailContact,
+                                    whatsapp,
+                                    phone,
+                                    zipcode: cep,
+                                    activity_branch: activityBranch,
+                                    logo_url: logoUrl,
+                                });
+                                setIsProfileComplete(completeness.complete);
                                 if (typeof window !== 'undefined') {
                                     window.dispatchEvent(new CustomEvent('fixxer:profile-saved'));
                                 }
-                                toast.success("Dados do perfil salvos com sucesso!", {
-                                    id: toastId,
-                                    description: "Suas informações já estão atualizadas na plataforma.",
-                                    icon: "✅"
-                                });
+                                if (completeness.complete) {
+                                    toast.success("Perfil completo! Funções liberadas.", {
+                                        id: toastId,
+                                        description: "Criar Serviço e Avaliações agora estão disponíveis.",
+                                        icon: "✅"
+                                    });
+                                } else {
+                                    toast.warning("Perfil salvo, mas ainda incompleto.", {
+                                        id: toastId,
+                                        description: describeMissing(completeness),
+                                        duration: 8000,
+                                    });
+                                }
                             } catch (err: any) {
                                 console.error('[Perfil Lojista] erro ao salvar:', err);
                                 const msg = err?.message || 'Erro desconhecido ao salvar.';
