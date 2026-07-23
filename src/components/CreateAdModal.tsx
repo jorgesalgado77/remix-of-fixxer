@@ -622,68 +622,24 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     );
   };
 
-  const PreviewMedia = () => {
-    if (firstImage) {
-      return (
-        <div className="relative aspect-video bg-black">
-          <img src={firstImage.url} alt="preview" className="w-full h-full object-cover" />
-        </div>
-      );
-    }
-    if (firstVideo) {
-      return (
-        <div className="relative aspect-video bg-black">
-          <video src={firstVideo.url} className="w-full h-full object-cover" muted playsInline />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <div
-              className="rounded-full w-12 h-12 flex items-center justify-center text-black font-black"
-              style={{ backgroundColor: theme.hex }}
-            >
-              ▶
-            </div>
-          </div>
-        </div>
-      );
-    }
-    if (firstPdf) {
-      return (
-        <div
-          className="relative aspect-video flex flex-col items-center justify-center gap-2"
-          style={{ background: `rgba(${theme.rgb}, 0.08)` }}
-        >
-          <div
-            className="w-14 h-16 rounded-md flex items-center justify-center text-black font-black text-xs"
-            style={{ backgroundColor: theme.hex }}
-          >
-            PDF
-          </div>
-          <span className="text-[10px] uppercase font-bold text-white/70 line-clamp-1 px-3 text-center">
-            {firstPdf.file.name}
-          </span>
-        </div>
-      );
-    }
-    if (fallbackFile) {
-      return (
-        <div
-          className="relative aspect-video flex flex-col items-center justify-center gap-2"
-          style={{ background: `rgba(${theme.rgb}, 0.08)` }}
-        >
-          <span className="text-[10px] uppercase font-black text-white/70 px-3 text-center">
-            {fallbackFile.file.name}
-          </span>
-        </div>
-      );
-    }
-    return (
-      <div
-        className="aspect-video flex items-center justify-center text-white/30 text-xs uppercase font-bold"
-        style={{ background: `rgba(${theme.rgb}, 0.06)` }}
-      >
-        Sem imagem
-      </div>
-    );
-  };
+  const previewAttachment = firstImage ?? firstVideo ?? firstPdf ?? fallbackFile;
+  const PreviewMedia = () => (
+    <AttachmentPreview
+      attachment={
+        previewAttachment
+          ? {
+              url: previewAttachment.url,
+              name: previewAttachment.file?.name,
+              mime: previewAttachment.file?.type,
+              kind: previewAttachment.kind as any,
+            }
+          : null
+      }
+      categoryOverride={defaultCategory}
+      aspect="video"
+      emptyLabel="Sem imagem"
+    />
+  );
 
   const PreviewCard = (
     <div
