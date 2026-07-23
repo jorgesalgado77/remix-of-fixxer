@@ -16,9 +16,18 @@ import {
   Star,
   MoreVertical,
   CheckCircle2,
-  User
+  User,
+  Plus,
+  Trash,
+  Edit2,
+  Save,
+  X as CloseIcon
 } from "lucide-react";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminDashboardComponent,
