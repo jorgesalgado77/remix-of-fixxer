@@ -133,7 +133,9 @@ export function LojistaPublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("sobre");
   const [photoFilter, setPhotoFilter] = useState("Todas");
-  const [mediaTypeFilter, setMediaTypeFilter] = useState<"Todos" | "Fotos" | "Vídeos" | "Documentos">("Todos");
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<"Todos" | "Fotos" | "Documentos">("Todos");
+  const PAGE_SIZE = 12;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [gallerySearch, setGallerySearch] = useState("");
   const [gallerySort, setGallerySort] = useState<"recent" | "oldest" | "section">("recent");
   const [prefsHydrated, setPrefsHydrated] = useState(false);
