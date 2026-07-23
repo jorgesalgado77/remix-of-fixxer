@@ -141,8 +141,9 @@ export function GlobalActionBar() {
       </button>
 
       <button
-        onClick={() => navigate({ to: "/feed" as any })}
-        className={`flex flex-col items-center gap-1 ${isActive("/feed") && !isHash("reviews") ? "text-primary" : "text-muted-foreground"}`}
+        onClick={() => setCreateOpen(true)}
+        className={`flex flex-col items-center gap-1 ${createOpen ? "text-primary" : "text-muted-foreground"}`}
+        aria-label="Criar anúncio"
       >
         <PlusCircle className="w-5 h-5" />
         <span className="text-[8px] font-black uppercase italic">Criar</span>
