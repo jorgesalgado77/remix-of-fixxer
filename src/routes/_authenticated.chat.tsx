@@ -103,7 +103,7 @@ function ChatInboxPage() {
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
-      if (data) setMessages(data as MessageRow[]);
+      if (data) setMessages(data as unknown as MessageRow[]);
     } catch {
       // fallback: colunas de anexo podem não existir ainda
       try {
@@ -113,7 +113,7 @@ function ChatInboxPage() {
           .or(`sender_id.eq.${uid},recipient_id.eq.${uid}`)
           .order("created_at", { ascending: false })
           .limit(300);
-        if (data) setMessages(data as MessageRow[]);
+        if (data) setMessages(data as unknown as MessageRow[]);
       } catch {
         setMessages([]);
       }
