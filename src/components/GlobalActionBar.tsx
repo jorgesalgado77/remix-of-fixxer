@@ -3,6 +3,8 @@ import { Activity, PlusCircle, Store, MessageCircle, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { resolveFeedRoute } from "@/lib/chat-preferences";
+import { CreateAdModal } from "@/components/CreateAdModal";
+import type { CategoryKey } from "@/lib/category-colors";
 
 /**
  * Barra de ações global inferior — visível em mobile e desktop.
@@ -14,6 +16,7 @@ export function GlobalActionBar() {
   const path = location.pathname;
   const hash = location.hash;
   const [unreadCount, setUnreadCount] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const isActive = (target: string) => path.startsWith(target);
   const isHash = (h: string) => path.startsWith("/dashboard/lojista") && hash === h;
@@ -128,6 +131,7 @@ export function GlobalActionBar() {
   }, []);
 
   return (
+    <>
     <div className="fixed bottom-0 left-0 right-0 bg-black/85 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around pb-safe">
       <button
         onClick={() => navigate({ to: "/dashboard/lojista" as any })}
@@ -138,8 +142,9 @@ export function GlobalActionBar() {
       </button>
 
       <button
-        onClick={() => navigate({ to: "/feed" as any })}
-        className={`flex flex-col items-center gap-1 ${isActive("/feed") && !isHash("reviews") ? "text-primary" : "text-muted-foreground"}`}
+        onClick={() => setCreateOpen(true)}
+        className={`flex flex-col items-center gap-1 ${createOpen ? "text-primary" : "text-muted-foreground"}`}
+        aria-label="Criar anúncio"
       >
         <PlusCircle className="w-5 h-5" />
         <span className="text-[8px] font-black uppercase italic">Criar</span>
@@ -179,5 +184,11 @@ export function GlobalActionBar() {
         <span className="text-[8px] font-black uppercase italic">Menu</span>
       </button>
     </div>
+    <CreateAdModal
+      open={createOpen}
+      onClose={() => setCreateOpen(false)}
+      defaultCategory={(["lojista","prestador","fornecedor","cliente","admin"].includes(role) ? role : "lojista") as CategoryKey}
+    />
+    </>
   );
 }
