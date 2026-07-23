@@ -80,7 +80,8 @@ interface Review {
   store_reply?: string | null;
 }
 
-const PHOTO_FILTERS = ["Todas", "Cozinhas", "Dormitórios", "Showroom"];
+const getPhotoUrl = (p: any): string => (typeof p === "string" ? p : p?.url ?? "");
+const getPhotoThumb = (p: any): string => (typeof p === "string" ? p : (p?.thumbUrl || p?.url || ""));
 
 export function LojistaPublicProfilePage() {
   const params = useParams({ strict: false }) as { id?: string };
