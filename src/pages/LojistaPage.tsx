@@ -57,6 +57,7 @@ import { IMaskInput } from "react-imask";
 import { useMediaUpload } from "@/hooks/use-media-upload";
 import { Progress } from "@/components/ui/progress";
 import { ActivitySelect } from "@/components/ActivitySelect";
+import { useActivityBranches } from "@/hooks/use-activity-branches";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
