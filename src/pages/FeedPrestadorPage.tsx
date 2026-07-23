@@ -675,6 +675,7 @@ function JobCard({
   onApply,
   onChat,
   onLightbox,
+  onOpenDetails,
 }: {
   job: JobPost;
   saved: boolean;
@@ -683,10 +684,14 @@ function JobCard({
   onApply: (job: JobPost) => void;
   onChat: (job: JobPost) => void;
   onLightbox: (job: JobPost, index: number) => void;
+  onOpenDetails: (job: JobPost) => void;
 }) {
   const navigate = useNavigate();
   const isClientFinal = job.type === "cliente_final";
   const cardTheme = getCategoryTheme(isClientFinal ? "cliente" : "lojista");
+  const status = getFeedStatus(job.id);
+  const statusColor = FEED_STATUS_COLOR[status];
+  const contractorHref = isClientFinal ? "/cliente/$id" : "/lojista/$id";
 
   return (
     <article
@@ -703,13 +708,26 @@ function JobCard({
         {/* CABEÇALHO */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Avatar initials={job.contractor.initials} />
+            <Link to={contractorHref} params={{ id: job.contractor.id }} className="hover:scale-105 transition-transform">
+              <Avatar initials={job.contractor.initials} />
+            </Link>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-[11px] font-black text-white uppercase italic truncate">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  to={contractorHref}
+                  params={{ id: job.contractor.id }}
+                  className="text-[11px] font-black text-white uppercase italic truncate hover:opacity-80"
+                >
                   {job.contractor.name}
-                </h3>
+                </Link>
                 {job.contractor.isVerified && <CheckCircle2 className="w-3 h-3 text-[#FF9F0A]" />}
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border"
+                  style={{ color: statusColor, borderColor: `${statusColor}55`, backgroundColor: `${statusColor}18` }}
+                >
+                  <span className="w-1 h-1 rounded-full" style={{ backgroundColor: statusColor }} />
+                  {FEED_STATUS_LABEL[status]}
+                </span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
