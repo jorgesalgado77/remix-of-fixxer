@@ -47,15 +47,17 @@ interface StoreProfile {
   banner_url?: string | null;
   gallery_urls?: string[];
   video_urls?: string[];
+  document_urls?: string[];
   activity_branch?: string;
   specialties?: { id: string; title: string; description: string; featured?: boolean }[];
   photo_sections?: {
-    showroom?: (string | { url: string; thumbUrl?: string })[];
-    assemblies?: (string | { url: string; thumbUrl?: string })[];
-    custom?: { id: string; name: string; photos: (string | { url: string; thumbUrl?: string })[] }[];
+    showroom?: (string | { url: string; thumbUrl?: string; createdAt?: string })[];
+    assemblies?: (string | { url: string; thumbUrl?: string; createdAt?: string })[];
+    custom?: { id: string; name: string; photos: (string | { url: string; thumbUrl?: string; createdAt?: string })[] }[];
   } | null;
   created_at?: string;
 }
+
 
 interface ServiceOrder {
   id: string;
