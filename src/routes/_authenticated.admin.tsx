@@ -348,3 +348,165 @@ function AdminCard({ type, id, title, owner, ownerType, value, status, location,
     </div>
   );
 }
+
+function CategoriesManager() {
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  const loadCategories = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabaseExternal
+        .from('activity_branches')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao carregar categorias");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+
+    const channel = supabaseExternal
+      .channel('categories-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_branches' }, () => {
+        loadCategories();
+      })
+      .subscribe();
+
+    return () => {
+      supabaseExternal.removeChannel(channel);
+    };
+  }, []);
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    try {
+      const { error } = await supabaseExternal
+        .from('activity_branches')
+        .insert([{ name: newCategoryName.trim() }]);
+      
+      if (error) throw error;
+      setNewCategoryName("");
+      toast.success("Categoria adicionada com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao adicionar categoria");
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta categoria?")) return;
+    try {
+      const { error } = await supabaseExternal
+        .from('activity_branches')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      toast.success("Categoria excluída");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao excluir categoria");
+    }
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    if (!editValue.trim()) return;
+    try {
+      const { error } = await supabaseExternal
+        .from('activity_branches')
+        .update({ name: editValue.trim() })
+        .eq('id', id);
+      
+      if (error) throw error;
+      setEditingId(null);
+      toast.success("Categoria atualizada");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao atualizar categoria");
+    }
+  };
+
+  return (
+    <div className="bg-[#1A1A1A]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-black text-white uppercase italic">Gerenciar Categorias Globais</h3>
+        <div className="flex gap-2">
+          <Input 
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            placeholder="Nova Categoria..."
+            className="h-10 bg-black/40 border-white/10 text-xs font-bold uppercase italic"
+          />
+          <Button onClick={handleAddCategory} className="bg-[#00FF87] text-black font-black uppercase italic h-10 px-4">
+            <Plus className="w-4 h-4 mr-2" /> Adicionar
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? (
+          <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4">
+            <Activity className="w-8 h-8 text-[#00FF87] animate-spin" />
+            <span className="text-[10px] font-black uppercase text-muted-foreground animate-pulse">Sincronizando...</span>
+          </div>
+        ) : categories.length > 0 ? (
+          categories.map((cat) => (
+            <div key={cat.id} className="bg-black/40 border border-white/5 p-4 rounded-2xl flex items-center justify-between group hover:border-[#00FF87]/30 transition-all">
+              {editingId === cat.id ? (
+                <div className="flex items-center gap-2 w-full">
+                  <Input 
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="h-8 bg-black/60 border-[#00FF87]/50 text-[10px] font-bold uppercase"
+                    autoFocus
+                  />
+                  <button onClick={() => handleSaveEdit(cat.id)} className="p-1.5 bg-[#00FF87] text-black rounded-lg hover:scale-105 transition-transform">
+                    <Save className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setEditingId(null)} className="p-1.5 bg-red-500/10 text-red-500 rounded-lg hover:scale-105 transition-transform">
+                    <CloseIcon className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <span className="text-xs font-black text-white uppercase italic tracking-wider">{cat.name}</span>
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => { setEditingId(cat.id); setEditValue(cat.name); }}
+                      className="p-1.5 bg-white/5 text-muted-foreground hover:text-white rounded-lg transition-colors"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteCategory(cat.id)}
+                      className="p-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors"
+                    >
+                      <Trash className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="col-span-full py-10 text-center">
+            <Filter className="w-8 h-8 text-white/5 mx-auto mb-2" />
+            <p className="text-[10px] font-black text-muted-foreground uppercase">Nenhuma categoria encontrada</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
