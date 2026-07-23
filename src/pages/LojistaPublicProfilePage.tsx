@@ -105,6 +105,9 @@ export function LojistaPublicProfilePage() {
   // Filtros de Oportunidades
   const [oppSearch, setOppSearch] = useState("");
   const [oppSpecialty, setOppSpecialty] = useState<string>("Todas");
+  const [oppNeighborhood, setOppNeighborhood] = useState<string>("Todos");
+  const [oppCity, setOppCity] = useState<string>("Todas");
+  const [oppUf, setOppUf] = useState<string>("Todas");
 
   useEffect(() => {
     const load = async () => {
