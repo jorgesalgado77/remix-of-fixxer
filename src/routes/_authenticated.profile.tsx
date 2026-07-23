@@ -1,10 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
 import { compressImage } from "@/utils/image-compression";
 import { MaskedInput } from "@/components/MaskedInput";
+import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+
+function roleToCategory(role?: string | null): CategoryKey {
+  const r = (role || "").toLowerCase();
+  if (r === "admin") return "admin";
+  if (r === "lojista") return "lojista";
+  if (r === "prestador") return "prestador";
+  if (r === "parceiro" || r === "fornecedor") return "fornecedor";
+  if (r === "cliente" || r === "casual") return "cliente";
+  return "cliente";
+}
 
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -298,8 +309,20 @@ function ProfilePage() {
   );
 
 
+  const theme = useMemo(() => getCategoryTheme(roleToCategory(profile?.role)), [profile?.role]);
+
   return (
-    <div className="min-h-screen bg-[#121214] pb-20 overflow-x-hidden">
+    <div
+      className="min-h-screen bg-[#121214] pb-20 overflow-x-hidden"
+      style={{
+        // Sobrescreve tokens Tailwind (primary) para pintar toda a página com a cor da categoria
+        ["--primary" as any]: theme.hex,
+        ["--primary-foreground" as any]: "#0A0A0B",
+        ["--sidebar-primary" as any]: theme.hex,
+        ["--sidebar-primary-foreground" as any]: "#0A0A0B",
+        ["--ring" as any]: theme.hex,
+      }}
+    >
       {/* 1. CABEÇALHO DO PERFIL */}
       <div className="relative h-64 w-full group">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#121214]/80 z-10" />
@@ -317,7 +340,10 @@ function ProfilePage() {
       <div className="max-w-5xl mx-auto px-6 -mt-20 relative z-30">
         <div className="flex flex-col md:flex-row items-end gap-6 mb-12">
           <div className="relative group">
-            <div className="w-40 h-40 rounded-3xl overflow-hidden border-4 border-[#121214] bg-[#121214] shadow-2xl">
+            <div
+              className="w-40 h-40 rounded-3xl overflow-hidden border-4 bg-[#121214] shadow-2xl"
+              style={{ borderColor: theme.hex, boxShadow: `0 0 30px rgba(${theme.rgb}, 0.45)` }}
+            >
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
               ) : (
@@ -339,8 +365,12 @@ function ProfilePage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md text-muted-foreground">
-                {profile?.role}
+              <span
+                className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md flex items-center gap-1 border"
+                style={{ ...theme.bgSoft, ...theme.borderSoft, color: theme.hex }}
+              >
+                <BadgeCheck className="w-3 h-3" />
+                {theme.label}
               </span>
               <span className="bg-primary/20 border border-primary/40 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md text-primary flex items-center gap-1">
                 <BadgeCheck className="w-3 h-3" />
@@ -348,6 +378,7 @@ function ProfilePage() {
               </span>
             </div>
           </div>
+
 
           {profileId ? (
             <div className="flex flex-col gap-2 mb-4">
