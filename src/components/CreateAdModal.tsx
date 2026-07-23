@@ -1,5 +1,20 @@
 import { useState, useRef, useMemo, useEffect } from "react";
-import { X, Upload, Trash2, ImagePlus, ArrowUp, ArrowDown, AlertCircle, Eye } from "lucide-react";
+import {
+  X,
+  Upload,
+  Trash2,
+  ImagePlus,
+  ArrowUp,
+  ArrowDown,
+  AlertCircle,
+  Eye,
+  FileText,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,58 +28,104 @@ interface CreateAdModalProps {
   defaultCategory?: CategoryKey;
 }
 
-type PriceType = "fixo" | "contrato" | "comissao";
+type PriceType = "fixo" | "comissao";
+type Priority = "baixa" | "media" | "alta" | "urgente";
 
 interface UploadItem {
   id: string;
   file: File;
   url: string;
-  progress: number; // 0-100 (progresso simulado de leitura local)
+  kind: "image" | "pdf";
+  progress: number;
   error?: string;
 }
 
-const CATEGORIES: CategoryKey[] = ["lojista", "prestador", "fornecedor", "cliente"];
-const MAX_IMAGES = 6;
-const MAX_SIZE = 5 * 1024 * 1024;
-const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const SERVICE_TYPES = [
+  "Projeto",
+  "Medição",
+  "Conferência",
+  "Montagem",
+  "Assistência",
+  "Vistoria",
+] as const;
 
-const formatBRL = (v: string) => {
-  const n = Number(v);
+const TECH_SPECS = [
+  { id: "veiculo", label: "Possuir veículo próprio" },
+  { id: "ferramental", label: "Possuir ferramental completo" },
+  { id: "ajudante", label: "Possuir ajudante" },
+] as const;
+
+const PRIORITIES: { id: Priority; label: string }[] = [
+  { id: "baixa", label: "Baixa" },
+  { id: "media", label: "Média" },
+  { id: "alta", label: "Alta" },
+  { id: "urgente", label: "Urgente" },
+];
+
+const MAX_FILES = 6;
+const MAX_SIZE_IMG = 5 * 1024 * 1024;
+const MAX_SIZE_PDF = 10 * 1024 * 1024;
+const ACCEPTED_IMG = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ACCEPTED_PDF = ["application/pdf"];
+const ACCEPTED_ALL = [...ACCEPTED_IMG, ...ACCEPTED_PDF];
+
+const formatBRL = (v: string | number) => {
+  const n = typeof v === "number" ? v : Number(v);
   if (!v || Number.isNaN(n)) return "R$ 0,00";
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
 export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: CreateAdModalProps) {
-  const [category, setCategory] = useState<CategoryKey>(defaultCategory);
+  const [serviceTypes, setServiceTypes] = useState<string[]>([]);
+  const [rooms, setRooms] = useState<number>(1);
   const [title, setTitle] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [priority, setPriority] = useState<Priority>("media");
   const [description, setDescription] = useState("");
-  const [specs, setSpecs] = useState("");
+  const [notes, setNotes] = useState("");
+  const [techSpecs, setTechSpecs] = useState<string[]>([]);
+  const [otherChecked, setOtherChecked] = useState(false);
+  const [otherText, setOtherText] = useState("");
   const [priceType, setPriceType] = useState<PriceType>("fixo");
   const [fixedValue, setFixedValue] = useState("");
   const [contractValue, setContractValue] = useState("");
-  const [commission, setCommission] = useState("");
-  const [images, setImages] = useState<UploadItem[]>([]);
+  const [commissionPct, setCommissionPct] = useState("");
+  const [files, setFiles] = useState<UploadItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+  const [viewer, setViewer] = useState<{ index: number; zoom: number } | null>(null);
+
   const fileRef = useRef<HTMLInputElement>(null);
+  const theme = getCategoryTheme(defaultCategory);
 
-  const theme = getCategoryTheme(category);
-
-  // limpa object URLs ao desmontar
   useEffect(() => {
     return () => {
-      images.forEach((i) => URL.revokeObjectURL(i.url));
+      files.forEach((i) => URL.revokeObjectURL(i.url));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  
+  const toggleServiceType = (t: string) => {
+    setServiceTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  };
+
+  const toggleTechSpec = (id: string) => {
+    setTechSpecs((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const commissionValue = useMemo(() => {
+    const cv = Number(contractValue);
+    const pct = Number(commissionPct);
+    if (!cv || !pct || Number.isNaN(cv) || Number.isNaN(pct)) return 0;
+    return (cv * pct) / 100;
+  }, [contractValue, commissionPct]);
 
   const simulateProgress = (id: string) => {
     let p = 0;
     const tick = () => {
       p += 20 + Math.random() * 20;
-      setImages((prev) =>
+      setFiles((prev) =>
         prev.map((i) => (i.id === id ? { ...i, progress: Math.min(100, p) } : i)),
       );
       if (p < 100) setTimeout(tick, 120);
@@ -72,57 +133,66 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setTimeout(tick, 60);
   };
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const remaining = MAX_IMAGES - images.length;
+  const handleFiles = (fl: FileList | null) => {
+    if (!fl || fl.length === 0) return;
+    const remaining = MAX_FILES - files.length;
     if (remaining <= 0) {
-      toast.warning(`Máximo de ${MAX_IMAGES} imagens atingido.`);
+      toast.warning(`Máximo de ${MAX_FILES} arquivos atingido.`);
       return;
     }
-    const incoming = Array.from(files);
+    const incoming = Array.from(fl);
     const toAdd: UploadItem[] = [];
-    let rejectedType = 0;
-    let rejectedSize = 0;
-    let rejectedLimit = 0;
+    let rejType = 0;
+    let rejSize = 0;
+    let rejLimit = 0;
 
     for (const file of incoming) {
       if (toAdd.length >= remaining) {
-        rejectedLimit++;
+        rejLimit++;
         continue;
       }
-      if (!ACCEPTED.includes(file.type)) {
-        rejectedType++;
+      const isImg = ACCEPTED_IMG.includes(file.type);
+      const isPdf = ACCEPTED_PDF.includes(file.type);
+      if (!isImg && !isPdf) {
+        rejType++;
         continue;
       }
-      if (file.size > MAX_SIZE) {
-        rejectedSize++;
+      const maxSize = isPdf ? MAX_SIZE_PDF : MAX_SIZE_IMG;
+      if (file.size > maxSize) {
+        rejSize++;
         continue;
       }
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      toAdd.push({ id, file, url: URL.createObjectURL(file), progress: 0 });
+      toAdd.push({
+        id,
+        file,
+        url: URL.createObjectURL(file),
+        kind: isPdf ? "pdf" : "image",
+        progress: 0,
+      });
     }
 
     if (toAdd.length) {
-      setImages((prev) => [...prev, ...toAdd]);
+      setFiles((prev) => [...prev, ...toAdd]);
       toAdd.forEach((i) => simulateProgress(i.id));
     }
-    if (rejectedType) toast.error(`${rejectedType} arquivo(s) rejeitado(s): formato inválido.`);
-    if (rejectedSize) toast.error(`${rejectedSize} arquivo(s) acima de 5MB.`);
-    if (rejectedLimit) toast.warning(`${rejectedLimit} arquivo(s) excederam o limite de ${MAX_IMAGES}.`);
+    if (rejType) toast.error(`${rejType} arquivo(s) rejeitado(s): formato inválido.`);
+    if (rejSize) toast.error(`${rejSize} arquivo(s) acima do limite de tamanho.`);
+    if (rejLimit) toast.warning(`${rejLimit} arquivo(s) excederam o limite de ${MAX_FILES}.`);
 
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const removeImage = (id: string) => {
-    setImages((prev) => {
-      const target = prev.find((i) => i.id === id);
-      if (target) URL.revokeObjectURL(target.url);
+  const removeFile = (id: string) => {
+    setFiles((prev) => {
+      const t = prev.find((i) => i.id === id);
+      if (t) URL.revokeObjectURL(t.url);
       return prev.filter((i) => i.id !== id);
     });
   };
 
-  const moveImage = (id: string, dir: -1 | 1) => {
-    setImages((prev) => {
+  const moveFile = (id: string, dir: -1 | 1) => {
+    setFiles((prev) => {
       const idx = prev.findIndex((i) => i.id === id);
       const target = idx + dir;
       if (idx < 0 || target < 0 || target >= prev.length) return prev;
@@ -133,59 +203,87 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   };
 
   const resetForm = () => {
-    images.forEach((i) => URL.revokeObjectURL(i.url));
-    setImages([]);
+    files.forEach((i) => URL.revokeObjectURL(i.url));
+    setFiles([]);
+    setServiceTypes([]);
+    setRooms(1);
     setTitle("");
+    setStartDate("");
+    setDeadline("");
+    setPriority("media");
     setDescription("");
-    setSpecs("");
+    setNotes("");
+    setTechSpecs([]);
+    setOtherChecked(false);
+    setOtherText("");
     setFixedValue("");
     setContractValue("");
-    setCommission("");
+    setCommissionPct("");
     setPriceType("fixo");
   };
 
   const validate = (): string | null => {
-    if (!title.trim()) return "Informe o título do anúncio.";
-    if (!description.trim()) return "Descreva o anúncio.";
+    if (serviceTypes.length === 0) return "Selecione ao menos um tipo de serviço.";
+    if (!title.trim()) return "Informe o título do serviço.";
+    if (!description.trim()) return "Descreva o serviço.";
+    if (rooms < 1 || rooms > 25) return "Quantidade de ambientes deve ser entre 1 e 25.";
+    if (startDate && deadline && new Date(deadline) < new Date(startDate))
+      return "O prazo de execução não pode ser anterior à data de início.";
     if (priceType === "fixo") {
       const n = Number(fixedValue);
       if (!fixedValue || Number.isNaN(n) || n <= 0) return "Informe um valor fixo válido (> 0).";
     }
-    if (priceType === "contrato") {
-      const n = Number(contractValue);
-      if (!contractValue || Number.isNaN(n) || n <= 0) return "Informe um valor de contrato válido (> 0).";
-    }
     if (priceType === "comissao") {
-      const n = Number(commission);
-      if (!commission || Number.isNaN(n) || n <= 0 || n > 100)
-        return "Informe uma comissão válida (entre 0 e 100).";
+      const cv = Number(contractValue);
+      const pct = Number(commissionPct);
+      if (!contractValue || Number.isNaN(cv) || cv <= 0)
+        return "Informe o valor do contrato fechado.";
+      if (!commissionPct || Number.isNaN(pct) || pct <= 0 || pct > 100)
+        return "Informe uma porcentagem válida (entre 0 e 100).";
     }
-    if (images.some((i) => i.progress < 100)) return "Aguarde o processamento das imagens.";
+    if (otherChecked && !otherText.trim())
+      return 'Especifique o item "Outro" nas especificações técnicas.';
+    if (files.some((i) => i.progress < 100 && !i.error))
+      return "Aguarde o processamento dos arquivos.";
     return null;
   };
 
   const priceDisplay = useMemo(() => {
     if (priceType === "fixo") return formatBRL(fixedValue);
-    if (priceType === "contrato") return `Contrato: ${formatBRL(contractValue)}`;
-    if (priceType === "comissao") return `Comissão: ${commission || 0}%`;
-    return "";
-  }, [priceType, fixedValue, contractValue, commission]);
-
-  if (!open) return null;
+    return `Comissão: ${formatBRL(commissionValue)} (${commissionPct || 0}%)`;
+  }, [priceType, fixedValue, commissionValue, commissionPct]);
 
   const buildPayload = () => {
+    const specsList = [
+      ...techSpecs.map((id) => TECH_SPECS.find((t) => t.id === id)?.label).filter(Boolean),
+      ...(otherChecked && otherText.trim() ? [`Outro: ${otherText.trim()}`] : []),
+    ];
     const base = {
-      category,
+      category: defaultCategory,
+      service_types: serviceTypes,
+      rooms,
       title: title.trim(),
+      start_date: startDate || null,
+      deadline: deadline || null,
+      priority,
       description: description.trim(),
-      specs: specs.trim() || null,
+      notes: notes.trim() || null,
+      tech_specs: specsList,
       price_type: priceType,
-      images: images.map((i, order) => ({ name: i.file.name, size: i.file.size, order })),
+      files: files.map((i, order) => ({
+        name: i.file.name,
+        size: i.file.size,
+        kind: i.kind,
+        order,
+      })),
     };
-    // Apenas o campo relevante para o tipo escolhido
     if (priceType === "fixo") return { ...base, fixed_value: Number(fixedValue) };
-    if (priceType === "contrato") return { ...base, contract_value: Number(contractValue) };
-    return { ...base, commission_percent: Number(commission) };
+    return {
+      ...base,
+      contract_value: Number(contractValue),
+      commission_percent: Number(commissionPct),
+      commission_value: commissionValue,
+    };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,47 +296,49 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setSubmitting(true);
     try {
       const payload = buildPayload();
-      // TODO: integrar com Supabase (tabela `listings` + upload no bucket `media`).
       console.log("[CreateAdModal] payload =>", payload);
       await new Promise((r) => setTimeout(r, 600));
-      toast.success("Anúncio criado com sucesso!");
+      toast.success("Serviço publicado com sucesso!");
       resetForm();
       onClose();
     } catch (err: any) {
-      toast.error(err?.message || "Falha ao criar anúncio.");
+      toast.error(err?.message || "Falha ao publicar serviço.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // --------- PRÉVIA (CARD) ---------
+  // ---------- Fullscreen viewer ----------
+  const openViewer = (index: number) => setViewer({ index, zoom: 1 });
+  const closeViewer = () => setViewer(null);
+  const stepViewer = (dir: -1 | 1) => {
+    if (!viewer) return;
+    const next = (viewer.index + dir + files.length) % files.length;
+    setViewer({ index: next, zoom: 1 });
+  };
+  const zoomViewer = (delta: number) => {
+    if (!viewer) return;
+    const next = Math.max(0.5, Math.min(4, viewer.zoom + delta));
+    setViewer({ ...viewer, zoom: next });
+  };
+
+  if (!open) return null;
+
+  const firstImage = files.find((f) => f.kind === "image");
+
   const PreviewCard = (
     <div
       className="rounded-2xl overflow-hidden border bg-[#0F0F10]"
       style={{ borderColor: `rgba(${theme.rgb}, 0.35)`, ...theme.glow }}
     >
-      {images[0] ? (
+      {firstImage ? (
         <div className="relative aspect-video bg-black">
-          <img src={images[0].url} alt="preview" className="w-full h-full object-cover" />
-          {images.length > 1 && (
-            <div className="absolute bottom-2 left-2 flex gap-1">
-              {images.slice(0, 6).map((img, i) => (
-                <div
-                  key={img.id}
-                  className={`w-8 h-8 rounded-md overflow-hidden border ${
-                    i === 0 ? "border-white" : "border-white/20"
-                  }`}
-                >
-                  <img src={img.url} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
+          <img src={firstImage.url} alt="preview" className="w-full h-full object-cover" />
           <div
             className="absolute top-2 right-2 px-2 py-1 rounded-md text-[9px] uppercase font-black italic"
             style={{ ...theme.bgSoft, color: theme.hex }}
           >
-            {CATEGORY_LABEL[category]}
+            {CATEGORY_LABEL[defaultCategory]}
           </div>
         </div>
       ) : (
@@ -251,20 +351,30 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       )}
       <div className="p-4 space-y-2">
         <h3 className="text-white font-black text-base leading-tight line-clamp-2">
-          {title || "Título do anúncio"}
+          {title || "Título do serviço"}
         </h3>
-        <p className="text-white/60 text-xs line-clamp-3">
-          {description || "Descrição do anúncio aparecerá aqui..."}
-        </p>
-        {specs.trim() && (
-          <div
-            className="text-[10px] uppercase font-bold px-2 py-1 rounded"
-            style={{ ...theme.bgSoft, color: theme.hex }}
-          >
-            Specs: {specs.slice(0, 60)}
-            {specs.length > 60 ? "..." : ""}
+        {serviceTypes.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {serviceTypes.map((t) => (
+              <span
+                key={t}
+                className="text-[9px] uppercase font-black px-2 py-0.5 rounded"
+                style={{ ...theme.bgSoft, color: theme.hex }}
+              >
+                {t}
+              </span>
+            ))}
           </div>
         )}
+        <p className="text-white/60 text-xs line-clamp-3">
+          {description || "Descrição do serviço aparecerá aqui..."}
+        </p>
+        <div className="flex flex-wrap gap-2 text-[9px] uppercase font-bold text-white/50">
+          <span>{rooms} ambiente{rooms > 1 ? "s" : ""}</span>
+          {startDate && <span>Início {new Date(startDate).toLocaleDateString("pt-BR")}</span>}
+          {deadline && <span>Prazo {new Date(deadline).toLocaleDateString("pt-BR")}</span>}
+          <span>Prioridade: {priority}</span>
+        </div>
         <div
           className="pt-2 mt-1 border-t flex items-center justify-between"
           style={{ borderColor: "rgba(255,255,255,0.06)" }}
@@ -277,6 +387,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       </div>
     </div>
   );
+
+  const currentViewerFile = viewer ? files[viewer.index] : null;
 
   return (
     <div
@@ -295,10 +407,13 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         >
           <div>
             <h2 className="text-lg font-black uppercase italic text-white tracking-tight">
-              Criar Anúncio
+              Criar Serviço
             </h2>
-            <p className="text-[10px] uppercase font-bold tracking-wider" style={{ color: theme.hex }}>
-              {CATEGORY_LABEL[category]}
+            <p
+              className="text-[10px] uppercase font-bold tracking-wider"
+              style={{ color: theme.hex }}
+            >
+              {CATEGORY_LABEL[defaultCategory]}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -325,32 +440,65 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             onSubmit={handleSubmit}
             className={`p-5 space-y-5 ${showPreviewMobile ? "hidden lg:block" : ""}`}
           >
-            {/* Categoria */}
+            {/* Tipo de Serviço */}
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                Categoria
+                Tipo de Serviço (múltipla escolha)
               </Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {CATEGORIES.map((c) => {
-                  const t = getCategoryTheme(c);
-                  const active = c === category;
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {SERVICE_TYPES.map((t) => {
+                  const active = serviceTypes.includes(t);
                   return (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setCategory(c)}
-                      className="px-3 py-2.5 rounded-xl border text-[11px] uppercase font-black italic tracking-wide transition"
+                    <label
+                      key={t}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-[11px] uppercase font-black italic tracking-wide cursor-pointer transition"
                       style={
                         active
-                          ? { ...t.bgSoft, ...t.borderStrong, color: t.hex, ...t.glow }
-                          : { borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }
+                          ? { ...theme.bgSoft, ...theme.borderStrong, color: theme.hex }
+                          : {
+                              borderColor: "rgba(255,255,255,0.08)",
+                              color: "rgba(255,255,255,0.6)",
+                            }
                       }
                     >
-                      {CATEGORY_LABEL[c]}
-                    </button>
+                      <input
+                        type="checkbox"
+                        checked={active}
+                        onChange={() => toggleServiceType(t)}
+                        className="accent-current w-3.5 h-3.5"
+                      />
+                      {t}
+                    </label>
                   );
                 })}
               </div>
+            </div>
+
+            {/* Quantidade de ambientes */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                Quantidade de Ambientes
+              </Label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={1}
+                  max={25}
+                  value={rooms}
+                  onChange={(e) => setRooms(Number(e.target.value))}
+                  className="flex-1 accent-current"
+                  style={{ color: theme.hex }}
+                />
+                <Input
+                  type="number"
+                  min={1}
+                  max={25}
+                  value={rooms}
+                  onChange={(e) => setRooms(Math.max(1, Math.min(25, Number(e.target.value) || 1)))}
+                  className="w-20 bg-white/5 border-white/10 text-white text-center"
+                />
+              </div>
+              <p className="text-[9px] text-white/40">De 1 a 25 ambientes.</p>
             </div>
 
             {/* Título */}
@@ -361,48 +509,110 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex.: Manutenção de ar-condicionado residencial"
+                placeholder="Ex.: Montagem de móveis planejados"
                 maxLength={100}
                 className="bg-white/5 border-white/10 text-white"
               />
               <p className="text-[9px] text-white/40 text-right">{title.length}/100</p>
             </div>
 
-            {/* Imagens */}
+            {/* Datas e prioridade */}
+            <div className="grid md:grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                  Data de Início
+                </Label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                  Prazo de Execução
+                </Label>
+                <Input
+                  type="date"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                  Prioridade
+                </Label>
+                <div className="grid grid-cols-2 gap-1">
+                  {PRIORITIES.map((p) => {
+                    const active = priority === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setPriority(p.id)}
+                        className="px-2 py-2 rounded-lg border text-[10px] uppercase font-black italic transition"
+                        style={
+                          active
+                            ? { ...theme.bgSoft, ...theme.borderStrong, color: theme.hex }
+                            : {
+                                borderColor: "rgba(255,255,255,0.08)",
+                                color: "rgba(255,255,255,0.6)",
+                              }
+                        }
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Arquivos (imagens + PDF) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                  Imagens ({images.length}/{MAX_IMAGES})
+                  Anexos ({files.length}/{MAX_FILES})
                 </Label>
                 <span className="text-[9px] text-white/40 uppercase font-bold">
-                  JPG, PNG, WEBP · máx 5MB
+                  JPG, PNG, WEBP (5MB) · PDF (10MB)
                 </span>
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                {images.map((img, idx) => (
+                {files.map((f, idx) => (
                   <div
-                    key={img.id}
+                    key={f.id}
                     className="relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-white/5 group"
                   >
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    {f.kind === "image" ? (
+                      <img src={f.url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 text-center bg-red-950/30">
+                        <FileText className="w-8 h-8" style={{ color: theme.hex }} />
+                        <span className="text-[9px] text-white/70 font-bold truncate w-full">
+                          {f.file.name}
+                        </span>
+                        <span className="text-[8px] uppercase font-black text-red-400">PDF</span>
+                      </div>
+                    )}
 
-                    {/* progresso / erro */}
-                    {img.progress < 100 && !img.error && (
+                    {f.progress < 100 && !f.error && (
                       <div className="absolute inset-x-0 bottom-0 h-1 bg-black/40">
                         <div
                           className="h-full transition-all"
-                          style={{ width: `${img.progress}%`, background: theme.hex }}
+                          style={{ width: `${f.progress}%`, background: theme.hex }}
                         />
                       </div>
                     )}
-                    {img.error && (
+                    {f.error && (
                       <div className="absolute inset-0 bg-red-900/70 flex flex-col items-center justify-center text-white text-[9px] text-center p-1">
                         <AlertCircle className="w-4 h-4 mb-1" />
-                        {img.error}
+                        {f.error}
                       </div>
                     )}
 
-                    {/* badge ordem */}
                     <div
                       className="absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-black"
                       style={{ background: theme.hex }}
@@ -410,40 +620,44 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                       {idx + 1}
                     </div>
 
-                    {/* remover */}
                     <button
                       type="button"
-                      onClick={() => removeImage(img.id)}
+                      onClick={() => openViewer(idx)}
+                      className="absolute top-1 right-8 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white hover:bg-black transition opacity-0 group-hover:opacity-100"
+                      aria-label="Expandir"
+                    >
+                      <Maximize2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(f.id)}
                       className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white hover:bg-red-500 transition"
-                      aria-label="Remover imagem"
+                      aria-label="Remover"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
 
-                    {/* mover */}
                     <div className="absolute bottom-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition">
                       <button
                         type="button"
-                        onClick={() => moveImage(img.id, -1)}
+                        onClick={() => moveFile(f.id, -1)}
                         disabled={idx === 0}
                         className="w-5 h-5 rounded bg-black/70 flex items-center justify-center text-white disabled:opacity-30"
-                        aria-label="Mover para trás"
                       >
                         <ArrowUp className="w-3 h-3" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => moveImage(img.id, 1)}
-                        disabled={idx === images.length - 1}
+                        onClick={() => moveFile(f.id, 1)}
+                        disabled={idx === files.length - 1}
                         className="w-5 h-5 rounded bg-black/70 flex items-center justify-center text-white disabled:opacity-30"
-                        aria-label="Mover para frente"
                       >
                         <ArrowDown className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
                 ))}
-                {images.length < MAX_IMAGES && (
+                {files.length < MAX_FILES && (
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
@@ -457,7 +671,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <input
                 ref={fileRef}
                 type="file"
-                accept={ACCEPTED.join(",")}
+                accept={ACCEPTED_ALL.join(",")}
                 multiple
                 className="hidden"
                 onChange={(e) => handleFiles(e.target.files)}
@@ -469,12 +683,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                 Tipo de Preço
               </Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {(
                   [
                     { id: "fixo", label: "Valor Fixo" },
-                    { id: "contrato", label: "Contrato" },
-                    { id: "comissao", label: "Comissão %" },
+                    { id: "comissao", label: "Comissão" },
                   ] as { id: PriceType; label: string }[]
                 ).map((opt) => {
                   const active = priceType === opt.id;
@@ -487,7 +700,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                       style={
                         active
                           ? { ...theme.bgSoft, ...theme.borderStrong, color: theme.hex }
-                          : { borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }
+                          : {
+                              borderColor: "rgba(255,255,255,0.08)",
+                              color: "rgba(255,255,255,0.6)",
+                            }
                       }
                     >
                       {opt.label}
@@ -497,7 +713,6 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
-            {/* Campos de preço condicionais */}
             {priceType === "fixo" && (
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
@@ -512,42 +727,56 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   placeholder="0,00"
                   className="bg-white/5 border-white/10 text-white"
                 />
-                <p className="text-[9px] text-white/40">Valor único cobrado pelo item/serviço.</p>
               </div>
             )}
-            {priceType === "contrato" && (
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                  Valor do Contrato (R$)
-                </Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={contractValue}
-                  onChange={(e) => setContractValue(e.target.value)}
-                  placeholder="0,00"
-                  className="bg-white/5 border-white/10 text-white"
-                />
-                <p className="text-[9px] text-white/40">Valor total previsto para o contrato.</p>
-              </div>
-            )}
+
             {priceType === "comissao" && (
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                  Percentual de Comissão (%)
-                </Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={commission}
-                  onChange={(e) => setCommission(e.target.value)}
-                  placeholder="Ex.: 10"
-                  className="bg-white/5 border-white/10 text-white"
-                />
-                <p className="text-[9px] text-white/40">Percentual aplicado sobre cada venda/fechamento.</p>
+              <div className="grid md:grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                    Valor do Contrato (R$)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={contractValue}
+                    onChange={(e) => setContractValue(e.target.value)}
+                    placeholder="Ex.: 50000,00"
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                    Comissão (%)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={commissionPct}
+                    onChange={(e) => setCommissionPct(e.target.value)}
+                    placeholder="Ex.: 5"
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                    Valor da Comissão
+                  </Label>
+                  <div
+                    className="h-10 px-3 rounded-md border flex items-center font-black italic"
+                    style={{
+                      borderColor: `rgba(${theme.rgb}, 0.4)`,
+                      background: `rgba(${theme.rgb}, 0.08)`,
+                      color: theme.hex,
+                    }}
+                  >
+                    {formatBRL(commissionValue)}
+                  </div>
+                  <p className="text-[9px] text-white/40">Calculado automaticamente.</p>
+                </div>
               </div>
             )}
 
@@ -559,7 +788,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descreva seu serviço, produto ou necessidade..."
+                placeholder="Descreva o serviço..."
                 rows={4}
                 maxLength={1000}
                 className="bg-white/5 border-white/10 text-white resize-none"
@@ -567,20 +796,82 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <p className="text-[9px] text-white/40 text-right">{description.length}/1000</p>
             </div>
 
-            {/* Especificações */}
+            {/* Observações Especiais */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                Observações Especiais
+              </Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ex.: Permite trabalho aos sábados, execução somente em período noturno..."
+                rows={3}
+                maxLength={500}
+                className="bg-white/5 border-white/10 text-white resize-none"
+              />
+              <p className="text-[9px] text-white/40 text-right">{notes.length}/500</p>
+            </div>
+
+            {/* Especificações Técnicas */}
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                 Especificações Técnicas
               </Label>
-              <Textarea
-                value={specs}
-                onChange={(e) => setSpecs(e.target.value)}
-                placeholder="Detalhes técnicos, dimensões, materiais, prazos..."
-                rows={3}
-                maxLength={800}
-                className="bg-white/5 border-white/10 text-white resize-none"
-              />
-              <p className="text-[9px] text-white/40 text-right">{specs.length}/800</p>
+              <div className="grid md:grid-cols-2 gap-2">
+                {TECH_SPECS.map((s) => {
+                  const active = techSpecs.includes(s.id);
+                  return (
+                    <label
+                      key={s.id}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-[11px] uppercase font-black italic tracking-wide cursor-pointer transition"
+                      style={
+                        active
+                          ? { ...theme.bgSoft, ...theme.borderStrong, color: theme.hex }
+                          : {
+                              borderColor: "rgba(255,255,255,0.08)",
+                              color: "rgba(255,255,255,0.6)",
+                            }
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={active}
+                        onChange={() => toggleTechSpec(s.id)}
+                        className="accent-current w-3.5 h-3.5"
+                      />
+                      {s.label}
+                    </label>
+                  );
+                })}
+                <label
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-[11px] uppercase font-black italic tracking-wide cursor-pointer transition"
+                  style={
+                    otherChecked
+                      ? { ...theme.bgSoft, ...theme.borderStrong, color: theme.hex }
+                      : {
+                          borderColor: "rgba(255,255,255,0.08)",
+                          color: "rgba(255,255,255,0.6)",
+                        }
+                  }
+                >
+                  <input
+                    type="checkbox"
+                    checked={otherChecked}
+                    onChange={(e) => setOtherChecked(e.target.checked)}
+                    className="accent-current w-3.5 h-3.5"
+                  />
+                  Outro
+                </label>
+              </div>
+              {otherChecked && (
+                <Input
+                  value={otherText}
+                  onChange={(e) => setOtherText(e.target.value)}
+                  placeholder='Especifique o item "Outro"'
+                  maxLength={120}
+                  className="bg-white/5 border-white/10 text-white mt-2"
+                />
+              )}
             </div>
 
             {/* Ações */}
@@ -600,12 +891,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 style={{ background: theme.hex, ...theme.glowStrong }}
               >
                 <Upload className="w-4 h-4 mr-2" />
-                {submitting ? "Publicando..." : "Publicar Anúncio"}
+                {submitting ? "Publicando..." : "Publicar Serviço"}
               </Button>
             </div>
           </form>
 
-          {/* PRÉVIA (desktop sempre visível, mobile via toggle) */}
+          {/* PRÉVIA */}
           <aside
             className={`p-5 border-t lg:border-t-0 lg:border-l border-white/5 bg-black/30 ${
               showPreviewMobile ? "block" : "hidden lg:block"
@@ -626,6 +917,91 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           </aside>
         </div>
       </div>
+
+      {/* Fullscreen Viewer */}
+      {viewer && currentViewerFile && (
+        <div
+          className="fixed inset-0 z-[300] bg-black/95 flex flex-col"
+          onClick={closeViewer}
+        >
+          <div
+            className="flex items-center justify-between p-4 border-b border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-white text-xs font-bold truncate max-w-[50%]">
+              {currentViewerFile.file.name} ({viewer.index + 1}/{files.length})
+            </div>
+            <div className="flex items-center gap-2">
+              {currentViewerFile.kind === "image" && (
+                <>
+                  <button
+                    onClick={() => zoomViewer(-0.25)}
+                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                    aria-label="Diminuir zoom"
+                  >
+                    <ZoomOut className="w-4 h-4" />
+                  </button>
+                  <span className="text-white text-xs font-bold w-12 text-center">
+                    {Math.round(viewer.zoom * 100)}%
+                  </span>
+                  <button
+                    onClick={() => zoomViewer(0.25)}
+                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                    aria-label="Aumentar zoom"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+              <button
+                onClick={closeViewer}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                aria-label="Fechar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div
+            className="flex-1 relative overflow-auto flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {files.length > 1 && (
+              <button
+                onClick={() => stepViewer(-1)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+            {currentViewerFile.kind === "image" ? (
+              <img
+                src={currentViewerFile.url}
+                alt=""
+                className="transition-transform max-w-none"
+                style={{ transform: `scale(${viewer.zoom})` }}
+              />
+            ) : (
+              <iframe
+                src={currentViewerFile.url}
+                title={currentViewerFile.file.name}
+                className="w-full h-full bg-white"
+              />
+            )}
+            {files.length > 1 && (
+              <button
+                onClick={() => stepViewer(1)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10"
+                aria-label="Próximo"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
