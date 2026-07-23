@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as PerfilLojistaRouteImport } from './routes/perfil.lojista'
 import { Route as LojistaIdRouteImport } from './routes/lojista.$id'
+import { Route as DashboardPrestadorRouteImport } from './routes/dashboard.prestador'
 import { Route as DashboardLojistaRouteImport } from './routes/dashboard.lojista'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPrestadorRouteImport } from './routes/_authenticated.prestador'
@@ -27,7 +28,9 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated.cliente'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
+import { Route as AuthenticatedFeedIndexRouteImport } from './routes/_authenticated.feed.index'
 import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
+import { Route as AuthenticatedFeedPrestadorRouteImport } from './routes/_authenticated.feed.prestador'
 import { Route as AuthenticatedFeedLojistaRouteImport } from './routes/_authenticated.feed.lojista'
 import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authenticated.chat.$peerId'
 
@@ -68,6 +71,11 @@ const PerfilLojistaRoute = PerfilLojistaRouteImport.update({
 const LojistaIdRoute = LojistaIdRouteImport.update({
   id: '/lojista/$id',
   path: '/lojista/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardPrestadorRoute = DashboardPrestadorRouteImport.update({
+  id: '/dashboard/prestador',
+  path: '/dashboard/prestador',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardLojistaRoute = DashboardLojistaRouteImport.update({
@@ -120,11 +128,22 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedFeedIndexRoute = AuthenticatedFeedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedFeedRoute,
+} as any)
 const ApiPublicSetupDbRoute = ApiPublicSetupDbRouteImport.update({
   id: '/api/public/setup-db',
   path: '/api/public/setup-db',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedFeedPrestadorRoute =
+  AuthenticatedFeedPrestadorRouteImport.update({
+    id: '/prestador',
+    path: '/prestador',
+    getParentRoute: () => AuthenticatedFeedRoute,
+  } as any)
 const AuthenticatedFeedLojistaRoute =
   AuthenticatedFeedLojistaRouteImport.update({
     id: '/lojista',
@@ -152,12 +171,15 @@ export interface FileRoutesByFullPath {
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
+  '/dashboard/prestador': typeof DashboardPrestadorRoute
   '/lojista/$id': typeof LojistaIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth/': typeof AuthIndexRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
+  '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
+  '/feed/': typeof AuthenticatedFeedIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -167,18 +189,20 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/feed': typeof AuthenticatedFeedRouteWithChildren
   '/lojista': typeof AuthenticatedLojistaRoute
   '/parceiro': typeof AuthenticatedParceiroRoute
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
+  '/dashboard/prestador': typeof DashboardPrestadorRoute
   '/lojista/$id': typeof LojistaIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth': typeof AuthIndexRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
+  '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
+  '/feed': typeof AuthenticatedFeedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -197,12 +221,15 @@ export interface FileRoutesById {
   '/_authenticated/prestador': typeof AuthenticatedPrestadorRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
+  '/dashboard/prestador': typeof DashboardPrestadorRoute
   '/lojista/$id': typeof LojistaIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/_authenticated/feed/lojista': typeof AuthenticatedFeedLojistaRoute
+  '/_authenticated/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
+  '/_authenticated/feed/': typeof AuthenticatedFeedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,12 +248,15 @@ export interface FileRouteTypes {
     | '/prestador'
     | '/profile'
     | '/dashboard/lojista'
+    | '/dashboard/prestador'
     | '/lojista/$id'
     | '/perfil/lojista'
     | '/auth/'
     | '/chat/$peerId'
     | '/feed/lojista'
+    | '/feed/prestador'
     | '/api/public/setup-db'
+    | '/feed/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -236,18 +266,20 @@ export interface FileRouteTypes {
     | '/chat'
     | '/cliente'
     | '/dashboard'
-    | '/feed'
     | '/lojista'
     | '/parceiro'
     | '/prestador'
     | '/profile'
     | '/dashboard/lojista'
+    | '/dashboard/prestador'
     | '/lojista/$id'
     | '/perfil/lojista'
     | '/auth'
     | '/chat/$peerId'
     | '/feed/lojista'
+    | '/feed/prestador'
     | '/api/public/setup-db'
+    | '/feed'
   id:
     | '__root__'
     | '/'
@@ -265,12 +297,15 @@ export interface FileRouteTypes {
     | '/_authenticated/prestador'
     | '/_authenticated/profile'
     | '/dashboard/lojista'
+    | '/dashboard/prestador'
     | '/lojista/$id'
     | '/perfil/lojista'
     | '/auth/'
     | '/_authenticated/chat/$peerId'
     | '/_authenticated/feed/lojista'
+    | '/_authenticated/feed/prestador'
     | '/api/public/setup-db'
+    | '/_authenticated/feed/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -280,6 +315,7 @@ export interface RootRouteChildren {
   CadastroRoute: typeof CadastroRoute
   TermsRoute: typeof TermsRoute
   DashboardLojistaRoute: typeof DashboardLojistaRoute
+  DashboardPrestadorRoute: typeof DashboardPrestadorRoute
   LojistaIdRoute: typeof LojistaIdRoute
   PerfilLojistaRoute: typeof PerfilLojistaRoute
   ApiPublicSetupDbRoute: typeof ApiPublicSetupDbRoute
@@ -341,6 +377,13 @@ declare module '@tanstack/react-router' {
       path: '/lojista/$id'
       fullPath: '/lojista/$id'
       preLoaderRoute: typeof LojistaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/prestador': {
+      id: '/dashboard/prestador'
+      path: '/dashboard/prestador'
+      fullPath: '/dashboard/prestador'
+      preLoaderRoute: typeof DashboardPrestadorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/lojista': {
@@ -413,12 +456,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/feed/': {
+      id: '/_authenticated/feed/'
+      path: '/'
+      fullPath: '/feed/'
+      preLoaderRoute: typeof AuthenticatedFeedIndexRouteImport
+      parentRoute: typeof AuthenticatedFeedRoute
+    }
     '/api/public/setup-db': {
       id: '/api/public/setup-db'
       path: '/api/public/setup-db'
       fullPath: '/api/public/setup-db'
       preLoaderRoute: typeof ApiPublicSetupDbRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/feed/prestador': {
+      id: '/_authenticated/feed/prestador'
+      path: '/prestador'
+      fullPath: '/feed/prestador'
+      preLoaderRoute: typeof AuthenticatedFeedPrestadorRouteImport
+      parentRoute: typeof AuthenticatedFeedRoute
     }
     '/_authenticated/feed/lojista': {
       id: '/_authenticated/feed/lojista'
@@ -450,10 +507,14 @@ const AuthenticatedChatRouteWithChildren =
 
 interface AuthenticatedFeedRouteChildren {
   AuthenticatedFeedLojistaRoute: typeof AuthenticatedFeedLojistaRoute
+  AuthenticatedFeedPrestadorRoute: typeof AuthenticatedFeedPrestadorRoute
+  AuthenticatedFeedIndexRoute: typeof AuthenticatedFeedIndexRoute
 }
 
 const AuthenticatedFeedRouteChildren: AuthenticatedFeedRouteChildren = {
   AuthenticatedFeedLojistaRoute: AuthenticatedFeedLojistaRoute,
+  AuthenticatedFeedPrestadorRoute: AuthenticatedFeedPrestadorRoute,
+  AuthenticatedFeedIndexRoute: AuthenticatedFeedIndexRoute,
 }
 
 const AuthenticatedFeedRouteWithChildren =
@@ -504,6 +565,7 @@ const rootRouteChildren: RootRouteChildren = {
   CadastroRoute: CadastroRoute,
   TermsRoute: TermsRoute,
   DashboardLojistaRoute: DashboardLojistaRoute,
+  DashboardPrestadorRoute: DashboardPrestadorRoute,
   LojistaIdRoute: LojistaIdRoute,
   PerfilLojistaRoute: PerfilLojistaRoute,
   ApiPublicSetupDbRoute: ApiPublicSetupDbRoute,
@@ -511,13 +573,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
