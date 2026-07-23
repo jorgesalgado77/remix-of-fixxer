@@ -2294,30 +2294,55 @@ function ProfileView({
                     </div>
 
                     <Button 
-                        disabled={isSaving}
+                        disabled={isSaving || isUploading}
                         onClick={async () => {
+                            // 0) Bloqueia salvar enquanto houver upload em andamento
+                            if (isUploading) {
+                                toast.warning("Aguarde os uploads terminarem antes de salvar.", {
+                                    description: `${uploadProgress.length} arquivo(s) em envio.`,
+                                });
+                                return;
+                            }
+
+                            // 1) Validação de campos essenciais
+                            const missing: string[] = [];
+                            if (!companyName?.trim()) missing.push("Nome da Empresa");
+                            if (!cnpj?.trim() || cnpj.replace(/\D/g, "").length !== 14) missing.push("CNPJ válido");
+                            if (!responsibleName?.trim()) missing.push("Responsável");
+                            if (!emailContact?.trim() || !/^\S+@\S+\.\S+$/.test(emailContact)) missing.push("E-mail de contato válido");
+                            if (!whatsapp?.trim() || whatsapp.replace(/\D/g, "").length < 10) missing.push("WhatsApp");
+                            if (!cep?.trim() || cep.replace(/\D/g, "").length !== 8) missing.push("CEP");
+                            if (!address?.logradouro?.trim()) missing.push("Endereço");
+                            if (!address?.numero?.trim()) missing.push("Número");
+                            if (!address?.localidade?.trim()) missing.push("Cidade");
+                            if (!address?.uf?.trim()) missing.push("Estado");
+                            if (!activityBranch?.trim()) missing.push("Ramo de atividade");
+                            if (missing.length) {
+                                toast.error("Preencha os campos obrigatórios antes de salvar.", {
+                                    description: missing.join(" • "),
+                                    duration: 8000,
+                                });
+                                return;
+                            }
+
                             setIsSaving(true);
                             const toastId = toast.loading("Salvando perfil...");
                             try {
-                                // 1) Tenta obter o usuário via sessão do Supabase Externo
+                                // 2) Identidade: sessão real ou fallback via email do localStorage
                                 const { data: authData } = await supabaseExternal.auth.getUser();
                                 let userId = authData?.user?.id as string | undefined;
-                                let userEmail = authData?.user?.email as string | undefined;
-
-                                // 2) Fallback: usa email persistido no localStorage (login via bypass/admin)
-                                if (!userEmail && typeof window !== 'undefined') {
-                                    userEmail = localStorage.getItem('fixxer_user_email') || undefined;
+                                let userEmailLocal = authData?.user?.email as string | undefined;
+                                if (!userEmailLocal && typeof window !== 'undefined') {
+                                    userEmailLocal = localStorage.getItem('fixxer_user_email') || undefined;
                                 }
-                                if (!userEmail) {
+                                if (!userEmailLocal) {
                                     throw new Error("Sessão expirada. Faça login novamente para salvar o perfil.");
                                 }
-
-                                // 3) Se não houver user_id da sessão, gera UUID determinístico a partir do email
                                 if (!userId) {
-                                    const enc = new TextEncoder().encode(`fixxer:${userEmail.toLowerCase()}`);
+                                    const enc = new TextEncoder().encode(`fixxer:${userEmailLocal.toLowerCase()}`);
                                     const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', enc));
-                                    hash[6] = (hash[6] & 0x0f) | 0x50; // versão 5
-                                    hash[8] = (hash[8] & 0x3f) | 0x80; // variant RFC 4122
+                                    hash[6] = (hash[6] & 0x0f) | 0x50;
+                                    hash[8] = (hash[8] & 0x3f) | 0x80;
                                     const hex = Array.from(hash.slice(0, 16))
                                         .map((b) => b.toString(16).padStart(2, '0')).join('');
                                     userId = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
@@ -2328,7 +2353,7 @@ function ProfileView({
 
                                 const formData = {
                                     user_id: userId,
-                                    user_email: userEmail,
+                                    user_email: userEmailLocal,
                                     company_name: companyName,
                                     social_name: socialName,
                                     cnpj: cnpj,
@@ -2356,29 +2381,66 @@ function ProfileView({
                                     updated_at: new Date().toISOString()
                                 };
 
-                                const { error } = await supabaseExternal
+                                // 3) Upsert + retorna a linha atualizada
+                                const { data: saved, error } = await supabaseExternal
                                     .from('store_profiles')
-                                    .upsert(formData, { onConflict: 'user_id' });
+                                    .upsert(formData, { onConflict: 'user_id' })
+                                    .select('*')
+                                    .maybeSingle();
 
                                 if (error) {
                                     console.error('[store_profiles.upsert] erro:', error);
-                                    throw new Error(error.message || 'Falha ao gravar no Supabase.');
+                                    // Extrai campo problemático (ex.: coluna inválida) do detail/message
+                                    const raw = `${error.message || ''} ${error.details || ''} ${(error as any).hint || ''}`;
+                                    const colMatch = raw.match(/column\s+"?([\w.]+)"?/i)
+                                        || raw.match(/"([\w_]+)"\s+of relation/i);
+                                    const field = colMatch?.[1];
+                                    const parts = [
+                                        error.message,
+                                        error.details ? `Detalhe: ${error.details}` : null,
+                                        (error as any).hint ? `Dica: ${(error as any).hint}` : null,
+                                        error.code ? `Código: ${error.code}` : null,
+                                        field ? `Campo: ${field}` : null,
+                                    ].filter(Boolean).join(" • ");
+                                    toast.error("Erro ao salvar perfil no Supabase.", {
+                                        id: toastId,
+                                        description: parts || 'Falha desconhecida.',
+                                        duration: 12000,
+                                    });
+                                    setIsSaving(false);
+                                    return;
                                 }
 
-                                // Buscar o ID gerado se for novo ou confirmar o existente
-                                const { data: profileData } = await supabaseExternal
-                                    .from('store_profiles')
-                                    .select('id')
-                                    .eq('user_id', userId)
-                                    .maybeSingle();
-
-                                if (profileData?.id && typeof window !== 'undefined') {
-                                    localStorage.setItem('fixxer_lojista_id', profileData.id);
+                                // 4) Atualiza estado local com o que o banco realmente gravou
+                                if (saved) {
+                                    setCompanyName(saved.company_name || "");
+                                    setSocialName(saved.social_name || "");
+                                    setCnpj(saved.cnpj || "");
+                                    setResponsibleName(saved.responsible_name || "");
+                                    setEmailContact(saved.email_contact || "");
+                                    setWhatsapp(saved.whatsapp || "");
+                                    setPhone(saved.phone || "");
+                                    setCep(saved.zipcode || "");
+                                    setActivityBranch(saved.activity_branch || "");
+                                    setLogoUrl(saved.logo_url || null);
+                                    setBannerUrl(saved.banner_url || null);
+                                    setGalleryUrls(Array.isArray(saved.gallery_urls) ? saved.gallery_urls : []);
+                                    setVideoUrls(Array.isArray(saved.video_urls) ? saved.video_urls : []);
+                                    setDocuments(Array.isArray(saved.documents) ? saved.documents : []);
+                                    setSocialLinks({
+                                        instagram: saved.instagram || "",
+                                        facebook: saved.facebook || "",
+                                        tiktok: saved.tiktok || "",
+                                        site: saved.site_url || "",
+                                    });
+                                    if (saved.id && typeof window !== 'undefined') {
+                                        localStorage.setItem('fixxer_lojista_id', saved.id);
+                                    }
                                 }
 
-                                // Salvar no LocalStorage como garantia
+                                // 5) Cache local
                                 if (typeof window !== 'undefined') {
-                                    localStorage.setItem(`fixxer_profile_${userEmail}`, JSON.stringify({
+                                    localStorage.setItem(`fixxer_profile_${userEmailLocal}`, JSON.stringify({
                                         companyName, socialName, cnpj, responsibleName, emailContact,
                                         whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
                                         galleryUrls, videoUrls, documents, socialLinks, address
@@ -2391,10 +2453,6 @@ function ProfileView({
                                     description: "Suas informações já estão atualizadas na plataforma.",
                                     icon: "✅"
                                 });
-
-                                setTimeout(() => {
-                                   window.dispatchEvent(new CustomEvent('change-tab', { detail: 'dashboard' }));
-                                }, 800);
                             } catch (err: any) {
                                 console.error('[Perfil Lojista] erro ao salvar:', err);
                                 const msg = err?.message || 'Erro desconhecido ao salvar.';
@@ -2405,7 +2463,7 @@ function ProfileView({
                         }}
                         className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98] disabled:opacity-50"
                     >
-                        {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
+                        {isSaving ? "Salvando..." : isUploading ? "Aguardando uploads..." : "Salvar Todas as Alterações"}
                     </Button>
                   </div>
                   </>
