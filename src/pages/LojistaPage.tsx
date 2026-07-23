@@ -3007,3 +3007,123 @@ function MetricCard({ label, value, icon, color, subValue }: any) {
         </div>
     )
 }
+
+// ============================================================================
+// SortableSpecialtyCard — card arrastável de especialidade com destaque/dup
+// ============================================================================
+interface SortableSpecialtyCardProps {
+    sp: { id: string; title: string; description: string; featured?: boolean };
+    index: number;
+    isDuplicate: boolean;
+    onChangeTitle: (v: string) => void;
+    onChangeDescription: (v: string) => void;
+    onRemove: () => void;
+    onToggleFeatured: () => void;
+}
+
+function SortableSpecialtyCard({
+    sp,
+    index,
+    isDuplicate,
+    onChangeTitle,
+    onChangeDescription,
+    onRemove,
+    onToggleFeatured,
+}: SortableSpecialtyCardProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: sp.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 0,
+        opacity: isDragging ? 0.6 : 1,
+    };
+
+    const borderCls = isDuplicate
+        ? "border-red-500/60 ring-1 ring-red-500/40"
+        : sp.featured
+            ? "border-primary/60 ring-1 ring-primary/40"
+            : "border-white/10 hover:border-primary/30";
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`p-4 rounded-2xl bg-black/40 border transition-all space-y-3 ${borderCls}`}
+        >
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <button
+                        type="button"
+                        {...attributes}
+                        {...listeners}
+                        className="p-1 -ml-1 text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing touch-none"
+                        aria-label="Arrastar para reordenar"
+                    >
+                        <GripVertical className="w-4 h-4" />
+                    </button>
+                    <span className="text-[9px] font-black text-primary uppercase tracking-widest">
+                        Especialidade {index + 1}
+                    </span>
+                    {sp.featured && (
+                        <span className="text-[8px] font-black text-black bg-primary px-1.5 py-0.5 rounded-full uppercase tracking-widest">
+                            Destaque
+                        </span>
+                    )}
+                    {isDuplicate && (
+                        <span className="text-[8px] font-black text-white bg-red-500 px-1.5 py-0.5 rounded-full uppercase tracking-widest">
+                            Duplicado
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-1">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleFeatured}
+                        className={`h-7 w-7 ${sp.featured ? "text-primary hover:text-primary" : "text-muted-foreground hover:text-primary"} hover:bg-primary/10`}
+                        aria-label={sp.featured ? "Remover destaque" : "Destacar no perfil público"}
+                        title={sp.featured ? "Remover destaque" : "Destacar no perfil público"}
+                    >
+                        <Star className={`w-3.5 h-3.5 ${sp.featured ? "fill-current" : ""}`} />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={onRemove}
+                        className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        aria-label="Remover especialidade"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                </div>
+            </div>
+            <input
+                type="text"
+                maxLength={80}
+                value={sp.title}
+                onChange={(e) => onChangeTitle(e.target.value)}
+                placeholder="Ex.: MÓVEIS PLANEJADOS DE ALTO PADRÃO"
+                className={`w-full bg-white/5 border rounded-lg px-3 py-2 text-xs font-black text-white uppercase italic placeholder:text-muted-foreground/40 outline-none transition-all ${isDuplicate ? "border-red-500/60 focus:border-red-500" : "border-white/10 focus:border-primary"}`}
+            />
+            <textarea
+                rows={2}
+                maxLength={180}
+                value={sp.description}
+                onChange={(e) => onChangeDescription(e.target.value)}
+                placeholder="Breve descrição — Ex.: Projetos residenciais premium sob medida."
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white placeholder:text-muted-foreground/40 focus:border-primary outline-none transition-all resize-none"
+            />
+            <p className="text-[9px] text-muted-foreground/60 text-right">{sp.description.length}/180</p>
+        </div>
+    );
+}
