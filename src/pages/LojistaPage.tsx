@@ -84,6 +84,51 @@ export function LojistaDashboard() {
   const [history, setHistory] = useState<any[]>([]);
   const { branches } = useActivityBranches();
   const [undoStack, setUndoStack] = useState<any[]>([]);
+  const { branches } = useActivityBranches();
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
+
+  const loadFavorites = async () => {
+    setLoadingFavorites(true);
+    try {
+      const { data: { user } } = await supabaseExternal.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabaseExternal
+        .from('user_favorites')
+        .select('*, store_profiles(*)')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setFavorites(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingFavorites(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showFavoritesModal) {
+      loadFavorites();
+      
+      const channel = supabaseExternal
+        .channel('favorites-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_favorites' }, () => {
+          loadFavorites();
+        })
+        .subscribe();
+
+      return () => {
+        supabaseExternal.removeChannel(channel);
+      };
+    }
+  }, [showFavoritesModal]);
+
+  const filteredFavorites = useMemo(() => {
+    if (favoriteCategory === 'todas') return favorites;
+    return favorites.filter(f => f.store_profiles?.activity_branch === favoriteCategory);
+  }, [favorites, favoriteCategory]);
   
   const { glassClass } = usePerformanceMode();
   
