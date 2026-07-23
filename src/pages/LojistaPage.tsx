@@ -2186,10 +2186,9 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         className="w-full md:w-auto px-12 bg-primary text-black font-black uppercase italic tracking-widest hover:bg-primary/90 h-14 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.2)] transition-all active:scale-[0.98] disabled:opacity-50"
                     >
                         {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
-                    </Button>
-                 </div>
+                  </div>
                   </>
-                 ) : null}
+                 )}
 
                  {activeSettingsTab === 'security' && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
