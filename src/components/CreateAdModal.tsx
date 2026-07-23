@@ -42,7 +42,7 @@ interface UploadItem {
   id: string;
   file: File;
   url: string;
-  kind: "image" | "pdf";
+  kind: "image" | "pdf" | "video";
   progress: number;
   error?: string;
 }
@@ -72,9 +72,14 @@ const PRIORITIES: { id: Priority; label: string }[] = [
 const MAX_FILES = 6;
 const MAX_SIZE_IMG = 5 * 1024 * 1024;
 const MAX_SIZE_PDF = 10 * 1024 * 1024;
+const MAX_SIZE_VIDEO = 50 * 1024 * 1024;
 const ACCEPTED_IMG = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const ACCEPTED_PDF = ["application/pdf"];
-const ACCEPTED_ALL = [...ACCEPTED_IMG, ...ACCEPTED_PDF];
+const ACCEPTED_VIDEO = ["video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-matroska"];
+const ACCEPTED_ALL = [...ACCEPTED_IMG, ...ACCEPTED_PDF, ...ACCEPTED_VIDEO];
+
+const DRAFT_KEY = "fixxer:create-ad-draft:v1";
+const DRAFT_MAX_FILE_SIZE = 8 * 1024 * 1024; // ignora arquivos maiores para caber no localStorage
 
 const formatBRL = (v: string | number) => {
   const n = typeof v === "number" ? v : Number(v);
