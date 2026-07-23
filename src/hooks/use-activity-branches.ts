@@ -29,8 +29,9 @@ export function useActivityBranches() {
   useEffect(() => {
     fetchBranches();
 
+    const channelName = `activity-branches-sync-${Math.random().toString(36).slice(2)}-${Date.now()}`;
     const channel = supabaseExternal
-      .channel('activity-branches-sync')
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_branches' }, () => {
         fetchBranches();
       })
@@ -40,6 +41,7 @@ export function useActivityBranches() {
       supabaseExternal.removeChannel(channel);
     };
   }, []);
+
 
   const addBranch = async (name: string) => {
     try {
