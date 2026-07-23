@@ -535,7 +535,7 @@ export function LojistaDashboard() {
                 disabled={!isProfileComplete}
               />
 
-              <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
+              <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={false} onClick={openPublicProfile} />
 
               <SidebarButton 
                 icon={<Heart className="w-4 h-4 text-red-500 fill-red-500/20"/>} 
