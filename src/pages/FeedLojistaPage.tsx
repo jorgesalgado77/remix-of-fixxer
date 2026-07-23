@@ -806,8 +806,38 @@ export default function FeedLojistaPage() {
         </div>
       </header>
 
-      {/* Feed */}
-      <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1">
+      {/* Feed com coluna lateral fixa (desktop) */}
+      <div className="w-full flex-1 lg:max-w-6xl lg:mx-auto lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6 lg:px-4">
+        <aside className="hidden lg:block">
+          <div className="sticky top-[168px] space-y-3">
+            <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10">
+              <div className="text-[10px] font-black uppercase tracking-widest text-[#00E5FF] mb-3">
+                Atalhos do Lojista
+              </div>
+              <nav className="space-y-1.5">
+                <Link to="/lojista" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                  <Store className="w-4 h-4 text-[#00E5FF]" /> Dashboard
+                </Link>
+                <Link to="/chat" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                  <MessageSquare className="w-4 h-4 text-[#00E5FF]" /> Chat
+                </Link>
+                <Link to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                  <User className="w-4 h-4 text-[#00E5FF]" /> Meu Perfil
+                </Link>
+              </nav>
+            </div>
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-[#00E5FF]/10 to-transparent border border-[#00E5FF]/20">
+              <div className="text-[10px] font-black uppercase tracking-widest text-[#00E5FF] mb-2">
+                Dica Rápida
+              </div>
+              <p className="text-[11px] text-white/70 leading-relaxed">
+                Filtre por status para acompanhar propostas, andamentos e finalizações em tempo real.
+              </p>
+            </div>
+          </div>
+        </aside>
+
+      <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
         {searching ? (
           <div className="space-y-4" aria-live="polite">
             {[0, 1, 2].map((i) => (
