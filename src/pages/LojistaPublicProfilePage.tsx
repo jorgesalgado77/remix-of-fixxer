@@ -515,10 +515,10 @@ export function LojistaPublicProfilePage() {
             <section className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
-                  <Filter className="w-4 h-4" /> Galeria de Projetos
+                  <Filter className="w-4 h-4" /> Galeria de Fotos
                 </h2>
                 <div className="flex gap-1.5 flex-wrap">
-                  {PHOTO_FILTERS.map((f) => (
+                  {photoFilters.map((f) => (
                     <button
                       key={f}
                       onClick={() => setPhotoFilter(f)}
@@ -531,15 +531,19 @@ export function LojistaPublicProfilePage() {
                   ))}
                 </div>
               </div>
-              {gallery.length > 0 ? (
+              {visiblePhotos.length > 0 ? (
                 <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory">
-                  {gallery.map((url, i) => (
+                  {visiblePhotos.map((item, i) => (
                     <button
-                      key={url}
-                      onClick={() => openImageLightbox(url, i)}
+                      key={`${item.url}-${i}`}
+                      onClick={() => openImageLightbox(item.url, i)}
                       className="shrink-0 w-40 h-40 md:w-56 md:h-56 rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all snap-start group relative"
+                      title={item.sectionName}
                     >
-                      <img src={url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <img src={item.thumb || item.url} alt={item.sectionName} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
+                        {item.sectionName}
+                      </span>
                     </button>
                   ))}
                 </div>
