@@ -1,15 +1,17 @@
 /**
- * Rascunhos de conversa (texto + anexo) preservados entre navegações.
+ * Rascunhos de conversa (texto + anexos) preservados entre navegações.
  *
  * - Texto: persistido em localStorage (`fixxer_chat_draft_text:<peerId>`)
- *   para sobreviver a reloads.
- * - Anexo (File): mantido em cache de módulo em memória — File objects não
- *   podem ser serializados; se a aba fechar, o anexo precisa ser reselecionado,
- *   mas navegações internas (ex.: abrir perfil e voltar) preservam.
+ *   para sobreviver a reloads e cross-tab.
+ * - Anexos (File[]): mantidos em cache de módulo em memória — objetos File não
+ *   podem ser serializados; se a aba fechar, precisam ser reselecionados,
+ *   mas navegações internas preservam.
+ * - Estado "visto" (mock): localStorage, cross-tab automaticamente (storage
+ *   event) + custom event local para reatividade na mesma aba.
  */
 
 const KEY = "fixxer_chat_draft_text";
-const fileCache = new Map<string, File>();
+const filesCache = new Map<string, File[]>();
 
 export function getDraftText(peerId: string): string {
   if (!peerId || typeof window === "undefined") return "";
@@ -30,22 +32,36 @@ export function setDraftText(peerId: string, text: string) {
 
 export function clearDraft(peerId: string) {
   setDraftText(peerId, "");
-  fileCache.delete(peerId);
+  filesCache.delete(peerId);
 }
 
+/* -------- Multi-anexos (nova API) -------- */
+
+export function getDraftFiles(peerId: string): File[] {
+  return filesCache.get(peerId) ?? [];
+}
+
+export function setDraftFiles(peerId: string, files: File[] | null) {
+  if (!peerId) return;
+  if (files && files.length) filesCache.set(peerId, files);
+  else filesCache.delete(peerId);
+}
+
+/* -------- Compat single-file -------- */
+
 export function getDraftFile(peerId: string): File | null {
-  return fileCache.get(peerId) ?? null;
+  const list = getDraftFiles(peerId);
+  return list[0] ?? null;
 }
 
 export function setDraftFile(peerId: string, file: File | null) {
-  if (!peerId) return;
-  if (file) fileCache.set(peerId, file);
-  else fileCache.delete(peerId);
+  setDraftFiles(peerId, file ? [file] : null);
 }
 
 /**
  * Marca uma conversa mock como "aberta agora" para zerar o badge de não-lidas.
- * Usado pelo inbox mock (que não persiste no banco).
+ * Grava em localStorage (cross-tab automático via evento `storage`) e emite
+ * um custom event local para atualizar a aba corrente.
  */
 const MOCK_SEEN_KEY = "fixxer_mock_chat_seen";
 
@@ -70,3 +86,5 @@ export function getMockSeenAt(peerId: string): number {
     return 0;
   }
 }
+
+export const MOCK_SEEN_STORAGE_KEY = MOCK_SEEN_KEY;
