@@ -716,7 +716,7 @@ export function LojistaPublicProfilePage() {
               </div>
 
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                {visibleMedia.length} mídia(s) encontrada(s)
+                Exibindo {pagedMedia.length} de {visibleMedia.length} mídia(s)
               </p>
 
               {visibleMedia.length > 0 ? (
