@@ -1,8 +1,8 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
-export const Route = createFileRoute('/dashboard/prestador')({
+export const Route = createFileRoute("/dashboard/prestador")({
   component: DashboardPrestadorRedirect,
 });
 
@@ -10,7 +10,7 @@ function DashboardPrestadorRedirect() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate({ to: '/_authenticated/prestador' });
+    navigate({ to: "/_authenticated/prestador" });
   }, [navigate]);
 
   return (

@@ -240,7 +240,8 @@ const MOCK_JOBS: JobPost[] = [
       {
         type: "video",
         url: "https://videos.pexels.com/video-files/4258906/4258906-hd_1920_1080_25fps.mp4",
-        poster: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=70&auto=format&fit=crop",
+        poster:
+          "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=70&auto=format&fit=crop",
       },
     ],
   },
@@ -280,7 +281,11 @@ const MOCK_JOBS: JobPost[] = [
 
 const FILTERS: { key: "todas" | Subcategory; label: string; icon: React.ReactNode }[] = [
   { key: "todas", label: "Todas as Vagas", icon: null },
-  { key: "Conferência Técnica", label: "Conferência Técnica", icon: <ClipboardList className="w-3 h-3" /> },
+  {
+    key: "Conferência Técnica",
+    label: "Conferência Técnica",
+    icon: <ClipboardList className="w-3 h-3" />,
+  },
   { key: "Medição Fina", label: "Medição Fina", icon: <Ruler className="w-3 h-3" /> },
   { key: "Montagem de Móveis", label: "Montagem de Móveis", icon: <Hammer className="w-3 h-3" /> },
   { key: "Instalação", label: "Instalação", icon: <Wrench className="w-3 h-3" /> },
@@ -390,14 +395,14 @@ function ApplyModal({
           <h3 className="text-sm font-black text-white uppercase italic tracking-tight">
             Candidatar-se à O.S.
           </h3>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-            {job.title}
-          </p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{job.title}</p>
         </div>
 
         <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase">Contratante</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase">
+              Contratante
+            </span>
             <span className="text-[10px] font-black text-white">{job.contractor.name}</span>
           </div>
           <div className="flex items-center justify-between">
@@ -406,7 +411,9 @@ function ApplyModal({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-muted-foreground uppercase">Cidade</span>
-            <span className="text-[10px] font-black text-white">{job.city}/{job.state}</span>
+            <span className="text-[10px] font-black text-white">
+              {job.city}/{job.state}
+            </span>
           </div>
         </div>
 
@@ -442,15 +449,7 @@ function ApplyModal({
 // LIGHTBOX
 // =============================================================================
 
-function Lightbox({
-  job,
-  index,
-  onClose,
-}: {
-  job: JobPost;
-  index: number;
-  onClose: () => void;
-}) {
+function Lightbox({ job, index, onClose }: { job: JobPost; index: number; onClose: () => void }) {
   const [current, setCurrent] = useState(index);
 
   const next = useCallback(() => {
@@ -555,7 +554,9 @@ function JobCard({
   return (
     <article
       className={`relative rounded-3xl border bg-[#1A1A1B] overflow-hidden transition-all hover:border-[#00FF87]/30 group ${
-        isClientFinal ? "border-[#00FF87]/30 shadow-[0_0_20px_rgba(0,255,135,0.08)]" : "border-white/10"
+        isClientFinal
+          ? "border-[#00FF87]/30 shadow-[0_0_20px_rgba(0,255,135,0.08)]"
+          : "border-white/10"
       }`}
     >
       {isClientFinal && (
@@ -572,9 +573,7 @@ function JobCard({
                 <h3 className="text-[11px] font-black text-white uppercase italic truncate">
                   {job.contractor.name}
                 </h3>
-                {job.contractor.isVerified && (
-                  <CheckCircle2 className="w-3 h-3 text-[#00FF87]" />
-                )}
+                {job.contractor.isVerified && <CheckCircle2 className="w-3 h-3 text-[#00FF87]" />}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
@@ -758,7 +757,8 @@ export default function FeedPrestadorPage() {
       const matchesFilter = filter === "todas" || job.subcategory === filter;
       if (!matchesFilter) return false;
       if (!term) return true;
-      const hay = `${job.title} ${job.description} ${job.contractor.name} ${job.city} ${job.state} ${job.subcategory}`.toLowerCase();
+      const hay =
+        `${job.title} ${job.description} ${job.contractor.name} ${job.city} ${job.state} ${job.subcategory}`.toLowerCase();
       return hay.includes(term);
     });
   }, [debouncedSearch, filter]);
@@ -783,7 +783,7 @@ export default function FeedPrestadorPage() {
           }, 400);
         }
       },
-      { rootMargin: "120px" }
+      { rootMargin: "120px" },
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
@@ -828,7 +828,9 @@ export default function FeedPrestadorPage() {
             </div>
           </div>
 
-          <div className={`flex items-center gap-3 p-3 rounded-2xl border border-white/10 ${glassClass}`}>
+          <div
+            className={`flex items-center gap-3 p-3 rounded-2xl border border-white/10 ${glassClass}`}
+          >
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               type="text"
@@ -838,7 +840,10 @@ export default function FeedPrestadorPage() {
               className="bg-transparent border-none outline-none text-xs text-white w-full font-medium placeholder:text-muted-foreground"
             />
             {search && (
-              <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-white">
+              <button
+                onClick={() => setSearch("")}
+                className="text-muted-foreground hover:text-white"
+              >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
@@ -873,7 +878,10 @@ export default function FeedPrestadorPage() {
         {searching && (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-44 rounded-3xl bg-[#1A1A1B] border border-white/5 animate-pulse" />
+              <div
+                key={i}
+                className="h-44 rounded-3xl bg-[#1A1A1B] border border-white/5 animate-pulse"
+              />
             ))}
           </div>
         )}
@@ -901,16 +909,17 @@ export default function FeedPrestadorPage() {
           </div>
         )}
 
-        {!searching && paged.map((job) => (
-          <JobCard
-            key={job.id}
-            job={job}
-            saved={saved.has(job.id)}
-            onToggleSave={toggleSave}
-            onApply={setApplyFor}
-            onLightbox={(job, index) => setLightbox({ job, index })}
-          />
-        ))}
+        {!searching &&
+          paged.map((job) => (
+            <JobCard
+              key={job.id}
+              job={job}
+              saved={saved.has(job.id)}
+              onToggleSave={toggleSave}
+              onApply={setApplyFor}
+              onLightbox={(job, index) => setLightbox({ job, index })}
+            />
+          ))}
 
         {/* Sentinel de scroll infinito */}
         {!searching && filtered.length > 0 && (
@@ -934,11 +943,7 @@ export default function FeedPrestadorPage() {
       <ApplyModal job={applyFor} isOpen={!!applyFor} onClose={() => setApplyFor(null)} />
 
       {lightbox && (
-        <Lightbox
-          job={lightbox.job}
-          index={lightbox.index}
-          onClose={() => setLightbox(null)}
-        />
+        <Lightbox job={lightbox.job} index={lightbox.index} onClose={() => setLightbox(null)} />
       )}
     </div>
   );
