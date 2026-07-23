@@ -125,14 +125,15 @@ export function LojistaDashboard() {
       setIsProfileComplete(result.complete);
       setProfileMissing(result.missingLabels);
       setProfileSummary({
-        id: data.id,
+        id: data.user_id || data.id,
         companyName: data.company_name || "",
         logoUrl: data.logo_url || null,
         city: data.city || "",
         state: data.state || "",
       });
-      if (data.id) {
-        try { localStorage.setItem("fixxer_lojista_id", data.id); } catch {}
+      const publicKey = data.user_id || data.id;
+      if (publicKey) {
+        try { localStorage.setItem("fixxer_lojista_id", publicKey); } catch {}
       }
     };
 
@@ -2745,8 +2746,9 @@ function ProfileView({
                                         tiktok: saved.tiktok || "",
                                         site: saved.site_url || "",
                                     });
-                                    if (saved.id && typeof window !== 'undefined') {
-                                        localStorage.setItem('fixxer_lojista_id', saved.id);
+                                    if (typeof window !== 'undefined') {
+                                        const publicKey = (saved as any).user_id || saved.id;
+                                        if (publicKey) localStorage.setItem('fixxer_lojista_id', publicKey);
                                     }
                                 }
 
