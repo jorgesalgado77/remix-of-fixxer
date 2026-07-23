@@ -324,7 +324,7 @@ function UrgencyBadge({ urgency }: { urgency: JobPost["urgency"] }) {
 function TypeBadge({ type }: { type: ContractType }) {
   if (type === "lojista") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#00FF87]/10 border border-[#00FF87]/20 text-[#00FF87] text-[8px] font-black uppercase tracking-widest">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 text-[#FF9F0A] text-[8px] font-black uppercase tracking-widest">
         <Store className="w-2.5 h-2.5" /> Lojista
       </span>
     );
@@ -347,7 +347,7 @@ function RatingStars({ value }: { value: number }) {
 
 function Avatar({ initials }: { initials: string }) {
   return (
-    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00FF87]/20 to-[#00FF87]/5 border border-[#00FF87]/20 flex items-center justify-center text-[11px] font-black text-[#00FF87] italic">
+    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF9F0A]/20 to-[#FF9F0A]/5 border border-[#FF9F0A]/20 flex items-center justify-center text-[11px] font-black text-[#FF9F0A] italic">
       {initials}
     </div>
   );
@@ -449,7 +449,7 @@ function ApplyModal({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-muted-foreground uppercase">Valor</span>
-            <span className="text-[10px] font-black text-[#00FF87]">{job.value}</span>
+            <span className="text-[10px] font-black text-[#FF9F0A]">{job.value}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-muted-foreground uppercase">Cidade</span>
@@ -464,13 +464,13 @@ function ApplyModal({
           onChange={(e) => setMessage(e.target.value)}
           disabled={alreadyApplied}
           placeholder="Escreva uma mensagem breve para o contratante..."
-          className="w-full min-h-[100px] bg-black/30 border border-white/10 rounded-2xl p-4 text-xs text-white placeholder:text-muted-foreground outline-none focus:border-[#00FF87]/50 resize-none disabled:opacity-50"
+          className="w-full min-h-[100px] bg-black/30 border border-white/10 rounded-2xl p-4 text-xs text-white placeholder:text-muted-foreground outline-none focus:border-[#FF9F0A]/50 resize-none disabled:opacity-50"
         />
 
         <button
           onClick={handleSubmit}
           disabled={loading || alreadyApplied}
-          className="w-full py-3.5 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-3.5 rounded-xl bg-[#FF9F0A] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(255,159,10,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -569,7 +569,7 @@ function Lightbox({ job, index, onClose }: { job: JobPost; index: number; onClos
             <button
               key={i}
               onClick={() => setCurrent(i)}
-              className={`w-2 h-2 rounded-full transition-colors ${i === current ? "bg-[#00FF87]" : "bg-white/20"}`}
+              className={`w-2 h-2 rounded-full transition-colors ${i === current ? "bg-[#FF9F0A]" : "bg-white/20"}`}
             />
           ))}
         </div>
@@ -604,14 +604,14 @@ function JobCard({
 
   return (
     <article
-      className={`relative rounded-3xl border bg-[#1A1A1B] overflow-hidden transition-all hover:border-[#00FF87]/30 group ${
+      className={`relative rounded-3xl border bg-[#1A1A1B] overflow-hidden transition-all hover:border-[#FF9F0A]/30 group ${
         isClientFinal
-          ? "border-[#00FF87]/30 shadow-[0_0_20px_rgba(0,255,135,0.08)]"
+          ? "border-[#FF9F0A]/30 shadow-[0_0_20px_rgba(255,159,10,0.08)]"
           : "border-white/10"
       }`}
     >
       {isClientFinal && (
-        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#00FF87] to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF9F0A] to-transparent" />
       )}
 
       <div className="p-4 space-y-4">
@@ -624,11 +624,11 @@ function JobCard({
                 <h3 className="text-[11px] font-black text-white uppercase italic truncate">
                   {job.contractor.name}
                 </h3>
-                {job.contractor.isVerified && <CheckCircle2 className="w-3 h-3 text-[#00FF87]" />}
+                {job.contractor.isVerified && <CheckCircle2 className="w-3 h-3 text-[#FF9F0A]" />}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                  <MapPin className="w-2.5 h-2.5 text-[#00FF87]" /> {job.city}/{job.state}
+                  <MapPin className="w-2.5 h-2.5 text-[#FF9F0A]" /> {job.city}/{job.state}
                 </span>
                 <RatingStars value={job.rating} />
               </div>
@@ -645,7 +645,7 @@ function JobCard({
 
         {/* ESPECIFICAÇÕES */}
         <div className="space-y-2">
-          <h4 className="text-[13px] font-black text-white uppercase italic leading-tight group-hover:text-[#00FF87] transition-colors">
+          <h4 className="text-[13px] font-black text-white uppercase italic leading-tight group-hover:text-[#FF9F0A] transition-colors">
             {job.title}
           </h4>
           <p className="text-[10px] text-muted-foreground font-medium leading-relaxed line-clamp-3">
@@ -654,7 +654,7 @@ function JobCard({
 
           <div className="flex flex-wrap gap-1.5 pt-1">
             {job.subcategory && (
-              <span className="px-2 py-0.5 rounded-md bg-[#00FF87]/10 border border-[#00FF87]/20 text-[#00FF87] text-[8px] font-black uppercase tracking-widest">
+              <span className="px-2 py-0.5 rounded-md bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 text-[#FF9F0A] text-[8px] font-black uppercase tracking-widest">
                 {job.subcategory}
               </span>
             )}
@@ -683,7 +683,7 @@ function JobCard({
               <button
                 key={i}
                 onClick={() => onLightbox(job, i)}
-                className="relative shrink-0 w-28 h-20 rounded-xl overflow-hidden border border-white/10 bg-black/40 group/media focus:outline-none focus:ring-2 focus:ring-[#00FF87]/50"
+                className="relative shrink-0 w-28 h-20 rounded-xl overflow-hidden border border-white/10 bg-black/40 group/media focus:outline-none focus:ring-2 focus:ring-[#FF9F0A]/50"
               >
                 {item.type === "video" ? (
                   <>
@@ -714,7 +714,7 @@ function JobCard({
             <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">
               Remuneração
             </span>
-            <span className="text-xs font-black text-[#00FF87]">{job.value}</span>
+            <span className="text-xs font-black text-[#FF9F0A]">{job.value}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -722,7 +722,7 @@ function JobCard({
               onClick={() => onToggleSave(job.id)}
               className={`p-2.5 rounded-xl border transition-all ${
                 saved
-                  ? "bg-[#00FF87]/10 border-[#00FF87]/30 text-[#00FF87]"
+                  ? "bg-[#FF9F0A]/10 border-[#FF9F0A]/30 text-[#FF9F0A]"
                   : "bg-white/5 border-white/10 text-white hover:bg-white/10"
               }`}
               aria-label={saved ? "Remover dos salvos" : "Salvar vaga"}
@@ -732,7 +732,7 @@ function JobCard({
 
             <button
               onClick={() => onChat(job)}
-              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-[#00FF87]/10 hover:border-[#00FF87]/30 transition-all"
+              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-[#FF9F0A]/10 hover:border-[#FF9F0A]/30 transition-all"
               aria-label="Chat direto"
             >
               <MessageSquare className="w-4 h-4" />
@@ -741,7 +741,7 @@ function JobCard({
             <button
               onClick={() => onApply(job)}
               disabled={applied}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF9F0A] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,159,10,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {applied ? (
                 <>
@@ -758,7 +758,7 @@ function JobCard({
       </div>
 
       {/* GLOW DECORATIVO */}
-      <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#00FF87]/5 blur-3xl rounded-full pointer-events-none" />
+      <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#FF9F0A]/5 blur-3xl rounded-full pointer-events-none" />
     </article>
   );
 }
@@ -972,7 +972,7 @@ export default function FeedPrestadorPage() {
             </button>
             <div className="min-w-0">
               <h1 className="text-base font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
-                <Zap className="w-4 h-4 text-[#00FF87]" /> Feed do Prestador
+                <Zap className="w-4 h-4 text-[#FF9F0A]" /> Feed do Prestador
               </h1>
               <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest truncate">
                 Mural de Oportunidades e O.S.
@@ -1011,7 +1011,7 @@ export default function FeedPrestadorPage() {
                   onClick={() => setFilter(f.key)}
                   className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
                     active
-                      ? "bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_15px_rgba(0,255,135,0.3)]"
+                      ? "bg-[#FF9F0A] text-black border-[#FF9F0A] shadow-[0_0_15px_rgba(255,159,10,0.3)]"
                       : "bg-white/5 border-white/10 text-white hover:bg-white/10"
                   }`}
                 >
@@ -1080,7 +1080,7 @@ export default function FeedPrestadorPage() {
           <div ref={sentinelRef} className="py-4 text-center">
             {loadingMore && (
               <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                <div className="w-4 h-4 border-2 border-[#00FF87] border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[#FF9F0A] border-t-transparent rounded-full animate-spin" />
                 Carregando mais vagas...
               </div>
             )}
