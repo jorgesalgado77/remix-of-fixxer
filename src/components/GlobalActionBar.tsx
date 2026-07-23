@@ -17,69 +17,123 @@ export function GlobalActionBar() {
   const isActive = (target: string) => path.startsWith(target);
   const isHash = (h: string) => path.startsWith("/dashboard/lojista") && hash === h;
 
-  const getRole = (): string => {
+  const [role, setRole] = useState<string>(() => {
     if (typeof window === "undefined") return "";
     return (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
+  });
+
+  // Resolve a aba do Feed a partir do papel; fallback = feed geral sem tab
+  const resolveFeedTab = (r: string): string | null => {
+    const role = (r || "").toLowerCase();
+    if (!role) return null;
+    if (role.includes("lojista")) return "prestadores";
+    if (role.includes("prestador")) return "demandas_lojista";
+    if (role.includes("parceiro") || role.includes("fornecedor")) return "parceiros";
+    if (role.includes("cliente") || role.includes("casual")) return "obras_b2c";
+    return null;
   };
 
   // Perfil → Feed relacionado ao papel do usuário logado
   const goToRoleFeed = () => {
-    const role = getRole();
-    // /feed é único; a página aplica a aba padrão via userRole do contexto.
-    // Passa search para forçar o tab correto em cada perfil.
-    let tab: string | null = null;
-    if (role.includes("lojista")) tab = "prestadores";
-    else if (role.includes("prestador")) tab = "demandas_lojista";
-    else if (role.includes("parceiro") || role.includes("fornecedor")) tab = "parceiros";
-    else if (role.includes("cliente") || role.includes("casual")) tab = "obras_b2c";
-
+    let current = role;
+    if (!current && typeof window !== "undefined") {
+      current = (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
+      if (current) setRole(current);
+    }
+    const tab = resolveFeedTab(current);
     navigate({
       to: "/feed" as any,
       search: (tab ? { tab } : {}) as any,
     });
   };
 
-  // Notificações de novas mensagens
+  // Reage a mudanças de papel: outro tab (storage) e atualizações internas
+  useEffect(() => {
+    const syncRole = () => {
+      if (typeof window === "undefined") return;
+      setRole((localStorage.getItem("fixxer_user_role") || "").toLowerCase());
+    };
+    window.addEventListener("storage", syncRole);
+    window.addEventListener("fixxer:role-changed", syncRole as any);
+    return () => {
+      window.removeEventListener("storage", syncRole);
+      window.removeEventListener("fixxer:role-changed", syncRole as any);
+    };
+  }, []);
+
+  // Notificações de novas mensagens — reativas ao usuário logado
   useEffect(() => {
     let cancelled = false;
+    let channel: any = null;
+    let currentUserId: string | null = null;
 
     const loadUnread = async () => {
       try {
-        const { data: userData } = await supabaseExternal.auth.getUser();
-        const userId = userData?.user?.id;
-        if (!userId) return;
-
+        if (!currentUserId) {
+          if (!cancelled) setUnreadCount(0);
+          return;
+        }
         const { count, error } = await supabaseExternal
           .from("messages")
           .select("id", { count: "exact", head: true })
-          .eq("recipient_id", userId)
+          .eq("recipient_id", currentUserId)
           .eq("read", false);
-
         if (!error && !cancelled) setUnreadCount(count || 0);
       } catch {
         // tabela pode não existir ainda; mantém 0 silenciosamente
       }
     };
 
-    loadUnread();
+    const subscribe = () => {
+      try {
+        if (channel) {
+          try { supabaseExternal.removeChannel(channel); } catch {}
+          channel = null;
+        }
+        if (!currentUserId) return;
+        const channelName = `chat-unread-${Math.random().toString(36).slice(2)}`;
+        channel = supabaseExternal
+          .channel(channelName)
+          .on(
+            "postgres_changes" as any,
+            { event: "*", schema: "public", table: "messages" },
+            () => loadUnread(),
+          )
+          .subscribe();
+      } catch {
+        // Realtime indisponível
+      }
+    };
 
-    let channel: any = null;
-    try {
-      const channelName = `chat-unread-${Math.random().toString(36).slice(2)}`;
-      channel = supabaseExternal
-        .channel(channelName)
-        .on(
-          "postgres_changes" as any,
-          { event: "*", schema: "public", table: "messages" },
-          () => loadUnread(),
-        )
-        .subscribe();
-    } catch {
-      // ignora se Realtime não estiver disponível
-    }
+    const bootstrap = async () => {
+      try {
+        const { data } = await supabaseExternal.auth.getUser();
+        currentUserId = data?.user?.id ?? null;
+      } catch {
+        currentUserId = null;
+      }
+      await loadUnread();
+      subscribe();
+    };
+
+    bootstrap();
+
+    // Zera imediatamente quando o Inbox marca tudo como lido
+    const onLocalRead = () => setUnreadCount(0);
+    window.addEventListener("fixxer:messages-read", onLocalRead);
+
+    // Reagir a login/logout: recarrega o userId e reinscreve o canal
+    const { data: authSub } = supabaseExternal.auth.onAuthStateChange(async (_evt, session) => {
+      currentUserId = session?.user?.id ?? null;
+      if (!currentUserId) setUnreadCount(0);
+      await loadUnread();
+      subscribe();
+    });
 
     return () => {
       cancelled = true;
+      window.removeEventListener("fixxer:messages-read", onLocalRead);
+      try { authSub?.subscription?.unsubscribe(); } catch {}
       if (channel) {
         try { supabaseExternal.removeChannel(channel); } catch {}
       }
