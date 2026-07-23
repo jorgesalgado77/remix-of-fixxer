@@ -47,30 +47,41 @@ export function useMediaUpload() {
         return publicUrl;
       } catch (error: any) {
         attempt++;
-        console.error(`Tentativa ${attempt} falhou:`, error);
-        
-        if (attempt >= retries) {
-          let errorMessage = "Erro desconhecido";
-          if (error.message?.includes('storage/quota-exceeded')) errorMessage = "Cota de armazenamento excedida";
-          if (error.message?.includes('payload too large')) errorMessage = "Arquivo muito grande para o servidor";
-          if (error.status === 403) errorMessage = "Sem permissão para upload";
-          
-          setUploadProgress(prev => 
+        const raw = error?.message || error?.error || error?.statusText || "";
+        const status = error?.status || error?.statusCode;
+        console.error(`[upload] tentativa ${attempt} falhou`, { status, raw, error });
+
+        // Erros definitivos: não vale a pena tentar de novo
+        const isBucketMissing = /bucket not found/i.test(raw) || String(status) === "404";
+        const isForbidden = String(status) === "403" || /new row violates row-level security|not authorized|unauthorized/i.test(raw);
+        const isTooLarge = /payload too large|exceeded the maximum allowed size|too large/i.test(raw) || String(status) === "413";
+        const isDuplicate = /already exists|duplicate/i.test(raw) || String(status) === "409";
+        const definitive = isBucketMissing || isForbidden || isTooLarge || isDuplicate;
+
+        if (attempt >= retries || definitive) {
+          let errorMessage = raw || "Erro desconhecido";
+          if (isBucketMissing) errorMessage = `Bucket "${bucket}" não existe no Supabase. Rode o SQL de setup do Storage.`;
+          else if (isForbidden) errorMessage = "Sem permissão para upload. Faça login novamente ou revise as policies do bucket.";
+          else if (isTooLarge) errorMessage = "Arquivo maior que o limite do bucket.";
+          else if (/quota-exceeded/i.test(raw)) errorMessage = "Cota de armazenamento excedida.";
+
+          setUploadProgress(prev =>
             prev.map(p => p.fileName === file.name ? { ...p, error: true, progress: 0 } : p)
           );
 
           toast.error(`Falha no upload: ${file.name}`, {
-            description: `${errorMessage}. Você pode tentar reenviar no resumo.`
+            description: errorMessage,
           });
           break;
         }
-        
+
         const delay = 1000 * attempt;
         toast.info(`Retentando ${file.name}...`, {
           description: `Tentativa ${attempt + 1} de ${retries} em ${delay/1000}s`
         });
         await new Promise(resolve => setTimeout(resolve, delay));
       }
+
     }
 
     setIsUploading(false);
