@@ -103,11 +103,11 @@ export function PhotoSectionsManager({ value, onChange }: Props) {
     setBusyKey(null);
   };
 
-  const removeShowroom = (url: string) => onChange({ ...safe, showroom: safe.showroom.filter(u => u !== url) });
-  const removeAssemblies = (url: string) => onChange({ ...safe, assemblies: safe.assemblies.filter(u => u !== url) });
-  const removeCustom = (sectionId: string, url: string) => onChange({
+  const removeShowroom = (item: PhotoItem) => onChange({ ...safe, showroom: safe.showroom.filter(p => getUrl(p) !== getUrl(item)) });
+  const removeAssemblies = (item: PhotoItem) => onChange({ ...safe, assemblies: safe.assemblies.filter(p => getUrl(p) !== getUrl(item)) });
+  const removeCustom = (sectionId: string, item: PhotoItem) => onChange({
     ...safe,
-    custom: safe.custom.map(s => s.id === sectionId ? { ...s, photos: s.photos.filter(u => u !== url) } : s),
+    custom: safe.custom.map(s => s.id === sectionId ? { ...s, photos: s.photos.filter(p => getUrl(p) !== getUrl(item)) } : s),
   });
 
   const addSection = () => {
@@ -131,6 +131,8 @@ export function PhotoSectionsManager({ value, onChange }: Props) {
     setEditingName('');
   };
 
+  const inProgress = uploadProgress.filter(p => !p.error && p.progress < 100);
+
   return (
     <div className="space-y-8 pt-6 border-t border-white/5">
       <PhotoBlock
@@ -141,6 +143,7 @@ export function PhotoSectionsManager({ value, onChange }: Props) {
         onAdd={handleAddShowroom}
         onRemove={removeShowroom}
         busy={busyKey === 'showroom'}
+        progressList={busyKey === 'showroom' ? inProgress : []}
       />
       <PhotoBlock
         title="Montagens Realizadas"
@@ -150,6 +153,7 @@ export function PhotoSectionsManager({ value, onChange }: Props) {
         onAdd={handleAddAssemblies}
         onRemove={removeAssemblies}
         busy={busyKey === 'assemblies'}
+        progressList={busyKey === 'assemblies' ? inProgress : []}
       />
 
       <div className="space-y-4">
@@ -214,8 +218,9 @@ export function PhotoSectionsManager({ value, onChange }: Props) {
               photos={section.photos}
               max={MAX_CUSTOM_PHOTOS}
               onAdd={(files) => handleAddCustom(section.id, files)}
-              onRemove={(url) => removeCustom(section.id, url)}
+              onRemove={(item) => removeCustom(section.id, item)}
               busy={busyKey === section.id}
+              progressList={busyKey === section.id ? inProgress : []}
             />
           </div>
         ))}
@@ -225,15 +230,16 @@ export function PhotoSectionsManager({ value, onChange }: Props) {
 }
 
 function PhotoBlock({
-  title, icon, photos, max, onAdd, onRemove, busy,
+  title, icon, photos, max, onAdd, onRemove, busy, progressList,
 }: {
   title: string;
   icon: React.ReactNode;
-  photos: string[];
+  photos: PhotoItem[];
   max: number;
   onAdd: (files: File[]) => void;
-  onRemove: (url: string) => void;
+  onRemove: (item: PhotoItem) => void;
   busy: boolean;
+  progressList: { fileName: string; progress: number; error?: boolean }[];
 }) {
   return (
     <div className="space-y-3">
@@ -243,57 +249,93 @@ function PhotoBlock({
         </h4>
         <span className="text-[9px] text-muted-foreground">{photos.length}/{max}</span>
       </div>
-      <PhotoGrid photos={photos} max={max} onAdd={onAdd} onRemove={onRemove} busy={busy} />
+      <PhotoGrid photos={photos} max={max} onAdd={onAdd} onRemove={onRemove} busy={busy} progressList={progressList} />
     </div>
   );
 }
 
 function PhotoGrid({
-  photos, max, onAdd, onRemove, busy,
+  photos, max, onAdd, onRemove, busy, progressList,
 }: {
-  photos: string[];
+  photos: PhotoItem[];
   max: number;
   onAdd: (files: File[]) => void;
-  onRemove: (url: string) => void;
+  onRemove: (item: PhotoItem) => void;
   busy: boolean;
+  progressList: { fileName: string; progress: number; error?: boolean }[];
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const canAdd = photos.length < max;
+  const renderFallback = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.style.opacity = '0.3';
+  };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-3 rounded-2xl border-2 border-dashed border-white/10 bg-black/20">
-      {photos.map((url) => (
-        <div key={url} className="relative aspect-square rounded-xl overflow-hidden group border border-white/10">
-          <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
-          <button
-            onClick={() => onRemove(url)}
-            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-red-400 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
-            title="Remover"
-          >
-            <Trash className="w-3 h-3" />
-          </button>
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-3 rounded-2xl border-2 border-dashed border-white/10 bg-black/20">
+        {photos.map((item) => {
+          const url = getUrl(item);
+          const thumb = getThumb(item);
+          return (
+            <div key={url} className="relative aspect-square rounded-xl overflow-hidden group border border-white/10">
+              <img
+                src={thumb}
+                alt=""
+                className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+                onError={renderFallback}
+              />
+              <button
+                onClick={() => onRemove(item)}
+                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-red-400 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                title="Remover"
+              >
+                <Trash className="w-3 h-3" />
+              </button>
+            </div>
+          );
+        })}
+        {canAdd && (
+          <label className={`aspect-square rounded-xl border border-white/5 bg-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-white/10 transition ${busy ? 'opacity-60 pointer-events-none' : ''}`}>
+            <input
+              ref={inputRef}
+              type="file"
+              className="hidden"
+              accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                if (files.length) onAdd(files);
+                if (inputRef.current) inputRef.current.value = '';
+              }}
+            />
+            <PlusCircle className="w-5 h-5 text-muted-foreground" />
+            <span className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter">
+              {busy ? 'Enviando...' : 'Add Foto'}
+            </span>
+          </label>
+        )}
+      </div>
+      {progressList.length > 0 && (
+        <div className="space-y-1.5">
+          {progressList.map(p => (
+            <div key={p.fileName} className="space-y-1">
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span className="truncate max-w-[70%]">{p.fileName}</span>
+                <span>{p.error ? 'Erro' : `${p.progress}%`}</span>
+              </div>
+              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all ${p.error ? 'bg-red-500' : 'bg-primary'}`}
+                  style={{ width: `${p.progress}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
-      {canAdd && (
-        <label className={`aspect-square rounded-xl border border-white/5 bg-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-white/10 transition ${busy ? 'opacity-60 pointer-events-none' : ''}`}>
-          <input
-            ref={inputRef}
-            type="file"
-            className="hidden"
-            accept="image/*"
-            multiple
-            onChange={(e) => {
-              const files = Array.from(e.target.files || []);
-              if (files.length) onAdd(files);
-              if (inputRef.current) inputRef.current.value = '';
-            }}
-          />
-          <PlusCircle className="w-5 h-5 text-muted-foreground" />
-          <span className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter">
-            {busy ? 'Enviando...' : 'Add Foto'}
-          </span>
-        </label>
       )}
     </div>
   );
 }
+
