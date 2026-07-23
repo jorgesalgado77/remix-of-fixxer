@@ -57,6 +57,7 @@ import { IMaskInput } from "react-imask";
 import { useMediaUpload } from "@/hooks/use-media-upload";
 import { Progress } from "@/components/ui/progress";
 import { ActivitySelect } from "@/components/ActivitySelect";
+import { useActivityBranches } from "@/hooks/use-activity-branches";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
@@ -81,7 +82,52 @@ export function LojistaDashboard() {
     review_received: true
   });
   const [history, setHistory] = useState<any[]>([]);
+  const { branches } = useActivityBranches();
   const [undoStack, setUndoStack] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
+
+  const loadFavorites = async () => {
+    setLoadingFavorites(true);
+    try {
+      const { data: { user } } = await supabaseExternal.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabaseExternal
+        .from('user_favorites')
+        .select('*, store_profiles(*)')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setFavorites(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingFavorites(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showFavoritesModal) {
+      loadFavorites();
+      
+      const channel = supabaseExternal
+        .channel('favorites-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_favorites' }, () => {
+          loadFavorites();
+        })
+        .subscribe();
+
+      return () => {
+        supabaseExternal.removeChannel(channel);
+      };
+    }
+  }, [showFavoritesModal]);
+
+  const filteredFavorites = useMemo(() => {
+    if (favoriteCategory === 'todas') return favorites;
+    return favorites.filter(f => f.store_profiles?.activity_branch === favoriteCategory);
+  }, [favorites, favoriteCategory]);
   
   const { glassClass } = usePerformanceMode();
   
@@ -527,6 +573,9 @@ export function LojistaDashboard() {
                     setShowFavoritesModal={setShowFavoritesModal}
                     favoriteCategory={favoriteCategory}
                     setFavoriteCategory={setFavoriteCategory}
+                    branches={branches}
+                    loadingFavorites={loadingFavorites}
+                    filteredFavorites={filteredFavorites}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
@@ -1153,7 +1202,10 @@ function ProfileView({
     showFavoritesModal,
     setShowFavoritesModal,
     favoriteCategory,
-    setFavoriteCategory
+    setFavoriteCategory,
+    branches,
+    loadingFavorites,
+    filteredFavorites
 }: { 
     setIsProfileComplete: (complete: boolean) => void; 
     rating: number; 
@@ -1173,7 +1225,11 @@ function ProfileView({
     setShowFavoritesModal: (show: boolean) => void;
     favoriteCategory: string;
     setFavoriteCategory: (cat: string) => void;
+    branches: string[];
+    loadingFavorites: boolean;
+    filteredFavorites: any[];
 }) {
+    const navigate = useNavigate();
     const [userEmail, setUserEmail] = useState("");
     const [companyName, setCompanyName] = useState("");
     const [socialName, setSocialName] = useState("");
@@ -2296,18 +2352,63 @@ function ProfileView({
                                 className="w-full h-12 bg-black/40 border-white/10 rounded-xl pl-10 pr-4 text-xs font-black uppercase italic text-white appearance-none cursor-pointer outline-none focus:border-primary/50"
                             >
                                 <option value="todas">Todas as Categorias</option>
-                                <option value="Montagem">Montagem</option>
-                                <option value="Marcenaria">Marcenaria</option>
-                                <option value="Elétrica">Elétrica</option>
-                                <option value="Hidráulica">Hidráulica</option>
+                                {branches.map((b: string) => (
+                                    <option key={b} value={b}>{b}</option>
+                                ))}
                             </select>
                         </div>
 
                         <div className="flex-1 overflow-y-auto scrollbar-none pr-2 space-y-4">
-                            {/* Mock Favoritos */}
-                            <div className="flex flex-col gap-4">
-                                <p className="text-[10px] text-muted-foreground uppercase font-bold text-center py-8">Nenhum perfil favorito encontrado nesta categoria.</p>
-                            </div>
+                            {loadingFavorites ? (
+                                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                                    <Activity className="w-8 h-8 text-primary animate-spin" />
+                                    <span className="text-[10px] font-black text-primary uppercase italic">Carregando favoritos...</span>
+                                </div>
+                            ) : filteredFavorites.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {filteredFavorites.map((fav: any) => (
+                                        <div key={fav.id} className="p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-primary/30 transition-all group">
+                                            <div className="flex gap-3">
+                                                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
+                                                    {fav.store_profiles?.logo_url ? (
+                                                        <img src={fav.store_profiles.logo_url} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Store className="w-6 h-6 text-primary" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-[11px] font-black text-white uppercase italic">{fav.store_profiles?.name || 'Loja sem nome'}</div>
+                                                    <div className="text-[8px] text-primary font-black uppercase italic">{fav.store_profiles?.activity_branch || 'Sem categoria'}</div>
+                                                    <div className="flex items-center gap-1 mt-1">
+                                                        <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                                                        <span className="text-[10px] font-black text-amber-500 italic">4.9</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={async () => {
+                                                        const { error } = await supabaseExternal.from('user_favorites').delete().eq('id', fav.id);
+                                                        if (error) toast.error("Erro ao remover");
+                                                        else toast.success("Removido dos favoritos");
+                                                    }}
+                                                    className="p-2 text-red-500/50 hover:text-red-500 transition-colors"
+                                                >
+                                                    <Heart className="w-4 h-4 fill-red-500" />
+                                                </button>
+                                            </div>
+                                            <button 
+                                                onClick={() => navigate({ to: `/lojista/${fav.store_profiles?.lojista_id}` as any })}
+                                                className="w-full mt-3 py-2 rounded-xl bg-white/5 hover:bg-primary/20 text-white hover:text-primary text-[9px] font-black uppercase italic transition-all border border-transparent hover:border-primary/20"
+                                            >
+                                                Ver Perfil Completo
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-4">
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold text-center py-8">Nenhum perfil favorito encontrado nesta categoria.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

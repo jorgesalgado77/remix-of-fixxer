@@ -303,14 +303,6 @@ export function LojistaPublicProfilePage() {
                   <MetricCard label="Satisfação" value="99%" suffix="Positivo" />
                   <MetricCard label="Tempo Resposta" value="<15" suffix="min" />
                 </div>
-
-                {/* CTA */}
-                <Button
-                  onClick={handleContactWhatsApp}
-                  className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
-                </Button>
               </div>
             </div>
           </div>
@@ -467,11 +459,11 @@ export function LojistaPublicProfilePage() {
         )}
       </div>
 
-      {/* STICKY FOOTER CTA MOBILE */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-[#0A0A0B]/95 backdrop-blur-md border-t border-white/10">
+      {/* STICKY FOOTER CTA GLOBAL */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-[#0A0A0B]/95 backdrop-blur-md border-t border-white/10 flex gap-3">
         <Button
           onClick={handleContactWhatsApp}
-          className="w-full bg-primary text-black font-black uppercase italic tracking-widest h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
+          className="flex-1 bg-primary text-black font-black uppercase italic tracking-widest h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
         >
           <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
         </Button>
