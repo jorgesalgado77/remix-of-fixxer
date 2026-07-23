@@ -218,8 +218,14 @@ export function LojistaDashboard() {
 
   const handleOpenSettings = () => {
     setActiveTab('profile');
+    setActiveSettingsTab('my-profile');
     setMobileMenuOpen(false);
+    setTimeout(() => {
+      const el = document.getElementById('settings-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
+
 
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
