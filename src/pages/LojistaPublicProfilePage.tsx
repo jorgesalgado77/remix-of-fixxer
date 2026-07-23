@@ -235,7 +235,7 @@ export function LojistaPublicProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white pb-24 md:pb-8 scrollbar-none">
+    <div className="min-h-screen bg-[#0A0A0B] text-white pb-32 md:pb-8 scrollbar-none">
       {/* HERO */}
       <div className="relative">
         <div
@@ -699,3 +699,16 @@ function ReviewCard({ review }: { review: Review }) {
     </div>
   );
 }
+
+function SpecialtyCard({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="bg-[#1A1A1B] border border-white/10 p-5 rounded-2xl space-y-2 hover:border-primary/30 transition-all">
+      <div className="flex items-center gap-2 text-primary">
+        <ShieldCheck className="w-4 h-4" />
+        <h3 className="text-xs font-black uppercase italic">{title}</h3>
+      </div>
+      <p className="text-[10px] text-muted-foreground leading-relaxed">{desc}</p>
+    </div>
+  );
+}
+
