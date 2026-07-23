@@ -842,6 +842,13 @@ function JobCard({
             </button>
 
             <button
+              onClick={() => onOpenDetails(job)}
+              className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all"
+            >
+              Detalhes
+            </button>
+
+            <button
               onClick={() => onApply(job)}
               disabled={applied}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF9F0A] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,159,10,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
