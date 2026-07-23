@@ -2188,7 +2188,94 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
                     </Button>
                  </div>
+                 )}
+
+                 {activeSettingsTab === 'security' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
+                            <Lock className="w-3 h-3" /> Segurança da Conta
+                        </h4>
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                                <Label className="text-[10px] font-black uppercase italic text-white">Alterar Senha</Label>
+                                <div className="flex flex-col gap-4">
+                                    <Input type="password" placeholder="Senha Atual" className="bg-black/40 border-white/10 h-10 rounded-xl" />
+                                    <Input type="password" placeholder="Nova Senha" className="bg-black/40 border-white/10 h-10 rounded-xl" />
+                                    <Button className="w-full bg-white/5 hover:bg-white/10 text-white font-bold uppercase text-[10px] h-10 rounded-xl">Atualizar Senha</Button>
+                                </div>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/20 space-y-2">
+                                <Label className="text-[10px] font-black uppercase italic text-red-400">Zona de Perigo</Label>
+                                <Button variant="destructive" className="w-full font-bold uppercase text-[10px] h-10 rounded-xl">Excluir Minha Conta</Button>
+                            </div>
+                        </div>
+                    </div>
+                 )}
+
+                 {activeSettingsTab === 'notifications' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
+                            <Bell className="w-3 h-3" /> Preferências de Notificação
+                        </h4>
+                        <div className="space-y-4">
+                            {[
+                                { id: 'status_change', label: 'Mudanças de Status de O.S.' },
+                                { id: 'new_proposal', label: 'Novas Propostas Recebidas' },
+                                { id: 'review_received', label: 'Novas Avaliações' }
+                            ].map((setting) => (
+                                <div key={setting.id} className="flex items-center justify-between p-4 rounded-2xl bg-black/40 border border-white/5">
+                                    <span className="text-[10px] font-black uppercase italic text-white">{setting.label}</span>
+                                    <button 
+                                        onClick={() => setNotificationSettings(prev => ({ ...prev, [setting.id]: !prev[setting.id as keyof typeof notificationSettings] }))}
+                                        className={`w-10 h-5 rounded-full transition-all relative ${notificationSettings[setting.id as keyof typeof notificationSettings] ? 'bg-primary' : 'bg-white/10'}`}
+                                    >
+                                        <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${notificationSettings[setting.id as keyof typeof notificationSettings] ? 'right-1' : 'left-1'}`} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                 )}
             </div>
+
+            {/* Modal de Favoritos */}
+            {showFavoritesModal && (
+                <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6 md:p-8 max-w-2xl w-full space-y-6 max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <Heart className="w-6 h-6 text-red-500 fill-red-500" />
+                                <h3 className="text-sm font-black text-white uppercase italic">Meus Favoritos</h3>
+                            </div>
+                            <button onClick={() => setShowFavoritesModal(false)} className="text-muted-foreground hover:text-white p-2">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <div className="relative">
+                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+                            <select 
+                                value={favoriteCategory}
+                                onChange={(e) => setFavoriteCategory(e.target.value)}
+                                className="w-full h-12 bg-black/40 border-white/10 rounded-xl pl-10 pr-4 text-xs font-black uppercase italic text-white appearance-none cursor-pointer outline-none focus:border-primary/50"
+                            >
+                                <option value="todas">Todas as Categorias</option>
+                                <option value="Montagem">Montagem</option>
+                                <option value="Marcenaria">Marcenaria</option>
+                                <option value="Elétrica">Elétrica</option>
+                                <option value="Hidráulica">Hidráulica</option>
+                            </select>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto scrollbar-none pr-2 space-y-4">
+                            {/* Mock Favoritos */}
+                            <div className="flex flex-col gap-4">
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold text-center py-8">Nenhum perfil favorito encontrado nesta categoria.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
