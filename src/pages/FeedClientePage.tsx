@@ -780,6 +780,32 @@ export default function FeedClientePage() {
           </button>
         </div>
 
+        {/* MODO GERENCIAR FAVORITOS */}
+        {savedOnly && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#00FF87]/5 border border-[#00FF87]/20 text-[10px] font-bold text-[#00FF87]">
+            <Bookmark className="w-3 h-3 fill-current" />
+            <span className="flex-1">
+              Modo gerenciar favoritos — toque no marcador para remover. Ordenação: {SORT_LABELS[sortBy].toLowerCase()}.
+            </span>
+            <button
+              onClick={() => setSavedOnly(false)}
+              className="text-[9px] uppercase tracking-widest text-white/70 hover:text-white"
+            >
+              Sair
+            </button>
+          </div>
+        )}
+
+        {sortBy === "nearest" && (
+          <button
+            onClick={requestGeolocation}
+            className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-[#00FF87] flex items-center gap-1"
+          >
+            <Navigation className="w-3 h-3" />
+            {userCoords ? "Atualizar minha localização" : "Ativar geolocalização"}
+          </button>
+        )}
+
         {/* LISTA */}
         <div className="space-y-4 pt-2">
           {visible.length === 0 && (
