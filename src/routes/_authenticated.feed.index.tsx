@@ -345,7 +345,7 @@ function FeedCard({
   const profile = post.profiles;
   const isB2C = post.feed_type === "Demanda_Cliente";
   const isOS = post.feed_type === "Demanda_OS";
-  const isVitrine = post.feed_type.startsWith("Vitrine");
+  const isVitrine = post.feed_type?.startsWith("Vitrine") ?? false;
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   const maskContacts = (text: string) => {
@@ -425,7 +425,7 @@ function FeedCard({
           </span>
         </div>
         <p className="text-[10px] text-muted-foreground font-medium leading-relaxed line-clamp-2">
-          {maskContacts(post.description)}
+          {maskContacts(post.description ?? "")}
         </p>
 
         {isB2C && (
@@ -482,7 +482,7 @@ function FeedCard({
       <ReviewModal
         isOpen={reviewModalOpen}
         onClose={() => setReviewModalOpen(false)}
-        targetId={profile?.id}
+        targetId={profile?.id ?? ""}
         targetName={profile?.company_name || profile?.full_name || "Usuário"}
         userRole={userRole}
         orderId={post.id}
