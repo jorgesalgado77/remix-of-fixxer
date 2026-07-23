@@ -353,27 +353,62 @@ function ConversationPage() {
     }
   };
 
+  /**
+   * Persistência idempotente: usa `client_message_id` como chave de conflito
+   * para que retries após falha parcial de rede não criem duplicatas.
+   */
   const persistMessage = async (
-    tmpId: string,
+    clientId: string,
     text: string,
     attachment: { url: string; type: string; name: string } | null,
   ) => {
-    const payload: any = { sender_id: userId, recipient_id: peerId, content: text || null, read: false };
+    const payload: any = {
+      sender_id: userId,
+      recipient_id: peerId,
+      content: text || null,
+      read: false,
+      client_message_id: clientId,
+    };
     if (attachment) {
       payload.attachment_url = attachment.url;
       payload.attachment_type = attachment.type;
       payload.attachment_name = attachment.name;
     }
-    const { data, error } = await supabaseExternal
-      .from("messages")
-      .insert(payload)
-      .select(selectCols)
-      .maybeSingle();
-    if (error) throw error;
-    if (data) {
-      const row = data as unknown as MessageRow;
+
+    const tryUpsert = async (cols: string) =>
+      supabaseExternal
+        .from("messages")
+        .upsert(payload, { onConflict: "client_message_id", ignoreDuplicates: false })
+        .select(cols)
+        .maybeSingle();
+
+    let row: MessageRow | null = null;
+    try {
+      const { data, error } = await tryUpsert(selectCols);
+      if (error) throw error;
+      row = (data as unknown as MessageRow) ?? null;
+    } catch (err: any) {
+      // Fallback quando client_message_id ainda não existe no schema
+      const msg = String(err?.message || "");
+      if (msg.includes("client_message_id") || err?.code === "42703") {
+        delete payload.client_message_id;
+        const { data, error } = await supabaseExternal
+          .from("messages")
+          .insert(payload)
+          .select("id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name")
+          .maybeSingle();
+        if (error) throw error;
+        row = (data as unknown as MessageRow) ?? null;
+      } else {
+        throw err;
+      }
+    }
+
+    if (row) {
       idSetRef.current.add(row.id);
-      setMessages((prev) => prev.map((m) => (m.id === tmpId ? row : m)));
+      setMessages((prev) =>
+        prev.map((m) => (m._clientId === clientId || m.id === clientId ? { ...row!, _clientId: clientId } : m)),
+      );
     }
   };
 
@@ -384,15 +419,16 @@ function ConversationPage() {
     sendTypingStop();
 
     const draftFile = pendingFile;
-    const tmpId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const clientId = newClientId();
     const optimistic: MessageRow = {
-      id: tmpId,
+      id: clientId,
       sender_id: userId,
       recipient_id: peerId,
       content: text || null,
       created_at: new Date().toISOString(),
       read: false,
       _pending: true,
+      _clientId: clientId,
       _draftText: text,
       _draftFile: draftFile,
     };
@@ -406,11 +442,11 @@ function ConversationPage() {
         attachment = await doUpload(draftFile);
         if (!attachment) throw new Error("Upload cancelado");
       }
-      await persistMessage(tmpId, text, attachment);
+      await persistMessage(clientId, text, attachment);
     } catch (e: any) {
       toast.error("Falha ao enviar", { description: e?.message });
       setMessages((prev) =>
-        prev.map((m) => (m.id === tmpId ? { ...m, _pending: false, _failed: true } : m)),
+        prev.map((m) => (m._clientId === clientId ? { ...m, _pending: false, _failed: true } : m)),
       );
     } finally {
       setSending(false);
@@ -419,21 +455,25 @@ function ConversationPage() {
 
   const retrySend = async (m: MessageRow) => {
     if (!userId) return;
-    setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, _pending: true, _failed: false } : x)));
+    const clientId = m._clientId || m.id;
+    setMessages((prev) =>
+      prev.map((x) => (x._clientId === clientId || x.id === clientId ? { ...x, _pending: true, _failed: false } : x)),
+    );
     try {
       let attachment: { url: string; type: string; name: string } | null = null;
       if (m._draftFile) {
         attachment = await doUpload(m._draftFile);
         if (!attachment) throw new Error("Upload cancelado");
       }
-      await persistMessage(m.id, m._draftText || "", attachment);
+      await persistMessage(clientId, m._draftText || "", attachment);
     } catch (e: any) {
       toast.error("Retentativa falhou", { description: e?.message });
       setMessages((prev) =>
-        prev.map((x) => (x.id === m.id ? { ...x, _pending: false, _failed: true } : x)),
+        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true } : x)),
       );
     }
   };
+
 
   const discardFailed = (id: string) => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
