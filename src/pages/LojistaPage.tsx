@@ -2296,10 +2296,9 @@ function ProfileView({
                                 className="w-full h-12 bg-black/40 border-white/10 rounded-xl pl-10 pr-4 text-xs font-black uppercase italic text-white appearance-none cursor-pointer outline-none focus:border-primary/50"
                             >
                                 <option value="todas">Todas as Categorias</option>
-                                <option value="Montagem">Montagem</option>
-                                <option value="Marcenaria">Marcenaria</option>
-                                <option value="Elétrica">Elétrica</option>
-                                <option value="Hidráulica">Hidráulica</option>
+                                {branches.map(b => (
+                                    <option key={b} value={b}>{b}</option>
+                                ))}
                             </select>
                         </div>
 
