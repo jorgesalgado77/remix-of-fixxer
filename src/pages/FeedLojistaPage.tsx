@@ -3,6 +3,14 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCategoryTheme } from "@/lib/category-colors";
+import {
+  FEED_STATUS_COLOR,
+  FEED_STATUS_LABEL,
+  STATUS_FILTERS,
+  getFeedStatus,
+  type StatusFilterKey,
+} from "@/lib/feed-status";
+import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
 
 import {
   ArrowLeft,
@@ -485,9 +493,23 @@ function categoryBadge(cat: FeedCategory) {
 const PAGE_SIZE = 4;
 const SAVES_STORAGE_KEY = "fixxer_feed_saves_v1";
 
+const AUTHOR_ROUTE: Record<FeedCategory, string> = {
+  lojista: "/lojista",
+  prestador: "/prestador",
+  fornecedor: "/parceiro",
+  cliente: "/cliente",
+};
+
+function authorHref(post: FeedPost) {
+  return `${AUTHOR_ROUTE[post.category]}/${post.author.id}`;
+}
+
+
 export default function FeedLojistaPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"todos" | FeedCategory>("todos");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
+  const [detailsFor, setDetailsFor] = useState<FeedPost | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [searching, setSearching] = useState(false);
@@ -574,8 +596,11 @@ export default function FeedLojistaPage() {
   const visible = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
     const byCategory = MOCK_POSTS.filter((p) => filter === "todos" || p.category === filter);
+    const byStatus = statusFilter === "todos"
+      ? byCategory
+      : byCategory.filter((p) => getFeedStatus(p.id) === statusFilter);
     const filtered = q
-      ? byCategory.filter((p) => {
+      ? byStatus.filter((p) => {
           const hay = [
             p.title,
             p.description,
@@ -588,13 +613,13 @@ export default function FeedLojistaPage() {
             .toLowerCase();
           return hay.includes(q);
         })
-      : byCategory;
+      : byStatus;
     return [...filtered].sort((a, b) => {
       if (a.category === "cliente" && b.category !== "cliente") return -1;
       if (b.category === "cliente" && a.category !== "cliente") return 1;
       return 0;
     });
-  }, [filter, debouncedSearch]);
+  }, [filter, statusFilter, debouncedSearch]);
 
   const paged = useMemo(() => visible.slice(0, page * PAGE_SIZE), [visible, page]);
   const hasMore = paged.length < visible.length;
@@ -602,7 +627,7 @@ export default function FeedLojistaPage() {
   // Reset da paginação quando filtro/busca muda
   useEffect(() => {
     setPage(1);
-  }, [filter, debouncedSearch]);
+  }, [filter, statusFilter, debouncedSearch]);
 
   // IntersectionObserver para scroll infinito
   useEffect(() => {
@@ -754,6 +779,31 @@ export default function FeedLojistaPage() {
             );
           })}
         </div>
+
+        {/* Filtros por Status */}
+        <div className="max-w-3xl mx-auto flex items-center gap-2 overflow-x-auto pt-2 pb-0.5 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
+          <span className="text-[10px] uppercase tracking-widest text-white/40 font-black shrink-0 mr-1">
+            Status:
+          </span>
+          {STATUS_FILTERS.map((s) => {
+            const active = statusFilter === s.key;
+            const color = s.key === "todos" ? "#00E5FF" : FEED_STATUS_COLOR[s.key];
+            return (
+              <button
+                key={s.key}
+                onClick={() => setStatusFilter(s.key)}
+                className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase whitespace-nowrap tracking-wide border transition-all"
+                style={
+                  active
+                    ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
+                    : { backgroundColor: "#1A1A1B", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                }
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       {/* Feed */}
@@ -817,6 +867,7 @@ export default function FeedLojistaPage() {
                 onDelete={() => setDeleteFor(post)}
                 onEdit={() => toast("Abrindo editor da publicação...")}
                 onOpenMedia={(index) => setLightbox({ post, index })}
+                onOpenDetails={() => setDetailsFor(post)}
               />
             ))}
 
@@ -973,6 +1024,51 @@ export default function FeedLojistaPage() {
           </div>
         </ModalShell>
       )}
+      {/* Modal de Detalhes do Post */}
+      <FeedDetailsModal
+        data={
+          detailsFor
+            ? ({
+                id: detailsFor.id,
+                title: detailsFor.title,
+                description: detailsFor.description,
+                category: detailsFor.category,
+                status: getFeedStatus(detailsFor.id),
+                author: {
+                  id: detailsFor.author.id,
+                  name: detailsFor.author.name,
+                  initials: detailsFor.author.avatarInitials,
+                },
+                authorHref: authorHref(detailsFor),
+                city: detailsFor.city,
+                postedAt: detailsFor.postedAt,
+                rating: detailsFor.rating,
+                badges: [
+                  categoryBadge(detailsFor.category).label,
+                  ...(detailsFor.specialty ? [detailsFor.specialty] : []),
+                  ...(detailsFor.radiusKm ? [`Raio ${detailsFor.radiusKm} km`] : []),
+                ],
+                metaRows: [
+                  ...(detailsFor.budget ? [{ label: "Orçamento", value: detailsFor.budget }] : []),
+                  { label: "Publicado", value: detailsFor.postedAt },
+                  { label: "Local", value: detailsFor.city },
+                ],
+                media: detailsFor.media,
+                ctaLabel: "Entrar em contato",
+              } satisfies FeedDetailsData)
+            : null
+        }
+        isSaved={detailsFor ? saved.has(detailsFor.id) : false}
+        onSave={() => detailsFor && toggleSaved(detailsFor.id)}
+        onChat={() => {
+          if (detailsFor) {
+            const p = detailsFor;
+            setDetailsFor(null);
+            openChat(p);
+          }
+        }}
+        onClose={() => setDetailsFor(null)}
+      />
     </div>
   );
 }
@@ -1024,6 +1120,7 @@ function PostCard({
   onDelete,
   onEdit,
   onOpenMedia,
+  onOpenDetails,
 }: {
   post: FeedPost;
   isSaved: boolean;
@@ -1037,37 +1134,62 @@ function PostCard({
   onDelete: () => void;
   onEdit: () => void;
   onOpenMedia: (index: number) => void;
+  onOpenDetails: () => void;
 }) {
   const badge = categoryBadge(post.category);
   const theme = getCategoryTheme(post.category);
   const isClient = post.category === "cliente";
+  const status = getFeedStatus(post.id);
+  const statusColor = FEED_STATUS_COLOR[status];
+  const profileHref = authorHref(post);
 
   return (
     <article
       className="relative bg-[#1A1A1B] rounded-3xl p-4 sm:p-5 space-y-4 transition-all border-2"
       style={{ ...theme.borderStrong, ...theme.glow }}
     >
-      {theme.highlight && (
-        <div
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border tracking-widest"
-          style={{ ...theme.bgSoft, ...theme.color, ...theme.borderSoft }}
+      {/* Badges de status + highlight */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border"
+          style={{
+            color: statusColor,
+            borderColor: `${statusColor}55`,
+            backgroundColor: `${statusColor}18`,
+          }}
         >
-          <Flame className="w-3.5 h-3.5 animate-pulse" />
-          {theme.highlight}
-        </div>
-      )}
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor }} />
+          {FEED_STATUS_LABEL[status]}
+        </span>
+        {theme.highlight && (
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border tracking-widest"
+            style={{ ...theme.bgSoft, ...theme.color, ...theme.borderSoft }}
+          >
+            <Flame className="w-3.5 h-3.5 animate-pulse" />
+            {theme.highlight}
+          </div>
+        )}
+      </div>
 
       {/* Cabeçalho */}
       <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
-        <div
-          className="w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center font-black text-sm bg-[#0A0A0B] border"
+        <Link
+          to={profileHref}
+          className="w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center font-black text-sm bg-[#0A0A0B] border hover:scale-105 transition-transform"
           style={{ ...theme.borderStrong, ...theme.color }}
+          aria-label={`Ver perfil de ${post.author.name}`}
         >
           {post.author.avatarInitials}
-        </div>
+        </Link>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h4 className="font-bold text-white text-sm truncate">{post.author.name}</h4>
+            <Link
+              to={profileHref}
+              className="font-bold text-white text-sm truncate hover:opacity-80"
+            >
+              {post.author.name}
+            </Link>
             <span
               className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded font-bold border"
               style={{ ...theme.bgSoft, ...theme.color, ...theme.borderSoft }}
@@ -1150,9 +1272,14 @@ function PostCard({
 
       {/* Conteúdo */}
       <div className="space-y-2">
-        <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-tight leading-snug">
-          {post.title}
-        </h3>
+        <button
+          onClick={onOpenDetails}
+          className="text-left w-full"
+        >
+          <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-tight leading-snug hover:opacity-80 transition-opacity">
+            {post.title}
+          </h3>
+        </button>
         <p className="text-xs sm:text-[13px] text-white/70 leading-relaxed">{post.description}</p>
         {post.budget && (
           <div

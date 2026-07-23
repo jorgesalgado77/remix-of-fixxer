@@ -4,6 +4,14 @@ import { toast } from "sonner";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCategoryTheme } from "@/lib/category-colors";
+import {
+  FEED_STATUS_COLOR,
+  FEED_STATUS_LABEL,
+  STATUS_FILTERS,
+  getFeedStatus,
+  type StatusFilterKey,
+} from "@/lib/feed-status";
+import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
 
 import {
   ArrowLeft,
@@ -667,6 +675,7 @@ function JobCard({
   onApply,
   onChat,
   onLightbox,
+  onOpenDetails,
 }: {
   job: JobPost;
   saved: boolean;
@@ -675,10 +684,14 @@ function JobCard({
   onApply: (job: JobPost) => void;
   onChat: (job: JobPost) => void;
   onLightbox: (job: JobPost, index: number) => void;
+  onOpenDetails: (job: JobPost) => void;
 }) {
   const navigate = useNavigate();
   const isClientFinal = job.type === "cliente_final";
   const cardTheme = getCategoryTheme(isClientFinal ? "cliente" : "lojista");
+  const status = getFeedStatus(job.id);
+  const statusColor = FEED_STATUS_COLOR[status];
+  const contractorHref = isClientFinal ? "/cliente/$id" : "/lojista/$id";
 
   return (
     <article
@@ -695,13 +708,26 @@ function JobCard({
         {/* CABEÇALHO */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Avatar initials={job.contractor.initials} />
+            <Link to={contractorHref} params={{ id: job.contractor.id }} className="hover:scale-105 transition-transform">
+              <Avatar initials={job.contractor.initials} />
+            </Link>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-[11px] font-black text-white uppercase italic truncate">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  to={contractorHref}
+                  params={{ id: job.contractor.id }}
+                  className="text-[11px] font-black text-white uppercase italic truncate hover:opacity-80"
+                >
                   {job.contractor.name}
-                </h3>
+                </Link>
                 {job.contractor.isVerified && <CheckCircle2 className="w-3 h-3 text-[#FF9F0A]" />}
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border"
+                  style={{ color: statusColor, borderColor: `${statusColor}55`, backgroundColor: `${statusColor}18` }}
+                >
+                  <span className="w-1 h-1 rounded-full" style={{ backgroundColor: statusColor }} />
+                  {FEED_STATUS_LABEL[status]}
+                </span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
@@ -816,6 +842,13 @@ function JobCard({
             </button>
 
             <button
+              onClick={() => onOpenDetails(job)}
+              className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all"
+            >
+              Detalhes
+            </button>
+
+            <button
               onClick={() => onApply(job)}
               disabled={applied}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF9F0A] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,159,10,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
@@ -849,6 +882,8 @@ export default function FeedPrestadorPage() {
   const { glassClass } = usePerformanceMode();
 
   const [filter, setFilter] = useState<"todas" | Subcategory>("todas");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
+  const [detailsFor, setDetailsFor] = useState<JobPost | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [saved, setSaved] = useState<Set<string>>(new Set());
@@ -940,12 +975,13 @@ export default function FeedPrestadorPage() {
     return MOCK_JOBS.filter((job) => {
       const matchesFilter = filter === "todas" || job.subcategory === filter;
       if (!matchesFilter) return false;
+      if (statusFilter !== "todos" && getFeedStatus(job.id) !== statusFilter) return false;
       if (!term) return true;
       const hay =
         `${job.title} ${job.description} ${job.contractor.name} ${job.city} ${job.state} ${job.subcategory}`.toLowerCase();
       return hay.includes(term);
     });
-  }, [debouncedSearch, filter]);
+  }, [debouncedSearch, filter, statusFilter]);
 
   // Paginação por scroll infinito
   const paged = useMemo(() => filtered.slice(0, page * 4), [filtered, page]);
@@ -1098,6 +1134,31 @@ export default function FeedPrestadorPage() {
               );
             })}
           </div>
+
+          {/* FILTRO POR STATUS */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-[9px] uppercase tracking-widest text-white/40 font-black shrink-0">
+              Status:
+            </span>
+            {STATUS_FILTERS.map((s) => {
+              const active = statusFilter === s.key;
+              const color = s.key === "todos" ? "#FF9F0A" : FEED_STATUS_COLOR[s.key];
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => setStatusFilter(s.key)}
+                  className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap tracking-widest border transition-all"
+                  style={
+                    active
+                      ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
+                      : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                  }
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </header>
 
@@ -1149,6 +1210,7 @@ export default function FeedPrestadorPage() {
               onApply={setApplyFor}
               onChat={openChatWith}
               onLightbox={(job, index) => setLightbox({ job, index })}
+              onOpenDetails={setDetailsFor}
             />
           ))}
 
@@ -1188,6 +1250,50 @@ export default function FeedPrestadorPage() {
       {lightbox && (
         <Lightbox job={lightbox.job} index={lightbox.index} onClose={() => setLightbox(null)} />
       )}
+
+      <FeedDetailsModal
+        data={
+          detailsFor
+            ? ({
+                id: detailsFor.id,
+                title: detailsFor.title,
+                description: detailsFor.description,
+                category: detailsFor.type === "cliente_final" ? "cliente" : "lojista",
+                status: getFeedStatus(detailsFor.id),
+                author: {
+                  id: detailsFor.contractor.id,
+                  name: detailsFor.contractor.name,
+                  initials: detailsFor.contractor.initials,
+                },
+                authorHref:
+                  detailsFor.type === "cliente_final"
+                    ? `/cliente/${detailsFor.contractor.id}`
+                    : `/lojista/${detailsFor.contractor.id}`,
+                city: `${detailsFor.city}/${detailsFor.state}`,
+                postedAt: detailsFor.postedAt,
+                rating: detailsFor.rating,
+                badges: [detailsFor.subcategory],
+                metaRows: [
+                  { label: "Valor", value: detailsFor.value },
+                  { label: "Local", value: `${detailsFor.city}/${detailsFor.state}` },
+                  { label: "Publicado", value: detailsFor.postedAt },
+                ],
+                media: detailsFor.media,
+                ctaLabel: applied.has(detailsFor.id) ? "Candidatado" : "Candidatar-se",
+              } satisfies FeedDetailsData)
+            : null
+        }
+        isSaved={detailsFor ? saved.has(detailsFor.id) : false}
+        onSave={() => detailsFor && toggleSave(detailsFor.id)}
+        onChat={() => {
+          if (detailsFor) {
+            const j = detailsFor;
+            setDetailsFor(null);
+            openChatWith(j);
+          }
+        }}
+        onClose={() => setDetailsFor(null)}
+      />
     </div>
   );
 }

@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  FEED_STATUS_COLOR,
+  FEED_STATUS_LABEL,
+  STATUS_FILTERS,
+  getFeedStatus,
+  type StatusFilterKey,
+} from "@/lib/feed-status";
+import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -492,6 +500,8 @@ export default function FeedParceiroPage() {
   const [quotesRemote, setQuotesRemote] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [quoteOpen, setQuoteOpen] = useState<B2BRequest | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
+  const [detailsFor, setDetailsFor] = useState<B2BRequest | null>(null);
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -568,6 +578,7 @@ export default function FeedParceiroPage() {
     return MOCK_REQUESTS.filter((r) => {
       if (activeSector !== "Todas as Demandas" && r.sector !== activeSector)
         return false;
+      if (statusFilter !== "todos" && getFeedStatus(r.id) !== statusFilter) return false;
       if (!term) return true;
       return (
         r.title.toLowerCase().includes(term) ||
@@ -577,7 +588,7 @@ export default function FeedParceiroPage() {
         r.state.toLowerCase().includes(term)
       );
     });
-  }, [search, activeSector]);
+  }, [search, activeSector, statusFilter]);
 
   const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
   const hasMore = paged.length < filtered.length;
@@ -748,6 +759,30 @@ export default function FeedParceiroPage() {
             );
           })}
         </div>
+
+        <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-[10px] uppercase tracking-widest text-white/40 font-black shrink-0">
+            Status:
+          </span>
+          {STATUS_FILTERS.map((s) => {
+            const active = statusFilter === s.key;
+            const color = s.key === "todos" ? "#A855F7" : FEED_STATUS_COLOR[s.key];
+            return (
+              <button
+                key={s.key}
+                onClick={() => setStatusFilter(s.key)}
+                className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap tracking-widest border transition-all"
+                style={
+                  active
+                    ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
+                    : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                }
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       {/* FEED */}
@@ -784,17 +819,41 @@ export default function FeedParceiroPage() {
                 >
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold" style={{ borderColor: accent, color: accent }}>
+                    <Link
+                      to={isPrestador ? "/prestador/$id" : "/lojista/$id"}
+                      params={{ id: r.store.id }}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold hover:scale-105 transition-transform"
+                      style={{ borderColor: accent, color: accent }}
+                    >
                       {r.store.initials}
-                    </div>
+                    </Link>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 text-sm font-semibold">
-                        <span className="truncate">{r.store.name}</span>
+                      <div className="flex items-center gap-1.5 text-sm font-semibold flex-wrap">
+                        <Link
+                          to={isPrestador ? "/prestador/$id" : "/lojista/$id"}
+                          params={{ id: r.store.id }}
+                          className="truncate hover:opacity-80"
+                        >
+                          {r.store.name}
+                        </Link>
                         {r.store.verified && (
                           <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: accentRgba(0.15), color: accent }}>
                             {roleLabel}
                           </span>
                         )}
+                        {(() => {
+                          const st = getFeedStatus(r.id);
+                          const c = FEED_STATUS_COLOR[st];
+                          return (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border"
+                              style={{ color: c, borderColor: `${c}55`, backgroundColor: `${c}18` }}
+                            >
+                              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: c }} />
+                              {FEED_STATUS_LABEL[st]}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/50">
                         <span className="inline-flex items-center gap-1">
@@ -816,9 +875,11 @@ export default function FeedParceiroPage() {
 
                   {/* Título + descrição */}
                   <div className="px-4 pb-3">
-                    <h3 className="text-base font-semibold leading-snug">
-                      {r.title}
-                    </h3>
+                    <button type="button" onClick={() => setDetailsFor(r)} className="text-left w-full">
+                      <h3 className="text-base font-semibold leading-snug hover:opacity-80 transition-opacity">
+                        {r.title}
+                      </h3>
+                    </button>
                     <p className="mt-1 text-sm text-white/70">{r.description}</p>
                   </div>
 
@@ -987,6 +1048,61 @@ export default function FeedParceiroPage() {
           }}
         />
       )}
+
+      {/* MODAL DE DETALHES */}
+      <FeedDetailsModal
+        data={
+          detailsFor
+            ? ({
+                id: detailsFor.id,
+                title: detailsFor.title,
+                description: detailsFor.description,
+                category: "fornecedor",
+                status: getFeedStatus(detailsFor.id),
+                author: {
+                  id: detailsFor.store.id,
+                  name: detailsFor.store.name,
+                  initials: detailsFor.store.initials,
+                },
+                authorHref:
+                  detailsFor.requesterType === "prestador"
+                    ? `/prestador/${detailsFor.store.id}`
+                    : `/lojista/${detailsFor.store.id}`,
+                city: `${detailsFor.city}/${detailsFor.state}`,
+                postedAt: detailsFor.postedAt,
+                rating: detailsFor.rating,
+                badges: [detailsFor.sector],
+                metaRows: [
+                  { label: "Setor", value: detailsFor.sector },
+                  { label: "Local", value: `${detailsFor.city}/${detailsFor.state}` },
+                  { label: "Publicado", value: detailsFor.postedAt },
+                ],
+                media: detailsFor.attachment
+                  ? [{ type: "image" as const, url: detailsFor.attachment }]
+                  : [],
+                ctaLabel: "Enviar cotação",
+              } satisfies FeedDetailsData)
+            : null
+        }
+        isSaved={detailsFor ? saved.has(detailsFor.id) : false}
+        onSave={() =>
+          detailsFor &&
+          setSaved((prev) => {
+            const next = new Set(prev);
+            if (next.has(detailsFor.id)) next.delete(detailsFor.id);
+            else next.add(detailsFor.id);
+            return next;
+          })
+        }
+        onChat={() => {
+          if (detailsFor) {
+            const req = detailsFor;
+            setDetailsFor(null);
+            setQuoteOpen(req);
+          }
+        }}
+        onClose={() => setDetailsFor(null)}
+      />
     </div>
   );
 }
