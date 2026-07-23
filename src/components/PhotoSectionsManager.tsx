@@ -4,23 +4,27 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useMediaUpload } from '@/hooks/use-media-upload';
-import { compressImage } from '@/utils/image-compression';
+import { processImage } from '@/utils/image-compression';
+import { validateImage } from '@/utils/image-validation';
 
-export type CustomPhotoSection = { id: string; name: string; photos: string[] };
+export type CustomPhotoSection = { id: string; name: string; photos: PhotoItem[] };
+export type PhotoItem = { url: string; thumbUrl?: string } | string;
 export type PhotoSectionsValue = {
-  showroom: string[];
-  assemblies: string[];
+  showroom: PhotoItem[];
+  assemblies: PhotoItem[];
   custom: CustomPhotoSection[];
 };
 
 export const EMPTY_PHOTO_SECTIONS: PhotoSectionsValue = { showroom: [], assemblies: [], custom: [] };
 
-const IMG_ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
-const IMG_MAX_MB = 5;
+const IMG_MAX_MB = 8;
 const MAX_SHOWROOM = 20;
 const MAX_ASSEMBLIES = 20;
 const MAX_CUSTOM_SECTIONS = 5;
 const MAX_CUSTOM_PHOTOS = 10;
+
+const getUrl = (p: PhotoItem): string => (typeof p === 'string' ? p : p.url);
+const getThumb = (p: PhotoItem): string => (typeof p === 'string' ? p : (p.thumbUrl || p.url));
 
 interface Props {
   value: PhotoSectionsValue;
@@ -33,38 +37,45 @@ export function PhotoSectionsManager({ value, onChange }: Props) {
     assemblies: Array.isArray(value?.assemblies) ? value.assemblies : [],
     custom: Array.isArray(value?.custom) ? value.custom : [],
   };
-  const { uploadFile } = useMediaUpload();
+  const { uploadFileDetailed, uploadProgress } = useMediaUpload();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
-  const uploadImages = async (files: File[], folder: string, limit: number, existing: string[]): Promise<string[]> => {
+  const uploadImages = async (files: File[], folder: string, limit: number, existing: PhotoItem[]): Promise<PhotoItem[]> => {
     const remaining = Math.max(0, limit - existing.length);
     if (remaining <= 0) {
       toast.error('Limite de fotos atingido nesta seção.');
       return [];
     }
     const list = files.slice(0, remaining);
-    const uploaded: string[] = [];
+    const uploaded: PhotoItem[] = [];
     for (const original of list) {
-      if (!IMG_ALLOWED.includes(original.type)) {
-        toast.error('Formato inválido', { description: `${original.name} não é JPG/PNG/WEBP.` });
+      const check = validateImage(original, IMG_MAX_MB * 1024 * 1024);
+      if (!check.ok) {
+        toast.error('Arquivo não aceito', { description: check.error });
         continue;
       }
-      if (original.size > IMG_MAX_MB * 1024 * 1024) {
-        toast.error('Arquivo muito grande', { description: `${original.name} excede ${IMG_MAX_MB}MB.` });
-        continue;
+      let processed;
+      try { processed = await processImage(original, { maxWidth: 1600, quality: 0.82 }); }
+      catch (err) {
+        console.warn('processImage falhou, usando original:', err);
+        processed = { file: original, mime: check.mime, ext: check.ext, width: 0, height: 0 };
       }
-      let f = original;
-      try { f = await compressImage(original, 1200, 0.8); } catch {}
-      const url = await uploadFile(f, 'media', folder);
-      if (url) uploaded.push(url);
+      const res = await uploadFileDetailed(processed.file, {
+        bucket: 'media',
+        folder,
+        contentType: processed.mime,
+        generateThumb: true,
+      });
+      if (res) uploaded.push({ url: res.url, thumbUrl: res.thumbUrl });
     }
     if (files.length > remaining) {
       toast.warning(`Somente ${remaining} foto(s) foram enviadas — limite da seção atingido.`);
     }
     return uploaded;
   };
+
 
   const handleAddShowroom = async (files: File[]) => {
     setBusyKey('showroom');
