@@ -636,19 +636,59 @@ export default function FeedClientePage() {
                         ? "bg-white/10 text-muted-foreground border-white/20"
                         : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
                   return (
-                    <li key={n.id} className="px-4 py-3 flex items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-white truncate">{n.title}</div>
-                        <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
-                          {n.category || "—"}
-                          {n.location ? ` · ${n.location}` : ""}
+                    <li key={n.id} className="px-4 py-3 flex flex-col gap-2">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-white truncate">{n.title}</div>
+                          <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
+                            {n.category || "—"}
+                            {n.location ? ` · ${n.location}` : ""}
+                          </div>
                         </div>
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${statusColor}`}
+                        >
+                          {statusLabel}
+                        </span>
                       </div>
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${statusColor}`}
-                      >
-                        {statusLabel}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          onClick={() => setEditingNeed(n)}
+                          className="px-2 py-1 rounded-md bg-white/5 border border-white/10 hover:border-white/20 text-[9px] font-black uppercase tracking-widest flex items-center gap-1"
+                        >
+                          <Pencil className="w-2.5 h-2.5" /> Editar
+                        </button>
+                        {status !== "active" && (
+                          <button
+                            onClick={() => updateNeedStatus(n, "active")}
+                            className="px-2 py-1 rounded-md bg-[#00FF87]/10 border border-[#00FF87]/30 text-[#00FF87] text-[9px] font-black uppercase tracking-widest flex items-center gap-1"
+                          >
+                            <Check className="w-2.5 h-2.5" /> Reativar
+                          </button>
+                        )}
+                        {status === "active" && (
+                          <button
+                            onClick={() => updateNeedStatus(n, "paused")}
+                            className="px-2 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-[9px] font-black uppercase tracking-widest"
+                          >
+                            Pausar
+                          </button>
+                        )}
+                        {status !== "closed" && (
+                          <button
+                            onClick={() => updateNeedStatus(n, "closed")}
+                            className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-muted-foreground text-[9px] font-black uppercase tracking-widest"
+                          >
+                            Encerrar
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteNeed(n)}
+                          className="ml-auto px-2 py-1 rounded-md bg-red-500/10 border border-red-500/30 text-red-400 text-[9px] font-black uppercase tracking-widest flex items-center gap-1"
+                        >
+                          <Trash2 className="w-2.5 h-2.5" /> Excluir
+                        </button>
+                      </div>
                     </li>
                   );
                 })}
