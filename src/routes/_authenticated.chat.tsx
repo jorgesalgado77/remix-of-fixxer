@@ -357,7 +357,7 @@ function ChatInboxPage() {
     return scored.sort((a, b) =>
       b._score - a._score || new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime(),
     );
-  }, [conversations, query, showArchived, role]);
+  }, [conversationsWithMock, query, showArchived, role]);
 
   const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
   const archivedCount = conversationsWithMock.filter((c) => c.archived).length;
