@@ -158,6 +158,7 @@ function ConversationPage() {
     let cancelled = false;
     let channel: any = null;
     let presenceChannel: any = null;
+    let unsubPeerRead: (() => void) | null = null;
     let expireTimer: ReturnType<typeof setInterval> | null = null;
     let lastPeerHeartbeat = 0;
 
