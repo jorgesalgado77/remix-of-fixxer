@@ -14,6 +14,13 @@ import {
   ZoomOut,
   ChevronLeft,
   ChevronRight,
+  Save,
+  RotateCcw,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Video as VideoIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
