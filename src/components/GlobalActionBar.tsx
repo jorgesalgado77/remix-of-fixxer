@@ -183,5 +183,11 @@ export function GlobalActionBar() {
         <span className="text-[8px] font-black uppercase italic">Menu</span>
       </button>
     </div>
+    <CreateAdModal
+      open={createOpen}
+      onClose={() => setCreateOpen(false)}
+      defaultCategory={(["lojista","prestador","fornecedor","cliente","admin"].includes(role) ? role : "lojista") as CategoryKey}
+    />
+    </>
   );
 }
