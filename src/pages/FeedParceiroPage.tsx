@@ -578,6 +578,7 @@ export default function FeedParceiroPage() {
     return MOCK_REQUESTS.filter((r) => {
       if (activeSector !== "Todas as Demandas" && r.sector !== activeSector)
         return false;
+      if (statusFilter !== "todos" && getFeedStatus(r.id) !== statusFilter) return false;
       if (!term) return true;
       return (
         r.title.toLowerCase().includes(term) ||
@@ -587,7 +588,7 @@ export default function FeedParceiroPage() {
         r.state.toLowerCase().includes(term)
       );
     });
-  }, [search, activeSector]);
+  }, [search, activeSector, statusFilter]);
 
   const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
   const hasMore = paged.length < filtered.length;
