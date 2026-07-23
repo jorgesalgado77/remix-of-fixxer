@@ -17,6 +17,7 @@ import {
   Download,
   Check,
   CheckCheck,
+  UserCircle2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -35,10 +36,34 @@ import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
+import {
+  clearDraft,
+  getDraftFile,
+  getDraftText,
+  markMockConversationSeen,
+  setDraftFile,
+  setDraftText,
+} from "@/lib/chat-drafts";
 
 export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
 });
+
+/** UID sintético estável quando não há sessão Supabase (fase de construção / bypass admin). */
+function getFallbackUid(): string {
+  if (typeof window === "undefined") return "local-anon";
+  try {
+    const cached = localStorage.getItem("fixxer_local_uid");
+    if (cached) return cached;
+    const email = (localStorage.getItem("fixxer_user_email") || "local").toLowerCase();
+    const uid = `local-${btoa(email).replace(/[^a-zA-Z0-9]/g, "").slice(0, 24)}`;
+    localStorage.setItem("fixxer_local_uid", uid);
+    return uid;
+  } catch {
+    return "local-anon";
+  }
+}
+
 
 type MessageRow = {
   id: string;
