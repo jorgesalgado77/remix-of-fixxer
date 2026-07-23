@@ -602,18 +602,18 @@ function JobCard({
 }) {
   const navigate = useNavigate();
   const isClientFinal = job.type === "cliente_final";
+  const cardTheme = getCategoryTheme(isClientFinal ? "cliente" : "lojista");
 
   return (
     <article
-      className={`relative rounded-3xl border bg-[#1A1A1B] overflow-hidden transition-all hover:border-[#FF9F0A]/30 group ${
-        isClientFinal
-          ? "border-[#FF9F0A]/30 shadow-[0_0_20px_rgba(255,159,10,0.08)]"
-          : "border-white/10"
-      }`}
+      className="relative rounded-3xl border-2 bg-[#1A1A1B] overflow-hidden transition-all group"
+      style={{ ...cardTheme.borderStrong, ...cardTheme.glow }}
     >
-      {isClientFinal && (
-        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF9F0A] to-transparent" />
-      )}
+      <div
+        className="absolute top-0 inset-x-0 h-[2px]"
+        style={{ background: `linear-gradient(90deg, transparent, ${cardTheme.hex}, transparent)` }}
+      />
+
 
       <div className="p-4 space-y-4">
         {/* CABEÇALHO */}
