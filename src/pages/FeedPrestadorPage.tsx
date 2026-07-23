@@ -731,11 +731,7 @@ function JobCard({
             </button>
 
             <button
-              onClick={() =>
-                toast.info("Chat Direto iniciado", {
-                  description: `Abrindo conversa com ${job.contractor.name}...`,
-                })
-              }
+              onClick={() => onChat(job)}
               className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-[#00FF87]/10 hover:border-[#00FF87]/30 transition-all"
               aria-label="Chat direto"
             >
@@ -744,9 +740,18 @@ function JobCard({
 
             <button
               onClick={() => onApply(job)}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] active:scale-[0.98] transition-all"
+              disabled={applied}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Zap className="w-3.5 h-3.5" /> Candidatar-se
+              {applied ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Candidatado
+                </>
+              ) : (
+                <>
+                  <Zap className="w-3.5 h-3.5" /> Candidatar-se
+                </>
+              )}
             </button>
           </div>
         </div>
