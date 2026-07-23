@@ -16,10 +16,12 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 const ARCHIVED_KEY = "fixxer_chat_archived";
 const MUTED_KEY = "fixxer_chat_muted";
 const PEER_ROLE_KEY = "fixxer_chat_peer_roles";
+const LAST_READ_KEY = "fixxer_chat_last_read";
 
 // Cache em memória (evita ler localStorage em cada render)
 const memArchived = new Map<string, Set<string>>();
 const memMuted = new Map<string, Set<string>>();
+const memLastRead = new Map<string, Record<string, string>>();
 
 function readSetLS(key: string, userId: string): Set<string> {
   if (typeof window === "undefined") return new Set();
