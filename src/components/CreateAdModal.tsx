@@ -87,8 +87,16 @@ const formatBRL = (v: string | number) => {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
+const UF_LIST = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+  "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+];
+
 export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: CreateAdModalProps) {
   const [serviceTypes, setServiceTypes] = useState<string[]>([]);
+  const [neighborhood, setNeighborhood] = useState("");
+  const [city, setCity] = useState("");
+  const [uf, setUf] = useState("");
   const [rooms, setRooms] = useState<number>(1);
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -110,6 +118,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
 
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = getCategoryTheme(defaultCategory);
+
+  // Cache de arquivos codificados em base64 (para auto-save leve)
+  const filesCacheRef = useRef<Map<string, { name: string; type: string; size: number; kind: UploadItem["kind"]; dataUrl: string }>>(new Map());
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
     return () => {
