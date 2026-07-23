@@ -668,26 +668,114 @@ export function LojistaPublicProfilePage() {
                   ))}
                 </div>
               </div>
-              {visiblePhotos.length > 0 ? (
-                <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory">
-                  {visiblePhotos.map((item, i) => (
-                    <button
-                      key={`${item.url}-${i}`}
-                      onClick={() => openImageLightbox(item.url, i)}
-                      className="shrink-0 w-40 h-40 md:w-56 md:h-56 rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all snap-start group relative"
-                      title={item.sectionName}
+
+              {/* Busca + Ordenação + Tipo de mídia */}
+              <div className="flex flex-col md:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    value={gallerySearch}
+                    onChange={(e) => setGallerySearch(e.target.value)}
+                    placeholder="Buscar por seção ou nome do arquivo..."
+                    className="pl-9 h-10 bg-black/40 border-white/10 text-xs"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={mediaTypeFilter}
+                    onChange={(e) => setMediaTypeFilter(e.target.value as any)}
+                    className="h-10 bg-black/40 border border-white/10 rounded-md px-3 text-xs font-bold text-white uppercase italic outline-none focus:border-primary"
+                  >
+                    <option value="Todos">Todas as mídias</option>
+                    <option value="Fotos">Fotos</option>
+                    <option value="Vídeos">Vídeos</option>
+                    <option value="Documentos">Documentos</option>
+                  </select>
+                  <div className="relative">
+                    <ArrowUpDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                    <select
+                      value={gallerySort}
+                      onChange={(e) => setGallerySort(e.target.value as any)}
+                      className="h-10 pl-7 pr-3 bg-black/40 border border-white/10 rounded-md text-xs font-bold text-white uppercase italic outline-none focus:border-primary"
                     >
-                      <img src={item.thumb || item.url} alt={item.sectionName} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                      <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
-                        {item.sectionName}
-                      </span>
-                    </button>
-                  ))}
+                      <option value="recent">Mais recentes</option>
+                      <option value="oldest">Mais antigos</option>
+                      <option value="section">Por seção</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                {visibleMedia.length} mídia(s) encontrada(s)
+              </p>
+
+              {visibleMedia.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {visibleMedia.map((item, i) => {
+                    if (item.kind === "photo") {
+                      const photoIdx = visiblePhotos.findIndex((p) => p.url === item.url);
+                      return (
+                        <button
+                          key={`${item.url}-${i}`}
+                          onClick={() => openImageLightbox(item.url, photoIdx >= 0 ? photoIdx : 0)}
+                          className="aspect-square rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all group relative"
+                          title={item.sectionName}
+                        >
+                          <img src={item.thumb || item.url} alt={item.sectionName} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
+                            {item.sectionName}
+                          </span>
+                        </button>
+                      );
+                    }
+                    if (item.kind === "video") {
+                      return (
+                        <button
+                          key={`${item.url}-${i}`}
+                          onClick={() => setLightboxVideo(item.url)}
+                          className="aspect-square rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all relative bg-black group"
+                          title={item.sectionName}
+                        >
+                          <video src={item.url} className="w-full h-full object-cover opacity-70" preload="metadata" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                            <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center" style={{ boxShadow: `0 0 20px rgba(${theme.rgb}, 0.50)` }}>
+                              <Play className="w-6 h-6 fill-black text-black ml-0.5" />
+                            </div>
+                          </div>
+                          <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
+                            {item.sectionName}
+                          </span>
+                        </button>
+                      );
+                    }
+                    // documento
+                    return (
+                      <a
+                        key={`${item.url}-${i}`}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="aspect-square rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all relative bg-[#1A1A1B] flex flex-col items-center justify-center gap-2 p-3 group"
+                        title={basename(item.url)}
+                      >
+                        <FileText className="w-10 h-10 text-primary" />
+                        <span className="text-[10px] font-bold text-white text-center line-clamp-2 break-all">
+                          {basename(item.url)}
+                        </span>
+                        <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
+                          {item.sectionName}
+                        </span>
+                        <Download className="absolute top-2 right-2 w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
+                      </a>
+                    );
+                  })}
                 </div>
               ) : (
-                <EmptyState label="Nenhuma foto publicada ainda." />
+                <EmptyState label="Nenhuma mídia encontrada com esses filtros." />
               )}
             </section>
+
 
             {/* Vídeos */}
             <section className="space-y-4">
