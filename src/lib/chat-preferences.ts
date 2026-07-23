@@ -22,6 +22,12 @@ const LAST_READ_KEY = "fixxer_chat_last_read";
 const memArchived = new Map<string, Set<string>>();
 const memMuted = new Map<string, Set<string>>();
 const memLastRead = new Map<string, Record<string, string>>();
+// last_read_at do peer (para read receipts): peerId -> ISO
+const memPeerLastRead = new Map<string, string>();
+// canais realtime por user (auto-sync entre dispositivos)
+const prefsChannels = new Map<string, any>();
+// canais realtime das leituras do peer (para "visto")
+const peerReadChannels = new Map<string, any>();
 
 function readSetLS(key: string, userId: string): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -84,7 +90,121 @@ export async function hydrateChatPreferences(userId: string): Promise<void> {
     writeSetLS(ARCHIVED_KEY, userId, arch);
     writeSetLS(MUTED_KEY, userId, mut);
     try { localStorage.setItem(`${LAST_READ_KEY}:${userId}`, JSON.stringify(reads)); } catch {}
+    // Assina alterações da própria linha para sincronizar entre dispositivos
+    ensurePrefsRealtime(userId);
   } catch {}
+}
+
+/** Assina INSERT/UPDATE/DELETE das preferências do usuário atual. */
+function ensurePrefsRealtime(userId: string) {
+  if (typeof window === "undefined" || prefsChannels.has(userId)) return;
+  try {
+    const channel = supabaseExternal
+      .channel(`chat-prefs-${userId}-${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes" as any,
+        { event: "*", schema: "public", table: "chat_conversation_state", filter: `user_id=eq.${userId}` },
+        (payload: any) => {
+          const row = (payload?.new || payload?.old) as
+            | { peer_id: string; archived?: boolean; muted?: boolean; last_read_at?: string | null }
+            | undefined;
+          if (!row?.peer_id) return;
+          const arch = memArchived.get(userId) ?? new Set<string>();
+          const mut = memMuted.get(userId) ?? new Set<string>();
+          const reads = { ...(memLastRead.get(userId) ?? {}) };
+          if (payload.eventType === "DELETE") {
+            arch.delete(row.peer_id);
+            mut.delete(row.peer_id);
+            delete reads[row.peer_id];
+          } else {
+            if (row.archived) arch.add(row.peer_id); else arch.delete(row.peer_id);
+            if (row.muted) mut.add(row.peer_id); else mut.delete(row.peer_id);
+            if (row.last_read_at) reads[row.peer_id] = row.last_read_at;
+          }
+          memArchived.set(userId, arch);
+          memMuted.set(userId, mut);
+          memLastRead.set(userId, reads);
+          writeSetLS(ARCHIVED_KEY, userId, arch);
+          writeSetLS(MUTED_KEY, userId, mut);
+          try { localStorage.setItem(`${LAST_READ_KEY}:${userId}`, JSON.stringify(reads)); } catch {}
+        },
+      )
+      .subscribe();
+    prefsChannels.set(userId, channel);
+  } catch {}
+}
+
+/** Encerra assinatura de preferências (logout / troca de user). */
+export function teardownChatPreferences(userId: string) {
+  const ch = prefsChannels.get(userId);
+  if (ch) { try { supabaseExternal.removeChannel(ch); } catch {} prefsChannels.delete(userId); }
+  memArchived.delete(userId);
+  memMuted.delete(userId);
+  memLastRead.delete(userId);
+}
+
+/**
+ * Busca last_read_at do PEER (quando ele leu por último as mensagens minhas).
+ * A row do peer é (user_id=peerId, peer_id=meuUid). Requer policy que permita
+ * o meu usuário ver essa linha (veja SQL fornecido no chat).
+ */
+export async function fetchPeerLastReadAt(myUid: string, peerId: string): Promise<string | null> {
+  if (!myUid || !peerId) return null;
+  try {
+    const { data } = await supabaseExternal
+      .from("chat_conversation_state")
+      .select("last_read_at")
+      .eq("user_id", peerId)
+      .eq("peer_id", myUid)
+      .maybeSingle();
+    const at = (data as any)?.last_read_at ?? null;
+    if (at) memPeerLastRead.set(`${myUid}:${peerId}`, at);
+    return at;
+  } catch { return null; }
+}
+
+export function getPeerLastReadAt(myUid: string, peerId: string): string | null {
+  return memPeerLastRead.get(`${myUid}:${peerId}`) ?? null;
+}
+
+/**
+ * Assina a linha do peer em tempo real para receber "read receipts" quando
+ * o outro lado marcar como lido em qualquer dispositivo.
+ */
+export function subscribePeerReadReceipts(
+  myUid: string,
+  peerId: string,
+  onChange: (at: string) => void,
+): () => void {
+  if (typeof window === "undefined" || !myUid || !peerId) return () => {};
+  const key = `${myUid}:${peerId}`;
+  const existing = peerReadChannels.get(key);
+  if (existing) { try { supabaseExternal.removeChannel(existing); } catch {} }
+  try {
+    const channel = supabaseExternal
+      .channel(`peer-read-${key}-${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes" as any,
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_conversation_state",
+          filter: `user_id=eq.${peerId}`,
+        },
+        (payload: any) => {
+          const row = payload?.new as { peer_id?: string; last_read_at?: string | null } | undefined;
+          if (!row || row.peer_id !== myUid || !row.last_read_at) return;
+          memPeerLastRead.set(key, row.last_read_at);
+          onChange(row.last_read_at);
+        },
+      )
+      .subscribe();
+    peerReadChannels.set(key, channel);
+  } catch {}
+  return () => {
+    const ch = peerReadChannels.get(key);
+    if (ch) { try { supabaseExternal.removeChannel(ch); } catch {} peerReadChannels.delete(key); }
+  };
 }
 
 async function upsertState(
