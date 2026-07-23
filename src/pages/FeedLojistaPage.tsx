@@ -596,8 +596,11 @@ export default function FeedLojistaPage() {
   const visible = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
     const byCategory = MOCK_POSTS.filter((p) => filter === "todos" || p.category === filter);
+    const byStatus = statusFilter === "todos"
+      ? byCategory
+      : byCategory.filter((p) => getFeedStatus(p.id) === statusFilter);
     const filtered = q
-      ? byCategory.filter((p) => {
+      ? byStatus.filter((p) => {
           const hay = [
             p.title,
             p.description,
@@ -610,13 +613,13 @@ export default function FeedLojistaPage() {
             .toLowerCase();
           return hay.includes(q);
         })
-      : byCategory;
+      : byStatus;
     return [...filtered].sort((a, b) => {
       if (a.category === "cliente" && b.category !== "cliente") return -1;
       if (b.category === "cliente" && a.category !== "cliente") return 1;
       return 0;
     });
-  }, [filter, debouncedSearch]);
+  }, [filter, statusFilter, debouncedSearch]);
 
   const paged = useMemo(() => visible.slice(0, page * PAGE_SIZE), [visible, page]);
   const hasMore = paged.length < visible.length;
