@@ -1203,6 +1203,7 @@ export default function FeedPrestadorPage() {
               onApply={setApplyFor}
               onChat={openChatWith}
               onLightbox={(job, index) => setLightbox({ job, index })}
+              onOpenDetails={setDetailsFor}
             />
           ))}
 
