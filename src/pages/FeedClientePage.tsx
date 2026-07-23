@@ -23,6 +23,10 @@ import {
   ArrowUpDown,
   ClipboardList,
   ChevronDown,
+  Pencil,
+  Trash2,
+  Navigation,
+  Check,
 } from "lucide-react";
 
 
