@@ -741,9 +741,15 @@ export default function FeedClientePage() {
                       }`}
                     >
                       {SORT_LABELS[k]}
-                      {k === "nearest" && !userCity && (
+                      {k === "nearest" && (
                         <span className="ml-2 text-[8px] font-bold text-muted-foreground normal-case">
-                          (defina sua cidade)
+                          {geoStatus === "loading"
+                            ? "(localizando...)"
+                            : userCoords
+                              ? "(GPS)"
+                              : userCity
+                                ? `(cidade: ${userCity})`
+                                : "(defina sua cidade)"}
                         </span>
                       )}
                     </button>
