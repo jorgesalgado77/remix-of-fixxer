@@ -131,6 +131,7 @@ export function GlobalActionBar() {
   }, []);
 
   return (
+    <>
     <div className="fixed bottom-0 left-0 right-0 bg-black/85 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around pb-safe">
       <button
         onClick={() => navigate({ to: "/dashboard/lojista" as any })}
