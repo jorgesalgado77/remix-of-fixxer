@@ -343,7 +343,7 @@ function ChatInboxPage() {
             {visible.map((c) => (
               <li key={c.peerId} className="relative">
                 <button
-                  onClick={() => navigate({ to: "/chat/$peerId" as any, params: { peerId: c.peerId } })}
+                  onClick={() => navigate({ to: "/chat/$peerId" as any, params: { peerId: c.peerId } as any })}
                   className="w-full flex items-center gap-3 bg-[#1A1A1B] border border-white/10 hover:border-primary/40 rounded-2xl p-4 text-left transition-colors"
                 >
                   <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 relative">
