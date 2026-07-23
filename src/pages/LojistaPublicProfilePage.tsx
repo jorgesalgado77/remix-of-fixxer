@@ -721,7 +721,7 @@ export function LojistaPublicProfilePage() {
 
               {visibleMedia.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {visibleMedia.map((item, i) => {
+                  {pagedMedia.map((item, i) => {
                     if (item.kind === "photo") {
                       const photoIdx = visiblePhotos.findIndex((p) => p.url === item.url);
                       return (
