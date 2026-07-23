@@ -165,11 +165,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       }
       const isImg = ACCEPTED_IMG.includes(file.type);
       const isPdf = ACCEPTED_PDF.includes(file.type);
-      if (!isImg && !isPdf) {
+      const isVideo = ACCEPTED_VIDEO.includes(file.type) || file.type.startsWith("video/");
+      if (!isImg && !isPdf && !isVideo) {
         rejType++;
         continue;
       }
-      const maxSize = isPdf ? MAX_SIZE_PDF : MAX_SIZE_IMG;
+      const maxSize = isVideo ? MAX_SIZE_VIDEO : isPdf ? MAX_SIZE_PDF : MAX_SIZE_IMG;
       if (file.size > maxSize) {
         rejSize++;
         continue;
@@ -179,7 +180,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         id,
         file,
         url: URL.createObjectURL(file),
-        kind: isPdf ? "pdf" : "image",
+        kind: isVideo ? "video" : isPdf ? "pdf" : "image",
         progress: 0,
       });
     }
