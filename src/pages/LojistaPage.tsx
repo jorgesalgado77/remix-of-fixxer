@@ -1786,7 +1786,7 @@ function ProfileView({
 
     // Limites aplicados no modal de Ajustar Imagem
     const LOGO_MAX_MB = 5;
-    const LOGO_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+    const LOGO_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: File[] } }, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document') => {
@@ -1807,7 +1807,7 @@ function ProfileView({
             const isVideo = type === 'video';
             const isDoc = type === 'document';
             const maxSize = isVideo ? 50 * 1024 * 1024 : (isDoc ? 10 * 1024 * 1024 : 5 * 1024 * 1024);
-            const allowedTypes = isVideo ? ['video/mp4', 'video/quicktime'] : (isDoc ? ['application/pdf'] : ['image/jpeg', 'image/png', 'image/webp']);
+            const allowedTypes = isVideo ? ['video/mp4', 'video/quicktime'] : (isDoc ? ['application/pdf'] : ['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
 
             if (!allowedTypes.includes(file.type)) {
                 toast.error("Formato inválido", {
