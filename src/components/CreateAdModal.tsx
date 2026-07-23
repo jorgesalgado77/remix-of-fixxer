@@ -58,7 +58,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!open) return null;
+  
 
   const simulateProgress = (id: string) => {
     let p = 0;
