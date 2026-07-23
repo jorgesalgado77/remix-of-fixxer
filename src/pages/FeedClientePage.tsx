@@ -191,6 +191,26 @@ type MyNeed = {
   metadata: any;
 };
 
+// Coordenadas aproximadas das cidades dos vendors (para "Mais perto" via geolocalização)
+const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  sorocaba: { lat: -23.5015, lng: -47.4526 },
+  votorantim: { lat: -23.5464, lng: -47.4383 },
+  "são paulo": { lat: -23.5505, lng: -46.6333 },
+  campinas: { lat: -22.9099, lng: -47.0626 },
+  itu: { lat: -23.2637, lng: -47.2992 },
+};
+
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
 // =============================================================================
 // COMPONENTE PRINCIPAL
 // =============================================================================
