@@ -1465,7 +1465,26 @@ function ProfileView({
                     setDocuments(parsed.documents || []);
                     setSpecialties(Array.isArray(parsed.specialties) ? parsed.specialties : []);
                     setSocialLinks(parsed.socialLinks || { instagram: "", facebook: "", tiktok: "", site: "" });
+                    if (parsed.address && typeof parsed.address === 'object') {
+                        setAddress({
+                            logradouro: parsed.address.logradouro || "",
+                            bairro: parsed.address.bairro || "",
+                            localidade: parsed.address.localidade || "",
+                            uf: parsed.address.uf || "",
+                            numero: parsed.address.numero || "",
+                            complemento: parsed.address.complemento || "",
+                        });
+                    }
+                    setIsFranchise(!!parsed.isFranchise);
+                    setFranchiseName(parsed.franchiseName || "");
+                    setOwnManufacturing(!!parsed.ownManufacturing);
+                    setPhotoSections(parsed.photoSections && typeof parsed.photoSections === 'object' ? {
+                        showroom: Array.isArray(parsed.photoSections.showroom) ? parsed.photoSections.showroom : [],
+                        assemblies: Array.isArray(parsed.photoSections.assemblies) ? parsed.photoSections.assemblies : [],
+                        custom: Array.isArray(parsed.photoSections.custom) ? parsed.photoSections.custom : [],
+                    } : EMPTY_PHOTO_SECTIONS);
                 }
+
 
                 // 2. Buscar dados reais do Supabase
                 const { data, error } = await supabaseExternal
@@ -1496,7 +1515,27 @@ function ProfileView({
                         tiktok: data.tiktok || "",
                         site: data.site_url || ""
                     });
-                    
+                    // Endereço completo — inclui número e complemento
+                    setAddress({
+                        logradouro: data.address || "",
+                        bairro: data.neighborhood || "",
+                        localidade: data.city || "",
+                        uf: data.state || "",
+                        numero: data.address_number || "",
+                        complemento: data.address_complement || "",
+                    });
+                    // Franquia / Fabricação própria
+                    setIsFranchise(!!data.is_franchise);
+                    setFranchiseName(data.franchise_name || "");
+                    setOwnManufacturing(!!data.own_manufacturing);
+                    // Seções de fotos temáticas
+                    const ps = data.photo_sections;
+                    setPhotoSections(ps && typeof ps === 'object' ? {
+                        showroom: Array.isArray(ps.showroom) ? ps.showroom : [],
+                        assemblies: Array.isArray(ps.assemblies) ? ps.assemblies : [],
+                        custom: Array.isArray(ps.custom) ? ps.custom : [],
+                    } : EMPTY_PHOTO_SECTIONS);
+
                     // Atualizar o cache com dados frescos do banco
                     localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
                         companyName: data.company_name,
@@ -1519,10 +1558,23 @@ function ProfileView({
                             facebook: data.facebook,
                             tiktok: data.tiktok,
                             site: data.site_url
-                        }
+                        },
+                        address: {
+                            logradouro: data.address || "",
+                            bairro: data.neighborhood || "",
+                            localidade: data.city || "",
+                            uf: data.state || "",
+                            numero: data.address_number || "",
+                            complemento: data.address_complement || "",
+                        },
+                        isFranchise: !!data.is_franchise,
+                        franchiseName: data.franchise_name || "",
+                        ownManufacturing: !!data.own_manufacturing,
+                        photoSections: ps && typeof ps === 'object' ? ps : EMPTY_PHOTO_SECTIONS,
                     }));
                     if (data.id) localStorage.setItem('fixxer_lojista_id', data.id);
                 }
+
             } catch (err) {
                 console.error("Erro ao carregar perfil:", err);
             }
@@ -2021,6 +2073,44 @@ function ProfileView({
                   <div className="space-y-6 pt-6 border-t border-white/5">
                     <ActivitySelect value={activityBranch} onChange={setActivityBranch} />
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-2xl bg-black/20 border border-white/5">
+                        <div className="space-y-3">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">É Franquia?</Label>
+                            <div className="flex items-center gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="is-franchise" checked={isFranchise} onChange={() => setIsFranchise(true)} className="accent-primary" />
+                                    <span className="text-xs">Sim</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="is-franchise" checked={!isFranchise} onChange={() => { setIsFranchise(false); setFranchiseName(""); }} className="accent-primary" />
+                                    <span className="text-xs">Não</span>
+                                </label>
+                            </div>
+                            {isFranchise && (
+                                <Input
+                                    value={franchiseName}
+                                    onChange={(e) => setFranchiseName(e.target.value)}
+                                    placeholder="Nome da franquia / marca..."
+                                    className="bg-black/40 border-white/10 h-11 rounded-xl focus:border-primary/50 transition-all"
+                                />
+                            )}
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Fabricação Própria?</Label>
+                            <div className="flex items-center gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="own-mfg" checked={ownManufacturing} onChange={() => setOwnManufacturing(true)} className="accent-primary" />
+                                    <span className="text-xs">Sim</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="own-mfg" checked={!ownManufacturing} onChange={() => setOwnManufacturing(false)} className="accent-primary" />
+                                    <span className="text-xs">Não</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+
                     <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
                         <Globe className="w-3 h-3" /> Redes Sociais e Site
                     </h4>
@@ -2432,7 +2522,10 @@ function ProfileView({
                         </DndContext>
                     </div>
 
+                    <PhotoSectionsManager value={photoSections} onChange={setPhotoSections} />
+
                     <div className="space-y-4 pt-6 border-t border-white/5">
+
                         <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center justify-between">
                             Vídeos da Empresa (Até 3 vídeos)
                             <span className="text-[8px] opacity-50">{videoUrls.length}/3</span>
@@ -2697,8 +2790,13 @@ function ProfileView({
                                     video_urls: videoUrls,
                                     documents: documents,
                                     specialties: specialties,
+                                    is_franchise: isFranchise,
+                                    franchise_name: isFranchise ? franchiseName : null,
+                                    own_manufacturing: ownManufacturing,
+                                    photo_sections: photoSections,
                                     updated_at: new Date().toISOString()
                                 };
+
 
                                 // 3) Upsert + retorna a linha atualizada
                                 const { data: saved, error } = await supabaseExternal
@@ -2753,6 +2851,25 @@ function ProfileView({
                                         tiktok: saved.tiktok || "",
                                         site: saved.site_url || "",
                                     });
+                                    setAddress({
+                                        logradouro: saved.address || "",
+                                        bairro: saved.neighborhood || "",
+                                        localidade: saved.city || "",
+                                        uf: saved.state || "",
+                                        numero: saved.address_number || "",
+                                        complemento: saved.address_complement || "",
+                                    });
+                                    setIsFranchise(!!saved.is_franchise);
+                                    setFranchiseName(saved.franchise_name || "");
+                                    setOwnManufacturing(!!saved.own_manufacturing);
+                                    if (saved.photo_sections && typeof saved.photo_sections === 'object') {
+                                        setPhotoSections({
+                                            showroom: Array.isArray(saved.photo_sections.showroom) ? saved.photo_sections.showroom : [],
+                                            assemblies: Array.isArray(saved.photo_sections.assemblies) ? saved.photo_sections.assemblies : [],
+                                            custom: Array.isArray(saved.photo_sections.custom) ? saved.photo_sections.custom : [],
+                                        });
+                                    }
+
                                     if (typeof window !== 'undefined') {
                                         const publicKey = (saved as any).user_id || saved.id;
                                         if (publicKey) localStorage.setItem('fixxer_lojista_id', publicKey);
@@ -2764,9 +2881,11 @@ function ProfileView({
                                     localStorage.setItem(`fixxer_profile_${userEmailLocal}`, JSON.stringify({
                                         companyName, socialName, cnpj, responsibleName, emailContact,
                                         whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
-                                        galleryUrls, videoUrls, documents, specialties, socialLinks, address
+                                        galleryUrls, videoUrls, documents, specialties, socialLinks, address,
+                                        isFranchise, franchiseName, ownManufacturing, photoSections,
                                     }));
                                 }
+
 
                                 // Recalcula completude usando a mesma regra da sidebar/menu
                                 const completeness = evaluateProfileCompleteness('lojista', saved ?? {
