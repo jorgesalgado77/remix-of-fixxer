@@ -133,7 +133,9 @@ export function LojistaPublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("sobre");
   const [photoFilter, setPhotoFilter] = useState("Todas");
-  const [mediaTypeFilter, setMediaTypeFilter] = useState<"Todos" | "Fotos" | "Vídeos" | "Documentos">("Todos");
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<"Todos" | "Fotos" | "Documentos">("Todos");
+  const PAGE_SIZE = 12;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [gallerySearch, setGallerySearch] = useState("");
   const [gallerySort, setGallerySort] = useState<"recent" | "oldest" | "section">("recent");
   const [prefsHydrated, setPrefsHydrated] = useState(false);
@@ -329,15 +331,8 @@ export function LojistaPublicProfilePage() {
     });
     const legacy = profile?.gallery_urls ?? [];
     if (legacy.length) sections.push({ key: "legacy", name: "Galeria", items: toItems("Galeria", legacy) });
-    // Adiciona vídeos e documentos separados como pseudo-seções para permanecerem filtráveis
-    const flatVideos = (profile?.video_urls ?? []).map((url) => ({
-      url,
-      thumb: url,
-      sectionName: "Vídeos",
-      kind: "video" as const,
-      order: orderCounter++,
-    }));
-    if (flatVideos.length) sections.push({ key: "videos", name: "Vídeos", items: flatVideos });
+    // Vídeos NÃO entram na Galeria de Fotos — possuem sua própria seção "Vídeos da Loja".
+    // Documentos permanecem como pseudo-seção filtrável.
     const flatDocs = (profile?.document_urls ?? []).map((url) => ({
       url,
       thumb: url,
@@ -347,7 +342,7 @@ export function LojistaPublicProfilePage() {
     }));
     if (flatDocs.length) sections.push({ key: "documents", name: "Documentos", items: flatDocs });
     return sections;
-  }, [profile?.photo_sections, profile?.gallery_urls, profile?.video_urls, profile?.document_urls]);
+  }, [profile?.photo_sections, profile?.gallery_urls, profile?.document_urls]);
 
   // Filtro por seção usa exatamente as seções existentes no perfil atual
   const photoFilters = useMemo(() => ["Todas", ...photoSections.map((s) => s.name)], [photoSections]);
@@ -362,7 +357,6 @@ export function LojistaPublicProfilePage() {
     const kindMap: Record<typeof mediaTypeFilter, MediaKind | null> = {
       Todos: null,
       Fotos: "photo",
-      Vídeos: "video",
       Documentos: "document",
     };
     const targetKind = kindMap[mediaTypeFilter];
@@ -379,7 +373,14 @@ export function LojistaPublicProfilePage() {
       });
     });
     if (gallerySort === "section") {
-      items.sort((a, b) => a.sectionName.localeCompare(b.sectionName, "pt-BR") || a.order - b.order);
+      items.sort((a, b) => {
+        const sec = a.sectionName.localeCompare(b.sectionName, "pt-BR");
+        if (sec !== 0) return sec;
+        // Dentro da mesma seção, ordena por data de upload real (mais recente primeiro)
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : a.order;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : b.order;
+        return tb - ta;
+      });
     } else if (gallerySort === "oldest") {
       items.sort((a, b) => {
         const ta = a.createdAt ? new Date(a.createdAt).getTime() : a.order;
@@ -397,9 +398,17 @@ export function LojistaPublicProfilePage() {
     return items;
   }, [photoSections, photoFilter, mediaTypeFilter, gallerySearch, gallerySort]);
 
+  // Reseta a paginação quando filtros/ordem/busca mudam
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [photoFilter, mediaTypeFilter, gallerySearch, gallerySort]);
+
+  const pagedMedia = useMemo(() => visibleMedia.slice(0, visibleCount), [visibleMedia, visibleCount]);
+  const hasMore = visibleCount < visibleMedia.length;
+
   const visiblePhotos = useMemo(
-    () => visibleMedia.filter((i) => i.kind === "photo"),
-    [visibleMedia],
+    () => pagedMedia.filter((i) => i.kind === "photo"),
+    [pagedMedia],
   );
   const gallery = useMemo(() => visiblePhotos.map((i) => i.url), [visiblePhotos]);
   const videos = profile?.video_urls || [];
@@ -707,12 +716,12 @@ export function LojistaPublicProfilePage() {
               </div>
 
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                {visibleMedia.length} mídia(s) encontrada(s)
+                Exibindo {pagedMedia.length} de {visibleMedia.length} mídia(s)
               </p>
 
               {visibleMedia.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {visibleMedia.map((item, i) => {
+                  {pagedMedia.map((item, i) => {
                     if (item.kind === "photo") {
                       const photoIdx = visiblePhotos.findIndex((p) => p.url === item.url);
                       return (
@@ -773,6 +782,17 @@ export function LojistaPublicProfilePage() {
                 </div>
               ) : (
                 <EmptyState label="Nenhuma mídia encontrada com esses filtros." />
+              )}
+
+              {hasMore && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                    className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase italic bg-primary/15 text-primary border border-primary/40 hover:bg-primary/25 transition-all"
+                  >
+                    Carregar mais ({visibleMedia.length - pagedMedia.length} restantes)
+                  </button>
+                </div>
               )}
             </section>
 
