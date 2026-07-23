@@ -16,6 +16,34 @@ export type MockConversation = {
   peerAvatar: string | null;
   online?: boolean;
   messages: MockMessage[];
+  profile?: MockProfile;
+};
+
+export type MockProfile = {
+  companyName?: string;
+  bio: string;
+  city: string;
+  state: string;
+  whatsapp: string;
+  bannerUrl: string;
+  gallery: string[];
+  videos?: string[];
+  activityBranch: string;
+  rating: number;
+  reviewsCount: number;
+  yearsActive: number;
+  memberSince: string; // ISO
+  specialties: string[];
+  reviews: {
+    id: string;
+    reviewer_name: string;
+    reviewer_city?: string;
+    reviewer_category: "cliente" | "prestador" | "fornecedor";
+    reviewer_avatar?: string | null;
+    rating: number;
+    comment: string;
+    created_at: string;
+  }[];
 };
 
 export const MOCK_CONVERSATIONS: MockConversation[] = [
