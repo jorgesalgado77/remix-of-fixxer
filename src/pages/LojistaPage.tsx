@@ -1431,6 +1431,11 @@ function ProfileView({
         site: ""
     });
     const [isSaving, setIsSaving] = useState(false);
+    const [isFranchise, setIsFranchise] = useState(false);
+    const [franchiseName, setFranchiseName] = useState("");
+    const [ownManufacturing, setOwnManufacturing] = useState(false);
+    const [photoSections, setPhotoSections] = useState<PhotoSectionsValue>(EMPTY_PHOTO_SECTIONS);
+
 
     useEffect(() => {
         const fetchProfile = async () => {
