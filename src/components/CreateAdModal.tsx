@@ -122,6 +122,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = getCategoryTheme(defaultCategory);
 
+  // Cache de arquivos codificados em base64 (para auto-save leve)
+  const filesCacheRef = useRef<Map<string, { name: string; type: string; size: number; kind: UploadItem["kind"]; dataUrl: string }>>(new Map());
+  const hydratedRef = useRef(false);
+
+
   // Perfil do autor (nome + reputação) para exibir na prévia
   const [authorProfile, setAuthorProfile] = useState<{ name: string; logoUrl?: string | null; rating: number }>({
     name: "Sua Empresa",
