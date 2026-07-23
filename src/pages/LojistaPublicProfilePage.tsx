@@ -472,8 +472,6 @@ export function LojistaPublicProfilePage() {
         )}
       </div>
 
-      {/* Barra de ações global inferior (mobile) */}
-      <GlobalActionBar />
 
       {/* LIGHTBOX IMAGEM */}
       {lightboxImage && (
