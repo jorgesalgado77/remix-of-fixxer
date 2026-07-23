@@ -30,7 +30,8 @@ type Sector =
   | "Iluminação LED"
   | "Softwares & Maquinário";
 
-type B2BStatus = "aberto" | "urgente" | "negociando";
+type B2BStatus = "aberto" | "urgente" | "negociando" | "em_andamento";
+type RequesterType = "lojista" | "prestador";
 
 type B2BRequest = {
   id: string;
@@ -40,6 +41,7 @@ type B2BRequest = {
     initials: string;
     verified?: boolean;
   };
+  requesterType?: RequesterType;
   city: string;
   state: string;
   rating: number;
@@ -348,6 +350,119 @@ const MOCK_REQUESTS: B2BRequest[] = [
     deadline: "Início em 10 dias",
     paymentTerms: "45 dias fora mês",
   },
+  // ============ SERVIÇOS EM ANDAMENTO — LOJISTAS & PRESTADORES ============
+  {
+    id: "b2b-013",
+    store: { id: "store-planejados-sorocaba", name: "Design Planejados Sorocaba", initials: "DP", verified: true },
+    requesterType: "lojista",
+    city: "Sorocaba", state: "SP", rating: 4.85, postedAt: "há 30 min",
+    status: "em_andamento", sector: "Ferragens & Insumos",
+    title: "Reposição URGENTE de Corrediças Blum — Obra em Execução",
+    description:
+      "Obra iniciada na segunda, faltaram 12 pares de corrediças Blum Tandem 55cm. Preciso hoje para não parar a montagem.",
+    specs: [
+      "Corrediça Blum Tandem 55cm — 12 pares",
+      "Push-open integrado",
+      "Retirada em Sorocaba ou entrega hoje",
+    ],
+    quantity: "12 pares",
+    deadline: "Entrega hoje até 17h",
+    paymentTerms: "PIX à vista",
+  },
+  {
+    id: "b2b-014",
+    store: { id: "prest-carlos-conf", name: "Carlos Silva — Conferente Técnico", initials: "CS", verified: true },
+    requesterType: "prestador",
+    city: "Sorocaba", state: "SP", rating: 4.9, postedAt: "há 1 h",
+    status: "em_andamento", sector: "Ferragens & Insumos",
+    title: "Kit de Ferragens Complementar — O.S. em Execução (Alphaville)",
+    description:
+      "Estou executando conferência em Alphaville e identifiquei falta de dobradiças caneco 35mm curvas. Preciso fornecedor com entrega direta na obra amanhã cedo.",
+    specs: [
+      "Dobradiça caneco 35mm curva — 24 un.",
+      "Amortecedor hidráulico Blum — 24 un.",
+      "Parafusos 4x16 chip — 200 un.",
+      "Entrega direta no canteiro",
+    ],
+    quantity: "Kit completo",
+    deadline: "Entrega amanhã 8h",
+    paymentTerms: "Faturado 15 dias (nota do prestador)",
+  },
+  {
+    id: "b2b-015",
+    store: { id: "prest-bruno-mont", name: "Bruno Montador Pro", initials: "BM", verified: true },
+    requesterType: "prestador",
+    city: "Jundiaí", state: "SP", rating: 4.95, postedAt: "há 2 h",
+    status: "em_andamento", sector: "Vidraçaria & Espelhos",
+    title: "Espelho Bronze 4mm Bisotê — Substituição em Obra Aberta",
+    description:
+      "Estou finalizando montagem de closet e o espelho chegou com defeito de fábrica. Preciso reposição rápida com corte já feito.",
+    specs: [
+      "Espelho Bronze 4mm 1.80m x 0.60m — 1 peça",
+      "Bisotê 2cm nas 4 bordas",
+      "Furação para roldana Blum",
+    ],
+    quantity: "1 peça",
+    deadline: "Entrega em 48h",
+    paymentTerms: "PIX na entrega",
+    attachment:
+      "https://images.unsplash.com/photo-1616627547584-bf28cee262db?auto=format&fit=crop&w=1200&q=70",
+  },
+  {
+    id: "b2b-016",
+    store: { id: "prest-ana-proj", name: "Ana Projetos — Projetista 3D", initials: "AP", verified: true },
+    requesterType: "prestador",
+    city: "Itu", state: "SP", rating: 4.8, postedAt: "há 4 h",
+    status: "em_andamento", sector: "Softwares & Maquinário",
+    title: "Licença Adicional Promob — Projeto em Curso para Lojista",
+    description:
+      "Assumi 3 projetos executivos para uma marcenaria de Itu e preciso de uma estação Promob extra por 30 dias para paralelizar entregas.",
+    specs: [
+      "Licença Promob Plus — 30 dias",
+      "Biblioteca de ferragens Blum atualizada",
+      "Suporte técnico dedicado",
+    ],
+    quantity: "1 licença mensal",
+    deadline: "Ativação imediata",
+    paymentTerms: "Cartão em 3x sem juros",
+  },
+  {
+    id: "b2b-017",
+    store: { id: "prest-lucia-3d", name: "Lúcia Interiores 3D", initials: "LI", verified: true },
+    requesterType: "prestador",
+    city: "Sorocaba", state: "SP", rating: 4.85, postedAt: "há 6 h",
+    status: "em_andamento", sector: "Iluminação LED",
+    title: "Fita LED COB p/ Nichos — Projeto em Instalação Final",
+    description:
+      "Finalizando instalação de home theater. Cliente pediu upgrade de iluminação nos nichos: fita COB alta densidade + fonte compatível.",
+    specs: [
+      "Fita LED COB 24V 3000K — 8 metros",
+      "Fonte 24V 60W — 1 un.",
+      "Perfil embutir alumínio — 8m",
+      "Difusor opalino",
+    ],
+    quantity: "Kit iluminação nichos",
+    deadline: "Retirada em 3 dias",
+    paymentTerms: "PIX à vista 5% desc.",
+  },
+  {
+    id: "b2b-018",
+    store: { id: "prest-pedro-inst", name: "Pedro Transportes & Instalações", initials: "PT" },
+    requesterType: "prestador",
+    city: "Campinas", state: "SP", rating: 4.7, postedAt: "há 12 h",
+    status: "em_andamento", sector: "Ferragens & Insumos",
+    title: "Puxadores Alumínio Escovado — Complemento para O.S. Ativa",
+    description:
+      "Cliente final aprovou troca de puxadores durante montagem. Preciso 18 unidades 128mm alumínio escovado com entrega até amanhã.",
+    specs: [
+      "Puxador tubular 128mm — 18 un.",
+      "Acabamento alumínio escovado",
+      "Fixação inclusa",
+    ],
+    quantity: "18 un.",
+    deadline: "Entrega amanhã",
+    paymentTerms: "Boleto 7 dias",
+  },
 ];
 
 const PAGE_SIZE = 4;
@@ -655,23 +770,29 @@ export default function FeedParceiroPage() {
           <ul className="space-y-4">
             {paged.map((r) => {
               const quoteStatus = quotesByRequest[r.id];
+              const isPrestador = r.requesterType === "prestador";
+              const accent = isPrestador ? "#FF9F0A" : "#00E5FF";
+              const accentRgba = (a: number) => isPrestador
+                ? `rgba(255, 159, 10, ${a})`
+                : `rgba(0, 229, 255, ${a})`;
+              const roleLabel = isPrestador ? "✓ Prestador" : "✓ Lojista";
               return (
                 <li
                   key={r.id}
                   className="overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
-                  style={{ borderColor: "rgba(0, 229, 255, 0.35)", boxShadow: "0 0 18px rgba(0, 229, 255, 0.10)" }}
+                  style={{ borderColor: accentRgba(0.35), boxShadow: `0 0 18px ${accentRgba(0.1)}` }}
                 >
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold" style={{ borderColor: "#00E5FF", color: "#00E5FF" }}>
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold" style={{ borderColor: accent, color: accent }}>
                       {r.store.initials}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 text-sm font-semibold">
                         <span className="truncate">{r.store.name}</span>
                         {r.store.verified && (
-                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "rgba(0, 229, 255, 0.15)", color: "#00E5FF" }}>
-                            ✓ Lojista
+                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: accentRgba(0.15), color: accent }}>
+                            {roleLabel}
                           </span>
                         )}
                       </div>
@@ -888,6 +1009,11 @@ function StatusBadge({ status }: { status: B2BStatus }) {
     negociando: {
       label: "Negociando",
       className: "border-amber-400/40 bg-amber-400/10 text-amber-300",
+    },
+    em_andamento: {
+      label: "Em Andamento",
+      className:
+        "border-emerald-400/40 bg-emerald-400/10 text-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.25)]",
     },
   };
   const s = map[status];
