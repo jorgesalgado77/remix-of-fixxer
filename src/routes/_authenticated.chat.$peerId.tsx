@@ -944,10 +944,18 @@ function AttachmentBlock({
   onDownload: () => void;
 }) {
   const image = isImageType(type);
+  const video = !!type && type.startsWith("video/");
   return (
     <div className="mb-1 space-y-1">
       {image ? (
         <img src={url} alt={name} className="rounded-lg max-h-64 object-cover" />
+      ) : video ? (
+        <video
+          src={url}
+          controls
+          preload="metadata"
+          className="rounded-lg max-h-64 w-full bg-black"
+        />
       ) : (
         <div
           className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${
