@@ -360,6 +360,105 @@ const MOCK_POSTS: FeedPost[] = [
     ],
     keywords: ["parceria", "cross", "selling", "marcenaria"],
   },
+  // ============ NOVOS MOCKS (adicionados) ============
+  {
+    id: "p13",
+    category: "cliente",
+    author: { id: "u-rafaela", name: "Rafaela Nunes", avatarInitials: "RN" },
+    rating: 4.7,
+    city: "Itu, SP",
+    postedAt: "há 18 min",
+    title: "Home Office Planejado 2,40m — Preciso de Lojista Local",
+    description:
+      "Quero uma bancada em L com nichos e gaveteiro para escritório em casa. MDF cinza + puxadores pretos. Aceito visita técnica.",
+    budget: "R$ 4.500 – R$ 6.800",
+    media: [
+      { type: "image", url: "https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?w=1200&q=70&auto=format&fit=crop" },
+    ],
+    keywords: ["home office", "planejado", "itu"],
+  },
+  {
+    id: "p14",
+    category: "cliente",
+    author: { id: "u-thiago", name: "Thiago Almeida", avatarInitials: "TA" },
+    rating: 4.6,
+    city: "Campinas, SP",
+    postedAt: "há 55 min",
+    title: "Painel de TV Ripado + Rack Suspenso para Sala",
+    description:
+      "Painel ripado freijó com 3,20m e rack suspenso. Já tenho projeto em PDF, preciso apenas execução e instalação.",
+    budget: "R$ 3.200 – R$ 4.800",
+    media: [
+      { type: "image", url: "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=70&auto=format&fit=crop" },
+    ],
+    keywords: ["painel", "ripado", "rack", "campinas"],
+  },
+  {
+    id: "p15",
+    category: "prestador",
+    author: { id: "u-bruno-mont", name: "Bruno Montador Pro", avatarInitials: "BM", gold: true },
+    rating: 4.95,
+    city: "Sorocaba, SP",
+    postedAt: "há 1 h",
+    specialty: "Montador Master — Cozinhas & Closets",
+    radiusKm: 70,
+    title: "Montador Master Disponível esta Semana — Selo Ouro",
+    description:
+      "Vagas para 3 O.S. de médio/grande porte. Equipe própria com 2 auxiliares, ferramenta completa e seguro incluso.",
+    media: [
+      { type: "image", url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&q=70&auto=format&fit=crop" },
+    ],
+    keywords: ["montador", "selo ouro", "sorocaba"],
+  },
+  {
+    id: "p16",
+    category: "prestador",
+    author: { id: "u-lucia-proj", name: "Lúcia Interiores 3D", avatarInitials: "LI" },
+    rating: 4.8,
+    city: "Jundiaí, SP",
+    postedAt: "há 3 h",
+    specialty: "Projetista Promob + Render Corona",
+    radiusKm: 100,
+    title: "Projetos Executivos em 72h com Render Foto-Realista",
+    description:
+      "Atendo lojistas com pacote fechado por ambiente. Entrega inclui memorial, lista de corte e 4 imagens em alta.",
+    media: [
+      { type: "image", url: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=70&auto=format&fit=crop" },
+    ],
+    keywords: ["projetista", "promob", "render"],
+  },
+  {
+    id: "p17",
+    category: "fornecedor",
+    author: { id: "u-mdf-master", name: "MDF Master Distribuidora", avatarInitials: "MM" },
+    rating: 4.9,
+    city: "Campinas, SP",
+    postedAt: "há 4 h",
+    title: "Chapas MDF Duratex 15/18mm — Entrega em 24h para Lojistas",
+    description:
+      "Estoque completo em MDF branco TX, freijó, carvalho munique e cinza cristal. Frete grátis acima de 20 chapas.",
+    budget: "A partir de R$ 189/chapa",
+    media: [
+      { type: "image", url: "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?w=1200&q=70&auto=format&fit=crop" },
+    ],
+    keywords: ["mdf", "duratex", "chapas", "distribuidor"],
+  },
+  {
+    id: "p18",
+    category: "fornecedor",
+    author: { id: "u-ferragens-blum", name: "Blum Center Sorocaba", avatarInitials: "BC" },
+    rating: 4.8,
+    city: "Sorocaba, SP",
+    postedAt: "há 6 h",
+    title: "Ferragens Blum Originais — Corrediças, Dobradiças e Aventos",
+    description:
+      "Distribuidor oficial Blum. Kits promocionais para lojistas cadastrados. Consultoria técnica gratuita para projetos.",
+    budget: "Descontos progressivos",
+    media: [
+      { type: "image", url: "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=1200&q=70&auto=format&fit=crop" },
+    ],
+    keywords: ["blum", "ferragens", "corrediças"],
+  },
 ];
 
 const FILTERS: { key: "todos" | FeedCategory; label: string; icon: React.ReactNode }[] = [
