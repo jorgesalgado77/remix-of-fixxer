@@ -225,6 +225,11 @@ export function AdminDashboardComponent() {
               onAction={() => {}}
             />
           )}
+          {activeTab === 'categorias' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <CategoriesManager />
+            </div>
+          )}
         </div>
       </div>
     </div>
