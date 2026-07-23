@@ -1067,8 +1067,10 @@ export default function FeedPrestadorPage() {
               key={job.id}
               job={job}
               saved={saved.has(job.id)}
+              applied={applied.has(job.id)}
               onToggleSave={toggleSave}
               onApply={setApplyFor}
+              onChat={openChatWith}
               onLightbox={(job, index) => setLightbox({ job, index })}
             />
           ))}
@@ -1092,7 +1094,19 @@ export default function FeedPrestadorPage() {
       </main>
 
       {/* MODAIS */}
-      <ApplyModal job={applyFor} isOpen={!!applyFor} onClose={() => setApplyFor(null)} />
+      <ApplyModal
+        job={applyFor}
+        isOpen={!!applyFor}
+        alreadyApplied={applyFor ? applied.has(applyFor.id) : false}
+        onClose={() => setApplyFor(null)}
+        onApplied={(jobId) =>
+          setApplied((prev) => {
+            const next = new Set(prev);
+            next.add(jobId);
+            return next;
+          })
+        }
+      />
 
       {lightbox && (
         <Lightbox job={lightbox.job} index={lightbox.index} onClose={() => setLightbox(null)} />
