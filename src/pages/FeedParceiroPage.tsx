@@ -819,17 +819,41 @@ export default function FeedParceiroPage() {
                 >
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold" style={{ borderColor: accent, color: accent }}>
+                    <Link
+                      to={isPrestador ? "/prestador/$id" : "/lojista/$id"}
+                      params={{ id: r.store.id }}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold hover:scale-105 transition-transform"
+                      style={{ borderColor: accent, color: accent }}
+                    >
                       {r.store.initials}
-                    </div>
+                    </Link>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 text-sm font-semibold">
-                        <span className="truncate">{r.store.name}</span>
+                      <div className="flex items-center gap-1.5 text-sm font-semibold flex-wrap">
+                        <Link
+                          to={isPrestador ? "/prestador/$id" : "/lojista/$id"}
+                          params={{ id: r.store.id }}
+                          className="truncate hover:opacity-80"
+                        >
+                          {r.store.name}
+                        </Link>
                         {r.store.verified && (
                           <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: accentRgba(0.15), color: accent }}>
                             {roleLabel}
                           </span>
                         )}
+                        {(() => {
+                          const st = getFeedStatus(r.id);
+                          const c = FEED_STATUS_COLOR[st];
+                          return (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border"
+                              style={{ color: c, borderColor: `${c}55`, backgroundColor: `${c}18` }}
+                            >
+                              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: c }} />
+                              {FEED_STATUS_LABEL[st]}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/50">
                         <span className="inline-flex items-center gap-1">
@@ -851,9 +875,11 @@ export default function FeedParceiroPage() {
 
                   {/* Título + descrição */}
                   <div className="px-4 pb-3">
-                    <h3 className="text-base font-semibold leading-snug">
-                      {r.title}
-                    </h3>
+                    <button type="button" onClick={() => setDetailsFor(r)} className="text-left w-full">
+                      <h3 className="text-base font-semibold leading-snug hover:opacity-80 transition-opacity">
+                        {r.title}
+                      </h3>
+                    </button>
                     <p className="mt-1 text-sm text-white/70">{r.description}</p>
                   </div>
 
