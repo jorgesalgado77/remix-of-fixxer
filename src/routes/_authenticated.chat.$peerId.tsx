@@ -12,12 +12,14 @@ import {
   X,
   FileText,
   Image as ImageIcon,
+  Video as VideoIcon,
   RotateCcw,
   AlertCircle,
   Download,
   Check,
   CheckCheck,
   UserCircle2,
+  Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -38,12 +40,16 @@ import { downloadAttachment } from "@/lib/attachment-download";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
 import {
   clearDraft,
-  getDraftFile,
+  getDraftFiles,
   getDraftText,
   markMockConversationSeen,
-  setDraftFile,
+  setDraftFiles,
   setDraftText,
 } from "@/lib/chat-drafts";
+
+const MAX_FILES = 6;
+const MAX_FILE_MB = 15;
+const ACCEPTED_HINT = "image/*,video/*,application/pdf";
 
 export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
@@ -113,12 +119,17 @@ function ConversationPage() {
   const [archived, setArchived] = useState(false);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
 
-  // Anexos + progresso
-  const [pendingFile, setPendingFile] = useState<File | null>(() => getDraftFile(peerId));
+  // Anexos + progresso (multi-arquivo)
+  const [pendingFiles, setPendingFiles] = useState<File[]>(() => getDraftFiles(peerId));
   const [uploading, setUploading] = useState(false);
-  const [uploadPct, setUploadPct] = useState(0);
+  const [uploadPct, setUploadPct] = useState(0); // % do arquivo atual
+  const [uploadingIndex, setUploadingIndex] = useState(0); // índice do arquivo atual
   const fileRef = useRef<HTMLInputElement>(null);
   const [downloads, setDownloads] = useState<Record<string, { pct: number; loading: boolean }>>({});
+
+  // Confirmação de descarte de rascunho (dois cliques)
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+  const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Presença + typing
   const [peerOnline, setPeerOnline] = useState(false);
@@ -488,36 +499,59 @@ function ConversationPage() {
     }
   };
 
+  /**
+   * Envia texto + N anexos. Cada anexo vira uma mensagem separada (o schema atual
+   * suporta 1 anexo por linha). A primeira mensagem carrega o texto; as demais
+   * são apenas mídia. Cria linhas otimistas para todas antes do upload,
+   * evitando travamento visual e permitindo retry independente.
+   */
   const send = async () => {
     const text = content.trim();
-    if ((!text && !pendingFile) || !userId || sending) return;
+    const filesToSend = pendingFiles.slice();
+    if ((!text && filesToSend.length === 0) || !userId || sending) return;
     setSending(true);
     sendTypingStop();
 
-    const draftFile = pendingFile;
-    const clientId = newClientId();
-    const optimistic: MessageRow = {
-      id: clientId,
+    // Cria linhas otimistas: primeira com texto (+ 1º anexo se houver), demais só anexo
+    type Optim = { clientId: string; text: string; file: File | null };
+    const optimBatch: Optim[] = [];
+    if (filesToSend.length === 0) {
+      optimBatch.push({ clientId: newClientId(), text, file: null });
+    } else {
+      filesToSend.forEach((f, i) => {
+        optimBatch.push({
+          clientId: newClientId(),
+          text: i === 0 ? text : "",
+          file: f,
+        });
+      });
+    }
+    const optimisticRows: MessageRow[] = optimBatch.map((o) => ({
+      id: o.clientId,
       sender_id: userId,
       recipient_id: peerId,
-      content: text || null,
+      content: o.text || null,
       created_at: new Date().toISOString(),
       read: false,
       _pending: true,
-      _clientId: clientId,
-      _draftText: text,
-      _draftFile: draftFile,
-    };
-    setMessages((prev) => [...prev, optimistic]);
+      _clientId: o.clientId,
+      _draftText: o.text,
+      _draftFile: o.file,
+    }));
+    setMessages((prev) => [...prev, ...optimisticRows]);
     setContent("");
-    setPendingFile(null);
+    setPendingFiles([]);
     clearDraft(peerId);
 
     // === MODO MOCK: sem persistência, com auto-resposta simulada ===
     if (isMockPeerId(peerId)) {
       setTimeout(() => {
         setMessages((prev) =>
-          prev.map((m) => (m._clientId === clientId ? { ...m, _pending: false, read: true } : m)),
+          prev.map((m) =>
+            optimBatch.some((o) => o.clientId === m._clientId)
+              ? { ...m, _pending: false, read: true }
+              : m,
+          ),
         );
       }, 400);
       const replies = [
@@ -527,9 +561,7 @@ function ConversationPage() {
         "Show, vou verificar e já retorno.",
       ];
       const reply = replies[Math.floor(Math.random() * replies.length)];
-      setTimeout(() => {
-        setPeerTyping(true);
-      }, 900);
+      setTimeout(() => setPeerTyping(true), 900);
       setTimeout(() => {
         setPeerTyping(false);
         setMessages((prev) => [
@@ -548,22 +580,31 @@ function ConversationPage() {
       return;
     }
 
-
-    try {
-      let attachment: { url: string; type: string; name: string } | null = null;
-      if (draftFile) {
-        attachment = await doUpload(draftFile);
-        if (!attachment) throw new Error("Upload cancelado");
+    // === REAL: upload sequencial + persist por mensagem ===
+    setUploadingIndex(0);
+    for (let i = 0; i < optimBatch.length; i++) {
+      const o = optimBatch[i];
+      setUploadingIndex(i);
+      try {
+        let attachment: { url: string; type: string; name: string } | null = null;
+        if (o.file) {
+          attachment = await doUpload(o.file);
+          if (!attachment) throw new Error("Upload cancelado");
+        }
+        await persistMessage(o.clientId, o.text, attachment);
+      } catch (e: any) {
+        toast.error(
+          filesToSend.length > 1
+            ? `Falha ao enviar item ${i + 1}/${optimBatch.length}`
+            : "Falha ao enviar",
+          { description: e?.message },
+        );
+        setMessages((prev) =>
+          prev.map((m) => (m._clientId === o.clientId ? { ...m, _pending: false, _failed: true } : m)),
+        );
       }
-      await persistMessage(clientId, text, attachment);
-    } catch (e: any) {
-      toast.error("Falha ao enviar", { description: e?.message });
-      setMessages((prev) =>
-        prev.map((m) => (m._clientId === clientId ? { ...m, _pending: false, _failed: true } : m)),
-      );
-    } finally {
-      setSending(false);
     }
+    setSending(false);
   };
 
   const retrySend = async (m: MessageRow) => {
@@ -670,7 +711,7 @@ function ConversationPage() {
           onClick={() => {
             // Preserva o rascunho (texto + anexo) antes de sair para o perfil.
             setDraftText(peerId, content);
-            setDraftFile(peerId, pendingFile);
+            setDraftFiles(peerId, pendingFiles);
             const path = `/lojista/${encodeURIComponent(peerId)}`;
             try {
               navigate({ to: path as any });
@@ -853,51 +894,153 @@ function ConversationPage() {
 
       <div className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          {pendingFile && (
-            <div className="mb-2 flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs">
-              {pendingFile.type.startsWith("image/") ? (
-                <ImageIcon className="w-4 h-4 text-primary" />
-              ) : (
-                <FileText className="w-4 h-4 text-primary" />
-              )}
-              <span className="truncate flex-1">{pendingFile.name}</span>
-              <span className="text-muted-foreground">{Math.round(pendingFile.size / 1024)} KB</span>
-              <button onClick={() => { setPendingFile(null); setDraftFile(peerId, null); }} className="w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center" aria-label="Remover">
-                <X className="w-3.5 h-3.5" />
-              </button>
+          {pendingFiles.length > 0 && (
+            <div className="mb-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                  {pendingFiles.length} anexo{pendingFiles.length > 1 ? "s" : ""} • máx {MAX_FILES}
+                </p>
+                <button
+                  onClick={() => { setPendingFiles([]); setDraftFiles(peerId, null); }}
+                  className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-white font-bold"
+                >
+                  Limpar anexos
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {pendingFiles.map((f, idx) => {
+                  const isImg = f.type.startsWith("image/");
+                  const isVid = f.type.startsWith("video/");
+                  return (
+                    <div key={`${f.name}-${idx}`} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs max-w-[240px]">
+                      {isImg ? <ImageIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                        : isVid ? <VideoIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                        : <FileText className="w-3.5 h-3.5 text-primary shrink-0" />}
+                      <span className="truncate max-w-[110px]">{f.name}</span>
+                      <span className="text-muted-foreground text-[10px]">{Math.round(f.size / 1024)}KB</span>
+                      <button
+                        onClick={() => {
+                          const next = pendingFiles.filter((_, i) => i !== idx);
+                          setPendingFiles(next);
+                          setDraftFiles(peerId, next);
+                        }}
+                        className="w-5 h-5 rounded-md hover:bg-white/10 flex items-center justify-center"
+                        aria-label={`Remover ${f.name}`}
+                        disabled={uploading || sending}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
           {uploading && (
             <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-              <Loader2 className="w-3 h-3 animate-spin" /> Enviando anexo · {uploadPct}%
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Enviando anexo {pendingFiles.length > 1 ? `${uploadingIndex + 1}/${pendingFiles.length} · ` : "· "}{uploadPct}%
               <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-primary transition-all" style={{ width: `${uploadPct}%` }} />
               </div>
+            </div>
+          )}
+          {(content.trim().length > 0 || pendingFiles.length > 0) && !sending && !uploading && (
+            <div className="mb-2 flex justify-end">
+              {confirmingDiscard ? (
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold">
+                  <span className="text-red-400">Descartar rascunho?</span>
+                  <button
+                    onClick={() => {
+                      setContent("");
+                      setPendingFiles([]);
+                      clearDraft(peerId);
+                      setConfirmingDiscard(false);
+                      if (discardTimerRef.current) clearTimeout(discardTimerRef.current);
+                      toast.success("Rascunho descartado");
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 hover:bg-red-500/30"
+                  >
+                    Sim, descartar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setConfirmingDiscard(false);
+                      if (discardTimerRef.current) clearTimeout(discardTimerRef.current);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-white"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setConfirmingDiscard(true);
+                    if (discardTimerRef.current) clearTimeout(discardTimerRef.current);
+                    discardTimerRef.current = setTimeout(() => setConfirmingDiscard(false), 4000);
+                  }}
+                  className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-red-400 flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" /> Descartar rascunho
+                </button>
+              )}
             </div>
           )}
           <div className="flex items-end gap-2">
             <input
               ref={fileRef}
               type="file"
+              multiple
+              accept={ACCEPTED_HINT}
               className="hidden"
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) {
-                  if (f.size > 15 * 1024 * 1024) {
-                    toast.error("Arquivo muito grande", { description: "Limite de 15MB por anexo." });
-                    return;
+                const picked = Array.from(e.target.files ?? []);
+                if (picked.length === 0) return;
+                const remaining = MAX_FILES - pendingFiles.length;
+                if (remaining <= 0) {
+                  toast.error("Limite de anexos atingido", { description: `Máximo ${MAX_FILES} arquivos por mensagem.` });
+                  if (fileRef.current) fileRef.current.value = "";
+                  return;
+                }
+                const overflow = picked.length - remaining;
+                const accepted: File[] = [];
+                const rejected: string[] = [];
+                for (const f of picked.slice(0, remaining)) {
+                  if (f.size > MAX_FILE_MB * 1024 * 1024) {
+                    rejected.push(`${f.name} (>${MAX_FILE_MB}MB)`);
+                    continue;
                   }
-                  setPendingFile(f);
-                  setDraftFile(peerId, f);
+                  if (f.size === 0) {
+                    rejected.push(`${f.name} (vazio)`);
+                    continue;
+                  }
+                  accepted.push(f);
+                }
+                if (rejected.length) {
+                  toast.error(`${rejected.length} arquivo(s) rejeitado(s)`, {
+                    description: rejected.join(" • "),
+                  });
+                }
+                if (overflow > 0) {
+                  toast.warning(`${overflow} arquivo(s) ignorado(s)`, {
+                    description: `Limite de ${MAX_FILES} anexos por mensagem.`,
+                  });
+                }
+                if (accepted.length) {
+                  const merged = [...pendingFiles, ...accepted];
+                  setPendingFiles(merged);
+                  setDraftFiles(peerId, merged);
                 }
                 if (fileRef.current) fileRef.current.value = "";
               }}
             />
             <button
               onClick={() => fileRef.current?.click()}
-              disabled={uploading || sending}
+              disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
+              title={pendingFiles.length >= MAX_FILES ? `Máximo ${MAX_FILES} anexos` : "Anexar arquivos"}
               className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
-              aria-label="Anexar arquivo"
+              aria-label="Anexar arquivos"
             >
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
             </button>
@@ -914,7 +1057,7 @@ function ConversationPage() {
             />
             <button
               onClick={send}
-              disabled={sending || uploading || (!content.trim() && !pendingFile)}
+              disabled={sending || uploading || (!content.trim() && pendingFiles.length === 0)}
               className="w-11 h-11 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_15px_rgba(0,255,135,0.3)] disabled:opacity-40 disabled:shadow-none"
               aria-label="Enviar"
             >
