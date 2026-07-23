@@ -523,6 +523,10 @@ export function LojistaDashboard() {
                     setActiveSettingsTab={setActiveSettingsTab}
                     notificationSettings={notificationSettings}
                     setNotificationSettings={setNotificationSettings}
+                    showFavoritesModal={showFavoritesModal}
+                    setShowFavoritesModal={setShowFavoritesModal}
+                    favoriteCategory={favoriteCategory}
+                    setFavoriteCategory={setFavoriteCategory}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
