@@ -41,6 +41,7 @@ type B2BRequest = {
     initials: string;
     verified?: boolean;
   };
+  requesterType?: RequesterType;
   city: string;
   state: string;
   rating: number;
