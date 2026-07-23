@@ -658,19 +658,20 @@ export default function FeedParceiroPage() {
               return (
                 <li
                   key={r.id}
-                  className="overflow-hidden rounded-2xl border border-white/10 bg-[#1A1A1B]"
+                  className="overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
+                  style={{ borderColor: "rgba(0, 229, 255, 0.35)", boxShadow: "0 0 18px rgba(0, 229, 255, 0.10)" }}
                 >
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#0A0A0B] text-sm font-semibold text-[#A855F7]">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold" style={{ borderColor: "#00E5FF", color: "#00E5FF" }}>
                       {r.store.initials}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 text-sm font-semibold">
                         <span className="truncate">{r.store.name}</span>
                         {r.store.verified && (
-                          <span className="rounded-full bg-[#A855F7]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#A855F7]">
-                            ✓
+                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "rgba(0, 229, 255, 0.15)", color: "#00E5FF" }}>
+                            ✓ Lojista
                           </span>
                         )}
                       </div>
