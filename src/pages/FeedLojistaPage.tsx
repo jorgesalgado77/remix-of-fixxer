@@ -229,6 +229,136 @@ const MOCK_POSTS: FeedPost[] = [
     ],
     keywords: ["parceria", "marcenaria", "jundiaí"],
   },
+  {
+    id: "p9",
+    category: "cliente",
+    author: { id: "u-fernanda", name: "Fernanda Ribeiro", avatarInitials: "FR" },
+    rating: 4.9,
+    city: "Sorocaba, SP",
+    postedAt: "há 25 min",
+    title: "Cozinha Planejada para Apartamento de 68m² — Preciso de Orçamento",
+    description:
+      "Apartamento novo em Sorocaba, cozinha americana com 4,20m de bancada. Busco lojistas que trabalhem com MDF branco e puxadores em alumínio.",
+    budget: "R$ 12.000 – R$ 18.000",
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=70&auto=format&fit=crop",
+      },
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
+    keywords: ["cozinha", "planejada", "mdf", "sorocaba"],
+  },
+  {
+    id: "p10",
+    category: "prestador",
+    author: { id: "u-pedro-frete", name: "Pedro Transportes", avatarInitials: "PT" },
+    rating: 4.8,
+    city: "Votorantim, SP",
+    postedAt: "há 3 h",
+    specialty: "Fretista com Van Baú 3,5m",
+    radiusKm: 120,
+    title: "Fretista Dedicado para Móveis Planejados — Van Baú Fechada",
+    description:
+      "Van baú fechada 3,5m com escada e diárias flexíveis. Atendo lojistas no eixo Sorocaba/Campinas/São Paulo. Cargas seguradas.",
+    budget: "R$ 380/diária",
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
+    keywords: ["frete", "van", "transporte", "planejados"],
+  },
+  {
+    id: "p11",
+    category: "prestador",
+    author: {
+      id: "u-julia-montadora",
+      name: "Júlia Martins",
+      avatarInitials: "JM",
+      gold: true,
+    },
+    rating: 5.0,
+    city: "Sorocaba, SP",
+    postedAt: "há 4 h",
+    specialty: "Montadora Certificada Todeschini",
+    radiusKm: 90,
+    title: "Montadora Certificada — Todeschini, Italinea e Dellanno",
+    description:
+      "10 anos montando planejados de alto padrão. Tenho equipe própria de 2 auxiliares. Selo Ouro Fixxer. Fotos do portfólio disponíveis.",
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?w=1200&q=70&auto=format&fit=crop",
+      },
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
+    keywords: ["montadora", "todeschini", "italinea", "premium"],
+  },
+  {
+    id: "p12",
+    category: "fornecedor",
+    author: { id: "u-ferragens", name: "Ferragens Blum Distribuidora", avatarInitials: "FB" },
+    rating: 4.7,
+    city: "São Paulo, SP",
+    postedAt: "há 8 h",
+    title: "Corrediças e Dobradiças Blum — Estoque Total e Entrega em 24h",
+    description:
+      "Distribuidor autorizado Blum. Corrediças Tandem, Movento e dobradiças Clip-Top com preço de fábrica para lojistas cadastrados.",
+    budget: "Tabela exclusiva B2B",
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
+    keywords: ["ferragens", "blum", "corrediças", "b2b"],
+  },
+  {
+    id: "p13",
+    category: "cliente",
+    author: { id: "u-roberto", name: "Roberto Almeida", avatarInitials: "RA" },
+    rating: 4.6,
+    city: "Itu, SP",
+    postedAt: "há 12 h",
+    title: "Home Theater Planejado com Painel Ripado e Iluminação LED",
+    description:
+      "Sala de estar 4,80m x 3,20m. Quero painel ripado escuro com nichos e iluminação LED integrada. Envio referências no chat.",
+    budget: "R$ 6.000 – R$ 9.500",
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
+    keywords: ["home", "theater", "painel", "ripado", "itu"],
+  },
+  {
+    id: "p14",
+    category: "lojista",
+    author: { id: "u-loja-decor", name: "Decor Ambientes", avatarInitials: "DA" },
+    rating: 4.8,
+    city: "Campinas, SP",
+    postedAt: "há 1 dia",
+    title: "Parceria de Cross-Selling — Marcenaria + Tapeçaria",
+    description:
+      "Estamos abrindo parcerias com tapeçarias e vidraçarias para indicação mútua de clientes. Zero taxa, apenas troca de leads qualificados.",
+    budget: "Comissão negociável",
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
+    keywords: ["parceria", "cross", "selling", "marcenaria"],
+  },
 ];
 
 const FILTERS: { key: "todos" | FeedCategory; label: string; icon: React.ReactNode }[] = [
