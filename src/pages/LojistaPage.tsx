@@ -1145,7 +1145,11 @@ function ProfileView({
     activeSettingsTab,
     setActiveSettingsTab,
     notificationSettings,
-    setNotificationSettings
+    setNotificationSettings,
+    showFavoritesModal,
+    setShowFavoritesModal,
+    favoriteCategory,
+    setFavoriteCategory
 }: { 
     setIsProfileComplete: (complete: boolean) => void; 
     rating: number; 
@@ -1161,6 +1165,10 @@ function ProfileView({
     setActiveSettingsTab: (tab: string) => void;
     notificationSettings: any;
     setNotificationSettings: React.Dispatch<React.SetStateAction<any>>;
+    showFavoritesModal: boolean;
+    setShowFavoritesModal: (show: boolean) => void;
+    favoriteCategory: string;
+    setFavoriteCategory: (cat: string) => void;
 }) {
     const [userEmail, setUserEmail] = useState("");
     const [companyName, setCompanyName] = useState("");
