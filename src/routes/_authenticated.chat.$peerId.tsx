@@ -645,25 +645,31 @@ function ConversationPage() {
                       } ${m._pending ? "opacity-70" : ""}`}
                     >
                       {m.attachment_url && (
-                        <div className="mb-1">
-                          {isImageType(m.attachment_type) ? (
-                            <a href={m.attachment_url} target="_blank" rel="noreferrer">
-                              <img src={m.attachment_url} alt={m.attachment_name || "Anexo"} className="rounded-lg max-h-64 object-cover" />
-                            </a>
-                          ) : (
-                            <a
-                              href={m.attachment_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${
-                                mine ? "bg-black/20" : "bg-white/5 border border-white/10"
-                              }`}
-                            >
-                              <FileText className="w-4 h-4" />
-                              <span className="truncate max-w-[200px]">{m.attachment_name || "Anexo"}</span>
-                            </a>
-                          )}
-                        </div>
+                        <AttachmentBlock
+                          url={m.attachment_url}
+                          type={m.attachment_type}
+                          name={m.attachment_name || "anexo"}
+                          mine={mine}
+                          messageId={m.id}
+                          state={downloads[m.id]}
+                          onDownload={async () => {
+                            setDownloads((s) => ({ ...s, [m.id]: { pct: 0, loading: true } }));
+                            try {
+                              await downloadAttachment(m.attachment_url!, m.attachment_name || "anexo", (p) =>
+                                setDownloads((s) => ({ ...s, [m.id]: { pct: p.percent, loading: true } })),
+                              );
+                              toast.success("Download concluído");
+                            } catch (err: any) {
+                              toast.error("Falha no download", { description: err?.message });
+                            } finally {
+                              setDownloads((s) => {
+                                const next = { ...s };
+                                delete next[m.id];
+                                return next;
+                              });
+                            }
+                          }}
+                        />
                       )}
                       {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
                       {m._pending && uploading && m._draftFile && (
@@ -673,7 +679,28 @@ function ConversationPage() {
                       )}
                       <p className={`text-[9px] mt-1 flex items-center gap-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
                         {new Date(m.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                        {mine && !m._pending && !m._failed && (m.read ? " · Lida" : " · Enviada")}
+                        {mine && !m._pending && !m._failed && (() => {
+                          const seenAt =
+                            peerLastReadAt && new Date(m.created_at) <= new Date(peerLastReadAt)
+                              ? peerLastReadAt
+                              : null;
+                          const isRead = !!m.read || !!seenAt;
+                          return (
+                            <span className="inline-flex items-center gap-0.5">
+                              {" · "}
+                              {isRead ? (
+                                <CheckCheck className="w-3 h-3 text-sky-300 inline" />
+                              ) : (
+                                <Check className="w-3 h-3 inline" />
+                              )}
+                              {isRead
+                                ? seenAt
+                                  ? `Visto ${new Date(seenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                                  : "Visto"
+                                : "Enviada"}
+                            </span>
+                          );
+                        })()}
                         {m._pending && <> · <Loader2 className="w-2.5 h-2.5 animate-spin inline" /> enviando</>}
                         {m._failed && (
                           <>
@@ -694,6 +721,7 @@ function ConversationPage() {
                           </>
                         )}
                       </p>
+
                     </div>
                   </div>
                 );
