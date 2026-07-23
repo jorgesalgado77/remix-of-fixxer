@@ -1940,17 +1940,19 @@ function ProfileView({
                     </div>
                     
                     {cropImage && (
-                        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-                            <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6 md:p-8 max-w-xl w-full space-y-6">
-                                <div className="flex justify-between items-center">
+                        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+                            <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6 md:p-8 max-w-xl w-full my-auto flex flex-col max-h-[calc(100dvh-2rem)]">
+                                <div className="flex justify-between items-center shrink-0 mb-4">
                                     <h3 className="text-sm font-black text-white uppercase italic">Ajustar Imagem</h3>
                                     <button onClick={() => setCropImage(null)} className="text-muted-foreground hover:text-white"><X className="w-5 h-5" /></button>
                                 </div>
-                                <div className="aspect-square bg-black/40 rounded-2xl overflow-hidden border border-white/5 relative flex items-center justify-center">
-                                    <img src={cropImage} alt="Crop preview" className="max-w-full max-h-full" />
-                                    <div className="absolute inset-0 border-2 border-primary border-dashed opacity-50 pointer-events-none rounded-full m-4" />
+                                <div className="flex-1 min-h-0 overflow-y-auto">
+                                    <div className="aspect-square bg-black/40 rounded-2xl overflow-hidden border border-white/5 relative flex items-center justify-center">
+                                        <img src={cropImage} alt="Crop preview" className="max-w-full max-h-full" />
+                                        <div className="absolute inset-0 border-2 border-primary border-dashed opacity-50 pointer-events-none rounded-full m-4" />
+                                    </div>
                                 </div>
-                                <div className="flex gap-4">
+                                <div className="flex gap-4 shrink-0 mt-4 pb-[env(safe-area-inset-bottom)]">
                                     <Button variant="ghost" onClick={() => setCropImage(null)} className="flex-1 uppercase font-bold">Cancelar</Button>
                                     <Button 
                                         onClick={async () => {
@@ -1998,6 +2000,7 @@ function ProfileView({
                             </div>
                         </div>
                     )}
+
                     
                     {uploadProgress.length > 0 && (
                         <div className="space-y-3 p-4 rounded-2xl bg-white/5 border border-white/10 animate-in fade-in slide-in-from-top-2">
