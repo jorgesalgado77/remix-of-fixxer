@@ -7,6 +7,11 @@ export type MockMessage = {
   fromMe: boolean;
   content: string;
   minutesAgo: number; // relativo a "agora"
+  attachment?: {
+    url: string;
+    type: string; // ex.: "image/jpeg", "video/mp4"
+    name: string;
+  };
 };
 
 export type MockConversation = {
@@ -59,7 +64,7 @@ export const MOCK_CONVERSATIONS: MockConversation[] = [
     messages: [
       { id: "m1", fromMe: false, minutesAgo: 180, content: "Olá! Vi seu pedido de repasse em Alphaville, tenho interesse." },
       { id: "m2", fromMe: true, minutesAgo: 175, content: "Perfeito, Carlos. Você tem disponibilidade para 3ª feira?" },
-      { id: "m3", fromMe: false, minutesAgo: 172, content: "Tenho sim. Posso fazer a conferência das medidas antes, sem custo extra." },
+      { id: "m3", fromMe: false, minutesAgo: 172, content: "Tenho sim. Aqui vai uma foto do último repasse que fiz para referência.", attachment: { url: IMG("photo-1600585154340-be6161a56a0c", 1200), type: "image/jpeg", name: "repasse-alphaville.jpg" } },
       { id: "m4", fromMe: true, minutesAgo: 170, content: "Ótimo. Envio o projeto executivo em PDF ainda hoje." },
       { id: "m5", fromMe: false, minutesAgo: 45, content: "Fechado! Aguardo o projeto. Já bloqueei minha agenda." },
       { id: "m6", fromMe: false, minutesAgo: 12, content: "Aliás, precisa de fretista parceiro? Trabalho com um de confiança." },
@@ -92,10 +97,12 @@ export const MOCK_CONVERSATIONS: MockConversation[] = [
     online: false,
     messages: [
       { id: "m1", fromMe: true, minutesAgo: 1440, content: "Bom dia! Preciso de cotação de tampo em mármore branco 2,40m x 0,65m." },
-      { id: "m2", fromMe: false, minutesAgo: 1430, content: "Bom dia! Temos em estoque. R$ 1.180 com corte, polimento e cuba embutida." },
-      { id: "m3", fromMe: true, minutesAgo: 1425, content: "Prazo de entrega em Sorocaba?" },
-      { id: "m4", fromMe: false, minutesAgo: 1420, content: "5 dias úteis. Se fechar hoje, entrego na 6ª sem custo de frete." },
-      { id: "m5", fromMe: false, minutesAgo: 300, content: "Consegue confirmar o pedido para eu já reservar a chapa?" },
+      { id: "m2", fromMe: false, minutesAgo: 1430, content: "Bom dia! Temos em estoque. Veja a chapa disponível:", attachment: { url: IMG("photo-1615873968403-89e068629265", 1200), type: "image/jpeg", name: "marmore-branco-chapa.jpg" } },
+      { id: "m3", fromMe: false, minutesAgo: 1428, content: "R$ 1.180 com corte, polimento e cuba embutida." },
+      { id: "m4", fromMe: true, minutesAgo: 1425, content: "Prazo de entrega em Sorocaba?" },
+      { id: "m5", fromMe: false, minutesAgo: 1420, content: "5 dias úteis. Se fechar hoje, entrego na 6ª sem custo de frete." },
+      { id: "m6", fromMe: false, minutesAgo: 300, content: "Vídeo curto do acabamento polido para você ver de perto:", attachment: { url: "https://cdn.coverr.co/videos/coverr-a-marble-slab-being-polished-9203/1080p.mp4", type: "video/mp4", name: "polimento-marmore.mp4" } },
+      { id: "m7", fromMe: false, minutesAgo: 30, content: "Consegue confirmar o pedido para eu já reservar a chapa?" },
     ],
     profile: {
       companyName: "Marmoraria Granitos & Arte",
@@ -124,10 +131,11 @@ export const MOCK_CONVERSATIONS: MockConversation[] = [
     online: true,
     messages: [
       { id: "m1", fromMe: false, minutesAgo: 60, content: "Oi! Vocês fazem projeto de dormitório planejado sob medida?" },
-      { id: "m2", fromMe: true, minutesAgo: 58, content: "Olá, Mariana! Fazemos sim. Você já tem as medidas ou prefere agendar visita técnica?" },
-      { id: "m3", fromMe: false, minutesAgo: 55, content: "Prefiro agendar. Moro na região central de Sorocaba." },
-      { id: "m4", fromMe: true, minutesAgo: 50, content: "Perfeito. Amanhã de manhã ou tarde?" },
-      { id: "m5", fromMe: false, minutesAgo: 8, content: "Tarde, por favor 🙌 Após as 14h." },
+      { id: "m2", fromMe: false, minutesAgo: 59, content: "Segue foto do quarto — quero aproveitar as duas paredes:", attachment: { url: IMG("photo-1505691938895-1758d7feb511", 1200), type: "image/jpeg", name: "quarto-mariana.jpg" } },
+      { id: "m3", fromMe: true, minutesAgo: 58, content: "Olá, Mariana! Fazemos sim. Você já tem as medidas ou prefere agendar visita técnica?" },
+      { id: "m4", fromMe: false, minutesAgo: 55, content: "Prefiro agendar. Moro na região central de Sorocaba." },
+      { id: "m5", fromMe: true, minutesAgo: 50, content: "Perfeito. Amanhã de manhã ou tarde?" },
+      { id: "m6", fromMe: false, minutesAgo: 8, content: "Tarde, por favor 🙌 Após as 14h." },
     ],
     profile: {
       bio: "Cliente Final — reformando o apartamento novo em Sorocaba. Procurando dormitório planejado e cozinha compacta.",
@@ -149,9 +157,10 @@ export const MOCK_CONVERSATIONS: MockConversation[] = [
     online: false,
     messages: [
       { id: "m1", fromMe: false, minutesAgo: 2880, content: "Fala! Estamos com agenda cheia em Jundiaí, topa pegar 3 O.S. de montagem?" },
-      { id: "m2", fromMe: true, minutesAgo: 2870, content: "Topo! Qual a comissão e prazo?" },
-      { id: "m3", fromMe: false, minutesAgo: 2860, content: "50/50 no valor da O.S. e prazo de 10 dias para finalizar as três." },
-      { id: "m4", fromMe: true, minutesAgo: 400, content: "Fechado. Manda os endereços e projetos que já monto a rota." },
+      { id: "m2", fromMe: false, minutesAgo: 2878, content: "Um dos projetos:", attachment: { url: IMG("photo-1616486338812-3dadae4b4ace", 1200), type: "image/jpeg", name: "projeto-cozinha-jundiai.jpg" } },
+      { id: "m3", fromMe: true, minutesAgo: 2870, content: "Topo! Qual a comissão e prazo?" },
+      { id: "m4", fromMe: false, minutesAgo: 2860, content: "50/50 no valor da O.S. e prazo de 10 dias para finalizar as três." },
+      { id: "m5", fromMe: true, minutesAgo: 400, content: "Fechado. Manda os endereços e projetos que já monto a rota." },
     ],
     profile: {
       companyName: "Móveis Bianchi",
@@ -181,8 +190,9 @@ export const MOCK_CONVERSATIONS: MockConversation[] = [
     online: false,
     messages: [
       { id: "m1", fromMe: false, minutesAgo: 42, content: "Boa tarde, a porta do armário da cozinha desalinhou. Vocês fazem assistência técnica?" },
-      { id: "m2", fromMe: true, minutesAgo: 40, content: "Boa tarde! Fazemos sim. Custo mínimo de visita é R$ 120, abatido no orçamento se aceito." },
-      { id: "m3", fromMe: false, minutesAgo: 3, content: "Pode ser amanhã? Estou em Votorantim." },
+      { id: "m2", fromMe: false, minutesAgo: 41, content: "Segue foto do defeito:", attachment: { url: IMG("photo-1600607687644-c7171b42498f", 1200), type: "image/jpeg", name: "porta-desalinhada.jpg" } },
+      { id: "m3", fromMe: true, minutesAgo: 40, content: "Boa tarde! Fazemos sim. Custo mínimo de visita é R$ 120, abatido no orçamento se aceito." },
+      { id: "m4", fromMe: false, minutesAgo: 3, content: "Pode ser amanhã? Estou em Votorantim." },
     ],
     profile: {
       bio: "Cliente residencial — pequenos ajustes e assistência técnica em móveis planejados existentes.",
