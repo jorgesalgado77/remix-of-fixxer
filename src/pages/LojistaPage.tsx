@@ -1199,26 +1199,7 @@ function ProfileView({
     showFavoritesModal,
     setShowFavoritesModal,
     favoriteCategory,
-    setFavoriteCategory
-}: { 
-    setIsProfileComplete: (complete: boolean) => void; 
-    rating: number; 
-    getRatingColor: (val: number) => string; 
-    setRating: (rating: number) => void;
-    undoStack: any[];
-    pushToUndo: (action: string, state: any) => void;
-    setEmergencySetGallery: (fn: any) => void;
-    handleUndo: () => void;
-    failedUploads: File[];
-    setFailedUploads: React.Dispatch<React.SetStateAction<File[]>>;
-    activeSettingsTab: string;
-    setActiveSettingsTab: (tab: string) => void;
-    notificationSettings: any;
-    setNotificationSettings: React.Dispatch<React.SetStateAction<any>>;
-    showFavoritesModal: boolean;
-    setShowFavoritesModal: (show: boolean) => void;
-    favoriteCategory: string;
-    setFavoriteCategory: (cat: string) => void;
+    setFavoriteCategory,
     branches,
     loadingFavorites,
     filteredFavorites
