@@ -39,8 +39,10 @@ import {
   Settings,
   XCircle,
   Eye,
-  Heart
+  Heart,
+  Loader2
 } from "lucide-react";
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabaseExternal } from "@/lib/supabaseExternal";
