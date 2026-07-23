@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { 
   Store, 
@@ -64,6 +64,7 @@ import { compressImage } from "@/utils/image-compression";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [rating, setRating] = useState(4.9);
@@ -162,6 +163,11 @@ export function LojistaDashboard() {
       return;
     }
     setActiveTab(tab);
+    setMobileMenuOpen(false);
+  };
+
+  const handleOpenSettings = () => {
+    setActiveTab('profile');
     setMobileMenuOpen(false);
   };
 
@@ -306,6 +312,13 @@ export function LojistaDashboard() {
                         onClick={() => handleTabChange('reviews')}
                         disabled={!isProfileComplete}
                       />
+
+                      <SidebarButton 
+                        icon={<Settings className="w-5 h-5"/>} 
+                        label="Configurações" 
+                        active={activeTab === 'profile'} 
+                        onClick={handleOpenSettings} 
+                      />
                   </nav>
                 </TooltipProvider>
                 <div className="mt-auto pt-6 flex flex-col gap-4">
@@ -352,6 +365,13 @@ export function LojistaDashboard() {
                 active={activeTab === 'reviews'} 
                 onClick={() => handleTabChange('reviews')}
                 disabled={!isProfileComplete}
+              />
+
+              <SidebarButton 
+                icon={<Settings className="w-4 h-4"/>} 
+                label="Configurações" 
+                active={activeTab === 'profile'} 
+                onClick={handleOpenSettings} 
               />
           </nav>
         </TooltipProvider>
@@ -503,7 +523,11 @@ export function LojistaDashboard() {
         </button>
         <div className="flex flex-col items-center gap-1 relative">
             <button 
-                onClick={() => handleTabChange('profile')} 
+                onClick={() => {
+                    const profileId = localStorage.getItem('fixxer_lojista_id') || 'meu-perfil';
+                    navigate({ to: `/lojista/${profileId}` as any });
+                }} 
+
                 className={`w-12 h-12 -mt-6 bg-black border border-white/20 rounded-full flex items-center justify-center shadow-2xl transition-all ${activeTab === 'profile' ? 'border-primary text-primary' : 'text-white'}`}
             >
                 <Store className="w-6 h-6" />
@@ -1183,6 +1207,7 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         videoUrls: data.video_urls,
                         documents: data.documents
                     }));
+                    if (data.id) localStorage.setItem('fixxer_lojista_id', data.id);
                 }
             } catch (err) {
                 console.error("Erro ao carregar perfil:", err);
@@ -2033,6 +2058,17 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                                     .upsert(formData, { onConflict: 'user_id' });
 
                                 if (error) throw error;
+
+                                // Buscar o ID gerado se for novo ou confirmar o existente
+                                const { data: profileData } = await supabaseExternal
+                                    .from('store_profiles')
+                                    .select('id')
+                                    .eq('user_id', user.id)
+                                    .single();
+                                
+                                if (profileData?.id) {
+                                    localStorage.setItem('fixxer_lojista_id', profileData.id);
+                                }
 
                                 // Salvar no LocalStorage como garantia
                                 localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
