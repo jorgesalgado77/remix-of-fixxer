@@ -163,6 +163,7 @@ function RootComponent() {
 
   useEffect(() => {
     fixAuthAndPreview();
+    void import("../lib/chat-read-queue").then((m) => m.initChatReadQueue());
   }, []);
 
   // Rotas públicas/marketing/auth onde a barra não deve aparecer

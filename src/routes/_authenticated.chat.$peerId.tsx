@@ -12,17 +12,22 @@ import {
   X,
   FileText,
   Image as ImageIcon,
+  RotateCcw,
+  AlertCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import {
   hydrateChatPreferences,
   isConversationArchived,
   isConversationMuted,
+  markConversationReadLocal,
   setConversationArchived,
   setConversationMuted,
 } from "@/lib/chat-preferences";
+import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
+import { uploadWithProgress } from "@/lib/upload-with-progress";
 
 export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
@@ -38,6 +43,11 @@ type MessageRow = {
   attachment_url?: string | null;
   attachment_type?: string | null;
   attachment_name?: string | null;
+  // Cliente apenas:
+  _pending?: boolean;
+  _failed?: boolean;
+  _draftText?: string;
+  _draftFile?: File | null;
 };
 
 const PAGE_SIZE = 30;
@@ -61,9 +71,10 @@ function ConversationPage() {
   const [muted, setMuted] = useState(false);
   const [archived, setArchived] = useState(false);
 
-  // Anexos
+  // Anexos + progresso
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Presença + typing
@@ -72,58 +83,65 @@ function ConversationPage() {
   const presenceRef = useRef<any>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSentRef = useRef<number>(0);
+  const stopTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
+  const idSetRef = useRef<Set<string>>(new Set());
+
+  const selectCols =
+    "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name";
+
+  const loadPage = useCallback(
+    async (uid: string, beforeIso?: string): Promise<MessageRow[]> => {
+      const runQuery = async (cols: string) => {
+        let q = supabaseExternal
+          .from("messages")
+          .select(cols)
+          .or(
+            `and(sender_id.eq.${uid},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${uid})`,
+          )
+          .order("created_at", { ascending: false })
+          .limit(PAGE_SIZE);
+        if (beforeIso) q = q.lt("created_at", beforeIso);
+        return q;
+      };
+      try {
+        const { data, error } = await runQuery(selectCols);
+        if (error) throw error;
+        return ((data as unknown as MessageRow[]) ?? []).reverse();
+      } catch {
+        const { data } = await runQuery("id, sender_id, recipient_id, content, created_at, read");
+        return ((data as unknown as MessageRow[]) ?? []).reverse();
+      }
+    },
+    [peerId],
+  );
 
   const markIncomingRead = async (uid: string) => {
     setMarkingRead(true);
     try {
-      const { error } = await supabaseExternal
-        .from("messages")
-        .update({ read: true })
-        .eq("sender_id", peerId)
-        .eq("recipient_id", uid)
-        .eq("read", false);
-      if (error) throw error;
+      enqueueMarkConversationRead(uid, peerId);
+      markConversationReadLocal(uid, peerId);
       window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
-    } catch (e: any) {
-      // Não interrompe a UI; apenas avisa
-      toast.error("Falha ao sincronizar leitura", { description: e?.message });
     } finally {
       setMarkingRead(false);
     }
   };
 
-  const selectCols = "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name";
-
-  const loadPage = async (uid: string, beforeIso?: string): Promise<MessageRow[]> => {
-    const runQuery = async (cols: string) => {
-      let q = supabaseExternal
-        .from("messages")
-        .select(cols)
-        .or(
-          `and(sender_id.eq.${uid},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${uid})`,
-        )
-        .order("created_at", { ascending: false })
-        .limit(PAGE_SIZE);
-      if (beforeIso) q = q.lt("created_at", beforeIso);
-      return q;
-    };
+  const sendTypingStop = () => {
+    if (!presenceRef.current || !userId) return;
     try {
-      const { data, error } = await runQuery(selectCols);
-      if (error) throw error;
-      return ((data as unknown as MessageRow[]) ?? []).reverse();
-    } catch {
-      const { data } = await runQuery("id, sender_id, recipient_id, content, created_at, read");
-      return ((data as unknown as MessageRow[]) ?? []).reverse();
-    }
+      presenceRef.current.send({ type: "broadcast", event: "typing-stop", payload: { from: userId } });
+    } catch {}
   };
 
   useEffect(() => {
     let cancelled = false;
     let channel: any = null;
     let presenceChannel: any = null;
+    let expireTimer: ReturnType<typeof setInterval> | null = null;
+    let lastPeerHeartbeat = 0;
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
@@ -150,6 +168,7 @@ function ConversationPage() {
       setArchived(isConversationArchived(uid, peerId));
 
       const first = await loadPage(uid);
+      idSetRef.current = new Set(first.map((m) => m.id));
       if (!cancelled) {
         setMessages(first);
         setHasMore(first.length === PAGE_SIZE);
@@ -157,7 +176,7 @@ function ConversationPage() {
       }
       await markIncomingRead(uid);
 
-      // Canal de INSERT de mensagens
+      // Canal de INSERT/UPDATE de mensagens
       try {
         const channelName = `chat-conv-${Math.random().toString(36).slice(2)}`;
         channel = supabaseExternal
@@ -168,11 +187,13 @@ function ConversationPage() {
             (payload: any) => {
               const m = payload?.new as MessageRow | undefined;
               if (!m) return;
-              const isThisConv =
+              const inConv =
                 (m.sender_id === uid && m.recipient_id === peerId) ||
                 (m.sender_id === peerId && m.recipient_id === uid);
-              if (!isThisConv) return;
-              setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+              if (!inConv) return;
+              if (idSetRef.current.has(m.id)) return;
+              idSetRef.current.add(m.id);
+              setMessages((prev) => [...prev, m]);
               if (m.recipient_id === uid) markIncomingRead(uid);
             },
           )
@@ -195,13 +216,19 @@ function ConversationPage() {
             if (key === peerId) setPeerOnline(true);
           })
           .on("presence", { event: "leave" }, ({ key }: any) => {
-            if (key === peerId) setPeerOnline(false);
+            if (key === peerId) { setPeerOnline(false); setPeerTyping(false); }
           })
           .on("broadcast", { event: "typing" }, ({ payload }: any) => {
             if (payload?.from !== peerId) return;
+            lastPeerHeartbeat = Date.now();
             setPeerTyping(true);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-            typingTimeoutRef.current = setTimeout(() => setPeerTyping(false), 3000);
+            typingTimeoutRef.current = setTimeout(() => setPeerTyping(false), 4000);
+          })
+          .on("broadcast", { event: "typing-stop" }, ({ payload }: any) => {
+            if (payload?.from !== peerId) return;
+            setPeerTyping(false);
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
           })
           .subscribe(async (status: string) => {
             if (status === "SUBSCRIBED") {
@@ -209,17 +236,33 @@ function ConversationPage() {
             }
           });
         presenceRef.current = presenceChannel;
+
+        // Watchdog: se não recebemos "typing" há > 5s, desliga
+        expireTimer = setInterval(() => {
+          if (Date.now() - lastPeerHeartbeat > 5000) setPeerTyping(false);
+        }, 1500);
       } catch {}
     })();
 
+    // Ao trocar de rota / recarregar / esconder aba: envia typing-stop e derruba presença
+    const onHide = () => { sendTypingStop(); };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onHide);
+
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onHide);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
+      if (expireTimer) clearInterval(expireTimer);
+      try { sendTypingStop(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
       if (presenceChannel) { try { supabaseExternal.removeChannel(presenceChannel); } catch {} }
       presenceRef.current = null;
     };
-  }, [peerId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peerId, loadPage]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -239,9 +282,11 @@ function ConversationPage() {
     const el = scrollRef.current;
     const prevHeight = el?.scrollHeight ?? 0;
     const older = await loadPage(userId, oldest);
-    if (older.length === 0) { setHasMore(false); return; }
+    const dedup = older.filter((m) => !idSetRef.current.has(m.id));
+    dedup.forEach((m) => idSetRef.current.add(m.id));
+    if (dedup.length === 0) { setHasMore(false); return; }
     setHasMore(older.length === PAGE_SIZE);
-    setMessages((prev) => [...older, ...prev]);
+    setMessages((prev) => [...dedup, ...prev]);
     requestAnimationFrame(() => {
       if (!el) return;
       el.scrollTop = el.scrollHeight - prevHeight;
@@ -251,31 +296,26 @@ function ConversationPage() {
   const sendTyping = () => {
     if (!presenceRef.current || !userId) return;
     const now = Date.now();
-    if (now - lastTypingSentRef.current < 1500) return; // throttle
-    lastTypingSentRef.current = now;
-    try {
-      presenceRef.current.send({
-        type: "broadcast",
-        event: "typing",
-        payload: { from: userId },
-      });
-    } catch {}
+    if (now - lastTypingSentRef.current >= 1500) {
+      lastTypingSentRef.current = now;
+      try {
+        presenceRef.current.send({ type: "broadcast", event: "typing", payload: { from: userId } });
+      } catch {}
+    }
+    // agenda "typing-stop" após 3s de inatividade
+    if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
+    stopTypingTimerRef.current = setTimeout(sendTypingStop, 3000);
   };
 
-  const uploadAttachment = async (file: File): Promise<{ url: string; type: string; name: string } | null> => {
+  const doUpload = async (file: File) => {
     if (!userId) return null;
     setUploading(true);
+    setUploadPct(0);
     try {
       const ext = file.name.split(".").pop() || "bin";
-      const path = `chat/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabaseExternal.storage.from("media").upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: file.type,
-      });
-      if (error) throw error;
-      const { data } = supabaseExternal.storage.from("media").getPublicUrl(path);
-      return { url: data.publicUrl, type: file.type || "application/octet-stream", name: file.name };
+      const path = `chat/${userId}/${peerId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { publicUrl } = await uploadWithProgress("media", path, file, (p) => setUploadPct(p.percent));
+      return { url: publicUrl, type: file.type || "application/octet-stream", name: file.name };
     } catch (e: any) {
       toast.error("Falha no upload do anexo", { description: e?.message });
       return null;
@@ -284,69 +324,106 @@ function ConversationPage() {
     }
   };
 
+  const persistMessage = async (
+    tmpId: string,
+    text: string,
+    attachment: { url: string; type: string; name: string } | null,
+  ) => {
+    const payload: any = { sender_id: userId, recipient_id: peerId, content: text || null, read: false };
+    if (attachment) {
+      payload.attachment_url = attachment.url;
+      payload.attachment_type = attachment.type;
+      payload.attachment_name = attachment.name;
+    }
+    const { data, error } = await supabaseExternal
+      .from("messages")
+      .insert(payload)
+      .select(selectCols)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) {
+      const row = data as unknown as MessageRow;
+      idSetRef.current.add(row.id);
+      setMessages((prev) => prev.map((m) => (m.id === tmpId ? row : m)));
+    }
+  };
+
   const send = async () => {
     const text = content.trim();
     if ((!text && !pendingFile) || !userId || sending) return;
     setSending(true);
+    sendTypingStop();
 
-    let attachment: { url: string; type: string; name: string } | null = null;
-    if (pendingFile) {
-      attachment = await uploadAttachment(pendingFile);
-      if (!attachment) { setSending(false); return; }
-    }
-
+    const draftFile = pendingFile;
+    const tmpId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const optimistic: MessageRow = {
-      id: `tmp-${Date.now()}`,
+      id: tmpId,
       sender_id: userId,
       recipient_id: peerId,
       content: text || null,
       created_at: new Date().toISOString(),
       read: false,
-      attachment_url: attachment?.url ?? null,
-      attachment_type: attachment?.type ?? null,
-      attachment_name: attachment?.name ?? null,
+      _pending: true,
+      _draftText: text,
+      _draftFile: draftFile,
     };
     setMessages((prev) => [...prev, optimistic]);
     setContent("");
     setPendingFile(null);
 
     try {
-      const payload: any = { sender_id: userId, recipient_id: peerId, content: text || null, read: false };
-      if (attachment) {
-        payload.attachment_url = attachment.url;
-        payload.attachment_type = attachment.type;
-        payload.attachment_name = attachment.name;
+      let attachment: { url: string; type: string; name: string } | null = null;
+      if (draftFile) {
+        attachment = await doUpload(draftFile);
+        if (!attachment) throw new Error("Upload cancelado");
       }
-      const { data, error } = await supabaseExternal
-        .from("messages")
-        .insert(payload)
-        .select(selectCols)
-        .maybeSingle();
-      if (error) throw error;
-      if (data) {
-        setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? (data as MessageRow) : m)));
-      }
+      await persistMessage(tmpId, text, attachment);
     } catch (e: any) {
-      toast.error("Falha ao enviar mensagem", { description: e?.message });
-      setMessages((prev) => prev.filter((m) => !m.id.startsWith("tmp-")));
+      toast.error("Falha ao enviar", { description: e?.message });
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tmpId ? { ...m, _pending: false, _failed: true } : m)),
+      );
     } finally {
       setSending(false);
     }
   };
 
+  const retrySend = async (m: MessageRow) => {
+    if (!userId) return;
+    setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, _pending: true, _failed: false } : x)));
+    try {
+      let attachment: { url: string; type: string; name: string } | null = null;
+      if (m._draftFile) {
+        attachment = await doUpload(m._draftFile);
+        if (!attachment) throw new Error("Upload cancelado");
+      }
+      await persistMessage(m.id, m._draftText || "", attachment);
+    } catch (e: any) {
+      toast.error("Retentativa falhou", { description: e?.message });
+      setMessages((prev) =>
+        prev.map((x) => (x.id === m.id ? { ...x, _pending: false, _failed: true } : x)),
+      );
+    }
+  };
+
+  const discardFailed = (id: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+  };
+
   const markAsUnread = async () => {
     if (!userId) return;
-    const lastIncoming = [...messages].reverse().find((m) => m.recipient_id === userId);
-    if (!lastIncoming) { toast.info("Sem mensagens recebidas para marcar como não lida"); return; }
+    const lastIncoming = [...messages].reverse().find((m) => m.recipient_id === userId && !m.id.startsWith("tmp-"));
+    if (!lastIncoming) { toast.info("Sem mensagens recebidas"); return; }
     try {
       const { error } = await supabaseExternal.from("messages").update({ read: false }).eq("id", lastIncoming.id);
       if (error) throw error;
       setMessages((prev) => prev.map((m) => (m.id === lastIncoming.id ? { ...m, read: false } : m)));
+      markConversationReadLocal(userId, peerId, new Date(0).toISOString());
       window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
       toast.success("Marcada como não lida");
       navigate({ to: "/chat" as any });
     } catch (e: any) {
-      toast.error("Não foi possível marcar como não lida", { description: e?.message });
+      toast.error("Falha ao marcar como não lida", { description: e?.message });
     }
   };
 
@@ -378,15 +455,7 @@ function ConversationPage() {
     return out;
   }, [messages]);
 
-  const statusLine = peerTyping
-    ? "Digitando..."
-    : peerOnline
-    ? "Online"
-    : muted
-    ? "Silenciada"
-    : archived
-    ? "Arquivada"
-    : "Offline";
+  const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col pb-32">
@@ -475,21 +544,19 @@ function ConversationPage() {
                 return (
                   <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                     <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                      className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm relative ${
                         mine
-                          ? "bg-primary text-primary-foreground rounded-br-sm"
+                          ? m._failed
+                            ? "bg-red-500/20 border border-red-500/40 text-white rounded-br-sm"
+                            : "bg-primary text-primary-foreground rounded-br-sm"
                           : "bg-[#1A1A1B] border border-white/10 text-white rounded-bl-sm"
-                      }`}
+                      } ${m._pending ? "opacity-70" : ""}`}
                     >
                       {m.attachment_url && (
                         <div className="mb-1">
                           {isImageType(m.attachment_type) ? (
                             <a href={m.attachment_url} target="_blank" rel="noreferrer">
-                              <img
-                                src={m.attachment_url}
-                                alt={m.attachment_name || "Anexo"}
-                                className="rounded-lg max-h-64 object-cover"
-                              />
+                              <img src={m.attachment_url} alt={m.attachment_name || "Anexo"} className="rounded-lg max-h-64 object-cover" />
                             </a>
                           ) : (
                             <a
@@ -507,9 +574,33 @@ function ConversationPage() {
                         </div>
                       )}
                       {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
-                      <p className={`text-[9px] mt-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
+                      {m._pending && uploading && m._draftFile && (
+                        <div className="mt-2 w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
+                          <div className="h-full bg-white/80 transition-all" style={{ width: `${uploadPct}%` }} />
+                        </div>
+                      )}
+                      <p className={`text-[9px] mt-1 flex items-center gap-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
                         {new Date(m.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                        {mine && (m.read ? " · Lida" : " · Enviada")}
+                        {mine && !m._pending && !m._failed && (m.read ? " · Lida" : " · Enviada")}
+                        {m._pending && <> · <Loader2 className="w-2.5 h-2.5 animate-spin inline" /> enviando</>}
+                        {m._failed && (
+                          <>
+                            {" · "}
+                            <AlertCircle className="w-3 h-3 inline" />
+                            <button
+                              onClick={() => retrySend(m)}
+                              className="ml-1 inline-flex items-center gap-1 underline text-white/90 hover:text-white"
+                            >
+                              <RotateCcw className="w-2.5 h-2.5" /> Reenviar
+                            </button>
+                            <button
+                              onClick={() => discardFailed(m.id)}
+                              className="ml-2 underline text-white/70 hover:text-white"
+                            >
+                              Descartar
+                            </button>
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -533,7 +624,6 @@ function ConversationPage() {
         )}
       </div>
 
-      {/* Composer */}
       <div className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3">
         <div className="max-w-3xl mx-auto">
           {pendingFile && (
@@ -545,13 +635,17 @@ function ConversationPage() {
               )}
               <span className="truncate flex-1">{pendingFile.name}</span>
               <span className="text-muted-foreground">{Math.round(pendingFile.size / 1024)} KB</span>
-              <button
-                onClick={() => setPendingFile(null)}
-                className="w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center"
-                aria-label="Remover anexo"
-              >
+              <button onClick={() => setPendingFile(null)} className="w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center" aria-label="Remover">
                 <X className="w-3.5 h-3.5" />
               </button>
+            </div>
+          )}
+          {uploading && (
+            <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+              <Loader2 className="w-3 h-3 animate-spin" /> Enviando anexo · {uploadPct}%
+              <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-primary transition-all" style={{ width: `${uploadPct}%` }} />
+              </div>
             </div>
           )}
           <div className="flex items-end gap-2">
@@ -582,6 +676,7 @@ function ConversationPage() {
             <textarea
               value={content}
               onChange={(e) => { setContent(e.target.value); sendTyping(); }}
+              onBlur={sendTypingStop}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
               }}
