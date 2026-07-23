@@ -1030,25 +1030,55 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             </div>
 
             {/* Ações */}
-            <div className="flex gap-2 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onClose}
-                className="flex-1 text-white/70 hover:text-white uppercase italic font-black text-xs h-12"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 uppercase italic font-black text-xs h-12 border-0 text-black"
-                style={{ background: theme.hex, ...theme.glowStrong }}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                {submitting ? "Publicando..." : "Publicar Serviço"}
-              </Button>
+            <div className="space-y-2 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={saveDraft}
+                  className="flex-1 border-white/15 bg-white/5 text-white hover:bg-white/10 uppercase italic font-black text-xs h-11"
+                >
+                  <Save className="w-4 h-4 mr-2" style={{ color: theme.hex }} />
+                  Salvar Rascunho
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    discardDraft();
+                    resetForm();
+                    toast.success("Rascunho descartado.");
+                  }}
+                  className="flex-1 text-white/50 hover:text-white uppercase italic font-black text-xs h-11"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Descartar Rascunho
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onClose}
+                  className="flex-1 text-white/70 hover:text-white uppercase italic font-black text-xs h-12"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 uppercase italic font-black text-xs h-12 border-0 text-black"
+                  style={{ background: theme.hex, ...theme.glowStrong }}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {submitting ? "Publicando..." : "Publicar Serviço"}
+                </Button>
+              </div>
+              <p className="text-[9px] text-white/40 text-center italic">
+                Rascunhos ficam salvos localmente neste navegador.
+              </p>
             </div>
+
           </form>
 
           {/* PRÉVIA */}
