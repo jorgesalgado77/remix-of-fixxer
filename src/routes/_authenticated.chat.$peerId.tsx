@@ -170,6 +170,29 @@ function ConversationPage() {
       setUserId(uid);
       if (!uid) { setLoading(false); return; }
 
+      // === MODO MOCK (peerId "mock-*") ===
+      if (isMockPeerId(peerId)) {
+        const mock = getMockConversation(peerId);
+        if (mock) {
+          setPeerName(mock.peerName);
+          setPeerAvatar(mock.peerAvatar);
+          setPeerOnline(!!mock.online);
+          const mockRows: MessageRow[] = mock.messages.map((m) => ({
+            id: `${peerId}-${m.id}`,
+            sender_id: m.fromMe ? uid : peerId,
+            recipient_id: m.fromMe ? peerId : uid,
+            content: m.content,
+            created_at: mockMessageIsoAt(m.minutesAgo),
+            read: true,
+          }));
+          setMessages(mockRows);
+          setHasMore(false);
+          setLoading(false);
+          return;
+        }
+      }
+
+
       await hydrateChatPreferences(uid);
 
       try {
