@@ -843,9 +843,15 @@ function OrderCard({ order }: { order: ServiceOrder }) {
             <Clock className="w-4 h-4" />
             <h3 className="text-sm font-black uppercase italic truncate">{order.title}</h3>
           </div>
-          <div className="text-[9px] font-black uppercase text-muted-foreground mt-1">
-            {order.code} • {order.city || "—"}/{order.state || "—"}
+          <div className="text-[9px] font-black uppercase text-muted-foreground mt-1 flex items-center gap-1.5 flex-wrap">
+            <span>{order.code}</span>
+            <span className="opacity-40">•</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+              📍 {order.neighborhood ? `${order.neighborhood} — ` : ""}
+              {order.city || "—"}/{(order.state || "—").toUpperCase()}
+            </span>
           </div>
+
         </div>
         <div className="text-right">
           <div className="text-lg font-black text-primary italic">R$ {(order.price || 0).toFixed(2)}</div>
