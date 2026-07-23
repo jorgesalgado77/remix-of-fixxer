@@ -1,15 +1,27 @@
 /**
- * Preferências locais de conversas (arquivar / silenciar / roles do peer).
- * Persistência via localStorage por usuário. Uma migração futura para
- * uma tabela `chat_conversation_state` pode substituir este armazenamento
- * mantendo a mesma API.
+ * Preferências de conversas (arquivar / silenciar / roles do peer).
+ *
+ * Persistência primária: tabela `public.chat_conversation_state` no Supabase
+ * externo (funciona entre dispositivos). Persistência secundária: localStorage
+ * como cache offline / fallback quando a tabela não existir ainda.
+ *
+ * API mantida síncrona para não quebrar consumidores: `hydrateChatPreferences`
+ * deve ser chamado uma vez após login (a Inbox já faz isso) e os setters
+ * gravam de forma otimista no cache + localStorage e em seguida sincronizam
+ * com o Supabase em background.
  */
+
+import { supabaseExternal } from "@/lib/supabaseExternal";
 
 const ARCHIVED_KEY = "fixxer_chat_archived";
 const MUTED_KEY = "fixxer_chat_muted";
 const PEER_ROLE_KEY = "fixxer_chat_peer_roles";
 
-function readSet(key: string, userId: string): Set<string> {
+// Cache em memória (evita ler localStorage em cada render)
+const memArchived = new Map<string, Set<string>>();
+const memMuted = new Map<string, Set<string>>();
+
+function readSetLS(key: string, userId: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
     const raw = localStorage.getItem(`${key}:${userId}`);
@@ -21,7 +33,7 @@ function readSet(key: string, userId: string): Set<string> {
   }
 }
 
-function writeSet(key: string, userId: string, set: Set<string>) {
+function writeSetLS(key: string, userId: string, set: Set<string>) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(`${key}:${userId}`, JSON.stringify(Array.from(set)));
@@ -29,37 +41,94 @@ function writeSet(key: string, userId: string, set: Set<string>) {
   } catch {}
 }
 
+function getArchived(userId: string): Set<string> {
+  let s = memArchived.get(userId);
+  if (!s) {
+    s = readSetLS(ARCHIVED_KEY, userId);
+    memArchived.set(userId, s);
+  }
+  return s;
+}
+
+function getMuted(userId: string): Set<string> {
+  let s = memMuted.get(userId);
+  if (!s) {
+    s = readSetLS(MUTED_KEY, userId);
+    memMuted.set(userId, s);
+  }
+  return s;
+}
+
+/** Carrega estado da tabela `chat_conversation_state` no Supabase. */
+export async function hydrateChatPreferences(userId: string): Promise<void> {
+  if (!userId) return;
+  try {
+    const { data, error } = await supabaseExternal
+      .from("chat_conversation_state")
+      .select("peer_id, archived, muted")
+      .eq("user_id", userId);
+    if (error) return; // tabela pode não existir; segue com localStorage
+    const arch = new Set<string>();
+    const mut = new Set<string>();
+    for (const row of (data as any[]) ?? []) {
+      if (row.archived) arch.add(row.peer_id);
+      if (row.muted) mut.add(row.peer_id);
+    }
+    memArchived.set(userId, arch);
+    memMuted.set(userId, mut);
+    writeSetLS(ARCHIVED_KEY, userId, arch);
+    writeSetLS(MUTED_KEY, userId, mut);
+  } catch {
+    /* silencioso */
+  }
+}
+
+async function upsertState(userId: string, peerId: string, patch: { archived?: boolean; muted?: boolean }) {
+  try {
+    await supabaseExternal
+      .from("chat_conversation_state")
+      .upsert(
+        { user_id: userId, peer_id: peerId, ...patch, updated_at: new Date().toISOString() },
+        { onConflict: "user_id,peer_id" },
+      );
+  } catch {
+    /* funciona só localmente se tabela não existir */
+  }
+}
+
 export function isConversationArchived(userId: string, peerId: string): boolean {
-  return readSet(ARCHIVED_KEY, userId).has(peerId);
+  return getArchived(userId).has(peerId);
 }
 
 export function setConversationArchived(userId: string, peerId: string, value: boolean) {
-  const set = readSet(ARCHIVED_KEY, userId);
+  const set = getArchived(userId);
   if (value) set.add(peerId);
   else set.delete(peerId);
-  writeSet(ARCHIVED_KEY, userId, set);
+  writeSetLS(ARCHIVED_KEY, userId, set);
+  void upsertState(userId, peerId, { archived: value });
 }
 
 export function isConversationMuted(userId: string, peerId: string): boolean {
-  return readSet(MUTED_KEY, userId).has(peerId);
+  return getMuted(userId).has(peerId);
 }
 
 export function setConversationMuted(userId: string, peerId: string, value: boolean) {
-  const set = readSet(MUTED_KEY, userId);
+  const set = getMuted(userId);
   if (value) set.add(peerId);
   else set.delete(peerId);
-  writeSet(MUTED_KEY, userId, set);
+  writeSetLS(MUTED_KEY, userId, set);
+  void upsertState(userId, peerId, { muted: value });
 }
 
 export function getArchivedSet(userId: string): Set<string> {
-  return readSet(ARCHIVED_KEY, userId);
+  return new Set(getArchived(userId));
 }
 
 export function getMutedSet(userId: string): Set<string> {
-  return readSet(MUTED_KEY, userId);
+  return new Set(getMuted(userId));
 }
 
-/** Cache local de role por peerId para evitar refetch a cada render. */
+/** Cache local de role por peerId. */
 export function getCachedPeerRole(peerId: string): string | null {
   if (typeof window === "undefined") return null;
   try {
@@ -81,11 +150,6 @@ export function setCachedPeerRoles(entries: Record<string, string>) {
   } catch {}
 }
 
-/**
- * Mapa de compatibilidade de roles para o Inbox.
- * Interpretação: o usuário só deve ver conversas com contatos cujo papel
- * faça sentido dentro do seu perfil no aplicativo.
- */
 const COMPAT: Record<string, string[]> = {
   lojista: ["prestador", "parceiro", "fornecedor", "cliente", "casual", "admin"],
   prestador: ["lojista", "cliente", "casual", "admin"],
@@ -109,11 +173,6 @@ function normalizeRole(r: string | null | undefined): string {
   return s;
 }
 
-/**
- * Regra de acesso: retorna true quando `peerRole` é compatível com `myRole`.
- * Fallback seguro: se qualquer um dos papéis for desconhecido, mostra a
- * conversa (não bloqueia navegação já existente).
- */
 export function canSeeConversationWith(myRole: string | null | undefined, peerRole: string | null | undefined) {
   const mine = normalizeRole(myRole);
   const peer = normalizeRole(peerRole);
@@ -121,4 +180,16 @@ export function canSeeConversationWith(myRole: string | null | undefined, peerRo
   const allowed = COMPAT[mine];
   if (!allowed) return true;
   return allowed.includes(peer);
+}
+
+/** Rota padrão de Feed conforme role — fallback consistente global. */
+export function resolveFeedRoute(rawRole: string | null | undefined): { to: string; search?: Record<string, string> } {
+  const r = normalizeRole(rawRole);
+  if (r === "lojista") return { to: "/feed", search: { tab: "prestadores" } };
+  if (r === "prestador") return { to: "/feed", search: { tab: "demandas_lojista" } };
+  if (r === "parceiro" || r === "fornecedor") return { to: "/feed", search: { tab: "parceiros" } };
+  if (r === "cliente" || r === "casual") return { to: "/feed", search: { tab: "obras_b2c" } };
+  if (r === "admin") return { to: "/feed" };
+  // Fallback seguro: role ausente/desconhecida → feed geral
+  return { to: "/feed" };
 }
