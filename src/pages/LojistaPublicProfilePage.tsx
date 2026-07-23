@@ -79,6 +79,21 @@ const PHOTO_FILTERS = ["Todas", "Cozinhas", "Dormitórios", "Showroom"];
 
 export function LojistaPublicProfilePage() {
   const params = useParams({ strict: false }) as { id?: string };
+  const location = useLocation();
+  const category: CategoryKey = useMemo(() => {
+    const p = location.pathname || "";
+    if (p.startsWith("/prestador")) return "prestador";
+    if (p.startsWith("/parceiro")) return "fornecedor";
+    if (p.startsWith("/cliente")) return "cliente";
+    return "lojista";
+  }, [location.pathname]);
+  const theme = useMemo(() => getCategoryTheme(category), [category]);
+  const themeStyle = {
+    ["--primary" as any]: theme.hex,
+    ["--ring" as any]: theme.hex,
+    ["--primary-rgb" as any]: theme.rgb,
+  } as React.CSSProperties;
+
   const storeId = params?.id;
 
   const [profile, setProfile] = useState<StoreProfile | null>(null);
