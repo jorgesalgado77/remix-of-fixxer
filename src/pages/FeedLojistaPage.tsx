@@ -918,6 +918,7 @@ export default function FeedLojistaPage() {
         )}
 
       </main>
+      </div>
 
       {/* Lightbox */}
       {lightbox && (
