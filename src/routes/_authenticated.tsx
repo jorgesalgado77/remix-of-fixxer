@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useCurrentCategory, getCategoryCssVars } from "@/lib/user-category";
+
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
