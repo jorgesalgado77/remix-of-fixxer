@@ -58,7 +58,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!open) return null;
+  
 
   const simulateProgress = (id: string) => {
     let p = 0;
@@ -170,6 +170,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     if (priceType === "comissao") return `Comissão: ${commission || 0}%`;
     return "";
   }, [priceType, fixedValue, contractValue, commission]);
+
+  if (!open) return null;
 
   const buildPayload = () => {
     const base = {
