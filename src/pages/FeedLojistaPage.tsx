@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { getCategoryTheme } from "@/lib/category-colors";
 
 import {
   ArrowLeft,
