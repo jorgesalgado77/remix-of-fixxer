@@ -358,7 +358,7 @@ export default function FeedClientePage() {
       }
     }
     return list;
-  }, [query, solution, savedOnly, saved, sortBy, userCity]);
+  }, [query, solution, savedOnly, saved, sortBy, userCity, userCoords]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
