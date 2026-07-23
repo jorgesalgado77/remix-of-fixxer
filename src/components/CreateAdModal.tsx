@@ -700,14 +700,14 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
-            {/* Arquivos (imagens + PDF) */}
+            {/* Arquivos (imagens + PDF + vídeo) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                   Anexos ({files.length}/{MAX_FILES})
                 </Label>
                 <span className="text-[9px] text-white/40 uppercase font-bold">
-                  JPG, PNG, WEBP (5MB) · PDF (10MB)
+                  JPG/PNG/WEBP (5MB) · PDF (10MB) · MP4/WEBM/MOV (50MB)
                 </span>
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
@@ -718,6 +718,30 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   >
                     {f.kind === "image" ? (
                       <img src={f.url} alt="" className="w-full h-full object-cover" />
+                    ) : f.kind === "video" ? (
+                      <div className="relative w-full h-full bg-black">
+                        <video
+                          src={f.url}
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{ background: theme.hex }}
+                          >
+                            <Play className="w-5 h-5 text-black fill-black" />
+                          </div>
+                        </div>
+                        <span
+                          className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[8px] uppercase font-black"
+                          style={{ ...theme.bgSoft, color: theme.hex }}
+                        >
+                          Vídeo
+                        </span>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 text-center bg-red-950/30">
                         <FileText className="w-8 h-8" style={{ color: theme.hex }} />
@@ -727,6 +751,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                         <span className="text-[8px] uppercase font-black text-red-400">PDF</span>
                       </div>
                     )}
+
 
                     {f.progress < 100 && !f.error && (
                       <div className="absolute inset-x-0 bottom-0 h-1 bg-black/40">
