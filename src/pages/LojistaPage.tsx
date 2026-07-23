@@ -41,7 +41,8 @@ import {
   Eye,
   Heart,
   Loader2,
-  Sparkles
+  Sparkles,
+  GripVertical
 } from "lucide-react";
 
 import jsPDF from 'jspdf';
@@ -1419,7 +1420,7 @@ function ProfileView({
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
     const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
     const [documents, setDocuments] = useState<{name: string, url: string, size: number}[]>([]);
-    const [specialties, setSpecialties] = useState<{id: string, title: string, description: string}[]>([]);
+    const [specialties, setSpecialties] = useState<{id: string, title: string, description: string, featured?: boolean}[]>([]);
     const [socialLinks, setSocialLinks] = useState({
         instagram: "",
         facebook: "",
@@ -1551,6 +1552,54 @@ function ProfileView({
             saveMediaOrder(type);
         }
     };
+
+    // === Especialidades: helpers ===
+    const MAX_FEATURED = 3;
+    const featuredCount = useMemo(
+        () => specialties.filter((s) => s.featured).length,
+        [specialties]
+    );
+    const normalizeTitle = (t: string) => t.trim().toLowerCase();
+    const duplicateTitleIds = useMemo(() => {
+        const seen = new Map<string, string>();
+        const dups = new Set<string>();
+        for (const s of specialties) {
+            const key = normalizeTitle(s.title);
+            if (!key) continue;
+            if (seen.has(key)) {
+                dups.add(s.id);
+                dups.add(seen.get(key)!);
+            } else {
+                seen.set(key, s.id);
+            }
+        }
+        return dups;
+    }, [specialties]);
+
+    const handleSpecialtiesDragEnd = (event: any) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        setSpecialties((items) => {
+            const oldIndex = items.findIndex((i) => i.id === active.id);
+            const newIndex = items.findIndex((i) => i.id === over.id);
+            if (oldIndex < 0 || newIndex < 0) return items;
+            return arrayMove(items, oldIndex, newIndex);
+        });
+        toast.success("Ordem das especialidades atualizada!");
+    };
+
+    const toggleFeatured = (id: string) => {
+        setSpecialties((prev) => {
+            const target = prev.find((s) => s.id === id);
+            if (!target) return prev;
+            if (!target.featured && prev.filter((s) => s.featured).length >= MAX_FEATURED) {
+                toast.warning(`Você pode destacar até ${MAX_FEATURED} especialidades no perfil público.`);
+                return prev;
+            }
+            return prev.map((s) => (s.id === id ? { ...s, featured: !s.featured } : s));
+        });
+    };
+
 
     const saveMediaOrder = async (type: 'gallery' | 'video', customUrls?: string[]) => {
         const toastId = toast.loading("Salvando nova ordem...");
@@ -2464,7 +2513,10 @@ function ProfileView({
                                 <Sparkles className="w-4 h-4 text-primary" /> Especialidades da Empresa
                             </h3>
                             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">
-                                Crie até 10 cards destacando suas áreas de atuação • {specialties.length}/10
+                                Crie até 10 cards • {specialties.length}/10 • Destaques no perfil público: {featuredCount}/{MAX_FEATURED}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/70 mt-1 normal-case tracking-normal">
+                                Arraste os cards para reordenar. Clique na estrela para destacar até {MAX_FEATURED} no topo do seu perfil público.
                             </p>
                         </div>
                         <Button
@@ -2477,7 +2529,8 @@ function ProfileView({
                                 setSpecialties(prev => [...prev, {
                                     id: `sp-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
                                     title: "",
-                                    description: ""
+                                    description: "",
+                                    featured: false
                                 }]);
                             }}
                             disabled={specialties.length >= 10}
@@ -2498,52 +2551,31 @@ function ProfileView({
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {specialties.map((sp, index) => (
-                                <div key={sp.id} className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3 hover:border-primary/30 transition-all">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[9px] font-black text-primary uppercase tracking-widest">
-                                            Especialidade {index + 1}
-                                        </span>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => setSpecialties(prev => prev.filter(s => s.id !== sp.id))}
-                                            className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                                            aria-label="Remover especialidade"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </Button>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        maxLength={80}
-                                        value={sp.title}
-                                        onChange={(e) => {
-                                            const v = e.target.value;
-                                            setSpecialties(prev => prev.map(s => s.id === sp.id ? { ...s, title: v } : s));
-                                        }}
-                                        placeholder="Ex.: MÓVEIS PLANEJADOS DE ALTO PADRÃO"
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs font-black text-white uppercase italic placeholder:text-muted-foreground/40 focus:border-primary outline-none transition-all"
-                                    />
-                                    <textarea
-                                        rows={2}
-                                        maxLength={180}
-                                        value={sp.description}
-                                        onChange={(e) => {
-                                            const v = e.target.value;
-                                            setSpecialties(prev => prev.map(s => s.id === sp.id ? { ...s, description: v } : s));
-                                        }}
-                                        placeholder="Breve descrição — Ex.: Projetos residenciais premium sob medida."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white placeholder:text-muted-foreground/40 focus:border-primary outline-none transition-all resize-none"
-                                    />
-                                    <p className="text-[9px] text-muted-foreground/60 text-right">{sp.description.length}/180</p>
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleSpecialtiesDragEnd}
+                        >
+                            <SortableContext items={specialties.map(s => s.id)} strategy={rectSortingStrategy}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {specialties.map((sp, index) => (
+                                        <SortableSpecialtyCard
+                                            key={sp.id}
+                                            sp={sp}
+                                            index={index}
+                                            isDuplicate={duplicateTitleIds.has(sp.id)}
+                                            onChangeTitle={(v) => setSpecialties(prev => prev.map(s => s.id === sp.id ? { ...s, title: v } : s))}
+                                            onChangeDescription={(v) => setSpecialties(prev => prev.map(s => s.id === sp.id ? { ...s, description: v } : s))}
+                                            onRemove={() => setSpecialties(prev => prev.filter(s => s.id !== sp.id))}
+                                            onToggleFeatured={() => toggleFeatured(sp.id)}
+                                        />
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
+                            </SortableContext>
+                        </DndContext>
                     )}
                  </div>
+
 
 
 
@@ -2584,6 +2616,24 @@ function ProfileView({
                                 });
                                 return;
                             }
+
+                            // 1.b) Validação de especialidades
+                            if (specialties.length > 10) {
+                                toast.error("Você excedeu o limite de 10 especialidades.");
+                                return;
+                            }
+                            if (duplicateTitleIds.size > 0) {
+                                toast.error("Existem especialidades com títulos duplicados.", {
+                                    description: "Renomeie ou remova os cards em destaque vermelho antes de salvar.",
+                                    duration: 8000,
+                                });
+                                return;
+                            }
+                            if (featuredCount > MAX_FEATURED) {
+                                toast.error(`Selecione no máximo ${MAX_FEATURED} especialidades em destaque.`);
+                                return;
+                            }
+
 
                             setIsSaving(true);
                             const toastId = toast.loading("Salvando perfil...");
@@ -2956,4 +3006,124 @@ function MetricCard({ label, value, icon, color, subValue }: any) {
             <div className={`absolute top-0 right-0 w-12 h-12 ${color} opacity-[0.03] -mr-6 -mt-6 rounded-full`} />
         </div>
     )
+}
+
+// ============================================================================
+// SortableSpecialtyCard — card arrastável de especialidade com destaque/dup
+// ============================================================================
+interface SortableSpecialtyCardProps {
+    sp: { id: string; title: string; description: string; featured?: boolean };
+    index: number;
+    isDuplicate: boolean;
+    onChangeTitle: (v: string) => void;
+    onChangeDescription: (v: string) => void;
+    onRemove: () => void;
+    onToggleFeatured: () => void;
+}
+
+function SortableSpecialtyCard({
+    sp,
+    index,
+    isDuplicate,
+    onChangeTitle,
+    onChangeDescription,
+    onRemove,
+    onToggleFeatured,
+}: SortableSpecialtyCardProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: sp.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 0,
+        opacity: isDragging ? 0.6 : 1,
+    };
+
+    const borderCls = isDuplicate
+        ? "border-red-500/60 ring-1 ring-red-500/40"
+        : sp.featured
+            ? "border-primary/60 ring-1 ring-primary/40"
+            : "border-white/10 hover:border-primary/30";
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`p-4 rounded-2xl bg-black/40 border transition-all space-y-3 ${borderCls}`}
+        >
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <button
+                        type="button"
+                        {...attributes}
+                        {...listeners}
+                        className="p-1 -ml-1 text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing touch-none"
+                        aria-label="Arrastar para reordenar"
+                    >
+                        <GripVertical className="w-4 h-4" />
+                    </button>
+                    <span className="text-[9px] font-black text-primary uppercase tracking-widest">
+                        Especialidade {index + 1}
+                    </span>
+                    {sp.featured && (
+                        <span className="text-[8px] font-black text-black bg-primary px-1.5 py-0.5 rounded-full uppercase tracking-widest">
+                            Destaque
+                        </span>
+                    )}
+                    {isDuplicate && (
+                        <span className="text-[8px] font-black text-white bg-red-500 px-1.5 py-0.5 rounded-full uppercase tracking-widest">
+                            Duplicado
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-1">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleFeatured}
+                        className={`h-7 w-7 ${sp.featured ? "text-primary hover:text-primary" : "text-muted-foreground hover:text-primary"} hover:bg-primary/10`}
+                        aria-label={sp.featured ? "Remover destaque" : "Destacar no perfil público"}
+                        title={sp.featured ? "Remover destaque" : "Destacar no perfil público"}
+                    >
+                        <Star className={`w-3.5 h-3.5 ${sp.featured ? "fill-current" : ""}`} />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={onRemove}
+                        className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        aria-label="Remover especialidade"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                </div>
+            </div>
+            <input
+                type="text"
+                maxLength={80}
+                value={sp.title}
+                onChange={(e) => onChangeTitle(e.target.value)}
+                placeholder="Ex.: MÓVEIS PLANEJADOS DE ALTO PADRÃO"
+                className={`w-full bg-white/5 border rounded-lg px-3 py-2 text-xs font-black text-white uppercase italic placeholder:text-muted-foreground/40 outline-none transition-all ${isDuplicate ? "border-red-500/60 focus:border-red-500" : "border-white/10 focus:border-primary"}`}
+            />
+            <textarea
+                rows={2}
+                maxLength={180}
+                value={sp.description}
+                onChange={(e) => onChangeDescription(e.target.value)}
+                placeholder="Breve descrição — Ex.: Projetos residenciais premium sob medida."
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white placeholder:text-muted-foreground/40 focus:border-primary outline-none transition-all resize-none"
+            />
+            <p className="text-[9px] text-muted-foreground/60 text-right">{sp.description.length}/180</p>
+        </div>
+    );
 }
