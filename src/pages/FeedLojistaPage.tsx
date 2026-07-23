@@ -528,36 +528,84 @@ export default function FeedLojistaPage() {
 
       {/* Feed */}
       <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1">
-        {visible.length === 0 ? (
+        {searching ? (
+          <div className="space-y-4" aria-live="polite">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-4 animate-pulse"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-11 h-11 rounded-full bg-white/5" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-1/3 bg-white/5 rounded" />
+                    <div className="h-2 w-1/4 bg-white/5 rounded" />
+                  </div>
+                </div>
+                <div className="h-3 w-3/4 bg-white/5 rounded mb-2" />
+                <div className="h-2 w-full bg-white/5 rounded mb-1" />
+                <div className="h-2 w-5/6 bg-white/5 rounded" />
+                <div className="h-40 w-full bg-white/5 rounded-2xl mt-3" />
+              </div>
+            ))}
+          </div>
+        ) : visible.length === 0 ? (
           <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center">
             <Search className="w-10 h-10 mx-auto mb-3 text-white/30" />
             <h3 className="font-black uppercase italic text-base mb-1">Nada encontrado</h3>
-            <p className="text-xs text-white/50">
-              Tente outro termo ou remova os filtros para ver todas as publicações.
+            <p className="text-xs text-white/50 mb-4">
+              {debouncedSearch
+                ? `Nenhuma publicação para "${debouncedSearch}"${filter !== "todos" ? ` nesta categoria` : ""}.`
+                : "Tente outro termo ou remova os filtros para ver todas as publicações."}
             </p>
+            {(debouncedSearch || filter !== "todos") && (
+              <button
+                onClick={() => { setSearch(""); setFilter("todos"); }}
+                className="text-[11px] font-bold uppercase tracking-wide px-4 py-2 rounded-full bg-white/10 border border-white/10 hover:bg-white/20 text-white"
+              >
+                Limpar filtros
+              </button>
+            )}
           </div>
         ) : (
-          visible.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              isSaved={saved.has(post.id)}
-              menuOpen={openMenu === post.id}
-              onToggleMenu={(e) => {
-                e.stopPropagation();
-                setOpenMenu((v) => (v === post.id ? null : post.id));
-              }}
-              onCloseMenu={() => setOpenMenu(null)}
-              onSave={() => toggleSaved(post.id)}
-              onChat={() => openChat(post)}
-              onPropose={() => setProposalFor(post)}
-              onReport={() => setReportFor(post)}
-              onDelete={() => setDeleteFor(post)}
-              onEdit={() => toast("Abrindo editor da publicação...")}
-              onOpenMedia={(index) => setLightbox({ post, index })}
-            />
-          ))
+          <>
+            {paged.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                isSaved={saved.has(post.id)}
+                menuOpen={openMenu === post.id}
+                onToggleMenu={(e) => {
+                  e.stopPropagation();
+                  setOpenMenu((v) => (v === post.id ? null : post.id));
+                }}
+                onCloseMenu={() => setOpenMenu(null)}
+                onSave={() => toggleSaved(post.id)}
+                onChat={() => openChat(post)}
+                onPropose={() => setProposalFor(post)}
+                onReport={() => setReportFor(post)}
+                onDelete={() => setDeleteFor(post)}
+                onEdit={() => toast("Abrindo editor da publicação...")}
+                onOpenMedia={(index) => setLightbox({ post, index })}
+              />
+            ))}
+
+            {hasMore ? (
+              <div
+                ref={sentinelRef}
+                className="py-6 flex items-center justify-center text-white/50 text-[11px] font-bold uppercase tracking-wide"
+              >
+                <div className="w-4 h-4 border-2 border-white/20 border-t-[#00FF87] rounded-full animate-spin mr-2" />
+                Carregando mais publicações...
+              </div>
+            ) : (
+              <div className="py-6 text-center text-[11px] font-bold uppercase tracking-wide text-white/30">
+                — Fim do feed —
+              </div>
+            )}
+          </>
         )}
+
       </main>
 
       {/* Lightbox */}
