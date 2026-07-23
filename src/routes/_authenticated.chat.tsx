@@ -413,14 +413,7 @@ function ChatInboxPage() {
 
   const handleViewProfile = (c: Conversation) => {
     setOpenMenu(null);
-    const role = (c.peerRole || "").toLowerCase();
-    // Rotas públicas conhecidas por role
-    const path =
-      role === "lojista"
-        ? `/lojista/${encodeURIComponent(c.peerId)}`
-        : role === "prestador"
-        ? `/prestador/${encodeURIComponent(c.peerId)}`
-        : `/lojista/${encodeURIComponent(c.peerId)}`;
+    const path = `/lojista/${encodeURIComponent(c.peerId)}`;
     try {
       navigate({ to: path as any });
     } catch {
