@@ -364,7 +364,6 @@ export function LojistaPublicProfilePage() {
     const kindMap: Record<typeof mediaTypeFilter, MediaKind | null> = {
       Todos: null,
       Fotos: "photo",
-      Vídeos: "video",
       Documentos: "document",
     };
     const targetKind = kindMap[mediaTypeFilter];
