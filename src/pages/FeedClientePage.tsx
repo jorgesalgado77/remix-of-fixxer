@@ -1097,7 +1097,7 @@ function PublishModal({
 }: {
   userId: string | null;
   onClose: () => void;
-  onPublished?: () => void | Promise<void>;
+  onPublished?: (created?: { title?: string }) => void | Promise<void>;
   glassClass: string;
 }) {
   const [title, setTitle] = useState("");
