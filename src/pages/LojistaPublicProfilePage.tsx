@@ -783,6 +783,17 @@ export function LojistaPublicProfilePage() {
               ) : (
                 <EmptyState label="Nenhuma mídia encontrada com esses filtros." />
               )}
+
+              {hasMore && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                    className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase italic bg-primary/15 text-primary border border-primary/40 hover:bg-primary/25 transition-all"
+                  >
+                    Carregar mais ({visibleMedia.length - pagedMedia.length} restantes)
+                  </button>
+                </div>
+              )}
             </section>
 
 
