@@ -857,6 +857,8 @@ export default function FeedPrestadorPage() {
   const { glassClass } = usePerformanceMode();
 
   const [filter, setFilter] = useState<"todas" | Subcategory>("todas");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
+  const [detailsFor, setDetailsFor] = useState<JobPost | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [saved, setSaved] = useState<Set<string>>(new Set());
