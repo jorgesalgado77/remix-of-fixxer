@@ -1168,13 +1168,22 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 className="transition-transform max-w-none"
                 style={{ transform: `scale(${viewer.zoom})` }}
               />
+            ) : currentViewerFile.kind === "video" ? (
+              <FixxerVideoPlayer
+                key={currentViewerFile.id}
+                src={currentViewerFile.url}
+                title={currentViewerFile.file.name}
+                themeHex={theme.hex}
+                onClose={closeViewer}
+              />
             ) : (
               <iframe
-                src={currentViewerFile.url}
+                src={`${currentViewerFile.url}#toolbar=1&navpanes=1&view=FitH`}
                 title={currentViewerFile.file.name}
                 className="w-full h-full bg-white"
               />
             )}
+
             {files.length > 1 && (
               <button
                 onClick={() => stepViewer(1)}
