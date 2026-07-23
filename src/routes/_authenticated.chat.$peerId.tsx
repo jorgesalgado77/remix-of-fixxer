@@ -499,36 +499,59 @@ function ConversationPage() {
     }
   };
 
+  /**
+   * Envia texto + N anexos. Cada anexo vira uma mensagem separada (o schema atual
+   * suporta 1 anexo por linha). A primeira mensagem carrega o texto; as demais
+   * são apenas mídia. Cria linhas otimistas para todas antes do upload,
+   * evitando travamento visual e permitindo retry independente.
+   */
   const send = async () => {
     const text = content.trim();
-    if ((!text && !pendingFile) || !userId || sending) return;
+    const filesToSend = pendingFiles.slice();
+    if ((!text && filesToSend.length === 0) || !userId || sending) return;
     setSending(true);
     sendTypingStop();
 
-    const draftFile = pendingFile;
-    const clientId = newClientId();
-    const optimistic: MessageRow = {
-      id: clientId,
+    // Cria linhas otimistas: primeira com texto (+ 1º anexo se houver), demais só anexo
+    type Optim = { clientId: string; text: string; file: File | null };
+    const optimBatch: Optim[] = [];
+    if (filesToSend.length === 0) {
+      optimBatch.push({ clientId: newClientId(), text, file: null });
+    } else {
+      filesToSend.forEach((f, i) => {
+        optimBatch.push({
+          clientId: newClientId(),
+          text: i === 0 ? text : "",
+          file: f,
+        });
+      });
+    }
+    const optimisticRows: MessageRow[] = optimBatch.map((o) => ({
+      id: o.clientId,
       sender_id: userId,
       recipient_id: peerId,
-      content: text || null,
+      content: o.text || null,
       created_at: new Date().toISOString(),
       read: false,
       _pending: true,
-      _clientId: clientId,
-      _draftText: text,
-      _draftFile: draftFile,
-    };
-    setMessages((prev) => [...prev, optimistic]);
+      _clientId: o.clientId,
+      _draftText: o.text,
+      _draftFile: o.file,
+    }));
+    setMessages((prev) => [...prev, ...optimisticRows]);
     setContent("");
-    setPendingFile(null);
+    setPendingFiles([]);
     clearDraft(peerId);
 
     // === MODO MOCK: sem persistência, com auto-resposta simulada ===
     if (isMockPeerId(peerId)) {
       setTimeout(() => {
         setMessages((prev) =>
-          prev.map((m) => (m._clientId === clientId ? { ...m, _pending: false, read: true } : m)),
+          prev.map((m) =>
+            optimBatch.some((o) => o.clientId === m._clientId)
+              ? { ...m, _pending: false, read: true }
+              : m,
+          ),
         );
       }, 400);
       const replies = [
@@ -538,9 +561,7 @@ function ConversationPage() {
         "Show, vou verificar e já retorno.",
       ];
       const reply = replies[Math.floor(Math.random() * replies.length)];
-      setTimeout(() => {
-        setPeerTyping(true);
-      }, 900);
+      setTimeout(() => setPeerTyping(true), 900);
       setTimeout(() => {
         setPeerTyping(false);
         setMessages((prev) => [
@@ -559,20 +580,33 @@ function ConversationPage() {
       return;
     }
 
-
-    try {
-      let attachment: { url: string; type: string; name: string } | null = null;
-      if (draftFile) {
-        attachment = await doUpload(draftFile);
-        if (!attachment) throw new Error("Upload cancelado");
+    // === REAL: upload sequencial + persist por mensagem ===
+    setUploadingIndex(0);
+    for (let i = 0; i < optimBatch.length; i++) {
+      const o = optimBatch[i];
+      setUploadingIndex(i);
+      try {
+        let attachment: { url: string; type: string; name: string } | null = null;
+        if (o.file) {
+          attachment = await doUpload(o.file);
+          if (!attachment) throw new Error("Upload cancelado");
+        }
+        await persistMessage(o.clientId, o.text, attachment);
+      } catch (e: any) {
+        toast.error(
+          filesToSend.length > 1
+            ? `Falha ao enviar item ${i + 1}/${optimBatch.length}`
+            : "Falha ao enviar",
+          { description: e?.message },
+        );
+        setMessages((prev) =>
+          prev.map((m) => (m._clientId === o.clientId ? { ...m, _pending: false, _failed: true } : m)),
+        );
       }
-      await persistMessage(clientId, text, attachment);
-    } catch (e: any) {
-      toast.error("Falha ao enviar", { description: e?.message });
-      setMessages((prev) =>
-        prev.map((m) => (m._clientId === clientId ? { ...m, _pending: false, _failed: true } : m)),
-      );
-    } finally {
+    }
+    setSending(false);
+  };
+
       setSending(false);
     }
   };
