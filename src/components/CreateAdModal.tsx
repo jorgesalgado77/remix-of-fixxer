@@ -1194,7 +1194,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={onClose}
+                  onClick={() => {
+                    discardDraft();
+                    resetForm();
+                    toast.info("Criação cancelada. Rascunho descartado.");
+                    onClose();
+                  }}
                   className="flex-1 text-white/70 hover:text-white uppercase italic font-black text-xs h-12"
                 >
                   Cancelar
