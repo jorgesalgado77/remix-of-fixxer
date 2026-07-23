@@ -598,7 +598,7 @@ export default function FeedParceiroPage() {
             onClick={() =>
               navigate({ to: "/dashboard/parceiro" }).catch(() => undefined)
             }
-            className="rounded-full border border-white/10 bg-[#1A1A1B] p-2 text-white/80 transition hover:border-[#00FF87]/40 hover:text-[#00FF87]"
+            className="rounded-full border border-white/10 bg-[#1A1A1B] p-2 text-white/80 transition hover:border-[#A855F7]/40 hover:text-[#A855F7]"
             aria-label="Voltar para Dashboard do Fornecedor"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -624,7 +624,7 @@ export default function FeedParceiroPage() {
                 onClick={() => setActiveSector(s)}
                 className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition ${
                   active
-                    ? "border-[#00FF87] bg-[#00FF87]/10 text-[#00FF87] shadow-[0_0_16px_rgba(0,255,135,0.25)]"
+                    ? "border-[#A855F7] bg-[#A855F7]/10 text-[#A855F7] shadow-[0_0_16px_rgba(168,85,247,0.25)]"
                     : "border-white/10 bg-[#1A1A1B] text-white/70 hover:border-white/20"
                 }`}
               >
@@ -642,7 +642,7 @@ export default function FeedParceiroPage() {
             {filtered.length} demanda{filtered.length === 1 ? "" : "s"} B2B
           </span>
           <span className="inline-flex items-center gap-1">
-            <Building2 className="h-3.5 w-3.5 text-[#00FF87]" />
+            <Building2 className="h-3.5 w-3.5 text-[#A855F7]" />
             Feed do Fornecedor
           </span>
         </div>
@@ -658,19 +658,20 @@ export default function FeedParceiroPage() {
               return (
                 <li
                   key={r.id}
-                  className="overflow-hidden rounded-2xl border border-white/10 bg-[#1A1A1B]"
+                  className="overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
+                  style={{ borderColor: "rgba(0, 229, 255, 0.35)", boxShadow: "0 0 18px rgba(0, 229, 255, 0.10)" }}
                 >
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#0A0A0B] text-sm font-semibold text-[#00FF87]">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold" style={{ borderColor: "#00E5FF", color: "#00E5FF" }}>
                       {r.store.initials}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 text-sm font-semibold">
                         <span className="truncate">{r.store.name}</span>
                         {r.store.verified && (
-                          <span className="rounded-full bg-[#00FF87]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#00FF87]">
-                            ✓
+                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "rgba(0, 229, 255, 0.15)", color: "#00E5FF" }}>
+                            ✓ Lojista
                           </span>
                         )}
                       </div>
@@ -721,14 +722,14 @@ export default function FeedParceiroPage() {
 
                   {/* Especificações */}
                   <div className="border-t border-white/5 px-4 py-3">
-                    <div className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#00FF87]">
+                    <div className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#A855F7]">
                       <FileText className="h-3.5 w-3.5" />
                       Especificações
                     </div>
                     <ul className="space-y-1 text-sm text-white/80">
                       {r.specs.map((s, i) => (
                         <li key={i} className="flex gap-2">
-                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00FF87]/70" />
+                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#A855F7]/70" />
                           <span>{s}</span>
                         </li>
                       ))}
@@ -768,8 +769,8 @@ export default function FeedParceiroPage() {
                       onClick={() => setQuoteOpen(r)}
                       className={`flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                         quoteStatus
-                          ? "border border-[#00FF87]/40 bg-[#00FF87]/10 text-[#00FF87] hover:bg-[#00FF87]/15"
-                          : "bg-[#00FF87] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] hover:brightness-110"
+                          ? "border border-[#A855F7]/40 bg-[#A855F7]/10 text-[#A855F7] hover:bg-[#A855F7]/15"
+                          : "bg-[#A855F7] text-black shadow-[0_0_20px_rgba(168,85,247,0.35)] hover:brightness-110"
                       }`}
                     >
                       {quoteStatus ? (
@@ -787,7 +788,7 @@ export default function FeedParceiroPage() {
                     <button
                       type="button"
                       onClick={() => openChat(r)}
-                      className="rounded-full border border-white/10 bg-[#1A1A1B] p-2.5 text-white/80 transition hover:border-[#00FF87]/40 hover:text-[#00FF87]"
+                      className="rounded-full border border-white/10 bg-[#1A1A1B] p-2.5 text-white/80 transition hover:border-[#A855F7]/40 hover:text-[#A855F7]"
                       aria-label="Chat direto B2B"
                     >
                       <MessageSquare className="h-4 w-4" />
@@ -797,8 +798,8 @@ export default function FeedParceiroPage() {
                       onClick={() => toggleSaved(r.id)}
                       className={`rounded-full border p-2.5 transition ${
                         saved.has(r.id)
-                          ? "border-[#00FF87]/50 bg-[#00FF87]/10 text-[#00FF87]"
-                          : "border-white/10 bg-[#1A1A1B] text-white/80 hover:border-[#00FF87]/40 hover:text-[#00FF87]"
+                          ? "border-[#A855F7]/50 bg-[#A855F7]/10 text-[#A855F7]"
+                          : "border-white/10 bg-[#1A1A1B] text-white/80 hover:border-[#A855F7]/40 hover:text-[#A855F7]"
                       }`}
                       aria-label="Salvar oportunidade"
                     >
@@ -818,7 +819,7 @@ export default function FeedParceiroPage() {
           <div ref={sentinelRef} className="py-6 text-center">
             {loadingMore && (
               <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-white/50">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#00FF87] border-t-transparent" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#A855F7] border-t-transparent" />
                 Carregando mais demandas...
               </div>
             )}
@@ -903,7 +904,7 @@ function QuoteStatusPill({ status }: { status: QuoteStatus }) {
   const map: Record<QuoteStatus, { label: string; className: string }> = {
     pendente: {
       label: "Cotação enviada — aguardando lojista",
-      className: "border-[#00FF87]/40 bg-[#00FF87]/10 text-[#00FF87]",
+      className: "border-[#A855F7]/40 bg-[#A855F7]/10 text-[#A855F7]",
     },
     aceita: {
       label: "Cotação aceita",
@@ -988,7 +989,7 @@ function QuoteModal({
       <div className="w-full max-w-lg overflow-hidden rounded-t-2xl border border-white/10 bg-[#1A1A1B] sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[#00FF87]">
+            <div className="text-[10px] uppercase tracking-wider text-[#A855F7]">
               Cotação B2B
             </div>
             <div className="text-sm font-semibold">{request.store.name}</div>
@@ -1005,7 +1006,7 @@ function QuoteModal({
         {existingStatus && (
           <div className="border-b border-white/10 bg-[#0F0F10] px-4 py-2 text-[11px] text-white/70">
             Você já possui uma cotação{" "}
-            <span className="font-semibold text-[#00FF87]">{existingStatus}</span>{" "}
+            <span className="font-semibold text-[#A855F7]">{existingStatus}</span>{" "}
             para esta demanda. Enviar novamente irá atualizar os valores.
           </div>
         )}
@@ -1037,13 +1038,13 @@ function QuoteModal({
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Detalhes adicionais, garantias, frete..."
-              className="w-full rounded-lg border border-white/10 bg-[#0F0F10] px-3 py-2 text-sm outline-none focus:border-[#00FF87]/50"
+              className="w-full rounded-lg border border-white/10 bg-[#0F0F10] px-3 py-2 text-sm outline-none focus:border-[#A855F7]/50"
             />
           </div>
           <button
             type="submit"
             disabled={submitting}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#00FF87] px-4 py-3 text-sm font-semibold text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition hover:brightness-110 disabled:opacity-70"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#A855F7] px-4 py-3 text-sm font-semibold text-black shadow-[0_0_20px_rgba(168,85,247,0.35)] transition hover:brightness-110 disabled:opacity-70"
           >
             {submitting ? (
               <>
@@ -1080,7 +1081,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-white/10 bg-[#0F0F10] px-3 py-2 text-sm outline-none focus:border-[#00FF87]/50"
+        className="w-full rounded-lg border border-white/10 bg-[#0F0F10] px-3 py-2 text-sm outline-none focus:border-[#A855F7]/50"
       />
     </div>
   );
