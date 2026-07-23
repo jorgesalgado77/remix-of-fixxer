@@ -486,6 +486,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     const base = {
       category: defaultCategory,
       service_types: serviceTypes,
+      location: {
+        neighborhood: neighborhood.trim(),
+        city: city.trim(),
+        uf: uf.trim().toUpperCase(),
+      },
       rooms,
       title: title.trim(),
       start_date: startDate || null,
