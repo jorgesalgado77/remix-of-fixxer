@@ -308,14 +308,14 @@ export function LojistaPublicProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center">
+      <div style={themeStyle} className="min-h-screen bg-[#0A0A0B] flex items-center justify-center">
         <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white pb-32 md:pb-8 scrollbar-none">
+    <div style={themeStyle} className="min-h-screen bg-[#0A0A0B] text-white pb-32 md:pb-8 scrollbar-none">
       {/* HERO */}
       <div className="relative">
         <div
@@ -335,7 +335,7 @@ export function LojistaPublicProfilePage() {
             <div className="flex flex-col md:flex-row gap-5 md:gap-8 items-start">
               {/* Logo */}
               <div className="relative shrink-0">
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-black border-2 border-primary shadow-[0_0_25px_rgba(0,255,135,0.4)] overflow-hidden flex items-center justify-center">
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-black border-2 border-primary overflow-hidden flex items-center justify-center" style={{ boxShadow: `0 0 25px rgba(${theme.rgb}, 0.40)` }}>
                   {profile?.logo_url ? (
                     <img src={profile.logo_url} alt={profile.company_name} className="w-full h-full object-contain p-2" />
                   ) : (
@@ -388,7 +388,8 @@ export function LojistaPublicProfilePage() {
                 <div className="pt-4">
                   <Button
                     onClick={handleContactWhatsApp}
-                    className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest px-8 h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
+                    className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest px-8 h-12 rounded-xl hover:bg-primary/90"
+                    style={{ boxShadow: `0 0 20px rgba(${theme.rgb}, 0.30)` }}
                   >
                     <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
                   </Button>
@@ -508,7 +509,7 @@ export function LojistaPublicProfilePage() {
                     >
                       <video src={url} className="w-full h-full object-cover opacity-70" preload="metadata" />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                        <div className="w-14 h-14 rounded-full bg-primary/90 flex items-center justify-center shadow-[0_0_20px_rgba(0,255,135,0.5)]">
+                        <div className="w-14 h-14 rounded-full bg-primary/90 flex items-center justify-center" style={{ boxShadow: `0 0 20px rgba(${theme.rgb}, 0.50)` }}>
                           <Play className="w-7 h-7 fill-black text-black ml-0.5" />
                         </div>
                       </div>
@@ -797,7 +798,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
     <button
       onClick={onClick}
       className={`shrink-0 px-3 md:px-4 py-2.5 rounded-xl text-[10px] font-black uppercase italic transition-all whitespace-nowrap ${
-        active ? "bg-primary text-black shadow-[0_0_15px_rgba(0,255,135,0.3)]" : "text-muted-foreground hover:text-white hover:bg-white/5"
+        active ? "bg-primary text-black" : "text-muted-foreground hover:text-white hover:bg-white/5"
       }`}
     >
       {children}
@@ -892,7 +893,7 @@ function OrderCard({ order }: { order: ServiceOrder }) {
         <Button variant="ghost" className="h-9 text-[9px] font-black uppercase italic border border-white/10 hover:bg-white/5 rounded-xl">
           <Download className="w-3 h-3 mr-1.5" /> PDF
         </Button>
-        <Button className="h-9 text-[9px] font-black uppercase italic bg-primary text-black hover:bg-primary/90 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.3)]">
+        <Button className="h-9 text-[9px] font-black uppercase italic bg-primary text-black hover:bg-primary/90 rounded-xl">
           <Zap className="w-3 h-3 mr-1.5" /> Candidatar-se
         </Button>
       </div>
