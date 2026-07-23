@@ -307,11 +307,11 @@ export function LojistaPublicProfilePage() {
                   <MetricCard label="Tempo Resposta" value="<15" suffix="min" />
                 </div>
                 
-                {/* Desktop CTA Button */}
-                <div className="hidden md:block pt-4">
+                {/* CTA Superior — visível em mobile e desktop */}
+                <div className="pt-4">
                   <Button
                     onClick={handleContactWhatsApp}
-                    className="bg-primary text-black font-black uppercase italic tracking-widest px-8 h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
+                    className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest px-8 h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
                   >
                     <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
                   </Button>
