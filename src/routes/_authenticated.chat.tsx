@@ -608,7 +608,7 @@ function ChatInboxPage() {
                     </div>
                   )}
                 </li>
-              ))}
+              );})}
             </ul>
             <div ref={sentinelRef} className="h-16 flex items-center justify-center mt-4">
               {loadingMore ? (
