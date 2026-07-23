@@ -18,7 +18,7 @@ export function GlobalActionBar() {
     const profileId =
       (typeof window !== "undefined" && localStorage.getItem("fixxer_lojista_id")) || "";
     if (profileId) {
-      navigate({ to: "/lojista/$id" as any, params: { id: profileId } });
+      navigate({ to: "/lojista/$id" as any, params: { id: profileId } as any });
     } else {
       navigate({ to: "/perfil/lojista" as any });
     }
