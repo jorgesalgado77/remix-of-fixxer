@@ -52,6 +52,7 @@ interface ServiceOrder {
   code: string;
   title: string;
   description?: string;
+  neighborhood?: string;
   city?: string;
   state?: string;
   price?: number;
