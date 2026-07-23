@@ -343,11 +343,22 @@ export function LojistaDashboard() {
 
   const handleTabChange = (tab: string) => {
     if ((tab === 'create' || tab === 'reviews') && !isProfileComplete) {
+      const details = profileMissing.length
+        ? `Preencha para liberar: ${profileMissing.join(", ")}.`
+        : "Preencha os campos obrigatórios do Perfil para liberar esta função.";
+      console.warn("[LojistaDashboard] tentativa de acesso a função bloqueada:", { tab, missing: profileMissing });
       toast.error("Perfil Incompleto", {
-        description: "Você precisa preencher todos os campos obrigatórios e enviar o logo da empresa no menu Perfil antes de acessar esta funcionalidade.",
-        duration: 5000,
+        description: details,
+        duration: 6000,
       });
       setActiveTab('profile');
+      setMobileMenuOpen(false);
+      return;
+    }
+    if (tab === 'create') {
+      // "Criar Serviço" da sidebar/dashboard abre o mesmo modal do botão global "Criar".
+      setShowCreateModal(true);
+      setMobileMenuOpen(false);
       return;
     }
     setActiveTab(tab);
