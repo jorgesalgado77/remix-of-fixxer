@@ -85,12 +85,14 @@ function ConversationPage() {
   const [hasMore, setHasMore] = useState(true);
   const [muted, setMuted] = useState(false);
   const [archived, setArchived] = useState(false);
+  const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
 
   // Anexos + progresso
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [downloads, setDownloads] = useState<Record<string, { pct: number; loading: boolean }>>({});
 
   // Presença + typing
   const [peerOnline, setPeerOnline] = useState(false);
@@ -105,7 +107,8 @@ function ConversationPage() {
   const idSetRef = useRef<Set<string>>(new Set());
 
   const selectCols =
-    "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name";
+    "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name, client_message_id";
+
 
   const loadPage = useCallback(
     async (uid: string, beforeIso?: string): Promise<MessageRow[]> => {
