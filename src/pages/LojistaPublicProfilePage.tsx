@@ -353,6 +353,49 @@ export function LojistaPublicProfilePage() {
         </div>
       </div>
 
+      {/* ESPECIALIDADES EM DESTAQUE (até 3) */}
+      {(() => {
+        const featured = (profile?.specialties ?? []).filter((s) => s.featured).slice(0, 3);
+        if (featured.length === 0) return null;
+        return (
+          <div className="max-w-5xl mx-auto px-4 mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Star className="w-4 h-4 text-primary fill-primary" />
+              <h2 className="text-xs font-black uppercase italic text-primary tracking-widest">
+                Especialidades em Destaque
+              </h2>
+            </div>
+            <div className={`grid gap-3 ${featured.length === 1 ? "grid-cols-1" : featured.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"}`}>
+              {featured.map((s) => (
+                <button
+                  key={s.id || s.title}
+                  onClick={() => {
+                    setOppSpecialty(s.title);
+                    setActiveTab("oportunidades");
+                  }}
+                  className="text-left p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-transparent border border-primary/40 hover:border-primary hover:from-primary/20 transition-all group"
+                >
+                  <div className="flex items-start gap-2 mb-2">
+                    <Star className="w-3.5 h-3.5 text-primary fill-primary flex-shrink-0 mt-0.5" />
+                    <h3 className="text-xs font-black uppercase italic text-white group-hover:text-primary transition-colors leading-tight">
+                      {s.title}
+                    </h3>
+                  </div>
+                  {s.description && (
+                    <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-3">
+                      {s.description}
+                    </p>
+                  )}
+                  <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Ver oportunidades →
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* STICKY TABS */}
       <div className="sticky top-0 md:top-4 z-30 max-w-5xl mx-auto px-4 mt-6">
         <div className="bg-[#1A1A1B]/95 backdrop-blur-md border border-white/10 rounded-2xl p-1.5 flex gap-1 overflow-x-auto scrollbar-none">
