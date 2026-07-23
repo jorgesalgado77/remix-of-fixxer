@@ -52,6 +52,7 @@ interface ServiceOrder {
   code: string;
   title: string;
   description?: string;
+  neighborhood?: string;
   city?: string;
   state?: string;
   price?: number;
@@ -104,6 +105,9 @@ export function LojistaPublicProfilePage() {
   // Filtros de Oportunidades
   const [oppSearch, setOppSearch] = useState("");
   const [oppSpecialty, setOppSpecialty] = useState<string>("Todas");
+  const [oppNeighborhood, setOppNeighborhood] = useState<string>("Todos");
+  const [oppCity, setOppCity] = useState<string>("Todas");
+  const [oppUf, setOppUf] = useState<string>("Todas");
 
   useEffect(() => {
     const load = async () => {
@@ -503,30 +507,46 @@ export function LojistaPublicProfilePage() {
 
         {activeTab === "oportunidades" && (() => {
           const specialtyTitles = (profile?.specialties ?? []).map((s) => s.title).filter(Boolean);
+          const uniq = (arr: (string | undefined)[]) =>
+            Array.from(new Set(arr.map((v) => (v ?? "").trim()).filter(Boolean))).sort((a, b) =>
+              a.localeCompare(b, "pt-BR"),
+            );
+          const neighborhoodOptions = uniq(orders.map((o) => o.neighborhood));
+          const cityOptions = uniq(orders.map((o) => o.city));
+          const ufOptions = uniq(orders.map((o) => o.state)).map((s) => s.toUpperCase());
           const filteredOrders = orders.filter((os) => {
             const q = oppSearch.trim().toLowerCase();
-            const hay = `${os.title ?? ""} ${os.description ?? ""} ${os.code ?? ""} ${os.city ?? ""}`.toLowerCase();
+            const hay = `${os.title ?? ""} ${os.description ?? ""} ${os.code ?? ""} ${os.neighborhood ?? ""} ${os.city ?? ""} ${os.state ?? ""}`.toLowerCase();
             if (q && !hay.includes(q)) return false;
             if (oppSpecialty !== "Todas") {
               const specHay = `${os.title ?? ""} ${os.description ?? ""}`.toLowerCase();
               if (!specHay.includes(oppSpecialty.toLowerCase())) return false;
             }
+            if (oppNeighborhood !== "Todos" && (os.neighborhood ?? "").trim() !== oppNeighborhood) return false;
+            if (oppCity !== "Todas" && (os.city ?? "").trim() !== oppCity) return false;
+            if (oppUf !== "Todas" && (os.state ?? "").trim().toUpperCase() !== oppUf) return false;
             return true;
           });
+          const hasActiveFilters =
+            oppSearch.trim() !== "" ||
+            oppSpecialty !== "Todas" ||
+            oppNeighborhood !== "Todos" ||
+            oppCity !== "Todas" ||
+            oppUf !== "Todas";
           return (
             <section className="space-y-4">
               <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
                 <Zap className="w-4 h-4" /> Ordens de Serviço em Aberto
               </h2>
 
-              {/* Busca + Filtro por Especialidade */}
+              {/* Busca + Filtros */}
               <div className="flex flex-col md:flex-row gap-2">
                 <div className="relative flex-1">
                   <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
                     value={oppSearch}
                     onChange={(e) => setOppSearch(e.target.value)}
-                    placeholder="Buscar por título, descrição, cidade..."
+                    placeholder="Buscar por título, descrição, bairro, cidade, UF..."
                     className="pl-9 h-10 bg-black/40 border-white/10 text-xs"
                   />
                 </div>
@@ -543,9 +563,63 @@ export function LojistaPublicProfilePage() {
                   </select>
                 )}
               </div>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                {filteredOrders.length} de {orders.length} oportunidade(s)
-              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <select
+                  value={oppNeighborhood}
+                  onChange={(e) => setOppNeighborhood(e.target.value)}
+                  disabled={neighborhoodOptions.length === 0}
+                  className="h-10 bg-black/40 border border-white/10 rounded-md px-3 text-xs font-bold text-white uppercase italic outline-none focus:border-primary disabled:opacity-40"
+                >
+                  <option value="Todos">Todos os Bairros</option>
+                  {neighborhoodOptions.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+                <select
+                  value={oppCity}
+                  onChange={(e) => setOppCity(e.target.value)}
+                  disabled={cityOptions.length === 0}
+                  className="h-10 bg-black/40 border border-white/10 rounded-md px-3 text-xs font-bold text-white uppercase italic outline-none focus:border-primary disabled:opacity-40"
+                >
+                  <option value="Todas">Todas as Cidades</option>
+                  {cityOptions.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <select
+                  value={oppUf}
+                  onChange={(e) => setOppUf(e.target.value)}
+                  disabled={ufOptions.length === 0}
+                  className="h-10 bg-black/40 border border-white/10 rounded-md px-3 text-xs font-bold text-white uppercase italic outline-none focus:border-primary disabled:opacity-40"
+                >
+                  <option value="Todas">Todas as UFs</option>
+                  {ufOptions.map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                  {filteredOrders.length} de {orders.length} oportunidade(s)
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={() => {
+                      setOppSearch("");
+                      setOppSpecialty("Todas");
+                      setOppNeighborhood("Todos");
+                      setOppCity("Todas");
+                      setOppUf("Todas");
+                    }}
+                    className="text-[10px] font-black uppercase tracking-widest text-primary hover:opacity-80"
+                  >
+                    Limpar filtros
+                  </button>
+                )}
+              </div>
+
 
               {filteredOrders.length > 0 ? (
                 <div className="space-y-4">
@@ -769,9 +843,15 @@ function OrderCard({ order }: { order: ServiceOrder }) {
             <Clock className="w-4 h-4" />
             <h3 className="text-sm font-black uppercase italic truncate">{order.title}</h3>
           </div>
-          <div className="text-[9px] font-black uppercase text-muted-foreground mt-1">
-            {order.code} • {order.city || "—"}/{order.state || "—"}
+          <div className="text-[9px] font-black uppercase text-muted-foreground mt-1 flex items-center gap-1.5 flex-wrap">
+            <span>{order.code}</span>
+            <span className="opacity-40">•</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+              📍 {order.neighborhood ? `${order.neighborhood} — ` : ""}
+              {order.city || "—"}/{(order.state || "—").toUpperCase()}
+            </span>
           </div>
+
         </div>
         <div className="text-right">
           <div className="text-lg font-black text-primary italic">R$ {(order.price || 0).toFixed(2)}</div>
