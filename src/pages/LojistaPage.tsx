@@ -40,7 +40,8 @@ import {
   XCircle,
   Eye,
   Heart,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 
 import jsPDF from 'jspdf';
@@ -1418,6 +1419,7 @@ function ProfileView({
     const [videoUrls, setVideoUrls] = useState<string[]>([]);
     const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
     const [documents, setDocuments] = useState<{name: string, url: string, size: number}[]>([]);
+    const [specialties, setSpecialties] = useState<{id: string, title: string, description: string}[]>([]);
     const [socialLinks, setSocialLinks] = useState({
         instagram: "",
         facebook: "",
@@ -1452,6 +1454,7 @@ function ProfileView({
                     setGalleryUrls(parsed.galleryUrls || []);
                     setVideoUrls(parsed.videoUrls || []);
                     setDocuments(parsed.documents || []);
+                    setSpecialties(Array.isArray(parsed.specialties) ? parsed.specialties : []);
                     setSocialLinks(parsed.socialLinks || { instagram: "", facebook: "", tiktok: "", site: "" });
                 }
 
@@ -1477,6 +1480,7 @@ function ProfileView({
                     setGalleryUrls(data.gallery_urls || []);
                     setVideoUrls(data.video_urls || []);
                     setDocuments(data.documents || []);
+                    setSpecialties(Array.isArray(data.specialties) ? data.specialties : []);
                     setSocialLinks({
                         instagram: data.instagram || "",
                         facebook: data.facebook || "",
@@ -1500,6 +1504,7 @@ function ProfileView({
                         galleryUrls: data.gallery_urls,
                         videoUrls: data.video_urls,
                         documents: data.documents,
+                        specialties: Array.isArray(data.specialties) ? data.specialties : [],
                         socialLinks: {
                             instagram: data.instagram,
                             facebook: data.facebook,
@@ -2451,6 +2456,97 @@ function ProfileView({
 
                  </div>
 
+                 {/* ESPECIALIDADES DA EMPRESA */}
+                 <div className="space-y-4 pt-6 border-t border-white/5">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-primary" /> Especialidades da Empresa
+                            </h3>
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">
+                                Crie até 10 cards destacando suas áreas de atuação • {specialties.length}/10
+                            </p>
+                        </div>
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                if (specialties.length >= 10) {
+                                    toast.warning("Limite de 10 especialidades atingido.");
+                                    return;
+                                }
+                                setSpecialties(prev => [...prev, {
+                                    id: `sp-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+                                    title: "",
+                                    description: ""
+                                }]);
+                            }}
+                            disabled={specialties.length >= 10}
+                            className="bg-primary text-black font-black uppercase italic text-[10px] h-9 rounded-xl hover:bg-primary/90 disabled:opacity-50"
+                        >
+                            <PlusCircle className="w-3.5 h-3.5 mr-1.5" /> Nova Especialidade
+                        </Button>
+                    </div>
+
+                    {specialties.length === 0 ? (
+                        <div className="p-6 rounded-2xl border-2 border-dashed border-white/10 bg-black/20 text-center">
+                            <Sparkles className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">
+                                Nenhuma especialidade cadastrada
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/70 mt-1">
+                                Ex.: "Móveis Planejados de Alto Padrão" — "Projetos residenciais premium sob medida."
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {specialties.map((sp, index) => (
+                                <div key={sp.id} className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3 hover:border-primary/30 transition-all">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[9px] font-black text-primary uppercase tracking-widest">
+                                            Especialidade {index + 1}
+                                        </span>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setSpecialties(prev => prev.filter(s => s.id !== sp.id))}
+                                            className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                            aria-label="Remover especialidade"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        maxLength={80}
+                                        value={sp.title}
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            setSpecialties(prev => prev.map(s => s.id === sp.id ? { ...s, title: v } : s));
+                                        }}
+                                        placeholder="Ex.: MÓVEIS PLANEJADOS DE ALTO PADRÃO"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs font-black text-white uppercase italic placeholder:text-muted-foreground/40 focus:border-primary outline-none transition-all"
+                                    />
+                                    <textarea
+                                        rows={2}
+                                        maxLength={180}
+                                        value={sp.description}
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            setSpecialties(prev => prev.map(s => s.id === sp.id ? { ...s, description: v } : s));
+                                        }}
+                                        placeholder="Breve descrição — Ex.: Projetos residenciais premium sob medida."
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white placeholder:text-muted-foreground/40 focus:border-primary outline-none transition-all resize-none"
+                                    />
+                                    <p className="text-[9px] text-muted-foreground/60 text-right">{sp.description.length}/180</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                 </div>
+
+
+
                   <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
                         <Star className={`w-4 h-4 ${getRatingColor(rating).replace('drop-shadow-', '')} fill-current`} />
@@ -2542,6 +2638,7 @@ function ProfileView({
                                     gallery_urls: galleryUrls,
                                     video_urls: videoUrls,
                                     documents: documents,
+                                    specialties: specialties,
                                     updated_at: new Date().toISOString()
                                 };
 
@@ -2591,6 +2688,7 @@ function ProfileView({
                                     setGalleryUrls(Array.isArray(saved.gallery_urls) ? saved.gallery_urls : []);
                                     setVideoUrls(Array.isArray(saved.video_urls) ? saved.video_urls : []);
                                     setDocuments(Array.isArray(saved.documents) ? saved.documents : []);
+                                    setSpecialties(Array.isArray(saved.specialties) ? saved.specialties : []);
                                     setSocialLinks({
                                         instagram: saved.instagram || "",
                                         facebook: saved.facebook || "",
@@ -2607,7 +2705,7 @@ function ProfileView({
                                     localStorage.setItem(`fixxer_profile_${userEmailLocal}`, JSON.stringify({
                                         companyName, socialName, cnpj, responsibleName, emailContact,
                                         whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
-                                        galleryUrls, videoUrls, documents, socialLinks, address
+                                        galleryUrls, videoUrls, documents, specialties, socialLinks, address
                                     }));
                                 }
 

@@ -43,6 +43,7 @@ interface StoreProfile {
   gallery_urls?: string[];
   video_urls?: string[];
   activity_branch?: string;
+  specialties?: { id: string; title: string; description: string }[];
   created_at?: string;
 }
 
@@ -481,19 +482,24 @@ export function LojistaPublicProfilePage() {
         {activeTab === "especialidades" && (
           <section className="space-y-4">
             <h2 className="text-sm font-black uppercase italic text-primary">📦 Especialidades da Loja</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { title: "Móveis Planejados de Alto Padrão", desc: "Projetos residenciais premium sob medida." },
-                { title: "Marcenaria Sob Medida", desc: "Peças exclusivas para ambientes personalizados." },
-                { title: "Projetos Corporativos", desc: "Ambientes empresariais e comerciais completos." },
-                { title: "Assistência Técnica Garantida", desc: "Suporte pós-venda e manutenção especializada." },
-              ].map((s) => (
-                <div key={s.title} className="bg-[#1A1A1B] border border-white/10 rounded-2xl p-5 hover:border-primary/30 transition-all">
-                  <h3 className="text-sm font-black uppercase italic text-white mb-2">{s.title}</h3>
-                  <p className="text-[11px] text-muted-foreground">{s.desc}</p>
+            {(() => {
+              const list = (profile?.specialties && profile.specialties.length > 0)
+                ? profile.specialties
+                : [];
+              if (list.length === 0) {
+                return <EmptyState label="Nenhuma especialidade cadastrada ainda." />;
+              }
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {list.map((s) => (
+                    <div key={s.id || s.title} className="bg-[#1A1A1B] border border-white/10 rounded-2xl p-5 hover:border-primary/30 transition-all">
+                      <h3 className="text-sm font-black uppercase italic text-white mb-2">{s.title}</h3>
+                      <p className="text-[11px] text-muted-foreground">{s.description}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </section>
         )}
       </div>
