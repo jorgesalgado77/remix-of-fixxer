@@ -1489,6 +1489,12 @@ function ProfileView({
 
     const [cropImage, setCropImage] = useState<string | null>(null);
     const [cropType, setCropType] = useState<'logo' | 'banner' | 'gallery' | 'video' | 'document' | null>(null);
+    const [cropSaving, setCropSaving] = useState(false);
+
+    // Limites aplicados no modal de Ajustar Imagem
+    const LOGO_MAX_MB = 5;
+    const LOGO_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: File[] } }, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document') => {
         const files = Array.from(e.target.files || []);
