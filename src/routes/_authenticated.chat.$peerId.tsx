@@ -119,12 +119,17 @@ function ConversationPage() {
   const [archived, setArchived] = useState(false);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
 
-  // Anexos + progresso
-  const [pendingFile, setPendingFile] = useState<File | null>(() => getDraftFile(peerId));
+  // Anexos + progresso (multi-arquivo)
+  const [pendingFiles, setPendingFiles] = useState<File[]>(() => getDraftFiles(peerId));
   const [uploading, setUploading] = useState(false);
-  const [uploadPct, setUploadPct] = useState(0);
+  const [uploadPct, setUploadPct] = useState(0); // % do arquivo atual
+  const [uploadingIndex, setUploadingIndex] = useState(0); // índice do arquivo atual
   const fileRef = useRef<HTMLInputElement>(null);
   const [downloads, setDownloads] = useState<Record<string, { pct: number; loading: boolean }>>({});
+
+  // Confirmação de descarte de rascunho (dois cliques)
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+  const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Presença + typing
   const [peerOnline, setPeerOnline] = useState(false);
