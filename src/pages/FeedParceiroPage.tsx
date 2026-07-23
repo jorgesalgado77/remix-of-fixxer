@@ -657,23 +657,29 @@ export default function FeedParceiroPage() {
           <ul className="space-y-4">
             {paged.map((r) => {
               const quoteStatus = quotesByRequest[r.id];
+              const isPrestador = r.requesterType === "prestador";
+              const accent = isPrestador ? "#FF9F0A" : "#00E5FF";
+              const accentRgba = (a: number) => isPrestador
+                ? `rgba(255, 159, 10, ${a})`
+                : `rgba(0, 229, 255, ${a})`;
+              const roleLabel = isPrestador ? "✓ Prestador" : "✓ Lojista";
               return (
                 <li
                   key={r.id}
                   className="overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
-                  style={{ borderColor: "rgba(0, 229, 255, 0.35)", boxShadow: "0 0 18px rgba(0, 229, 255, 0.10)" }}
+                  style={{ borderColor: accentRgba(0.35), boxShadow: `0 0 18px ${accentRgba(0.1)}` }}
                 >
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold" style={{ borderColor: "#00E5FF", color: "#00E5FF" }}>
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[#0A0A0B] text-sm font-semibold" style={{ borderColor: accent, color: accent }}>
                       {r.store.initials}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 text-sm font-semibold">
                         <span className="truncate">{r.store.name}</span>
                         {r.store.verified && (
-                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "rgba(0, 229, 255, 0.15)", color: "#00E5FF" }}>
-                            ✓ Lojista
+                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: accentRgba(0.15), color: accent }}>
+                            {roleLabel}
                           </span>
                         )}
                       </div>
