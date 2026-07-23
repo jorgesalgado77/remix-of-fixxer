@@ -533,8 +533,8 @@ export function LojistaDashboard() {
         </div>
       </main>
       
-      {/* Barra de ações fixa inferior Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around">
+      {/* Barra de ações fixa inferior Mobile (Global-like Dashboard Nav) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around pb-safe">
         <button onClick={() => handleTabChange('dashboard')} className={`flex flex-col items-center gap-1 ${activeTab === 'dashboard' ? 'text-primary' : 'text-muted-foreground'}`}>
             <Activity className="w-5 h-5" />
             <span className="text-[8px] font-black uppercase italic">Painel</span>

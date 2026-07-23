@@ -309,7 +309,7 @@ export function LojistaPublicProfilePage() {
                   onClick={handleContactWhatsApp}
                   className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato via Chat / WhatsApp
+                  <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
                 </Button>
               </div>
             </div>
@@ -473,7 +473,7 @@ export function LojistaPublicProfilePage() {
           onClick={handleContactWhatsApp}
           className="w-full bg-primary text-black font-black uppercase italic tracking-widest h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
         >
-          <MessageCircle className="w-4 h-4 mr-2" /> Falar com a Loja / Solicitar Orçamento
+          <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
         </Button>
       </div>
 
