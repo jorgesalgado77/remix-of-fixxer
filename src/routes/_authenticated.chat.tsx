@@ -195,6 +195,33 @@ function ChatInboxPage() {
     window.addEventListener("fixxer:role-changed", syncRole as any);
     const onPrefs = () => setPrefsVersion((v) => v + 1);
     window.addEventListener("fixxer:chat-prefs-changed", onPrefs as any);
+    window.addEventListener("fixxer:messages-read", onPrefs as any);
+
+    // Cross-tab sync: qualquer mudança em chaves de leitura/prefs em outra aba
+    // recomputa os contadores de não-lidas imediatamente. Se a conversa foi
+    // aberta em outra aba, o storage event chega aqui e zera o badge.
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key) return;
+      if (
+        e.key === "fixxer_mock_chat_seen" ||
+        e.key.startsWith("fixxer_chat_last_read") ||
+        e.key.startsWith("fixxer_chat_archived") ||
+        e.key.startsWith("fixxer_chat_muted")
+      ) {
+        setPrefsVersion((v) => v + 1);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    // Ao voltar o foco para esta aba, recarrega a primeira página (mensagens
+    // podem ter sido lidas/enviadas em outra aba enquanto esta estava oculta).
+    const onFocus = () => {
+      const uid = userId ?? (typeof window !== "undefined" ? localStorage.getItem("fixxer_local_uid") : null);
+      if (uid) void loadFirstPage(uid);
+      setPrefsVersion((v) => v + 1);
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
 
     const { data: authSub } = supabaseExternal.auth.onAuthStateChange(async (_evt, session) => {
       const uid = session?.user?.id ?? null;
@@ -211,8 +238,12 @@ function ChatInboxPage() {
     return () => {
       cancelled = true;
       window.removeEventListener("storage", syncRole);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("fixxer:role-changed", syncRole as any);
       window.removeEventListener("fixxer:chat-prefs-changed", onPrefs as any);
+      window.removeEventListener("fixxer:messages-read", onPrefs as any);
       try { authSub?.subscription?.unsubscribe(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
     };
