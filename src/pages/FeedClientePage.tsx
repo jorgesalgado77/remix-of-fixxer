@@ -833,10 +833,12 @@ function Lightbox({
 function PublishModal({
   userId,
   onClose,
+  onPublished,
   glassClass,
 }: {
   userId: string | null;
   onClose: () => void;
+  onPublished?: () => void | Promise<void>;
   glassClass: string;
 }) {
   const [title, setTitle] = useState("");
