@@ -895,16 +895,23 @@ function VendorCard({
 }) {
   const [carouselIdx, setCarouselIdx] = useState(0);
   const isLoja = vendor.kind === "loja";
+  const vendorHex = isLoja ? "#00E5FF" : "#FF9F0A";
+  const vendorLabel = isLoja ? "Lojista" : "Prestador";
+  const vendorIcon = isLoja ? <Store className="w-2.5 h-2.5" /> : <Wrench className="w-2.5 h-2.5" />;
 
   return (
-    <article className={`${glassClass} border border-white/10 rounded-3xl overflow-hidden bg-[#1A1A1B]`}>
+    <article
+      className={`${glassClass} border-2 rounded-3xl overflow-hidden bg-[#1A1A1B]`}
+      style={{ borderColor: `${vendorHex}55`, boxShadow: `0 0 18px ${vendorHex}22` }}
+    >
       {/* Cabeçalho */}
       <div className="p-4 flex items-start gap-3">
         <div className="relative shrink-0">
           <img
             src={vendor.avatar}
             alt={vendor.name}
-            className="w-12 h-12 rounded-xl border border-white/10 bg-black/40 object-cover"
+            className="w-12 h-12 rounded-xl border object-cover bg-black/40"
+            style={{ borderColor: `${vendorHex}55` }}
           />
           {vendor.goldSeal && (
             <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-yellow-400 border-2 border-[#1A1A1B] flex items-center justify-center">
@@ -915,14 +922,11 @@ function VendorCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1">
             <span
-              className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border flex items-center gap-1 ${
-                isLoja
-                  ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
-                  : "bg-[#00FF87]/10 text-[#00FF87] border-[#00FF87]/30"
-              }`}
+              className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border flex items-center gap-1"
+              style={{ backgroundColor: `${vendorHex}1A`, color: vendorHex, borderColor: `${vendorHex}55` }}
             >
-              {isLoja ? <Store className="w-2.5 h-2.5" /> : <Wrench className="w-2.5 h-2.5" />}
-              {isLoja ? "Lojista" : "Prestador"}
+              {vendorIcon}
+              {vendorLabel}
             </span>
             <div className="flex items-center gap-0.5 text-yellow-400">
               <Star className="w-3 h-3 fill-current" />
