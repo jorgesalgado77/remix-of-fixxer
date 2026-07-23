@@ -29,6 +29,7 @@ import {
 } from "@/lib/chat-preferences";
 import { enqueueMarkAllRead, enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { MOCK_CONVERSATIONS, mockMessageIsoAt } from "@/lib/mock-chat";
+import { getMockSeenAt, markMockConversationSeen } from "@/lib/chat-drafts";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatInboxPage,
@@ -158,7 +159,7 @@ function ChatInboxPage() {
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
-      const uid = data?.user?.id ?? null;
+      const uid = data?.user?.id ?? (typeof window !== "undefined" ? localStorage.getItem("fixxer_local_uid") : null);
       if (cancelled) return;
       setUserId(uid);
       if (!uid) { setLoading(false); return; }
@@ -310,9 +311,13 @@ function ChatInboxPage() {
     const mock: Conversation[] = MOCK_CONVERSATIONS.map((c) => {
       const last = c.messages[c.messages.length - 1];
       const lastAt = mockMessageIsoAt(last?.minutesAgo ?? 0);
-      const unread = c.messages.filter(
-        (m) => !m.fromMe && (m.minutesAgo <= 60), // "novas" na última hora
-      ).length;
+      const seenAt = getMockSeenAt(c.peerId);
+      const unread = c.messages.filter((m) => {
+        if (m.fromMe) return false;
+        if (m.minutesAgo > 60) return false; // "novas" na última hora
+        const msgAt = Date.now() - m.minutesAgo * 60_000;
+        return msgAt > seenAt; // zera após abrir a conversa
+      }).length;
       return {
         peerId: c.peerId,
         peerName: c.peerName,
@@ -398,11 +403,16 @@ function ChatInboxPage() {
   };
 
   const openConversation = (peerId: string) => {
+    // Zera badge imediatamente — para conversas reais (via fila) e para mocks.
+    if (peerId.startsWith("mock-")) {
+      markMockConversationSeen(peerId);
+    }
     if (userId) {
       enqueueMarkConversationRead(userId, peerId);
       markConversationReadLocal(userId, peerId);
-      window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
     }
+    window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
+    setPrefsVersion((v) => v + 1);
     setOpenMenu(null);
     try {
       navigate({ to: "/chat/$peerId" as any, params: { peerId } as any });
