@@ -2299,12 +2299,36 @@ function ProfileView({
                             setIsSaving(true);
                             const toastId = toast.loading("Salvando perfil...");
                             try {
-                                const { data: { user } } = await supabaseExternal.auth.getUser();
-                                if (!user) throw new Error("Usuário não logado");
+                                // 1) Tenta obter o usuário via sessão do Supabase Externo
+                                const { data: authData } = await supabaseExternal.auth.getUser();
+                                let userId = authData?.user?.id as string | undefined;
+                                let userEmail = authData?.user?.email as string | undefined;
+
+                                // 2) Fallback: usa email persistido no localStorage (login via bypass/admin)
+                                if (!userEmail && typeof window !== 'undefined') {
+                                    userEmail = localStorage.getItem('fixxer_user_email') || undefined;
+                                }
+                                if (!userEmail) {
+                                    throw new Error("Sessão expirada. Faça login novamente para salvar o perfil.");
+                                }
+
+                                // 3) Se não houver user_id da sessão, gera UUID determinístico a partir do email
+                                if (!userId) {
+                                    const enc = new TextEncoder().encode(`fixxer:${userEmail.toLowerCase()}`);
+                                    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', enc));
+                                    hash[6] = (hash[6] & 0x0f) | 0x50; // versão 5
+                                    hash[8] = (hash[8] & 0x3f) | 0x80; // variant RFC 4122
+                                    const hex = Array.from(hash.slice(0, 16))
+                                        .map((b) => b.toString(16).padStart(2, '0')).join('');
+                                    userId = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
+                                    if (typeof window !== 'undefined') {
+                                        localStorage.setItem('fixxer_derived_user_id', userId);
+                                    }
+                                }
 
                                 const formData = {
-                                    user_id: user.id,
-                                    user_email: user.email,
+                                    user_id: userId,
+                                    user_email: userEmail,
                                     company_name: companyName,
                                     social_name: socialName,
                                     cnpj: cnpj,
@@ -2336,25 +2360,30 @@ function ProfileView({
                                     .from('store_profiles')
                                     .upsert(formData, { onConflict: 'user_id' });
 
-                                if (error) throw error;
+                                if (error) {
+                                    console.error('[store_profiles.upsert] erro:', error);
+                                    throw new Error(error.message || 'Falha ao gravar no Supabase.');
+                                }
 
                                 // Buscar o ID gerado se for novo ou confirmar o existente
                                 const { data: profileData } = await supabaseExternal
                                     .from('store_profiles')
                                     .select('id')
-                                    .eq('user_id', user.id)
-                                    .single();
-                                
-                                if (profileData?.id) {
+                                    .eq('user_id', userId)
+                                    .maybeSingle();
+
+                                if (profileData?.id && typeof window !== 'undefined') {
                                     localStorage.setItem('fixxer_lojista_id', profileData.id);
                                 }
 
                                 // Salvar no LocalStorage como garantia
-                                localStorage.setItem(`fixxer_profile_${user.email}`, JSON.stringify({
-                                    companyName, socialName, cnpj, responsibleName, emailContact,
-                                    whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
-                                    galleryUrls, videoUrls, documents, socialLinks, address
-                                }));
+                                if (typeof window !== 'undefined') {
+                                    localStorage.setItem(`fixxer_profile_${userEmail}`, JSON.stringify({
+                                        companyName, socialName, cnpj, responsibleName, emailContact,
+                                        whatsapp, phone, cep, activityBranch, logoUrl, bannerUrl,
+                                        galleryUrls, videoUrls, documents, socialLinks, address
+                                    }));
+                                }
 
                                 setIsProfileComplete(true);
                                 toast.success("Dados do perfil salvos com sucesso!", {
@@ -2366,9 +2395,10 @@ function ProfileView({
                                 setTimeout(() => {
                                    window.dispatchEvent(new CustomEvent('change-tab', { detail: 'dashboard' }));
                                 }, 800);
-                            } catch (err) {
-                                console.error(err);
-                                toast.error("Erro ao salvar perfil. Tente novamente.", { id: toastId });
+                            } catch (err: any) {
+                                console.error('[Perfil Lojista] erro ao salvar:', err);
+                                const msg = err?.message || 'Erro desconhecido ao salvar.';
+                                toast.error(`Erro ao salvar perfil: ${msg}`, { id: toastId, duration: 8000 });
                             } finally {
                                 setIsSaving(false);
                             }
