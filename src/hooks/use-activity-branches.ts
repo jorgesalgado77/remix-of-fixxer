@@ -59,14 +59,19 @@ export function useActivityBranches() {
   }, []);
 
   const addBranch = async (name: string) => {
-    try {
-      if (branches.includes(name)) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
 
+    // Otimista: adiciona localmente já para aparecer no select
+    setBranches((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed].sort((a, b) => a.localeCompare(b))));
+
+    try {
       const { error } = await supabaseExternal
         .from('activity_branches')
-        .insert([{ name }]);
+        .insert([{ name: trimmed }]);
 
-      if (error) throw error;
+      // 23505 = unique_violation → ok, apenas já existe no banco
+      if (error && (error as any).code !== '23505') throw error;
     } catch (err) {
       console.error('Erro ao adicionar ramo de atividade:', err);
     }
@@ -74,3 +79,4 @@ export function useActivityBranches() {
 
   return { branches, loading, addBranch };
 }
+
