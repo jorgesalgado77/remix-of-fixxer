@@ -301,12 +301,42 @@ function ChatInboxPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, peers, userId, prefsVersion]);
 
+  const conversationsWithMock: Conversation[] = useMemo(() => {
+    if (!userId) return conversations;
+    const archivedSet = getArchivedSet(userId);
+    const mutedSet = getMutedSet(userId);
+    const mock: Conversation[] = MOCK_CONVERSATIONS.map((c) => {
+      const last = c.messages[c.messages.length - 1];
+      const lastAt = mockMessageIsoAt(last?.minutesAgo ?? 0);
+      const unread = c.messages.filter(
+        (m) => !m.fromMe && (m.minutesAgo <= 60), // "novas" na última hora
+      ).length;
+      return {
+        peerId: c.peerId,
+        peerName: c.peerName,
+        peerAvatar: c.peerAvatar,
+        peerRole: c.peerRole,
+        lastMessage: last?.content ?? "",
+        lastAttachmentType: null,
+        lastMessageId: null,
+        lastAt,
+        unread,
+        archived: archivedSet.has(c.peerId),
+        muted: mutedSet.has(c.peerId),
+      };
+    });
+    // Evita duplicar caso o peerId já exista nas reais
+    const existing = new Set(conversations.map((c) => c.peerId));
+    const merged = [...conversations, ...mock.filter((m) => !existing.has(m.peerId))];
+    return merged.sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime());
+  }, [conversations, userId, prefsVersion]);
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const terms = q.split(/\s+/).filter(Boolean);
-    const base = conversations
+    const base = conversationsWithMock
       .filter((c) => (showArchived ? c.archived : !c.archived))
-      .filter((c) => canSeeConversationWith(role, c.peerRole));
+      .filter((c) => c.peerId.startsWith("mock-") || canSeeConversationWith(role, c.peerRole));
     if (!q) return base;
     type Scored = Conversation & { _score: number };
     const scored: Scored[] = [];
