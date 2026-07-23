@@ -222,7 +222,7 @@ export function LojistaDashboard() {
       setActiveTab("profile");
       return;
     }
-    window.open(`/lojista/${id}`, "_blank", "noopener,noreferrer");
+    navigate({ to: "/lojista/$id", params: { id: String(id) } });
   };
 
   const loadFavorites = async () => {
