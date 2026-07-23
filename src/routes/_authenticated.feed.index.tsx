@@ -32,6 +32,32 @@ export const Route = createFileRoute("/_authenticated/feed/")({
   component: FeedPage,
 });
 
+interface FeedProfile {
+  id?: string;
+  full_name?: string | null;
+  company_name?: string | null;
+  avatar_url?: string | null;
+  karma_score?: number | null;
+  user_type?: string | null;
+  specialties?: string[] | null;
+}
+
+interface FeedPost {
+  id: string;
+  title?: string;
+  description?: string | null;
+  feed_type?: string | null;
+  category?: string | null;
+  city?: string | null;
+  state?: string | null;
+  status?: string | null;
+  created_at?: string;
+  user_id?: string;
+  budget?: string | number | null;
+  images?: string[] | null;
+  profiles?: FeedProfile | FeedProfile[] | null;
+}
+
 function FeedPage() {
   const { glassClass } = usePerformanceMode();
   const { userRole } = Route.useRouteContext();
