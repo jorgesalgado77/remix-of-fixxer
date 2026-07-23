@@ -21,6 +21,7 @@ import {
   Send,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { isMockPeerId, getMockProfile, getMockPeerName } from "@/lib/mock-chat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -103,6 +104,31 @@ export function LojistaPublicProfilePage() {
     const load = async () => {
       setLoading(true);
       try {
+        // Perfis mockados (usados durante a construção do sistema)
+        if (storeId && isMockPeerId(storeId)) {
+          const mock = getMockProfile(storeId);
+          const name = getMockPeerName(storeId) ?? "Perfil";
+          if (mock) {
+            setProfile({
+              user_id: storeId,
+              company_name: mock.companyName ?? name,
+              social_name: name,
+              city: mock.city,
+              state: mock.state,
+              whatsapp: mock.whatsapp,
+              logo_url: null,
+              banner_url: mock.bannerUrl,
+              gallery_urls: mock.gallery,
+              video_urls: mock.videos ?? [],
+              activity_branch: mock.activityBranch,
+              created_at: mock.memberSince,
+            });
+            setReviews(mock.reviews as Review[]);
+            setOrders([]);
+          }
+          return;
+        }
+
         let query = supabaseExternal.from("store_profiles").select("*");
         if (storeId) query = query.eq("user_id", storeId);
         const { data } = await query.limit(1).maybeSingle();

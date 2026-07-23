@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -29,7 +29,7 @@ function AuthenticatedLayout() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -40,9 +40,8 @@ function AuthenticatedLayout() {
       setEmail(storedEmail);
       setRole(storedRole);
 
-      if (storedEmail.trim() === 'jorgericardosalgado@gmail.com' || window.location.pathname.includes('admin')) {
-        setShowAdminPanel(true);
-      }
+      // Admin panel agora é derivado do pathname — nada a setar aqui
+
 
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession && !isAuthenticated) {
@@ -79,12 +78,13 @@ function AuthenticatedLayout() {
   }, [navigate]);
 
   const isAdmin = email.trim() === 'jorgericardosalgado@gmail.com' || role.toLowerCase() === 'admin';
+  const showAdminPanel = pathname.startsWith('/admin');
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <nav className="border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div onClick={() => setShowAdminPanel(isAdmin)} className="flex items-center gap-2 cursor-pointer group">
+          <div onClick={() => navigate({ to: isAdmin ? "/admin" as any : "/feed" as any })} className="flex items-center gap-2 cursor-pointer group">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-xl shadow-[0_0_15px_rgba(0,255,135,0.3)] group-hover:scale-110 transition-transform">
               F
             </div>
@@ -94,8 +94,8 @@ function AuthenticatedLayout() {
 
         <div className="flex items-center gap-6">
           {isAdmin && (
-            <div 
-              onClick={() => setShowAdminPanel(true)} 
+            <div
+              onClick={() => navigate({ to: "/admin" as any })}
               className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors ${showAdminPanel ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-white'}`}
             >
               <ShieldCheck className="w-4 h-4" />
@@ -103,8 +103,8 @@ function AuthenticatedLayout() {
             </div>
           )}
 
-          <div 
-            onClick={() => setShowAdminPanel(false)} 
+          <div
+            onClick={() => navigate({ to: "/feed" as any })}
             className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors ${!showAdminPanel ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-white'}`}
           >
             <LayoutDashboard className="w-4 h-4" />
