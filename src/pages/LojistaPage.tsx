@@ -41,7 +41,8 @@ import {
   Eye,
   Heart,
   Loader2,
-  Sparkles
+  Sparkles,
+  GripVertical
 } from "lucide-react";
 
 import jsPDF from 'jspdf';
