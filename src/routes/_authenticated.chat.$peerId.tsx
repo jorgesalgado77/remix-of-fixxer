@@ -222,6 +222,7 @@ function ConversationPage() {
         if (mock) {
           setPeerName(mock.peerName);
           setPeerAvatar(mock.peerAvatar);
+          setPeerRole(mock.peerRole);
           setPeerOnline(!!mock.online);
           const mockRows: MessageRow[] = mock.messages.map((m) => ({
             id: `${peerId}-${m.id}`,
