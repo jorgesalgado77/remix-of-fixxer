@@ -87,8 +87,16 @@ const formatBRL = (v: string | number) => {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
+const UF_LIST = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+  "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+];
+
 export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: CreateAdModalProps) {
   const [serviceTypes, setServiceTypes] = useState<string[]>([]);
+  const [neighborhood, setNeighborhood] = useState("");
+  const [city, setCity] = useState("");
+  const [uf, setUf] = useState("");
   const [rooms, setRooms] = useState<number>(1);
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -110,6 +118,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
 
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = getCategoryTheme(defaultCategory);
+
+  // Cache de arquivos codificados em base64 (para auto-save leve)
+  const filesCacheRef = useRef<Map<string, { name: string; type: string; size: number; kind: UploadItem["kind"]; dataUrl: string }>>(new Map());
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -136,44 +148,64 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     return new File([u8], name, { type: mime });
   };
 
+  // Coleta payload dos arquivos usando o cache (evita re-encodar em cada auto-save)
+  const collectFilesPayload = () => {
+    const payload: any[] = [];
+    let skipped = 0;
+    for (const f of files) {
+      if (f.file.size > DRAFT_MAX_FILE_SIZE) { skipped++; continue; }
+      const cached = filesCacheRef.current.get(f.id);
+      if (cached) payload.push(cached);
+      else skipped++; // ainda codificando
+    }
+    return { payload, skipped };
+  };
+
+  const buildDraftObject = () => {
+    const { payload } = collectFilesPayload();
+    return {
+      v: 2,
+      savedAt: new Date().toISOString(),
+      category: defaultCategory,
+      serviceTypes, neighborhood, city, uf,
+      rooms, title, startDate, deadline, priority,
+      description, notes, techSpecs, otherChecked, otherText,
+      priceType, fixedValue, contractValue, commissionPct,
+      files: payload,
+    };
+  };
+
+  const writeDraftSilent = () => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(buildDraftObject()));
+    } catch {
+      // storage cheio — ignora silenciosamente no auto-save
+    }
+  };
+
   const saveDraft = async () => {
     try {
-      const filesPayload: any[] = [];
+      // Garante que todos os arquivos estejam no cache antes de salvar manualmente
       let skipped = 0;
       for (const f of files) {
-        if (f.file.size > DRAFT_MAX_FILE_SIZE) {
-          skipped++;
-          continue;
-        }
-        try {
-          const dataUrl = await fileToDataUrl(f.file);
-          filesPayload.push({
-            name: f.file.name,
-            type: f.file.type,
-            size: f.file.size,
-            kind: f.kind,
-            dataUrl,
-          });
-        } catch {
-          skipped++;
+        if (f.file.size > DRAFT_MAX_FILE_SIZE) { skipped++; continue; }
+        if (!filesCacheRef.current.has(f.id)) {
+          try {
+            const dataUrl = await fileToDataUrl(f.file);
+            filesCacheRef.current.set(f.id, {
+              name: f.file.name, type: f.file.type, size: f.file.size,
+              kind: f.kind, dataUrl,
+            });
+          } catch { skipped++; }
         }
       }
-      const draft = {
-        v: 1,
-        savedAt: new Date().toISOString(),
-        category: defaultCategory,
-        serviceTypes, rooms, title, startDate, deadline, priority,
-        description, notes, techSpecs, otherChecked, otherText,
-        priceType, fixedValue, contractValue, commissionPct,
-        files: filesPayload,
-      };
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(buildDraftObject()));
       toast.success(
         skipped > 0
           ? `Rascunho salvo. ${skipped} arquivo(s) não couberam no rascunho.`
           : "Rascunho salvo. Você pode continuar depois.",
       );
-    } catch (e: any) {
+    } catch {
       toast.error("Não foi possível salvar o rascunho (armazenamento cheio).");
     }
   };
@@ -184,6 +216,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       if (!raw) return false;
       const d = JSON.parse(raw);
       setServiceTypes(d.serviceTypes || []);
+      setNeighborhood(d.neighborhood || "");
+      setCity(d.city || "");
+      setUf(d.uf || "");
       setRooms(d.rooms || 1);
       setTitle(d.title || "");
       setStartDate(d.startDate || "");
@@ -198,14 +233,17 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       setFixedValue(d.fixedValue || "");
       setContractValue(d.contractValue || "");
       setCommissionPct(d.commissionPct || "");
+      filesCacheRef.current.clear();
       const restored: UploadItem[] = (d.files || []).map((f: any) => {
         const file = dataUrlToFile(f.dataUrl, f.name, f.type);
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        filesCacheRef.current.set(id, {
+          name: f.name, type: f.type, size: f.size,
+          kind: f.kind || "image", dataUrl: f.dataUrl,
+        });
         return {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          file,
-          url: URL.createObjectURL(file),
-          kind: f.kind || "image",
-          progress: 100,
+          id, file, url: URL.createObjectURL(file),
+          kind: f.kind || "image", progress: 100,
         };
       });
       setFiles(restored);
@@ -218,19 +256,70 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const discardDraft = () => {
     try {
       localStorage.removeItem(DRAFT_KEY);
+      filesCacheRef.current.clear();
     } catch {}
   };
 
   // Auto-load draft ao abrir
   useEffect(() => {
     if (!open) return;
+    if (hydratedRef.current) return;
     const hasDraft = !!localStorage.getItem(DRAFT_KEY);
     if (hasDraft && files.length === 0 && !title && !description) {
       const ok = loadDraft();
       if (ok) toast.info("Rascunho anterior restaurado.", { duration: 2500 });
     }
+    hydratedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Reset flag de hidratação quando fecha (para reabrir e recarregar rascunho salvo)
+  useEffect(() => {
+    if (!open) hydratedRef.current = false;
+  }, [open]);
+
+  // Mantém cache de arquivos sincronizado (encoda novos, remove ausentes)
+  useEffect(() => {
+    const validIds = new Set(files.map((f) => f.id));
+    // remove ids que não existem mais
+    for (const id of Array.from(filesCacheRef.current.keys())) {
+      if (!validIds.has(id)) filesCacheRef.current.delete(id);
+    }
+    // encoda novos
+    let cancelled = false;
+    (async () => {
+      for (const f of files) {
+        if (filesCacheRef.current.has(f.id)) continue;
+        if (f.file.size > DRAFT_MAX_FILE_SIZE) continue;
+        try {
+          const dataUrl = await fileToDataUrl(f.file);
+          if (cancelled) return;
+          filesCacheRef.current.set(f.id, {
+            name: f.file.name, type: f.file.type, size: f.file.size,
+            kind: f.kind, dataUrl,
+          });
+          // Re-grava o rascunho com os novos arquivos codificados
+          writeDraftSilent();
+        } catch { /* ignora */ }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [files]);
+
+  // Auto-save debounced dos campos de texto/seleção
+  useEffect(() => {
+    if (!open) return;
+    if (!hydratedRef.current) return;
+    const t = setTimeout(() => writeDraftSilent(), 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    open, serviceTypes, neighborhood, city, uf, rooms, title, startDate, deadline,
+    priority, description, notes, techSpecs, otherChecked, otherText,
+    priceType, fixedValue, contractValue, commissionPct,
+  ]);
+
 
 
 
@@ -335,6 +424,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     files.forEach((i) => URL.revokeObjectURL(i.url));
     setFiles([]);
     setServiceTypes([]);
+    setNeighborhood("");
+    setCity("");
+    setUf("");
     setRooms(1);
     setTitle("");
     setStartDate("");
@@ -349,10 +441,14 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setContractValue("");
     setCommissionPct("");
     setPriceType("fixo");
+    filesCacheRef.current.clear();
   };
 
   const validate = (): string | null => {
     if (serviceTypes.length === 0) return "Selecione ao menos um tipo de serviço.";
+    if (!neighborhood.trim()) return "Informe o bairro do local de execução.";
+    if (!city.trim()) return "Informe a cidade do local de execução.";
+    if (!uf.trim() || uf.trim().length !== 2) return "Informe a UF (2 letras) do local de execução.";
     if (!title.trim()) return "Informe o título do serviço.";
     if (!description.trim()) return "Descreva o serviço.";
     if (rooms < 1 || rooms > 25) return "Quantidade de ambientes deve ser entre 1 e 25.";
@@ -390,6 +486,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     const base = {
       category: defaultCategory,
       service_types: serviceTypes,
+      location: {
+        neighborhood: neighborhood.trim(),
+        city: city.trim(),
+        uf: uf.trim().toUpperCase(),
+      },
       rooms,
       title: title.trim(),
       start_date: startDate || null,
@@ -602,6 +703,40 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   );
                 })}
               </div>
+            </div>
+
+            {/* Local de Execução */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                Local de Execução do Trabalho
+              </Label>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_90px] gap-2">
+                <Input
+                  value={neighborhood}
+                  onChange={(e) => setNeighborhood(e.target.value)}
+                  placeholder="Bairro"
+                  maxLength={80}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <Input
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Cidade"
+                  maxLength={80}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <select
+                  value={uf}
+                  onChange={(e) => setUf(e.target.value)}
+                  className="h-10 rounded-md bg-white/5 border border-white/10 text-white px-2 text-sm uppercase"
+                >
+                  <option value="" className="bg-neutral-900">UF</option>
+                  {UF_LIST.map((u) => (
+                    <option key={u} value={u} className="bg-neutral-900">{u}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[9px] text-white/40">Informe o endereço onde o serviço será executado.</p>
             </div>
 
             {/* Quantidade de ambientes */}
@@ -1059,7 +1194,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={onClose}
+                  onClick={() => {
+                    discardDraft();
+                    resetForm();
+                    toast.info("Criação cancelada. Rascunho descartado.");
+                    onClose();
+                  }}
                   className="flex-1 text-white/70 hover:text-white uppercase italic font-black text-xs h-12"
                 >
                   Cancelar
@@ -1075,7 +1215,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 </Button>
               </div>
               <p className="text-[9px] text-white/40 text-center italic">
-                Rascunhos ficam salvos localmente neste navegador.
+                Rascunho salvo automaticamente. Fechar ou clicar fora mantém os dados. Cancelar ou publicar limpa tudo.
               </p>
             </div>
 
