@@ -101,6 +101,10 @@ export function LojistaPublicProfilePage() {
   const [newComment, setNewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
 
+  // Filtros de Oportunidades
+  const [oppSearch, setOppSearch] = useState("");
+  const [oppSpecialty, setOppSpecialty] = useState<string>("Todas");
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
