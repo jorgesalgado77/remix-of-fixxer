@@ -331,15 +331,8 @@ export function LojistaPublicProfilePage() {
     });
     const legacy = profile?.gallery_urls ?? [];
     if (legacy.length) sections.push({ key: "legacy", name: "Galeria", items: toItems("Galeria", legacy) });
-    // Adiciona vídeos e documentos separados como pseudo-seções para permanecerem filtráveis
-    const flatVideos = (profile?.video_urls ?? []).map((url) => ({
-      url,
-      thumb: url,
-      sectionName: "Vídeos",
-      kind: "video" as const,
-      order: orderCounter++,
-    }));
-    if (flatVideos.length) sections.push({ key: "videos", name: "Vídeos", items: flatVideos });
+    // Vídeos NÃO entram na Galeria de Fotos — possuem sua própria seção "Vídeos da Loja".
+    // Documentos permanecem como pseudo-seção filtrável.
     const flatDocs = (profile?.document_urls ?? []).map((url) => ({
       url,
       thumb: url,
@@ -349,7 +342,7 @@ export function LojistaPublicProfilePage() {
     }));
     if (flatDocs.length) sections.push({ key: "documents", name: "Documentos", items: flatDocs });
     return sections;
-  }, [profile?.photo_sections, profile?.gallery_urls, profile?.video_urls, profile?.document_urls]);
+  }, [profile?.photo_sections, profile?.gallery_urls, profile?.document_urls]);
 
   // Filtro por seção usa exatamente as seções existentes no perfil atual
   const photoFilters = useMemo(() => ["Todas", ...photoSections.map((s) => s.name)], [photoSections]);
