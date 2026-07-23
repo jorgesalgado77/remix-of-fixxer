@@ -607,10 +607,6 @@ function ConversationPage() {
     setSending(false);
   };
 
-      setSending(false);
-    }
-  };
-
   const retrySend = async (m: MessageRow) => {
     if (!userId) return;
     const clientId = m._clientId || m.id;
