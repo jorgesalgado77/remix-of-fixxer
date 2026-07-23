@@ -118,20 +118,10 @@ export function LojistaDashboard() {
 
     const evaluate = (data: any) => {
       if (!data) return;
-      const required = [
-        data.company_name,
-        data.cnpj,
-        data.responsible_name,
-        data.email_contact,
-        data.whatsapp,
-        data.phone,
-        data.zipcode,
-        data.activity_branch,
-        data.logo_url,
-      ];
-      const complete = required.every((v) => typeof v === "string" && v.trim().length > 0);
+      const result: ProfileCompletenessResult = evaluateProfileCompleteness(userRole, data);
       if (cancelled) return;
-      setIsProfileComplete(complete);
+      setIsProfileComplete(result.complete);
+      setProfileMissing(result.missingLabels);
       setProfileSummary({
         id: data.id,
         companyName: data.company_name || "",
