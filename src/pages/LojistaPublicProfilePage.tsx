@@ -43,6 +43,7 @@ interface StoreProfile {
   gallery_urls?: string[];
   video_urls?: string[];
   activity_branch?: string;
+  specialties?: { id: string; title: string; description: string }[];
   created_at?: string;
 }
 
