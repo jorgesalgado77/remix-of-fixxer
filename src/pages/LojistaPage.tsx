@@ -1503,6 +1503,7 @@ function ProfileView({
                         galleryUrls: data.gallery_urls,
                         videoUrls: data.video_urls,
                         documents: data.documents,
+                        specialties: Array.isArray(data.specialties) ? data.specialties : [],
                         socialLinks: {
                             instagram: data.instagram,
                             facebook: data.facebook,
