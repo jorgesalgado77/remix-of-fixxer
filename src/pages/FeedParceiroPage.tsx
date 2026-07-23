@@ -30,7 +30,8 @@ type Sector =
   | "Iluminação LED"
   | "Softwares & Maquinário";
 
-type B2BStatus = "aberto" | "urgente" | "negociando";
+type B2BStatus = "aberto" | "urgente" | "negociando" | "em_andamento";
+type RequesterType = "lojista" | "prestador";
 
 type B2BRequest = {
   id: string;
