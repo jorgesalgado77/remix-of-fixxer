@@ -1,9 +1,23 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Send, MailOpen, Archive, BellOff, Bell, ArchiveRestore } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  MailOpen,
+  Archive,
+  BellOff,
+  Bell,
+  ArchiveRestore,
+  Paperclip,
+  Loader2,
+  X,
+  FileText,
+  Image as ImageIcon,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import {
+  hydrateChatPreferences,
   isConversationArchived,
   isConversationMuted,
   setConversationArchived,
@@ -21,9 +35,16 @@ type MessageRow = {
   content: string | null;
   created_at: string;
   read: boolean | null;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
+  attachment_name?: string | null;
 };
 
 const PAGE_SIZE = 30;
+
+function isImageType(t?: string | null) {
+  return !!t && t.startsWith("image/");
+}
 
 function ConversationPage() {
   const { peerId } = Route.useParams();
@@ -35,61 +56,84 @@ function ConversationPage() {
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [markingRead, setMarkingRead] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [muted, setMuted] = useState(false);
   const [archived, setArchived] = useState(false);
+
+  // Anexos
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Presença + typing
+  const [peerOnline, setPeerOnline] = useState(false);
+  const [peerTyping, setPeerTyping] = useState(false);
+  const presenceRef = useRef<any>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSentRef = useRef<number>(0);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
 
   const markIncomingRead = async (uid: string) => {
+    setMarkingRead(true);
     try {
-      await supabaseExternal
+      const { error } = await supabaseExternal
         .from("messages")
         .update({ read: true })
         .eq("sender_id", peerId)
         .eq("recipient_id", uid)
         .eq("read", false);
+      if (error) throw error;
       window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
-    } catch {
-      /* silencioso */
+    } catch (e: any) {
+      // Não interrompe a UI; apenas avisa
+      toast.error("Falha ao sincronizar leitura", { description: e?.message });
+    } finally {
+      setMarkingRead(false);
     }
   };
 
-  const loadPage = async (uid: string, beforeIso?: string) => {
-    try {
+  const selectCols = "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name";
+
+  const loadPage = async (uid: string, beforeIso?: string): Promise<MessageRow[]> => {
+    const runQuery = async (cols: string) => {
       let q = supabaseExternal
         .from("messages")
-        .select("id, sender_id, recipient_id, content, created_at, read")
+        .select(cols)
         .or(
           `and(sender_id.eq.${uid},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${uid})`,
         )
         .order("created_at", { ascending: false })
         .limit(PAGE_SIZE);
       if (beforeIso) q = q.lt("created_at", beforeIso);
-      const { data, error } = await q;
-      if (error || !data) return [];
-      return (data as MessageRow[]).reverse();
+      return q;
+    };
+    try {
+      const { data, error } = await runQuery(selectCols);
+      if (error) throw error;
+      return ((data as unknown as MessageRow[]) ?? []).reverse();
     } catch {
-      return [];
+      const { data } = await runQuery("id, sender_id, recipient_id, content, created_at, read");
+      return ((data as unknown as MessageRow[]) ?? []).reverse();
     }
   };
 
-  // Bootstrap
   useEffect(() => {
     let cancelled = false;
     let channel: any = null;
+    let presenceChannel: any = null;
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
       const uid = data?.user?.id ?? null;
       if (cancelled) return;
       setUserId(uid);
-      if (!uid) {
-        setLoading(false);
-        return;
-      }
+      if (!uid) { setLoading(false); return; }
 
-      // Perfil do peer
+      await hydrateChatPreferences(uid);
+
       try {
         const { data: p } = await supabaseExternal
           .from("profiles")
@@ -113,6 +157,7 @@ function ConversationPage() {
       }
       await markIncomingRead(uid);
 
+      // Canal de INSERT de mensagens
       try {
         const channelName = `chat-conv-${Math.random().toString(36).slice(2)}`;
         channel = supabaseExternal
@@ -133,17 +178,49 @@ function ConversationPage() {
           )
           .subscribe();
       } catch {}
+
+      // Canal de presença + typing (broadcast) — chave estável por par
+      try {
+        const key = [uid, peerId].sort().join(":");
+        const room = `chat-presence-${key}`;
+        presenceChannel = supabaseExternal.channel(room, {
+          config: { presence: { key: uid }, broadcast: { self: false } },
+        });
+        presenceChannel
+          .on("presence", { event: "sync" }, () => {
+            const state = presenceChannel.presenceState();
+            setPeerOnline(!!state?.[peerId]);
+          })
+          .on("presence", { event: "join" }, ({ key }: any) => {
+            if (key === peerId) setPeerOnline(true);
+          })
+          .on("presence", { event: "leave" }, ({ key }: any) => {
+            if (key === peerId) setPeerOnline(false);
+          })
+          .on("broadcast", { event: "typing" }, ({ payload }: any) => {
+            if (payload?.from !== peerId) return;
+            setPeerTyping(true);
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => setPeerTyping(false), 3000);
+          })
+          .subscribe(async (status: string) => {
+            if (status === "SUBSCRIBED") {
+              try { await presenceChannel.track({ online_at: Date.now() }); } catch {}
+            }
+          });
+        presenceRef.current = presenceChannel;
+      } catch {}
     })();
 
     return () => {
       cancelled = true;
-      if (channel) {
-        try { supabaseExternal.removeChannel(channel); } catch {}
-      }
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
+      if (presenceChannel) { try { supabaseExternal.removeChannel(presenceChannel); } catch {} }
+      presenceRef.current = null;
     };
   }, [peerId]);
 
-  // Auto-scroll para o fim ao carregar/receber nova mensagem
   useEffect(() => {
     if (!scrollRef.current) return;
     if (isInitialLoadRef.current && messages.length > 0) {
@@ -154,7 +231,7 @@ function ConversationPage() {
     const el = scrollRef.current;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
     if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [messages]);
+  }, [messages, peerTyping]);
 
   const loadOlder = async () => {
     if (!userId || messages.length === 0 || !hasMore) return;
@@ -162,10 +239,7 @@ function ConversationPage() {
     const el = scrollRef.current;
     const prevHeight = el?.scrollHeight ?? 0;
     const older = await loadPage(userId, oldest);
-    if (older.length === 0) {
-      setHasMore(false);
-      return;
-    }
+    if (older.length === 0) { setHasMore(false); return; }
     setHasMore(older.length === PAGE_SIZE);
     setMessages((prev) => [...older, ...prev]);
     requestAnimationFrame(() => {
@@ -174,25 +248,79 @@ function ConversationPage() {
     });
   };
 
+  const sendTyping = () => {
+    if (!presenceRef.current || !userId) return;
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < 1500) return; // throttle
+    lastTypingSentRef.current = now;
+    try {
+      presenceRef.current.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { from: userId },
+      });
+    } catch {}
+  };
+
+  const uploadAttachment = async (file: File): Promise<{ url: string; type: string; name: string } | null> => {
+    if (!userId) return null;
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `chat/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabaseExternal.storage.from("media").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+      if (error) throw error;
+      const { data } = supabaseExternal.storage.from("media").getPublicUrl(path);
+      return { url: data.publicUrl, type: file.type || "application/octet-stream", name: file.name };
+    } catch (e: any) {
+      toast.error("Falha no upload do anexo", { description: e?.message });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const send = async () => {
     const text = content.trim();
-    if (!text || !userId || sending) return;
+    if ((!text && !pendingFile) || !userId || sending) return;
     setSending(true);
+
+    let attachment: { url: string; type: string; name: string } | null = null;
+    if (pendingFile) {
+      attachment = await uploadAttachment(pendingFile);
+      if (!attachment) { setSending(false); return; }
+    }
+
+    const optimistic: MessageRow = {
+      id: `tmp-${Date.now()}`,
+      sender_id: userId,
+      recipient_id: peerId,
+      content: text || null,
+      created_at: new Date().toISOString(),
+      read: false,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
+      attachment_name: attachment?.name ?? null,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    setContent("");
+    setPendingFile(null);
+
     try {
-      const optimistic: MessageRow = {
-        id: `tmp-${Date.now()}`,
-        sender_id: userId,
-        recipient_id: peerId,
-        content: text,
-        created_at: new Date().toISOString(),
-        read: false,
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      setContent("");
+      const payload: any = { sender_id: userId, recipient_id: peerId, content: text || null, read: false };
+      if (attachment) {
+        payload.attachment_url = attachment.url;
+        payload.attachment_type = attachment.type;
+        payload.attachment_name = attachment.name;
+      }
       const { data, error } = await supabaseExternal
         .from("messages")
-        .insert({ sender_id: userId, recipient_id: peerId, content: text, read: false })
-        .select("id, sender_id, recipient_id, content, created_at, read")
+        .insert(payload)
+        .select(selectCols)
         .maybeSingle();
       if (error) throw error;
       if (data) {
@@ -209,12 +337,10 @@ function ConversationPage() {
   const markAsUnread = async () => {
     if (!userId) return;
     const lastIncoming = [...messages].reverse().find((m) => m.recipient_id === userId);
-    if (!lastIncoming) {
-      toast.info("Sem mensagens recebidas para marcar como não lida");
-      return;
-    }
+    if (!lastIncoming) { toast.info("Sem mensagens recebidas para marcar como não lida"); return; }
     try {
-      await supabaseExternal.from("messages").update({ read: false }).eq("id", lastIncoming.id);
+      const { error } = await supabaseExternal.from("messages").update({ read: false }).eq("id", lastIncoming.id);
+      if (error) throw error;
       setMessages((prev) => prev.map((m) => (m.id === lastIncoming.id ? { ...m, read: false } : m)));
       window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
       toast.success("Marcada como não lida");
@@ -252,9 +378,18 @@ function ConversationPage() {
     return out;
   }, [messages]);
 
+  const statusLine = peerTyping
+    ? "Digitando..."
+    : peerOnline
+    ? "Online"
+    : muted
+    ? "Silenciada"
+    : archived
+    ? "Arquivada"
+    : "Offline";
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col pb-32">
-      {/* Header */}
       <header className="sticky top-0 z-10 bg-black/85 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => navigate({ to: "/chat" as any })}
@@ -263,17 +398,21 @@ function ConversationPage() {
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0 relative">
           {peerAvatar ? (
             <img src={peerAvatar} alt={peerName} className="w-full h-full object-cover" />
           ) : (
             <span className="font-black italic text-primary">{peerName.slice(0, 1).toUpperCase()}</span>
           )}
+          {peerOnline && (
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-black" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-            {muted ? "Silenciada" : archived ? "Arquivada" : "Ativa"}
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold flex items-center gap-1">
+            {markingRead && <Loader2 className="w-3 h-3 animate-spin" />}
+            {statusLine}
           </p>
         </div>
         <button
@@ -303,11 +442,7 @@ function ConversationPage() {
         </button>
       </header>
 
-      {/* Mensagens */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {hasMore && !loading && messages.length > 0 && (
           <div className="text-center">
             <button
@@ -320,7 +455,9 @@ function ConversationPage() {
         )}
 
         {loading ? (
-          <div className="text-center text-sm text-muted-foreground">Carregando conversa...</div>
+          <div className="text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Carregando conversa...
+          </div>
         ) : messages.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground py-16">
             Nenhuma mensagem ainda. Diga um "olá" para iniciar 👋
@@ -344,12 +481,34 @@ function ConversationPage() {
                           : "bg-[#1A1A1B] border border-white/10 text-white rounded-bl-sm"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                      {m.attachment_url && (
+                        <div className="mb-1">
+                          {isImageType(m.attachment_type) ? (
+                            <a href={m.attachment_url} target="_blank" rel="noreferrer">
+                              <img
+                                src={m.attachment_url}
+                                alt={m.attachment_name || "Anexo"}
+                                className="rounded-lg max-h-64 object-cover"
+                              />
+                            </a>
+                          ) : (
+                            <a
+                              href={m.attachment_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${
+                                mine ? "bg-black/20" : "bg-white/5 border border-white/10"
+                              }`}
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span className="truncate max-w-[200px]">{m.attachment_name || "Anexo"}</span>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
                       <p className={`text-[9px] mt-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
-                        {new Date(m.created_at).toLocaleTimeString("pt-BR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {new Date(m.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                         {mine && (m.read ? " · Lida" : " · Enviada")}
                       </p>
                     </div>
@@ -359,32 +518,86 @@ function ConversationPage() {
             </div>
           ))
         )}
+
+        {peerTyping && (
+          <div className="flex justify-start">
+            <div className="bg-[#1A1A1B] border border-white/10 rounded-2xl px-4 py-2 text-xs text-muted-foreground italic flex items-center gap-2">
+              <span className="flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
+              </span>
+              digitando
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Composer */}
       <div className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-end gap-2">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            rows={1}
-            placeholder="Escreva uma mensagem..."
-            className="flex-1 bg-[#1A1A1B] border border-white/10 rounded-2xl px-4 py-3 text-sm outline-none focus:border-primary/50 resize-none max-h-32"
-          />
-          <button
-            onClick={send}
-            disabled={sending || !content.trim()}
-            className="w-11 h-11 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_15px_rgba(0,255,135,0.3)] disabled:opacity-40 disabled:shadow-none"
-            aria-label="Enviar"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+        <div className="max-w-3xl mx-auto">
+          {pendingFile && (
+            <div className="mb-2 flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs">
+              {pendingFile.type.startsWith("image/") ? (
+                <ImageIcon className="w-4 h-4 text-primary" />
+              ) : (
+                <FileText className="w-4 h-4 text-primary" />
+              )}
+              <span className="truncate flex-1">{pendingFile.name}</span>
+              <span className="text-muted-foreground">{Math.round(pendingFile.size / 1024)} KB</span>
+              <button
+                onClick={() => setPendingFile(null)}
+                className="w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center"
+                aria-label="Remover anexo"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          <div className="flex items-end gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  if (f.size > 15 * 1024 * 1024) {
+                    toast.error("Arquivo muito grande", { description: "Limite de 15MB por anexo." });
+                    return;
+                  }
+                  setPendingFile(f);
+                }
+                if (fileRef.current) fileRef.current.value = "";
+              }}
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading || sending}
+              className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
+              aria-label="Anexar arquivo"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+            </button>
+            <textarea
+              value={content}
+              onChange={(e) => { setContent(e.target.value); sendTyping(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+              }}
+              rows={1}
+              placeholder="Escreva uma mensagem..."
+              className="flex-1 bg-[#1A1A1B] border border-white/10 rounded-2xl px-4 py-3 text-sm outline-none focus:border-primary/50 resize-none max-h-32"
+            />
+            <button
+              onClick={send}
+              disabled={sending || uploading || (!content.trim() && !pendingFile)}
+              className="w-11 h-11 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_15px_rgba(0,255,135,0.3)] disabled:opacity-40 disabled:shadow-none"
+              aria-label="Enviar"
+            >
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Activity, PlusCircle, Store, MessageCircle, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { resolveFeedRoute } from "@/lib/chat-preferences";
 
 /**
  * Barra de ações global inferior — visível em mobile e desktop.
@@ -22,29 +23,15 @@ export function GlobalActionBar() {
     return (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
   });
 
-  // Resolve a aba do Feed a partir do papel; fallback = feed geral sem tab
-  const resolveFeedTab = (r: string): string | null => {
-    const role = (r || "").toLowerCase();
-    if (!role) return null;
-    if (role.includes("lojista")) return "prestadores";
-    if (role.includes("prestador")) return "demandas_lojista";
-    if (role.includes("parceiro") || role.includes("fornecedor")) return "parceiros";
-    if (role.includes("cliente") || role.includes("casual")) return "obras_b2c";
-    return null;
-  };
-
-  // Perfil → Feed relacionado ao papel do usuário logado
+  // Perfil → Feed relacionado ao papel do usuário logado (com fallback consistente)
   const goToRoleFeed = () => {
     let current = role;
     if (!current && typeof window !== "undefined") {
       current = (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
       if (current) setRole(current);
     }
-    const tab = resolveFeedTab(current);
-    navigate({
-      to: "/feed" as any,
-      search: (tab ? { tab } : {}) as any,
-    });
+    const target = resolveFeedRoute(current);
+    navigate({ to: target.to as any, search: (target.search ?? {}) as any });
   };
 
   // Reage a mudanças de papel: outro tab (storage) e atualizações internas

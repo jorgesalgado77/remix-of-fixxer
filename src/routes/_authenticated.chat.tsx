@@ -9,6 +9,8 @@ import {
   Bell,
   MailOpen,
   MoreVertical,
+  Loader2,
+  Paperclip,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -17,8 +19,7 @@ import {
   canSeeConversationWith,
   getArchivedSet,
   getMutedSet,
-  isConversationArchived,
-  isConversationMuted,
+  hydrateChatPreferences,
   setCachedPeerRoles,
   setConversationArchived,
   setConversationMuted,
@@ -35,6 +36,9 @@ type MessageRow = {
   content: string | null;
   created_at: string;
   read: boolean | null;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
+  attachment_name?: string | null;
 };
 
 type PeerInfo = { name: string; avatar: string | null; role: string | null };
@@ -45,6 +49,7 @@ type Conversation = {
   peerAvatar: string | null;
   peerRole: string | null;
   lastMessage: string;
+  lastAttachmentType: string | null;
   lastMessageId: string | null;
   lastAt: string;
   unread: number;
@@ -64,40 +69,59 @@ function ChatInboxPage() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [peers, setPeers] = useState<Record<string, PeerInfo>>({});
   const [loading, setLoading] = useState(true);
+  const [markingRead, setMarkingRead] = useState(false);
   const [query, setQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [prefsVersion, setPrefsVersion] = useState(0);
 
-  // Marca todas mensagens do usuário como lidas
   const markAllAsRead = async (uid: string) => {
+    setMarkingRead(true);
     try {
-      await supabaseExternal
+      const { error } = await supabaseExternal
         .from("messages")
         .update({ read: true })
         .eq("recipient_id", uid)
         .eq("read", false);
+      if (error) throw error;
       window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
-    } catch {}
+    } catch (e: any) {
+      toast.error("Não foi possível marcar mensagens como lidas", {
+        description: e?.message ?? "Verifique sua conexão e tente novamente.",
+      });
+    } finally {
+      setMarkingRead(false);
+    }
   };
 
   const loadMessages = async (uid: string) => {
     try {
       const { data, error } = await supabaseExternal
         .from("messages")
-        .select("id, sender_id, recipient_id, content, created_at, read")
+        .select("id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name")
         .or(`sender_id.eq.${uid},recipient_id.eq.${uid}`)
         .order("created_at", { ascending: false })
         .limit(300);
-      if (!error && data) setMessages(data as MessageRow[]);
+      if (error) throw error;
+      if (data) setMessages(data as unknown as MessageRow[]);
     } catch {
-      setMessages([]);
+      // fallback: colunas de anexo podem não existir ainda
+      try {
+        const { data } = await supabaseExternal
+          .from("messages")
+          .select("id, sender_id, recipient_id, content, created_at, read")
+          .or(`sender_id.eq.${uid},recipient_id.eq.${uid}`)
+          .order("created_at", { ascending: false })
+          .limit(300);
+        if (data) setMessages(data as unknown as MessageRow[]);
+      } catch {
+        setMessages([]);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Bootstrap: usuário + carga inicial + zera badge
   useEffect(() => {
     let cancelled = false;
     let channel: any = null;
@@ -111,6 +135,7 @@ function ChatInboxPage() {
         setLoading(false);
         return;
       }
+      await hydrateChatPreferences(uid);
       await loadMessages(uid);
       await markAllAsRead(uid);
 
@@ -130,25 +155,36 @@ function ChatInboxPage() {
       } catch {}
     })();
 
-    // Reage a mudanças de role no localStorage
     const syncRole = () => setRole(getStoredRole());
     window.addEventListener("storage", syncRole);
     window.addEventListener("fixxer:role-changed", syncRole as any);
     const onPrefs = () => setPrefsVersion((v) => v + 1);
     window.addEventListener("fixxer:chat-prefs-changed", onPrefs as any);
 
+    // Rehidrata prefs em login/logout
+    const { data: authSub } = supabaseExternal.auth.onAuthStateChange(async (_evt, session) => {
+      const uid = session?.user?.id ?? null;
+      setUserId(uid);
+      if (uid) {
+        await hydrateChatPreferences(uid);
+        setPrefsVersion((v) => v + 1);
+      } else {
+        setMessages([]);
+      }
+    });
+
     return () => {
       cancelled = true;
       window.removeEventListener("storage", syncRole);
       window.removeEventListener("fixxer:role-changed", syncRole as any);
       window.removeEventListener("fixxer:chat-prefs-changed", onPrefs as any);
+      try { authSub?.subscription?.unsubscribe(); } catch {}
       if (channel) {
         try { supabaseExternal.removeChannel(channel); } catch {}
       }
     };
   }, []);
 
-  // Carrega perfis dos peers (nome, avatar, role)
   useEffect(() => {
     if (!userId || messages.length === 0) return;
     const peerIds = Array.from(
@@ -178,9 +214,7 @@ function ChatInboxPage() {
           setPeers(map);
           setCachedPeerRoles(roleCache);
         }
-      } catch {
-        /* profiles pode não ter todas as colunas; segue com fallback */
-      }
+      } catch {}
     })();
   }, [messages, userId]);
 
@@ -202,6 +236,7 @@ function ChatInboxPage() {
           peerAvatar: info?.avatar ?? null,
           peerRole: info?.role ?? null,
           lastMessage: m.content || "",
+          lastAttachmentType: m.attachment_type ?? null,
           lastMessageId: m.id,
           lastAt: m.created_at,
           unread: isUnreadIncoming ? 1 : 0,
@@ -212,6 +247,7 @@ function ChatInboxPage() {
         if (isUnreadIncoming) existing.unread += 1;
         if (new Date(m.created_at) > new Date(existing.lastAt)) {
           existing.lastMessage = m.content || "";
+          existing.lastAttachmentType = m.attachment_type ?? null;
           existing.lastMessageId = m.id;
           existing.lastAt = m.created_at;
         }
@@ -220,28 +256,44 @@ function ChatInboxPage() {
     return Array.from(byPeer.values()).sort(
       (a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime(),
     );
-    // prefsVersion no deps garante reflow ao mudar arquivar/silenciar
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, peers, userId, prefsVersion]);
 
-  // Regra de acesso por role + filtro de arquivadas + busca
+  // Busca por relevância — pontua por match no nome (peso alto),
+  // palavras-chave no conteúdo e recência.
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return conversations
+    const terms = q.split(/\s+/).filter(Boolean);
+    const base = conversations
       .filter((c) => (showArchived ? c.archived : !c.archived))
-      .filter((c) => canSeeConversationWith(role, c.peerRole))
-      .filter(
-        (c) =>
-          !q ||
-          c.peerName.toLowerCase().includes(q) ||
-          c.lastMessage.toLowerCase().includes(q),
-      );
+      .filter((c) => canSeeConversationWith(role, c.peerRole));
+
+    if (!q) return base;
+
+    type Scored = Conversation & { _score: number };
+    const scored: Scored[] = [];
+    for (const c of base) {
+      const name = c.peerName.toLowerCase();
+      const msg = (c.lastMessage || "").toLowerCase();
+      let score = 0;
+      for (const t of terms) {
+        if (name.includes(t)) score += name.startsWith(t) ? 6 : 4;
+        if (msg.includes(t)) score += 2;
+      }
+      if (score === 0) continue;
+      // pequena bonificação por recência (últimas 24h)
+      const ageH = (Date.now() - new Date(c.lastAt).getTime()) / 36e5;
+      if (ageH < 24) score += 1;
+      scored.push({ ...c, _score: score });
+    }
+    return scored.sort((a, b) =>
+      b._score - a._score || new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime(),
+    );
   }, [conversations, query, showArchived, role]);
 
-  const totalUnread = visible.reduce((sum, c) => sum + (c.muted ? 0 : c.unread), 0);
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.muted ? 0 : c.unread), 0);
   const archivedCount = conversations.filter((c) => c.archived).length;
 
-  // Ações rápidas
   const handleMarkUnread = async (c: Conversation) => {
     if (!userId) return;
     const lastIncoming = [...messages]
@@ -252,7 +304,8 @@ function ChatInboxPage() {
       return;
     }
     try {
-      await supabaseExternal.from("messages").update({ read: false }).eq("id", lastIncoming.id);
+      const { error } = await supabaseExternal.from("messages").update({ read: false }).eq("id", lastIncoming.id);
+      if (error) throw error;
       setMessages((prev) =>
         prev.map((m) => (m.id === lastIncoming.id ? { ...m, read: false } : m)),
       );
@@ -287,17 +340,15 @@ function ChatInboxPage() {
           </div>
           <div className="flex-1">
             <h1 className="font-black uppercase italic text-xl tracking-tight">Chat</h1>
-            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest flex items-center gap-2">
+              {markingRead && <Loader2 className="w-3 h-3 animate-spin" />}
               {totalUnread > 0
                 ? `${totalUnread} não lida${totalUnread > 1 ? "s" : ""}`
                 : "Tudo em dia"}
             </p>
           </div>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowArchived((v) => !v);
-            }}
+            onClick={(e) => { e.stopPropagation(); setShowArchived((v) => !v); }}
             className={`px-3 h-9 rounded-xl border text-[10px] font-black uppercase italic tracking-widest flex items-center gap-2 ${
               showArchived
                 ? "bg-primary/10 border-primary/40 text-primary"
@@ -315,14 +366,14 @@ function ChatInboxPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onClick={(e) => e.stopPropagation()}
-            placeholder="Buscar por contato ou mensagem..."
+            placeholder="Buscar por contato ou palavras-chave nas mensagens..."
             className="w-full bg-[#1A1A1B] border border-white/10 rounded-2xl pl-10 pr-4 py-3 text-sm outline-none focus:border-primary/50"
           />
         </div>
 
         {loading ? (
-          <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center text-sm text-muted-foreground">
-            Carregando conversas...
+          <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Carregando conversas...
           </div>
         ) : visible.length === 0 ? (
           <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center">
@@ -335,7 +386,7 @@ function ChatInboxPage() {
                 ? "Tente outro termo de busca."
                 : showArchived
                 ? "Conversas que você arquivar aparecem aqui."
-                : "Quando você iniciar um contato com um lojista, prestador ou parceiro, as mensagens aparecem aqui."}
+                : "Quando você iniciar um contato, as mensagens aparecem aqui."}
             </p>
           </div>
         ) : (
@@ -364,13 +415,13 @@ function ChatInboxPage() {
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-bold uppercase italic text-sm truncate">{c.peerName}</p>
                       <span className="text-[10px] text-muted-foreground shrink-0">
-                        {new Date(c.lastAt).toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                        })}
+                        {new Date(c.lastAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{c.lastMessage || "—"}</p>
+                    <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                      {c.lastAttachmentType && <Paperclip className="w-3 h-3 shrink-0" />}
+                      {c.lastMessage || (c.lastAttachmentType ? "Anexo" : "—")}
+                    </p>
                   </div>
                   {c.unread > 0 && !c.muted && (
                     <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">
@@ -380,11 +431,7 @@ function ChatInboxPage() {
                   <span
                     role="button"
                     tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setOpenMenu(openMenu === c.peerId ? null : c.peerId);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpenMenu(openMenu === c.peerId ? null : c.peerId); }}
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10"
                     aria-label="Ações"
                   >
