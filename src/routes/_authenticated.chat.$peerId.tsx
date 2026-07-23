@@ -104,7 +104,7 @@ function ConversationPage() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [peerName, setPeerName] = useState<string>("Conversa");
   const [peerAvatar, setPeerAvatar] = useState<string | null>(null);
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState<string>(() => getDraftText(peerId));
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [markingRead, setMarkingRead] = useState(false);
@@ -114,7 +114,7 @@ function ConversationPage() {
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
 
   // Anexos + progresso
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(() => getDraftFile(peerId));
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -190,10 +190,9 @@ function ConversationPage() {
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
-      const uid = data?.user?.id ?? null;
+      const uid = data?.user?.id ?? getFallbackUid();
       if (cancelled) return;
       setUserId(uid);
-      if (!uid) { setLoading(false); return; }
 
       // === MODO MOCK (peerId "mock-*") ===
       if (isMockPeerId(peerId)) {
@@ -209,13 +208,18 @@ function ConversationPage() {
             content: m.content,
             created_at: mockMessageIsoAt(m.minutesAgo),
             read: true,
+            attachment_url: m.attachment?.url ?? null,
+            attachment_type: m.attachment?.type ?? null,
+            attachment_name: m.attachment?.name ?? null,
           }));
           setMessages(mockRows);
           setHasMore(false);
           setLoading(false);
+          markMockConversationSeen(peerId);
           return;
         }
       }
+
 
 
       await hydrateChatPreferences(uid);
