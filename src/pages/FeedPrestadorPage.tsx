@@ -950,12 +950,13 @@ export default function FeedPrestadorPage() {
     return MOCK_JOBS.filter((job) => {
       const matchesFilter = filter === "todas" || job.subcategory === filter;
       if (!matchesFilter) return false;
+      if (statusFilter !== "todos" && getFeedStatus(job.id) !== statusFilter) return false;
       if (!term) return true;
       const hay =
         `${job.title} ${job.description} ${job.contractor.name} ${job.city} ${job.state} ${job.subcategory}`.toLowerCase();
       return hay.includes(term);
     });
-  }, [debouncedSearch, filter]);
+  }, [debouncedSearch, filter, statusFilter]);
 
   // Paginação por scroll infinito
   const paged = useMemo(() => filtered.slice(0, page * 4), [filtered, page]);
