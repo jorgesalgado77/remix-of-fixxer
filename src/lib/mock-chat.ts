@@ -211,3 +211,16 @@ export function isMockPeerId(peerId: string | null | undefined): boolean {
 export function getMockConversation(peerId: string): MockConversation | null {
   return MOCK_CONVERSATIONS.find((c) => c.peerId === peerId) ?? null;
 }
+
+export function getMockProfile(peerId: string): MockProfile | null {
+  const conv = getMockConversation(peerId);
+  return conv?.profile ?? null;
+}
+
+export function getMockPeerName(peerId: string): string | null {
+  return getMockConversation(peerId)?.peerName ?? null;
+}
+
+export function getMockPeerAvatar(peerId: string): string | null {
+  return getMockConversation(peerId)?.peerAvatar ?? null;
+}
