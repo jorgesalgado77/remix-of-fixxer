@@ -11,6 +11,7 @@ import {
   MoreVertical,
   Loader2,
   Paperclip,
+  UserCircle2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -402,7 +403,22 @@ function ChatInboxPage() {
       markConversationReadLocal(userId, peerId);
       window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
     }
-    navigate({ to: "/chat/$peerId" as any, params: { peerId } as any });
+    setOpenMenu(null);
+    try {
+      navigate({ to: "/chat/$peerId" as any, params: { peerId } as any });
+    } catch {
+      window.location.href = `/chat/${encodeURIComponent(peerId)}`;
+    }
+  };
+
+  const handleViewProfile = (c: Conversation) => {
+    setOpenMenu(null);
+    const path = `/lojista/${encodeURIComponent(c.peerId)}`;
+    try {
+      navigate({ to: path as any });
+    } catch {
+      window.location.href = path;
+    }
   };
 
   return (
@@ -510,7 +526,10 @@ function ChatInboxPage() {
                       onClick={(e) => e.stopPropagation()}
                       className="absolute right-4 top-full mt-1 z-20 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[220px]"
                     >
-                      <button onClick={() => handleMarkUnread(c)} className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest hover:bg-white/5">
+                      <button onClick={() => handleViewProfile(c)} className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest hover:bg-white/5 text-primary">
+                        <UserCircle2 className="w-4 h-4" /> Ver perfil do usuário
+                      </button>
+                      <button onClick={() => handleMarkUnread(c)} className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest hover:bg-white/5 border-t border-white/5">
                         <MailOpen className="w-4 h-4" /> Marcar como não lida
                       </button>
                       <button onClick={() => handleToggleMute(c)} className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest hover:bg-white/5">
