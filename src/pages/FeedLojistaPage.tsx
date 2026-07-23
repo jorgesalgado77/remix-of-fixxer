@@ -867,6 +867,7 @@ export default function FeedLojistaPage() {
                 onDelete={() => setDeleteFor(post)}
                 onEdit={() => toast("Abrindo editor da publicação...")}
                 onOpenMedia={(index) => setLightbox({ post, index })}
+                onOpenDetails={() => setDetailsFor(post)}
               />
             ))}
 
