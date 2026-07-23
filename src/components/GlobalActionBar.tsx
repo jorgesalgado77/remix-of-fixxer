@@ -3,6 +3,8 @@ import { Activity, PlusCircle, Store, MessageCircle, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { resolveFeedRoute } from "@/lib/chat-preferences";
+import { CreateAdModal } from "@/components/CreateAdModal";
+import type { CategoryKey } from "@/lib/category-colors";
 
 /**
  * Barra de ações global inferior — visível em mobile e desktop.
