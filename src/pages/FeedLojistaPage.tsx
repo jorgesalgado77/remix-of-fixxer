@@ -1075,6 +1075,7 @@ function PostCard({
   onDelete,
   onEdit,
   onOpenMedia,
+  onOpenDetails,
 }: {
   post: FeedPost;
   isSaved: boolean;
@@ -1088,37 +1089,62 @@ function PostCard({
   onDelete: () => void;
   onEdit: () => void;
   onOpenMedia: (index: number) => void;
+  onOpenDetails: () => void;
 }) {
   const badge = categoryBadge(post.category);
   const theme = getCategoryTheme(post.category);
   const isClient = post.category === "cliente";
+  const status = getFeedStatus(post.id);
+  const statusColor = FEED_STATUS_COLOR[status];
+  const profileHref = authorHref(post);
 
   return (
     <article
       className="relative bg-[#1A1A1B] rounded-3xl p-4 sm:p-5 space-y-4 transition-all border-2"
       style={{ ...theme.borderStrong, ...theme.glow }}
     >
-      {theme.highlight && (
-        <div
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border tracking-widest"
-          style={{ ...theme.bgSoft, ...theme.color, ...theme.borderSoft }}
+      {/* Badges de status + highlight */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border"
+          style={{
+            color: statusColor,
+            borderColor: `${statusColor}55`,
+            backgroundColor: `${statusColor}18`,
+          }}
         >
-          <Flame className="w-3.5 h-3.5 animate-pulse" />
-          {theme.highlight}
-        </div>
-      )}
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor }} />
+          {FEED_STATUS_LABEL[status]}
+        </span>
+        {theme.highlight && (
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border tracking-widest"
+            style={{ ...theme.bgSoft, ...theme.color, ...theme.borderSoft }}
+          >
+            <Flame className="w-3.5 h-3.5 animate-pulse" />
+            {theme.highlight}
+          </div>
+        )}
+      </div>
 
       {/* Cabeçalho */}
       <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
-        <div
-          className="w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center font-black text-sm bg-[#0A0A0B] border"
+        <Link
+          to={profileHref}
+          className="w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center font-black text-sm bg-[#0A0A0B] border hover:scale-105 transition-transform"
           style={{ ...theme.borderStrong, ...theme.color }}
+          aria-label={`Ver perfil de ${post.author.name}`}
         >
           {post.author.avatarInitials}
-        </div>
+        </Link>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h4 className="font-bold text-white text-sm truncate">{post.author.name}</h4>
+            <Link
+              to={profileHref}
+              className="font-bold text-white text-sm truncate hover:opacity-80"
+            >
+              {post.author.name}
+            </Link>
             <span
               className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded font-bold border"
               style={{ ...theme.bgSoft, ...theme.color, ...theme.borderSoft }}
