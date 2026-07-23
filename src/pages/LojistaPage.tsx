@@ -84,7 +84,6 @@ export function LojistaDashboard() {
   const [history, setHistory] = useState<any[]>([]);
   const { branches } = useActivityBranches();
   const [undoStack, setUndoStack] = useState<any[]>([]);
-  const { branches } = useActivityBranches();
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
 
