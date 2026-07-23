@@ -1077,7 +1077,9 @@ export default function FeedParceiroPage() {
                   { label: "Local", value: `${detailsFor.city}/${detailsFor.state}` },
                   { label: "Publicado", value: detailsFor.postedAt },
                 ],
-                media: detailsFor.attachment ? [detailsFor.attachment] : [],
+                media: detailsFor.attachment
+                  ? [{ type: "image" as const, url: detailsFor.attachment }]
+                  : [],
                 ctaLabel: "Enviar cotação",
               } satisfies FeedDetailsData)
             : null
