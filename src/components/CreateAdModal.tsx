@@ -1199,3 +1199,221 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     </div>
   );
 }
+
+// ============================================================================
+// FixxerVideoPlayer — player leve com controles customizados (sem download)
+// ============================================================================
+interface FixxerVideoPlayerProps {
+  src: string;
+  title?: string;
+  themeHex: string;
+  onClose: () => void;
+}
+
+function FixxerVideoPlayer({ src, title, themeHex, onClose }: FixxerVideoPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [current, setCurrent] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const hideTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onLoaded = () => setDuration(v.duration || 0);
+    const onTime = () => setCurrent(v.currentTime);
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    v.addEventListener("loadedmetadata", onLoaded);
+    v.addEventListener("timeupdate", onTime);
+    v.addEventListener("play", onPlay);
+    v.addEventListener("pause", onPause);
+    return () => {
+      v.removeEventListener("loadedmetadata", onLoaded);
+      v.removeEventListener("timeupdate", onTime);
+      v.removeEventListener("play", onPlay);
+      v.removeEventListener("pause", onPause);
+    };
+  }, []);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) v.play();
+    else v.pause();
+  };
+
+  const seek = (t: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = Math.max(0, Math.min(duration, t));
+  };
+
+  const toggleMute = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setMuted(v.muted);
+  };
+
+  const changeVolume = (val: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.volume = val;
+    v.muted = val === 0;
+    setVolume(val);
+    setMuted(val === 0);
+  };
+
+  const toggleFullscreen = async () => {
+    const el = wrapRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      await el.requestFullscreen?.();
+    } else {
+      await document.exitFullscreen?.();
+    }
+  };
+
+  const fmt = (s: number) => {
+    if (!isFinite(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const kickHideTimer = () => {
+    setShowControls(true);
+    if (hideTimer.current) window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => {
+      if (playing) setShowControls(false);
+    }, 2500);
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      className="relative w-full h-full max-h-[92vh] flex items-center justify-center bg-black group"
+      onMouseMove={kickHideTimer}
+      onMouseLeave={() => playing && setShowControls(false)}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <video
+        ref={videoRef}
+        src={src}
+        className="max-w-full max-h-full outline-none"
+        playsInline
+        onClick={togglePlay}
+        controlsList="nodownload noremoteplayback noplaybackrate"
+        disablePictureInPicture
+      />
+
+      {/* Botão fechar */}
+      <button
+        onClick={onClose}
+        className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur flex items-center justify-center text-white transition"
+        aria-label="Fechar"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
+      {/* Título */}
+      {title && (
+        <div
+          className={`absolute top-3 left-3 right-16 z-10 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur text-white text-xs font-bold truncate transition-opacity ${
+            showControls ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {title}
+        </div>
+      )}
+
+      {/* Play central quando pausado */}
+      {!playing && (
+        <button
+          onClick={togglePlay}
+          className="absolute inset-0 flex items-center justify-center z-10"
+          aria-label="Reproduzir"
+        >
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110"
+            style={{ background: themeHex }}
+          >
+            <Play className="w-9 h-9 text-black fill-black ml-1" />
+          </div>
+        </button>
+      )}
+
+      {/* Barra de controles */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 z-10 px-4 pt-8 pb-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity ${
+          showControls ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {/* Barra de progresso */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-white text-[10px] font-bold w-10 text-right tabular-nums">{fmt(current)}</span>
+          <input
+            type="range"
+            min={0}
+            max={duration || 0}
+            step={0.1}
+            value={current}
+            onChange={(e) => seek(Number(e.target.value))}
+            className="flex-1 h-1 rounded-full appearance-none cursor-pointer"
+            style={{
+              background: `linear-gradient(to right, ${themeHex} 0%, ${themeHex} ${(current / (duration || 1)) * 100}%, rgba(255,255,255,0.2) ${(current / (duration || 1)) * 100}%, rgba(255,255,255,0.2) 100%)`,
+              accentColor: themeHex,
+            }}
+          />
+          <span className="text-white/70 text-[10px] font-bold w-10 tabular-nums">{fmt(duration)}</span>
+        </div>
+
+        {/* Controles inferiores */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={togglePlay}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+            aria-label={playing ? "Pausar" : "Reproduzir"}
+          >
+            {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMute}
+              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+              aria-label={muted ? "Ativar som" : "Silenciar"}
+            >
+              {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={muted ? 0 : volume}
+              onChange={(e) => changeVolume(Number(e.target.value))}
+              className="w-20 h-1 rounded-full cursor-pointer"
+              style={{ accentColor: themeHex }}
+            />
+          </div>
+
+          <div className="flex-1" />
+
+          <button
+            onClick={toggleFullscreen}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+            aria-label="Tela cheia"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
