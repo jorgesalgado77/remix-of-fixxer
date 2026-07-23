@@ -871,6 +871,7 @@ function PublishModal({
       toast.success("Necessidade publicada!", {
         description: "Você receberá orçamentos em breve.",
       });
+      await onPublished?.();
       onClose();
     } catch (err: any) {
       console.error("[FeedCliente] publish error", err);
