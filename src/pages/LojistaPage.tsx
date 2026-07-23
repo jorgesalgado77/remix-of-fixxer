@@ -38,7 +38,8 @@ import {
   Undo2,
   Settings,
   XCircle,
-  Eye
+  Eye,
+  Heart
 } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -64,6 +65,9 @@ import { compressImage } from "@/utils/image-compression";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeSettingsTab, setActiveSettingsTab] = useState("my-profile");
+  const [showFavoritesModal, setShowFavoritesModal] = useState(false);
+  const [favoriteCategory, setFavoriteCategory] = useState("todas");
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
@@ -305,6 +309,13 @@ export function LojistaDashboard() {
 
                       <SidebarButton icon={<Building2 className="w-5 h-5"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
 
+                      <SidebarButton 
+                        icon={<Heart className="w-5 h-5 text-red-500 fill-red-500/20"/>} 
+                        label="Favoritos" 
+                        active={false} 
+                        onClick={() => setShowFavoritesModal(true)} 
+                      />
+
                       <NavButtonWithTooltip 
                         icon={<Star className="w-5 h-5"/>} 
                         label="Avaliações" 
@@ -358,6 +369,13 @@ export function LojistaDashboard() {
               />
 
               <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
+
+              <SidebarButton 
+                icon={<Heart className="w-4 h-4 text-red-500 fill-red-500/20"/>} 
+                label="Favoritos" 
+                active={false} 
+                onClick={() => setShowFavoritesModal(true)} 
+              />
               
               <NavButtonWithTooltip 
                 icon={<Star className="w-4 h-4"/>} 
