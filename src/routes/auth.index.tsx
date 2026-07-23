@@ -80,7 +80,9 @@ function LoginComponent() {
           else if (category.includes('cliente') || category.includes('casual')) category = 'casual';
           
           localStorage.setItem('fixxer_user_category', category);
+          window.dispatchEvent(new Event('fixxer:category-change'));
         }
+
 
         if (normalizedEmail === 'jorgericardosalgado@gmail.com') {
           window.location.replace('/admin');

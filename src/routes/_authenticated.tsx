@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useCurrentCategory, getCategoryCssVars } from "@/lib/user-category";
+
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
@@ -80,8 +82,11 @@ function AuthenticatedLayout() {
   const isAdmin = email.trim() === 'jorgericardosalgado@gmail.com' || role.toLowerCase() === 'admin';
   const showAdminPanel = pathname.startsWith('/admin');
 
+  const currentCategory = useCurrentCategory();
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col" style={getCategoryCssVars(currentCategory)}>
+
       <nav className="border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div onClick={() => navigate({ to: isAdmin ? "/admin" as any : "/feed" as any })} className="flex items-center gap-2 cursor-pointer group">
