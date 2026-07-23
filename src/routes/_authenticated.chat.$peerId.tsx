@@ -34,6 +34,7 @@ import {
 import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
+import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
 
 export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
