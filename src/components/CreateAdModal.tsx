@@ -1215,7 +1215,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 </Button>
               </div>
               <p className="text-[9px] text-white/40 text-center italic">
-                Rascunhos ficam salvos localmente neste navegador.
+                Rascunho salvo automaticamente. Fechar ou clicar fora mantém os dados. Cancelar ou publicar limpa tudo.
               </p>
             </div>
 
