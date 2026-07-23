@@ -275,6 +275,52 @@ export default function FeedClientePage() {
     };
   }, [loadMyNeeds]);
 
+  // Realtime nas minhas necessidades
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabaseExternal
+      .channel(`my-needs-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "feed_posts", filter: `author_id=eq.${userId}` },
+        () => {
+          loadMyNeeds(userId);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabaseExternal.removeChannel(channel);
+    };
+  }, [userId, loadMyNeeds]);
+
+  const requestGeolocation = useCallback(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoStatus("denied");
+      toast.error("Geolocalização não disponível neste dispositivo.");
+      return;
+    }
+    setGeoStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoStatus("granted");
+        toast.success("Localização detectada — ordenando por proximidade.");
+      },
+      () => {
+        setGeoStatus("denied");
+        toast.info("Sem geolocalização — usando cidade do seu perfil.");
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 },
+    );
+  }, []);
+
+  // Dispara geolocalização automaticamente ao escolher "Mais perto"
+  useEffect(() => {
+    if (sortBy === "nearest" && !userCoords && geoStatus === "idle") {
+      requestGeolocation();
+    }
+  }, [sortBy, userCoords, geoStatus, requestGeolocation]);
+
   const filtered = useMemo(() => {
     let list = MOCK_VENDORS.filter((v) => {
       if (solution !== "Todas as Opções" && !v.solutions.includes(solution)) return false;
