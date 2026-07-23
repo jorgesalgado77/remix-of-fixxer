@@ -17,6 +17,7 @@ import {
   Download,
   Check,
   CheckCheck,
+  UserCircle2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -35,10 +36,34 @@ import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
+import {
+  clearDraft,
+  getDraftFile,
+  getDraftText,
+  markMockConversationSeen,
+  setDraftFile,
+  setDraftText,
+} from "@/lib/chat-drafts";
 
 export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
 });
+
+/** UID sintético estável quando não há sessão Supabase (fase de construção / bypass admin). */
+function getFallbackUid(): string {
+  if (typeof window === "undefined") return "local-anon";
+  try {
+    const cached = localStorage.getItem("fixxer_local_uid");
+    if (cached) return cached;
+    const email = (localStorage.getItem("fixxer_user_email") || "local").toLowerCase();
+    const uid = `local-${btoa(email).replace(/[^a-zA-Z0-9]/g, "").slice(0, 24)}`;
+    localStorage.setItem("fixxer_local_uid", uid);
+    return uid;
+  } catch {
+    return "local-anon";
+  }
+}
+
 
 type MessageRow = {
   id: string;
@@ -79,7 +104,7 @@ function ConversationPage() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [peerName, setPeerName] = useState<string>("Conversa");
   const [peerAvatar, setPeerAvatar] = useState<string | null>(null);
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState<string>(() => getDraftText(peerId));
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [markingRead, setMarkingRead] = useState(false);
@@ -89,7 +114,7 @@ function ConversationPage() {
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
 
   // Anexos + progresso
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(() => getDraftFile(peerId));
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -165,10 +190,9 @@ function ConversationPage() {
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
-      const uid = data?.user?.id ?? null;
+      const uid = data?.user?.id ?? getFallbackUid();
       if (cancelled) return;
       setUserId(uid);
-      if (!uid) { setLoading(false); return; }
 
       // === MODO MOCK (peerId "mock-*") ===
       if (isMockPeerId(peerId)) {
@@ -184,13 +208,18 @@ function ConversationPage() {
             content: m.content,
             created_at: mockMessageIsoAt(m.minutesAgo),
             read: true,
+            attachment_url: m.attachment?.url ?? null,
+            attachment_type: m.attachment?.type ?? null,
+            attachment_name: m.attachment?.name ?? null,
           }));
           setMessages(mockRows);
           setHasMore(false);
           setLoading(false);
+          markMockConversationSeen(peerId);
           return;
         }
       }
+
 
 
       await hydrateChatPreferences(uid);
@@ -482,6 +511,7 @@ function ConversationPage() {
     setMessages((prev) => [...prev, optimistic]);
     setContent("");
     setPendingFile(null);
+    clearDraft(peerId);
 
     // === MODO MOCK: sem persistência, com auto-resposta simulada ===
     if (isMockPeerId(peerId)) {
@@ -636,6 +666,23 @@ function ConversationPage() {
             {statusLine}
           </p>
         </div>
+        <button
+          onClick={() => {
+            // Preserva o rascunho (texto + anexo) antes de sair para o perfil.
+            setDraftText(peerId, content);
+            setDraftFile(peerId, pendingFile);
+            const path = `/lojista/${encodeURIComponent(peerId)}`;
+            try {
+              navigate({ to: path as any });
+            } catch {
+              window.location.href = path;
+            }
+          }}
+          title="Ver perfil do usuário"
+          className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
+        >
+          <UserCircle2 className="w-4 h-4" />
+        </button>
         <button
           onClick={markAsUnread}
           title="Marcar como não lida"
@@ -815,7 +862,7 @@ function ConversationPage() {
               )}
               <span className="truncate flex-1">{pendingFile.name}</span>
               <span className="text-muted-foreground">{Math.round(pendingFile.size / 1024)} KB</span>
-              <button onClick={() => setPendingFile(null)} className="w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center" aria-label="Remover">
+              <button onClick={() => { setPendingFile(null); setDraftFile(peerId, null); }} className="w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center" aria-label="Remover">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -841,6 +888,7 @@ function ConversationPage() {
                     return;
                   }
                   setPendingFile(f);
+                  setDraftFile(peerId, f);
                 }
                 if (fileRef.current) fileRef.current.value = "";
               }}
@@ -855,7 +903,7 @@ function ConversationPage() {
             </button>
             <textarea
               value={content}
-              onChange={(e) => { setContent(e.target.value); sendTyping(); }}
+              onChange={(e) => { setContent(e.target.value); setDraftText(peerId, e.target.value); sendTyping(); }}
               onBlur={sendTypingStop}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
@@ -896,10 +944,18 @@ function AttachmentBlock({
   onDownload: () => void;
 }) {
   const image = isImageType(type);
+  const video = !!type && type.startsWith("video/");
   return (
     <div className="mb-1 space-y-1">
       {image ? (
         <img src={url} alt={name} className="rounded-lg max-h-64 object-cover" />
+      ) : video ? (
+        <video
+          src={url}
+          controls
+          preload="metadata"
+          className="rounded-lg max-h-64 w-full bg-black"
+        />
       ) : (
         <div
           className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${
