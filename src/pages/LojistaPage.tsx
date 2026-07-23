@@ -573,6 +573,9 @@ export function LojistaDashboard() {
                     setShowFavoritesModal={setShowFavoritesModal}
                     favoriteCategory={favoriteCategory}
                     setFavoriteCategory={setFavoriteCategory}
+                    branches={branches}
+                    loadingFavorites={loadingFavorites}
+                    filteredFavorites={filteredFavorites}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
