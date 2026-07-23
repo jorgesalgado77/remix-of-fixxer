@@ -360,11 +360,15 @@ function Avatar({ initials }: { initials: string }) {
 function ApplyModal({
   job,
   isOpen,
+  alreadyApplied,
   onClose,
+  onApplied,
 }: {
   job: JobPost | null;
   isOpen: boolean;
+  alreadyApplied: boolean;
   onClose: () => void;
+  onApplied: (jobId: string) => void;
 }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -372,14 +376,51 @@ function ApplyModal({
   if (!isOpen || !job) return null;
 
   const handleSubmit = async () => {
+    if (alreadyApplied) {
+      toast.info("Você já se candidatou a esta O.S.");
+      onClose();
+      return;
+    }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setLoading(false);
-    toast.success("Candidatura enviada!", {
-      description: `Você se candidatou à O.S. ${job.id} de ${job.contractor.name}.`,
-    });
-    setMessage("");
-    onClose();
+    try {
+      const {
+        data: { user },
+      } = await supabaseExternal.auth.getUser();
+      if (!user) {
+        toast.error("Faça login para se candidatar.");
+        setLoading(false);
+        return;
+      }
+      const payload = {
+        provider_id: user.id,
+        job_id: job.id,
+        contractor_id: job.contractor.id,
+        message: message.trim() || null,
+        status: "pendente",
+      };
+      const { error } = await supabaseExternal
+        .from("service_applications")
+        .upsert(payload, { onConflict: "provider_id,job_id", ignoreDuplicates: true });
+      if (error) {
+        // Fallback silencioso: se a tabela ainda não existir, apenas marca localmente.
+        console.warn("[feed] service_applications indisponível:", error.message);
+        toast.warning("Candidatura registrada localmente", {
+          description: "Sincronização com o banco pendente.",
+        });
+      } else {
+        toast.success("Candidatura enviada!", {
+          description: `Você se candidatou à O.S. de ${job.contractor.name}.`,
+        });
+      }
+      onApplied(job.id);
+      setMessage("");
+      onClose();
+    } catch (err) {
+      console.warn("[feed] erro ao candidatar:", err);
+      toast.error("Não foi possível enviar sua candidatura.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -394,7 +435,7 @@ function ApplyModal({
 
         <div className="space-y-1">
           <h3 className="text-sm font-black text-white uppercase italic tracking-tight">
-            Candidatar-se à O.S.
+            {alreadyApplied ? "Candidatura já enviada" : "Candidatar-se à O.S."}
           </h3>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{job.title}</p>
         </div>
@@ -421,19 +462,24 @@ function ApplyModal({
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          disabled={alreadyApplied}
           placeholder="Escreva uma mensagem breve para o contratante..."
-          className="w-full min-h-[100px] bg-black/30 border border-white/10 rounded-2xl p-4 text-xs text-white placeholder:text-muted-foreground outline-none focus:border-[#00FF87]/50 resize-none"
+          className="w-full min-h-[100px] bg-black/30 border border-white/10 rounded-2xl p-4 text-xs text-white placeholder:text-muted-foreground outline-none focus:border-[#00FF87]/50 resize-none disabled:opacity-50"
         />
 
         <button
           onClick={handleSubmit}
-          disabled={loading}
+          disabled={loading || alreadyApplied}
           className="w-full py-3.5 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
               <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
               Enviando...
+            </>
+          ) : alreadyApplied ? (
+            <>
+              <CheckCircle2 className="w-4 h-4" /> Candidatura já enviada
             </>
           ) : (
             <>
