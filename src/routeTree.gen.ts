@@ -15,10 +15,13 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as PrestadorIdRouteImport } from './routes/prestador.$id'
 import { Route as PerfilLojistaRouteImport } from './routes/perfil.lojista'
+import { Route as ParceiroIdRouteImport } from './routes/parceiro.$id'
 import { Route as LojistaIdRouteImport } from './routes/lojista.$id'
 import { Route as DashboardPrestadorRouteImport } from './routes/dashboard.prestador'
 import { Route as DashboardLojistaRouteImport } from './routes/dashboard.lojista'
+import { Route as ClienteIdRouteImport } from './routes/cliente.$id'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPrestadorRouteImport } from './routes/_authenticated.prestador'
 import { Route as AuthenticatedParceiroRouteImport } from './routes/_authenticated.parceiro'
@@ -65,9 +68,19 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthRoute,
 } as any)
+const PrestadorIdRoute = PrestadorIdRouteImport.update({
+  id: '/prestador/$id',
+  path: '/prestador/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PerfilLojistaRoute = PerfilLojistaRouteImport.update({
   id: '/perfil/lojista',
   path: '/perfil/lojista',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParceiroIdRoute = ParceiroIdRouteImport.update({
+  id: '/parceiro/$id',
+  path: '/parceiro/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LojistaIdRoute = LojistaIdRouteImport.update({
@@ -83,6 +96,11 @@ const DashboardPrestadorRoute = DashboardPrestadorRouteImport.update({
 const DashboardLojistaRoute = DashboardLojistaRouteImport.update({
   id: '/dashboard/lojista',
   path: '/dashboard/lojista',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClienteIdRoute = ClienteIdRouteImport.update({
+  id: '/cliente/$id',
+  path: '/cliente/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -184,10 +202,13 @@ export interface FileRoutesByFullPath {
   '/parceiro': typeof AuthenticatedParceiroRoute
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
   '/lojista/$id': typeof LojistaIdRoute
+  '/parceiro/$id': typeof ParceiroIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
+  '/prestador/$id': typeof PrestadorIdRoute
   '/auth/': typeof AuthIndexRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -209,10 +230,13 @@ export interface FileRoutesByTo {
   '/parceiro': typeof AuthenticatedParceiroRoute
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
   '/lojista/$id': typeof LojistaIdRoute
+  '/parceiro/$id': typeof ParceiroIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
+  '/prestador/$id': typeof PrestadorIdRoute
   '/auth': typeof AuthIndexRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -238,10 +262,13 @@ export interface FileRoutesById {
   '/_authenticated/parceiro': typeof AuthenticatedParceiroRoute
   '/_authenticated/prestador': typeof AuthenticatedPrestadorRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
   '/lojista/$id': typeof LojistaIdRoute
+  '/parceiro/$id': typeof ParceiroIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
+  '/prestador/$id': typeof PrestadorIdRoute
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/_authenticated/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -267,10 +294,13 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/prestador'
     | '/profile'
+    | '/cliente/$id'
     | '/dashboard/lojista'
     | '/dashboard/prestador'
     | '/lojista/$id'
+    | '/parceiro/$id'
     | '/perfil/lojista'
+    | '/prestador/$id'
     | '/auth/'
     | '/chat/$peerId'
     | '/feed/cliente'
@@ -292,10 +322,13 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/prestador'
     | '/profile'
+    | '/cliente/$id'
     | '/dashboard/lojista'
     | '/dashboard/prestador'
     | '/lojista/$id'
+    | '/parceiro/$id'
     | '/perfil/lojista'
+    | '/prestador/$id'
     | '/auth'
     | '/chat/$peerId'
     | '/feed/cliente'
@@ -320,10 +353,13 @@ export interface FileRouteTypes {
     | '/_authenticated/parceiro'
     | '/_authenticated/prestador'
     | '/_authenticated/profile'
+    | '/cliente/$id'
     | '/dashboard/lojista'
     | '/dashboard/prestador'
     | '/lojista/$id'
+    | '/parceiro/$id'
     | '/perfil/lojista'
+    | '/prestador/$id'
     | '/auth/'
     | '/_authenticated/chat/$peerId'
     | '/_authenticated/feed/cliente'
@@ -340,10 +376,13 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   CadastroRoute: typeof CadastroRoute
   TermsRoute: typeof TermsRoute
+  ClienteIdRoute: typeof ClienteIdRoute
   DashboardLojistaRoute: typeof DashboardLojistaRoute
   DashboardPrestadorRoute: typeof DashboardPrestadorRoute
   LojistaIdRoute: typeof LojistaIdRoute
+  ParceiroIdRoute: typeof ParceiroIdRoute
   PerfilLojistaRoute: typeof PerfilLojistaRoute
+  PrestadorIdRoute: typeof PrestadorIdRoute
   ApiPublicSetupDbRoute: typeof ApiPublicSetupDbRoute
 }
 
@@ -391,11 +430,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/prestador/$id': {
+      id: '/prestador/$id'
+      path: '/prestador/$id'
+      fullPath: '/prestador/$id'
+      preLoaderRoute: typeof PrestadorIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/perfil/lojista': {
       id: '/perfil/lojista'
       path: '/perfil/lojista'
       fullPath: '/perfil/lojista'
       preLoaderRoute: typeof PerfilLojistaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parceiro/$id': {
+      id: '/parceiro/$id'
+      path: '/parceiro/$id'
+      fullPath: '/parceiro/$id'
+      preLoaderRoute: typeof ParceiroIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lojista/$id': {
@@ -417,6 +470,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/lojista'
       fullPath: '/dashboard/lojista'
       preLoaderRoute: typeof DashboardLojistaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cliente/$id': {
+      id: '/cliente/$id'
+      path: '/cliente/$id'
+      fullPath: '/cliente/$id'
+      preLoaderRoute: typeof ClienteIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
@@ -608,22 +668,15 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   CadastroRoute: CadastroRoute,
   TermsRoute: TermsRoute,
+  ClienteIdRoute: ClienteIdRoute,
   DashboardLojistaRoute: DashboardLojistaRoute,
   DashboardPrestadorRoute: DashboardPrestadorRoute,
   LojistaIdRoute: LojistaIdRoute,
+  ParceiroIdRoute: ParceiroIdRoute,
   PerfilLojistaRoute: PerfilLojistaRoute,
+  PrestadorIdRoute: PrestadorIdRoute,
   ApiPublicSetupDbRoute: ApiPublicSetupDbRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
