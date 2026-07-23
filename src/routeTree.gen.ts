@@ -29,6 +29,7 @@ import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.c
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
 import { Route as AuthenticatedFeedLojistaRouteImport } from './routes/_authenticated.feed.lojista'
+import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authenticated.chat.$peerId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -130,6 +131,11 @@ const AuthenticatedFeedLojistaRoute =
     path: '/lojista',
     getParentRoute: () => AuthenticatedFeedRoute,
   } as any)
+const AuthenticatedChatPeerIdRoute = AuthenticatedChatPeerIdRouteImport.update({
+  id: '/$peerId',
+  path: '/$peerId',
+  getParentRoute: () => AuthenticatedChatRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -137,7 +143,7 @@ export interface FileRoutesByFullPath {
   '/cadastro': typeof CadastroRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/chat': typeof AuthenticatedChatRoute
+  '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRouteWithChildren
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/lojista/$id': typeof LojistaIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth/': typeof AuthIndexRoute
+  '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
@@ -157,7 +164,7 @@ export interface FileRoutesByTo {
   '/cadastro': typeof CadastroRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/chat': typeof AuthenticatedChatRoute
+  '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRouteWithChildren
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/lojista/$id': typeof LojistaIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth': typeof AuthIndexRoute
+  '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
@@ -180,7 +188,7 @@ export interface FileRoutesById {
   '/cadastro': typeof CadastroRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/feed': typeof AuthenticatedFeedRouteWithChildren
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/lojista/$id': typeof LojistaIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/auth/': typeof AuthIndexRoute
+  '/_authenticated/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/_authenticated/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
 }
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/lojista/$id'
     | '/perfil/lojista'
     | '/auth/'
+    | '/chat/$peerId'
     | '/feed/lojista'
     | '/api/public/setup-db'
   fileRoutesByTo: FileRoutesByTo
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/lojista/$id'
     | '/perfil/lojista'
     | '/auth'
+    | '/chat/$peerId'
     | '/feed/lojista'
     | '/api/public/setup-db'
   id:
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/lojista/$id'
     | '/perfil/lojista'
     | '/auth/'
+    | '/_authenticated/chat/$peerId'
     | '/_authenticated/feed/lojista'
     | '/api/public/setup-db'
   fileRoutesById: FileRoutesById
@@ -415,8 +427,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFeedLojistaRouteImport
       parentRoute: typeof AuthenticatedFeedRoute
     }
+    '/_authenticated/chat/$peerId': {
+      id: '/_authenticated/chat/$peerId'
+      path: '/$peerId'
+      fullPath: '/chat/$peerId'
+      preLoaderRoute: typeof AuthenticatedChatPeerIdRouteImport
+      parentRoute: typeof AuthenticatedChatRoute
+    }
   }
 }
+
+interface AuthenticatedChatRouteChildren {
+  AuthenticatedChatPeerIdRoute: typeof AuthenticatedChatPeerIdRoute
+}
+
+const AuthenticatedChatRouteChildren: AuthenticatedChatRouteChildren = {
+  AuthenticatedChatPeerIdRoute: AuthenticatedChatPeerIdRoute,
+}
+
+const AuthenticatedChatRouteWithChildren =
+  AuthenticatedChatRoute._addFileChildren(AuthenticatedChatRouteChildren)
 
 interface AuthenticatedFeedRouteChildren {
   AuthenticatedFeedLojistaRoute: typeof AuthenticatedFeedLojistaRoute
@@ -431,7 +461,7 @@ const AuthenticatedFeedRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedChatRoute: typeof AuthenticatedChatRoute
+  AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRouteWithChildren
@@ -443,7 +473,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedChatRoute: AuthenticatedChatRoute,
+  AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeedRoute: AuthenticatedFeedRouteWithChildren,
