@@ -1227,9 +1227,14 @@ function PostCard({
 
       {/* Conteúdo */}
       <div className="space-y-2">
-        <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-tight leading-snug">
-          {post.title}
-        </h3>
+        <button
+          onClick={onOpenDetails}
+          className="text-left w-full"
+        >
+          <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-tight leading-snug hover:opacity-80 transition-opacity">
+            {post.title}
+          </h3>
+        </button>
         <p className="text-xs sm:text-[13px] text-white/70 leading-relaxed">{post.description}</p>
         {post.budget && (
           <div
