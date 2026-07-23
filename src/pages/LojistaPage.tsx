@@ -2546,6 +2546,7 @@ function ProfileView({
                                     gallery_urls: galleryUrls,
                                     video_urls: videoUrls,
                                     documents: documents,
+                                    specialties: specialties,
                                     updated_at: new Date().toISOString()
                                 };
 
