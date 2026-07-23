@@ -1127,10 +1127,8 @@ function PublishModal({
         metadata: { status: "active", source: "cliente_feed" },
       });
       if (error) throw error;
-      toast.success("Necessidade publicada!", {
-        description: "Você receberá orçamentos em breve.",
-      });
-      await onPublished?.();
+      // Toast principal é disparado pelo handlePublished do parent
+      await onPublished?.({ title });
       onClose();
     } catch (err: any) {
       console.error("[FeedCliente] publish error", err);
