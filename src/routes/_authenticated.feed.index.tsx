@@ -55,7 +55,10 @@ interface FeedPost {
   user_id?: string;
   budget?: string | number | null;
   images?: string[] | null;
-  profiles?: FeedProfile | FeedProfile[] | null;
+  is_negotiable?: boolean;
+  price_type?: string | null;
+  price_value?: string | number | null;
+  profiles?: FeedProfile | null;
 }
 
 function FeedPage() {
