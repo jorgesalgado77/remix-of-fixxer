@@ -1609,12 +1609,11 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                      </div>
                  </div>
 
-                 {activeSettingsTab === 'my-profile' ? (
+                  {activeSettingsTab === 'my-profile' ? (
                    <div className="space-y-6">
                     <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
                         <User className="w-3 h-3" /> Dados da Empresa e Responsável
                     </h4>
-                    {/* ... rest of the profile form ... */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome Fantasia da Empresa *</Label>
