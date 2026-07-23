@@ -2349,10 +2349,56 @@ function ProfileView({
                         </div>
 
                         <div className="flex-1 overflow-y-auto scrollbar-none pr-2 space-y-4">
-                            {/* Mock Favoritos */}
-                            <div className="flex flex-col gap-4">
-                                <p className="text-[10px] text-muted-foreground uppercase font-bold text-center py-8">Nenhum perfil favorito encontrado nesta categoria.</p>
-                            </div>
+                            {loadingFavorites ? (
+                                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                                    <Activity className="w-8 h-8 text-primary animate-spin" />
+                                    <span className="text-[10px] font-black text-primary uppercase italic">Carregando favoritos...</span>
+                                </div>
+                            ) : filteredFavorites.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {filteredFavorites.map((fav: any) => (
+                                        <div key={fav.id} className="p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-primary/30 transition-all group">
+                                            <div className="flex gap-3">
+                                                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
+                                                    {fav.store_profiles?.logo_url ? (
+                                                        <img src={fav.store_profiles.logo_url} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Store className="w-6 h-6 text-primary" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-[11px] font-black text-white uppercase italic">{fav.store_profiles?.name || 'Loja sem nome'}</div>
+                                                    <div className="text-[8px] text-primary font-black uppercase italic">{fav.store_profiles?.activity_branch || 'Sem categoria'}</div>
+                                                    <div className="flex items-center gap-1 mt-1">
+                                                        <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                                                        <span className="text-[10px] font-black text-amber-500 italic">4.9</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={async () => {
+                                                        const { error } = await supabaseExternal.from('user_favorites').delete().eq('id', fav.id);
+                                                        if (error) toast.error("Erro ao remover");
+                                                        else toast.success("Removido dos favoritos");
+                                                    }}
+                                                    className="p-2 text-red-500/50 hover:text-red-500 transition-colors"
+                                                >
+                                                    <Heart className="w-4 h-4 fill-red-500" />
+                                                </button>
+                                            </div>
+                                            <button 
+                                                onClick={() => navigate({ to: `/lojista/${fav.store_profiles?.lojista_id}` as any })}
+                                                className="w-full mt-3 py-2 rounded-xl bg-white/5 hover:bg-primary/20 text-white hover:text-primary text-[9px] font-black uppercase italic transition-all border border-transparent hover:border-primary/20"
+                                            >
+                                                Ver Perfil Completo
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-4">
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold text-center py-8">Nenhum perfil favorito encontrado nesta categoria.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
