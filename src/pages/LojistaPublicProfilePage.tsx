@@ -21,6 +21,8 @@ import {
   Truck,
   User,
   Send,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { isMockPeerId, getMockProfile, getMockPeerName } from "@/lib/mock-chat";
@@ -28,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+
 
 
 type TabKey = "sobre" | "oportunidades" | "avaliacoes" | "especialidades";
@@ -44,15 +47,17 @@ interface StoreProfile {
   banner_url?: string | null;
   gallery_urls?: string[];
   video_urls?: string[];
+  document_urls?: string[];
   activity_branch?: string;
   specialties?: { id: string; title: string; description: string; featured?: boolean }[];
   photo_sections?: {
-    showroom?: (string | { url: string; thumbUrl?: string })[];
-    assemblies?: (string | { url: string; thumbUrl?: string })[];
-    custom?: { id: string; name: string; photos: (string | { url: string; thumbUrl?: string })[] }[];
+    showroom?: (string | { url: string; thumbUrl?: string; createdAt?: string })[];
+    assemblies?: (string | { url: string; thumbUrl?: string; createdAt?: string })[];
+    custom?: { id: string; name: string; photos: (string | { url: string; thumbUrl?: string; createdAt?: string })[] }[];
   } | null;
   created_at?: string;
 }
+
 
 interface ServiceOrder {
   id: string;
@@ -82,6 +87,27 @@ interface Review {
 
 const getPhotoUrl = (p: any): string => (typeof p === "string" ? p : p?.url ?? "");
 const getPhotoThumb = (p: any): string => (typeof p === "string" ? p : (p?.thumbUrl || p?.url || ""));
+const getPhotoCreatedAt = (p: any): string | undefined =>
+  typeof p === "string" ? undefined : p?.createdAt;
+
+const IMAGE_EXT = /\.(jpe?g|png|webp|avif|gif|bmp|svg)(\?.*)?$/i;
+const VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv|avi|mkv)(\?.*)?$/i;
+const DOC_EXT = /\.(pdf|docx?|xlsx?|pptx?|txt|csv|zip|rar)(\?.*)?$/i;
+type MediaKind = "photo" | "video" | "document";
+const detectKind = (url: string): MediaKind => {
+  if (VIDEO_EXT.test(url)) return "video";
+  if (DOC_EXT.test(url)) return "document";
+  return "photo";
+};
+const basename = (url: string): string => {
+  try {
+    const u = url.split("?")[0];
+    const p = u.substring(u.lastIndexOf("/") + 1);
+    return decodeURIComponent(p);
+  } catch {
+    return url;
+  }
+};
 
 export function LojistaPublicProfilePage() {
   const params = useParams({ strict: false }) as { id?: string };
@@ -101,14 +127,20 @@ export function LojistaPublicProfilePage() {
   } as React.CSSProperties;
 
   const storeId = params?.id;
+  const prefsKey = storeId ? `fixxer:gallery-prefs:${storeId}` : "fixxer:gallery-prefs:default";
 
   const [profile, setProfile] = useState<StoreProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("sobre");
   const [photoFilter, setPhotoFilter] = useState("Todas");
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<"Todos" | "Fotos" | "Vídeos" | "Documentos">("Todos");
+  const [gallerySearch, setGallerySearch] = useState("");
+  const [gallerySort, setGallerySort] = useState<"recent" | "oldest" | "section">("recent");
+  const [prefsHydrated, setPrefsHydrated] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [lightboxVideo, setLightboxVideo] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
 
   // O.S.
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
@@ -236,37 +268,142 @@ export function LojistaPublicProfilePage() {
     };
   }, [profile?.user_id, storeId]);
 
-  // Seções de fotos dinâmicas a partir de profile.photo_sections + galeria legada
+  // Hidrata preferências de galeria por lojista
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(prefsKey);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (typeof p.photoFilter === "string") setPhotoFilter(p.photoFilter);
+        if (typeof p.mediaTypeFilter === "string") setMediaTypeFilter(p.mediaTypeFilter);
+        if (typeof p.gallerySearch === "string") setGallerySearch(p.gallerySearch);
+        if (typeof p.gallerySort === "string") setGallerySort(p.gallerySort);
+      }
+    } catch {}
+    setPrefsHydrated(true);
+  }, [prefsKey]);
+
+  // Persiste preferências
+  useEffect(() => {
+    if (!prefsHydrated) return;
+    try {
+      localStorage.setItem(
+        prefsKey,
+        JSON.stringify({ photoFilter, mediaTypeFilter, gallerySearch, gallerySort }),
+      );
+    } catch {}
+  }, [prefsHydrated, prefsKey, photoFilter, mediaTypeFilter, gallerySearch, gallerySort]);
+
+  // Seções dinâmicas — cada item vem com kind (foto/vídeo/documento) detectado pela extensão
+  type MediaItem = {
+    url: string;
+    thumb: string;
+    sectionName: string;
+    kind: MediaKind;
+    createdAt?: string;
+    order: number;
+  };
   const photoSections = useMemo(() => {
-    const sections: { key: string; name: string; photos: (string | { url: string; thumbUrl?: string })[] }[] = [];
+    const sections: { key: string; name: string; items: MediaItem[] }[] = [];
     const ps = profile?.photo_sections;
-    if (ps?.showroom && ps.showroom.length) sections.push({ key: "showroom", name: "Show Room", photos: ps.showroom });
-    if (ps?.assemblies && ps.assemblies.length) sections.push({ key: "assemblies", name: "Montagens Realizadas", photos: ps.assemblies });
+    let orderCounter = 0;
+    const toItems = (name: string, arr: (string | { url: string; thumbUrl?: string; createdAt?: string })[]) =>
+      arr
+        .map((p) => {
+          const url = getPhotoUrl(p);
+          if (!url) return null;
+          return {
+            url,
+            thumb: getPhotoThumb(p),
+            sectionName: name,
+            kind: detectKind(url),
+            createdAt: getPhotoCreatedAt(p),
+            order: orderCounter++,
+          } as MediaItem;
+        })
+        .filter(Boolean) as MediaItem[];
+    if (ps?.showroom && ps.showroom.length) sections.push({ key: "showroom", name: "Show Room", items: toItems("Show Room", ps.showroom) });
+    if (ps?.assemblies && ps.assemblies.length) sections.push({ key: "assemblies", name: "Montagens Realizadas", items: toItems("Montagens Realizadas", ps.assemblies) });
     (ps?.custom ?? []).forEach((c) => {
-      if (c?.photos?.length) sections.push({ key: `custom:${c.id}`, name: c.name || "Seção", photos: c.photos });
+      if (c?.photos?.length) sections.push({ key: `custom:${c.id}`, name: c.name || "Seção", items: toItems(c.name || "Seção", c.photos) });
     });
     const legacy = profile?.gallery_urls ?? [];
-    if (legacy.length) sections.push({ key: "legacy", name: "Galeria", photos: legacy });
+    if (legacy.length) sections.push({ key: "legacy", name: "Galeria", items: toItems("Galeria", legacy) });
+    // Adiciona vídeos e documentos separados como pseudo-seções para permanecerem filtráveis
+    const flatVideos = (profile?.video_urls ?? []).map((url) => ({
+      url,
+      thumb: url,
+      sectionName: "Vídeos",
+      kind: "video" as const,
+      order: orderCounter++,
+    }));
+    if (flatVideos.length) sections.push({ key: "videos", name: "Vídeos", items: flatVideos });
+    const flatDocs = (profile?.document_urls ?? []).map((url) => ({
+      url,
+      thumb: url,
+      sectionName: "Documentos",
+      kind: "document" as const,
+      order: orderCounter++,
+    }));
+    if (flatDocs.length) sections.push({ key: "documents", name: "Documentos", items: flatDocs });
     return sections;
-  }, [profile?.photo_sections, profile?.gallery_urls]);
+  }, [profile?.photo_sections, profile?.gallery_urls, profile?.video_urls, profile?.document_urls]);
 
+  // Filtro por seção usa exatamente as seções existentes no perfil atual
   const photoFilters = useMemo(() => ["Todas", ...photoSections.map((s) => s.name)], [photoSections]);
 
+  // Se a seção selecionada não existir mais (removida em tempo real), volta pra "Todas"
   useEffect(() => {
     if (!photoFilters.includes(photoFilter)) setPhotoFilter("Todas");
   }, [photoFilters, photoFilter]);
 
-  const visiblePhotos = useMemo(() => {
-    const items: { url: string; thumb: string; sectionName: string }[] = [];
+  const visibleMedia = useMemo(() => {
+    const q = gallerySearch.trim().toLowerCase();
+    const kindMap: Record<typeof mediaTypeFilter, MediaKind | null> = {
+      Todos: null,
+      Fotos: "photo",
+      Vídeos: "video",
+      Documentos: "document",
+    };
+    const targetKind = kindMap[mediaTypeFilter];
+    const items: MediaItem[] = [];
     photoSections.forEach((s) => {
       if (photoFilter !== "Todas" && s.name !== photoFilter) return;
-      s.photos.forEach((p) => items.push({ url: getPhotoUrl(p), thumb: getPhotoThumb(p), sectionName: s.name }));
+      s.items.forEach((it) => {
+        if (targetKind && it.kind !== targetKind) return;
+        if (q) {
+          const hay = `${it.sectionName} ${basename(it.url)}`.toLowerCase();
+          if (!hay.includes(q)) return;
+        }
+        items.push(it);
+      });
     });
-    return items.filter((i) => i.url);
-  }, [photoSections, photoFilter]);
+    if (gallerySort === "section") {
+      items.sort((a, b) => a.sectionName.localeCompare(b.sectionName, "pt-BR") || a.order - b.order);
+    } else if (gallerySort === "oldest") {
+      items.sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : a.order;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : b.order;
+        return ta - tb;
+      });
+    } else {
+      // recent — mais novos primeiro (createdAt DESC ou ordem reversa)
+      items.sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : a.order;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : b.order;
+        return tb - ta;
+      });
+    }
+    return items;
+  }, [photoSections, photoFilter, mediaTypeFilter, gallerySearch, gallerySort]);
 
+  const visiblePhotos = useMemo(
+    () => visibleMedia.filter((i) => i.kind === "photo"),
+    [visibleMedia],
+  );
   const gallery = useMemo(() => visiblePhotos.map((i) => i.url), [visiblePhotos]);
   const videos = profile?.video_urls || [];
+
 
   const avgRating = useMemo(() => {
     if (reviews.length === 0) return 5.0;
@@ -531,26 +668,114 @@ export function LojistaPublicProfilePage() {
                   ))}
                 </div>
               </div>
-              {visiblePhotos.length > 0 ? (
-                <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory">
-                  {visiblePhotos.map((item, i) => (
-                    <button
-                      key={`${item.url}-${i}`}
-                      onClick={() => openImageLightbox(item.url, i)}
-                      className="shrink-0 w-40 h-40 md:w-56 md:h-56 rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all snap-start group relative"
-                      title={item.sectionName}
+
+              {/* Busca + Ordenação + Tipo de mídia */}
+              <div className="flex flex-col md:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    value={gallerySearch}
+                    onChange={(e) => setGallerySearch(e.target.value)}
+                    placeholder="Buscar por seção ou nome do arquivo..."
+                    className="pl-9 h-10 bg-black/40 border-white/10 text-xs"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={mediaTypeFilter}
+                    onChange={(e) => setMediaTypeFilter(e.target.value as any)}
+                    className="h-10 bg-black/40 border border-white/10 rounded-md px-3 text-xs font-bold text-white uppercase italic outline-none focus:border-primary"
+                  >
+                    <option value="Todos">Todas as mídias</option>
+                    <option value="Fotos">Fotos</option>
+                    <option value="Vídeos">Vídeos</option>
+                    <option value="Documentos">Documentos</option>
+                  </select>
+                  <div className="relative">
+                    <ArrowUpDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                    <select
+                      value={gallerySort}
+                      onChange={(e) => setGallerySort(e.target.value as any)}
+                      className="h-10 pl-7 pr-3 bg-black/40 border border-white/10 rounded-md text-xs font-bold text-white uppercase italic outline-none focus:border-primary"
                     >
-                      <img src={item.thumb || item.url} alt={item.sectionName} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                      <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
-                        {item.sectionName}
-                      </span>
-                    </button>
-                  ))}
+                      <option value="recent">Mais recentes</option>
+                      <option value="oldest">Mais antigos</option>
+                      <option value="section">Por seção</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                {visibleMedia.length} mídia(s) encontrada(s)
+              </p>
+
+              {visibleMedia.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {visibleMedia.map((item, i) => {
+                    if (item.kind === "photo") {
+                      const photoIdx = visiblePhotos.findIndex((p) => p.url === item.url);
+                      return (
+                        <button
+                          key={`${item.url}-${i}`}
+                          onClick={() => openImageLightbox(item.url, photoIdx >= 0 ? photoIdx : 0)}
+                          className="aspect-square rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all group relative"
+                          title={item.sectionName}
+                        >
+                          <img src={item.thumb || item.url} alt={item.sectionName} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
+                            {item.sectionName}
+                          </span>
+                        </button>
+                      );
+                    }
+                    if (item.kind === "video") {
+                      return (
+                        <button
+                          key={`${item.url}-${i}`}
+                          onClick={() => setLightboxVideo(item.url)}
+                          className="aspect-square rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all relative bg-black group"
+                          title={item.sectionName}
+                        >
+                          <video src={item.url} className="w-full h-full object-cover opacity-70" preload="metadata" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                            <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center" style={{ boxShadow: `0 0 20px rgba(${theme.rgb}, 0.50)` }}>
+                              <Play className="w-6 h-6 fill-black text-black ml-0.5" />
+                            </div>
+                          </div>
+                          <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
+                            {item.sectionName}
+                          </span>
+                        </button>
+                      );
+                    }
+                    // documento
+                    return (
+                      <a
+                        key={`${item.url}-${i}`}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="aspect-square rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all relative bg-[#1A1A1B] flex flex-col items-center justify-center gap-2 p-3 group"
+                        title={basename(item.url)}
+                      >
+                        <FileText className="w-10 h-10 text-primary" />
+                        <span className="text-[10px] font-bold text-white text-center line-clamp-2 break-all">
+                          {basename(item.url)}
+                        </span>
+                        <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic bg-black/70 text-white/90 border border-white/10">
+                          {item.sectionName}
+                        </span>
+                        <Download className="absolute top-2 right-2 w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
+                      </a>
+                    );
+                  })}
                 </div>
               ) : (
-                <EmptyState label="Nenhuma foto publicada ainda." />
+                <EmptyState label="Nenhuma mídia encontrada com esses filtros." />
               )}
             </section>
+
 
             {/* Vídeos */}
             <section className="space-y-4">
