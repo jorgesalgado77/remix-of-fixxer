@@ -1610,10 +1610,11 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                  </div>
 
                   {activeSettingsTab === 'my-profile' ? (
-                   <div className="space-y-6">
-                    <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
-                        <User className="w-3 h-3" /> Dados da Empresa e Responsável
-                    </h4>
+                   <>
+                    <div className="space-y-6">
+                     <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
+                         <User className="w-3 h-3" /> Dados da Empresa e Responsável
+                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome Fantasia da Empresa *</Label>
@@ -2187,7 +2188,8 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                         {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
                     </Button>
                  </div>
-                 )}
+                  </>
+                 ) : null}
 
                  {activeSettingsTab === 'security' && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
