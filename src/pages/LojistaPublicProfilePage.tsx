@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { GlobalActionBar } from "@/components/GlobalActionBar";
 
 type TabKey = "sobre" | "oportunidades" | "avaliacoes" | "especialidades";
 
@@ -471,15 +472,8 @@ export function LojistaPublicProfilePage() {
         )}
       </div>
 
-      {/* STICKY FOOTER CTA GLOBAL - Visible only on mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-[#0A0A0B]/95 backdrop-blur-md border-t border-white/10 flex gap-3 md:hidden">
-        <Button
-          onClick={handleContactWhatsApp}
-          className="flex-1 bg-primary text-black font-black uppercase italic tracking-widest h-12 rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,255,135,0.3)]"
-        >
-          <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
-        </Button>
-      </div>
+      {/* Barra de ações global inferior (mobile) */}
+      <GlobalActionBar />
 
       {/* LIGHTBOX IMAGEM */}
       {lightboxImage && (
