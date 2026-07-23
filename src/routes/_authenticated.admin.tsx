@@ -144,6 +144,7 @@ export function AdminDashboardComponent() {
             <TabButton active={activeTab === 'os'} onClick={() => setActiveTab('os')} label="📋 Ordens de Serviço" icon={<FileText className="w-3 h-3" />} />
             <TabButton active={activeTab === 'fornecedores'} onClick={() => setActiveTab('fornecedores')} label="🏬 Insumos B2B" icon={<Truck className="w-3 h-3" />} />
             <TabButton active={activeTab === 'prestadores'} onClick={() => setActiveTab('prestadores')} label="🛠️ Profissionais" icon={<Users className="w-3 h-3" />} />
+            <TabButton active={activeTab === 'categorias'} onClick={() => setActiveTab('categorias')} label="📂 Categorias Globais" icon={<Filter className="w-3 h-3" />} />
             <TabButton active={activeTab === 'ocorrencias'} onClick={() => setActiveTab('ocorrencias')} label="⚠️ Auditoria" icon={<AlertTriangle className="w-3 h-3" />} />
           </div>
         </div>
