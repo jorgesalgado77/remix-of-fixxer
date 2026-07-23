@@ -666,6 +666,23 @@ function ConversationPage() {
           </p>
         </div>
         <button
+          onClick={() => {
+            // Preserva o rascunho (texto + anexo) antes de sair para o perfil.
+            setDraftText(peerId, content);
+            setDraftFile(peerId, pendingFile);
+            const path = `/lojista/${encodeURIComponent(peerId)}`;
+            try {
+              navigate({ to: path as any });
+            } catch {
+              window.location.href = path;
+            }
+          }}
+          title="Ver perfil do usuário"
+          className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
+        >
+          <UserCircle2 className="w-4 h-4" />
+        </button>
+        <button
           onClick={markAsUnread}
           title="Marcar como não lida"
           className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
