@@ -23,6 +23,10 @@ import {
   ArrowUpDown,
   ClipboardList,
   ChevronDown,
+  Pencil,
+  Trash2,
+  Navigation,
+  Check,
 } from "lucide-react";
 
 
@@ -187,6 +191,26 @@ type MyNeed = {
   metadata: any;
 };
 
+// Coordenadas aproximadas das cidades dos vendors (para "Mais perto" via geolocalização)
+const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  sorocaba: { lat: -23.5015, lng: -47.4526 },
+  votorantim: { lat: -23.5464, lng: -47.4383 },
+  "são paulo": { lat: -23.5505, lng: -46.6333 },
+  campinas: { lat: -22.9099, lng: -47.0626 },
+  itu: { lat: -23.2637, lng: -47.2992 },
+};
+
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
 // =============================================================================
 // COMPONENTE PRINCIPAL
 // =============================================================================
@@ -203,6 +227,8 @@ export default function FeedClientePage() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string>("");
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "granted" | "denied">("idle");
 
   const [sortBy, setSortBy] = useState<SortKey>("relevance");
   const [sortOpen, setSortOpen] = useState(false);
@@ -210,6 +236,7 @@ export default function FeedClientePage() {
 
   const [myNeeds, setMyNeeds] = useState<MyNeed[]>([]);
   const [needsOpen, setNeedsOpen] = useState(false);
+  const [editingNeed, setEditingNeed] = useState<MyNeed | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -248,6 +275,52 @@ export default function FeedClientePage() {
     };
   }, [loadMyNeeds]);
 
+  // Realtime nas minhas necessidades
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabaseExternal
+      .channel(`my-needs-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "feed_posts", filter: `author_id=eq.${userId}` },
+        () => {
+          loadMyNeeds(userId);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabaseExternal.removeChannel(channel);
+    };
+  }, [userId, loadMyNeeds]);
+
+  const requestGeolocation = useCallback(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoStatus("denied");
+      toast.error("Geolocalização não disponível neste dispositivo.");
+      return;
+    }
+    setGeoStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoStatus("granted");
+        toast.success("Localização detectada — ordenando por proximidade.");
+      },
+      () => {
+        setGeoStatus("denied");
+        toast.info("Sem geolocalização — usando cidade do seu perfil.");
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 },
+    );
+  }, []);
+
+  // Dispara geolocalização automaticamente ao escolher "Mais perto"
+  useEffect(() => {
+    if (sortBy === "nearest" && !userCoords && geoStatus === "idle") {
+      requestGeolocation();
+    }
+  }, [sortBy, userCoords, geoStatus, requestGeolocation]);
+
   const filtered = useMemo(() => {
     let list = MOCK_VENDORS.filter((v) => {
       if (solution !== "Todas as Opções" && !v.solutions.includes(solution)) return false;
@@ -268,16 +341,24 @@ export default function FeedClientePage() {
         (a, b) => b.rating - a.rating || b.reviews - a.reviews,
       );
     } else if (sortBy === "nearest") {
-      const city = userCity.trim().toLowerCase();
-      list = [...list].sort((a, b) => {
-        const aMatch = city && a.city.toLowerCase() === city ? 0 : 1;
-        const bMatch = city && b.city.toLowerCase() === city ? 0 : 1;
-        if (aMatch !== bMatch) return aMatch - bMatch;
-        return a.city.localeCompare(b.city);
-      });
+      if (userCoords) {
+        const dist = (v: Vendor) => {
+          const c = CITY_COORDS[v.city.toLowerCase()];
+          return c ? haversineKm(userCoords, c) : Number.POSITIVE_INFINITY;
+        };
+        list = [...list].sort((a, b) => dist(a) - dist(b));
+      } else {
+        const city = userCity.trim().toLowerCase();
+        list = [...list].sort((a, b) => {
+          const aMatch = city && a.city.toLowerCase() === city ? 0 : 1;
+          const bMatch = city && b.city.toLowerCase() === city ? 0 : 1;
+          if (aMatch !== bMatch) return aMatch - bMatch;
+          return a.city.localeCompare(b.city);
+        });
+      }
     }
     return list;
-  }, [query, solution, savedOnly, saved, sortBy, userCity]);
+  }, [query, solution, savedOnly, saved, sortBy, userCity, userCoords]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
@@ -361,10 +442,107 @@ export default function FeedClientePage() {
     [navigate],
   );
 
-  const handlePublished = useCallback(async () => {
-    if (userId) await loadMyNeeds(userId);
-    setNeedsOpen(true);
-  }, [userId, loadMyNeeds]);
+  const handlePublished = useCallback(
+    async (created?: { title?: string }) => {
+      if (userId) await loadMyNeeds(userId);
+      setNeedsOpen(true);
+      toast.success("Necessidade publicada com sucesso!", {
+        description: created?.title
+          ? `"${created.title}" está ATIVA e visível para os profissionais.`
+          : "Status: ATIVA — visível para os profissionais.",
+      });
+    },
+    [userId, loadMyNeeds],
+  );
+
+  const updateNeedStatus = useCallback(
+    async (need: MyNeed, nextStatus: "active" | "paused" | "closed") => {
+      if (!userId) return;
+      const prev = myNeeds;
+      const nextMeta = { ...(need.metadata ?? {}), status: nextStatus };
+      setMyNeeds((list) =>
+        list.map((n) => (n.id === need.id ? { ...n, metadata: nextMeta } : n)),
+      );
+      const { error } = await supabaseExternal
+        .from("feed_posts")
+        .update({ metadata: nextMeta })
+        .eq("id", need.id)
+        .eq("author_id", userId);
+      if (error) {
+        setMyNeeds(prev);
+        toast.error("Não foi possível atualizar o status.");
+      } else {
+        toast.success(
+          nextStatus === "active"
+            ? "Necessidade reativada."
+            : nextStatus === "paused"
+              ? "Necessidade pausada."
+              : "Necessidade encerrada.",
+        );
+      }
+    },
+    [userId, myNeeds],
+  );
+
+  const deleteNeed = useCallback(
+    async (need: MyNeed) => {
+      if (!userId) return;
+      if (!confirm(`Excluir "${need.title}"? Esta ação não pode ser desfeita.`)) return;
+      const prev = myNeeds;
+      setMyNeeds((list) => list.filter((n) => n.id !== need.id));
+      const { error } = await supabaseExternal
+        .from("feed_posts")
+        .delete()
+        .eq("id", need.id)
+        .eq("author_id", userId);
+      if (error) {
+        setMyNeeds(prev);
+        toast.error("Não foi possível excluir.");
+      } else {
+        toast.success("Necessidade excluída.");
+      }
+    },
+    [userId, myNeeds],
+  );
+
+  const saveEditedNeed = useCallback(
+    async (updated: { id: string; title: string; category: string; location: string; content?: string; status: string }) => {
+      if (!userId) return;
+      const current = myNeeds.find((n) => n.id === updated.id);
+      const nextMeta = { ...(current?.metadata ?? {}), status: updated.status };
+      const { error } = await supabaseExternal
+        .from("feed_posts")
+        .update({
+          title: updated.title,
+          category: updated.category,
+          location: updated.location,
+          content: updated.content,
+          metadata: nextMeta,
+        })
+        .eq("id", updated.id)
+        .eq("author_id", userId);
+      if (error) {
+        toast.error("Não foi possível salvar as alterações.");
+        return;
+      }
+      setMyNeeds((list) =>
+        list.map((n) =>
+          n.id === updated.id
+            ? {
+                ...n,
+                title: updated.title,
+                category: updated.category,
+                location: updated.location,
+                metadata: nextMeta,
+              }
+            : n,
+        ),
+      );
+      toast.success("Necessidade atualizada.");
+      setEditingNeed(null);
+    },
+    [userId, myNeeds],
+  );
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
@@ -458,19 +636,59 @@ export default function FeedClientePage() {
                         ? "bg-white/10 text-muted-foreground border-white/20"
                         : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
                   return (
-                    <li key={n.id} className="px-4 py-3 flex items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-white truncate">{n.title}</div>
-                        <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
-                          {n.category || "—"}
-                          {n.location ? ` · ${n.location}` : ""}
+                    <li key={n.id} className="px-4 py-3 flex flex-col gap-2">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-white truncate">{n.title}</div>
+                          <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
+                            {n.category || "—"}
+                            {n.location ? ` · ${n.location}` : ""}
+                          </div>
                         </div>
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${statusColor}`}
+                        >
+                          {statusLabel}
+                        </span>
                       </div>
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${statusColor}`}
-                      >
-                        {statusLabel}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          onClick={() => setEditingNeed(n)}
+                          className="px-2 py-1 rounded-md bg-white/5 border border-white/10 hover:border-white/20 text-[9px] font-black uppercase tracking-widest flex items-center gap-1"
+                        >
+                          <Pencil className="w-2.5 h-2.5" /> Editar
+                        </button>
+                        {status !== "active" && (
+                          <button
+                            onClick={() => updateNeedStatus(n, "active")}
+                            className="px-2 py-1 rounded-md bg-[#00FF87]/10 border border-[#00FF87]/30 text-[#00FF87] text-[9px] font-black uppercase tracking-widest flex items-center gap-1"
+                          >
+                            <Check className="w-2.5 h-2.5" /> Reativar
+                          </button>
+                        )}
+                        {status === "active" && (
+                          <button
+                            onClick={() => updateNeedStatus(n, "paused")}
+                            className="px-2 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-[9px] font-black uppercase tracking-widest"
+                          >
+                            Pausar
+                          </button>
+                        )}
+                        {status !== "closed" && (
+                          <button
+                            onClick={() => updateNeedStatus(n, "closed")}
+                            className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-muted-foreground text-[9px] font-black uppercase tracking-widest"
+                          >
+                            Encerrar
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteNeed(n)}
+                          className="ml-auto px-2 py-1 rounded-md bg-red-500/10 border border-red-500/30 text-red-400 text-[9px] font-black uppercase tracking-widest flex items-center gap-1"
+                        >
+                          <Trash2 className="w-2.5 h-2.5" /> Excluir
+                        </button>
+                      </div>
                     </li>
                   );
                 })}
@@ -523,9 +741,15 @@ export default function FeedClientePage() {
                       }`}
                     >
                       {SORT_LABELS[k]}
-                      {k === "nearest" && !userCity && (
+                      {k === "nearest" && (
                         <span className="ml-2 text-[8px] font-bold text-muted-foreground normal-case">
-                          (defina sua cidade)
+                          {geoStatus === "loading"
+                            ? "(localizando...)"
+                            : userCoords
+                              ? "(GPS)"
+                              : userCity
+                                ? `(cidade: ${userCity})`
+                                : "(defina sua cidade)"}
                         </span>
                       )}
                     </button>
@@ -555,6 +779,32 @@ export default function FeedClientePage() {
             </span>
           </button>
         </div>
+
+        {/* MODO GERENCIAR FAVORITOS */}
+        {savedOnly && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#00FF87]/5 border border-[#00FF87]/20 text-[10px] font-bold text-[#00FF87]">
+            <Bookmark className="w-3 h-3 fill-current" />
+            <span className="flex-1">
+              Modo gerenciar favoritos — toque no marcador para remover. Ordenação: {SORT_LABELS[sortBy].toLowerCase()}.
+            </span>
+            <button
+              onClick={() => setSavedOnly(false)}
+              className="text-[9px] uppercase tracking-widest text-white/70 hover:text-white"
+            >
+              Sair
+            </button>
+          </div>
+        )}
+
+        {sortBy === "nearest" && (
+          <button
+            onClick={requestGeolocation}
+            className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-[#00FF87] flex items-center gap-1"
+          >
+            <Navigation className="w-3 h-3" />
+            {userCoords ? "Atualizar minha localização" : "Ativar geolocalização"}
+          </button>
+        )}
 
         {/* LISTA */}
         <div className="space-y-4 pt-2">
@@ -605,6 +855,15 @@ export default function FeedClientePage() {
           userId={userId}
           onClose={() => setPublishOpen(false)}
           onPublished={handlePublished}
+          glassClass={glassClass}
+        />
+      )}
+
+      {editingNeed && (
+        <EditNeedModal
+          need={editingNeed}
+          onClose={() => setEditingNeed(null)}
+          onSave={saveEditedNeed}
           glassClass={glassClass}
         />
       )}
@@ -838,7 +1097,7 @@ function PublishModal({
 }: {
   userId: string | null;
   onClose: () => void;
-  onPublished?: () => void | Promise<void>;
+  onPublished?: (created?: { title?: string }) => void | Promise<void>;
   glassClass: string;
 }) {
   const [title, setTitle] = useState("");
@@ -868,10 +1127,8 @@ function PublishModal({
         metadata: { status: "active", source: "cliente_feed" },
       });
       if (error) throw error;
-      toast.success("Necessidade publicada!", {
-        description: "Você receberá orçamentos em breve.",
-      });
-      await onPublished?.();
+      // Toast principal é disparado pelo handlePublished do parent
+      await onPublished?.({ title });
       onClose();
     } catch (err: any) {
       console.error("[FeedCliente] publish error", err);
@@ -967,6 +1224,137 @@ function PublishModal({
         >
           {loading ? "Publicando..." : "Publicar Agora"}
           {!loading && <Send className="w-3 h-3" />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// EDIT NEED MODAL
+// =============================================================================
+
+function EditNeedModal({
+  need,
+  onClose,
+  onSave,
+  glassClass,
+}: {
+  need: MyNeed;
+  onClose: () => void;
+  onSave: (u: {
+    id: string;
+    title: string;
+    category: string;
+    location: string;
+    content?: string;
+    status: string;
+  }) => Promise<void>;
+  glassClass: string;
+}) {
+  const [title, setTitle] = useState(need.title);
+  const [category, setCategory] = useState(need.category ?? "Montagem");
+  const [location, setLocation] = useState(need.location ?? "");
+  const [status, setStatus] = useState<string>((need.metadata?.status as string) || "active");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      toast.error("Informe um título.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave({ id: need.id, title, category, location, status });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`${glassClass} w-full max-w-md border border-white/10 rounded-3xl p-6 space-y-4 bg-[#1A1A1B]`}
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
+            <Pencil className="w-4 h-4 text-[#00FF87]" />
+            Editar Necessidade
+          </h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+              Título
+            </label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none font-medium"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+                Categoria
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none font-medium appearance-none"
+              >
+                <option>Montagem</option>
+                <option>Planejados</option>
+                <option>Assistência Técnica</option>
+                <option>Reforma</option>
+                <option>Outros</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+                Cidade
+              </label>
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none font-medium"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+              Status
+            </label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-[#00FF87] outline-none font-medium appearance-none"
+            >
+              <option value="active">Ativa</option>
+              <option value="paused">Pausada</option>
+              <option value="closed">Encerrada</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {saving ? "Salvando..." : "Salvar Alterações"}
+          {!saving && <Check className="w-3 h-3" />}
         </button>
       </div>
     </div>
