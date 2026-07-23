@@ -627,7 +627,7 @@ export default function FeedLojistaPage() {
   // Reset da paginação quando filtro/busca muda
   useEffect(() => {
     setPage(1);
-  }, [filter, debouncedSearch]);
+  }, [filter, statusFilter, debouncedSearch]);
 
   // IntersectionObserver para scroll infinito
   useEffect(() => {
