@@ -31,7 +31,7 @@ export function AdminDashboardComponent() {
   const { glassClass } = usePerformanceMode();
 
   // Estados do Feed Global Admin
-  const [activeTab, setActiveTab] = useState<"os" | "fornecedores" | "prestadores" | "ocorrencias">("os");
+  const [activeTab, setActiveTab] = useState<"os" | "fornecedores" | "prestadores" | "ocorrencias" | "categorias">("os");
   const [selectedCategory, setSelectedCategory] = useState("todas");
   const [searchQuery, setSearchQuery] = useState("");
 
