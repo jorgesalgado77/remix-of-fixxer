@@ -888,6 +888,7 @@ function ConversationPage() {
                     return;
                   }
                   setPendingFile(f);
+                  setDraftFile(peerId, f);
                 }
                 if (fileRef.current) fileRef.current.value = "";
               }}
@@ -902,7 +903,7 @@ function ConversationPage() {
             </button>
             <textarea
               value={content}
-              onChange={(e) => { setContent(e.target.value); sendTyping(); }}
+              onChange={(e) => { setContent(e.target.value); setDraftText(peerId, e.target.value); sendTyping(); }}
               onBlur={sendTypingStop}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
