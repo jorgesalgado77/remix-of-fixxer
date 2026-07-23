@@ -120,6 +120,7 @@ function ConversationPage() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [peerName, setPeerName] = useState<string>("Conversa");
   const [peerAvatar, setPeerAvatar] = useState<string | null>(null);
+  const [peerRole, setPeerRole] = useState<string | null>(null);
   const [content, setContent] = useState<string>(() => getDraftText(peerId));
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
