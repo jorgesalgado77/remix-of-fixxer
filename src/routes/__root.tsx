@@ -4,12 +4,14 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
+import { GlobalActionBar } from "@/components/GlobalActionBar";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -157,15 +159,24 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     fixAuthAndPreview();
   }, []);
 
+  // Rotas públicas/marketing/auth onde a barra não deve aparecer
+  const hideBar =
+    pathname === "/" ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/cadastro") ||
+    pathname.startsWith("/terms");
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      {!hideBar && <GlobalActionBar />}
       <Toaster closeButton duration={2000} />
     </QueryClientProvider>
   );

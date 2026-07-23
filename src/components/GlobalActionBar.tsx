@@ -166,7 +166,7 @@ export function GlobalActionBar() {
         >
           <Store className="w-6 h-6" />
         </button>
-        <span className="text-[8px] font-black uppercase italic mt-1">Perfil</span>
+        <span className="text-[8px] font-black uppercase italic mt-1">Feed</span>
       </div>
 
       <button
