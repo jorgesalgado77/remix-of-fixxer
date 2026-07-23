@@ -30,6 +30,16 @@ import {
 import { enqueueMarkAllRead, enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { MOCK_CONVERSATIONS, mockMessageIsoAt } from "@/lib/mock-chat";
 import { getMockSeenAt, markMockConversationSeen } from "@/lib/chat-drafts";
+import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+
+function roleToCategory(role: string | null | undefined): CategoryKey {
+  const r = (role || "").toLowerCase();
+  if (r.includes("lojista")) return "lojista";
+  if (r.includes("fornec") || r.includes("parceiro")) return "fornecedor";
+  if (r.includes("cliente") || r.includes("casual")) return "cliente";
+  if (r.includes("admin")) return "admin";
+  return "prestador";
+}
 
 export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatInboxPage,
