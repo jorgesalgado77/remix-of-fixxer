@@ -1576,20 +1576,45 @@ function ProfileView({ setIsProfileComplete, rating, getRatingColor, setRating, 
                 </div>
             )}
             <div className="bg-[#1A1A1B] border border-white/10 p-5 md:p-8 rounded-2xl md:rounded-3xl space-y-6 md:space-y-8 shadow-2xl">
-                 <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/5">
-                     <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,255,135,0.1)]">
-                         <Building2 className="w-8 h-8" />
+                 <div className="flex flex-col gap-4 mb-4 pb-4 border-b border-white/5">
+                     <div className="flex items-center gap-4">
+                         <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,255,135,0.1)]">
+                             <Building2 className="w-8 h-8" />
+                         </div>
+                         <div>
+                             <h3 className="font-black text-white uppercase italic text-lg tracking-tight">Perfil e Configurações</h3>
+                             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Mantenha seus dados e preferências atualizados.</p>
+                         </div>
                      </div>
-                     <div>
-                         <h3 className="font-black text-white uppercase italic text-lg tracking-tight">Perfil da Empresa</h3>
-                         <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Mantenha seus dados atualizados para gerar confiança.</p>
+
+                     <div className="flex gap-2 overflow-x-auto scrollbar-none mt-2">
+                        <button 
+                            onClick={() => setActiveSettingsTab('my-profile')}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase italic transition-all border whitespace-nowrap ${activeSettingsTab === 'my-profile' ? 'bg-primary text-black border-primary' : 'bg-white/5 text-muted-foreground border-white/10 hover:border-white/20'}`}
+                        >
+                            <User className="w-3 h-3 inline-block mr-1" /> Meu Perfil
+                        </button>
+                        <button 
+                            onClick={() => setActiveSettingsTab('security')}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase italic transition-all border whitespace-nowrap ${activeSettingsTab === 'security' ? 'bg-primary text-black border-primary' : 'bg-white/5 text-muted-foreground border-white/10 hover:border-white/20'}`}
+                        >
+                            <Lock className="w-3 h-3 inline-block mr-1" /> Segurança
+                        </button>
+                        <button 
+                            onClick={() => setActiveSettingsTab('notifications')}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase italic transition-all border whitespace-nowrap ${activeSettingsTab === 'notifications' ? 'bg-primary text-black border-primary' : 'bg-white/5 text-muted-foreground border-white/10 hover:border-white/20'}`}
+                        >
+                            <Bell className="w-3 h-3 inline-block mr-1" /> Notificações
+                        </button>
                      </div>
                  </div>
 
-                 <div className="space-y-6">
+                 {activeSettingsTab === 'my-profile' ? (
+                   <div className="space-y-6">
                     <h4 className="text-xs font-black uppercase italic text-primary flex items-center gap-2">
                         <User className="w-3 h-3" /> Dados da Empresa e Responsável
                     </h4>
+                    {/* ... rest of the profile form ... */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome Fantasia da Empresa *</Label>
