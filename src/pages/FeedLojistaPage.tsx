@@ -938,39 +938,40 @@ function PostCard({
   onEdit: () => void;
   onOpenMedia: (index: number) => void;
 }) {
-  const isClient = post.category === "cliente";
   const badge = categoryBadge(post.category);
+  const theme = getCategoryTheme(post.category);
+  const isClient = post.category === "cliente";
 
   return (
     <article
-      className={`relative bg-[#1A1A1B] rounded-3xl p-4 sm:p-5 space-y-4 transition-all ${
-        isClient
-          ? "border-2 border-[#00E5FF] shadow-[0_0_22px_rgba(0,229,255,0.18)]"
-          : "border border-white/10"
-      }`}
+      className="relative bg-[#1A1A1B] rounded-3xl p-4 sm:p-5 space-y-4 transition-all border-2"
+      style={{ ...theme.borderStrong, ...theme.glow }}
     >
-      {isClient && (
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00E5FF]/10 text-[#00E5FF] text-[10px] font-black uppercase border border-[#00E5FF]/30 tracking-widest">
+      {theme.highlight && (
+        <div
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border tracking-widest"
+          style={{ ...theme.bgSoft, ...theme.color, ...theme.borderSoft }}
+        >
           <Flame className="w-3.5 h-3.5 animate-pulse" />
-          Oportunidade · Cliente Final
+          {theme.highlight}
         </div>
       )}
 
       {/* Cabeçalho */}
       <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
         <div
-          className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center font-black text-sm ${
-            isClient
-              ? "bg-[#0A0A0B] border border-[#00E5FF] text-[#00E5FF]"
-              : "bg-[#0A0A0B] border border-white/10 text-white/80"
-          }`}
+          className="w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center font-black text-sm bg-[#0A0A0B] border"
+          style={{ ...theme.borderStrong, ...theme.color }}
         >
           {post.author.avatarInitials}
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <h4 className="font-bold text-white text-sm truncate">{post.author.name}</h4>
-            <span className="inline-flex items-center gap-1 text-[10px] bg-white/10 px-2 py-0.5 rounded text-white/70">
+            <span
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded font-bold border"
+              style={{ ...theme.bgSoft, ...theme.color, ...theme.borderSoft }}
+            >
               {badge.icon}
               {badge.label}
             </span>
@@ -981,16 +982,8 @@ function PostCard({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/50 mt-0.5">
-            <span
-              className={`font-bold flex items-center gap-1 ${
-                isClient ? "text-[#00E5FF]" : "text-yellow-300"
-              }`}
-            >
-              <Star
-                className={`w-3 h-3 ${
-                  isClient ? "fill-[#00E5FF] text-[#00E5FF]" : "fill-yellow-300 text-yellow-300"
-                }`}
-              />
+            <span className="font-bold flex items-center gap-1" style={theme.color}>
+              <Star className="w-3 h-3" style={theme.fill} />
               {post.rating.toFixed(1)}
             </span>
             <span className="inline-flex items-center gap-1">
@@ -1030,19 +1023,13 @@ function PostCard({
               {post.author.isMine ? (
                 <>
                   <button
-                    onClick={() => {
-                      onCloseMenu();
-                      onEdit();
-                    }}
+                    onClick={() => { onCloseMenu(); onEdit(); }}
                     className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest hover:bg-white/5"
                   >
                     <Edit3 className="w-4 h-4" /> Editar
                   </button>
                   <button
-                    onClick={() => {
-                      onCloseMenu();
-                      onDelete();
-                    }}
+                    onClick={() => { onCloseMenu(); onDelete(); }}
                     className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest text-red-400 hover:bg-red-500/10 border-t border-white/5"
                   >
                     <Trash2 className="w-4 h-4" /> Excluir
@@ -1050,10 +1037,7 @@ function PostCard({
                 </>
               ) : (
                 <button
-                  onClick={() => {
-                    onCloseMenu();
-                    onReport();
-                  }}
+                  onClick={() => { onCloseMenu(); onReport(); }}
                   className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest text-red-400 hover:bg-red-500/10"
                 >
                   <Flag className="w-4 h-4" /> Denunciar Publicação
@@ -1071,7 +1055,10 @@ function PostCard({
         </h3>
         <p className="text-xs sm:text-[13px] text-white/70 leading-relaxed">{post.description}</p>
         {post.budget && (
-          <div className="inline-flex items-center gap-1.5 mt-1 px-3 py-1 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] text-[11px] font-black uppercase tracking-widest">
+          <div
+            className="inline-flex items-center gap-1.5 mt-1 px-3 py-1 rounded-full border text-[11px] font-black uppercase tracking-widest"
+            style={{ ...theme.bgSoft, ...theme.color, ...theme.borderSoft }}
+          >
             {post.budget}
           </div>
         )}
@@ -1079,11 +1066,7 @@ function PostCard({
 
       {/* Mídias */}
       {post.media.length > 0 && (
-        <div
-          className={`grid gap-2 ${
-            post.media.length === 1 ? "grid-cols-1" : "grid-cols-2"
-          }`}
-        >
+        <div className={`grid gap-2 ${post.media.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
           {post.media.slice(0, 4).map((m, i) => (
             <button
               key={i}
@@ -1093,19 +1076,17 @@ function PostCard({
               {m.type === "video" ? (
                 <>
                   {m.poster ? (
-                    <img
-                      src={m.poster}
-                      alt=""
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={m.poster} alt="" loading="lazy" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/30">
                       <ImageIcon className="w-8 h-8" />
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-[#00E5FF] text-black flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.5)]">
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center"
+                      style={{ ...theme.bgSolid, ...theme.glowStrong }}
+                    >
                       <Play className="w-5 h-5 ml-0.5" fill="currentColor" />
                     </div>
                   </div>
@@ -1127,27 +1108,29 @@ function PostCard({
       <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
         <button
           onClick={onChat}
-          className="flex-1 bg-[#00E5FF] hover:bg-[#00E5FF]/90 text-black font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
+          className="flex-1 font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all hover:opacity-90"
+          style={{ ...theme.bgSolid, ...theme.glow }}
         >
-          <MessageSquare className="w-4 h-4" /> Chat Direto
+          <MessageSquare className="w-4 h-4" /> {isClient ? "Chat Direto" : "Chat"}
         </button>
         <button
           onClick={onPropose}
           className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
         >
-          <Send className="w-4 h-4 text-[#00E5FF]" /> Enviar Proposta
+          <Send className="w-4 h-4" style={theme.color} /> Enviar Proposta
         </button>
         <button
           onClick={onSave}
           aria-pressed={isSaved}
           aria-label={isSaved ? "Remover dos salvos" : "Salvar publicação"}
-          className={`p-2.5 rounded-xl border transition-colors ${
+          className="p-2.5 rounded-xl border transition-colors"
+          style={
             isSaved
-              ? "bg-[#00E5FF]/10 border-[#00E5FF]/40 text-[#00E5FF]"
-              : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10"
-          }`}
+              ? { ...theme.bgSoft, ...theme.borderSoft, ...theme.color }
+              : { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }
+          }
         >
-          <Bookmark className={`w-4 h-4 ${isSaved ? "fill-[#00E5FF]" : ""}`} />
+          <Bookmark className="w-4 h-4" style={isSaved ? theme.fill : undefined} />
         </button>
       </div>
     </article>
