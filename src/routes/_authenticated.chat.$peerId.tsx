@@ -211,7 +211,7 @@ function ConversationPage() {
           .channel(channelName)
           .on(
             "postgres_changes" as any,
-            { event: "INSERT", schema: "public", table: "messages" },
+            { event: "*", schema: "public", table: "messages" },
             (payload: any) => {
               const m = payload?.new as MessageRow | undefined;
               if (!m) return;
@@ -219,14 +219,37 @@ function ConversationPage() {
                 (m.sender_id === uid && m.recipient_id === peerId) ||
                 (m.sender_id === peerId && m.recipient_id === uid);
               if (!inConv) return;
-              if (idSetRef.current.has(m.id)) return;
-              idSetRef.current.add(m.id);
-              setMessages((prev) => [...prev, m]);
-              if (m.recipient_id === uid) markIncomingRead(uid);
+              // Idempotência: se veio da minha própria escrita otimista,
+              // atualiza a linha em vez de duplicar (match por client_message_id).
+              if (m.client_message_id) {
+                setMessages((prev) => {
+                  const idx = prev.findIndex(
+                    (x) => x._clientId === m.client_message_id || x.id === m.client_message_id,
+                  );
+                  if (idx >= 0) {
+                    idSetRef.current.add(m.id);
+                    const next = prev.slice();
+                    next[idx] = { ...m, _clientId: m.client_message_id ?? next[idx]._clientId };
+                    return next;
+                  }
+                  if (idSetRef.current.has(m.id)) {
+                    return prev.map((x) => (x.id === m.id ? { ...x, ...m } : x));
+                  }
+                  idSetRef.current.add(m.id);
+                  return [...prev, m];
+                });
+              } else if (idSetRef.current.has(m.id)) {
+                setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+              } else {
+                idSetRef.current.add(m.id);
+                setMessages((prev) => [...prev, m]);
+              }
+              if (m.recipient_id === uid && payload?.eventType !== "UPDATE") markIncomingRead(uid);
             },
           )
           .subscribe();
       } catch {}
+
 
       // Canal de presença + typing (broadcast) — chave estável por par
       try {
