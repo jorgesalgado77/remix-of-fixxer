@@ -281,6 +281,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       setFixedValue(d.fixedValue || "");
       setContractValue(d.contractValue || "");
       setCommissionPct(d.commissionPct || "");
+      setFreightVolumes(d.freightVolumes || "");
+      setFreightWeight(d.freightWeight || "");
+      setOtherServiceText(d.otherServiceText || "");
       filesCacheRef.current.clear();
       const restored: UploadItem[] = (d.files || []).map((f: any) => {
         const file = dataUrlToFile(f.dataUrl, f.name, f.type);
