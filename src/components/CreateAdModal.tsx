@@ -207,6 +207,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     rating: 4.9,
   });
 
+  // Ramo/macro-categoria do usuário logado (rótulos dinâmicos)
+  const [userMacro, setUserMacro] = useState<{ icon: string; label: string } | null>(null);
+
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
