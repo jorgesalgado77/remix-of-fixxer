@@ -501,14 +501,20 @@ function RefundStatusCard({
   status: Appointment["status"];
 }) {
   const brl = (n: number) => `R$ ${n.toFixed(2).replace(".", ",")}`;
+  const held = Math.max(0, summary.net);
+  const state: "refunded" | "released" | "held" | "none" =
+    summary.deposit <= 0 ? "none" :
+    summary.refunded > 0 ? "refunded" :
+    summary.released > 0 ? "released" :
+    held > 0 ? "held" : "none";
   const color =
-    summary.state === "refunded" ? "#00FF87" :
-    summary.state === "released" ? "#00E5FF" :
-    summary.state === "held" ? "#FFD600" : "#8E8E93";
+    state === "refunded" ? "#00FF87" :
+    state === "released" ? "#00E5FF" :
+    state === "held" ? "#FFD600" : "#8E8E93";
   const label =
-    summary.state === "refunded" ? "Reembolsado ao cliente" :
-    summary.state === "released" ? "Liberado ao prestador" :
-    summary.state === "held" ? "Sinal retido em custódia" : "Sem custódia ativa";
+    state === "refunded" ? "Reembolsado ao cliente" :
+    state === "released" ? "Liberado ao prestador" :
+    state === "held" ? "Sinal retido em custódia" : "Sem custódia ativa";
   return (
     <div
       className="p-3 rounded-xl border space-y-2"
@@ -526,7 +532,7 @@ function RefundStatusCard({
       <div className="grid grid-cols-3 gap-2 text-[10px]">
         <div className="p-1.5 rounded bg-black/30">
           <p className="text-white/50 uppercase">Retido</p>
-          <p className="font-bold text-white">{brl(summary.held)}</p>
+          <p className="font-bold text-white">{brl(held)}</p>
         </div>
         <div className="p-1.5 rounded bg-black/30">
           <p className="text-white/50 uppercase">Liberado</p>
@@ -545,6 +551,7 @@ function RefundStatusCard({
     </div>
   );
 }
+
 
 function DisputesSection({
   disputes,
