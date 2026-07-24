@@ -1,4 +1,5 @@
 import { RadiusFilter } from "@/components/RadiusFilter";
+import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -799,6 +800,7 @@ export default function FeedParceiroPage() {
 
       {/* FEED */}
       <main className="mx-auto max-w-3xl px-4 py-4">
+        <div className="mb-4"><B2BSuggestionsCard /></div>
         <div className="mb-4 flex items-center justify-between text-xs text-white/50">
           <span>
             {filtered.length} demanda{filtered.length === 1 ? "" : "s"} B2B

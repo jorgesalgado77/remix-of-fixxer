@@ -1,4 +1,5 @@
 import { RadiusFilter } from "@/components/RadiusFilter";
+import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -873,6 +874,7 @@ export default function FeedLojistaPage() {
         </aside>
 
       <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
+        <B2BSuggestionsCard />
         {searching ? (
           <div className="space-y-4" aria-live="polite">
             {[0, 1, 2].map((i) => (

@@ -1,4 +1,5 @@
 import { RadiusFilter } from "@/components/RadiusFilter";
+import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -1174,6 +1175,7 @@ export default function FeedPrestadorPage() {
 
       {/* CONTEÚDO */}
       <main className="max-w-5xl mx-auto px-4 py-4 space-y-4">
+        <B2BSuggestionsCard />
         {/* Skeleton de busca */}
         {searching && (
           <div className="space-y-4">

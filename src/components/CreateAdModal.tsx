@@ -207,6 +207,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     rating: 4.9,
   });
 
+  // Ramo/macro-categoria do usuário logado (rótulos dinâmicos)
+  const [userMacro, setUserMacro] = useState<{ icon: string; label: string } | null>(null);
+
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -227,6 +230,37 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           rating: typeof data.rating === "number" ? data.rating : 4.9,
         });
       } catch { /* silencioso — mantém fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  // Detecta macro-categoria do usuário (Assistência, Imobiliário, Fitness, etc.)
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { findMacroForBranch } = await import("@/lib/activity-branches");
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return;
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("business_category")
+          .eq("id", uid)
+          .maybeSingle();
+        const branches = String(data?.business_category ?? "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        for (const b of branches) {
+          const m = findMacroForBranch(b);
+          if (m) {
+            if (!cancelled) setUserMacro({ icon: m.icon, label: m.label });
+            return;
+          }
+        }
+      } catch { /* silencioso */ }
     })();
     return () => { cancelled = true; };
   }, [open]);
@@ -985,6 +1019,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               style={{ color: theme.hex }}
             >
               {CATEGORY_LABEL[defaultCategory]}
+              {userMacro && (
+                <span className="ml-2 text-white/50 normal-case font-semibold tracking-normal">
+                  · {userMacro.icon} {userMacro.label}
+                </span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
