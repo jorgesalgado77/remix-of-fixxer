@@ -55,12 +55,14 @@ export default function AppointmentDetailPage() {
   const navigate = useNavigate();
   const [apt, setApt] = useState<Appointment | null>(null);
   const [events, setEvents] = useState<AppointmentEvent[]>([]);
+  const [disputes, setDisputes] = useState<AppointmentDispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [photoModal, setPhotoModal] = useState<{ mode: "checkin" | "checkout" } | null>(null);
+  const [disputeOpen, setDisputeOpen] = useState(false);
   const { uploadFileDetailed } = useMediaUpload();
 
   const load = useCallback(async () => {
@@ -69,8 +71,12 @@ export default function AppointmentDetailPage() {
       const a = await fetchAppointment(id);
       setApt(a);
       if (a) {
-        const ev = await fetchAppointmentEvents(id);
+        const [ev, ds] = await Promise.all([
+          fetchAppointmentEvents(id),
+          fetchDisputes(id),
+        ]);
         setEvents(ev);
+        setDisputes(ds);
       }
     } catch (e: any) {
       toast.error("Falha ao carregar compromisso", { description: e?.message });
@@ -84,7 +90,7 @@ export default function AppointmentDetailPage() {
     load();
   }, [load]);
 
-  // Realtime
+  // Realtime — compromisso, eventos e disputas
   useEffect(() => {
     const ch = supabaseExternal
       .channel(`appt-detail:${id}`)
@@ -98,11 +104,32 @@ export default function AppointmentDetailPage() {
         { event: "*", schema: "public", table: "appointment_events", filter: `appointment_id=eq.${id}` },
         () => load(),
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointment_disputes", filter: `appointment_id=eq.${id}` },
+        () => load(),
+      )
       .subscribe();
     return () => {
       supabaseExternal.removeChannel(ch);
     };
   }, [id, load]);
+
+  const refundSummary = useMemo(
+    () => (apt ? summarizeRefund(apt, events) : null),
+    [apt, events],
+  );
+
+  const handleDownloadPdf = async () => {
+    if (!apt) return;
+    await withBusy("pdf", async () => {
+      const blob = await generateAppointmentPdf(apt, events, disputes);
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadPdf(blob, `fixxer-compromisso-${apt.id.slice(0, 8)}-${stamp}.pdf`);
+      toast.success("📄 PDF gerado com sucesso!");
+    });
+  };
+
 
   const timeline = useMemo(() => {
     if (!apt) return [] as { at: string; icon: string; title: string; sub?: string; color: string }[];
