@@ -1019,6 +1019,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               style={{ color: theme.hex }}
             >
               {CATEGORY_LABEL[defaultCategory]}
+              {userMacro && (
+                <span className="ml-2 text-white/50 normal-case font-semibold tracking-normal">
+                  · {userMacro.icon} {userMacro.label}
+                </span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
