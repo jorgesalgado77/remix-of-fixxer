@@ -137,6 +137,30 @@ const parseCurrencyBRL = (masked: string) => {
   return Number(digits) / 100;
 };
 
+/**
+ * Verifica integridade entre string mascarada e número gerado.
+ * Retorna string de erro ou null.
+ */
+const assertCurrencyIntegrity = (label: string, masked: string): string | null => {
+  if (!masked) return null;
+  const n = parseCurrencyBRL(masked);
+  if (!Number.isFinite(n) || n < 0) return `${label}: valor numérico inválido.`;
+  const back = maskCurrencyBRL(masked);
+  if (back !== masked) return `${label}: formato monetário inconsistente (${masked} ≠ ${back}).`;
+  if (n > 9_999_999_999.99) return `${label}: valor acima do limite permitido.`;
+  return null;
+};
+
+/** Handlers reutilizáveis para inputs de moeda BRL. */
+const currencyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Bloqueia caracteres numéricos científicos e sinais
+  if (["e", "E", "+", "-", ",", "."].includes(e.key)) e.preventDefault();
+};
+const currencyFocusSelect = (e: React.FocusEvent<HTMLInputElement>) => {
+  // Facilita edição: seleciona tudo ao focar
+  requestAnimationFrame(() => e.target.select());
+};
+
 const UF_LIST = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
