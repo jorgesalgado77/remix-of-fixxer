@@ -981,15 +981,19 @@ export default function FeedLojistaPage() {
             Para: <span className="text-white font-bold">{proposalFor.author.name}</span> ·{" "}
             <span className="text-[#00E5FF]">{proposalFor.title}</span>
           </p>
-          <label className="block text-[10px] uppercase tracking-widest font-black text-white/60 mb-1">
-            Valor da proposta
-          </label>
-          <input
-            value={proposalValue}
-            onChange={(e) => setProposalValue(e.target.value)}
-            placeholder="R$ 0,00"
-            className="w-full bg-[#0A0A0B] border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#00E5FF] mb-3"
-          />
+          <div className="mb-3">
+            <CurrencyInputBRL
+              label="Valor da proposta"
+              value={proposalValue}
+              onChange={(v) => {
+                setProposalValue(v);
+                if (proposalError) setProposalError(null);
+              }}
+              error={proposalError}
+              accentColor="#00E5FF"
+              placeholder="0,00"
+            />
+          </div>
           <label className="block text-[10px] uppercase tracking-widest font-black text-white/60 mb-1">
             Mensagem (opcional)
           </label>
