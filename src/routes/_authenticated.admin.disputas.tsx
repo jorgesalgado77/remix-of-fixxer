@@ -143,23 +143,81 @@ function AdminDisputesPage() {
                       Parecer: {d.admin_notes}
                     </p>
                   )}
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => setSelected(d)}
-                      className="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg bg-[#00E5FF] text-black flex items-center gap-1"
-                    >
-                      <Eye className="w-3 h-3" /> Revisar
-                    </button>
-                    {d.appointment_id && (
-                      <Link
-                        to={"/agenda/$id" as any}
-                        params={{ id: d.appointment_id } as any}
-                        className="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-1"
-                      >
-                        <ExternalLink className="w-3 h-3" /> Compromisso
-                      </Link>
-                    )}
-                  </div>
+                  {(() => {
+                    const days = daysSince(d.created_at);
+                    const overdue = d.status === "open" && days >= 3;
+                    const depAmount = Number(d.appointment?.deposit_amount ?? 0);
+                    const quickApproveProvider = async () => {
+                      if (!confirm("Aprovar prestador (rejeitar reclamação) e liberar a custódia?")) return;
+                      try {
+                        await resolveDispute({
+                          id: d.id,
+                          status: "rejected",
+                          admin_notes: `[1-clique] Aprovação forçada do prestador após ${days}d sem acordo. Custódia liberada ao prestador.`,
+                          refund_amount: null,
+                        });
+                        toast.success("Prestador aprovado — custódia liberada.");
+                        load();
+                      } catch (e: any) {
+                        toast.error("Falha na aprovação forçada", { description: e?.message });
+                      }
+                    };
+                    const quickRefundClient = async () => {
+                      if (!confirm(`Reembolsar contratante em R$ ${depAmount.toFixed(2).replace(".", ",")}?`)) return;
+                      try {
+                        await resolveDispute({
+                          id: d.id,
+                          status: "approved",
+                          admin_notes: `[1-clique] Reembolso total ao contratante após ${days}d sem acordo.`,
+                          refund_amount: depAmount,
+                        });
+                        toast.success("Contratante reembolsado.");
+                        load();
+                      } catch (e: any) {
+                        toast.error("Falha no reembolso 1-clique", { description: e?.message });
+                      }
+                    };
+                    return (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button
+                          onClick={() => setSelected(d)}
+                          className="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg bg-[#00E5FF] text-black flex items-center gap-1"
+                        >
+                          <Eye className="w-3 h-3" /> Revisar
+                        </button>
+                        {d.appointment_id && (
+                          <Link
+                            to={"/agenda/$id" as any}
+                            params={{ id: d.appointment_id } as any}
+                            className="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Compromisso
+                          </Link>
+                        )}
+                        {overdue && (
+                          <>
+                            <span className="text-[9px] font-black uppercase px-2 py-1 rounded-lg bg-[#FFB020]/20 text-[#FFB020] border border-[#FFB020]/40 flex items-center gap-1">
+                              <AlarmClock className="w-3 h-3" /> {days}d sem acordo
+                            </span>
+                            <button
+                              onClick={quickApproveProvider}
+                              title="Aprovar prestador (1 clique)"
+                              className="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg bg-[#00FF87] text-black flex items-center gap-1"
+                            >
+                              <Zap className="w-3 h-3" /> Aprovar Prestador
+                            </button>
+                            <button
+                              onClick={quickRefundClient}
+                              title="Reembolsar contratante (1 clique)"
+                              className="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg bg-[#FF3B30] text-white flex items-center gap-1"
+                            >
+                              <DollarSign className="w-3 h-3" /> Reembolsar Contratante
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </li>
               );
             })}
