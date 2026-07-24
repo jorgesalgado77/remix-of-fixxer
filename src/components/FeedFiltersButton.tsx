@@ -113,6 +113,16 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
 
   const [open, setOpen] = useState(false);
   const [radius, setRadius] = useState<number>(() => readStoredRadius(category));
+  const [applying, setApplying] = useState(false);
+
+  // Flash "Aplicando…" por ~350ms sempre que um filtro relevante muda,
+  // dando feedback visual imediato mesmo quando o resultado atualiza rápido.
+  useEffect(() => {
+    setApplying(true);
+    const t = setTimeout(() => setApplying(false), 350);
+    return () => clearTimeout(t);
+  }, [macroValue, pillValue, statusValue, radius]);
+
 
   // Sincroniza raio quando outra tela dispara o evento global.
   useEffect(() => {
