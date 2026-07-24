@@ -135,9 +135,26 @@ export async function fetchTransactions(userId: string, limit = 100): Promise<Co
   return readLocalTx(userId);
 }
 
+/** Chaves de idempotência já consumidas nesta sessão (evita cliques duplos). */
+const usedIdemKeys = new Set<string>();
+
 /** Consome moedas do usuário localmente + no remoto (best effort). */
-export async function consumeCoins(userId: string, amount: number, description: string, source: CoinTxSource = "action_consume", reference?: string): Promise<{ ok: boolean; balance: number; error?: string }> {
+export async function consumeCoins(
+  userId: string,
+  amount: number,
+  description: string,
+  source: CoinTxSource = "action_consume",
+  reference?: string,
+  idempotencyKey?: string,
+): Promise<{ ok: boolean; balance: number; duplicated?: boolean; error?: string }> {
   if (amount <= 0) return { ok: true, balance: currentBalance };
+
+  // Curto-circuito local: se a mesma chave já foi usada nesta sessão, não re-debita
+  if (idempotencyKey && usedIdemKeys.has(idempotencyKey)) {
+    return { ok: true, balance: currentBalance, duplicated: true };
+  }
+  if (idempotencyKey) usedIdemKeys.add(idempotencyKey);
+
   const next = Math.max(0, currentBalance - amount);
   writeLocalBalance(userId, next);
   notify(next);
@@ -153,7 +170,11 @@ export async function consumeCoins(userId: string, amount: number, description: 
 
   try {
     const { error } = await supabaseExternal.rpc("consume_coins", {
-      p_user: userId, p_amount: amount, p_description: description, p_source: source, p_reference: reference ?? null,
+      _user_id: userId,
+      _amount: amount,
+      _source: source,
+      _description: description,
+      _idempotency_key: idempotencyKey ?? null,
     });
     if (error) throw error;
     return { ok: true, balance: next };
