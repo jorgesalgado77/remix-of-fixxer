@@ -24,21 +24,10 @@ function LoginComponent() {
     setLoading(true);
     setErrorMsg('');
 
-    // SE FOR O E-MAIL E SENHA DO ADMINISTRADOR MASTER, LIBERA ACESSO IMEDIATO
-    // 2. Normaliza o e-mail e verifica Administrador Master
-    const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('fixxer_user_email', normalizedEmail);
-        localStorage.setItem('fixxer_user_role', 'Admin');
-        localStorage.setItem('fixxer_user_category', 'admin');
-        localStorage.setItem('fixxer_authenticated', 'true');
-        
-        // Redirecionamento imediato para /admin
-        window.location.assign('/admin');
-      }
-      return;
-    }
+    // Autenticação exclusivamente via Supabase — sem bypass hardcoded.
+    // O papel de admin é determinado no servidor pela tabela public.user_roles.
+
+
 
 
 
@@ -56,37 +45,43 @@ function LoginComponent() {
 
       if (data?.session) {
         const normalizedEmail = email.trim().toLowerCase();
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('fixxer_user_email', normalizedEmail);
-          localStorage.setItem('fixxer_authenticated', 'true');
-        }
-        
+
+        // Papel de admin é resolvido server-side via public.user_roles (RLS-safe).
+        const { data: adminRow } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.session.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        const isAdmin = !!adminRow;
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', data.session.user.id)
           .maybeSingle();
-        
-        let role = profile?.role || 'user';
+
+        const role = isAdmin ? 'admin' : (profile?.role || 'user');
         if (typeof window !== 'undefined') {
+          localStorage.setItem('fixxer_user_email', normalizedEmail);
+          localStorage.setItem('fixxer_authenticated', 'true');
           localStorage.setItem('fixxer_user_role', role);
-          
-          // Mapeamento de categoria para redirecionamento
+
           let category = role.toLowerCase();
-          if (normalizedEmail === 'jorgericardosalgado@gmail.com') category = 'admin';
+          if (isAdmin) category = 'admin';
           else if (category.includes('lojista')) category = 'lojista';
           else if (category.includes('prestador')) category = 'prestador';
           else if (category.includes('parceiro') || category.includes('fornecedor')) category = 'parceiro';
           else if (category.includes('cliente') || category.includes('casual')) category = 'casual';
-          
+
           localStorage.setItem('fixxer_user_category', category);
           window.dispatchEvent(new Event('fixxer:category-change'));
         }
 
-
-        if (normalizedEmail === 'jorgericardosalgado@gmail.com') {
+        if (isAdmin) {
           window.location.replace('/admin');
         } else {
+
           const storedCategory = localStorage.getItem('fixxer_user_category');
           if (storedCategory === 'casual') window.location.replace('/dashboard/cliente');
           else if (storedCategory === 'lojista') window.location.replace('/dashboard/lojista');

@@ -31,23 +31,47 @@ function AuthenticatedLayout() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     const checkAuth = async () => {
-      const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
-      const storedRole = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
-      const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
-      
-      setEmail(storedEmail);
-      setRole(storedRole);
-
-      // Admin panel agora é derivado do pathname — nada a setar aqui
-
-
       const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
+
       if (!currentSession && !isAuthenticated) {
         navigate({ to: "/auth" as any });
+        return;
+      }
+
+      const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
+      const storedRole = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
+      setEmail(currentSession?.user?.email || storedEmail);
+      setRole(storedRole);
+
+      // Verificação de admin server-side (RLS + user_roles), nunca por email/localStorage.
+      if (currentSession?.user?.id) {
+        const { data: adminRow } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', currentSession.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        const serverAdmin = !!adminRow;
+        setIsAdmin(serverAdmin);
+        if (typeof window !== 'undefined') {
+          if (serverAdmin) localStorage.setItem('fixxer_user_role', 'admin');
+        }
+        // Bloqueia acesso a /admin quando não confirmado pelo servidor.
+        if (!serverAdmin && pathname.startsWith('/admin')) {
+          toast.error("Acesso restrito ao Administrador Master.");
+          navigate({ to: "/feed" as any });
+        }
+      } else {
+        setIsAdmin(false);
+        if (pathname.startsWith('/admin')) {
+          navigate({ to: "/auth" as any });
+        }
       }
     };
     checkAuth();
@@ -77,10 +101,10 @@ function AuthenticatedLayout() {
     return () => {
       supabaseExternal.removeChannel(channel);
     };
-  }, [navigate]);
+  }, [navigate, pathname]);
 
-  const isAdmin = email.trim() === 'jorgericardosalgado@gmail.com' || role.toLowerCase() === 'admin';
   const showAdminPanel = pathname.startsWith('/admin');
+
 
   const currentCategory = useCurrentCategory();
 
