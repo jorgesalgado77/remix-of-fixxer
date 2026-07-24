@@ -103,9 +103,15 @@ interface Props {
   value: PhotoSectionsValue;
   onChange: (next: PhotoSectionsValue) => void;
   limits?: Partial<PhotoLimits>;
+  /** Se preenchido, cobra moedas ao criar sessão extra ou foto excedente. */
+  chargeUserId?: string;
+  /** Nº de seções personalizadas grátis antes de cobrar 15 moedas por seção nova. */
+  freeSessionsQuota?: number;
+  /** Nº de fotos grátis por seção antes de cobrar 5 moedas por foto excedente. */
+  freePhotosPerSection?: number;
 }
 
-export function PhotoSectionsManager({ value, onChange, limits }: Props) {
+export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, freeSessionsQuota = 1, freePhotosPerSection = 6 }: Props) {
   const L: PhotoLimits = { ...DEFAULT_LIMITS, ...(limits ?? {}) };
 
   const safe: PhotoSectionsValue = {
