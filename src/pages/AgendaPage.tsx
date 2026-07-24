@@ -347,6 +347,7 @@ function AppointmentCard({
   appointment,
   userId,
   busy,
+  onOpen,
   onAccept,
   onCancel,
   onCheckIn,
@@ -355,6 +356,7 @@ function AppointmentCard({
   appointment: Appointment;
   userId: string | null;
   busy: boolean;
+  onOpen: () => void;
   onAccept: () => void;
   onCancel: () => void;
   onCheckIn: () => void;
