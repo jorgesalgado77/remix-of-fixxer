@@ -135,6 +135,16 @@ function RegisterComponent() {
           }
         }
 
+        // Attach referral (se veio de link /r/:code)
+        try {
+          const refResult = await attachReferralAfterSignup(authData.user.id);
+          if (refResult.attached) {
+            toast.success("Indicação registrada! Bem-vindo(a) ao FIXXER.");
+          }
+        } catch (refErr) {
+          console.warn("Erro ao anexar referral:", refErr);
+        }
+
         toast.success("Cadastro realizado!");
         
         // 4. Gravação no localStorage conforme requisito (Fixxer Auth Logic)
