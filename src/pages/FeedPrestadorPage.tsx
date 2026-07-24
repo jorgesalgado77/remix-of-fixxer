@@ -1117,74 +1117,25 @@ export default function FeedPrestadorPage() {
             )}
           </div>
 
-          <MacroBranchChips
-            value={null}
-            onChange={(id) => {
-              if (!id) { setSearch(""); return; }
-              const terms = getMacroSearchTerms(id);
-              setSearch(terms[0] ?? "");
-            }}
-            accent="#FF9F0A"
-          />
-
-
-
-          {/* FILTRO ROLAGEM HORIZONTAL */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {FILTERS.map((f) => {
-              const active = filter === f.key;
-              return (
-                <button
-                  key={f.key}
-                  onClick={() => setFilter(f.key)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
-                    active
-                      ? "bg-[#FF9F0A] text-black border-[#FF9F0A] shadow-[0_0_15px_rgba(255,159,10,0.3)]"
-                      : "bg-white/5 border-white/10 text-white hover:bg-white/10"
-                  }`}
-                >
-                  {f.icon}
-                  {f.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* FILTRO POR STATUS */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            <span className="text-[9px] uppercase tracking-widest text-white/40 font-black shrink-0">
-              Status:
-            </span>
-            {STATUS_FILTERS.map((s) => {
-              const active = statusFilter === s.key;
-              const color = s.key === "todos" ? "#FF9F0A" : FEED_STATUS_COLOR[s.key];
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => setStatusFilter(s.key)}
-                  className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap tracking-widest border transition-all"
-                  style={
-                    active
-                      ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
-                      : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
-                  }
-                >
-                  {s.label}
-                </button>
-              );
-            })}
-          </div>
         </div>
       </header>
 
-      <RadiusFilter
-        category="prestador"
+      <FeedFiltersBar
         accent="#FF9F0A"
+        category="prestador"
+        onMacroSearchTerm={(term) => setSearch(term ?? "")}
+        pillLabel="Especialidade"
+        pillOptions={FILTERS.map((f) => ({ key: f.key, label: f.label, icon: f.icon }))}
+        pillValue={filter}
+        onPillChange={(k) => setFilter(k as typeof filter)}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
         badge={{
           icon: "⚡",
           text: "4 O.S. de Montagem e Medição abertas no raio de 15 km",
         }}
       />
+
 
       {/* CONTEÚDO */}
       <main className="max-w-5xl mx-auto px-4 py-4 space-y-4">
