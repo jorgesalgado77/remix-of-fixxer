@@ -158,7 +158,7 @@ function AuthenticatedLayout() {
         </div>
       </nav>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1">
         {/* RENDERIZAÇÃO DIRETA DO PAINEL ADMIN MASTER SE FOR O ADMINISTRADOR */}
         {showAdminPanel && isAdmin ? (
           <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
