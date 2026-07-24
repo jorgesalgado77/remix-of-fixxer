@@ -8,6 +8,7 @@ import {
   Bell,
   ArchiveRestore,
   Paperclip,
+  CalendarPlus,
   Loader2,
   X,
   FileText,
@@ -40,6 +41,7 @@ import { downloadAttachment } from "@/lib/attachment-download";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory } from "@/lib/user-category";
+import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
 
 function roleToCategory(role: string | null | undefined): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -130,6 +132,7 @@ function ConversationPage() {
   const [muted, setMuted] = useState(false);
   const [archived, setArchived] = useState(false);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   // Anexos + progresso (multi-arquivo)
   const [pendingFiles, setPendingFiles] = useState<File[]>(() => getDraftFiles(peerId));
@@ -1083,6 +1086,14 @@ function ConversationPage() {
             >
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
             </button>
+            <button
+              onClick={() => setScheduleOpen(true)}
+              title="Propor agendamento"
+              className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center"
+              aria-label="Propor agendamento"
+            >
+              <CalendarPlus className="w-4 h-4" />
+            </button>
             <textarea
               value={content}
               onChange={(e) => { setContent(e.target.value); setDraftText(peerId, e.target.value); sendTyping(); }}
@@ -1105,6 +1116,14 @@ function ConversationPage() {
           </div>
         </div>
       </div>
+      {scheduleOpen && (
+        <ScheduleAppointmentModal
+          open={scheduleOpen}
+          peerId={peerId}
+          peerName={peerName}
+          onClose={() => setScheduleOpen(false)}
+        />
+      )}
     </div>
   );
 }
