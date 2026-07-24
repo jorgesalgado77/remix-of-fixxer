@@ -1,4 +1,5 @@
-import { X, Bookmark, MessageSquare, MapPin, Clock, Star, Play } from "lucide-react";
+import { useState } from "react";
+import { X, Bookmark, MessageSquare, MapPin, Clock, Star, Play, Lock, Coins, Loader2, Zap } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import {
@@ -32,16 +33,37 @@ export function FeedDetailsModal({
   onSave,
   onChat,
   onClose,
+  locked = false,
+  unlockCost = 5,
+  onUnlock,
+  onCandidatar,
 }: {
   data: FeedDetailsData | null;
   isSaved: boolean;
   onSave: () => void;
   onChat: () => void;
   onClose: () => void;
+  /** Se true, oculta descrição, contato e chat até desbloquear (custa `unlockCost` moedas). */
+  locked?: boolean;
+  unlockCost?: number;
+  onUnlock?: () => Promise<boolean> | boolean;
+  /** Aparece quando desbloqueado — botão "⚡ Candidatar-se". */
+  onCandidatar?: () => void;
 }) {
+  const [unlocking, setUnlocking] = useState(false);
   if (!data) return null;
   const theme = getCategoryTheme(data.category);
   const statusColor = data.status ? FEED_STATUS_COLOR[data.status] : null;
+
+  const doUnlock = async () => {
+    if (!onUnlock) return;
+    try {
+      setUnlocking(true);
+      await onUnlock();
+    } finally {
+      setUnlocking(false);
+    }
+  };
 
   return (
     <div
@@ -151,17 +173,40 @@ export function FeedDetailsModal({
           </div>
 
           {/* Título + descrição */}
-          <div>
+          <div className="relative">
             <h2 className="text-lg sm:text-xl font-black text-white uppercase italic tracking-tight leading-tight">
               {data.title}
             </h2>
-            <p className="mt-2 text-sm text-white/75 leading-relaxed whitespace-pre-line">
+            <p
+              className={`mt-2 text-sm text-white/75 leading-relaxed whitespace-pre-line ${
+                locked ? "blur-sm select-none pointer-events-none max-h-24 overflow-hidden" : ""
+              }`}
+            >
               {data.description}
             </p>
+            {locked && (
+              <div className="mt-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-center space-y-2">
+                <div className="inline-flex items-center gap-2 text-amber-300 text-[11px] font-black uppercase tracking-widest">
+                  <Lock className="w-3.5 h-3.5" /> Dados completos bloqueados
+                </div>
+                <p className="text-[11px] text-white/70">
+                  Desbloqueie por <b className="text-amber-300">{unlockCost} moedas</b> para ver descrição
+                  completa, contato direto e liberar o chat.
+                </p>
+                <button
+                  onClick={doUnlock}
+                  disabled={unlocking || !onUnlock}
+                  className="w-full py-2.5 rounded-xl bg-amber-500 text-black text-[11px] font-black uppercase tracking-widest disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  {unlocking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Coins className="w-3.5 h-3.5" />}
+                  Ver Detalhes (−{unlockCost} moedas)
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Meta rows */}
-          {data.metaRows && data.metaRows.length > 0 && (
+          {!locked && data.metaRows && data.metaRows.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {data.metaRows.map((m, i) => (
                 <div
@@ -178,7 +223,7 @@ export function FeedDetailsModal({
           )}
 
           {/* Mídia */}
-          {data.media && data.media.length > 0 && (
+          {!locked && data.media && data.media.length > 0 && (
             <div className="grid grid-cols-2 gap-2">
               {data.media.map((m, i) =>
                 m.type === "video" ? (
@@ -234,12 +279,24 @@ export function FeedDetailsModal({
           </button>
           <button
             onClick={onChat}
-            className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:opacity-90"
+            disabled={locked}
+            className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ ...theme.bgSolid, ...theme.glow }}
+            title={locked ? "Desbloqueie os detalhes para conversar" : undefined}
           >
-            <MessageSquare className="w-4 h-4" />
-            {data.ctaLabel ?? "Entrar em contato"}
+            {locked ? <Lock className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+            {locked ? "💬 Chat Direto (bloqueado)" : (data.ctaLabel ?? "💬 Chat Direto")}
           </button>
+          {onCandidatar && (
+            <button
+              onClick={onCandidatar}
+              disabled={locked}
+              className="py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 bg-[#00FF87] text-black disabled:opacity-40 disabled:cursor-not-allowed"
+              title={locked ? "Desbloqueie os detalhes para se candidatar" : "Candidatar-se a esta oportunidade"}
+            >
+              <Zap className="w-4 h-4" /> Candidatar-se
+            </button>
+          )}
         </div>
       </div>
     </div>

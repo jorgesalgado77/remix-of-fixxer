@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Star, ShieldCheck, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Star, ShieldCheck, Loader2, Coins, ChevronDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,12 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchMonetizationConfig,
+  getActionCost,
+  spendCoinsForAction,
+} from "@/lib/monetization";
+import { getCachedBalance, subscribeBalance } from "@/lib/coins";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -24,6 +30,18 @@ export function ReviewModal({ isOpen, onClose, targetId, targetName, userRole, o
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [balance, setBalance] = useState<number>(getCachedBalance());
+  const [cost, setCost] = useState<number>(getActionCost("reply_review")?.coins ?? 10);
+  const [showCostPanel, setShowCostPanel] = useState(false);
+
+  useEffect(() => {
+    fetchMonetizationConfig().then(() => {
+      setCost(getActionCost("reply_review")?.coins ?? 10);
+    });
+    const unsub = subscribeBalance((b) => setBalance(b));
+    return unsub;
+  }, []);
+
   const getMetrics = () => {
     if (userRole === "lojista") return ["Pontualidade", "Qualidade", "Limpeza"];
     if (userRole === "prestador") return ["Informações", "Recepção"];
@@ -35,6 +53,21 @@ export function ReviewModal({ isOpen, onClose, targetId, targetName, userRole, o
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
+
+      // Cobrança de moedas por resposta/avaliação (configurável em /admin/monetizacao)
+      if (cost > 0) {
+        const spent = await spendCoinsForAction(user.id, "reply_review", orderId);
+        if (!spent.ok) {
+          if (spent.reason === "insufficient") {
+            toast.error(`Saldo insuficiente. Necessário: ${cost} moedas.`);
+          } else if (spent.reason === "disabled") {
+            // ação desabilitada globalmente pelo admin — segue sem cobrar
+          } else {
+            toast.error("Falha ao debitar moedas", { description: spent.error });
+            setLoading(false); return;
+          }
+        }
+      }
 
       const { error } = await supabase
         .from('reviews')
@@ -114,15 +147,38 @@ export function ReviewModal({ isOpen, onClose, targetId, targetName, userRole, o
               Sua avaliação ajuda a manter a comunidade FIXXER segura e transparente.
             </p>
           </div>
+
+          {/* Sanfona de custo em moedas */}
+          <div className="rounded-2xl bg-amber-500/5 border border-amber-500/20 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowCostPanel((v) => !v)}
+              className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
+            >
+              <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-amber-300">
+                <Coins className="w-3.5 h-3.5" /> Custo desta ação: {cost} moedas
+              </span>
+              <ChevronDown className={`w-4 h-4 text-amber-300 transition ${showCostPanel ? "rotate-180" : ""}`} />
+            </button>
+            {showCostPanel && (
+              <div className="px-4 pb-3 space-y-1 text-[10px] text-white/70">
+                <p>Serão debitadas <b className="text-amber-300">{cost} moedas</b> ao confirmar a avaliação.</p>
+                <p>Seu saldo atual: <b className="text-white">{balance} moedas</b>.</p>
+                {balance < cost && (
+                  <p className="text-[10px] text-[#FF3B30] font-black uppercase">⚠️ Saldo insuficiente — recarregue na Loja de Moedas.</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || balance < cost}
             className="w-full py-4 rounded-2xl bg-[#00FF87] text-black font-black uppercase italic text-xs hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar Avaliação"}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Confirmar (−${cost} moedas)`}
           </button>
         </DialogFooter>
       </DialogContent>
