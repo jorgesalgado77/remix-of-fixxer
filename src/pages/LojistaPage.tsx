@@ -2539,7 +2539,11 @@ function ProfileView({
                         </DndContext>
                     </div>
 
-                    <PhotoSectionsManager value={photoSections} onChange={setPhotoSections} />
+                    <PhotoSectionsManager
+                        value={photoSections}
+                        onChange={setPhotoSections}
+                        chargeUserId={typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_id') || undefined) : undefined}
+                    />
 
                     <div className="space-y-4 pt-6 border-t border-white/5">
 
