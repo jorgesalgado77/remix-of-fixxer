@@ -156,8 +156,8 @@ export function CoinFeedbackBridge() {
 
       {(extractOpen || packsOpen) && (
         <Suspense fallback={null}>
-          {extractOpen && <CoinsExtractModal open={extractOpen} onClose={() => setExtractOpen(false)} />}
-          {packsOpen   && <CoinPacksStoreModal open={packsOpen}   onClose={() => setPacksOpen(false)} />}
+          {extractOpen && <CoinsExtractModal onClose={() => setExtractOpen(false)} />}
+          {packsOpen   && <CoinPacksStoreModal onClose={() => setPacksOpen(false)} />}
         </Suspense>
       )}
     </>
