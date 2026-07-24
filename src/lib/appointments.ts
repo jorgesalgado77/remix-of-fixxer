@@ -124,11 +124,42 @@ export async function acceptAppointment(id: string) {
 }
 
 export async function proposeReschedule(id: string, newDateISO: string) {
+  const { data: apt } = await supabaseExternal
+    .from("appointments")
+    .select("proposer_id, invitee_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { data: userData } = await supabaseExternal.auth.getUser();
+  const currentUid = userData.user?.id ?? null;
+
   const { error } = await supabaseExternal
     .from("appointments")
     .update({ scheduled_at: newDateISO, status: "rescheduled" })
     .eq("id", id);
   if (error) throw error;
+
+  // Notifica a contraparte
+  const target =
+    apt && currentUid && apt.proposer_id === currentUid ? apt.invitee_id : apt?.proposer_id;
+  if (target) {
+    try {
+      const { sendPushToUser } = await import("./push-client");
+      const when = new Date(newDateISO).toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      void sendPushToUser({
+        userId: target,
+        title: "🔄 Novo horário proposto",
+        body: `Sugestão de reagendamento para ${when}.`,
+        url: "/agenda",
+        tag: `appt-reschedule-${id}`,
+      });
+    } catch { /* ignore */ }
+  }
 }
 
 export async function cancelAppointment(id: string) {
@@ -139,24 +170,51 @@ export async function cancelAppointment(id: string) {
   if (error) throw error;
 }
 
-export async function checkIn(id: string): Promise<void> {
+export async function checkIn(id: string, photos: string[] = []): Promise<void> {
   const coords = await getCurrentCoords();
+  const { data: apt } = await supabaseExternal
+    .from("appointments")
+    .select("proposer_id, invitee_id, checkin_photos")
+    .eq("id", id)
+    .maybeSingle();
+
+  const update: Record<string, any> = {
+    status: "checked_in",
+    checkin_at: new Date().toISOString(),
+    checkin_lat: coords?.lat ?? null,
+    checkin_lng: coords?.lng ?? null,
+  };
+  if (photos.length > 0) update.checkin_photos = photos;
+
   const { error } = await supabaseExternal
     .from("appointments")
-    .update({
-      status: "checked_in",
-      checkin_at: new Date().toISOString(),
-      checkin_lat: coords?.lat ?? null,
-      checkin_lng: coords?.lng ?? null,
-    })
+    .update(update)
     .eq("id", id);
   if (error) throw error;
+
+  // Push à contraparte
+  const { data: userData } = await supabaseExternal.auth.getUser();
+  const currentUid = userData.user?.id ?? null;
+  const target =
+    apt && currentUid && apt.proposer_id === currentUid ? apt.invitee_id : apt?.proposer_id;
+  if (target) {
+    try {
+      const { sendPushToUser } = await import("./push-client");
+      void sendPushToUser({
+        userId: target,
+        title: "📍 Check-in realizado",
+        body: coords ? "Prestador chegou ao local do serviço." : "Check-in registrado no compromisso.",
+        url: "/agenda",
+        tag: `appt-checkin-${id}`,
+      });
+    } catch { /* ignore */ }
+  }
 }
 
 export async function checkOut(id: string, photos: string[] = []): Promise<void> {
   const { data: apt } = await supabaseExternal
     .from("appointments")
-    .select("proposer_id, invitee_id, type")
+    .select("proposer_id, invitee_id, type, deposit_amount")
     .eq("id", id)
     .maybeSingle();
 
@@ -170,11 +228,14 @@ export async function checkOut(id: string, photos: string[] = []): Promise<void>
     .eq("id", id);
   if (error) throw error;
 
-  // Dispara evento global para solicitar liberação de custódia (escrow)
+  // Liberação de custódia server-side (RPC verifica autorização)
+  const escrowResult = await releaseEscrowForAppointment(id);
+
+  // Evento local (compat)
   if (typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent("fixxer:escrow-release-request", {
-        detail: { appointment_id: id },
+        detail: { appointment_id: id, released: escrowResult.released },
       }),
     );
   }
@@ -183,14 +244,40 @@ export async function checkOut(id: string, photos: string[] = []): Promise<void>
   if (apt?.proposer_id) {
     try {
       const { sendPushToUser } = await import("./push-client");
+      const body = escrowResult.released
+        ? "Check-out registrado. Custódia liberada para o prestador."
+        : "Check-out registrado. Nenhum sinal em custódia para liberar.";
       void sendPushToUser({
         userId: apt.proposer_id,
         title: "🏁 Serviço concluído",
-        body: "Check-out registrado. Custódia liberada para o prestador.",
+        body,
         url: "/agenda",
         tag: `appt-completed-${id}`,
       });
     } catch { /* ignore */ }
+  }
+}
+
+/**
+ * Solicita ao backend a liberação da custódia vinculada ao compromisso.
+ * A função RPC `public.release_escrow_for_appointment` valida:
+ *   - o usuário atual é proposer ou invitee do agendamento
+ *   - o agendamento está com status `completed`
+ *   - existe um registro de escrow pendente
+ * Falha silenciosa (retorna released=false) quando não há RPC/tabela — o UI segue.
+ */
+export async function releaseEscrowForAppointment(
+  appointmentId: string,
+): Promise<{ released: boolean; amount?: number; error?: string }> {
+  try {
+    const { data, error } = await supabaseExternal.rpc("release_escrow_for_appointment", {
+      _appointment_id: appointmentId,
+    });
+    if (error) return { released: false, error: error.message };
+    const row = Array.isArray(data) ? data[0] : data;
+    return { released: !!row?.released, amount: row?.amount };
+  } catch (e: any) {
+    return { released: false, error: e?.message };
   }
 }
 

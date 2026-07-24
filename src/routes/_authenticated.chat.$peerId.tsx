@@ -42,6 +42,7 @@ import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory } from "@/lib/user-category";
 import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
+import { ChatAppointmentsBanner } from "@/components/ChatAppointmentsBanner";
 
 function roleToCategory(role: string | null | undefined): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -787,6 +788,7 @@ function ConversationPage() {
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <ChatAppointmentsBanner userId={userId} peerId={peerId} />
         {hasMore && !loading && messages.length > 0 && (
           <div className="text-center">
             <button
