@@ -30,6 +30,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 
 // =============================================================================
 // TIPOS
