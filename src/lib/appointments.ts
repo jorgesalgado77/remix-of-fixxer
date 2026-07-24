@@ -124,6 +124,12 @@ export async function checkIn(id: string): Promise<void> {
 }
 
 export async function checkOut(id: string, photos: string[] = []): Promise<void> {
+  const { data: apt } = await supabaseExternal
+    .from("appointments")
+    .select("proposer_id, invitee_id, type")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabaseExternal
     .from("appointments")
     .update({
@@ -141,6 +147,20 @@ export async function checkOut(id: string, photos: string[] = []): Promise<void>
         detail: { appointment_id: id },
       }),
     );
+  }
+
+  // Push ao proponente (best-effort)
+  if (apt?.proposer_id) {
+    try {
+      const { sendPushToUser } = await import("./push-client");
+      void sendPushToUser({
+        userId: apt.proposer_id,
+        title: "🏁 Serviço concluído",
+        body: "Check-out registrado. Custódia liberada para o prestador.",
+        url: "/agenda",
+        tag: `appt-completed-${id}`,
+      });
+    } catch { /* ignore */ }
   }
 }
 
