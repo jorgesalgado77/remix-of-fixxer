@@ -55,7 +55,16 @@ function ProfilePage() {
         postId ? supabase.from('feed_posts').select('*').eq('id', postId).single() : Promise.resolve({ data: null })
       ]);
       
-      if (profileRes.data) setProfile(profileRes.data);
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+        // Sincroniza raio de atuação salvo para uso como padrão nos feeds
+        if (!profileId && profileRes.data.service_radius_km != null) {
+          try {
+            const cat = roleToCategory(profileRes.data.role);
+            localStorage.setItem(`fixxer_radius_${cat}`, String(profileRes.data.service_radius_km));
+          } catch { /* noop */ }
+        }
+      }
       if (brandsRes.data) setBrands(brandsRes.data.map(b => b.name));
       if (postRes?.data) setTargetPost(postRes.data);
       setLoading(false);
