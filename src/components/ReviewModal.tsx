@@ -30,6 +30,18 @@ export function ReviewModal({ isOpen, onClose, targetId, targetName, userRole, o
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [balance, setBalance] = useState<number>(getCachedBalance());
+  const [cost, setCost] = useState<number>(getActionCost("reply_review")?.coins ?? 10);
+  const [showCostPanel, setShowCostPanel] = useState(false);
+
+  useEffect(() => {
+    fetchMonetizationConfig().then(() => {
+      setCost(getActionCost("reply_review")?.coins ?? 10);
+    });
+    const unsub = subscribeBalance((b) => setBalance(b));
+    return unsub;
+  }, []);
+
   const getMetrics = () => {
     if (userRole === "lojista") return ["Pontualidade", "Qualidade", "Limpeza"];
     if (userRole === "prestador") return ["Informações", "Recepção"];
@@ -41,6 +53,21 @@ export function ReviewModal({ isOpen, onClose, targetId, targetName, userRole, o
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
+
+      // Cobrança de moedas por resposta/avaliação (configurável em /admin/monetizacao)
+      if (cost > 0) {
+        const spent = await spendCoinsForAction(user.id, "reply_review", orderId);
+        if (!spent.ok) {
+          if (spent.reason === "insufficient") {
+            toast.error(`Saldo insuficiente. Necessário: ${cost} moedas.`);
+          } else if (spent.reason === "disabled") {
+            // ação desabilitada globalmente pelo admin — segue sem cobrar
+          } else {
+            toast.error("Falha ao debitar moedas", { description: spent.error });
+            setLoading(false); return;
+          }
+        }
+      }
 
       const { error } = await supabase
         .from('reviews')
