@@ -537,7 +537,7 @@ export function LojistaPublicProfilePage() {
               <div className="relative shrink-0">
                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-black border-2 border-primary overflow-hidden flex items-center justify-center" style={{ boxShadow: `0 0 25px rgba(${theme.rgb}, 0.40)` }}>
                   {profile?.logo_url ? (
-                    <img src={profile.logo_url} alt={profile.company_name} className="w-full h-full object-contain p-2" />
+                    <img src={profile.logo_url} alt={profile.company_name} loading="lazy" decoding="async" className="w-full h-full object-contain p-2" />
                   ) : (
                     <span className="text-3xl font-black text-primary italic">F</span>
                   )}
@@ -1215,7 +1215,7 @@ function ReviewCard({ review }: { review: Review }) {
     <div className="bg-[#1A1A1B] border border-white/10 rounded-2xl p-5 space-y-3">
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full bg-black border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-          {review.reviewer_avatar ? <img src={review.reviewer_avatar} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-muted-foreground" />}
+          {review.reviewer_avatar ? <img src={review.reviewer_avatar} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-muted-foreground" />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
