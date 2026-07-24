@@ -16,6 +16,9 @@ import {
   RefreshCw,
   History,
   ImagePlus,
+  FileDown,
+  Gavel,
+  AlertTriangle,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
@@ -33,8 +36,19 @@ import {
   type Appointment,
   type AppointmentEvent,
 } from "@/lib/appointments";
+import {
+  fetchDisputes,
+  openDispute,
+  withdrawDispute,
+  DISPUTE_STATUS_LABEL,
+  DISPUTE_ACTION_LABEL,
+  type AppointmentDispute,
+  type DisputeAction,
+} from "@/lib/appointment-disputes";
+import { generateAppointmentPdf, downloadPdf, summarizeRefund } from "@/lib/appointment-pdf";
 import { CheckoutPhotosModal } from "@/components/CheckoutPhotosModal";
 import { useMediaUpload } from "@/hooks/use-media-upload";
+
 
 export default function AppointmentDetailPage() {
   const { id } = useParams({ from: "/_authenticated/agenda/$id" });
