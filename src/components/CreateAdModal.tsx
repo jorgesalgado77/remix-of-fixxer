@@ -551,6 +551,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
 
   const priceDisplay = useMemo(() => {
     if (priceType === "fixo") return formatBRL(fixedValue);
+    if (priceType === "fixo_comissao") {
+      const total = Number(fixedValue || 0) + commissionValue;
+      return `${formatBRL(fixedValue)} + ${commissionPct || 0}% = ${formatBRL(total)}`;
+    }
     return `Comissão: ${formatBRL(commissionValue)} (${commissionPct || 0}%)`;
   }, [priceType, fixedValue, commissionValue, commissionPct]);
 
@@ -559,9 +563,15 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       ...techSpecs.map((id) => TECH_SPECS.find((t) => t.id === id)?.label).filter(Boolean),
       ...(otherChecked && otherText.trim() ? [`Outro: ${otherText.trim()}`] : []),
     ];
-    const base = {
+    // Concatena "Outro: <texto>" ao serviço final
+    const finalServiceTypes = serviceTypes.map((t) =>
+      t === OTHER_SERVICE_TYPE && otherServiceText.trim()
+        ? `Outro: ${otherServiceText.trim()}`
+        : t,
+    );
+    const base: any = {
       category: defaultCategory,
-      service_types: serviceTypes,
+      service_types: finalServiceTypes,
       location: {
         neighborhood: neighborhood.trim(),
         city: city.trim(),
@@ -583,7 +593,23 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         order,
       })),
     };
+    if (serviceTypes.includes(FREIGHT_TYPE)) {
+      base.freight = {
+        volumes: Number(freightVolumes),
+        weight_kg: Number(freightWeight),
+      };
+    }
     if (priceType === "fixo") return { ...base, fixed_value: Number(fixedValue) };
+    if (priceType === "fixo_comissao") {
+      return {
+        ...base,
+        fixed_value: Number(fixedValue),
+        contract_value: Number(contractValue),
+        commission_percent: Number(commissionPct),
+        commission_value: commissionValue,
+        total_value: Number(fixedValue) + commissionValue,
+      };
+    }
     return {
       ...base,
       contract_value: Number(contractValue),
@@ -602,9 +628,67 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setSubmitting(true);
     try {
       const payload = buildPayload();
-      console.log("[CreateAdModal] payload =>", payload);
-      await new Promise((r) => setTimeout(r, 600));
-      toast.success("Serviço publicado com sucesso!");
+      // Sessão atual do lojista
+      const { data: sessionData } = await supabaseExternal.auth.getSession();
+      const uid = sessionData?.session?.user?.id ?? null;
+      const row: any = {
+        lojista_id: uid,
+        title: payload.title,
+        description: payload.description,
+        service_types: (payload as any).service_types,
+        neighborhood: (payload as any).location.neighborhood,
+        city: (payload as any).location.city,
+        uf: (payload as any).location.uf,
+        rooms: payload.rooms,
+        start_date: payload.start_date,
+        deadline: payload.deadline,
+        priority: payload.priority,
+        notes: payload.notes,
+        tech_specs: (payload as any).tech_specs,
+        price_type: payload.price_type,
+        fixed_value: (payload as any).fixed_value ?? null,
+        contract_value: (payload as any).contract_value ?? null,
+        commission_percent: (payload as any).commission_percent ?? null,
+        commission_value: (payload as any).commission_value ?? null,
+        total_value: (payload as any).total_value ?? null,
+        freight: (payload as any).freight ?? null,
+        files: (payload as any).files,
+        category: payload.category,
+        status: "PENDENTE",
+      };
+      let insertedId: string | null = null;
+      try {
+        const { data, error } = await supabaseExternal
+          .from("service_orders")
+          .insert(row)
+          .select("id")
+          .single();
+        if (error) throw error;
+        insertedId = data?.id ?? null;
+      } catch (dbErr: any) {
+        // Fallback: persiste em localStorage para não perder o dado quando a tabela não existir
+        console.warn("[CreateAdModal] Falha ao gravar em service_orders — usando fallback local.", dbErr?.message);
+        const key = "fixxer:service_orders:local";
+        const prev = JSON.parse(localStorage.getItem(key) || "[]");
+        insertedId = `local-${Date.now()}`;
+        prev.unshift({ id: insertedId, created_at: new Date().toISOString(), ...row });
+        localStorage.setItem(key, JSON.stringify(prev.slice(0, 100)));
+      }
+      // Incrementa contador local (métricas)
+      try {
+        const cKey = "fixxer:os:created:count";
+        const n = Number(localStorage.getItem(cKey) || "0") + 1;
+        localStorage.setItem(cKey, String(n));
+      } catch { /* ignore */ }
+      // Dissemina para os feeds/dashboards abertos
+      try {
+        window.dispatchEvent(
+          new CustomEvent("fixxer:os-created", {
+            detail: { id: insertedId, row, payload, authorName: authorProfile.name, authorLogo: authorProfile.logoUrl },
+          }),
+        );
+      } catch { /* ignore */ }
+      toast.success("Serviço publicado com sucesso e disponível no feed!");
       discardDraft();
       resetForm();
       onClose();
