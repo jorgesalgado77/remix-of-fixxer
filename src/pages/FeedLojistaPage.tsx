@@ -11,6 +11,8 @@ import {
   type StatusFilterKey,
 } from "@/lib/feed-status";
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
+import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
+import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
 
 import {
   ArrowLeft,
