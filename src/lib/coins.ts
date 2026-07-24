@@ -205,15 +205,20 @@ export async function creditCoins(
   amount: number,
   description: string,
   source: CoinTxSource = "purchase_pack",
-  reference?: string,
+  refOrOpts?: string | CoinOpOptions,
   idempotencyKey?: string,
 ): Promise<{ ok: boolean; balance: number; duplicated?: boolean; error?: string }> {
   if (amount <= 0) return { ok: true, balance: currentBalance };
 
-  if (idempotencyKey && usedIdemKeys.has(idempotencyKey)) {
+  const opts: CoinOpOptions = typeof refOrOpts === "string"
+    ? { reference: refOrOpts, idempotencyKey }
+    : (refOrOpts ?? { idempotencyKey });
+  const idem = opts.idempotencyKey ?? idempotencyKey;
+
+  if (idem && usedIdemKeys.has(idem)) {
     return { ok: true, balance: currentBalance, duplicated: true };
   }
-  if (idempotencyKey) usedIdemKeys.add(idempotencyKey);
+  if (idem) usedIdemKeys.add(idem);
 
   const next = currentBalance + amount;
   writeLocalBalance(userId, next);
@@ -222,7 +227,7 @@ export async function creditCoins(
     id: `local_${Date.now()}`,
     user_id: userId,
     type: "credit", source, amount, description,
-    reference: reference ?? null,
+    reference: opts.reference ?? null,
     created_at: new Date().toISOString(),
   };
   writeLocalTx(userId, [tx, ...readLocalTx(userId)]);
@@ -234,7 +239,11 @@ export async function creditCoins(
       _amount: amount,
       _source: source,
       _description: description,
-      _idempotency_key: idempotencyKey ?? null,
+      _idempotency_key: idem ?? null,
+      _operation: opts.operation ?? null,
+      _origin: opts.origin ?? "client",
+      _metadata: opts.metadata ?? null,
+      _reference: opts.reference ?? null,
     });
     if (error) throw error;
     return { ok: true, balance: next };
