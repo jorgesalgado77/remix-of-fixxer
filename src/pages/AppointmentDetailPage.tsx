@@ -386,7 +386,22 @@ export default function AppointmentDetailPage() {
             ))}
           </div>
         </section>
+
+        {/* Contestações / Recursos */}
+        <DisputesSection
+          disputes={disputes}
+          userId={userId}
+          onWithdraw={async (id) => {
+            await withBusy(`with-${id}`, async () => {
+              await withdrawDispute(id);
+              toast.success("Contestação retirada.");
+              load();
+            });
+          }}
+          onOpenNew={() => setDisputeOpen(true)}
+        />
       </div>
+
 
       {/* Modal de cancelamento */}
       {cancelOpen && (
