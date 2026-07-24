@@ -877,9 +877,9 @@ function ProfilePage() {
                   </div>
                   <ActivityBranchSelector
                     value={(profile?.business_category || '').split(',').map((s: string) => s.trim()).filter(Boolean)}
-                    onChange={(next) => setProfile({ ...profile, business_category: next.join(',') })}
+                    onChange={(next: string[]) => setProfile({ ...profile, business_category: next.join(',') })}
                     customValue={(profile?.custom_branch || '').split('||').map((s: string) => s.trim()).filter(Boolean)}
-                    onCustomChange={(next) => setProfile({ ...profile, custom_branch: next.join('||') })}
+                    onCustomChange={(next: string[]) => setProfile({ ...profile, custom_branch: next.join('||') })}
                   />
                 </div>
               )}
