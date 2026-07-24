@@ -17,6 +17,7 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { fixAuthAndPreview } from "../lib/preview-fixer";
+import { subscribeBlockedStatus } from "../lib/blocked-guard";
 import { useContextualCategory, getCategoryCssVars } from "../lib/user-category";
 
 function NotFoundComponent() {
