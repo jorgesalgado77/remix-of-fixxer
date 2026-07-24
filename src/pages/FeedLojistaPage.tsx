@@ -526,6 +526,7 @@ export default function FeedLojistaPage() {
   const [deleteFor, setDeleteFor] = useState<FeedPost | null>(null);
   const [proposalValue, setProposalValue] = useState("");
   const [proposalMsg, setProposalMsg] = useState("");
+  const [proposalError, setProposalError] = useState<string | null>(null);
 
   // Paginação por scroll infinito
   const [page, setPage] = useState(1);
