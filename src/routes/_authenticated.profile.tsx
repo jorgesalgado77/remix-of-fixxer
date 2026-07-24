@@ -993,6 +993,7 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Camera className="w-3 h-3" /> Galeria de Imagens
+                    <span className="ml-auto text-[9px] text-amber-400/90">💰 6 grátis · +5 moedas/foto extra</span>
                   </h4>
                   <div className="columns-2 gap-3 space-y-3">
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'image').map((img: any, i: number) => (
