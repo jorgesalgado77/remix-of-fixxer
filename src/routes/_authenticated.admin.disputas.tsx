@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Gavel, Loader2, Filter, ShieldCheck, CheckCircle2, XCircle, Eye, ExternalLink } from "lucide-react";
+import { ArrowLeft, Gavel, Loader2, Filter, ShieldCheck, CheckCircle2, XCircle, Eye, ExternalLink, Zap, DollarSign, AlarmClock } from "lucide-react";
 import {
   listAllDisputes,
   resolveDispute,
@@ -11,6 +11,9 @@ import {
   type DisputeWithContext,
 } from "@/lib/appointment-disputes";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+
+const DAY_MS = 86400_000;
+const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS);
 
 export const Route = createFileRoute("/_authenticated/admin/disputas")({
   component: AdminDisputesPage,
