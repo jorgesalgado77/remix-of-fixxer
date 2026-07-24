@@ -1416,7 +1416,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             </div>
 
             {(priceType === "fixo" || priceType === "fixo_comissao") && (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                   Valor Fixo {priceType === "fixo_comissao" ? "Garantido " : ""}(R$)
                 </Label>
@@ -1427,20 +1427,39 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                     inputMode="numeric"
                     autoComplete="off"
                     value={fixedValue}
-                    onChange={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
+                    onChange={(e) => {
+                      setFixedValue(maskCurrencyBRL(e.target.value));
+                      clearFieldError("fixedValue");
+                    }}
                     onKeyDown={currencyKeyDown}
                     onFocus={currencyFocusSelect}
                     onBlur={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
+                    onPaste={currencyPaste((v) => {
+                      setFixedValue(v);
+                      clearFieldError("fixedValue");
+                    })}
                     placeholder="0,00"
-                    className="bg-white/5 border-white/10 text-white pl-10"
+                    aria-invalid={fieldErrors.fixedValue ? true : undefined}
+                    data-currency-error={fieldErrors.fixedValue ? "true" : undefined}
+                    className={`text-white pl-10 ${
+                      fieldErrors.fixedValue
+                        ? "bg-red-500/5 border-red-500/70 focus-visible:ring-red-500/40"
+                        : "bg-white/5 border-white/10"
+                    }`}
                   />
                 </div>
+                {fieldErrors.fixedValue && (
+                  <p role="alert" className="flex items-center gap-1 text-[11px] font-semibold text-red-400">
+                    <AlertCircle className="h-3 w-3 shrink-0" />
+                    {fieldErrors.fixedValue}
+                  </p>
+                )}
               </div>
             )}
 
             {(priceType === "comissao" || priceType === "fixo_comissao") && (
               <div className="grid md:grid-cols-3 gap-3">
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                     Valor do Contrato (R$)
                   </Label>
@@ -1451,16 +1470,35 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                       inputMode="numeric"
                       autoComplete="off"
                       value={contractValue}
-                      onChange={(e) => setContractValue(maskCurrencyBRL(e.target.value))}
+                      onChange={(e) => {
+                        setContractValue(maskCurrencyBRL(e.target.value));
+                        clearFieldError("contractValue");
+                      }}
                       onKeyDown={currencyKeyDown}
                       onFocus={currencyFocusSelect}
                       onBlur={(e) => setContractValue(maskCurrencyBRL(e.target.value))}
+                      onPaste={currencyPaste((v) => {
+                        setContractValue(v);
+                        clearFieldError("contractValue");
+                      })}
                       placeholder="50.000,00"
-                      className="bg-white/5 border-white/10 text-white pl-10"
+                      aria-invalid={fieldErrors.contractValue ? true : undefined}
+                      data-currency-error={fieldErrors.contractValue ? "true" : undefined}
+                      className={`text-white pl-10 ${
+                        fieldErrors.contractValue
+                          ? "bg-red-500/5 border-red-500/70 focus-visible:ring-red-500/40"
+                          : "bg-white/5 border-white/10"
+                      }`}
                     />
                   </div>
+                  {fieldErrors.contractValue && (
+                    <p role="alert" className="flex items-center gap-1 text-[11px] font-semibold text-red-400">
+                      <AlertCircle className="h-3 w-3 shrink-0" />
+                      {fieldErrors.contractValue}
+                    </p>
+                  )}
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                     Comissão (%)
                   </Label>
@@ -1470,10 +1508,25 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                     max="100"
                     step="0.1"
                     value={commissionPct}
-                    onChange={(e) => setCommissionPct(e.target.value)}
+                    onChange={(e) => {
+                      setCommissionPct(e.target.value);
+                      clearFieldError("commissionPct");
+                    }}
                     placeholder="Ex.: 5"
-                    className="bg-white/5 border-white/10 text-white"
+                    aria-invalid={fieldErrors.commissionPct ? true : undefined}
+                    data-field-error={fieldErrors.commissionPct ? "true" : undefined}
+                    className={`text-white ${
+                      fieldErrors.commissionPct
+                        ? "bg-red-500/5 border-red-500/70 focus-visible:ring-red-500/40"
+                        : "bg-white/5 border-white/10"
+                    }`}
                   />
+                  {fieldErrors.commissionPct && (
+                    <p role="alert" className="flex items-center gap-1 text-[11px] font-semibold text-red-400">
+                      <AlertCircle className="h-3 w-3 shrink-0" />
+                      {fieldErrors.commissionPct}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
