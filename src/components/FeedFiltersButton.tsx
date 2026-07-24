@@ -99,15 +99,48 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     return () => window.removeEventListener("fixxer:radius-change", handler as EventListener);
   }, [category]);
 
-  // Trava o scroll do body enquanto o modal está aberto.
+  // Trava o scroll do body enquanto o modal está aberto + Escape fecha.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  // Atalhos globais: "/" foca a 1ª busca visível, "f" abre o modal de filtros.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (isEditable) return;
+      if (e.key === "/") {
+        const input = document.querySelector<HTMLInputElement>(
+          'input[type="search"], input[placeholder*="uscar" i]',
+        );
+        if (input) {
+          e.preventDefault();
+          input.focus();
+        }
+      } else if (e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
 
   // Notifica externo quando o raio muda (após interação inicial).
   useEffect(() => {
@@ -482,13 +515,42 @@ export function FeedFiltersBar(
   },
 ) {
   const { onMacroSearchTerm, ...rest } = props;
-  const [macro, setMacro] = useState<string | null>(null);
+
+  // Hidrata inicial a partir de ?m=<macroId> na URL (persistência entre navegações).
+  const initialMacro =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("m")
+      : null;
+  const [macro, setMacro] = useState<string | null>(initialMacro);
+
+  // Emite o termo de busca associado ao macro restaurado da URL (na 1ª render).
+  useEffect(() => {
+    if (!initialMacro || !onMacroSearchTerm) return;
+    const terms = getMacroSearchTerms(initialMacro);
+    onMacroSearchTerm(terms[0] ?? null);
+    // Executa apenas uma vez na montagem
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const persistToUrl = (id: string | null) => {
+    if (typeof window === "undefined") return;
+    try {
+      const url = new URL(window.location.href);
+      if (id) url.searchParams.set("m", id);
+      else url.searchParams.delete("m");
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      /* noop */
+    }
+  };
+
   return (
     <FeedFiltersButton
       {...rest}
       macroValue={macro}
       onMacroChange={(id) => {
         setMacro(id);
+        persistToUrl(id);
         if (!id) {
           onMacroSearchTerm?.(null);
           return;
@@ -499,3 +561,4 @@ export function FeedFiltersBar(
     />
   );
 }
+

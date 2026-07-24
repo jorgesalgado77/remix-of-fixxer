@@ -12,20 +12,41 @@ export const Route = createFileRoute("/api/public/push/dispatch")({
             return Response.json({ error: "unauthorized" }, { status: 401 });
           }
 
+          const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+          const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+          if (!supabaseUrl || !anonKey) {
+            return Response.json({ error: "supabase não configurado" }, { status: 500 });
+          }
+
+          // 1b. Valida o JWT contra o Supabase Auth e extrai o sender_id real.
+          //     Evita que um token vazio/expirado passe adiante mesmo com header presente.
+          const whoRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+            headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+          });
+          if (!whoRes.ok) {
+            return Response.json({ error: "token inválido" }, { status: 401 });
+          }
+          const whoJson = (await whoRes.json().catch(() => null)) as { id?: string } | null;
+          const senderId = whoJson?.id;
+          if (!senderId) {
+            return Response.json({ error: "token sem identidade" }, { status: 401 });
+          }
+
           // 2. Payload
-          const payload = await request.json().catch(() => null) as
+          const payload = (await request.json().catch(() => null)) as
             | { userId: string; title: string; body: string; url?: string; tag?: string }
             | null;
           if (!payload || !payload.userId || !payload.title || !payload.body) {
             return Response.json({ error: "payload inválido" }, { status: 400 });
           }
 
-          // 3. Busca subscriptions do destinatário via RPC SECURITY DEFINER
-          const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-          const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-          if (!supabaseUrl || !anonKey) {
-            return Response.json({ error: "supabase não configurado" }, { status: 500 });
+          // Limites defensivos de tamanho (evita abuso do canal de notificação).
+          if (payload.title.length > 120 || payload.body.length > 400) {
+            return Response.json({ error: "payload excede limites" }, { status: 413 });
           }
+
+          // 3. Busca subscriptions do destinatário via RPC SECURITY DEFINER
+
 
           const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/get_user_push_subs`, {
             method: "POST",
@@ -68,7 +89,9 @@ export const Route = createFileRoute("/api/public/push/dispatch")({
             body: payload.body,
             url: payload.url || "/dashboard",
             tag: payload.tag || "fixxer-notif",
+            sender_id: senderId, // auditoria: quem originou o push
           });
+
 
           const results = await Promise.allSettled(
             subs.map((s) =>
