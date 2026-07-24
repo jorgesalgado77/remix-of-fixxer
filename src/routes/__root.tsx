@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { GlobalActionBar } from "@/components/GlobalActionBar";
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -185,7 +186,9 @@ function RootComponent() {
       {/* Cores --primary/--ring por categoria aplicadas globalmente (inclusive fora do layout autenticado). */}
       <div style={getCategoryCssVars(category)} className="contents">
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <GlobalErrorBoundary>
+          <Outlet />
+        </GlobalErrorBoundary>
         {!hideBar && <GlobalActionBar />}
         <Toaster closeButton duration={2000} />
       </div>
