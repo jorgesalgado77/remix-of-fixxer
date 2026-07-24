@@ -1033,7 +1033,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                         onChange={() => toggleServiceType(t)}
                         className="accent-current w-3.5 h-3.5"
                       />
-                      <Icon className="w-4 h-4 shrink-0" style={{ color: active ? theme.hex : "rgba(255,255,255,0.55)" }} />
+                      <Icon
+                        className="w-4 h-4 shrink-0"
+                        style={{ color: SERVICE_TYPE_COLOR[t] ?? "#94A3B8" }}
+                        strokeWidth={2.4}
+                      />
                       <span className="truncate">{label}</span>
                     </label>
                   );
