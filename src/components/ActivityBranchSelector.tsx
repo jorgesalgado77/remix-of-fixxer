@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import {
   ACTIVITY_MATRIX,
   CUSTOM_BRANCH_MARKER,
@@ -14,6 +15,10 @@ type Props = {
   onCustomChange?: (next: string[]) => void;
   /** Cor de destaque (usa var(--primary) por padrão). */
   accentColor?: string;
+  /** Se informado, cobra `extra_specialty` moedas ao adicionar ramo customizado excedente. */
+  chargeUserId?: string;
+  /** Quantos ramos customizados grátis antes de cobrar (default: 1). */
+  freeCustomQuota?: number;
 };
 
 /**
