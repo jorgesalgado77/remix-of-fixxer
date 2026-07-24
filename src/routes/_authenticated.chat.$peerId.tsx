@@ -42,6 +42,7 @@ import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory } from "@/lib/user-category";
 import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
+import { ChatAppointmentsBanner } from "@/components/ChatAppointmentsBanner";
 
 function roleToCategory(role: string | null | undefined): CategoryKey {
   const r = (role || "").toLowerCase();
