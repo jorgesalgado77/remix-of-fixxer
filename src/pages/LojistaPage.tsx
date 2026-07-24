@@ -42,7 +42,11 @@ import {
   Heart,
   Loader2,
   Sparkles,
-  GripVertical
+  GripVertical,
+  Coins,
+  Rocket,
+  Receipt,
+  Crown
 } from "lucide-react";
 
 import jsPDF from 'jspdf';
