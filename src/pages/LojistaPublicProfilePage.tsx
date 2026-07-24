@@ -537,7 +537,7 @@ export function LojistaPublicProfilePage() {
               <div className="relative shrink-0">
                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-black border-2 border-primary overflow-hidden flex items-center justify-center" style={{ boxShadow: `0 0 25px rgba(${theme.rgb}, 0.40)` }}>
                   {profile?.logo_url ? (
-                    <img src={profile.logo_url} alt={profile.company_name} className="w-full h-full object-contain p-2" />
+                    <img src={profile.logo_url} alt={profile.company_name} loading="lazy" decoding="async" className="w-full h-full object-contain p-2" />
                   ) : (
                     <span className="text-3xl font-black text-primary italic">F</span>
                   )}
