@@ -166,3 +166,6 @@ function B2BSuggestionsCardInner() {
     </div>
   );
 }
+
+export const B2BSuggestionsCard = memo(B2BSuggestionsCardInner);
+
