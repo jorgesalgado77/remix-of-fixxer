@@ -166,6 +166,10 @@ function RootComponent() {
   useEffect(() => {
     fixAuthAndPreview();
     void import("../lib/chat-read-queue").then((m) => m.initChatReadQueue());
+    // Registra Service Worker para push notifications (best-effort)
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
   }, []);
 
   // Rotas públicas/marketing/auth onde a barra não deve aparecer
