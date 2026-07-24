@@ -604,9 +604,10 @@ function ProfilePage() {
               {/* NOTIFICAÇÕES PUSH */}
               <div className="pt-8 space-y-4">
                 <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                  <h3 className="text-xl font-black uppercase tracking-tighter">Notificações</h3>
+                  <h3 className="text-xl font-black uppercase tracking-tighter">Notificações & Ganhos</h3>
                 </div>
                 <PushToggle />
+                <AffiliateBanner />
               </div>
 
 
