@@ -85,6 +85,7 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     onStatusChange,
     onRadiusChange,
     badge,
+    searchInput,
   } = props;
 
   const [open, setOpen] = useState(false);
