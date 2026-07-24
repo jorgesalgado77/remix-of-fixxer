@@ -693,9 +693,32 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       toast.error(err);
       return;
     }
+    // Validação de integridade dos valores monetários mascarados
+    const integrityErrors = [
+      (priceType === "fixo" || priceType === "fixo_comissao")
+        ? assertCurrencyIntegrity("Valor Fixo", fixedValue)
+        : null,
+      (priceType === "comissao" || priceType === "fixo_comissao")
+        ? assertCurrencyIntegrity("Valor do Contrato", contractValue)
+        : null,
+    ].filter(Boolean) as string[];
+    if (integrityErrors.length) {
+      toast.error(integrityErrors[0]);
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = buildPayload();
+      // Sanidade final: todo campo monetário no payload deve ser número finito ≥ 0
+      const moneyFields = ["fixed_value", "contract_value", "commission_value", "total_value"] as const;
+      for (const f of moneyFields) {
+        const v = (payload as any)[f];
+        if (v !== undefined && v !== null && (!Number.isFinite(v) || v < 0)) {
+          toast.error(`Campo monetário inválido (${f}). Revise os valores.`);
+          setSubmitting(false);
+          return;
+        }
+      }
       // Sessão atual do lojista
       const { data: sessionData } = await supabaseExternal.auth.getSession();
       const uid = sessionData?.session?.user?.id ?? null;
