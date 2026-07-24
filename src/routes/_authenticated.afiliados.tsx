@@ -149,6 +149,41 @@ function AffiliatesPage() {
     }
   }
 
+  function exportCsv() {
+    if (!profile) return;
+    const brl = (n: number) => n.toFixed(2).replace(".", ",");
+    const totalEarned = commissions.reduce((s, c) => s + Number(c.amount), 0);
+    const lines: string[] = [];
+    // Cabeçalho de métricas
+    lines.push("Métrica;Valor");
+    lines.push(`Código;${profile.code}`);
+    lines.push(`Taxa Comissão (%);${profile.commission_pct.toFixed(1)}`);
+    lines.push(`Indicações;${referrals.length}`);
+    lines.push(`Total Ganho (R$);${brl(totalEarned)}`);
+    lines.push(`Pendente (R$);${brl(totalPending)}`);
+    lines.push(`Disponível (R$);${brl(totalAvailable)}`);
+    lines.push(`Pago (R$);${brl(totalPaid)}`);
+    lines.push("");
+    // Histórico
+    lines.push("ID Comissão;Data;O.S.;Valor (R$);Status");
+    for (const c of commissions) {
+      const dt = new Date(c.created_at).toLocaleString("pt-BR");
+      const status = c.status === "paid" ? "Pago" : c.status === "available" ? "Disponível" : "Pendente";
+      lines.push(`${c.id};${dt};${c.order_id};${brl(Number(c.amount))};${status}`);
+    }
+    const csv = "\uFEFF" + lines.join("\n"); // BOM para Excel PT-BR
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fixxer-afiliados-${profile.code}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("CSV exportado!");
+  }
+
   const totalPending = commissions.filter((c) => c.status === "pending").reduce((s, c) => s + Number(c.amount), 0);
   const totalAvailable = commissions.filter((c) => c.status === "available").reduce((s, c) => s + Number(c.amount), 0);
   const totalPaid = commissions.filter((c) => c.status === "paid").reduce((s, c) => s + Number(c.amount), 0);
