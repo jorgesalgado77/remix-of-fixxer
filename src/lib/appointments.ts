@@ -82,15 +82,45 @@ export async function createAppointment(payload: {
     .single();
 
   if (error) throw error;
+
+  // Push ao convidado
+  try {
+    const { sendPushToUser } = await import("./push-client");
+    void sendPushToUser({
+      userId: payload.invitee_id,
+      title: "📅 Novo agendamento proposto",
+      body: `Você recebeu uma proposta de agendamento (${payload.type}).`,
+      url: "/agenda",
+      tag: `appt-new-${data.id}`,
+    });
+  } catch { /* ignore */ }
+
   return data as Appointment;
 }
 
 export async function acceptAppointment(id: string) {
+  const { data: apt } = await supabaseExternal
+    .from("appointments")
+    .select("proposer_id")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabaseExternal
     .from("appointments")
     .update({ status: "confirmed" })
     .eq("id", id);
   if (error) throw error;
+  if (apt?.proposer_id) {
+    try {
+      const { sendPushToUser } = await import("./push-client");
+      void sendPushToUser({
+        userId: apt.proposer_id,
+        title: "✅ Agendamento confirmado",
+        body: "Sua proposta de agendamento foi aceita.",
+        url: "/agenda",
+        tag: `appt-confirmed-${id}`,
+      });
+    } catch { /* ignore */ }
+  }
 }
 
 export async function proposeReschedule(id: string, newDateISO: string) {
