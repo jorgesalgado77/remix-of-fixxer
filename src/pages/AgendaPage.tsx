@@ -431,7 +431,7 @@ function AppointmentCard({
         {appointment.notes && (
           <p className="text-[11px] text-white/60 italic line-clamp-3">{appointment.notes}</p>
         )}
-      </div>
+      </button>
 
       {/* Ações */}
       <div className="flex flex-wrap gap-2 p-3 border-t border-white/5 bg-black/20">
