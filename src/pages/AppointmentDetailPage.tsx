@@ -40,6 +40,7 @@ import {
   fetchDisputes,
   openDispute,
   withdrawDispute,
+  uploadDisputeEvidences,
   DISPUTE_STATUS_LABEL,
   DISPUTE_ACTION_LABEL,
   type AppointmentDispute,
