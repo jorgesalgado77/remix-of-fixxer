@@ -8,6 +8,8 @@ import {
   type StatusFilterKey,
 } from "@/lib/feed-status";
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
+import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
+import { assertCurrencyIntegrity } from "@/lib/currency-brl";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -1211,11 +1213,21 @@ function QuoteModal({
   const [delivery, setDelivery] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!price.trim() || !payment.trim() || !delivery.trim()) {
-      toast.error("Preencha preço, condições e prazo.");
+    const perr = assertCurrencyIntegrity("Preço total", price, {
+      required: true,
+      min: 0.01,
+    });
+    if (perr) {
+      setPriceError(perr);
+      toast.error(perr);
+      return;
+    }
+    if (!payment.trim() || !delivery.trim()) {
+      toast.error("Preencha condições e prazo.");
       return;
     }
     setSubmitting(true);
@@ -1253,11 +1265,16 @@ function QuoteModal({
           </div>
         )}
         <form onSubmit={submit} className="space-y-3 p-4">
-          <Field
+          <CurrencyInputBRL
             label="Preço total (R$)"
             value={price}
-            onChange={setPrice}
-            placeholder="Ex.: 12.480,00"
+            onChange={(v) => {
+              setPrice(v);
+              if (priceError) setPriceError(null);
+            }}
+            error={priceError}
+            accentColor="#A855F7"
+            placeholder="12.480,00"
           />
           <Field
             label="Condições de pagamento"

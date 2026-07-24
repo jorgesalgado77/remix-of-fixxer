@@ -40,6 +40,14 @@ import { getCategoryTheme, CATEGORY_LABEL, type CategoryKey } from "@/lib/catego
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
+import {
+  maskCurrencyBRL as sharedMaskBRL,
+  parseCurrencyBRL as sharedParseBRL,
+  assertCurrencyIntegrity as sharedAssertBRL,
+  currencyKeyDown as sharedKeyDown,
+  currencyFocusSelect as sharedFocusSelect,
+  currencyPaste as sharedPaste,
+} from "@/lib/currency-brl";
 
 
 interface CreateAdModalProps {
@@ -133,45 +141,14 @@ const formatBRL = (v: string | number) => {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
-/** Máscara de moeda BRL — recebe o valor digitado e retorna string formatada "12.345,67". */
-const maskCurrencyBRL = (raw: string) => {
-  const digits = (raw || "").replace(/\D/g, "").slice(0, 14);
-  if (!digits) return "";
-  const n = Number(digits) / 100;
-  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
-
-/** Converte string mascarada BRL para número. */
-const parseCurrencyBRL = (masked: string) => {
-  if (!masked) return 0;
-  const digits = masked.replace(/\D/g, "");
-  if (!digits) return 0;
-  return Number(digits) / 100;
-};
-
-/**
- * Verifica integridade entre string mascarada e número gerado.
- * Retorna string de erro ou null.
- */
-const assertCurrencyIntegrity = (label: string, masked: string): string | null => {
-  if (!masked) return null;
-  const n = parseCurrencyBRL(masked);
-  if (!Number.isFinite(n) || n < 0) return `${label}: valor numérico inválido.`;
-  const back = maskCurrencyBRL(masked);
-  if (back !== masked) return `${label}: formato monetário inconsistente (${masked} ≠ ${back}).`;
-  if (n > 9_999_999_999.99) return `${label}: valor acima do limite permitido.`;
-  return null;
-};
-
-/** Handlers reutilizáveis para inputs de moeda BRL. */
-const currencyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-  // Bloqueia caracteres numéricos científicos e sinais
-  if (["e", "E", "+", "-", ",", "."].includes(e.key)) e.preventDefault();
-};
-const currencyFocusSelect = (e: React.FocusEvent<HTMLInputElement>) => {
-  // Facilita edição: seleciona tudo ao focar
-  requestAnimationFrame(() => e.target.select());
-};
+// Reexporta helpers centralizados em @/lib/currency-brl (fonte única de verdade)
+const maskCurrencyBRL = sharedMaskBRL;
+const parseCurrencyBRL = sharedParseBRL;
+const assertCurrencyIntegrity = (label: string, masked: string) =>
+  sharedAssertBRL(label, masked);
+const currencyKeyDown = sharedKeyDown;
+const currencyFocusSelect = sharedFocusSelect;
+const currencyPaste = sharedPaste;
 
 const UF_LIST = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
@@ -206,6 +183,14 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [freightVolumes, setFreightVolumes] = useState("");
   const [freightWeight, setFreightWeight] = useState("");
   const [otherServiceText, setOtherServiceText] = useState("");
+  // Erros inline por campo monetário (destaca borda + mensagem sob o input)
+  const [fieldErrors, setFieldErrors] = useState<{
+    fixedValue?: string | null;
+    contractValue?: string | null;
+    commissionPct?: string | null;
+  }>({});
+  const clearFieldError = (k: "fixedValue" | "contractValue" | "commissionPct") =>
+    setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: null } : prev));
 
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = getCategoryTheme(defaultCategory);
@@ -700,22 +685,44 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validação por campo (destaca inline + escolhe primeira mensagem para o toast)
+    const needFixed = priceType === "fixo" || priceType === "fixo_comissao";
+    const needContract = priceType === "comissao" || priceType === "fixo_comissao";
+    const needPct = priceType === "comissao" || priceType === "fixo_comissao";
+    const pctNum = Number(commissionPct);
+    const fixedErr = needFixed
+      ? sharedAssertBRL("Valor Fixo", fixedValue, { required: true, min: 0.01 })
+      : null;
+    const contractErr = needContract
+      ? sharedAssertBRL("Valor do Contrato", contractValue, { required: true, min: 0.01 })
+      : null;
+    const pctErr = needPct
+      ? !commissionPct || Number.isNaN(pctNum) || pctNum <= 0 || pctNum > 100
+        ? "Comissão: informe um percentual entre 0 e 100."
+        : null
+      : null;
+    const nextErrors = {
+      fixedValue: fixedErr,
+      contractValue: contractErr,
+      commissionPct: pctErr,
+    };
+    setFieldErrors(nextErrors);
+    // Foca no primeiro campo com erro para acessibilidade
+    const firstMoneyErr = fixedErr || contractErr || pctErr;
+    if (firstMoneyErr) {
+      toast.error(firstMoneyErr);
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(
+          '[data-currency-error="true"], [data-field-error="true"]',
+        );
+        el?.focus?.();
+        el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      });
+      return;
+    }
     const err = validate();
     if (err) {
       toast.error(err);
-      return;
-    }
-    // Validação de integridade dos valores monetários mascarados
-    const integrityErrors = [
-      (priceType === "fixo" || priceType === "fixo_comissao")
-        ? assertCurrencyIntegrity("Valor Fixo", fixedValue)
-        : null,
-      (priceType === "comissao" || priceType === "fixo_comissao")
-        ? assertCurrencyIntegrity("Valor do Contrato", contractValue)
-        : null,
-    ].filter(Boolean) as string[];
-    if (integrityErrors.length) {
-      toast.error(integrityErrors[0]);
       return;
     }
     setSubmitting(true);
@@ -1409,7 +1416,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             </div>
 
             {(priceType === "fixo" || priceType === "fixo_comissao") && (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                   Valor Fixo {priceType === "fixo_comissao" ? "Garantido " : ""}(R$)
                 </Label>
@@ -1420,20 +1427,39 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                     inputMode="numeric"
                     autoComplete="off"
                     value={fixedValue}
-                    onChange={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
+                    onChange={(e) => {
+                      setFixedValue(maskCurrencyBRL(e.target.value));
+                      clearFieldError("fixedValue");
+                    }}
                     onKeyDown={currencyKeyDown}
                     onFocus={currencyFocusSelect}
                     onBlur={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
+                    onPaste={currencyPaste((v) => {
+                      setFixedValue(v);
+                      clearFieldError("fixedValue");
+                    })}
                     placeholder="0,00"
-                    className="bg-white/5 border-white/10 text-white pl-10"
+                    aria-invalid={fieldErrors.fixedValue ? true : undefined}
+                    data-currency-error={fieldErrors.fixedValue ? "true" : undefined}
+                    className={`text-white pl-10 ${
+                      fieldErrors.fixedValue
+                        ? "bg-red-500/5 border-red-500/70 focus-visible:ring-red-500/40"
+                        : "bg-white/5 border-white/10"
+                    }`}
                   />
                 </div>
+                {fieldErrors.fixedValue && (
+                  <p role="alert" className="flex items-center gap-1 text-[11px] font-semibold text-red-400">
+                    <AlertCircle className="h-3 w-3 shrink-0" />
+                    {fieldErrors.fixedValue}
+                  </p>
+                )}
               </div>
             )}
 
             {(priceType === "comissao" || priceType === "fixo_comissao") && (
               <div className="grid md:grid-cols-3 gap-3">
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                     Valor do Contrato (R$)
                   </Label>
@@ -1444,16 +1470,35 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                       inputMode="numeric"
                       autoComplete="off"
                       value={contractValue}
-                      onChange={(e) => setContractValue(maskCurrencyBRL(e.target.value))}
+                      onChange={(e) => {
+                        setContractValue(maskCurrencyBRL(e.target.value));
+                        clearFieldError("contractValue");
+                      }}
                       onKeyDown={currencyKeyDown}
                       onFocus={currencyFocusSelect}
                       onBlur={(e) => setContractValue(maskCurrencyBRL(e.target.value))}
+                      onPaste={currencyPaste((v) => {
+                        setContractValue(v);
+                        clearFieldError("contractValue");
+                      })}
                       placeholder="50.000,00"
-                      className="bg-white/5 border-white/10 text-white pl-10"
+                      aria-invalid={fieldErrors.contractValue ? true : undefined}
+                      data-currency-error={fieldErrors.contractValue ? "true" : undefined}
+                      className={`text-white pl-10 ${
+                        fieldErrors.contractValue
+                          ? "bg-red-500/5 border-red-500/70 focus-visible:ring-red-500/40"
+                          : "bg-white/5 border-white/10"
+                      }`}
                     />
                   </div>
+                  {fieldErrors.contractValue && (
+                    <p role="alert" className="flex items-center gap-1 text-[11px] font-semibold text-red-400">
+                      <AlertCircle className="h-3 w-3 shrink-0" />
+                      {fieldErrors.contractValue}
+                    </p>
+                  )}
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                     Comissão (%)
                   </Label>
@@ -1463,10 +1508,25 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                     max="100"
                     step="0.1"
                     value={commissionPct}
-                    onChange={(e) => setCommissionPct(e.target.value)}
+                    onChange={(e) => {
+                      setCommissionPct(e.target.value);
+                      clearFieldError("commissionPct");
+                    }}
                     placeholder="Ex.: 5"
-                    className="bg-white/5 border-white/10 text-white"
+                    aria-invalid={fieldErrors.commissionPct ? true : undefined}
+                    data-field-error={fieldErrors.commissionPct ? "true" : undefined}
+                    className={`text-white ${
+                      fieldErrors.commissionPct
+                        ? "bg-red-500/5 border-red-500/70 focus-visible:ring-red-500/40"
+                        : "bg-white/5 border-white/10"
+                    }`}
                   />
+                  {fieldErrors.commissionPct && (
+                    <p role="alert" className="flex items-center gap-1 text-[11px] font-semibold text-red-400">
+                      <AlertCircle className="h-3 w-3 shrink-0" />
+                      {fieldErrors.commissionPct}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">

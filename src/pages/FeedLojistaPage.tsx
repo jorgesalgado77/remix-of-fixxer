@@ -11,6 +11,8 @@ import {
   type StatusFilterKey,
 } from "@/lib/feed-status";
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
+import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
+import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
 
 import {
   ArrowLeft,
@@ -524,6 +526,7 @@ export default function FeedLojistaPage() {
   const [deleteFor, setDeleteFor] = useState<FeedPost | null>(null);
   const [proposalValue, setProposalValue] = useState("");
   const [proposalMsg, setProposalMsg] = useState("");
+  const [proposalError, setProposalError] = useState<string | null>(null);
 
   // Paginação por scroll infinito
   const [page, setPage] = useState(1);
@@ -698,16 +701,24 @@ export default function FeedLojistaPage() {
   };
 
   const submitProposal = () => {
-    if (!proposalValue.trim()) {
-      toast.error("Informe um valor para a proposta");
+    const err = assertCurrencyIntegrity("Valor da proposta", proposalValue, {
+      required: true,
+      min: 0.01,
+    });
+    if (err) {
+      setProposalError(err);
+      toast.error(err);
       return;
     }
+    const n = parseCurrencyBRL(proposalValue);
     toast.success("Proposta enviada!", {
-      description: `${proposalFor?.author.name} receberá sua oferta de ${proposalValue}.`,
+      description: `${proposalFor?.author.name} receberá sua oferta de R$ ${n
+        .toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.`,
     });
     setProposalFor(null);
     setProposalValue("");
     setProposalMsg("");
+    setProposalError(null);
   };
 
   const submitReport = () => {
@@ -970,15 +981,19 @@ export default function FeedLojistaPage() {
             Para: <span className="text-white font-bold">{proposalFor.author.name}</span> ·{" "}
             <span className="text-[#00E5FF]">{proposalFor.title}</span>
           </p>
-          <label className="block text-[10px] uppercase tracking-widest font-black text-white/60 mb-1">
-            Valor da proposta
-          </label>
-          <input
-            value={proposalValue}
-            onChange={(e) => setProposalValue(e.target.value)}
-            placeholder="R$ 0,00"
-            className="w-full bg-[#0A0A0B] border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#00E5FF] mb-3"
-          />
+          <div className="mb-3">
+            <CurrencyInputBRL
+              label="Valor da proposta"
+              value={proposalValue}
+              onChange={(v) => {
+                setProposalValue(v);
+                if (proposalError) setProposalError(null);
+              }}
+              error={proposalError}
+              accentColor="#00E5FF"
+              placeholder="0,00"
+            />
+          </div>
           <label className="block text-[10px] uppercase tracking-widest font-black text-white/60 mb-1">
             Mensagem (opcional)
           </label>
