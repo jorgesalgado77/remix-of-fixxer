@@ -9,6 +9,8 @@ import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { PushToggle } from "@/components/PushToggle";
 import { AffiliateBanner } from "@/components/AffiliateBanner";
 import { ActivityBranchSelector } from "@/components/ActivityBranchSelector";
+import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
+import { PlanBadge } from "@/components/PlanBadge";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
