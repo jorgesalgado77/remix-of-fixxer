@@ -71,6 +71,7 @@ function LoginComponent() {
 
         const role = isAdmin ? 'admin' : (statusRow?.role || 'user');
         if (typeof window !== 'undefined') {
+          localStorage.setItem('fixxer_user_id', data.session.user.id);
           localStorage.setItem('fixxer_user_email', normalizedEmail);
           localStorage.setItem('fixxer_authenticated', 'true');
           localStorage.setItem('fixxer_user_role', role);
