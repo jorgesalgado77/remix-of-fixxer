@@ -1,4 +1,5 @@
 import { RadiusFilter } from "@/components/RadiusFilter";
+import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
