@@ -40,6 +40,35 @@ export function useCurrentCategory(): CategoryKey {
 }
 
 /**
+ * Deriva a categoria de um perfil visitado a partir do pathname.
+ * Retorna `null` quando a rota não é um perfil público — nesse caso
+ * a cor a aplicar é a do usuário logado.
+ *
+ *  /lojista/:id, /perfil/lojista      → lojista
+ *  /prestador/:id                     → prestador
+ *  /parceiro/:id, /fornecedor/:id     → fornecedor
+ *  /cliente/:id                       → cliente
+ */
+export function categoryFromPathname(pathname: string): CategoryKey | null {
+  if (!pathname) return null;
+  if (pathname.startsWith("/lojista/") || pathname === "/perfil/lojista") return "lojista";
+  if (pathname.startsWith("/prestador/")) return "prestador";
+  if (pathname.startsWith("/parceiro/") || pathname.startsWith("/fornecedor/")) return "fornecedor";
+  if (pathname.startsWith("/cliente/")) return "cliente";
+  return null;
+}
+
+/**
+ * Cor de contexto: prioriza a categoria do perfil visitado (quando a rota
+ * for de perfil público); caso contrário, usa a categoria do usuário logado.
+ */
+export function useContextualCategory(pathname: string): CategoryKey {
+  const own = useCurrentCategory();
+  const visited = categoryFromPathname(pathname);
+  return visited ?? own;
+}
+
+/**
  * Retorna um objeto style pronto para aplicar a um wrapper e sobrescrever
  * as variáveis semânticas globais (--primary, --ring, --accent-foreground)
  * com a cor oficial da categoria informada.
