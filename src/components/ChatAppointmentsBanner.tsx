@@ -162,9 +162,10 @@ export function ChatAppointmentsBanner({ userId, peerId }: Props) {
                   <button
                     disabled={busy === a.id}
                     onClick={() =>
-                      withBusy(a.id, () =>
-                        acceptAppointment(a.id).then(() => toast.success("✅ Aceito e agendado!")),
-                      )
+                      withBusy(a.id, async () => {
+                        await acceptAppointment(a.id);
+                        toast.success("✅ Aceito e agendado!");
+                      })
                     }
                     className="flex-1 min-w-[130px] py-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-1 disabled:opacity-40"
                     style={{ backgroundColor: "#00FF87", color: "#000" }}
