@@ -190,8 +190,16 @@ export default function AgendaPage() {
                 appointment={a}
                 userId={userId}
                 busy={busy === a.id}
+                onOpen={() => navigate({ to: "/agenda/$id", params: { id: a.id } })}
                 onAccept={() => withBusy(a.id, async () => { await acceptAppointment(a.id); toast.success("Confirmado!"); })}
-                onCancel={() => withBusy(a.id, async () => { await cancelAppointment(a.id); toast("Cancelado."); })}
+                onCancel={() => {
+                  const reason = window.prompt("Motivo do cancelamento (opcional):", "") ?? undefined;
+                  void withBusy(a.id, async () => {
+                    const r = await cancelAppointment(a.id, reason || undefined);
+                    if (r.refunded) toast.success(`Cancelado. Sinal reembolsado (R$ ${r.amount?.toFixed(2) ?? "0,00"}).`);
+                    else toast("Compromisso cancelado.");
+                  });
+                }}
                 onCheckIn={() => setPhotoModal({ appointment: a, mode: "checkin" })}
                 onCheckOut={() => setPhotoModal({ appointment: a, mode: "checkout" })}
               />
