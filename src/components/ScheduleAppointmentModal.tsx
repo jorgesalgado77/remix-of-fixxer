@@ -119,7 +119,7 @@ export function ScheduleAppointmentModal({
           {/* Tipo */}
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-white/50 mb-2">
-              Tipo de compromisso
+              {typeLabel}
             </label>
             <div className="grid grid-cols-1 gap-2">
               {(Object.keys(APPOINTMENT_TYPES) as AppointmentType[]).map((k) => {
