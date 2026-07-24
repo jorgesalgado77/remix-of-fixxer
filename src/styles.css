@@ -104,6 +104,17 @@
 }
 
 :root {
+  /* =========================================================
+     Paleta oficial FIXXER por categoria (color-coding contextual)
+     Fonte única: src/lib/category-colors.ts
+     Uso: var(--cat-lojista), var(--cat-prestador), etc.
+     ========================================================= */
+  --cat-lojista: #00E5FF;    /* Azul Ciano Elétrico  — Lojista / Empresa */
+  --cat-prestador: #FF9F0A;  /* Laranja Âmbar Neon   — Prestador de Serviço */
+  --cat-fornecedor: #A855F7; /* Roxo Violeta Elétrico — Parceiro Fornecedor B2B */
+  --cat-cliente: #00FF87;    /* Verde Esmeralda Neon — Cliente Final / Casual */
+  --cat-admin: #FFD600;      /* Dourado Amarelo Neon — Admin Master / Sistema */
+
   --radius: 0.625rem;
   --background: oklch(0.129 0.042 264.695); /* #121214 approximate */
   --foreground: oklch(0.984 0.003 247.858); /* White */
