@@ -94,6 +94,13 @@ export function AdminDashboardComponent() {
         
         <div className="flex items-center gap-3 flex-wrap">
           <Link
+            to={"/admin/usuarios" as any}
+            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-sky-500/15 border border-sky-400/40 text-sky-300 font-black uppercase italic text-xs tracking-widest hover:bg-sky-500/25 transition-all"
+          >
+            <Users className="w-4 h-4" />
+            Usuários
+          </Link>
+          <Link
             to={"/admin/monetizacao" as any}
             className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 font-black uppercase italic text-xs tracking-widest hover:bg-emerald-500/25 transition-all"
           >
