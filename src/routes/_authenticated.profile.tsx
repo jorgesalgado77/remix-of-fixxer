@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -608,6 +608,19 @@ function ProfilePage() {
                   <h3 className="text-xl font-black uppercase tracking-tighter">Notificações & Ganhos</h3>
                 </div>
                 <PushToggle />
+                <Link
+                  to="/preferencias/notificacoes"
+                  className="w-full flex items-center justify-between gap-3 p-4 rounded-2xl border border-white/10 bg-white/5 hover:border-primary/50 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#00FF87]/10 flex items-center justify-center text-lg">🔔</div>
+                    <div className="text-left">
+                      <div className="text-sm font-black text-white uppercase tracking-tight">Preferências de notificação</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Escolha o que receber por push e in-app</div>
+                    </div>
+                  </div>
+                  <span className="text-white/40">›</span>
+                </Link>
                 <AffiliateBanner />
               </div>
 

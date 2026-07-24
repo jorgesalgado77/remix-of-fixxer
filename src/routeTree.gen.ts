@@ -36,11 +36,13 @@ import { Route as AuthenticatedAfiliadosRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedFeedIndexRouteImport } from './routes/_authenticated.feed.index'
 import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
+import { Route as AuthenticatedPreferenciasNotificacoesRouteImport } from './routes/_authenticated.preferencias.notificacoes'
 import { Route as AuthenticatedFeedPrestadorRouteImport } from './routes/_authenticated.feed.prestador'
 import { Route as AuthenticatedFeedParceiroRouteImport } from './routes/_authenticated.feed.parceiro'
 import { Route as AuthenticatedFeedLojistaRouteImport } from './routes/_authenticated.feed.lojista'
 import { Route as AuthenticatedFeedClienteRouteImport } from './routes/_authenticated.feed.cliente'
 import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authenticated.chat.$peerId'
+import { Route as AuthenticatedAgendaIdRouteImport } from './routes/_authenticated.agenda.$id'
 import { Route as ApiPublicPushDispatchRouteImport } from './routes/api/public/push.dispatch'
 
 const TermsRoute = TermsRouteImport.update({
@@ -177,6 +179,12 @@ const ApiPublicSetupDbRoute = ApiPublicSetupDbRouteImport.update({
   path: '/api/public/setup-db',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedPreferenciasNotificacoesRoute =
+  AuthenticatedPreferenciasNotificacoesRouteImport.update({
+    id: '/preferencias/notificacoes',
+    path: '/preferencias/notificacoes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedFeedPrestadorRoute =
   AuthenticatedFeedPrestadorRouteImport.update({
     id: '/prestador',
@@ -206,6 +214,11 @@ const AuthenticatedChatPeerIdRoute = AuthenticatedChatPeerIdRouteImport.update({
   path: '/$peerId',
   getParentRoute: () => AuthenticatedChatRoute,
 } as any)
+const AuthenticatedAgendaIdRoute = AuthenticatedAgendaIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedAgendaRoute,
+} as any)
 const ApiPublicPushDispatchRoute = ApiPublicPushDispatchRouteImport.update({
   id: '/api/public/push/dispatch',
   path: '/api/public/push/dispatch',
@@ -219,7 +232,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/afiliados': typeof AuthenticatedAfiliadosRoute
-  '/agenda': typeof AuthenticatedAgendaRoute
+  '/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -237,11 +250,13 @@ export interface FileRoutesByFullPath {
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
   '/auth/': typeof AuthIndexRoute
+  '/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
+  '/preferencias/notificacoes': typeof AuthenticatedPreferenciasNotificacoesRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/feed/': typeof AuthenticatedFeedIndexRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
@@ -252,7 +267,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/afiliados': typeof AuthenticatedAfiliadosRoute
-  '/agenda': typeof AuthenticatedAgendaRoute
+  '/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -269,11 +284,13 @@ export interface FileRoutesByTo {
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
   '/auth': typeof AuthIndexRoute
+  '/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
   '/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
+  '/preferencias/notificacoes': typeof AuthenticatedPreferenciasNotificacoesRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/feed': typeof AuthenticatedFeedIndexRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
@@ -287,7 +304,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/afiliados': typeof AuthenticatedAfiliadosRoute
-  '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
+  '/_authenticated/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -305,11 +322,13 @@ export interface FileRoutesById {
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
   '/auth/': typeof AuthIndexRoute
+  '/_authenticated/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/_authenticated/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/_authenticated/feed/cliente': typeof AuthenticatedFeedClienteRoute
   '/_authenticated/feed/lojista': typeof AuthenticatedFeedLojistaRoute
   '/_authenticated/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/_authenticated/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
+  '/_authenticated/preferencias/notificacoes': typeof AuthenticatedPreferenciasNotificacoesRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/_authenticated/feed/': typeof AuthenticatedFeedIndexRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
@@ -341,11 +360,13 @@ export interface FileRouteTypes {
     | '/prestador/$id'
     | '/r/$code'
     | '/auth/'
+    | '/agenda/$id'
     | '/chat/$peerId'
     | '/feed/cliente'
     | '/feed/lojista'
     | '/feed/parceiro'
     | '/feed/prestador'
+    | '/preferencias/notificacoes'
     | '/api/public/setup-db'
     | '/feed/'
     | '/api/public/push/dispatch'
@@ -373,11 +394,13 @@ export interface FileRouteTypes {
     | '/prestador/$id'
     | '/r/$code'
     | '/auth'
+    | '/agenda/$id'
     | '/chat/$peerId'
     | '/feed/cliente'
     | '/feed/lojista'
     | '/feed/parceiro'
     | '/feed/prestador'
+    | '/preferencias/notificacoes'
     | '/api/public/setup-db'
     | '/feed'
     | '/api/public/push/dispatch'
@@ -408,11 +431,13 @@ export interface FileRouteTypes {
     | '/prestador/$id'
     | '/r/$code'
     | '/auth/'
+    | '/_authenticated/agenda/$id'
     | '/_authenticated/chat/$peerId'
     | '/_authenticated/feed/cliente'
     | '/_authenticated/feed/lojista'
     | '/_authenticated/feed/parceiro'
     | '/_authenticated/feed/prestador'
+    | '/_authenticated/preferencias/notificacoes'
     | '/api/public/setup-db'
     | '/_authenticated/feed/'
     | '/api/public/push/dispatch'
@@ -627,6 +652,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSetupDbRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/preferencias/notificacoes': {
+      id: '/_authenticated/preferencias/notificacoes'
+      path: '/preferencias/notificacoes'
+      fullPath: '/preferencias/notificacoes'
+      preLoaderRoute: typeof AuthenticatedPreferenciasNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/feed/prestador': {
       id: '/_authenticated/feed/prestador'
       path: '/prestador'
@@ -662,6 +694,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatPeerIdRouteImport
       parentRoute: typeof AuthenticatedChatRoute
     }
+    '/_authenticated/agenda/$id': {
+      id: '/_authenticated/agenda/$id'
+      path: '/$id'
+      fullPath: '/agenda/$id'
+      preLoaderRoute: typeof AuthenticatedAgendaIdRouteImport
+      parentRoute: typeof AuthenticatedAgendaRoute
+    }
     '/api/public/push/dispatch': {
       id: '/api/public/push/dispatch'
       path: '/api/public/push/dispatch'
@@ -671,6 +710,17 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedAgendaRouteChildren {
+  AuthenticatedAgendaIdRoute: typeof AuthenticatedAgendaIdRoute
+}
+
+const AuthenticatedAgendaRouteChildren: AuthenticatedAgendaRouteChildren = {
+  AuthenticatedAgendaIdRoute: AuthenticatedAgendaIdRoute,
+}
+
+const AuthenticatedAgendaRouteWithChildren =
+  AuthenticatedAgendaRoute._addFileChildren(AuthenticatedAgendaRouteChildren)
 
 interface AuthenticatedChatRouteChildren {
   AuthenticatedChatPeerIdRoute: typeof AuthenticatedChatPeerIdRoute
@@ -705,7 +755,7 @@ const AuthenticatedFeedRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAfiliadosRoute: typeof AuthenticatedAfiliadosRoute
-  AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
+  AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRouteWithChildren
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -714,12 +764,13 @@ interface AuthenticatedRouteChildren {
   AuthenticatedParceiroRoute: typeof AuthenticatedParceiroRoute
   AuthenticatedPrestadorRoute: typeof AuthenticatedPrestadorRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedPreferenciasNotificacoesRoute: typeof AuthenticatedPreferenciasNotificacoesRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAfiliadosRoute: AuthenticatedAfiliadosRoute,
-  AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
+  AuthenticatedAgendaRoute: AuthenticatedAgendaRouteWithChildren,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
@@ -728,6 +779,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedParceiroRoute: AuthenticatedParceiroRoute,
   AuthenticatedPrestadorRoute: AuthenticatedPrestadorRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedPreferenciasNotificacoesRoute:
+    AuthenticatedPreferenciasNotificacoesRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

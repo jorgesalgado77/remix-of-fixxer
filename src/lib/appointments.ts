@@ -39,7 +39,9 @@ export type Appointment = {
   checkout_at: string | null;
   checkin_lat: number | null;
   checkin_lng: number | null;
+  checkin_photos: string[] | null;
   checkout_photos: string[] | null;
+  cancel_reason: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -162,12 +164,129 @@ export async function proposeReschedule(id: string, newDateISO: string) {
   }
 }
 
-export async function cancelAppointment(id: string) {
+export async function cancelAppointment(
+  id: string,
+  reason?: string,
+): Promise<{ cancelled: boolean; refunded: boolean; amount?: number; error?: string }> {
+  const { data: apt } = await supabaseExternal
+    .from("appointments")
+    .select("proposer_id, invitee_id, deposit_amount, status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (apt && ["completed", "cancelled"].includes(apt.status)) {
+    return { cancelled: false, refunded: false, error: "Compromisso já finalizado." };
+  }
+
+  // Tenta RPC transacional (cancela + reembolsa custódia se aplicável)
+  let refunded = false;
+  let refundedAmount: number | undefined;
+  try {
+    const { data, error } = await supabaseExternal.rpc("cancel_appointment_and_refund_escrow", {
+      _appointment_id: id,
+      _reason: reason ?? null,
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    refunded = !!row?.refunded;
+    refundedAmount = row?.amount ? Number(row.amount) : undefined;
+  } catch {
+    // Fallback: apenas marca como cancelado
+    const { error } = await supabaseExternal
+      .from("appointments")
+      .update({ status: "cancelled", cancel_reason: reason ?? null })
+      .eq("id", id);
+    if (error) throw error;
+  }
+
+  // Push à contraparte (best-effort)
+  const { data: userData } = await supabaseExternal.auth.getUser();
+  const currentUid = userData.user?.id ?? null;
+  const target =
+    apt && currentUid && apt.proposer_id === currentUid ? apt.invitee_id : apt?.proposer_id;
+  if (target) {
+    try {
+      const { sendPushToUser } = await import("./push-client");
+      void sendPushToUser({
+        userId: target,
+        title: "❌ Compromisso cancelado",
+        body: refunded
+          ? `Cancelado. Sinal reembolsado (R$ ${(refundedAmount ?? apt?.deposit_amount ?? 0).toFixed(2)}).`
+          : reason
+            ? `Motivo: ${reason}`
+            : "O compromisso foi cancelado pela contraparte.",
+        url: `/agenda/${id}`,
+        tag: `appt-cancel-${id}`,
+      });
+    } catch { /* ignore */ }
+  }
+
+  return { cancelled: true, refunded, amount: refundedAmount };
+}
+
+/**
+ * Substitui as fotos de check-in ou check-out de um compromisso.
+ * O backend valida via RLS que o usuário atual é proposer/invitee.
+ */
+export async function updateAppointmentPhotos(
+  id: string,
+  mode: "checkin" | "checkout",
+  photoUrls: string[],
+): Promise<void> {
+  const column = mode === "checkin" ? "checkin_photos" : "checkout_photos";
   const { error } = await supabaseExternal
     .from("appointments")
-    .update({ status: "cancelled" })
+    .update({ [column]: photoUrls, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
+}
+
+/**
+ * Remove uma única foto do array de check-in/check-out.
+ * Não deleta o arquivo do storage (histórico é preservado).
+ */
+export async function removeAppointmentPhoto(
+  id: string,
+  mode: "checkin" | "checkout",
+  photoUrl: string,
+): Promise<string[]> {
+  const column = mode === "checkin" ? "checkin_photos" : "checkout_photos";
+  const { data: apt } = await supabaseExternal
+    .from("appointments")
+    .select(column)
+    .eq("id", id)
+    .maybeSingle();
+  const current: string[] = (apt as any)?.[column] ?? [];
+  const next = current.filter((u) => u !== photoUrl);
+  await updateAppointmentPhotos(id, mode, next);
+  return next;
+}
+
+export type AppointmentEvent = {
+  id: string;
+  appointment_id: string;
+  actor_id: string | null;
+  event_type: string;
+  metadata: Record<string, any> | null;
+  created_at: string;
+};
+
+/**
+ * Busca histórico consolidado de eventos do compromisso.
+ * Combina rows da tabela appointment_events + campos do próprio agendamento
+ * como fallback (para ambientes onde a tabela ainda não existe).
+ */
+export async function fetchAppointmentEvents(id: string): Promise<AppointmentEvent[]> {
+  const events: AppointmentEvent[] = [];
+  try {
+    const { data } = await supabaseExternal
+      .from("appointment_events")
+      .select("*")
+      .eq("appointment_id", id)
+      .order("created_at", { ascending: true });
+    if (data) events.push(...(data as AppointmentEvent[]));
+  } catch { /* ignore */ }
+  return events;
 }
 
 export async function checkIn(id: string, photos: string[] = []): Promise<void> {

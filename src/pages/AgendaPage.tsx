@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   Calendar as CalendarIcon,
@@ -33,6 +33,7 @@ import { getCategoryTheme, CATEGORY_COLORS } from "@/lib/category-colors";
 import { CheckoutPhotosModal } from "@/components/CheckoutPhotosModal";
 
 export default function AgendaPage() {
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -190,8 +191,16 @@ export default function AgendaPage() {
                 appointment={a}
                 userId={userId}
                 busy={busy === a.id}
+                onOpen={() => navigate({ to: "/agenda/$id", params: { id: a.id } })}
                 onAccept={() => withBusy(a.id, async () => { await acceptAppointment(a.id); toast.success("Confirmado!"); })}
-                onCancel={() => withBusy(a.id, async () => { await cancelAppointment(a.id); toast("Cancelado."); })}
+                onCancel={() => {
+                  const reason = window.prompt("Motivo do cancelamento (opcional):", "") ?? undefined;
+                  void withBusy(a.id, async () => {
+                    const r = await cancelAppointment(a.id, reason || undefined);
+                    if (r.refunded) toast.success(`Cancelado. Sinal reembolsado (R$ ${r.amount?.toFixed(2) ?? "0,00"}).`);
+                    else toast("Compromisso cancelado.");
+                  });
+                }}
                 onCheckIn={() => setPhotoModal({ appointment: a, mode: "checkin" })}
                 onCheckOut={() => setPhotoModal({ appointment: a, mode: "checkout" })}
               />
@@ -338,6 +347,7 @@ function AppointmentCard({
   appointment,
   userId,
   busy,
+  onOpen,
   onAccept,
   onCancel,
   onCheckIn,
@@ -346,6 +356,7 @@ function AppointmentCard({
   appointment: Appointment;
   userId: string | null;
   busy: boolean;
+  onOpen: () => void;
   onAccept: () => void;
   onCancel: () => void;
   onCheckIn: () => void;
@@ -372,7 +383,10 @@ function AppointmentCard({
       className="rounded-2xl border bg-[#1A1A1B] overflow-hidden"
       style={{ borderColor: `${s.color}44` }}
     >
-      <div className="p-4 space-y-3">
+      <button
+        onClick={onOpen}
+        className="w-full text-left p-4 space-y-3 hover:bg-white/[0.02] transition-colors"
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
@@ -417,7 +431,7 @@ function AppointmentCard({
         {appointment.notes && (
           <p className="text-[11px] text-white/60 italic line-clamp-3">{appointment.notes}</p>
         )}
-      </div>
+      </button>
 
       {/* Ações */}
       <div className="flex flex-wrap gap-2 p-3 border-t border-white/5 bg-black/20">
