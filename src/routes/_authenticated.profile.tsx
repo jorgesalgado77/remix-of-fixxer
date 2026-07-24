@@ -378,7 +378,7 @@ function ProfilePage() {
                 <span className="text-primary font-black text-sm">{profile?.karma_score || '5.0'}</span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               <span
                 className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md flex items-center gap-1 border"
                 style={{ ...theme.bgSoft, ...theme.borderSoft, color: theme.hex }}
@@ -386,12 +386,15 @@ function ProfilePage() {
                 <BadgeCheck className="w-3 h-3" />
                 {theme.label}
               </span>
-              <span className="bg-primary/20 border border-primary/40 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md text-primary flex items-center gap-1">
-                <BadgeCheck className="w-3 h-3" />
-                Plano {profile?.plan_id ? 'Profissional' : 'Gratuito'}
-              </span>
+              {!profileId && (
+                <>
+                  <CoinBalanceBadge />
+                  <PlanBadge planId={profile?.plan_id || "free"} renewsAt={profile?.plan_renews_at} />
+                </>
+              )}
             </div>
           </div>
+
 
 
           {profileId ? (
