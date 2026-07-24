@@ -180,6 +180,37 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
   ): Promise<PhotoItem[]> => {
     const list = validateBatch(files, existing, limit);
     if (!list.length) return [];
+
+    // Cobrança de fotos excedentes: 5 moedas por foto acima do quota grátis por seção.
+    if (chargeUserId) {
+      const { getActionCost, spendCoinsForAction } = await import('@/lib/monetization');
+      const perPhoto = getActionCost('extra_photo')?.coins ?? 5;
+      const startIdx = existing.length; // 0-based
+      const extras = list.reduce(
+        (count, _, i) => (startIdx + i + 1 > freePhotosPerSection ? count + 1 : count),
+        0,
+      );
+      if (extras > 0 && perPhoto > 0) {
+        const total = extras * perPhoto;
+        const ok = confirm(
+          `Você está enviando ${extras} foto(s) além da cota grátis (${freePhotosPerSection}/seção).\n\nCusto estimado: ${total} moedas (${perPhoto} moedas por foto extra).\n\nConfirmar upload?`,
+        );
+        if (!ok) return [];
+        let charged = 0;
+        for (let i = 0; i < extras; i++) {
+          const res = await spendCoinsForAction(chargeUserId, 'extra_photo', folder);
+          if (!res.ok) {
+            if (res.reason === 'insufficient') { toast.error(`Saldo insuficiente. Necessário: ${res.cost} moedas por foto.`); return []; }
+            if (res.reason === 'disabled') break;
+            toast.error('Falha ao debitar moedas', { description: res.error });
+            return [];
+          }
+          charged += res.cost ?? perPhoto;
+        }
+        if (charged > 0) toast.success(`−${charged} moedas · ${extras} foto(s) extra(s) liberadas.`);
+      }
+    }
+
     const uploaded: PhotoItem[] = [];
     for (const original of list) {
       const check = validateImage(original, L.imgMaxMB * 1024 * 1024);
@@ -407,6 +438,11 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
             <p className="text-[10px] text-muted-foreground mt-1">
               Crie até {L.maxCustomSections} seções nomeadas (ex.: Cozinhas, Dormitórios) — {L.maxCustomPhotos} fotos cada.
             </p>
+            {chargeUserId && (
+              <p className="text-[10px] text-amber-400/90 mt-1 font-bold">
+                💰 Fotos extras: 5 moedas/foto acima de {freePhotosPerSection}/seção · Nova seção extra: 15 moedas (após {freeSessionsQuota} grátis).
+              </p>
+            )}
           </div>
           <Button
             onClick={addSection}
@@ -414,6 +450,9 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
             className="h-8 bg-primary text-black font-black uppercase italic text-[10px] rounded-xl hover:bg-primary/90 disabled:opacity-40"
           >
             <PlusCircle className="w-3 h-3 mr-1.5" /> Nova Seção ({safe.custom.length}/{L.maxCustomSections})
+            {chargeUserId && safe.custom.length >= freeSessionsQuota && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded bg-black/30 text-amber-300 text-[9px]">−15</span>
+            )}
           </Button>
         </div>
 
