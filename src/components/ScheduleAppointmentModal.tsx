@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Calendar as CalendarIcon, MapPin, DollarSign, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createAppointment, APPOINTMENT_TYPES, type AppointmentType } from "@/lib/appointments";
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { parseCurrencyBRL } from "@/lib/currency-brl";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+import { normalizeBranches } from "@/lib/activity-branches";
+import { getFieldConfigForBranches } from "@/lib/branch-field-map";
 
 type Props = {
   open: boolean;
