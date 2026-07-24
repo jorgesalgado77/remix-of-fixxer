@@ -21,6 +21,15 @@ import {
   Volume2,
   VolumeX,
   Video as VideoIcon,
+  PencilRuler,
+  Ruler,
+  ClipboardCheck,
+  Wrench,
+  LifeBuoy,
+  Search as SearchIcon,
+  Truck,
+  MoreHorizontal,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
