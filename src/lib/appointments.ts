@@ -39,7 +39,9 @@ export type Appointment = {
   checkout_at: string | null;
   checkin_lat: number | null;
   checkin_lng: number | null;
+  checkin_photos: string[] | null;
   checkout_photos: string[] | null;
+  cancel_reason: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
