@@ -493,6 +493,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setContractValue("");
     setCommissionPct("");
     setPriceType("fixo");
+    setFreightVolumes("");
+    setFreightWeight("");
+    setOtherServiceText("");
     filesCacheRef.current.clear();
   };
 
