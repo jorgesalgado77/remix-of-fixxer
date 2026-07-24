@@ -190,15 +190,35 @@ export default function AgendaPage() {
                 appointment={a}
                 userId={userId}
                 busy={busy === a.id}
-                onAccept={() => withBusy(a.id, () => acceptAppointment(a.id).then(() => { toast.success("Confirmado!"); }))}
-                onCancel={() => withBusy(a.id, () => cancelAppointment(a.id).then(() => { toast("Cancelado."); }))}
-                onCheckIn={() => withBusy(a.id, () => checkIn(a.id).then(() => { toast.success("📍 Check-in registrado!"); }))}
-                onCheckOut={() => withBusy(a.id, () => checkOut(a.id, []).then(() => { toast.success("🏁 Check-out concluído. Custódia liberada."); }))}
+                onAccept={() => withBusy(a.id, async () => { await acceptAppointment(a.id); toast.success("Confirmado!"); })}
+                onCancel={() => withBusy(a.id, async () => { await cancelAppointment(a.id); toast("Cancelado."); })}
+                onCheckIn={() => setPhotoModal({ appointment: a, mode: "checkin" })}
+                onCheckOut={() => setPhotoModal({ appointment: a, mode: "checkout" })}
               />
             ))}
           </div>
         )}
       </div>
+
+      {photoModal && (
+        <CheckoutPhotosModal
+          open={!!photoModal}
+          onClose={() => setPhotoModal(null)}
+          appointmentId={photoModal.appointment.id}
+          serviceTitle={APPOINTMENT_TYPES[photoModal.appointment.type]?.label}
+          mode={photoModal.mode}
+          minPhotos={photoModal.mode === "checkout" ? 1 : 0}
+          onConfirm={async (urls) => {
+            if (photoModal.mode === "checkin") {
+              await checkIn(photoModal.appointment.id, urls);
+              toast.success("📍 Check-in registrado!");
+            } else {
+              await checkOut(photoModal.appointment.id, urls);
+              toast.success("🏁 Check-out concluído. Custódia liberada.");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
