@@ -30,7 +30,7 @@ export function ScheduleAppointmentModal({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [address, setAddress] = useState(defaultAddress || "");
-  const [deposit, setDeposit] = useState(0);
+  const [deposit, setDeposit] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
