@@ -86,6 +86,9 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     onRadiusChange,
     badge,
     searchInput,
+    resultCount,
+    resultLabel = "resultado",
+    loading,
   } = props;
 
   const [open, setOpen] = useState(false);
