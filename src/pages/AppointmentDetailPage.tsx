@@ -16,6 +16,9 @@ import {
   RefreshCw,
   History,
   ImagePlus,
+  FileDown,
+  Gavel,
+  AlertTriangle,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
@@ -33,20 +36,33 @@ import {
   type Appointment,
   type AppointmentEvent,
 } from "@/lib/appointments";
+import {
+  fetchDisputes,
+  openDispute,
+  withdrawDispute,
+  DISPUTE_STATUS_LABEL,
+  DISPUTE_ACTION_LABEL,
+  type AppointmentDispute,
+  type DisputeAction,
+} from "@/lib/appointment-disputes";
+import { generateAppointmentPdf, downloadPdf, summarizeRefund } from "@/lib/appointment-pdf";
 import { CheckoutPhotosModal } from "@/components/CheckoutPhotosModal";
 import { useMediaUpload } from "@/hooks/use-media-upload";
+
 
 export default function AppointmentDetailPage() {
   const { id } = useParams({ from: "/_authenticated/agenda/$id" });
   const navigate = useNavigate();
   const [apt, setApt] = useState<Appointment | null>(null);
   const [events, setEvents] = useState<AppointmentEvent[]>([]);
+  const [disputes, setDisputes] = useState<AppointmentDispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [photoModal, setPhotoModal] = useState<{ mode: "checkin" | "checkout" } | null>(null);
+  const [disputeOpen, setDisputeOpen] = useState(false);
   const { uploadFileDetailed } = useMediaUpload();
 
   const load = useCallback(async () => {
@@ -55,8 +71,12 @@ export default function AppointmentDetailPage() {
       const a = await fetchAppointment(id);
       setApt(a);
       if (a) {
-        const ev = await fetchAppointmentEvents(id);
+        const [ev, ds] = await Promise.all([
+          fetchAppointmentEvents(id),
+          fetchDisputes(id),
+        ]);
         setEvents(ev);
+        setDisputes(ds);
       }
     } catch (e: any) {
       toast.error("Falha ao carregar compromisso", { description: e?.message });
@@ -70,7 +90,7 @@ export default function AppointmentDetailPage() {
     load();
   }, [load]);
 
-  // Realtime
+  // Realtime — compromisso, eventos e disputas
   useEffect(() => {
     const ch = supabaseExternal
       .channel(`appt-detail:${id}`)
@@ -84,11 +104,32 @@ export default function AppointmentDetailPage() {
         { event: "*", schema: "public", table: "appointment_events", filter: `appointment_id=eq.${id}` },
         () => load(),
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointment_disputes", filter: `appointment_id=eq.${id}` },
+        () => load(),
+      )
       .subscribe();
     return () => {
       supabaseExternal.removeChannel(ch);
     };
   }, [id, load]);
+
+  const refundSummary = useMemo(
+    () => (apt ? summarizeRefund(apt, events) : null),
+    [apt, events],
+  );
+
+  const handleDownloadPdf = async () => {
+    if (!apt) return;
+    await withBusy("pdf", async () => {
+      const blob = await generateAppointmentPdf(apt, events, disputes);
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadPdf(blob, `fixxer-compromisso-${apt.id.slice(0, 8)}-${stamp}.pdf`);
+      toast.success("📄 PDF gerado com sucesso!");
+    });
+  };
+
 
   const timeline = useMemo(() => {
     if (!apt) return [] as { at: string; icon: string; title: string; sub?: string; color: string }[];
@@ -269,14 +310,8 @@ export default function AppointmentDetailPage() {
               </button>
             </div>
           )}
-          {apt.deposit_amount > 0 && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-[#00FF87]/10 border border-[#00FF87]/30">
-              <ShieldCheck className="w-4 h-4 text-[#00FF87]" />
-              <div className="flex-1">
-                <p className="text-[10px] font-black uppercase text-[#00FF87]">Sinal em custódia FIXXER</p>
-                <p className="text-sm font-bold">R$ {apt.deposit_amount.toFixed(2).replace(".", ",")}</p>
-              </div>
-            </div>
+          {apt.deposit_amount > 0 && refundSummary && (
+            <RefundStatusCard summary={refundSummary} status={apt.status} />
           )}
           {apt.notes && (
             <p className="text-[12px] text-white/70 italic border-l-2 border-white/10 pl-3">{apt.notes}</p>
@@ -297,7 +332,12 @@ export default function AppointmentDetailPage() {
           {canCancel && (
             <ActionBtn onClick={() => setCancelOpen(true)} busy={false} icon={<X className="w-3 h-3" />} label="Cancelar" bg="#FF3B30" />
           )}
+          {apt.deposit_amount > 0 && (
+            <ActionBtn onClick={() => setDisputeOpen(true)} busy={false} icon={<Gavel className="w-3 h-3" />} label="Contestar" bg="#FFB020" />
+          )}
+          <ActionBtn onClick={handleDownloadPdf} busy={busy === "pdf"} icon={<FileDown className="w-3 h-3" />} label="Baixar PDF" bg="#00E5FF" />
         </section>
+
 
         {/* Fotos check-in */}
         {canManagePhotos && (
@@ -346,7 +386,22 @@ export default function AppointmentDetailPage() {
             ))}
           </div>
         </section>
+
+        {/* Contestações / Recursos */}
+        <DisputesSection
+          disputes={disputes}
+          userId={userId}
+          onWithdraw={async (id) => {
+            await withBusy(`with-${id}`, async () => {
+              await withdrawDispute(id);
+              toast.success("Contestação retirada.");
+              load();
+            });
+          }}
+          onOpenNew={() => setDisputeOpen(true)}
+        />
       </div>
+
 
       {/* Modal de cancelamento */}
       {cancelOpen && (
@@ -419,9 +474,261 @@ export default function AppointmentDetailPage() {
           }}
         />
       )}
+
+      {disputeOpen && (
+        <DisputeModal
+          appointmentId={apt.id}
+          hasEscrow={apt.deposit_amount > 0}
+          onClose={() => setDisputeOpen(false)}
+          onCreated={() => {
+            setDisputeOpen(false);
+            toast.success("⚖️ Contestação registrada. A FIXXER revisará em breve.");
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }
+
+// ---------- Sub-componentes ----------
+
+function RefundStatusCard({
+  summary,
+  status,
+}: {
+  summary: ReturnType<typeof summarizeRefund>;
+  status: Appointment["status"];
+}) {
+  const brl = (n: number) => `R$ ${n.toFixed(2).replace(".", ",")}`;
+  const held = Math.max(0, summary.net);
+  const state: "refunded" | "released" | "held" | "none" =
+    summary.deposit <= 0 ? "none" :
+    summary.refunded > 0 ? "refunded" :
+    summary.released > 0 ? "released" :
+    held > 0 ? "held" : "none";
+  const color =
+    state === "refunded" ? "#00FF87" :
+    state === "released" ? "#00E5FF" :
+    state === "held" ? "#FFD600" : "#8E8E93";
+  const label =
+    state === "refunded" ? "Reembolsado ao cliente" :
+    state === "released" ? "Liberado ao prestador" :
+    state === "held" ? "Sinal retido em custódia" : "Sem custódia ativa";
+  return (
+    <div
+      className="p-3 rounded-xl border space-y-2"
+      style={{ backgroundColor: `${color}15`, borderColor: `${color}55` }}
+    >
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4" style={{ color }} />
+        <div className="flex-1">
+          <p className="text-[10px] font-black uppercase tracking-widest" style={{ color }}>
+            Custódia FIXXER — {label}
+          </p>
+          <p className="text-sm font-bold">{brl(summary.deposit)}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-[10px]">
+        <div className="p-1.5 rounded bg-black/30">
+          <p className="text-white/50 uppercase">Retido</p>
+          <p className="font-bold text-white">{brl(held)}</p>
+        </div>
+        <div className="p-1.5 rounded bg-black/30">
+          <p className="text-white/50 uppercase">Liberado</p>
+          <p className="font-bold" style={{ color: "#00E5FF" }}>{brl(summary.released)}</p>
+        </div>
+        <div className="p-1.5 rounded bg-black/30">
+          <p className="text-white/50 uppercase">Reembolso</p>
+          <p className="font-bold" style={{ color: "#00FF87" }}>{brl(summary.refunded)}</p>
+        </div>
+      </div>
+      {status === "cancelled" && summary.refunded > 0 && (
+        <p className="text-[10px] text-white/60 italic">
+          Cancelamento processado — reembolso creditado automaticamente.
+        </p>
+      )}
+    </div>
+  );
+}
+
+
+function DisputesSection({
+  disputes,
+  userId,
+  onWithdraw,
+  onOpenNew,
+}: {
+  disputes: AppointmentDispute[];
+  userId: string | null;
+  onWithdraw: (id: string) => void | Promise<void>;
+  onOpenNew: () => void;
+}) {
+  return (
+    <section className="bg-white/[0.04] border border-white/10 rounded-2xl p-4 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[11px] font-black uppercase tracking-widest text-white/60 flex items-center gap-2">
+          <Gavel className="w-3 h-3" /> Contestações e Recursos
+        </h2>
+        <button
+          onClick={onOpenNew}
+          className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg"
+          style={{ backgroundColor: "#FFB020", color: "#000" }}
+        >
+          + Nova
+        </button>
+      </div>
+      {disputes.length === 0 ? (
+        <p className="text-[11px] text-white/40 italic">Nenhuma contestação aberta.</p>
+      ) : (
+        <ul className="space-y-2">
+          {disputes.map((d) => {
+            const isMine = d.opened_by === userId;
+            const canWithdraw = isMine && d.status === "open";
+            const meta = DISPUTE_STATUS_LABEL[d.status];
+            const statusColor = meta?.color ?? "#8E8E93";
+            return (
+              <li key={d.id} className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded"
+                    style={{ backgroundColor: `${statusColor}25`, color: statusColor }}
+                  >
+                    {meta?.icon} {meta?.label ?? d.status}
+                  </span>
+                  <span className="text-[9px] text-white/40">
+                    {new Date(d.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+                <p className="text-[11px] font-bold text-white">
+                  Solicita: {DISPUTE_ACTION_LABEL[d.requested_action] ?? d.requested_action}
+                </p>
+                {d.reason && <p className="text-[11px] text-white/70 leading-snug">{d.reason}</p>}
+                {d.admin_notes && (
+                  <p className="text-[10px] text-white/60 italic border-l-2 border-white/20 pl-2 mt-1">
+                    Parecer FIXXER: {d.admin_notes}
+                  </p>
+                )}
+                {canWithdraw && (
+                  <button
+                    onClick={() => onWithdraw(d.id)}
+                    className="text-[10px] uppercase font-black text-white/60 hover:text-white flex items-center gap-1 mt-1"
+                  >
+                    <Trash2 className="w-3 h-3" /> Retirar contestação
+                  </button>
+                )}
+              </li>
+            );
+
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function DisputeModal({
+  appointmentId,
+  hasEscrow,
+  onClose,
+  onCreated,
+}: {
+  appointmentId: string;
+  hasEscrow: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [action, setAction] = useState<DisputeAction>(hasEscrow ? "full_refund" : "refund_review");
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const options: { value: DisputeAction; label: string; hint: string }[] = [
+    { value: "full_refund",     label: "Reembolso integral",       hint: "Devolver 100% do sinal ao cliente." },
+    { value: "partial_refund",  label: "Reembolso parcial",        hint: "Dividir custódia entre as partes." },
+    { value: "reverse_release", label: "Estornar liberação",       hint: "Reverter valor já liberado ao prestador." },
+    { value: "refund_review",   label: "Revisão do reembolso",     hint: "Solicitar mediação FIXXER sem definição prévia." },
+  ];
+  const submit = async () => {
+    if (reason.trim().length < 10) {
+      toast.error("Descreva o motivo com pelo menos 10 caracteres.");
+      return;
+    }
+    try {
+      setSaving(true);
+      await openDispute({ appointment_id: appointmentId, requested_action: action, reason: reason.trim() });
+      onCreated();
+    } catch (e: any) {
+      toast.error("Falha ao abrir contestação", { description: e?.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full sm:max-w-md bg-[#0A0A0B] border border-white/10 rounded-t-3xl sm:rounded-3xl p-4 space-y-4 max-h-[90vh] overflow-y-auto"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+      >
+        <div>
+          <h3 className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-[#FFB020]" />
+            Abrir contestação
+          </h3>
+          <p className="text-[10px] text-white/50 mt-1">
+            A equipe FIXXER analisará em até 48h úteis. Descreva o ocorrido de forma objetiva.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase text-white/60">O que você solicita?</label>
+          <div className="grid grid-cols-1 gap-1.5">
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setAction(opt.value)}
+                className={`text-left p-2.5 rounded-lg border transition ${
+                  action === opt.value
+                    ? "bg-[#FFB020]/20 border-[#FFB020] text-white"
+                    : "bg-white/5 border-white/10 text-white/70"
+                }`}
+              >
+                <p className="text-[11px] font-black uppercase">{opt.label}</p>
+                <p className="text-[10px] text-white/50 mt-0.5">{opt.hint}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-black uppercase text-white/60">Motivo detalhado</label>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={4}
+            maxLength={800}
+            placeholder="Descreva o que aconteceu, prazos, evidências…"
+            className="w-full mt-1 bg-[#1A1A1B] border border-white/10 rounded-lg px-3 py-2 text-sm text-white resize-none"
+          />
+          <p className="text-[9px] text-white/40 text-right mt-0.5">{reason.length}/800</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/70">
+            Cancelar
+          </button>
+          <button
+            onClick={submit}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-40 flex items-center justify-center gap-2"
+            style={{ backgroundColor: "#FFB020", color: "#000" }}
+          >
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Gavel className="w-3 h-3" />}
+            Registrar contestação
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function Info({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
