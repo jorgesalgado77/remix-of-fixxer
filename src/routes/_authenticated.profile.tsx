@@ -154,6 +154,39 @@ function ProfilePage() {
       const newMedia = [];
       const newDocs = [];
 
+      // ---- Cobrança de excedentes: fotos (5 moedas) / vídeos (10 moedas) ----
+      const FREE_PHOTOS = 6;
+      const FREE_VIDEOS = 1;
+      if (type === 'image' || type === 'video') {
+        const existing = (profile?.portfolio_media || []).filter((f: any) => f.type === type).length;
+        const incoming = files.length;
+        const freeLeft = Math.max(0, (type === 'image' ? FREE_PHOTOS : FREE_VIDEOS) - existing);
+        const extras = Math.max(0, incoming - freeLeft);
+        if (extras > 0 && profile?.id) {
+          const { getActionCost, spendCoinsForAction } = await import('@/lib/monetization');
+          const key = type === 'image' ? 'extra_photo' : 'extra_video';
+          const per = getActionCost(key)?.coins ?? (type === 'image' ? 5 : 10);
+          const total = extras * per;
+          const label = type === 'image' ? 'foto(s)' : 'vídeo(s)';
+          const ok = per > 0 ? window.confirm(
+            `Você está enviando ${extras} ${label} além da cota grátis (${type === 'image' ? FREE_PHOTOS : FREE_VIDEOS}).\n\nCusto estimado: ${total} moedas (${per}/${type === 'image' ? 'foto' : 'vídeo'}).\n\nConfirmar upload?`
+          ) : true;
+          if (!ok) { setSaving(false); return; }
+          let charged = 0;
+          for (let i = 0; i < extras; i++) {
+            const res = await spendCoinsForAction(profile.id, key, `portfolio_${type}`);
+            if (!res.ok) {
+              if (res.reason === 'insufficient') { toast.error(`Saldo insuficiente. Necessário: ${res.cost} moedas por ${type === 'image' ? 'foto' : 'vídeo'}.`); setSaving(false); return; }
+              if (res.reason === 'disabled') break;
+              toast.error('Falha ao debitar moedas', { description: res.error }); setSaving(false); return;
+            }
+            charged += res.cost ?? per;
+          }
+          if (charged > 0) toast.success(`−${charged} moedas · ${extras} ${label} extra(s) liberadas.`);
+        }
+      }
+
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
