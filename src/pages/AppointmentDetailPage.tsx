@@ -474,9 +474,255 @@ export default function AppointmentDetailPage() {
           }}
         />
       )}
+
+      {disputeOpen && (
+        <DisputeModal
+          appointmentId={apt.id}
+          hasEscrow={apt.deposit_amount > 0}
+          onClose={() => setDisputeOpen(false)}
+          onCreated={() => {
+            setDisputeOpen(false);
+            toast.success("⚖️ Contestação registrada. A FIXXER revisará em breve.");
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }
+
+// ---------- Sub-componentes ----------
+
+function RefundStatusCard({
+  summary,
+  status,
+}: {
+  summary: ReturnType<typeof summarizeRefund>;
+  status: Appointment["status"];
+}) {
+  const brl = (n: number) => `R$ ${n.toFixed(2).replace(".", ",")}`;
+  const color =
+    summary.state === "refunded" ? "#00FF87" :
+    summary.state === "released" ? "#00E5FF" :
+    summary.state === "held" ? "#FFD600" : "#8E8E93";
+  const label =
+    summary.state === "refunded" ? "Reembolsado ao cliente" :
+    summary.state === "released" ? "Liberado ao prestador" :
+    summary.state === "held" ? "Sinal retido em custódia" : "Sem custódia ativa";
+  return (
+    <div
+      className="p-3 rounded-xl border space-y-2"
+      style={{ backgroundColor: `${color}15`, borderColor: `${color}55` }}
+    >
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4" style={{ color }} />
+        <div className="flex-1">
+          <p className="text-[10px] font-black uppercase tracking-widest" style={{ color }}>
+            Custódia FIXXER — {label}
+          </p>
+          <p className="text-sm font-bold">{brl(summary.deposit)}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-[10px]">
+        <div className="p-1.5 rounded bg-black/30">
+          <p className="text-white/50 uppercase">Retido</p>
+          <p className="font-bold text-white">{brl(summary.held)}</p>
+        </div>
+        <div className="p-1.5 rounded bg-black/30">
+          <p className="text-white/50 uppercase">Liberado</p>
+          <p className="font-bold" style={{ color: "#00E5FF" }}>{brl(summary.released)}</p>
+        </div>
+        <div className="p-1.5 rounded bg-black/30">
+          <p className="text-white/50 uppercase">Reembolso</p>
+          <p className="font-bold" style={{ color: "#00FF87" }}>{brl(summary.refunded)}</p>
+        </div>
+      </div>
+      {status === "cancelled" && summary.refunded > 0 && (
+        <p className="text-[10px] text-white/60 italic">
+          Cancelamento processado — reembolso creditado automaticamente.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function DisputesSection({
+  disputes,
+  userId,
+  onWithdraw,
+  onOpenNew,
+}: {
+  disputes: AppointmentDispute[];
+  userId: string | null;
+  onWithdraw: (id: string) => void | Promise<void>;
+  onOpenNew: () => void;
+}) {
+  return (
+    <section className="bg-white/[0.04] border border-white/10 rounded-2xl p-4 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[11px] font-black uppercase tracking-widest text-white/60 flex items-center gap-2">
+          <Gavel className="w-3 h-3" /> Contestações e Recursos
+        </h2>
+        <button
+          onClick={onOpenNew}
+          className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg"
+          style={{ backgroundColor: "#FFB020", color: "#000" }}
+        >
+          + Nova
+        </button>
+      </div>
+      {disputes.length === 0 ? (
+        <p className="text-[11px] text-white/40 italic">Nenhuma contestação aberta.</p>
+      ) : (
+        <ul className="space-y-2">
+          {disputes.map((d) => {
+            const isMine = d.opened_by === userId;
+            const canWithdraw = isMine && d.status === "open";
+            const statusColor =
+              d.status === "resolved" ? "#00FF87" :
+              d.status === "reviewing" ? "#00E5FF" :
+              d.status === "open" ? "#FFB020" :
+              d.status === "rejected" ? "#FF3B30" : "#8E8E93";
+            return (
+              <li key={d.id} className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded"
+                    style={{ backgroundColor: `${statusColor}25`, color: statusColor }}
+                  >
+                    {DISPUTE_STATUS_LABEL[d.status] ?? d.status}
+                  </span>
+                  <span className="text-[9px] text-white/40">
+                    {new Date(d.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+                <p className="text-[11px] font-bold text-white">
+                  Solicita: {DISPUTE_ACTION_LABEL[d.requested_action] ?? d.requested_action}
+                </p>
+                {d.reason && <p className="text-[11px] text-white/70 leading-snug">{d.reason}</p>}
+                {d.resolution_notes && (
+                  <p className="text-[10px] text-white/60 italic border-l-2 border-white/20 pl-2 mt-1">
+                    Parecer FIXXER: {d.resolution_notes}
+                  </p>
+                )}
+                {canWithdraw && (
+                  <button
+                    onClick={() => onWithdraw(d.id)}
+                    className="text-[10px] uppercase font-black text-white/60 hover:text-white flex items-center gap-1 mt-1"
+                  >
+                    <Trash2 className="w-3 h-3" /> Retirar contestação
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function DisputeModal({
+  appointmentId,
+  hasEscrow,
+  onClose,
+  onCreated,
+}: {
+  appointmentId: string;
+  hasEscrow: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [action, setAction] = useState<DisputeAction>(hasEscrow ? "refund_full" : "review_case");
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const options: { value: DisputeAction; label: string; hint: string }[] = [
+    { value: "refund_full", label: "Reembolso integral", hint: "Devolver 100% do sinal ao cliente." },
+    { value: "refund_partial", label: "Reembolso parcial", hint: "Dividir custódia entre as partes." },
+    { value: "release_to_provider", label: "Liberar ao prestador", hint: "Serviço foi prestado — liberar valor." },
+    { value: "review_case", label: "Análise geral", hint: "Solicitar mediação FIXXER sem definição prévia." },
+  ];
+  const submit = async () => {
+    if (reason.trim().length < 10) {
+      toast.error("Descreva o motivo com pelo menos 10 caracteres.");
+      return;
+    }
+    try {
+      setSaving(true);
+      await openDispute({ appointmentId, requestedAction: action, reason: reason.trim() });
+      onCreated();
+    } catch (e: any) {
+      toast.error("Falha ao abrir contestação", { description: e?.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full sm:max-w-md bg-[#0A0A0B] border border-white/10 rounded-t-3xl sm:rounded-3xl p-4 space-y-4 max-h-[90vh] overflow-y-auto"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+      >
+        <div>
+          <h3 className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-[#FFB020]" />
+            Abrir contestação
+          </h3>
+          <p className="text-[10px] text-white/50 mt-1">
+            A equipe FIXXER analisará em até 48h úteis. Descreva o ocorrido de forma objetiva.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase text-white/60">O que você solicita?</label>
+          <div className="grid grid-cols-1 gap-1.5">
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setAction(opt.value)}
+                className={`text-left p-2.5 rounded-lg border transition ${
+                  action === opt.value
+                    ? "bg-[#FFB020]/20 border-[#FFB020] text-white"
+                    : "bg-white/5 border-white/10 text-white/70"
+                }`}
+              >
+                <p className="text-[11px] font-black uppercase">{opt.label}</p>
+                <p className="text-[10px] text-white/50 mt-0.5">{opt.hint}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-black uppercase text-white/60">Motivo detalhado</label>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={4}
+            maxLength={800}
+            placeholder="Descreva o que aconteceu, prazos, evidências…"
+            className="w-full mt-1 bg-[#1A1A1B] border border-white/10 rounded-lg px-3 py-2 text-sm text-white resize-none"
+          />
+          <p className="text-[9px] text-white/40 text-right mt-0.5">{reason.length}/800</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/70">
+            Cancelar
+          </button>
+          <button
+            onClick={submit}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-40 flex items-center justify-center gap-2"
+            style={{ backgroundColor: "#FFB020", color: "#000" }}
+          >
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Gavel className="w-3 h-3" />}
+            Registrar contestação
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function Info({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
