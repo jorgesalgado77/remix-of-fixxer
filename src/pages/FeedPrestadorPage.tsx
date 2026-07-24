@@ -1078,7 +1078,7 @@ export default function FeedPrestadorPage() {
     <div className="min-h-screen bg-[#0A0A0B] text-foreground pb-24 animate-in fade-in duration-500">
       {/* TOPBAR FIXO */}
       <header className="sticky top-0 z-50 bg-[#0A0A0B]/90 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-5xl mx-auto px-4 py-3 space-y-3">
+        <div className="max-w-5xl mx-auto px-4 py-3 space-y-2">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate({ to: "/dashboard/prestador" })}
@@ -1097,45 +1097,46 @@ export default function FeedPrestadorPage() {
             </div>
           </div>
 
-          <div
-            className={`flex items-center gap-3 p-3 rounded-2xl border border-white/10 ${glassClass}`}
-          >
-            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por palavra-chave ou cidade..."
-              className="bg-transparent border-none outline-none text-xs text-white w-full font-medium placeholder:text-muted-foreground"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="text-muted-foreground hover:text-white"
+          <FeedFiltersBar
+            accent="#FF9F0A"
+            category="prestador"
+            searchInput={
+              <div
+                className={`flex items-center gap-3 px-3 py-2 rounded-xl border border-white/10 ${glassClass}`}
               >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar palavra-chave ou cidade..."
+                  className="bg-transparent border-none outline-none text-xs text-white w-full font-medium placeholder:text-muted-foreground"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="text-muted-foreground hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            }
+            onMacroSearchTerm={(term) => setSearch(term ?? "")}
+            pillLabel="Especialidade"
+            pillOptions={FILTERS.map((f) => ({ key: f.key, label: f.label, icon: f.icon }))}
+            pillValue={filter}
+            onPillChange={(k) => setFilter(k as typeof filter)}
+            statusValue={statusFilter}
+            onStatusChange={setStatusFilter}
+            badge={{
+              icon: "⚡",
+              text: "4 O.S. de Montagem e Medição abertas no raio de 15 km",
+            }}
+          />
 
         </div>
       </header>
-
-      <FeedFiltersBar
-        accent="#FF9F0A"
-        category="prestador"
-        onMacroSearchTerm={(term) => setSearch(term ?? "")}
-        pillLabel="Especialidade"
-        pillOptions={FILTERS.map((f) => ({ key: f.key, label: f.label, icon: f.icon }))}
-        pillValue={filter}
-        onPillChange={(k) => setFilter(k as typeof filter)}
-        statusValue={statusFilter}
-        onStatusChange={setStatusFilter}
-        badge={{
-          icon: "⚡",
-          text: "4 O.S. de Montagem e Medição abertas no raio de 15 km",
-        }}
-      />
 
 
       {/* CONTEÚDO */}
