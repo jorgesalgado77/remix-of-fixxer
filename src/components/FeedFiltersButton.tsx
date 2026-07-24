@@ -205,9 +205,9 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
 
       {/* Badge de oportunidades próximas (mantido, mais compacto) */}
       {badge && (
-        <div className="w-full max-w-3xl mx-auto px-3 sm:px-4 pb-2">
+        <div className="w-full px-3 sm:px-4 pb-2">
           <div
-            className="flex items-center gap-2 rounded-2xl border px-3 py-2 text-[11px] font-bold text-white"
+            className="w-full flex items-center gap-2 rounded-2xl border px-3 py-2 text-[11px] font-bold text-white"
             style={{
               borderColor: hexToRgba(accent, 0.35),
               backgroundColor: hexToRgba(accent, 0.08),
