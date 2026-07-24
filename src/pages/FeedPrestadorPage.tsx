@@ -14,6 +14,7 @@ import {
   type StatusFilterKey,
 } from "@/lib/feed-status";
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
+import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 
 import {
   ArrowLeft,
