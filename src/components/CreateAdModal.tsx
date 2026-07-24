@@ -551,24 +551,24 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     if (startDate && deadline && new Date(deadline) < new Date(startDate))
       return "O prazo de execução não pode ser anterior à data de início.";
     if (priceType === "fixo") {
-      const n = Number(fixedValue);
-      if (!fixedValue || Number.isNaN(n) || n <= 0) return "Informe um valor fixo válido (> 0).";
+      const n = parseCurrencyBRL(fixedValue);
+      if (n <= 0) return "Informe um valor fixo válido (> 0).";
     }
     if (priceType === "comissao") {
-      const cv = Number(contractValue);
+      const cv = parseCurrencyBRL(contractValue);
       const pct = Number(commissionPct);
-      if (!contractValue || Number.isNaN(cv) || cv <= 0)
+      if (cv <= 0)
         return "Informe o valor do contrato fechado.";
       if (!commissionPct || Number.isNaN(pct) || pct <= 0 || pct > 100)
         return "Informe uma porcentagem válida (entre 0 e 100).";
     }
     if (priceType === "fixo_comissao") {
-      const fv = Number(fixedValue);
-      const cv = Number(contractValue);
+      const fv = parseCurrencyBRL(fixedValue);
+      const cv = parseCurrencyBRL(contractValue);
       const pct = Number(commissionPct);
-      if (!fixedValue || Number.isNaN(fv) || fv <= 0)
+      if (fv <= 0)
         return "Informe o valor fixo garantido (> 0).";
-      if (!contractValue || Number.isNaN(cv) || cv <= 0)
+      if (cv <= 0)
         return "Informe o valor do contrato para calcular a comissão.";
       if (!commissionPct || Number.isNaN(pct) || pct <= 0 || pct > 100)
         return "Informe uma porcentagem de comissão válida (0–100).";
@@ -591,10 +591,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   };
 
   const priceDisplay = useMemo(() => {
-    if (priceType === "fixo") return formatBRL(fixedValue);
+    const fv = parseCurrencyBRL(fixedValue);
+    if (priceType === "fixo") return formatBRL(fv);
     if (priceType === "fixo_comissao") {
-      const total = Number(fixedValue || 0) + commissionValue;
-      return `${formatBRL(fixedValue)} + ${commissionPct || 0}% = ${formatBRL(total)}`;
+      const total = fv + commissionValue;
+      return `${formatBRL(fv)} + ${commissionPct || 0}% = ${formatBRL(total)}`;
     }
     return `Comissão: ${formatBRL(commissionValue)} (${commissionPct || 0}%)`;
   }, [priceType, fixedValue, commissionValue, commissionPct]);
