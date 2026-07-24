@@ -701,7 +701,7 @@ export default function FeedLojistaPage() {
     navigate({ to: "/chat/$peerId", params: { peerId: post.author.id } });
   };
 
-  const submitProposal = () => {
+  const submitProposal = async () => {
     const err = assertCurrencyIntegrity("Valor da proposta", proposalValue, {
       required: true,
       min: 0.01,
@@ -712,10 +712,24 @@ export default function FeedLojistaPage() {
       return;
     }
     const n = parseCurrencyBRL(proposalValue);
+    const target = proposalFor;
     toast.success("Proposta enviada!", {
-      description: `${proposalFor?.author.name} receberá sua oferta de R$ ${n
+      description: `${target?.author.name} receberá sua oferta de R$ ${n
         .toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.`,
     });
+    // Dispara push ao autor da O.S. (best-effort; ignora falha se sem sub)
+    if (target?.author?.id) {
+      try {
+        const { sendPushToUser } = await import("@/lib/push-client");
+        void sendPushToUser({
+          userId: target.author.id,
+          title: "💰 Nova proposta recebida",
+          body: `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} — ${target.title}`,
+          url: "/dashboard",
+          tag: `proposal-${target.id}`,
+        });
+      } catch { /* ignore */ }
+    }
     setProposalFor(null);
     setProposalValue("");
     setProposalMsg("");
