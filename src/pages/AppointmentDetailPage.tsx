@@ -560,25 +560,32 @@ function DisputesSection({
   userId,
   onWithdraw,
   onOpenNew,
+  appointmentId,
+  onReload,
 }: {
   disputes: AppointmentDispute[];
   userId: string | null;
   onWithdraw: (id: string) => void | Promise<void>;
   onOpenNew: () => void;
+  appointmentId: string;
+  onReload: () => void;
 }) {
   return (
     <section className="bg-white/[0.04] border border-white/10 rounded-2xl p-4 space-y-3">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-[11px] font-black uppercase tracking-widest text-white/60 flex items-center gap-2">
           <Gavel className="w-3 h-3" /> Contestações e Recursos
         </h2>
-        <button
-          onClick={onOpenNew}
-          className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg"
-          style={{ backgroundColor: "#FFB020", color: "#000" }}
-        >
-          + Nova
-        </button>
+        <div className="flex items-center gap-2">
+          <ComplaintButton appointmentId={appointmentId} onOpened={onReload} />
+          <button
+            onClick={onOpenNew}
+            className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg"
+            style={{ backgroundColor: "#FFB020", color: "#000" }}
+          >
+            + Nova
+          </button>
+        </div>
       </div>
       {disputes.length === 0 ? (
         <p className="text-[11px] text-white/40 italic">Nenhuma contestação aberta.</p>
