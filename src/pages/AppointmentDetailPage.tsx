@@ -641,6 +641,7 @@ function DisputeModal({
 }) {
   const [action, setAction] = useState<DisputeAction>(hasEscrow ? "full_refund" : "refund_review");
   const [reason, setReason] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const options: { value: DisputeAction; label: string; hint: string }[] = [
     { value: "full_refund",     label: "Reembolso integral",       hint: "Devolver 100% do sinal ao cliente." },
@@ -648,6 +649,13 @@ function DisputeModal({
     { value: "reverse_release", label: "Estornar liberação",       hint: "Reverter valor já liberado ao prestador." },
     { value: "refund_review",   label: "Revisão do reembolso",     hint: "Solicitar mediação FIXXER sem definição prévia." },
   ];
+
+  const addFiles = (list: FileList | null) => {
+    if (!list) return;
+    const arr = Array.from(list).filter(f => f.size <= 15 * 1024 * 1024);
+    setFiles(prev => [...prev, ...arr].slice(0, 8));
+  };
+
   const submit = async () => {
     if (reason.trim().length < 10) {
       toast.error("Descreva o motivo com pelo menos 10 caracteres.");
@@ -655,7 +663,12 @@ function DisputeModal({
     }
     try {
       setSaving(true);
-      await openDispute({ appointment_id: appointmentId, requested_action: action, reason: reason.trim() });
+      let evidence_urls: string[] = [];
+      if (files.length) {
+        toast("Enviando evidências...");
+        evidence_urls = await uploadDisputeEvidences(appointmentId, files);
+      }
+      await openDispute({ appointment_id: appointmentId, requested_action: action, reason: reason.trim(), evidence_urls });
       onCreated();
     } catch (e: any) {
       toast.error("Falha ao abrir contestação", { description: e?.message });
@@ -711,6 +724,27 @@ function DisputeModal({
           />
           <p className="text-[9px] text-white/40 text-right mt-0.5">{reason.length}/800</p>
         </div>
+
+        <div>
+          <label className="text-[10px] font-black uppercase text-white/60">Evidências (imagens/PDF, até 8 · 15MB cada)</label>
+          <label className="mt-1 flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-white/20 bg-white/5 text-[11px] text-white/70 cursor-pointer">
+            <ImagePlus className="w-4 h-4" /> Adicionar arquivos
+            <input type="file" hidden multiple accept="image/*,application/pdf" onChange={(e) => { addFiles(e.target.files); e.currentTarget.value = ""; }} />
+          </label>
+          {files.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {files.map((f, i) => (
+                <li key={i} className="flex items-center justify-between text-[10px] text-white/70 bg-black/40 rounded px-2 py-1">
+                  <span className="truncate flex-1">{f.name}</span>
+                  <button onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="text-white/40 hover:text-[#FF3B30] ml-2">
+                    <X className="w-3 h-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <div className="flex gap-2">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/70">
             Cancelar
