@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Calendar as CalendarIcon, MapPin, DollarSign, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createAppointment, APPOINTMENT_TYPES, type AppointmentType } from "@/lib/appointments";
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { parseCurrencyBRL } from "@/lib/currency-brl";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+import { normalizeBranches } from "@/lib/activity-branches";
+import { getFieldConfigForBranches } from "@/lib/branch-field-map";
 
 type Props = {
   open: boolean;
@@ -33,6 +36,27 @@ export function ScheduleAppointmentModal({
   const [deposit, setDeposit] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [typeLabel, setTypeLabel] = useState<string>("Tipo de compromisso");
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return;
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("business_category, custom_branch")
+          .eq("id", uid)
+          .maybeSingle();
+        const cfg = getFieldConfigForBranches(normalizeBranches(data ?? undefined));
+        if (!cancelled) setTypeLabel(cfg.appointmentLabel);
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
 
   if (!open) return null;
 
@@ -95,7 +119,7 @@ export function ScheduleAppointmentModal({
           {/* Tipo */}
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-white/50 mb-2">
-              Tipo de compromisso
+              {typeLabel}
             </label>
             <div className="grid grid-cols-1 gap-2">
               {(Object.keys(APPOINTMENT_TYPES) as AppointmentType[]).map((k) => {

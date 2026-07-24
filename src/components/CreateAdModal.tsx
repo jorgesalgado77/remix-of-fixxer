@@ -234,36 +234,50 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     return () => { cancelled = true; };
   }, [open]);
 
-  // Detecta macro-categoria do usuário (Assistência, Imobiliário, Fitness, etc.)
+  // Detecta macro-categoria do usuário e resolve labels dinâmicos por macro
+  const [macroFieldCfg, setMacroFieldCfg] = useState<{
+    callType: string;
+    deadlineLabel: string;
+    startLabel: string;
+    descriptionPlaceholder: string;
+  } | null>(null);
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
       try {
-        const { findMacroForBranch } = await import("@/lib/activity-branches");
+        const { findMacroForBranch, normalizeBranches } = await import("@/lib/activity-branches");
+        const { getFieldConfigForBranches } = await import("@/lib/branch-field-map");
         const { data: auth } = await supabaseExternal.auth.getUser();
         const uid = auth?.user?.id;
         if (!uid) return;
         const { data } = await supabaseExternal
           .from("profiles")
-          .select("business_category")
+          .select("business_category, custom_branch")
           .eq("id", uid)
           .maybeSingle();
-        const branches = String(data?.business_category ?? "")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
+        const branches = normalizeBranches(data ?? undefined);
         for (const b of branches) {
           const m = findMacroForBranch(b);
           if (m) {
             if (!cancelled) setUserMacro({ icon: m.icon, label: m.label });
-            return;
+            break;
           }
+        }
+        const cfg = getFieldConfigForBranches(branches);
+        if (!cancelled) {
+          setMacroFieldCfg({
+            callType: cfg.callType,
+            deadlineLabel: cfg.deadlineLabel,
+            startLabel: cfg.startLabel,
+            descriptionPlaceholder: cfg.descriptionPlaceholder,
+          });
         }
       } catch { /* silencioso */ }
     })();
     return () => { cancelled = true; };
   }, [open]);
+
 
 
   useEffect(() => {
@@ -1235,7 +1249,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             <div className="grid md:grid-cols-3 gap-3">
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                  Data de Início
+                  {macroFieldCfg?.startLabel ?? "Data de Início"}
                 </Label>
                 <Input
                   type="date"
@@ -1246,7 +1260,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                  Prazo de Execução
+                  {macroFieldCfg?.deadlineLabel ?? "Prazo de Execução"}
                 </Label>
                 <Input
                   type="date"

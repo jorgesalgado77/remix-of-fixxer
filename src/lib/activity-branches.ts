@@ -349,10 +349,78 @@ export const B2B_SUGGESTIONS: Record<string, B2BSuggestion[]> = {
   ],
 };
 
-/** Retorna sugestões B2B relevantes para uma lista de ramos do usuário. */
-export function getB2BSuggestions(userBranches: string[]): B2BSuggestion[] {
+/** Prefixo usado para marcar ramos digitados livremente pelo usuário. */
+export const CUSTOM_BRANCH_PREFIX = "Outro:";
+
+/**
+ * Normaliza as strings de ramos de um profile em uma lista única, unindo
+ * `business_category` (separado por vírgula) com `custom_branch`
+ * (separado por `||`, prefixado com `Outro:`), sem duplicatas.
+ */
+export function normalizeBranches(profile?: {
+  business_category?: string | null;
+  custom_branch?: string | null;
+} | null): string[] {
+  if (!profile) return [];
+  const base = String(profile.business_category ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const customs = String(profile.custom_branch ?? "")
+    .split("||")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => (s.toLowerCase().startsWith("outro:") ? s : `${CUSTOM_BRANCH_PREFIX} ${s}`));
   const seen = new Set<string>();
-  const out: B2BSuggestion[] = [];
+  const out: string[] = [];
+  for (const b of [...base, ...customs]) {
+    const k = b.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(b);
+  }
+  return out;
+}
+
+/** Distância em km entre dois pontos (Haversine). */
+export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+export type B2BCandidate = {
+  title: string;
+  targetBranch?: string;
+  lat?: number | null;
+  lng?: number | null;
+  /** ISO timestamp — usado para priorizar por recência. */
+  updatedAt?: string | null;
+};
+
+export type B2BContext = {
+  userLocation?: { lat: number; lng: number } | null;
+  radiusKm?: number | null;
+  /** Candidatos reais (parceiros no banco); quando ausente, usa sugestões estáticas. */
+  candidates?: B2BCandidate[];
+};
+
+/**
+ * Retorna sugestões B2B para os ramos do usuário. Quando `context.candidates`
+ * é fornecido, filtra por raio (km) a partir de `userLocation` e ordena por
+ * recência DESC → proximidade ASC. Sem candidatos, cai no dicionário estático.
+ */
+export function getB2BSuggestions(
+  userBranches: string[],
+  context?: B2BContext,
+): B2BSuggestion[] {
+  const seen = new Set<string>();
+  const staticList: B2BSuggestion[] = [];
   for (const raw of userBranches) {
     const key = raw.trim();
     const list = B2B_SUGGESTIONS[key];
@@ -360,8 +428,52 @@ export function getB2BSuggestions(userBranches: string[]): B2BSuggestion[] {
     for (const s of list) {
       if (seen.has(s.title)) continue;
       seen.add(s.title);
-      out.push(s);
+      staticList.push(s);
     }
   }
-  return out;
+
+  const candidates = context?.candidates;
+  const radiusKm = context?.radiusKm ?? null;
+  const loc = context?.userLocation ?? null;
+
+  if (!candidates || candidates.length === 0) return staticList;
+
+  const targets = new Set(
+    staticList.map((s) => (s.targetBranch || "").toLowerCase()).filter(Boolean),
+  );
+  const scored = candidates
+    .filter((c) => !targets.size || targets.has((c.targetBranch || "").toLowerCase()))
+    .map((c) => {
+      const d = loc && c.lat != null && c.lng != null
+        ? haversineKm(loc, { lat: c.lat, lng: c.lng })
+        : Number.POSITIVE_INFINITY;
+      return { c, d, t: c.updatedAt ? new Date(c.updatedAt).getTime() : 0 };
+    })
+    .filter((x) => (radiusKm ? x.d <= radiusKm : true))
+    .sort((a, b) => (b.t - a.t) || (a.d - b.d));
+
+  const dynList: B2BSuggestion[] = scored.map(({ c, d }) => {
+    const base = staticList.find(
+      (s) => (s.targetBranch || "").toLowerCase() === (c.targetBranch || "").toLowerCase(),
+    );
+    return {
+      icon: base?.icon ?? "🤝",
+      title: c.title,
+      hint: Number.isFinite(d)
+        ? `≈ ${d.toFixed(1)} km — parceiro ativo`
+        : (base?.hint ?? "Parceria B2B sugerida"),
+      targetBranch: c.targetBranch,
+    };
+  });
+
+  if (dynList.length === 0) return staticList;
+  const merged: B2BSuggestion[] = [];
+  const seenT = new Set<string>();
+  for (const s of [...dynList, ...staticList]) {
+    if (seenT.has(s.title)) continue;
+    seenT.add(s.title);
+    merged.push(s);
+  }
+  return merged;
 }
+

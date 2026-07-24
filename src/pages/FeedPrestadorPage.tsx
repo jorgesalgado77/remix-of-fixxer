@@ -14,6 +14,7 @@ import {
   type StatusFilterKey,
 } from "@/lib/feed-status";
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
+import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 
 import {
   ArrowLeft,
@@ -1115,6 +1116,18 @@ export default function FeedPrestadorPage() {
               </button>
             )}
           </div>
+
+          <MacroBranchChips
+            value={null}
+            onChange={(id) => {
+              if (!id) { setSearch(""); return; }
+              const terms = getMacroSearchTerms(id);
+              setSearch(terms[0] ?? "");
+            }}
+            accent="#FF9F0A"
+          />
+
+
 
           {/* FILTRO ROLAGEM HORIZONTAL */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">

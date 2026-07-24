@@ -15,6 +15,7 @@ import {
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
+import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 
 import {
   ArrowLeft,
@@ -785,6 +786,20 @@ export default function FeedLojistaPage() {
             )}
           </div>
         </div>
+
+        {/* Chips por macro-ramo */}
+        <div className="max-w-3xl mx-auto pt-2">
+          <MacroBranchChips
+            value={null}
+            onChange={(id) => {
+              if (!id) { setSearch(""); return; }
+              const terms = getMacroSearchTerms(id);
+              setSearch(terms[0] ?? "");
+            }}
+            accent="#00E5FF"
+          />
+        </div>
+
 
         {/* Filtros em Pílulas */}
         <div className="max-w-3xl mx-auto flex items-center gap-2 overflow-x-auto pt-3 pb-0.5 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">

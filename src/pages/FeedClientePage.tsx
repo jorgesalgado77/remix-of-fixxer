@@ -1,4 +1,5 @@
 import { RadiusFilter } from "@/components/RadiusFilter";
+import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -567,6 +568,19 @@ export default function FeedClientePage() {
           </div>
         </div>
       </header>
+
+      <div className="max-w-3xl mx-auto px-4 pt-3">
+        <MacroBranchChips
+          value={null}
+          onChange={(id) => {
+            if (!id) { setQuery(""); return; }
+            const terms = getMacroSearchTerms(id);
+            setQuery(terms[0] ?? "");
+          }}
+          accent="#00FF87"
+        />
+      </div>
+
 
       <RadiusFilter
         category="cliente"
