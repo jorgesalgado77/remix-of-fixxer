@@ -87,7 +87,7 @@ function AdminUsuariosPage() {
 
   const [coinModalUser, setCoinModalUser] = useState<AdminUser | null>(null);
   const [planModalUser, setPlanModalUser] = useState<AdminUser | null>(null);
-  const [viewUser, setViewUser] = useState<AdminUser | null>(null);
+  const [menuOpenAnchor, _setMenuOpenAnchor] = useState<string | null>(null); void menuOpenAnchor; void _setMenuOpenAnchor;
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   // Gate admin
