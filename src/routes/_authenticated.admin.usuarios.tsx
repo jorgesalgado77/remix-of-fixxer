@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Users, Search, Filter, Coins, ShieldOff, ShieldCheck, Star, Eye,
   MoreVertical, ArrowLeft, Crown, Award, Medal, Building2, X,
