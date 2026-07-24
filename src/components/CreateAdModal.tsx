@@ -1350,15 +1350,17 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                   Valor Fixo {priceType === "fixo_comissao" ? "Garantido " : ""}(R$)
                 </Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={fixedValue}
-                  onChange={(e) => setFixedValue(e.target.value)}
-                  placeholder="0,00"
-                  className="bg-white/5 border-white/10 text-white"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-white/60 pointer-events-none">R$</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={fixedValue}
+                    onChange={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
+                    placeholder="0,00"
+                    className="bg-white/5 border-white/10 text-white pl-10"
+                  />
+                </div>
               </div>
             )}
 
