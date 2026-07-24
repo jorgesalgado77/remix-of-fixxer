@@ -28,12 +28,14 @@ export function PublishPickerModal({ open, onClose, defaultCategory }: Props) {
   if (!open) return null;
 
   if (kind) {
+    if (typeof window !== "undefined") {
+      try { window.sessionStorage.setItem("fixxer_publish_kind", kind); } catch { /* ignore */ }
+    }
     return (
       <CreateAdModal
         open
         onClose={() => { setKind(null); onClose(); }}
         defaultCategory={defaultCategory}
-        defaultKind={kind === "ad" ? "offer" : "request"}
       />
     );
   }
