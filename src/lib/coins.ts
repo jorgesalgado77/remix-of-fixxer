@@ -184,8 +184,21 @@ export async function consumeCoins(
 }
 
 /** Credita moedas (compra de pacote, franquia mensal, bônus). */
-export async function creditCoins(userId: string, amount: number, description: string, source: CoinTxSource = "purchase_pack", reference?: string): Promise<{ ok: boolean; balance: number; error?: string }> {
+export async function creditCoins(
+  userId: string,
+  amount: number,
+  description: string,
+  source: CoinTxSource = "purchase_pack",
+  reference?: string,
+  idempotencyKey?: string,
+): Promise<{ ok: boolean; balance: number; duplicated?: boolean; error?: string }> {
   if (amount <= 0) return { ok: true, balance: currentBalance };
+
+  if (idempotencyKey && usedIdemKeys.has(idempotencyKey)) {
+    return { ok: true, balance: currentBalance, duplicated: true };
+  }
+  if (idempotencyKey) usedIdemKeys.add(idempotencyKey);
+
   const next = currentBalance + amount;
   writeLocalBalance(userId, next);
   notify(next);
@@ -201,7 +214,11 @@ export async function creditCoins(userId: string, amount: number, description: s
 
   try {
     const { error } = await supabaseExternal.rpc("credit_coins", {
-      p_user: userId, p_amount: amount, p_description: description, p_source: source, p_reference: reference ?? null,
+      _user_id: userId,
+      _amount: amount,
+      _source: source,
+      _description: description,
+      _idempotency_key: idempotencyKey ?? null,
     });
     if (error) throw error;
     return { ok: true, balance: next };
