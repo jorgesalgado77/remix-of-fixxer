@@ -507,7 +507,7 @@ export function LojistaDashboard() {
                       
                       <NavButtonWithTooltip 
                         icon={<PlusCircle className="w-5 h-5"/>} 
-                        label="Criar Serviço" 
+                        label="Publicar" 
                         active={activeTab === 'create'} 
                         onClick={() => handleTabChange('create')}
                         disabled={!isProfileComplete}
@@ -568,7 +568,7 @@ export function LojistaDashboard() {
               
               <NavButtonWithTooltip 
                 icon={<PlusCircle className="w-4 h-4"/>} 
-                label="Criar Serviço" 
+                label="Publicar" 
                 active={activeTab === 'create'} 
                 onClick={() => handleTabChange('create')}
                 disabled={!isProfileComplete}
