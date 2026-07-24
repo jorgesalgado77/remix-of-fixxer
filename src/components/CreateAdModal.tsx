@@ -857,13 +857,13 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       onClick={onClose}
     >
       <div
-        className="w-full md:max-w-5xl max-h-[92vh] overflow-y-auto bg-[#0A0A0B] border border-white/10 rounded-t-3xl md:rounded-3xl shadow-2xl"
-        style={theme.glow}
+        className="w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[92vh] flex flex-col bg-[#0A0A0B] border border-white/10 rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden"
+        style={{ ...theme.glow, paddingTop: "env(safe-area-inset-top)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header — fixo no topo (mesmo com teclado aberto) */}
         <div
-          className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur"
+          className="shrink-0 flex items-center justify-between px-5 py-4 border-b bg-[#1A1A1B]"
           style={{ borderColor: `rgba(${theme.rgb}, 0.25)` }}
         >
           <div>
@@ -895,7 +895,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[1fr_360px] gap-0">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin grid lg:grid-cols-[1fr_360px] gap-0">
           {/* FORM */}
           <form
             onSubmit={handleSubmit}
