@@ -36,6 +36,27 @@ export function ScheduleAppointmentModal({
   const [deposit, setDeposit] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [typeLabel, setTypeLabel] = useState<string>("Tipo de compromisso");
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return;
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("business_category, custom_branch")
+          .eq("id", uid)
+          .maybeSingle();
+        const cfg = getFieldConfigForBranches(normalizeBranches(data ?? undefined));
+        if (!cancelled) setTypeLabel(cfg.appointmentLabel);
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
 
   if (!open) return null;
 
