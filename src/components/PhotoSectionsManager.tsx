@@ -438,6 +438,11 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
             <p className="text-[10px] text-muted-foreground mt-1">
               Crie até {L.maxCustomSections} seções nomeadas (ex.: Cozinhas, Dormitórios) — {L.maxCustomPhotos} fotos cada.
             </p>
+            {chargeUserId && (
+              <p className="text-[10px] text-amber-400/90 mt-1 font-bold">
+                💰 Fotos extras: 5 moedas/foto acima de {freePhotosPerSection}/seção · Nova seção extra: 15 moedas (após {freeSessionsQuota} grátis).
+              </p>
+            )}
           </div>
           <Button
             onClick={addSection}
@@ -445,6 +450,9 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
             className="h-8 bg-primary text-black font-black uppercase italic text-[10px] rounded-xl hover:bg-primary/90 disabled:opacity-40"
           >
             <PlusCircle className="w-3 h-3 mr-1.5" /> Nova Seção ({safe.custom.length}/{L.maxCustomSections})
+            {chargeUserId && safe.custom.length >= freeSessionsQuota && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded bg-black/30 text-amber-300 text-[9px]">−15</span>
+            )}
           </Button>
         </div>
 
