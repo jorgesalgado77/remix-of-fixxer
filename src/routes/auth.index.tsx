@@ -46,6 +46,20 @@ function LoginComponent() {
       if (data?.session) {
         const normalizedEmail = email.trim().toLowerCase();
 
+        // Bloqueio de acesso — se profiles.status = 'bloqueado', encerra a sessão e nega login.
+        const { data: statusRow } = await supabase
+          .from('profiles')
+          .select('status, role')
+          .eq('id', data.session.user.id)
+          .maybeSingle();
+        if (statusRow?.status === 'bloqueado') {
+          await supabase.auth.signOut();
+          setErrorMsg('Sua conta está SUSPENSA. Contate o suporte para mais informações.');
+          toast.error('Acesso suspenso pelo administrador.');
+          setLoading(false);
+          return;
+        }
+
         // Papel de admin é resolvido server-side via public.user_roles (RLS-safe).
         const { data: adminRow } = await supabase
           .from('user_roles')
@@ -55,13 +69,7 @@ function LoginComponent() {
           .maybeSingle();
         const isAdmin = !!adminRow;
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.session.user.id)
-          .maybeSingle();
-
-        const role = isAdmin ? 'admin' : (profile?.role || 'user');
+        const role = isAdmin ? 'admin' : (statusRow?.role || 'user');
         if (typeof window !== 'undefined') {
           localStorage.setItem('fixxer_user_email', normalizedEmail);
           localStorage.setItem('fixxer_authenticated', 'true');
