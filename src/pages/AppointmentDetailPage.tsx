@@ -310,14 +310,8 @@ export default function AppointmentDetailPage() {
               </button>
             </div>
           )}
-          {apt.deposit_amount > 0 && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-[#00FF87]/10 border border-[#00FF87]/30">
-              <ShieldCheck className="w-4 h-4 text-[#00FF87]" />
-              <div className="flex-1">
-                <p className="text-[10px] font-black uppercase text-[#00FF87]">Sinal em custódia FIXXER</p>
-                <p className="text-sm font-bold">R$ {apt.deposit_amount.toFixed(2).replace(".", ",")}</p>
-              </div>
-            </div>
+          {apt.deposit_amount > 0 && refundSummary && (
+            <RefundStatusCard summary={refundSummary} status={apt.status} />
           )}
           {apt.notes && (
             <p className="text-[12px] text-white/70 italic border-l-2 border-white/10 pl-3">{apt.notes}</p>
@@ -338,7 +332,12 @@ export default function AppointmentDetailPage() {
           {canCancel && (
             <ActionBtn onClick={() => setCancelOpen(true)} busy={false} icon={<X className="w-3 h-3" />} label="Cancelar" bg="#FF3B30" />
           )}
+          {apt.deposit_amount > 0 && (
+            <ActionBtn onClick={() => setDisputeOpen(true)} busy={false} icon={<Gavel className="w-3 h-3" />} label="Contestar" bg="#FFB020" />
+          )}
+          <ActionBtn onClick={handleDownloadPdf} busy={busy === "pdf"} icon={<FileDown className="w-3 h-3" />} label="Baixar PDF" bg="#00E5FF" />
         </section>
+
 
         {/* Fotos check-in */}
         {canManagePhotos && (
