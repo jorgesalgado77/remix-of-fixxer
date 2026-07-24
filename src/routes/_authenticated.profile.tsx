@@ -6,6 +6,7 @@ import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, 
 import { compressImage } from "@/utils/image-compression";
 import { MaskedInput } from "@/components/MaskedInput";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+import { PushToggle } from "@/components/PushToggle";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
