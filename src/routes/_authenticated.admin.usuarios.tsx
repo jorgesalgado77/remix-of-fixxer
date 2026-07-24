@@ -575,7 +575,7 @@ function ViewProfileModal({ user, onClose }: { user: AdminUser; onClose: () => v
         <Info k="User ID" v={user.id} />
       </dl>
       <div className="mt-4 flex gap-2 flex-wrap">
-        <Link to={"/prestador/$id" as any} params={{ id: user.id }} className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-black uppercase tracking-widest">Ver perfil público</Link>
+        <a href={`/prestador/${user.id}`} className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-black uppercase tracking-widest">Ver perfil público</a>
       </div>
     </ModalShell>
   );
