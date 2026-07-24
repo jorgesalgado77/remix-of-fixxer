@@ -40,6 +40,14 @@ import { getCategoryTheme, CATEGORY_LABEL, type CategoryKey } from "@/lib/catego
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
+import {
+  maskCurrencyBRL as sharedMaskBRL,
+  parseCurrencyBRL as sharedParseBRL,
+  assertCurrencyIntegrity as sharedAssertBRL,
+  currencyKeyDown as sharedKeyDown,
+  currencyFocusSelect as sharedFocusSelect,
+  currencyPaste as sharedPaste,
+} from "@/lib/currency-brl";
 
 
 interface CreateAdModalProps {
