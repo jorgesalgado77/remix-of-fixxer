@@ -6,6 +6,8 @@ import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, 
 import { compressImage } from "@/utils/image-compression";
 import { MaskedInput } from "@/components/MaskedInput";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+import { PushToggle } from "@/components/PushToggle";
+import { AffiliateBanner } from "@/components/AffiliateBanner";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -598,6 +600,17 @@ function ProfilePage() {
                   })}
                 </div>
               </div>
+
+              {/* NOTIFICAÇÕES PUSH */}
+              <div className="pt-8 space-y-4">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                  <h3 className="text-xl font-black uppercase tracking-tighter">Notificações & Ganhos</h3>
+                </div>
+                <PushToggle />
+                <AffiliateBanner />
+              </div>
+
+
 
               {/* CAMPOS ESPECÍFICOS: LOJISTA */}
               {profile?.role === 'lojista' && (

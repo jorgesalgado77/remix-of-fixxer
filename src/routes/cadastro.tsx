@@ -3,6 +3,7 @@ import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2, E
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { attachReferralAfterSignup, getStoredReferralCode } from "@/lib/affiliates";
 
 export const Route = createFileRoute("/cadastro")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -132,6 +133,16 @@ function RegisterComponent() {
           } catch (pe) {
             console.error("Erro no upsert de perfil:", pe);
           }
+        }
+
+        // Attach referral (se veio de link /r/:code)
+        try {
+          const refResult = await attachReferralAfterSignup(authData.user.id);
+          if (refResult.attached) {
+            toast.success("Indicação registrada! Bem-vindo(a) ao FIXXER.");
+          }
+        } catch (refErr) {
+          console.warn("Erro ao anexar referral:", refErr);
         }
 
         toast.success("Cadastro realizado!");
