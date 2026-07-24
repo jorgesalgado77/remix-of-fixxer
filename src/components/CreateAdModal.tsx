@@ -234,6 +234,37 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     return () => { cancelled = true; };
   }, [open]);
 
+  // Detecta macro-categoria do usuário (Assistência, Imobiliário, Fitness, etc.)
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { findMacroForBranch } = await import("@/lib/activity-branches");
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return;
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("business_category")
+          .eq("id", uid)
+          .maybeSingle();
+        const branches = String(data?.business_category ?? "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        for (const b of branches) {
+          const m = findMacroForBranch(b);
+          if (m) {
+            if (!cancelled) setUserMacro({ icon: m.icon, label: m.label });
+            return;
+          }
+        }
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
 
   useEffect(() => {
     return () => {
