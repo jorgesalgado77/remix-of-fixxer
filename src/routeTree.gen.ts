@@ -43,6 +43,7 @@ import { Route as AuthenticatedFeedLojistaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedFeedClienteRouteImport } from './routes/_authenticated.feed.cliente'
 import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authenticated.chat.$peerId'
 import { Route as AuthenticatedAgendaIdRouteImport } from './routes/_authenticated.agenda.$id'
+import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated.admin.usuarios'
 import { Route as AuthenticatedAdminMonetizacaoRouteImport } from './routes/_authenticated.admin.monetizacao'
 import { Route as AuthenticatedAdminDisputasRouteImport } from './routes/_authenticated.admin.disputas'
 import { Route as ApiPublicPushDispatchRouteImport } from './routes/api/public/push.dispatch'
@@ -221,6 +222,12 @@ const AuthenticatedAgendaIdRoute = AuthenticatedAgendaIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedAgendaRoute,
 } as any)
+const AuthenticatedAdminUsuariosRoute =
+  AuthenticatedAdminUsuariosRouteImport.update({
+    id: '/usuarios',
+    path: '/usuarios',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminMonetizacaoRoute =
   AuthenticatedAdminMonetizacaoRouteImport.update({
     id: '/monetizacao',
@@ -266,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/auth/': typeof AuthIndexRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -302,6 +310,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -342,6 +351,7 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/_authenticated/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
+  '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/_authenticated/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/_authenticated/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -382,6 +392,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/admin/disputas'
     | '/admin/monetizacao'
+    | '/admin/usuarios'
     | '/agenda/$id'
     | '/chat/$peerId'
     | '/feed/cliente'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin/disputas'
     | '/admin/monetizacao'
+    | '/admin/usuarios'
     | '/agenda/$id'
     | '/chat/$peerId'
     | '/feed/cliente'
@@ -457,6 +469,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/_authenticated/admin/disputas'
     | '/_authenticated/admin/monetizacao'
+    | '/_authenticated/admin/usuarios'
     | '/_authenticated/agenda/$id'
     | '/_authenticated/chat/$peerId'
     | '/_authenticated/feed/cliente'
@@ -727,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgendaIdRouteImport
       parentRoute: typeof AuthenticatedAgendaRoute
     }
+    '/_authenticated/admin/usuarios': {
+      id: '/_authenticated/admin/usuarios'
+      path: '/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/monetizacao': {
       id: '/_authenticated/admin/monetizacao'
       path: '/monetizacao'
@@ -754,11 +774,13 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminDisputasRoute: typeof AuthenticatedAdminDisputasRoute
   AuthenticatedAdminMonetizacaoRoute: typeof AuthenticatedAdminMonetizacaoRoute
+  AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminDisputasRoute: AuthenticatedAdminDisputasRoute,
   AuthenticatedAdminMonetizacaoRoute: AuthenticatedAdminMonetizacaoRoute,
+  AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
