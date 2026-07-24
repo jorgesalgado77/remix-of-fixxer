@@ -32,7 +32,6 @@ import {
   Check,
 } from "lucide-react";
 
-
 // =============================================================================
 // TIPOS
 // =============================================================================
@@ -136,9 +135,7 @@ const MOCK_VENDORS: Vendor[] = [
     headline: "Assistência Técnica para Eletrodomésticos e Móveis Automatizados",
     solutions: ["Assistência Técnica"],
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=TechFix&backgroundColor=00FF87",
-    gallery: [
-      "https://images.unsplash.com/photo-1581092918484-8313e5b7e5c1?w=800",
-    ],
+    gallery: ["https://images.unsplash.com/photo-1581092918484-8313e5b7e5c1?w=800"],
   },
   {
     id: "vendor-5",
@@ -340,9 +337,7 @@ export default function FeedClientePage() {
     });
 
     if (sortBy === "reputation") {
-      list = [...list].sort(
-        (a, b) => b.rating - a.rating || b.reviews - a.reviews,
-      );
+      list = [...list].sort((a, b) => b.rating - a.rating || b.reviews - a.reviews);
     } else if (sortBy === "nearest") {
       if (userCoords) {
         const dist = (v: Vendor) => {
@@ -412,10 +407,7 @@ export default function FeedClientePage() {
         setSaved(next);
         const { error } = await supabaseExternal
           .from("feed_post_saves")
-          .upsert(
-            { user_id: userId, post_id: vendorId },
-            { onConflict: "user_id,post_id" },
-          );
+          .upsert({ user_id: userId, post_id: vendorId }, { onConflict: "user_id,post_id" });
         if (error) {
           setSaved(saved);
           toast.error("Não foi possível salvar o favorito.");
@@ -463,9 +455,7 @@ export default function FeedClientePage() {
       if (!userId) return;
       const prev = myNeeds;
       const nextMeta = { ...(need.metadata ?? {}), status: nextStatus };
-      setMyNeeds((list) =>
-        list.map((n) => (n.id === need.id ? { ...n, metadata: nextMeta } : n)),
-      );
+      setMyNeeds((list) => list.map((n) => (n.id === need.id ? { ...n, metadata: nextMeta } : n)));
       const { error } = await supabaseExternal
         .from("feed_posts")
         .update({ metadata: nextMeta })
@@ -509,7 +499,14 @@ export default function FeedClientePage() {
   );
 
   const saveEditedNeed = useCallback(
-    async (updated: { id: string; title: string; category: string; location: string; content?: string; status: string }) => {
+    async (updated: {
+      id: string;
+      title: string;
+      category: string;
+      location: string;
+      content?: string;
+      status: string;
+    }) => {
       if (!userId) return;
       const current = myNeeds.find((n) => n.id === updated.id);
       const nextMeta = { ...(current?.metadata ?? {}), status: updated.status };
@@ -551,35 +548,44 @@ export default function FeedClientePage() {
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0A0A0B]/90 border-b border-white/10">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-2">
           <Link
             to="/cliente"
             className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:border-[#00FF87]/50 transition-all shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
-          <div className="flex-1 relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar serviços, lojas ou móveis..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-xs font-medium text-white placeholder:text-muted-foreground focus:border-[#00FF87] outline-none transition-all"
-            />
-          </div>
+          <FeedFiltersBar
+            accent="#00FF87"
+            category="cliente"
+            searchInput={
+              <div className="relative w-full">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar serviços, lojas..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-9 py-2 text-xs font-medium text-white placeholder:text-muted-foreground focus:border-[#00FF87] outline-none transition-all"
+                />
+                {query && (
+                  <button
+                    onClick={() => setQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/50"
+                    aria-label="Limpar busca"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            }
+            onMacroSearchTerm={(term) => setQuery(term ?? "")}
+            badge={{
+              icon: "🌟",
+              text: "5 Lojas de Planejados verificadas a menos de 8 km de você",
+            }}
+          />
         </div>
       </header>
-
-      <FeedFiltersBar
-        accent="#00FF87"
-        category="cliente"
-        onMacroSearchTerm={(term) => setQuery(term ?? "")}
-        badge={{
-          icon: "🌟",
-          text: "5 Lojas de Planejados verificadas a menos de 8 km de você",
-        }}
-      />
-
 
       <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
         {/* BANNER PUBLICAR NECESSIDADE */}
@@ -611,7 +617,9 @@ export default function FeedClientePage() {
 
         {/* MINHAS NECESSIDADES */}
         {userId && myNeeds.length > 0 && (
-          <section className={`${glassClass} border border-white/10 rounded-2xl bg-[#1A1A1B] overflow-hidden`}>
+          <section
+            className={`${glassClass} border border-white/10 rounded-2xl bg-[#1A1A1B] overflow-hidden`}
+          >
             <button
               onClick={() => setNeedsOpen((v) => !v)}
               className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors"
@@ -737,7 +745,9 @@ export default function FeedClientePage() {
             >
               <ArrowUpDown className="w-3 h-3" />
               {SORT_LABELS[sortBy]}
-              <ChevronDown className={`w-3 h-3 transition-transform ${sortOpen ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`w-3 h-3 transition-transform ${sortOpen ? "rotate-180" : ""}`}
+              />
             </button>
             {sortOpen && (
               <>
@@ -799,7 +809,8 @@ export default function FeedClientePage() {
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#00FF87]/5 border border-[#00FF87]/20 text-[10px] font-bold text-[#00FF87]">
             <Bookmark className="w-3 h-3 fill-current" />
             <span className="flex-1">
-              Modo gerenciar favoritos — toque no marcador para remover. Ordenação: {SORT_LABELS[sortBy].toLowerCase()}.
+              Modo gerenciar favoritos — toque no marcador para remover. Ordenação:{" "}
+              {SORT_LABELS[sortBy].toLowerCase()}.
             </span>
             <button
               onClick={() => setSavedOnly(false)}
@@ -843,7 +854,10 @@ export default function FeedClientePage() {
           ))}
 
           {hasMore && (
-            <div ref={sentinelRef} className="py-8 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            <div
+              ref={sentinelRef}
+              className="py-8 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+            >
               Carregando mais...
             </div>
           )}
@@ -885,7 +899,6 @@ export default function FeedClientePage() {
   );
 }
 
-
 // =============================================================================
 // CARD
 // =============================================================================
@@ -911,7 +924,11 @@ function VendorCard({
   const isLoja = vendor.kind === "loja";
   const vendorHex = isLoja ? "#00E5FF" : "#FF9F0A";
   const vendorLabel = isLoja ? "Lojista" : "Prestador";
-  const vendorIcon = isLoja ? <Store className="w-2.5 h-2.5" /> : <Wrench className="w-2.5 h-2.5" />;
+  const vendorIcon = isLoja ? (
+    <Store className="w-2.5 h-2.5" />
+  ) : (
+    <Wrench className="w-2.5 h-2.5" />
+  );
 
   return (
     <article
@@ -937,7 +954,11 @@ function VendorCard({
           <div className="flex items-center gap-1.5 mb-1">
             <span
               className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border flex items-center gap-1"
-              style={{ backgroundColor: `${vendorHex}1A`, color: vendorHex, borderColor: `${vendorHex}55` }}
+              style={{
+                backgroundColor: `${vendorHex}1A`,
+                color: vendorHex,
+                borderColor: `${vendorHex}55`,
+              }}
             >
               {vendorIcon}
               {vendorLabel}
@@ -1053,7 +1074,8 @@ function Lightbox({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") onChange((index - 1 + vendor.gallery.length) % vendor.gallery.length);
+      if (e.key === "ArrowLeft")
+        onChange((index - 1 + vendor.gallery.length) % vendor.gallery.length);
       if (e.key === "ArrowRight") onChange((index + 1) % vendor.gallery.length);
     };
     window.addEventListener("keydown", onKey);

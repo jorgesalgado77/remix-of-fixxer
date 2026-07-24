@@ -91,7 +91,12 @@ const SECTORS: Array<"Todas as Demandas" | Sector> = [
 const MOCK_REQUESTS: B2BRequest[] = [
   {
     id: "b2b-001",
-    store: { id: "store-marcenaria-premium", name: "Marcenaria Premium", initials: "MP", verified: true },
+    store: {
+      id: "store-marcenaria-premium",
+      name: "Marcenaria Premium",
+      initials: "MP",
+      verified: true,
+    },
     city: "Sorocaba",
     state: "SP",
     rating: 4.9,
@@ -187,7 +192,12 @@ const MOCK_REQUESTS: B2BRequest[] = [
   },
   {
     id: "b2b-005",
-    store: { id: "store-fabrica-modular", name: "Fábrica Modular Sul", initials: "FS", verified: true },
+    store: {
+      id: "store-fabrica-modular",
+      name: "Fábrica Modular Sul",
+      initials: "FS",
+      verified: true,
+    },
     city: "Joinville",
     state: "SC",
     rating: 4.6,
@@ -367,10 +377,19 @@ const MOCK_REQUESTS: B2BRequest[] = [
   // ============ SERVIÇOS EM ANDAMENTO — LOJISTAS & PRESTADORES ============
   {
     id: "b2b-013",
-    store: { id: "store-planejados-sorocaba", name: "Design Planejados Sorocaba", initials: "DP", verified: true },
+    store: {
+      id: "store-planejados-sorocaba",
+      name: "Design Planejados Sorocaba",
+      initials: "DP",
+      verified: true,
+    },
     requesterType: "lojista",
-    city: "Sorocaba", state: "SP", rating: 4.85, postedAt: "há 30 min",
-    status: "em_andamento", sector: "Ferragens & Insumos",
+    city: "Sorocaba",
+    state: "SP",
+    rating: 4.85,
+    postedAt: "há 30 min",
+    status: "em_andamento",
+    sector: "Ferragens & Insumos",
     title: "Reposição URGENTE de Corrediças Blum — Obra em Execução",
     description:
       "Obra iniciada na segunda, faltaram 12 pares de corrediças Blum Tandem 55cm. Preciso hoje para não parar a montagem.",
@@ -385,10 +404,19 @@ const MOCK_REQUESTS: B2BRequest[] = [
   },
   {
     id: "b2b-014",
-    store: { id: "prest-carlos-conf", name: "Carlos Silva — Conferente Técnico", initials: "CS", verified: true },
+    store: {
+      id: "prest-carlos-conf",
+      name: "Carlos Silva — Conferente Técnico",
+      initials: "CS",
+      verified: true,
+    },
     requesterType: "prestador",
-    city: "Sorocaba", state: "SP", rating: 4.9, postedAt: "há 1 h",
-    status: "em_andamento", sector: "Ferragens & Insumos",
+    city: "Sorocaba",
+    state: "SP",
+    rating: 4.9,
+    postedAt: "há 1 h",
+    status: "em_andamento",
+    sector: "Ferragens & Insumos",
     title: "Kit de Ferragens Complementar — O.S. em Execução (Alphaville)",
     description:
       "Estou executando conferência em Alphaville e identifiquei falta de dobradiças caneco 35mm curvas. Preciso fornecedor com entrega direta na obra amanhã cedo.",
@@ -406,8 +434,12 @@ const MOCK_REQUESTS: B2BRequest[] = [
     id: "b2b-015",
     store: { id: "prest-bruno-mont", name: "Bruno Montador Pro", initials: "BM", verified: true },
     requesterType: "prestador",
-    city: "Jundiaí", state: "SP", rating: 4.95, postedAt: "há 2 h",
-    status: "em_andamento", sector: "Vidraçaria & Espelhos",
+    city: "Jundiaí",
+    state: "SP",
+    rating: 4.95,
+    postedAt: "há 2 h",
+    status: "em_andamento",
+    sector: "Vidraçaria & Espelhos",
     title: "Espelho Bronze 4mm Bisotê — Substituição em Obra Aberta",
     description:
       "Estou finalizando montagem de closet e o espelho chegou com defeito de fábrica. Preciso reposição rápida com corte já feito.",
@@ -424,10 +456,19 @@ const MOCK_REQUESTS: B2BRequest[] = [
   },
   {
     id: "b2b-016",
-    store: { id: "prest-ana-proj", name: "Ana Projetos — Projetista 3D", initials: "AP", verified: true },
+    store: {
+      id: "prest-ana-proj",
+      name: "Ana Projetos — Projetista 3D",
+      initials: "AP",
+      verified: true,
+    },
     requesterType: "prestador",
-    city: "Itu", state: "SP", rating: 4.8, postedAt: "há 4 h",
-    status: "em_andamento", sector: "Softwares & Maquinário",
+    city: "Itu",
+    state: "SP",
+    rating: 4.8,
+    postedAt: "há 4 h",
+    status: "em_andamento",
+    sector: "Softwares & Maquinário",
     title: "Licença Adicional Promob — Projeto em Curso para Lojista",
     description:
       "Assumi 3 projetos executivos para uma marcenaria de Itu e preciso de uma estação Promob extra por 30 dias para paralelizar entregas.",
@@ -444,8 +485,12 @@ const MOCK_REQUESTS: B2BRequest[] = [
     id: "b2b-017",
     store: { id: "prest-lucia-3d", name: "Lúcia Interiores 3D", initials: "LI", verified: true },
     requesterType: "prestador",
-    city: "Sorocaba", state: "SP", rating: 4.85, postedAt: "há 6 h",
-    status: "em_andamento", sector: "Iluminação LED",
+    city: "Sorocaba",
+    state: "SP",
+    rating: 4.85,
+    postedAt: "há 6 h",
+    status: "em_andamento",
+    sector: "Iluminação LED",
     title: "Fita LED COB p/ Nichos — Projeto em Instalação Final",
     description:
       "Finalizando instalação de home theater. Cliente pediu upgrade de iluminação nos nichos: fita COB alta densidade + fonte compatível.",
@@ -463,16 +508,16 @@ const MOCK_REQUESTS: B2BRequest[] = [
     id: "b2b-018",
     store: { id: "prest-pedro-inst", name: "Pedro Transportes & Instalações", initials: "PT" },
     requesterType: "prestador",
-    city: "Campinas", state: "SP", rating: 4.7, postedAt: "há 12 h",
-    status: "em_andamento", sector: "Ferragens & Insumos",
+    city: "Campinas",
+    state: "SP",
+    rating: 4.7,
+    postedAt: "há 12 h",
+    status: "em_andamento",
+    sector: "Ferragens & Insumos",
     title: "Puxadores Alumínio Escovado — Complemento para O.S. Ativa",
     description:
       "Cliente final aprovou troca de puxadores durante montagem. Preciso 18 unidades 128mm alumínio escovado com entrega até amanhã.",
-    specs: [
-      "Puxador tubular 128mm — 18 un.",
-      "Acabamento alumínio escovado",
-      "Fixação inclusa",
-    ],
+    specs: ["Puxador tubular 128mm — 18 un.", "Acabamento alumínio escovado", "Fixação inclusa"],
     quantity: "18 un.",
     deadline: "Entrega amanhã",
     paymentTerms: "Boleto 7 dias",
@@ -488,9 +533,7 @@ const PAGE_SIZE = 4;
 export default function FeedParceiroPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [activeSector, setActiveSector] = useState<(typeof SECTORS)[number]>(
-    "Todas as Demandas",
-  );
+  const [activeSector, setActiveSector] = useState<(typeof SECTORS)[number]>("Todas as Demandas");
   const [saved, setSaved] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
     try {
@@ -515,10 +558,7 @@ export default function FeedParceiroPage() {
   // Persistência local imediata dos favoritos
   useEffect(() => {
     try {
-      window.localStorage.setItem(
-        SAVES_STORAGE_KEY,
-        JSON.stringify(Array.from(saved)),
-      );
+      window.localStorage.setItem(SAVES_STORAGE_KEY, JSON.stringify(Array.from(saved)));
     } catch {
       /* ignore */
     }
@@ -545,12 +585,10 @@ export default function FeedParceiroPage() {
           setSaved((prev) => {
             const missing = [...prev].filter((id) => !remote.has(id));
             if (missing.length > 0) {
-              void supabaseExternal
-                .from("feed_post_saves")
-                .upsert(
-                  missing.map((post_id) => ({ user_id: user.id, post_id })),
-                  { onConflict: "user_id,post_id" },
-                );
+              void supabaseExternal.from("feed_post_saves").upsert(
+                missing.map((post_id) => ({ user_id: user.id, post_id })),
+                { onConflict: "user_id,post_id" },
+              );
             }
             return new Set([...prev, ...remote]);
           });
@@ -582,8 +620,7 @@ export default function FeedParceiroPage() {
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return MOCK_REQUESTS.filter((r) => {
-      if (activeSector !== "Todas as Demandas" && r.sector !== activeSector)
-        return false;
+      if (activeSector !== "Todas as Demandas" && r.sector !== activeSector) return false;
       if (statusFilter !== "todos" && getFeedStatus(r.id) !== statusFilter) return false;
       if (!term) return true;
       return (
@@ -724,49 +761,57 @@ export default function FeedParceiroPage() {
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 sm:px-4 py-3">
           <button
             type="button"
-            onClick={() =>
-              navigate({ to: "/dashboard/parceiro" }).catch(() => undefined)
-            }
-            className="rounded-full border border-white/10 bg-[#1A1A1B] p-2 text-white/80 transition hover:border-[#A855F7]/40 hover:text-[#A855F7]"
+            onClick={() => navigate({ to: "/dashboard/parceiro" }).catch(() => undefined)}
+            className="rounded-full border border-white/10 bg-[#1A1A1B] p-2 text-white/80 transition hover:border-[#A855F7]/40 hover:text-[#A855F7] shrink-0"
             aria-label="Voltar para Dashboard do Fornecedor"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="flex flex-1 items-center gap-2 rounded-full border border-white/10 bg-[#1A1A1B] px-3 py-2">
-            <Search className="h-4 w-4 text-white/40" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por material, loja ou cidade..."
-              className="w-full bg-transparent text-sm outline-none placeholder:text-white/40"
-            />
-          </div>
+          <FeedFiltersBar
+            accent="#A855F7"
+            category="fornecedor"
+            searchInput={
+              <div className="flex flex-1 items-center gap-2 rounded-full border border-white/10 bg-[#1A1A1B] px-3 py-2">
+                <Search className="h-4 w-4 text-white/40 shrink-0" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar material, loja ou cidade..."
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-white/40"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="text-white/40 hover:text-white shrink-0"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            }
+            onMacroSearchTerm={(term) => setSearch(term ?? "")}
+            pillLabel="Setor B2B"
+            pillOptions={SECTORS.map((s) => ({ key: s, label: s }))}
+            pillValue={activeSector}
+            onPillChange={(k) => setActiveSector(k as typeof activeSector)}
+            statusValue={statusFilter}
+            onStatusChange={setStatusFilter}
+            badge={{
+              icon: "📦",
+              text: "6 Lojistas buscando orçamentos de Marmoraria e Vidro na sua cidade",
+            }}
+          />
         </div>
       </header>
 
-      <FeedFiltersBar
-        accent="#A855F7"
-        category="fornecedor"
-        onMacroSearchTerm={(term) => setSearch(term ?? "")}
-        pillLabel="Setor B2B"
-        pillOptions={SECTORS.map((s) => ({ key: s, label: s }))}
-        pillValue={activeSector}
-        onPillChange={(k) => setActiveSector(k as typeof activeSector)}
-        statusValue={statusFilter}
-        onStatusChange={setStatusFilter}
-        badge={{
-          icon: "📦",
-          text: "6 Lojistas buscando orçamentos de Marmoraria e Vidro na sua cidade",
-        }}
-      />
-
-
       {/* FEED */}
       <main className="mx-auto max-w-3xl px-4 py-4">
-        <div className="mb-4"><B2BSuggestionsCard /></div>
+        <div className="mb-4">
+          <B2BSuggestionsCard />
+        </div>
         <div className="mb-4 flex items-center justify-between text-xs text-white/50">
           <span>
             {filtered.length} demanda{filtered.length === 1 ? "" : "s"} B2B
@@ -787,15 +832,17 @@ export default function FeedParceiroPage() {
               const quoteStatus = quotesByRequest[r.id];
               const isPrestador = r.requesterType === "prestador";
               const accent = isPrestador ? "#FF9F0A" : "#00E5FF";
-              const accentRgba = (a: number) => isPrestador
-                ? `rgba(255, 159, 10, ${a})`
-                : `rgba(0, 229, 255, ${a})`;
+              const accentRgba = (a: number) =>
+                isPrestador ? `rgba(255, 159, 10, ${a})` : `rgba(0, 229, 255, ${a})`;
               const roleLabel = isPrestador ? "✓ Prestador" : "✓ Lojista";
               return (
                 <li
                   key={r.id}
                   className="overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
-                  style={{ borderColor: accentRgba(0.35), boxShadow: `0 0 18px ${accentRgba(0.1)}` }}
+                  style={{
+                    borderColor: accentRgba(0.35),
+                    boxShadow: `0 0 18px ${accentRgba(0.1)}`,
+                  }}
                 >
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
@@ -817,7 +864,10 @@ export default function FeedParceiroPage() {
                           {r.store.name}
                         </Link>
                         {r.store.verified && (
-                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: accentRgba(0.15), color: accent }}>
+                          <span
+                            className="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                            style={{ backgroundColor: accentRgba(0.15), color: accent }}
+                          >
                             {roleLabel}
                           </span>
                         )}
@@ -829,7 +879,10 @@ export default function FeedParceiroPage() {
                               className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border"
                               style={{ color: c, borderColor: `${c}55`, backgroundColor: `${c}18` }}
                             >
-                              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: c }} />
+                              <span
+                                className="w-1 h-1 rounded-full"
+                                style={{ backgroundColor: c }}
+                              />
                               {FEED_STATUS_LABEL[st]}
                             </span>
                           );
@@ -855,7 +908,11 @@ export default function FeedParceiroPage() {
 
                   {/* Título + descrição */}
                   <div className="px-4 pb-3">
-                    <button type="button" onClick={() => setDetailsFor(r)} className="text-left w-full">
+                    <button
+                      type="button"
+                      onClick={() => setDetailsFor(r)}
+                      className="text-left w-full"
+                    >
                       <h3 className="text-base font-semibold leading-snug hover:opacity-80 transition-opacity">
                         {r.title}
                       </h3>
@@ -965,9 +1022,7 @@ export default function FeedParceiroPage() {
                       }`}
                       aria-label="Salvar oportunidade"
                     >
-                      <Bookmark
-                        className={`h-4 w-4 ${saved.has(r.id) ? "fill-current" : ""}`}
-                      />
+                      <Bookmark className={`h-4 w-4 ${saved.has(r.id) ? "fill-current" : ""}`} />
                     </button>
                   </div>
                 </li>
@@ -1148,24 +1203,14 @@ function QuoteStatusPill({ status }: { status: QuoteStatus }) {
   );
 }
 
-function MetaCell({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function MetaCell({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="rounded-lg border border-white/5 bg-[#0F0F10] p-2">
       <div className="mb-1 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-white/40">
         {icon}
         {label}
       </div>
-      <div className="text-[11px] font-medium leading-tight text-white/90">
-        {value}
-      </div>
+      <div className="text-[11px] font-medium leading-tight text-white/90">{value}</div>
     </div>
   );
 }
@@ -1221,9 +1266,7 @@ function QuoteModal({
       <div className="w-full max-w-lg overflow-hidden rounded-t-2xl border border-white/10 bg-[#1A1A1B] sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A855F7]">
-              Cotação B2B
-            </div>
+            <div className="text-[10px] uppercase tracking-wider text-[#A855F7]">Cotação B2B</div>
             <div className="text-sm font-semibold">{request.store.name}</div>
           </div>
           <button
@@ -1238,8 +1281,8 @@ function QuoteModal({
         {existingStatus && (
           <div className="border-b border-white/10 bg-[#0F0F10] px-4 py-2 text-[11px] text-white/70">
             Você já possui uma cotação{" "}
-            <span className="font-semibold text-[#A855F7]">{existingStatus}</span>{" "}
-            para esta demanda. Enviar novamente irá atualizar os valores.
+            <span className="font-semibold text-[#A855F7]">{existingStatus}</span> para esta
+            demanda. Enviar novamente irá atualizar os valores.
           </div>
         )}
         <form onSubmit={submit} className="space-y-3 p-4">

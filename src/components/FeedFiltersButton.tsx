@@ -3,11 +3,7 @@ import { SlidersHorizontal, X, MapPin, Sparkles, Flame, RotateCcw } from "lucide
 import { toast } from "sonner";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
 import { getMacroSearchTerms } from "@/components/MacroBranchChips";
-import {
-  FEED_STATUS_COLOR,
-  STATUS_FILTERS,
-  type StatusFilterKey,
-} from "@/lib/feed-status";
+import { FEED_STATUS_COLOR, STATUS_FILTERS, type StatusFilterKey } from "@/lib/feed-status";
 import type { CategoryKey } from "@/lib/category-colors";
 
 /**
@@ -41,6 +37,8 @@ export type FeedFiltersButtonProps = {
   // ------- raio -------
   onRadiusChange?: (km: number) => void;
   badge?: { icon?: string; text: string };
+  // ------- busca inline -------
+  searchInput?: ReactNode;
 };
 
 const RADIUS_OPTIONS: { value: number; label: string }[] = [
@@ -83,6 +81,7 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     onStatusChange,
     onRadiusChange,
     badge,
+    searchInput,
   } = props;
 
   const [open, setOpen] = useState(false);
@@ -147,12 +146,18 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
 
   return (
     <>
-      {/* Barra compacta: botão único + resumo do raio */}
-      <div className="w-full max-w-3xl mx-auto px-3 sm:px-4 pt-3 pb-1 flex items-center gap-2">
+      {/* Barra compacta: botão único + resumo do raio (e busca inline quando fornecida) */}
+      <div
+        className={`w-full px-3 sm:px-4 pt-3 pb-1 flex items-center gap-2 ${
+          searchInput ? "" : "max-w-3xl mx-auto"
+        }`}
+      >
+        {searchInput && <div className="flex-1 min-w-0">{searchInput}</div>}
+
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 rounded-2xl border px-3 py-2 text-[11px] font-black uppercase tracking-wide transition-colors"
+          className="flex items-center gap-2 rounded-2xl border px-3 py-2 text-[11px] font-black uppercase tracking-wide transition-colors shrink-0"
           style={{
             borderColor: hexToRgba(accent, 0.35),
             backgroundColor: hexToRgba(accent, 0.08),
@@ -173,22 +178,24 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
           )}
         </button>
 
-        <div
-          className="hidden sm:flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest"
-          style={{
-            borderColor: "rgba(255,255,255,0.1)",
-            color: "rgba(255,255,255,0.6)",
-          }}
-        >
-          <MapPin className="w-3 h-3" style={{ color: accent }} />
-          Raio: {radius === 0 ? "Toda a região" : `${radius} km`}
-        </div>
+        {!searchInput && (
+          <div
+            className="hidden sm:flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest"
+            style={{
+              borderColor: "rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,0.6)",
+            }}
+          >
+            <MapPin className="w-3 h-3" style={{ color: accent }} />
+            Raio: {radius === 0 ? "Toda a região" : `${radius} km`}
+          </div>
+        )}
 
         {activeCount > 0 && (
           <button
             type="button"
             onClick={resetAll}
-            className="ml-auto flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors"
+            className="ml-auto flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors shrink-0"
             aria-label="Limpar filtros"
           >
             <RotateCcw className="w-3 h-3" /> Limpar
@@ -233,9 +240,7 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4" style={{ color: accent }} />
-                <h2 className="text-sm font-black uppercase tracking-widest text-white">
-                  Filtros
-                </h2>
+                <h2 className="text-sm font-black uppercase tracking-widest text-white">Filtros</h2>
                 {activeCount > 0 && (
                   <span
                     className="min-w-[20px] h-5 px-1.5 grid place-items-center rounded-full text-[10px] font-black"
@@ -272,8 +277,16 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                     className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide"
                     style={
                       macroValue === null
-                        ? { backgroundColor: accent, color: "#000", boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}` }
-                        : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)" }
+                        ? {
+                            backgroundColor: accent,
+                            color: "#000",
+                            boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}`,
+                          }
+                        : {
+                            backgroundColor: "rgba(255,255,255,0.05)",
+                            color: "rgba(255,255,255,0.7)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                          }
                     }
                   >
                     ✨ Todos
@@ -289,8 +302,16 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                         className="px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide flex items-center gap-1.5"
                         style={
                           active
-                            ? { backgroundColor: accent, color: "#000", boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}` }
-                            : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.1)" }
+                            ? {
+                                backgroundColor: accent,
+                                color: "#000",
+                                boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}`,
+                              }
+                            : {
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                                color: "rgba(255,255,255,0.75)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                              }
                         }
                       >
                         <span>{m.icon}</span>
@@ -318,8 +339,16 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                           className="px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide flex items-center gap-1.5"
                           style={
                             active
-                              ? { backgroundColor: accent, color: "#000", boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}` }
-                              : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.1)" }
+                              ? {
+                                  backgroundColor: accent,
+                                  color: "#000",
+                                  boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}`,
+                                }
+                              : {
+                                  backgroundColor: "rgba(255,255,255,0.05)",
+                                  color: "rgba(255,255,255,0.75)",
+                                  border: "1px solid rgba(255,255,255,0.1)",
+                                }
                           }
                         >
                           {f.icon}
@@ -349,8 +378,17 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                           className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide border"
                           style={
                             active
-                              ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
-                              : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                              ? {
+                                  backgroundColor: color,
+                                  color: "#0A0A0B",
+                                  borderColor: color,
+                                  boxShadow: `0 0 10px ${color}55`,
+                                }
+                              : {
+                                  backgroundColor: "rgba(255,255,255,0.05)",
+                                  color: "rgba(255,255,255,0.6)",
+                                  borderColor: "rgba(255,255,255,0.1)",
+                                }
                           }
                         >
                           {s.label}
