@@ -1379,8 +1379,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   <Input
                     type="text"
                     inputMode="numeric"
+                    autoComplete="off"
                     value={fixedValue}
                     onChange={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
+                    onKeyDown={currencyKeyDown}
+                    onFocus={currencyFocusSelect}
+                    onBlur={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
                     placeholder="0,00"
                     className="bg-white/5 border-white/10 text-white pl-10"
                   />
