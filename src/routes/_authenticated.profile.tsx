@@ -1020,6 +1020,7 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Play className="w-3 h-3" /> Vídeos & Demonstrações
+                    <span className="ml-auto text-[9px] text-amber-400/90">💰 1 grátis · +10 moedas/vídeo extra</span>
                   </h4>
                   <div className="grid grid-cols-1 gap-4">
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'video').map((vid: any, i: number) => (
