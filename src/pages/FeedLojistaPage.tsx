@@ -701,16 +701,24 @@ export default function FeedLojistaPage() {
   };
 
   const submitProposal = () => {
-    if (!proposalValue.trim()) {
-      toast.error("Informe um valor para a proposta");
+    const err = assertCurrencyIntegrity("Valor da proposta", proposalValue, {
+      required: true,
+      min: 0.01,
+    });
+    if (err) {
+      setProposalError(err);
+      toast.error(err);
       return;
     }
+    const n = parseCurrencyBRL(proposalValue);
     toast.success("Proposta enviada!", {
-      description: `${proposalFor?.author.name} receberá sua oferta de ${proposalValue}.`,
+      description: `${proposalFor?.author.name} receberá sua oferta de R$ ${n
+        .toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.`,
     });
     setProposalFor(null);
     setProposalValue("");
     setProposalMsg("");
+    setProposalError(null);
   };
 
   const submitReport = () => {
