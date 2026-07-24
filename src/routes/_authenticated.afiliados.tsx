@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { buildReferralUrl, suggestAffiliateCode } from "@/lib/affiliates";
-import { Copy, Users, TrendingUp, Wallet, Sparkles, Check, Share2, Percent, Link2 } from "lucide-react";
+import { Copy, Users, TrendingUp, Wallet, Sparkles, Check, Share2, Percent, Link2, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/afiliados")({
@@ -149,6 +149,41 @@ function AffiliatesPage() {
     }
   }
 
+  function exportCsv() {
+    if (!profile) return;
+    const brl = (n: number) => n.toFixed(2).replace(".", ",");
+    const totalEarned = commissions.reduce((s, c) => s + Number(c.amount), 0);
+    const lines: string[] = [];
+    // Cabeçalho de métricas
+    lines.push("Métrica;Valor");
+    lines.push(`Código;${profile.code}`);
+    lines.push(`Taxa Comissão (%);${profile.commission_pct.toFixed(1)}`);
+    lines.push(`Indicações;${referrals.length}`);
+    lines.push(`Total Ganho (R$);${brl(totalEarned)}`);
+    lines.push(`Pendente (R$);${brl(totalPending)}`);
+    lines.push(`Disponível (R$);${brl(totalAvailable)}`);
+    lines.push(`Pago (R$);${brl(totalPaid)}`);
+    lines.push("");
+    // Histórico
+    lines.push("ID Comissão;Data;O.S.;Valor (R$);Status");
+    for (const c of commissions) {
+      const dt = new Date(c.created_at).toLocaleString("pt-BR");
+      const status = c.status === "paid" ? "Pago" : c.status === "available" ? "Disponível" : "Pendente";
+      lines.push(`${c.id};${dt};${c.order_id};${brl(Number(c.amount))};${status}`);
+    }
+    const csv = "\uFEFF" + lines.join("\n"); // BOM para Excel PT-BR
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fixxer-afiliados-${profile.code}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("CSV exportado!");
+  }
+
   const totalPending = commissions.filter((c) => c.status === "pending").reduce((s, c) => s + Number(c.amount), 0);
   const totalAvailable = commissions.filter((c) => c.status === "available").reduce((s, c) => s + Number(c.amount), 0);
   const totalPaid = commissions.filter((c) => c.status === "paid").reduce((s, c) => s + Number(c.amount), 0);
@@ -238,7 +273,17 @@ function AffiliatesPage() {
 
         {/* HISTÓRICO DE COMISSÕES */}
         <div className="bg-card/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 space-y-4">
-          <h2 className="text-lg font-black uppercase tracking-tight text-white">Comissões Recentes</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg font-black uppercase tracking-tight text-white">Comissões Recentes</h2>
+            <button
+              onClick={exportCsv}
+              disabled={commissions.length === 0 && referrals.length === 0}
+              className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Exportar CSV
+            </button>
+          </div>
           {commissions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Wallet className="w-10 h-10 mx-auto mb-3 opacity-30" />
