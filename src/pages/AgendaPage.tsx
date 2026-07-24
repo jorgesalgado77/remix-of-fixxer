@@ -120,7 +120,7 @@ export default function AgendaPage() {
           </Link>
           <div className="min-w-0">
             <h1 className="text-lg font-black uppercase tracking-tighter truncate flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5" style={{ color: theme.accent }} />
+              <CalendarIcon className="w-5 h-5" style={{ color: theme.hex }} />
               Minha Agenda
             </h1>
             <p className="text-[10px] text-white/50 truncate">
@@ -143,7 +143,7 @@ export default function AgendaPage() {
           cursor={monthCursor}
           onChange={setMonthCursor}
           dots={dotsByDay}
-          accent={theme.accent}
+          accent={theme.hex}
         />
 
         {/* Filtros de status */}
@@ -152,7 +152,7 @@ export default function AgendaPage() {
             label="Todos"
             active={filterStatus === "all"}
             onClick={() => setFilterStatus("all")}
-            accent={theme.accent}
+            accent={theme.hex}
           />
           {(Object.keys(APPOINTMENT_STATUS) as AppointmentStatus[]).map((s) => (
             <FilterChip
