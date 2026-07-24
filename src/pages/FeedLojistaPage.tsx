@@ -15,6 +15,7 @@ import {
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
+import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 
 import {
   ArrowLeft,
