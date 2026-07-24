@@ -8,6 +8,7 @@ import {
   Bell,
   ArchiveRestore,
   Paperclip,
+  CalendarPlus,
   Loader2,
   X,
   FileText,
