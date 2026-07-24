@@ -13,6 +13,7 @@ import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { GlobalActionBar } from "@/components/GlobalActionBar";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
+import { CoinFeedbackBridge } from "@/components/CoinFeedbackBridge";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -211,6 +212,7 @@ function RootComponent() {
           <Outlet />
         </GlobalErrorBoundary>
         {!hideBar && <GlobalActionBar />}
+        <CoinFeedbackBridge />
         <Toaster closeButton duration={2000} />
       </div>
     </QueryClientProvider>
