@@ -74,6 +74,22 @@ const SERVICE_TYPES = [
 const FREIGHT_TYPE = "🚚 Frete";
 const OTHER_SERVICE_TYPE = "📝 Outro";
 
+const SERVICE_TYPE_ICON: Record<string, LucideIcon> = {
+  "Projeto": PencilRuler,
+  "Medição": Ruler,
+  "Conferência": ClipboardCheck,
+  "Montagem": Wrench,
+  "Assistência": LifeBuoy,
+  "Vistoria": SearchIcon,
+  [FREIGHT_TYPE]: Truck,
+  [OTHER_SERVICE_TYPE]: MoreHorizontal,
+};
+
+const SERVICE_TYPE_LABEL: Record<string, string> = {
+  [FREIGHT_TYPE]: "Frete",
+  [OTHER_SERVICE_TYPE]: "Outro",
+};
+
 const TECH_SPECS = [
   { id: "veiculo", label: "Possuir veículo próprio" },
   { id: "ferramental", label: "Possuir ferramental completo" },
