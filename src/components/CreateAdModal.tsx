@@ -121,6 +121,22 @@ const formatBRL = (v: string | number) => {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
+/** Máscara de moeda BRL — recebe o valor digitado e retorna string formatada "12.345,67". */
+const maskCurrencyBRL = (raw: string) => {
+  const digits = (raw || "").replace(/\D/g, "").slice(0, 14);
+  if (!digits) return "";
+  const n = Number(digits) / 100;
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+/** Converte string mascarada BRL para número. */
+const parseCurrencyBRL = (masked: string) => {
+  if (!masked) return 0;
+  const digits = masked.replace(/\D/g, "");
+  if (!digits) return 0;
+  return Number(digits) / 100;
+};
+
 const UF_LIST = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
