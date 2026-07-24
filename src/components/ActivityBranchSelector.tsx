@@ -31,6 +31,8 @@ export function ActivityBranchSelector({
   customValue = [],
   onCustomChange,
   accentColor,
+  chargeUserId,
+  freeCustomQuota = 1,
 }: Props) {
   const [openMacro, setOpenMacro] = useState<string | null>(null);
   const [customInput, setCustomInput] = useState("");
@@ -47,12 +49,32 @@ export function ActivityBranchSelector({
     }
   };
 
-  const addCustom = (macroId: string) => {
+  const addCustom = async (_macroId: string) => {
     const trimmed = customInput.trim();
     if (!trimmed) return;
     if (customValue.includes(trimmed)) {
       setCustomInput("");
       return;
+    }
+    // Cobrança de ramo customizado extra (após freeCustomQuota grátis).
+    if (chargeUserId && customValue.length >= freeCustomQuota) {
+      try {
+        const { getActionCost, spendCoinsForAction } = await import("@/lib/monetization");
+        const cost = getActionCost("extra_specialty")?.coins ?? 10;
+        if (cost > 0) {
+          const ok = window.confirm(`Adicionar um ramo customizado extra custa ${cost} moedas. Confirmar?`);
+          if (!ok) return;
+          const res = await spendCoinsForAction(chargeUserId, "extra_specialty", `custom_branch:${trimmed}`);
+          if (!res.ok) {
+            if (res.reason === "insufficient") { toast.error(`Saldo insuficiente. Necessário: ${res.cost} moedas.`); return; }
+            if (res.reason !== "disabled") { toast.error("Falha ao debitar moedas", { description: res.error }); return; }
+          } else {
+            toast.success(`−${res.cost} moedas · Ramo customizado adicionado.`);
+          }
+        }
+      } catch (e) {
+        console.warn("[extra_specialty custom_branch]", e);
+      }
     }
     onCustomChange?.([...customValue, trimmed]);
     setCustomInput("");
