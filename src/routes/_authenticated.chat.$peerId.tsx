@@ -698,9 +698,17 @@ function ConversationPage() {
 
   const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
 
-  const peerTheme = getCategoryTheme(roleToCategory(peerRole));
+  const peerCategory = roleToCategory(peerRole);
+  const peerTheme = getCategoryTheme(peerCategory);
   const ownCategory = useCurrentCategory();
   const ownTheme = getCategoryTheme(ownCategory);
+
+  // Aplica a cor do interlocutor no tema global enquanto a conversa está aberta.
+  useEffect(() => {
+    if (!peerRole) return;
+    setContextCategoryOverride(peerCategory);
+    return () => setContextCategoryOverride(null);
+  }, [peerCategory, peerRole]);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col pb-32">
