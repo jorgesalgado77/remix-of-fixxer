@@ -567,17 +567,44 @@ export function FeedFiltersBar(
 ) {
   const { onMacroSearchTerm, statusValue: externalStatusValue, onStatusChange: externalOnStatusChange, onRadiusChange: externalOnRadiusChange, ...rest } = props;
 
-  // Hidrata inicial a partir de ?m=<macroId> na URL (persistência entre navegações).
-  const initialMacro =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("m")
+  // Hidrata inicial a partir de ?m=<macroId>&s=<status>&r=<km> na URL.
+  const initialParams =
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const initialMacro = initialParams?.get("m") ?? null;
+  const initialUrlStatus = initialParams?.get("s") as StatusFilterKey | null;
+  const initialUrlRadiusRaw = initialParams?.get("r");
+  const initialUrlRadius =
+    initialUrlRadiusRaw !== null && initialUrlRadiusRaw !== undefined && initialUrlRadiusRaw !== ""
+      ? Number(initialUrlRadiusRaw)
       : null;
+
   const [macro, setMacro] = useState<string | null>(initialMacro);
 
-  // Restaura status do localStorage (persistência entre navegações no mesmo app).
-  const [status, setStatus] = useState<StatusFilterKey>(() =>
-    externalStatusValue ?? readStoredStatus(rest.category) ?? "todos",
-  );
+  // Restaura status: URL > prop externa > localStorage > "todos".
+  const [status, setStatus] = useState<StatusFilterKey>(() => {
+    if (initialUrlStatus && STATUS_FILTERS.some((s) => s.key === initialUrlStatus)) {
+      return initialUrlStatus;
+    }
+    return externalStatusValue ?? readStoredStatus(rest.category) ?? "todos";
+  });
+
+  // Se a URL trouxe raio válido, propaga para consumidores logo na montagem.
+  useEffect(() => {
+    if (initialUrlRadius !== null && Number.isFinite(initialUrlRadius)) {
+      try {
+        localStorage.setItem(radiusStorageKey(rest.category), String(initialUrlRadius));
+      } catch {
+        /* noop */
+      }
+      window.dispatchEvent(
+        new CustomEvent("fixxer:radius-change", {
+          detail: { category: rest.category, radius: initialUrlRadius },
+        }),
+      );
+      externalOnRadiusChange?.(initialUrlRadius);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Emite o termo de busca associado ao macro restaurado da URL (na 1ª render).
   useEffect(() => {
@@ -596,12 +623,12 @@ export function FeedFiltersBar(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalStatusValue]);
 
-  const persistToUrl = (id: string | null) => {
+  const persistParamToUrl = (key: string, value: string | null) => {
     if (typeof window === "undefined") return;
     try {
       const url = new URL(window.location.href);
-      if (id) url.searchParams.set("m", id);
-      else url.searchParams.delete("m");
+      if (value === null || value === "") url.searchParams.delete(key);
+      else url.searchParams.set(key, value);
       window.history.replaceState({}, "", url.toString());
     } catch {
       /* noop */
@@ -611,10 +638,12 @@ export function FeedFiltersBar(
   const handleStatusChange = (key: StatusFilterKey) => {
     setStatus(key);
     writeStoredStatus(rest.category, key);
+    persistParamToUrl("s", key === "todos" ? null : key);
     externalOnStatusChange?.(key);
   };
 
   const handleRadiusChange = (km: number) => {
+    persistParamToUrl("r", km === 25 ? null : String(km));
     externalOnRadiusChange?.(km);
   };
 
@@ -624,7 +653,7 @@ export function FeedFiltersBar(
       macroValue={macro}
       onMacroChange={(id) => {
         setMacro(id);
-        persistToUrl(id);
+        persistParamToUrl("m", id);
         if (!id) {
           onMacroSearchTerm?.(null);
           return;
@@ -638,4 +667,5 @@ export function FeedFiltersBar(
     />
   );
 }
+
 
