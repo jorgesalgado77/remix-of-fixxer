@@ -29,14 +29,11 @@ const PLAN_BENEFITS: Record<PlanId, string[]> = {
 };
 
 export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
-  const [plans, setPlans] = useState<PlanConfig[]>(() => getCachedMonetization().plans);
+  const cfg = useMonetization();
+  const plans = useMemo(() => cfg.plans.filter((p) => p.enabled), [cfg]);
   const [billing, setBilling] = useState<Billing>("monthly");
   const [target, setTarget] = useState<PlanId>(currentPlan);
   const [processing, setProcessing] = useState(false);
-
-  useEffect(() => {
-    fetchMonetizationConfig().then((cfg) => setPlans(cfg.plans.filter((p) => p.enabled)));
-  }, []);
 
   const currentCfg = useMemo(() => plans.find((p) => p.id === currentPlan) || plans[0], [plans, currentPlan]);
   const targetCfg  = useMemo(() => plans.find((p) => p.id === target) || currentCfg, [plans, target, currentCfg]);
