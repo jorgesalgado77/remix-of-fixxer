@@ -16,7 +16,7 @@ import { GlobalActionBar } from "@/components/GlobalActionBar";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { fixAuthAndPreview } from "../lib/preview-fixer";
-import { useCurrentCategory, getCategoryCssVars } from "../lib/user-category";
+import { useContextualCategory, getCategoryCssVars } from "../lib/user-category";
 
 function NotFoundComponent() {
   useEffect(() => {
