@@ -8,6 +8,8 @@ import {
   type StatusFilterKey,
 } from "@/lib/feed-status";
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
+import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
+import { assertCurrencyIntegrity } from "@/lib/currency-brl";
 import { toast } from "sonner";
 import {
   ArrowLeft,
