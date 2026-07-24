@@ -131,6 +131,7 @@ function ConversationPage() {
   const [muted, setMuted] = useState(false);
   const [archived, setArchived] = useState(false);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   // Anexos + progresso (multi-arquivo)
   const [pendingFiles, setPendingFiles] = useState<File[]>(() => getDraftFiles(peerId));
