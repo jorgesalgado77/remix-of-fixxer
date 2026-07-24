@@ -218,6 +218,27 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
           )}
         </button>
 
+        {typeof resultCount === "number" && (
+          <div
+            className="hidden sm:flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest shrink-0"
+            style={{
+              borderColor: hexToRgba(accent, 0.35),
+              color: accent,
+              backgroundColor: hexToRgba(accent, 0.06),
+            }}
+            aria-live="polite"
+          >
+            {loading ? (
+              <span className="animate-pulse">Buscando…</span>
+            ) : (
+              <>
+                {resultCount} {resultLabel}
+                {resultCount === 1 ? "" : "s"}
+              </>
+            )}
+          </div>
+        )}
+
         {!searchInput && (
           <div
             className="hidden sm:flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest"
