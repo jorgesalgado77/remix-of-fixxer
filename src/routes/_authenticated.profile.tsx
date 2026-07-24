@@ -55,7 +55,16 @@ function ProfilePage() {
         postId ? supabase.from('feed_posts').select('*').eq('id', postId).single() : Promise.resolve({ data: null })
       ]);
       
-      if (profileRes.data) setProfile(profileRes.data);
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+        // Sincroniza raio de atuação salvo para uso como padrão nos feeds
+        if (!profileId && profileRes.data.service_radius_km != null) {
+          try {
+            const cat = roleToCategory(profileRes.data.role);
+            localStorage.setItem(`fixxer_radius_${cat}`, String(profileRes.data.service_radius_km));
+          } catch { /* noop */ }
+        }
+      }
       if (brandsRes.data) setBrands(brandsRes.data.map(b => b.name));
       if (postRes?.data) setTargetPost(postRes.data);
       setLoading(false);
@@ -524,6 +533,69 @@ function ProfilePage() {
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* RAIO DE ATUAÇÃO */}
+              <div className="pt-8 space-y-6">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                  <MapPin className="w-6 h-6 text-primary" />
+                  <h3 className="text-xl font-black uppercase tracking-tighter">Raio de Atuação</h3>
+                </div>
+                <p className="text-[11px] text-muted-foreground -mt-2">
+                  Distância máxima (a partir do seu endereço atual) usada como padrão nos feeds e recomendações da sua categoria.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 10, label: "10 km" },
+                    { value: 25, label: "25 km" },
+                    { value: 50, label: "50 km" },
+                    { value: 100, label: "100 km" },
+                    { value: 0, label: "Toda a Região" },
+                  ].map((opt) => {
+                    const current = Number(profile?.service_radius_km ?? 25);
+                    const active = current === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setProfile({ ...profile, service_radius_km: opt.value });
+                          try {
+                            const cat = roleToCategory(profile?.role);
+                            localStorage.setItem(`fixxer_radius_${cat}`, String(opt.value));
+                            window.dispatchEvent(
+                              new CustomEvent("fixxer:radius-change", {
+                                detail: { category: cat, radius: opt.value },
+                              }),
+                            );
+                          } catch {
+                            /* noop */
+                          }
+                        }}
+                        disabled={!!profileId}
+                        className="flex items-center gap-1 rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-wide transition-all disabled:opacity-50"
+                        style={
+                          active
+                            ? {
+                                backgroundColor: theme.hex,
+                                color: "#0A0A0B",
+                                borderColor: theme.hex,
+                                boxShadow: `0 0 12px rgba(${theme.rgb}, 0.45)`,
+                              }
+                            : {
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                                color: "rgba(255,255,255,0.7)",
+                                borderColor: "rgba(255,255,255,0.1)",
+                              }
+                        }
+                        aria-pressed={active}
+                      >
+                        <MapPin className="w-3 h-3" aria-hidden />
+                        {opt.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
