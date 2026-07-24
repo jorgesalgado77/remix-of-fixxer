@@ -8,6 +8,7 @@ import { MaskedInput } from "@/components/MaskedInput";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { PushToggle } from "@/components/PushToggle";
 import { AffiliateBanner } from "@/components/AffiliateBanner";
+import { ActivityBranchSelector } from "@/components/ActivityBranchSelector";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
