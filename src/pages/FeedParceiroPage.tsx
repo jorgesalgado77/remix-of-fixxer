@@ -743,6 +743,18 @@ export default function FeedParceiroPage() {
             />
           </div>
         </div>
+        <div className="px-4">
+          <MacroBranchChips
+            value={null}
+            onChange={(id) => {
+              if (!id) { setSearch(""); return; }
+              const terms = getMacroSearchTerms(id);
+              setSearch(terms[0] ?? "");
+            }}
+            accent="#A855F7"
+          />
+        </div>
+
         {/* PÍLULAS DE SETOR */}
         <div className="scrollbar-none flex gap-2 overflow-x-auto px-4 pb-3">
           {SECTORS.map((s) => {
