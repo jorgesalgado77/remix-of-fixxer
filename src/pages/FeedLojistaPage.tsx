@@ -817,6 +817,15 @@ export default function FeedLojistaPage() {
         </div>
       </header>
 
+      <RadiusFilter
+        category="lojista"
+        accent="#00E5FF"
+        badge={{
+          icon: "🔥",
+          text: "3 Novas Oportunidades de Clientes Finais a menos de 5 km de você (Sorocaba/SP)",
+        }}
+      />
+
       {/* Feed com coluna lateral fixa (desktop) */}
       <div className="w-full flex-1 lg:max-w-6xl lg:mx-auto lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6 lg:px-4">
         <aside className="hidden lg:block">

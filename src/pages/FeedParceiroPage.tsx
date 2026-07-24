@@ -787,6 +787,15 @@ export default function FeedParceiroPage() {
         </div>
       </header>
 
+      <RadiusFilter
+        category="fornecedor"
+        accent="#A855F7"
+        badge={{
+          icon: "📦",
+          text: "6 Lojistas buscando orçamentos de Marmoraria e Vidro na sua cidade",
+        }}
+      />
+
       {/* FEED */}
       <main className="mx-auto max-w-3xl px-4 py-4">
         <div className="mb-4 flex items-center justify-between text-xs text-white/50">

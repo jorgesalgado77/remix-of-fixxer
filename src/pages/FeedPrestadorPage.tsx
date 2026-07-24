@@ -1162,6 +1162,15 @@ export default function FeedPrestadorPage() {
         </div>
       </header>
 
+      <RadiusFilter
+        category="prestador"
+        accent="#FF9F0A"
+        badge={{
+          icon: "⚡",
+          text: "4 O.S. de Montagem e Medição abertas no raio de 15 km",
+        }}
+      />
+
       {/* CONTEÚDO */}
       <main className="max-w-5xl mx-auto px-4 py-4 space-y-4">
         {/* Skeleton de busca */}
