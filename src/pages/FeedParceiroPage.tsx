@@ -724,44 +724,53 @@ export default function FeedParceiroPage() {
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 sm:px-4 py-3">
           <button
             type="button"
             onClick={() =>
               navigate({ to: "/dashboard/parceiro" }).catch(() => undefined)
             }
-            className="rounded-full border border-white/10 bg-[#1A1A1B] p-2 text-white/80 transition hover:border-[#A855F7]/40 hover:text-[#A855F7]"
+            className="rounded-full border border-white/10 bg-[#1A1A1B] p-2 text-white/80 transition hover:border-[#A855F7]/40 hover:text-[#A855F7] shrink-0"
             aria-label="Voltar para Dashboard do Fornecedor"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="flex flex-1 items-center gap-2 rounded-full border border-white/10 bg-[#1A1A1B] px-3 py-2">
-            <Search className="h-4 w-4 text-white/40" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por material, loja ou cidade..."
-              className="w-full bg-transparent text-sm outline-none placeholder:text-white/40"
-            />
-          </div>
+          <FeedFiltersBar
+            accent="#A855F7"
+            category="fornecedor"
+            searchInput={
+              <div className="flex flex-1 items-center gap-2 rounded-full border border-white/10 bg-[#1A1A1B] px-3 py-2">
+                <Search className="h-4 w-4 text-white/40 shrink-0" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar material, loja ou cidade..."
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-white/40"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="text-white/40 hover:text-white shrink-0"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            }
+            onMacroSearchTerm={(term) => setSearch(term ?? "")}
+            pillLabel="Setor B2B"
+            pillOptions={SECTORS.map((s) => ({ key: s, label: s }))}
+            pillValue={activeSector}
+            onPillChange={(k) => setActiveSector(k as typeof activeSector)}
+            statusValue={statusFilter}
+            onStatusChange={setStatusFilter}
+            badge={{
+              icon: "📦",
+              text: "6 Lojistas buscando orçamentos de Marmoraria e Vidro na sua cidade",
+            }}
+          />
         </div>
       </header>
-
-      <FeedFiltersBar
-        accent="#A855F7"
-        category="fornecedor"
-        onMacroSearchTerm={(term) => setSearch(term ?? "")}
-        pillLabel="Setor B2B"
-        pillOptions={SECTORS.map((s) => ({ key: s, label: s }))}
-        pillValue={activeSector}
-        onPillChange={(k) => setActiveSector(k as typeof activeSector)}
-        statusValue={statusFilter}
-        onStatusChange={setStatusFilter}
-        badge={{
-          icon: "📦",
-          text: "6 Lojistas buscando orçamentos de Marmoraria e Vidro na sua cidade",
-        }}
-      />
 
 
       {/* FEED */}
