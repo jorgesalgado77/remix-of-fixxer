@@ -3,6 +3,7 @@ import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2, E
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { attachReferralAfterSignup, getStoredReferralCode } from "@/lib/affiliates";
 
 export const Route = createFileRoute("/cadastro")({
   validateSearch: (search: Record<string, unknown>) => ({
