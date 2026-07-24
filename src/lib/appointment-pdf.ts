@@ -213,6 +213,26 @@ export async function generateAppointmentPdf(
     },
     margin: { left: M, right: M },
   });
+  y = (doc as any).lastAutoTable.finalY + 20;
+
+  // Evidencias anexadas
+  const allEvidence = disputes.flatMap((d) =>
+    (d.evidence_urls ?? []).map((url) => ({ url, disputeId: d.id.slice(0, 8) })),
+  );
+  if (allEvidence.length > 0) {
+    if (y > doc.internal.pageSize.getHeight() - 120) { doc.addPage(); y = 60; }
+    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(20, 20, 20);
+    doc.text("Evidencias anexadas", M, y);
+    y += 12;
+    doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80);
+    for (const ev of allEvidence) {
+      if (y > doc.internal.pageSize.getHeight() - 40) { doc.addPage(); y = 60; }
+      doc.setTextColor(0, 100, 200);
+      doc.textWithLink(`- Disputa ${ev.disputeId}: ${ev.url}`, M, y, { url: ev.url });
+      y += 12;
+    }
+    y += 8;
+  }
 
   // Rodape em todas as paginas
   const pages = doc.getNumberOfPages();
