@@ -21,6 +21,15 @@ import {
   Volume2,
   VolumeX,
   Video as VideoIcon,
+  PencilRuler,
+  Ruler,
+  ClipboardCheck,
+  Wrench,
+  LifeBuoy,
+  Search as SearchIcon,
+  Truck,
+  MoreHorizontal,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +74,22 @@ const SERVICE_TYPES = [
 const FREIGHT_TYPE = "🚚 Frete";
 const OTHER_SERVICE_TYPE = "📝 Outro";
 
+const SERVICE_TYPE_ICON: Record<string, LucideIcon> = {
+  "Projeto": PencilRuler,
+  "Medição": Ruler,
+  "Conferência": ClipboardCheck,
+  "Montagem": Wrench,
+  "Assistência": LifeBuoy,
+  "Vistoria": SearchIcon,
+  [FREIGHT_TYPE]: Truck,
+  [OTHER_SERVICE_TYPE]: MoreHorizontal,
+};
+
+const SERVICE_TYPE_LABEL: Record<string, string> = {
+  [FREIGHT_TYPE]: "Frete",
+  [OTHER_SERVICE_TYPE]: "Outro",
+};
+
 const TECH_SPECS = [
   { id: "veiculo", label: "Possuir veículo próprio" },
   { id: "ferramental", label: "Possuir ferramental completo" },
@@ -94,6 +119,22 @@ const formatBRL = (v: string | number) => {
   const n = typeof v === "number" ? v : Number(v);
   if (!v || Number.isNaN(n)) return "R$ 0,00";
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+};
+
+/** Máscara de moeda BRL — recebe o valor digitado e retorna string formatada "12.345,67". */
+const maskCurrencyBRL = (raw: string) => {
+  const digits = (raw || "").replace(/\D/g, "").slice(0, 14);
+  if (!digits) return "";
+  const n = Number(digits) / 100;
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+/** Converte string mascarada BRL para número. */
+const parseCurrencyBRL = (masked: string) => {
+  if (!masked) return 0;
+  const digits = masked.replace(/\D/g, "");
+  if (!digits) return 0;
+  return Number(digits) / 100;
 };
 
 const UF_LIST = [
@@ -384,9 +425,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   };
 
   const commissionValue = useMemo(() => {
-    const cv = Number(contractValue);
+    const cv = parseCurrencyBRL(contractValue);
     const pct = Number(commissionPct);
-    if (!cv || !pct || Number.isNaN(cv) || Number.isNaN(pct)) return 0;
+    if (!cv || !pct || Number.isNaN(pct)) return 0;
     return (cv * pct) / 100;
   }, [contractValue, commissionPct]);
 
@@ -510,24 +551,24 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     if (startDate && deadline && new Date(deadline) < new Date(startDate))
       return "O prazo de execução não pode ser anterior à data de início.";
     if (priceType === "fixo") {
-      const n = Number(fixedValue);
-      if (!fixedValue || Number.isNaN(n) || n <= 0) return "Informe um valor fixo válido (> 0).";
+      const n = parseCurrencyBRL(fixedValue);
+      if (n <= 0) return "Informe um valor fixo válido (> 0).";
     }
     if (priceType === "comissao") {
-      const cv = Number(contractValue);
+      const cv = parseCurrencyBRL(contractValue);
       const pct = Number(commissionPct);
-      if (!contractValue || Number.isNaN(cv) || cv <= 0)
+      if (cv <= 0)
         return "Informe o valor do contrato fechado.";
       if (!commissionPct || Number.isNaN(pct) || pct <= 0 || pct > 100)
         return "Informe uma porcentagem válida (entre 0 e 100).";
     }
     if (priceType === "fixo_comissao") {
-      const fv = Number(fixedValue);
-      const cv = Number(contractValue);
+      const fv = parseCurrencyBRL(fixedValue);
+      const cv = parseCurrencyBRL(contractValue);
       const pct = Number(commissionPct);
-      if (!fixedValue || Number.isNaN(fv) || fv <= 0)
+      if (fv <= 0)
         return "Informe o valor fixo garantido (> 0).";
-      if (!contractValue || Number.isNaN(cv) || cv <= 0)
+      if (cv <= 0)
         return "Informe o valor do contrato para calcular a comissão.";
       if (!commissionPct || Number.isNaN(pct) || pct <= 0 || pct > 100)
         return "Informe uma porcentagem de comissão válida (0–100).";
@@ -550,10 +591,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   };
 
   const priceDisplay = useMemo(() => {
-    if (priceType === "fixo") return formatBRL(fixedValue);
+    const fv = parseCurrencyBRL(fixedValue);
+    if (priceType === "fixo") return formatBRL(fv);
     if (priceType === "fixo_comissao") {
-      const total = Number(fixedValue || 0) + commissionValue;
-      return `${formatBRL(fixedValue)} + ${commissionPct || 0}% = ${formatBRL(total)}`;
+      const total = fv + commissionValue;
+      return `${formatBRL(fv)} + ${commissionPct || 0}% = ${formatBRL(total)}`;
     }
     return `Comissão: ${formatBRL(commissionValue)} (${commissionPct || 0}%)`;
   }, [priceType, fixedValue, commissionValue, commissionPct]);
@@ -599,20 +641,22 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         weight_kg: Number(freightWeight),
       };
     }
-    if (priceType === "fixo") return { ...base, fixed_value: Number(fixedValue) };
+    const fvNum = parseCurrencyBRL(fixedValue);
+    const cvNum = parseCurrencyBRL(contractValue);
+    if (priceType === "fixo") return { ...base, fixed_value: fvNum };
     if (priceType === "fixo_comissao") {
       return {
         ...base,
-        fixed_value: Number(fixedValue),
-        contract_value: Number(contractValue),
+        fixed_value: fvNum,
+        contract_value: cvNum,
         commission_percent: Number(commissionPct),
         commission_value: commissionValue,
-        total_value: Number(fixedValue) + commissionValue,
+        total_value: fvNum + commissionValue,
       };
     }
     return {
       ...base,
-      contract_value: Number(contractValue),
+      contract_value: cvNum,
       commission_percent: Number(commissionPct),
       commission_value: commissionValue,
     };
@@ -909,6 +953,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {SERVICE_TYPES.map((t) => {
                   const active = serviceTypes.includes(t);
+                  const Icon = SERVICE_TYPE_ICON[t] ?? FileText;
+                  const label = SERVICE_TYPE_LABEL[t] ?? t;
                   return (
                     <label
                       key={t}
@@ -928,7 +974,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                         onChange={() => toggleServiceType(t)}
                         className="accent-current w-3.5 h-3.5"
                       />
-                      {t}
+                      <Icon className="w-4 h-4 shrink-0" style={{ color: active ? theme.hex : "rgba(255,255,255,0.55)" }} />
+                      <span className="truncate">{label}</span>
                     </label>
                   );
                 })}
@@ -1303,15 +1350,17 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                   Valor Fixo {priceType === "fixo_comissao" ? "Garantido " : ""}(R$)
                 </Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={fixedValue}
-                  onChange={(e) => setFixedValue(e.target.value)}
-                  placeholder="0,00"
-                  className="bg-white/5 border-white/10 text-white"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-white/60 pointer-events-none">R$</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={fixedValue}
+                    onChange={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
+                    placeholder="0,00"
+                    className="bg-white/5 border-white/10 text-white pl-10"
+                  />
+                </div>
               </div>
             )}
 
@@ -1321,15 +1370,17 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                     Valor do Contrato (R$)
                   </Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={contractValue}
-                    onChange={(e) => setContractValue(e.target.value)}
-                    placeholder="Ex.: 50000,00"
-                    className="bg-white/5 border-white/10 text-white"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-white/60 pointer-events-none">R$</span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      value={contractValue}
+                      onChange={(e) => setContractValue(maskCurrencyBRL(e.target.value))}
+                      placeholder="50.000,00"
+                      className="bg-white/5 border-white/10 text-white pl-10"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
