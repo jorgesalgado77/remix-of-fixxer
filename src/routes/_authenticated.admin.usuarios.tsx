@@ -604,3 +604,58 @@ function ModalShell({ title, children, onClose, wide }: { title: string; childre
     </div>
   );
 }
+
+/* ------------ Virtualized List ------------ */
+function VirtualUserList({
+  users, menuOpen, onToggleMenu, onView, onCoins, onPlan, onToggleBlock,
+}: {
+  users: AdminUser[];
+  menuOpen: string | null;
+  onToggleMenu: (id: string) => void;
+  onView: (u: AdminUser) => void;
+  onCoins: (u: AdminUser) => void;
+  onPlan: (u: AdminUser) => void;
+  onToggleBlock: (u: AdminUser) => void;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: users.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 108,
+    overscan: 8,
+  });
+
+  return (
+    <div
+      ref={parentRef}
+      className="rounded-2xl border border-white/10 bg-black/20"
+      style={{ height: "min(70vh, 780px)", overflow: "auto", contain: "strict" }}
+    >
+      <div style={{ height: virtualizer.getTotalSize(), width: "100%", position: "relative" }}>
+        {virtualizer.getVirtualItems().map((row) => {
+          const u = users[row.index];
+          return (
+            <div
+              key={u.id}
+              style={{
+                position: "absolute", top: 0, left: 0, right: 0,
+                transform: `translateY(${row.start}px)`,
+                paddingLeft: 8, paddingRight: 8, paddingBottom: 8,
+              }}
+            >
+              <UserCard
+                u={u}
+                menuOpen={menuOpen === u.id}
+                onToggleMenu={() => onToggleMenu(u.id)}
+                onView={() => onView(u)}
+                onCoins={() => onCoins(u)}
+                onPlan={() => onPlan(u)}
+                onToggleBlock={() => onToggleBlock(u)}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
