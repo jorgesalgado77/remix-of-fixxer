@@ -328,10 +328,25 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
     });
 
   // -------- section CRUD --------
-  const addSection = () => {
+  const addSection = async () => {
     if (safe.custom.length >= L.maxCustomSections) {
       toast.error(`Limite de ${L.maxCustomSections} seções personalizadas atingido.`);
       return;
+    }
+    // Cobrança: seções extras cobram 15 moedas (`extra_photo_session`)
+    if (chargeUserId && safe.custom.length >= freeSessionsQuota) {
+      const { spendCoinsForAction, getActionCost } = await import('@/lib/monetization');
+      const cost = getActionCost('extra_photo_session')?.coins ?? 15;
+      const ok = confirm(`Esta nova sessão de fotos custará ${cost} moedas. Confirmar?`);
+      if (!ok) return;
+      const res = await spendCoinsForAction(chargeUserId, 'extra_photo_session');
+      if (!res.ok) {
+        if (res.reason === 'insufficient') toast.error(`Saldo insuficiente. Necessário: ${res.cost} moedas.`);
+        else if (res.reason === 'disabled') { /* segue sem cobrar */ }
+        else { toast.error('Falha ao debitar moedas', { description: res.error }); return; }
+      } else {
+        toast.success(`−${res.cost} moedas · Nova sessão liberada.`);
+      }
     }
     const id = `sec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const next = { ...safe, custom: [...safe.custom, { id, name: 'Nova Seção', photos: [] }] };
