@@ -24,21 +24,10 @@ function LoginComponent() {
     setLoading(true);
     setErrorMsg('');
 
-    // SE FOR O E-MAIL E SENHA DO ADMINISTRADOR MASTER, LIBERA ACESSO IMEDIATO
-    // 2. Normaliza o e-mail e verifica Administrador Master
-    const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail === 'jorgericardosalgado@gmail.com' && password === '!jR17052') {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('fixxer_user_email', normalizedEmail);
-        localStorage.setItem('fixxer_user_role', 'Admin');
-        localStorage.setItem('fixxer_user_category', 'admin');
-        localStorage.setItem('fixxer_authenticated', 'true');
-        
-        // Redirecionamento imediato para /admin
-        window.location.assign('/admin');
-      }
-      return;
-    }
+    // Autenticação exclusivamente via Supabase — sem bypass hardcoded.
+    // O papel de admin é determinado no servidor pela tabela public.user_roles.
+
+
 
 
 
