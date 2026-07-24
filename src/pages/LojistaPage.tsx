@@ -1017,11 +1017,11 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
     const multiplier = getMultiplier();
 
     // Contador incremental de O.S. criadas nesta sessão (persistido em localStorage)
-    const [createdBoost, setCreatedBoost] = React.useState<number>(() => {
+    const [createdBoost, setCreatedBoost] = useState<number>(() => {
         if (typeof window === "undefined") return 0;
         return Number(localStorage.getItem("fixxer:os:created:count") || "0");
     });
-    React.useEffect(() => {
+    useEffect(() => {
         const handler = () => {
             setCreatedBoost(Number(localStorage.getItem("fixxer:os:created:count") || "0"));
         };
