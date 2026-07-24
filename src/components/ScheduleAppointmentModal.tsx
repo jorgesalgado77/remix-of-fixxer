@@ -49,7 +49,7 @@ export function ScheduleAppointmentModal({
         type,
         scheduled_at,
         location_address: address || undefined,
-        deposit_amount: deposit || 0,
+        deposit_amount: parseCurrencyBRL(deposit) || 0,
         order_id: orderId,
         chat_thread_id: chatThreadId,
         notes: notes || undefined,
