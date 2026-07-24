@@ -1,3 +1,4 @@
+import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -569,27 +570,16 @@ export default function FeedClientePage() {
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-4 pt-3">
-        <MacroBranchChips
-          value={null}
-          onChange={(id) => {
-            if (!id) { setQuery(""); return; }
-            const terms = getMacroSearchTerms(id);
-            setQuery(terms[0] ?? "");
-          }}
-          accent="#00FF87"
-        />
-      </div>
-
-
-      <RadiusFilter
-        category="cliente"
+      <FeedFiltersBar
         accent="#00FF87"
+        category="cliente"
+        onMacroSearchTerm={(term) => setQuery(term ?? "")}
         badge={{
           icon: "🌟",
           text: "5 Lojas de Planejados verificadas a menos de 8 km de você",
         }}
       />
+
 
       <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
         {/* BANNER PUBLICAR NECESSIDADE */}

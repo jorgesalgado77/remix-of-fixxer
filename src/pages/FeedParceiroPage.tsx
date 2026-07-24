@@ -1,3 +1,4 @@
+import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -744,72 +745,24 @@ export default function FeedParceiroPage() {
             />
           </div>
         </div>
-        <div className="px-4">
-          <MacroBranchChips
-            value={null}
-            onChange={(id) => {
-              if (!id) { setSearch(""); return; }
-              const terms = getMacroSearchTerms(id);
-              setSearch(terms[0] ?? "");
-            }}
-            accent="#A855F7"
-          />
-        </div>
-
-        {/* PÍLULAS DE SETOR */}
-        <div className="scrollbar-none flex gap-2 overflow-x-auto px-4 pb-3">
-          {SECTORS.map((s) => {
-            const active = s === activeSector;
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setActiveSector(s)}
-                className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition ${
-                  active
-                    ? "border-[#A855F7] bg-[#A855F7]/10 text-[#A855F7] shadow-[0_0_16px_rgba(168,85,247,0.25)]"
-                    : "border-white/10 bg-[#1A1A1B] text-white/70 hover:border-white/20"
-                }`}
-              >
-                {s}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-[10px] uppercase tracking-widest text-white/40 font-black shrink-0">
-            Status:
-          </span>
-          {STATUS_FILTERS.map((s) => {
-            const active = statusFilter === s.key;
-            const color = s.key === "todos" ? "#A855F7" : FEED_STATUS_COLOR[s.key];
-            return (
-              <button
-                key={s.key}
-                onClick={() => setStatusFilter(s.key)}
-                className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap tracking-widest border transition-all"
-                style={
-                  active
-                    ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
-                    : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
-                }
-              >
-                {s.label}
-              </button>
-            );
-          })}
-        </div>
       </header>
 
-      <RadiusFilter
-        category="fornecedor"
+      <FeedFiltersBar
         accent="#A855F7"
+        category="fornecedor"
+        onMacroSearchTerm={(term) => setSearch(term ?? "")}
+        pillLabel="Setor B2B"
+        pillOptions={SECTORS.map((s) => ({ key: s, label: s }))}
+        pillValue={activeSector}
+        onPillChange={(k) => setActiveSector(k as typeof activeSector)}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
         badge={{
           icon: "📦",
           text: "6 Lojistas buscando orçamentos de Marmoraria e Vidro na sua cidade",
         }}
       />
+
 
       {/* FEED */}
       <main className="mx-auto max-w-3xl px-4 py-4">
