@@ -1,6 +1,7 @@
 import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
+import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -548,7 +549,7 @@ export default function FeedClientePage() {
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0A0A0B]/90 border-b border-white/10">
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-2">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 grid grid-cols-[auto_1fr] items-start gap-2">
           <Link
             to="/cliente"
             className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:border-[#00FF87]/50 transition-all shrink-0"
@@ -836,11 +837,22 @@ export default function FeedClientePage() {
         {/* LISTA */}
         <div className="space-y-4 pt-2">
           {visible.length === 0 && (
-            <div className="text-center py-16 text-muted-foreground text-xs font-medium">
-              {savedOnly
-                ? "Você ainda não salvou nenhum favorito."
-                : "Nenhum resultado encontrado."}
-            </div>
+            <FeedEmptyState
+              accent="#00FF87"
+              title={savedOnly ? "Nenhum favorito salvo" : "Nenhum serviço encontrado"}
+              searchTerm={query}
+              hasActiveFilters={savedOnly || !!query || solution !== "Todas as Opções"}
+              onReset={
+                savedOnly
+                  ? () => setSavedOnly(false)
+                  : () => {
+                      setQuery("");
+                      setSolution("Todas as Opções");
+                    }
+              }
+              suggestions={savedOnly ? undefined : ["montagem", "cozinha", "planejados", "sorocaba", "armário"]}
+              onSuggestion={(term) => setQuery(term)}
+            />
           )}
           {visible.map((vendor) => (
             <VendorCard

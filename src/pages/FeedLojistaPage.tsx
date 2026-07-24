@@ -14,6 +14,7 @@ import {
   type StatusFilterKey,
 } from "@/lib/feed-status";
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
+import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
@@ -784,7 +785,7 @@ export default function FeedLojistaPage() {
     >
       {/* Topbar Fixa */}
       <header className="border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 pt-3 pb-1 flex items-center gap-2">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 pt-3 pb-1 grid grid-cols-[auto_1fr] items-start gap-2">
           <Link
             to="/lojista"
             aria-label="Voltar para a Dashboard do Lojista"
@@ -898,26 +899,20 @@ export default function FeedLojistaPage() {
               ))}
             </div>
           ) : visible.length === 0 ? (
-            <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center">
-              <Search className="w-10 h-10 mx-auto mb-3 text-white/30" />
-              <h3 className="font-black uppercase italic text-base mb-1">Nada encontrado</h3>
-              <p className="text-xs text-white/50 mb-4">
-                {debouncedSearch
-                  ? `Nenhuma publicação para "${debouncedSearch}"${filter !== "todos" ? ` nesta categoria` : ""}.`
-                  : "Tente outro termo ou remova os filtros para ver todas as publicações."}
-              </p>
-              {(debouncedSearch || filter !== "todos") && (
-                <button
-                  onClick={() => {
-                    setSearch("");
-                    setFilter("todos");
-                  }}
-                  className="text-[11px] font-bold uppercase tracking-wide px-4 py-2 rounded-full bg-white/10 border border-white/10 hover:bg-white/20 text-white"
-                >
-                  Limpar filtros
-                </button>
-              )}
-            </div>
+            <FeedEmptyState
+              accent="#00E5FF"
+              title="Nenhuma publicação encontrada"
+              searchTerm={debouncedSearch}
+              filterLabel={filter !== "todos" ? FILTERS.find((f) => f.key === filter)?.label : undefined}
+              hasActiveFilters={!!debouncedSearch || filter !== "todos" || statusFilter !== "todos"}
+              onReset={() => {
+                setSearch("");
+                setFilter("todos");
+                setStatusFilter("todos");
+              }}
+              suggestions={["guarda-roupa", "cozinha", "montagem", "sorocaba", "urgente"]}
+              onSuggestion={(term) => setSearch(term)}
+            />
           ) : (
             <>
               {paged.map((post) => (
