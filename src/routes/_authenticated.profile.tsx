@@ -600,6 +600,16 @@ function ProfilePage() {
                 </div>
               </div>
 
+              {/* NOTIFICAÇÕES PUSH */}
+              <div className="pt-8 space-y-4">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                  <h3 className="text-xl font-black uppercase tracking-tighter">Notificações</h3>
+                </div>
+                <PushToggle />
+              </div>
+
+
+
               {/* CAMPOS ESPECÍFICOS: LOJISTA */}
               {profile?.role === 'lojista' && (
                 <div className="pt-8 space-y-6">
