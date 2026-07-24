@@ -16,6 +16,7 @@ import {
 } from "@/lib/feed-status";
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
+import { FeedEmptyState } from "@/components/FeedEmptyState";
 
 import {
   ArrowLeft,
@@ -1218,26 +1219,20 @@ export default function FeedPrestadorPage() {
         )}
 
         {!searching && filtered.length === 0 && (
-          <div className="text-center py-16 px-6">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-              <Search className="w-7 h-7 text-muted-foreground" />
-            </div>
-            <p className="text-sm font-black text-white uppercase italic tracking-tight">
-              Nenhuma vaga encontrada
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-2 max-w-xs mx-auto">
-              Tente ajustar o filtro de subcategoria ou refinar sua busca por "{debouncedSearch}".
-            </p>
-            <button
-              onClick={() => {
-                setFilter("todas");
-                setSearch("");
-              }}
-              className="mt-4 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all"
-            >
-              Limpar Filtros
-            </button>
-          </div>
+          <FeedEmptyState
+            accent="#FF9F0A"
+            title="Nenhuma vaga encontrada"
+            searchTerm={debouncedSearch}
+            filterLabel={filter !== "todas" ? FILTERS.find((f) => f.key === filter)?.label : undefined}
+            hasActiveFilters={!!debouncedSearch || filter !== "todas" || statusFilter !== "todos"}
+            onReset={() => {
+              setFilter("todas");
+              setSearch("");
+              setStatusFilter("todos");
+            }}
+            suggestions={["montagem", "medição", "cozinha", "sorocaba", "planejados"]}
+            onSuggestion={(term) => setSearch(term)}
+          />
         )}
 
         {!searching &&

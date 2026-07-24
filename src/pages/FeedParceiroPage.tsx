@@ -1,6 +1,7 @@
 import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
+import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -761,7 +762,7 @@ export default function FeedParceiroPage() {
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 sm:px-4 py-3">
+        <div className="mx-auto grid max-w-3xl grid-cols-[auto_1fr] items-start gap-2 px-3 sm:px-4 py-3">
           <button
             type="button"
             onClick={() => navigate({ to: "/dashboard/parceiro" }).catch(() => undefined)}
@@ -825,9 +826,20 @@ export default function FeedParceiroPage() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-[#1A1A1B] p-8 text-center text-sm text-white/60">
-            Nenhuma demanda encontrada para os filtros atuais.
-          </div>
+          <FeedEmptyState
+            accent="#A855F7"
+            title="Nenhuma demanda B2B encontrada"
+            searchTerm={search}
+            filterLabel={activeSector !== "Todas as Demandas" ? activeSector : undefined}
+            hasActiveFilters={!!search || activeSector !== "Todas as Demandas" || statusFilter !== "todos"}
+            onReset={() => {
+              setSearch("");
+              setActiveSector("Todas as Demandas");
+              setStatusFilter("todos");
+            }}
+            suggestions={["mármore", "vidro", "ferragem", "sorocaba", "atacado"]}
+            onSuggestion={(term) => setSearch(term)}
+          />
         ) : (
           <ul className="space-y-4">
             {paged.map((r) => {
