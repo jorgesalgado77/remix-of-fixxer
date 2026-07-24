@@ -953,6 +953,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {SERVICE_TYPES.map((t) => {
                   const active = serviceTypes.includes(t);
+                  const Icon = SERVICE_TYPE_ICON[t] ?? FileText;
+                  const label = SERVICE_TYPE_LABEL[t] ?? t;
                   return (
                     <label
                       key={t}
@@ -972,7 +974,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                         onChange={() => toggleServiceType(t)}
                         className="accent-current w-3.5 h-3.5"
                       />
-                      {t}
+                      <Icon className="w-4 h-4 shrink-0" style={{ color: active ? theme.hex : "rgba(255,255,255,0.55)" }} />
+                      <span className="truncate">{label}</span>
                     </label>
                   );
                 })}
