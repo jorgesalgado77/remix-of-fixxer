@@ -295,9 +295,18 @@ const MOCK_JOBS: JobPost[] = [
   {
     id: "os-107",
     type: "lojista",
-    contractor: { id: "c-lojista-4", name: "Design Planejados Sorocaba", initials: "DP", isVerified: true },
-    city: "Sorocaba", state: "SP", rating: 4.85, postedAt: "há 40 min",
-    urgency: "urgente", subcategory: "Montagem de Móveis",
+    contractor: {
+      id: "c-lojista-4",
+      name: "Design Planejados Sorocaba",
+      initials: "DP",
+      isVerified: true,
+    },
+    city: "Sorocaba",
+    state: "SP",
+    rating: 4.85,
+    postedAt: "há 40 min",
+    urgency: "urgente",
+    subcategory: "Montagem de Móveis",
     title: "Montagem de Cozinha Planejada + Painel Ripado (Contrato Fixo)",
     description:
       "Lojista com fluxo semanal de O.S. Contrato fixo para montador que aceite 3 a 4 obras por semana em Sorocaba e região.",
@@ -305,14 +314,23 @@ const MOCK_JOBS: JobPost[] = [
     tools: ["Furadeira impacto", "Trena laser", "Nível 60cm"],
     value: "R$ 850,00 por O.S. + bônus mensal",
     valueType: "fixo",
-    media: [{ type: "image", url: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=70&auto=format&fit=crop" }],
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
   },
   {
     id: "os-108",
     type: "cliente_final",
     contractor: { id: "c-cliente-4", name: "Rafaela Nunes", initials: "RN" },
-    city: "Itu", state: "SP", rating: 4.9, postedAt: "há 1 h",
-    urgency: "normal", subcategory: "Instalação",
+    city: "Itu",
+    state: "SP",
+    rating: 4.9,
+    postedAt: "há 1 h",
+    urgency: "normal",
+    subcategory: "Instalação",
     title: "Instalação de Home Office Planejado (Bancada + Nichos)",
     description:
       "Móveis já entregues pela loja. Preciso apenas do instalador para montar e fixar na parede de alvenaria.",
@@ -320,14 +338,28 @@ const MOCK_JOBS: JobPost[] = [
     tools: ["Parafusadeira", "Nível laser", "Aspirador"],
     value: "R$ 320,00",
     valueType: "fixo",
-    media: [{ type: "image", url: "https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?w=1200&q=70&auto=format&fit=crop" }],
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
   },
   {
     id: "os-109",
     type: "lojista",
-    contractor: { id: "c-lojista-5", name: "Marcenaria Alto Padrão SP", initials: "AP", isVerified: true },
-    city: "São Paulo", state: "SP", rating: 4.95, postedAt: "há 2 h",
-    urgency: "critica", subcategory: "Conferência Técnica",
+    contractor: {
+      id: "c-lojista-5",
+      name: "Marcenaria Alto Padrão SP",
+      initials: "AP",
+      isVerified: true,
+    },
+    city: "São Paulo",
+    state: "SP",
+    rating: 4.95,
+    postedAt: "há 2 h",
+    urgency: "critica",
+    subcategory: "Conferência Técnica",
     title: "Conferência Técnica URGENTE — 2 Cozinhas em Alphaville",
     description:
       "Preciso enviar produção amanhã cedo. Conferente que possa ir ainda hoje em Alphaville para validar medidas e ferragens.",
@@ -335,14 +367,23 @@ const MOCK_JOBS: JobPost[] = [
     tools: ["Trena laser", "Camera 4K", "Checklist digital"],
     value: "R$ 480,00 fixo",
     valueType: "fixo",
-    media: [{ type: "image", url: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=70&auto=format&fit=crop" }],
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
   },
   {
     id: "os-110",
     type: "cliente_final",
     contractor: { id: "c-cliente-5", name: "Thiago Almeida", initials: "TA" },
-    city: "Campinas", state: "SP", rating: 4.7, postedAt: "há 3 h",
-    urgency: "normal", subcategory: "Montagem de Móveis",
+    city: "Campinas",
+    state: "SP",
+    rating: 4.7,
+    postedAt: "há 3 h",
+    urgency: "normal",
+    subcategory: "Montagem de Móveis",
     title: "Montagem de Painel de TV Ripado + Rack Suspenso",
     description:
       "Painel de 3,20m com rack suspenso freijó. Móveis chegam sexta-feira, agendar montagem para sábado.",
@@ -350,14 +391,23 @@ const MOCK_JOBS: JobPost[] = [
     tools: ["Furadeira", "Nível laser", "Passa-fio"],
     value: "R$ 280,00",
     valueType: "fixo",
-    media: [{ type: "image", url: "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=70&auto=format&fit=crop" }],
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
   },
   {
     id: "os-111",
     type: "lojista",
     contractor: { id: "c-lojista-6", name: "Móveis Bianchi", initials: "MB", isVerified: true },
-    city: "Jundiaí", state: "SP", rating: 4.9, postedAt: "há 5 h",
-    urgency: "normal", subcategory: "Projetos/Desenho",
+    city: "Jundiaí",
+    state: "SP",
+    rating: 4.9,
+    postedAt: "há 5 h",
+    urgency: "normal",
+    subcategory: "Projetos/Desenho",
     title: "Projetista Freelancer para 4 Projetos/Mês (Contrato Recorrente)",
     description:
       "Buscamos projetista Promob para produzir 4 projetos executivos por mês com render Corona ou V-Ray.",
@@ -365,7 +415,12 @@ const MOCK_JOBS: JobPost[] = [
     tools: ["Promob", "Corona/V-Ray", "Photoshop"],
     value: "R$ 600,00 por projeto",
     valueType: "fixo",
-    media: [{ type: "image", url: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=70&auto=format&fit=crop" }],
+    media: [
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=70&auto=format&fit=crop",
+      },
+    ],
   },
 ];
 
@@ -707,12 +762,15 @@ function JobCard({
         style={{ background: `linear-gradient(90deg, transparent, ${cardTheme.hex}, transparent)` }}
       />
 
-
       <div className="p-4 space-y-4">
         {/* CABEÇALHO */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link to={contractorHref} params={{ id: job.contractor.id }} className="hover:scale-105 transition-transform">
+            <Link
+              to={contractorHref}
+              params={{ id: job.contractor.id }}
+              className="hover:scale-105 transition-transform"
+            >
               <Avatar initials={job.contractor.initials} />
             </Link>
             <div className="min-w-0">
@@ -727,7 +785,11 @@ function JobCard({
                 {job.contractor.isVerified && <CheckCircle2 className="w-3 h-3 text-[#FF9F0A]" />}
                 <span
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border"
-                  style={{ color: statusColor, borderColor: `${statusColor}55`, backgroundColor: `${statusColor}18` }}
+                  style={{
+                    color: statusColor,
+                    borderColor: `${statusColor}55`,
+                    backgroundColor: `${statusColor}18`,
+                  }}
                 >
                   <span className="w-1 h-1 rounded-full" style={{ backgroundColor: statusColor }} />
                   {FEED_STATUS_LABEL[status]}
@@ -935,17 +997,18 @@ export default function FeedPrestadorPage() {
             const merged = new Set([...prev, ...remote]);
             const missing = [...prev].filter((id) => !remote.has(id));
             if (missing.length > 0) {
-              void supabaseExternal
-                .from("feed_post_saves")
-                .upsert(
-                  missing.map((post_id) => ({ user_id: user.id, post_id })),
-                  { onConflict: "user_id,post_id" },
-                );
+              void supabaseExternal.from("feed_post_saves").upsert(
+                missing.map((post_id) => ({ user_id: user.id, post_id })),
+                { onConflict: "user_id,post_id" },
+              );
             }
             return merged;
           });
         } else if (savesErr) {
-          console.warn("[feed] feed_post_saves indisponível, usando localStorage.", savesErr.message);
+          console.warn(
+            "[feed] feed_post_saves indisponível, usando localStorage.",
+            savesErr.message,
+          );
         }
 
         // Candidaturas do usuário
@@ -1134,10 +1197,8 @@ export default function FeedPrestadorPage() {
               text: "4 O.S. de Montagem e Medição abertas no raio de 15 km",
             }}
           />
-
         </div>
       </header>
-
 
       {/* CONTEÚDO */}
       <main className="max-w-5xl mx-auto px-4 py-4 space-y-4">

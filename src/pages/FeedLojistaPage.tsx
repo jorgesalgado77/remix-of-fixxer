@@ -387,7 +387,10 @@ const MOCK_POSTS: FeedPost[] = [
       "Quero uma bancada em L com nichos e gaveteiro para escritório em casa. MDF cinza + puxadores pretos. Aceito visita técnica.",
     budget: "R$ 4.500 – R$ 6.800",
     media: [
-      { type: "image", url: "https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?w=1200&q=70&auto=format&fit=crop" },
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?w=1200&q=70&auto=format&fit=crop",
+      },
     ],
     keywords: ["home office", "planejado", "itu"],
   },
@@ -403,7 +406,10 @@ const MOCK_POSTS: FeedPost[] = [
       "Painel ripado freijó com 3,20m e rack suspenso. Já tenho projeto em PDF, preciso apenas execução e instalação.",
     budget: "R$ 3.200 – R$ 4.800",
     media: [
-      { type: "image", url: "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=70&auto=format&fit=crop" },
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=70&auto=format&fit=crop",
+      },
     ],
     keywords: ["painel", "ripado", "rack", "campinas"],
   },
@@ -420,7 +426,10 @@ const MOCK_POSTS: FeedPost[] = [
     description:
       "Vagas para 3 O.S. de médio/grande porte. Equipe própria com 2 auxiliares, ferramenta completa e seguro incluso.",
     media: [
-      { type: "image", url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&q=70&auto=format&fit=crop" },
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&q=70&auto=format&fit=crop",
+      },
     ],
     keywords: ["montador", "selo ouro", "sorocaba"],
   },
@@ -437,7 +446,10 @@ const MOCK_POSTS: FeedPost[] = [
     description:
       "Atendo lojistas com pacote fechado por ambiente. Entrega inclui memorial, lista de corte e 4 imagens em alta.",
     media: [
-      { type: "image", url: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=70&auto=format&fit=crop" },
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=70&auto=format&fit=crop",
+      },
     ],
     keywords: ["projetista", "promob", "render"],
   },
@@ -453,7 +465,10 @@ const MOCK_POSTS: FeedPost[] = [
       "Estoque completo em MDF branco TX, freijó, carvalho munique e cinza cristal. Frete grátis acima de 20 chapas.",
     budget: "A partir de R$ 189/chapa",
     media: [
-      { type: "image", url: "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?w=1200&q=70&auto=format&fit=crop" },
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?w=1200&q=70&auto=format&fit=crop",
+      },
     ],
     keywords: ["mdf", "duratex", "chapas", "distribuidor"],
   },
@@ -469,7 +484,10 @@ const MOCK_POSTS: FeedPost[] = [
       "Distribuidor oficial Blum. Kits promocionais para lojistas cadastrados. Consultoria técnica gratuita para projetos.",
     budget: "Descontos progressivos",
     media: [
-      { type: "image", url: "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=1200&q=70&auto=format&fit=crop" },
+      {
+        type: "image",
+        url: "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=1200&q=70&auto=format&fit=crop",
+      },
     ],
     keywords: ["blum", "ferragens", "corrediças"],
   },
@@ -509,7 +527,6 @@ const AUTHOR_ROUTE: Record<FeedCategory, string> = {
 function authorHref(post: FeedPost) {
   return `${AUTHOR_ROUTE[post.category]}/${post.author.id}`;
 }
-
 
 export default function FeedLojistaPage() {
   const navigate = useNavigate();
@@ -558,7 +575,9 @@ export default function FeedLojistaPage() {
 
     (async () => {
       try {
-        const { data: { user } } = await supabaseExternal.auth.getUser();
+        const {
+          data: { user },
+        } = await supabaseExternal.auth.getUser();
         if (!user) return;
         setUserId(user.id);
         const { data, error } = await supabaseExternal
@@ -576,11 +595,12 @@ export default function FeedLojistaPage() {
         const local = new Set(saved);
         const missing = [...local].filter((id) => !remote.has(id));
         if (missing.length > 0) {
-          await supabaseExternal
-            .from("feed_post_saves")
-            .upsert(missing.map((post_id) => ({ user_id: user.id, post_id })), {
+          await supabaseExternal.from("feed_post_saves").upsert(
+            missing.map((post_id) => ({ user_id: user.id, post_id })),
+            {
               onConflict: "user_id,post_id",
-            });
+            },
+          );
           missing.forEach((id) => remote.add(id));
         }
         setSaved(remote);
@@ -603,9 +623,10 @@ export default function FeedLojistaPage() {
   const visible = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
     const byCategory = MOCK_POSTS.filter((p) => filter === "todos" || p.category === filter);
-    const byStatus = statusFilter === "todos"
-      ? byCategory
-      : byCategory.filter((p) => getFeedStatus(p.id) === statusFilter);
+    const byStatus =
+      statusFilter === "todos"
+        ? byCategory
+        : byCategory.filter((p) => getFeedStatus(p.id) === statusFilter);
     const filtered = q
       ? byStatus.filter((p) => {
           const hay = [
@@ -688,7 +709,9 @@ export default function FeedLojistaPage() {
       if (willSave) {
         next.add(id);
         toast.success("Publicação salva", {
-          description: savesRemote ? "Disponível em qualquer dispositivo." : "Faça login para sincronizar entre dispositivos.",
+          description: savesRemote
+            ? "Disponível em qualquer dispositivo."
+            : "Faça login para sincronizar entre dispositivos.",
         });
       } else {
         next.delete(id);
@@ -717,8 +740,9 @@ export default function FeedLojistaPage() {
     const n = parseCurrencyBRL(proposalValue);
     const target = proposalFor;
     toast.success("Proposta enviada!", {
-      description: `${target?.author.name} receberá sua oferta de R$ ${n
-        .toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.`,
+      description: `${target?.author.name} receberá sua oferta de R$ ${n.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+      })}.`,
     });
     // Dispara push ao autor da O.S. (best-effort; ignora falha se sem sub)
     if (target?.author?.id) {
@@ -731,7 +755,9 @@ export default function FeedLojistaPage() {
           url: "/dashboard",
           tag: `proposal-${target.id}`,
         });
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     setProposalFor(null);
     setProposalValue("");
@@ -750,7 +776,6 @@ export default function FeedLojistaPage() {
     toast.success("Publicação removida");
     setDeleteFor(null);
   };
-
 
   return (
     <div
@@ -806,7 +831,6 @@ export default function FeedLojistaPage() {
         </div>
       </header>
 
-
       {/* Feed com coluna lateral fixa (desktop) */}
       <div className="w-full flex-1 lg:max-w-6xl lg:mx-auto lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6 lg:px-4">
         <aside className="hidden lg:block">
@@ -816,13 +840,22 @@ export default function FeedLojistaPage() {
                 Atalhos do Lojista
               </div>
               <nav className="space-y-1.5">
-                <Link to="/lojista" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                <Link
+                  to="/lojista"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                >
                   <Store className="w-4 h-4 text-[#00E5FF]" /> Dashboard
                 </Link>
-                <Link to="/chat" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                <Link
+                  to="/chat"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                >
                   <MessageSquare className="w-4 h-4 text-[#00E5FF]" /> Chat
                 </Link>
-                <Link to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                >
                   <User className="w-4 h-4 text-[#00E5FF]" /> Meu Perfil
                 </Link>
               </nav>
@@ -832,94 +865,97 @@ export default function FeedLojistaPage() {
                 Dica Rápida
               </div>
               <p className="text-[11px] text-white/70 leading-relaxed">
-                Filtre por status para acompanhar propostas, andamentos e finalizações em tempo real.
+                Filtre por status para acompanhar propostas, andamentos e finalizações em tempo
+                real.
               </p>
             </div>
           </div>
         </aside>
 
-      <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
-        <B2BSuggestionsCard />
-        {searching ? (
-          <div className="space-y-4" aria-live="polite">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-4 animate-pulse"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-11 h-11 rounded-full bg-white/5" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-1/3 bg-white/5 rounded" />
-                    <div className="h-2 w-1/4 bg-white/5 rounded" />
+        <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
+          <B2BSuggestionsCard />
+          {searching ? (
+            <div className="space-y-4" aria-live="polite">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-4 animate-pulse"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-11 h-11 rounded-full bg-white/5" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-1/3 bg-white/5 rounded" />
+                      <div className="h-2 w-1/4 bg-white/5 rounded" />
+                    </div>
                   </div>
+                  <div className="h-3 w-3/4 bg-white/5 rounded mb-2" />
+                  <div className="h-2 w-full bg-white/5 rounded mb-1" />
+                  <div className="h-2 w-5/6 bg-white/5 rounded" />
+                  <div className="h-40 w-full bg-white/5 rounded-2xl mt-3" />
                 </div>
-                <div className="h-3 w-3/4 bg-white/5 rounded mb-2" />
-                <div className="h-2 w-full bg-white/5 rounded mb-1" />
-                <div className="h-2 w-5/6 bg-white/5 rounded" />
-                <div className="h-40 w-full bg-white/5 rounded-2xl mt-3" />
-              </div>
-            ))}
-          </div>
-        ) : visible.length === 0 ? (
-          <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center">
-            <Search className="w-10 h-10 mx-auto mb-3 text-white/30" />
-            <h3 className="font-black uppercase italic text-base mb-1">Nada encontrado</h3>
-            <p className="text-xs text-white/50 mb-4">
-              {debouncedSearch
-                ? `Nenhuma publicação para "${debouncedSearch}"${filter !== "todos" ? ` nesta categoria` : ""}.`
-                : "Tente outro termo ou remova os filtros para ver todas as publicações."}
-            </p>
-            {(debouncedSearch || filter !== "todos") && (
-              <button
-                onClick={() => { setSearch(""); setFilter("todos"); }}
-                className="text-[11px] font-bold uppercase tracking-wide px-4 py-2 rounded-full bg-white/10 border border-white/10 hover:bg-white/20 text-white"
-              >
-                Limpar filtros
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            {paged.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                isSaved={saved.has(post.id)}
-                menuOpen={openMenu === post.id}
-                onToggleMenu={(e) => {
-                  e.stopPropagation();
-                  setOpenMenu((v) => (v === post.id ? null : post.id));
-                }}
-                onCloseMenu={() => setOpenMenu(null)}
-                onSave={() => toggleSaved(post.id)}
-                onChat={() => openChat(post)}
-                onPropose={() => setProposalFor(post)}
-                onReport={() => setReportFor(post)}
-                onDelete={() => setDeleteFor(post)}
-                onEdit={() => toast("Abrindo editor da publicação...")}
-                onOpenMedia={(index) => setLightbox({ post, index })}
-                onOpenDetails={() => setDetailsFor(post)}
-              />
-            ))}
+              ))}
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center">
+              <Search className="w-10 h-10 mx-auto mb-3 text-white/30" />
+              <h3 className="font-black uppercase italic text-base mb-1">Nada encontrado</h3>
+              <p className="text-xs text-white/50 mb-4">
+                {debouncedSearch
+                  ? `Nenhuma publicação para "${debouncedSearch}"${filter !== "todos" ? ` nesta categoria` : ""}.`
+                  : "Tente outro termo ou remova os filtros para ver todas as publicações."}
+              </p>
+              {(debouncedSearch || filter !== "todos") && (
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setFilter("todos");
+                  }}
+                  className="text-[11px] font-bold uppercase tracking-wide px-4 py-2 rounded-full bg-white/10 border border-white/10 hover:bg-white/20 text-white"
+                >
+                  Limpar filtros
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {paged.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  isSaved={saved.has(post.id)}
+                  menuOpen={openMenu === post.id}
+                  onToggleMenu={(e) => {
+                    e.stopPropagation();
+                    setOpenMenu((v) => (v === post.id ? null : post.id));
+                  }}
+                  onCloseMenu={() => setOpenMenu(null)}
+                  onSave={() => toggleSaved(post.id)}
+                  onChat={() => openChat(post)}
+                  onPropose={() => setProposalFor(post)}
+                  onReport={() => setReportFor(post)}
+                  onDelete={() => setDeleteFor(post)}
+                  onEdit={() => toast("Abrindo editor da publicação...")}
+                  onOpenMedia={(index) => setLightbox({ post, index })}
+                  onOpenDetails={() => setDetailsFor(post)}
+                />
+              ))}
 
-            {hasMore ? (
-              <div
-                ref={sentinelRef}
-                className="py-6 flex items-center justify-center text-white/50 text-[11px] font-bold uppercase tracking-wide"
-              >
-                <div className="w-4 h-4 border-2 border-white/20 border-t-[#00E5FF] rounded-full animate-spin mr-2" />
-                Carregando mais publicações...
-              </div>
-            ) : (
-              <div className="py-6 text-center text-[11px] font-bold uppercase tracking-wide text-white/30">
-                — Fim do feed —
-              </div>
-            )}
-          </>
-        )}
-
-      </main>
+              {hasMore ? (
+                <div
+                  ref={sentinelRef}
+                  className="py-6 flex items-center justify-center text-white/50 text-[11px] font-bold uppercase tracking-wide"
+                >
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-[#00E5FF] rounded-full animate-spin mr-2" />
+                  Carregando mais publicações...
+                </div>
+              ) : (
+                <div className="py-6 text-center text-[11px] font-bold uppercase tracking-wide text-white/30">
+                  — Fim do feed —
+                </div>
+              )}
+            </>
+          )}
+        </main>
       </div>
 
       {/* Lightbox */}
@@ -1042,8 +1078,9 @@ export default function FeedLojistaPage() {
       {deleteFor && (
         <ModalShell onClose={() => setDeleteFor(null)} title="Excluir Publicação">
           <p className="text-xs text-white/70 mb-4">
-            Tem certeza que deseja excluir <span className="text-white font-bold">"{deleteFor.title}"</span>?
-            Esta ação não pode ser desfeita.
+            Tem certeza que deseja excluir{" "}
+            <span className="text-white font-bold">"{deleteFor.title}"</span>? Esta ação não pode
+            ser desfeita.
           </p>
           <div className="flex gap-2">
             <button
@@ -1259,9 +1296,7 @@ function PostCard({
                 {post.specialty}
               </span>
             )}
-            {post.radiusKm && (
-              <span className="text-white/60">Raio {post.radiusKm} km</span>
-            )}
+            {post.radiusKm && <span className="text-white/60">Raio {post.radiusKm} km</span>}
           </div>
         </div>
 
@@ -1282,13 +1317,19 @@ function PostCard({
               {post.author.isMine ? (
                 <>
                   <button
-                    onClick={() => { onCloseMenu(); onEdit(); }}
+                    onClick={() => {
+                      onCloseMenu();
+                      onEdit();
+                    }}
                     className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest hover:bg-white/5"
                   >
                     <Edit3 className="w-4 h-4" /> Editar
                   </button>
                   <button
-                    onClick={() => { onCloseMenu(); onDelete(); }}
+                    onClick={() => {
+                      onCloseMenu();
+                      onDelete();
+                    }}
                     className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest text-red-400 hover:bg-red-500/10 border-t border-white/5"
                   >
                     <Trash2 className="w-4 h-4" /> Excluir
@@ -1296,7 +1337,10 @@ function PostCard({
                 </>
               ) : (
                 <button
-                  onClick={() => { onCloseMenu(); onReport(); }}
+                  onClick={() => {
+                    onCloseMenu();
+                    onReport();
+                  }}
                   className="w-full flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase italic tracking-widest text-red-400 hover:bg-red-500/10"
                 >
                   <Flag className="w-4 h-4" /> Denunciar Publicação
@@ -1309,10 +1353,7 @@ function PostCard({
 
       {/* Conteúdo */}
       <div className="space-y-2">
-        <button
-          onClick={onOpenDetails}
-          className="text-left w-full"
-        >
+        <button onClick={onOpenDetails} className="text-left w-full">
           <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-tight leading-snug hover:opacity-80 transition-opacity">
             {post.title}
           </h3>
@@ -1340,7 +1381,12 @@ function PostCard({
               {m.type === "video" ? (
                 <>
                   {m.poster ? (
-                    <img src={m.poster} alt="" loading="lazy" className="w-full h-full object-cover" />
+                    <img
+                      src={m.poster}
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/30">
                       <ImageIcon className="w-8 h-8" />
@@ -1391,7 +1437,11 @@ function PostCard({
           style={
             isSaved
               ? { ...theme.bgSoft, ...theme.borderSoft, ...theme.color }
-              : { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }
+              : {
+                  backgroundColor: "rgba(255,255,255,0.05)",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  color: "rgba(255,255,255,0.6)",
+                }
           }
         >
           <Bookmark className="w-4 h-4" style={isSaved ? theme.fill : undefined} />

@@ -3,11 +3,7 @@ import { SlidersHorizontal, X, MapPin, Sparkles, Flame, RotateCcw } from "lucide
 import { toast } from "sonner";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
 import { getMacroSearchTerms } from "@/components/MacroBranchChips";
-import {
-  FEED_STATUS_COLOR,
-  STATUS_FILTERS,
-  type StatusFilterKey,
-} from "@/lib/feed-status";
+import { FEED_STATUS_COLOR, STATUS_FILTERS, type StatusFilterKey } from "@/lib/feed-status";
 import type { CategoryKey } from "@/lib/category-colors";
 
 /**
@@ -156,9 +152,7 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
           searchInput ? "" : "max-w-3xl mx-auto"
         }`}
       >
-        {searchInput && (
-          <div className="flex-1 min-w-0">{searchInput}</div>
-        )}
+        {searchInput && <div className="flex-1 min-w-0">{searchInput}</div>}
 
         <button
           type="button"
@@ -246,9 +240,7 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4" style={{ color: accent }} />
-                <h2 className="text-sm font-black uppercase tracking-widest text-white">
-                  Filtros
-                </h2>
+                <h2 className="text-sm font-black uppercase tracking-widest text-white">Filtros</h2>
                 {activeCount > 0 && (
                   <span
                     className="min-w-[20px] h-5 px-1.5 grid place-items-center rounded-full text-[10px] font-black"
@@ -285,8 +277,16 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                     className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide"
                     style={
                       macroValue === null
-                        ? { backgroundColor: accent, color: "#000", boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}` }
-                        : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)" }
+                        ? {
+                            backgroundColor: accent,
+                            color: "#000",
+                            boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}`,
+                          }
+                        : {
+                            backgroundColor: "rgba(255,255,255,0.05)",
+                            color: "rgba(255,255,255,0.7)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                          }
                     }
                   >
                     ✨ Todos
@@ -302,8 +302,16 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                         className="px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide flex items-center gap-1.5"
                         style={
                           active
-                            ? { backgroundColor: accent, color: "#000", boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}` }
-                            : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.1)" }
+                            ? {
+                                backgroundColor: accent,
+                                color: "#000",
+                                boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}`,
+                              }
+                            : {
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                                color: "rgba(255,255,255,0.75)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                              }
                         }
                       >
                         <span>{m.icon}</span>
@@ -331,8 +339,16 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                           className="px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide flex items-center gap-1.5"
                           style={
                             active
-                              ? { backgroundColor: accent, color: "#000", boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}` }
-                              : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.1)" }
+                              ? {
+                                  backgroundColor: accent,
+                                  color: "#000",
+                                  boxShadow: `0 0 10px ${hexToRgba(accent, 0.35)}`,
+                                }
+                              : {
+                                  backgroundColor: "rgba(255,255,255,0.05)",
+                                  color: "rgba(255,255,255,0.75)",
+                                  border: "1px solid rgba(255,255,255,0.1)",
+                                }
                           }
                         >
                           {f.icon}
@@ -362,8 +378,17 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                           className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide border"
                           style={
                             active
-                              ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
-                              : { backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                              ? {
+                                  backgroundColor: color,
+                                  color: "#0A0A0B",
+                                  borderColor: color,
+                                  boxShadow: `0 0 10px ${color}55`,
+                                }
+                              : {
+                                  backgroundColor: "rgba(255,255,255,0.05)",
+                                  color: "rgba(255,255,255,0.6)",
+                                  borderColor: "rgba(255,255,255,0.1)",
+                                }
                           }
                         >
                           {s.label}
