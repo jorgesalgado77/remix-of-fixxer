@@ -183,6 +183,14 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [freightVolumes, setFreightVolumes] = useState("");
   const [freightWeight, setFreightWeight] = useState("");
   const [otherServiceText, setOtherServiceText] = useState("");
+  // Erros inline por campo monetário (destaca borda + mensagem sob o input)
+  const [fieldErrors, setFieldErrors] = useState<{
+    fixedValue?: string | null;
+    contractValue?: string | null;
+    commissionPct?: string | null;
+  }>({});
+  const clearFieldError = (k: "fixedValue" | "contractValue" | "commissionPct") =>
+    setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: null } : prev));
 
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = getCategoryTheme(defaultCategory);
