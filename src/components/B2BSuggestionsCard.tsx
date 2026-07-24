@@ -49,15 +49,15 @@ export function B2BSuggestionsCard() {
     <div
       className="rounded-2xl p-3 space-y-2 border"
       style={{
-        borderColor: `${theme.primary}33`,
-        background: `linear-gradient(135deg, ${theme.primary}0F, transparent 70%)`,
+        borderColor: `${theme.hex}33`,
+        background: `linear-gradient(135deg, ${theme.hex}0F, transparent 70%)`,
       }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${theme.primary}22`, color: theme.primary }}
+            style={{ backgroundColor: `${theme.hex}22`, color: theme.hex }}
           >
             <Handshake className="w-4 h-4" />
           </div>
@@ -89,7 +89,7 @@ export function B2BSuggestionsCard() {
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-bold text-white truncate">{s.title}</p>
               <p className="text-[9px] text-white/50 truncate flex items-center gap-1">
-                <Sparkles className="w-2.5 h-2.5" style={{ color: theme.primary }} />
+                <Sparkles className="w-2.5 h-2.5" style={{ color: theme.hex }} />
                 {s.hint}
               </p>
             </div>
