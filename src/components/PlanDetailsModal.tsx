@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { X, Crown, Check, Rocket, Calendar, Coins, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { fetchMonetizationConfig, getCachedMonetization, type PlanConfig, type PlanId } from "@/lib/monetization";
+import { type PlanId } from "@/lib/monetization";
+import { useMonetization } from "@/hooks/use-monetization";
 
 interface Props {
   currentPlan: PlanId;
