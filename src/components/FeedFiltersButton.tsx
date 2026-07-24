@@ -41,6 +41,8 @@ export type FeedFiltersButtonProps = {
   // ------- raio -------
   onRadiusChange?: (km: number) => void;
   badge?: { icon?: string; text: string };
+  // ------- busca inline -------
+  searchInput?: ReactNode;
 };
 
 const RADIUS_OPTIONS: { value: number; label: string }[] = [
