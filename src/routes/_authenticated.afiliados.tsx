@@ -273,7 +273,17 @@ function AffiliatesPage() {
 
         {/* HISTÓRICO DE COMISSÕES */}
         <div className="bg-card/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 space-y-4">
-          <h2 className="text-lg font-black uppercase tracking-tight text-white">Comissões Recentes</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg font-black uppercase tracking-tight text-white">Comissões Recentes</h2>
+            <button
+              onClick={exportCsv}
+              disabled={commissions.length === 0 && referrals.length === 0}
+              className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Exportar CSV
+            </button>
+          </div>
           {commissions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Wallet className="w-10 h-10 mx-auto mb-3 opacity-30" />
