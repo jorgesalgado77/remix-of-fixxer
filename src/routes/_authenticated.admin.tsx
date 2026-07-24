@@ -92,7 +92,14 @@ export function AdminDashboardComponent() {
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            to={"/admin/monetizacao" as any}
+            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 font-black uppercase italic text-xs tracking-widest hover:bg-emerald-500/25 transition-all"
+          >
+            <DollarSign className="w-4 h-4" />
+            Monetização
+          </Link>
           <button 
             onClick={() => {
               const el = document.getElementById('admin-feed-section');
@@ -107,6 +114,7 @@ export function AdminDashboardComponent() {
             <User className="w-5 h-5" />
           </Link>
         </div>
+
       </div>
 
 
