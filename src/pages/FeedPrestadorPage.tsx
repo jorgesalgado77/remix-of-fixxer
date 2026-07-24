@@ -1163,6 +1163,8 @@ export default function FeedPrestadorPage() {
           <FeedFiltersBar
             accent="#FF9F0A"
             category="prestador"
+            resultCount={filtered.length}
+            resultLabel="vaga"
             searchInput={
               <div
                 className={`flex items-center gap-3 px-3 py-2 rounded-xl border border-white/10 ${glassClass}`}
