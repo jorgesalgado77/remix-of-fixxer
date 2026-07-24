@@ -800,6 +800,7 @@ export default function FeedParceiroPage() {
 
       {/* FEED */}
       <main className="mx-auto max-w-3xl px-4 py-4">
+        <div className="mb-4"><B2BSuggestionsCard /></div>
         <div className="mb-4 flex items-center justify-between text-xs text-white/50">
           <span>
             {filtered.length} demanda{filtered.length === 1 ? "" : "s"} B2B
