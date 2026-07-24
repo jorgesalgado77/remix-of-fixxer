@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { X, Coins, Copy, Check, QrCode, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchMonetizationConfig, getCachedMonetization, type CoinPack } from "@/lib/monetization";
+import { type CoinPack } from "@/lib/monetization";
+import { useMonetization } from "@/hooks/use-monetization";
 import { creditCoins } from "@/lib/coins";
 
 interface Props { onClose: () => void }
@@ -18,14 +19,11 @@ function buildPixPayload(pack: CoinPack): string {
 }
 
 export function CoinPacksStoreModal({ onClose }: Props) {
-  const [packs, setPacks] = useState<CoinPack[]>(() => getCachedMonetization().coinPacks);
+  const cfg = useMonetization();
+  const packs = useMemo(() => cfg.coinPacks.filter((p) => p.enabled), [cfg]);
   const [selected, setSelected] = useState<CoinPack | null>(null);
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState(false);
-
-  useEffect(() => {
-    fetchMonetizationConfig().then((cfg) => setPacks(cfg.coinPacks.filter((p) => p.enabled)));
-  }, []);
 
   const handleCopy = async () => {
     if (!selected) return;
