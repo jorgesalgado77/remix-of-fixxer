@@ -105,46 +105,6 @@ export function LojistaDashboard() {
   const [profileMissing, setProfileMissing] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // ─── Passo 7: Card "MEU PLANO & MOEDAS" ─────────────────────────
-  const monetization = useMonetization();
-  const [coinBalance, setCoinBalance] = useState<number>(() => getCachedBalance() || 0);
-  const [planId, setPlanId] = useState<PlanId>("free");
-  const [renewsAt, setRenewsAt] = useState<string | null>(null);
-  const [showExtractModal, setShowExtractModal] = useState(false);
-  const [showCoinStore, setShowCoinStore] = useState(false);
-  const [showPlanModal, setShowPlanModal] = useState(false);
-
-  useEffect(() => {
-    const unsub = subscribeBalance((v) => setCoinBalance(v ?? 0));
-    return unsub;
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: { user } } = await supabaseExternal.auth.getUser();
-        if (!user?.id || cancelled) return;
-        const { data } = await supabaseExternal
-          .from("profiles")
-          .select("plan_id, plan_renews_at")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (cancelled) return;
-        if (data?.plan_id) setPlanId(String(data.plan_id).toLowerCase() as PlanId);
-        if (data?.plan_renews_at) setRenewsAt(data.plan_renews_at as string);
-      } catch (err) {
-        console.warn("[LojistaDashboard] falha ao carregar plano:", err);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const activePlan = monetization.plans.find((p) => p.id === planId) || monetization.plans[0];
-  const nextRenewalLabel = renewsAt
-    ? new Date(renewsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
-    : "—";
-  // ────────────────────────────────────────────────────────────────
 
   const [userRole, setUserRole] = useState<CategoryKey>(() => {
     if (typeof window === "undefined") return "lojista";
