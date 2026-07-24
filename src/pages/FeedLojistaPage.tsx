@@ -758,8 +758,8 @@ export default function FeedLojistaPage() {
       onClick={() => setOpenMenu(null)}
     >
       {/* Topbar Fixa */}
-      <header className="border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur-md sticky top-0 z-40 p-3 sm:p-4">
-        <div className="max-w-3xl mx-auto grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
+      <header className="border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 pt-3 pb-1 flex items-center gap-2">
           <Link
             to="/lojista"
             aria-label="Voltar para a Dashboard do Lojista"
@@ -767,44 +767,44 @@ export default function FeedLojistaPage() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div className="relative min-w-0">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por palavra-chave, cidade ou especialidade..."
-              className="w-full bg-[#1A1A1B] border border-white/10 rounded-xl pl-9 pr-9 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00E5FF]"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/50"
-                aria-label="Limpar busca"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          <FeedFiltersBar
+            accent="#00E5FF"
+            category="lojista"
+            searchInput={
+              <div className="relative w-full">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar palavra-chave, cidade..."
+                  className="w-full bg-[#1A1A1B] border border-white/10 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00E5FF]"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/50"
+                    aria-label="Limpar busca"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            }
+            onMacroSearchTerm={(term) => setSearch(term ?? "")}
+            pillLabel="Tipo de Anúncio"
+            pillOptions={FILTERS.map((f) => ({ key: f.key, label: f.label, icon: f.icon }))}
+            pillValue={filter}
+            onPillChange={(k) => setFilter(k as typeof filter)}
+            statusValue={statusFilter}
+            onStatusChange={setStatusFilter}
+            badge={{
+              icon: "🔥",
+              text: "3 Novas Oportunidades de Clientes Finais a menos de 5 km de você (Sorocaba/SP)",
+            }}
+          />
         </div>
-
       </header>
-
-      <FeedFiltersBar
-        accent="#00E5FF"
-        category="lojista"
-        onMacroSearchTerm={(term) => setSearch(term ?? "")}
-        pillLabel="Tipo de Anúncio"
-        pillOptions={FILTERS.map((f) => ({ key: f.key, label: f.label, icon: f.icon }))}
-        pillValue={filter}
-        onPillChange={(k) => setFilter(k as typeof filter)}
-        statusValue={statusFilter}
-        onStatusChange={setStatusFilter}
-        badge={{
-          icon: "🔥",
-          text: "3 Novas Oportunidades de Clientes Finais a menos de 5 km de você (Sorocaba/SP)",
-        }}
-      />
 
 
       {/* Feed com coluna lateral fixa (desktop) */}
