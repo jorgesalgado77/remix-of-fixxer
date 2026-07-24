@@ -177,12 +177,22 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Momentum scroll iOS / Android para todos os overflows internos */
+  /* Momentum scroll iOS / Android para overflows verticais / bidimensionais.
+     Mantém overscroll-behavior-y: contain para não arrastar a página inteira,
+     mas NÃO trava o gesto no eixo Y — evita rolagem "presa". */
   [class*="overflow-y-auto"],
-  [class*="overflow-x-auto"],
   [class*="overflow-auto"] {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Tiras horizontais (chips, carrosséis): permitem que o gesto vertical
+     seja repassado ao scroller pai. Sem isso o toque sobre a tira “trava”
+     a rolagem vertical da página inteira em mobile. */
+  [class*="overflow-x-auto"] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
   }
 }
 

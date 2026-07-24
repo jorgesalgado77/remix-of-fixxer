@@ -1,3 +1,4 @@
+import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -787,75 +788,24 @@ export default function FeedLojistaPage() {
           </div>
         </div>
 
-        {/* Chips por macro-ramo */}
-        <div className="max-w-3xl mx-auto pt-2">
-          <MacroBranchChips
-            value={null}
-            onChange={(id) => {
-              if (!id) { setSearch(""); return; }
-              const terms = getMacroSearchTerms(id);
-              setSearch(terms[0] ?? "");
-            }}
-            accent="#00E5FF"
-          />
-        </div>
-
-
-        {/* Filtros em Pílulas */}
-        <div className="max-w-3xl mx-auto flex items-center gap-2 overflow-x-auto pt-3 pb-0.5 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
-          {FILTERS.map((f) => {
-            const active = filter === f.key;
-            return (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase whitespace-nowrap tracking-wide flex items-center gap-1.5 transition-all ${
-                  active
-                    ? "bg-[#00E5FF] text-black shadow-[0_0_12px_rgba(0,229,255,0.35)]"
-                    : "bg-[#1A1A1B] text-white/60 border border-white/10 hover:text-white"
-                }`}
-              >
-                {f.icon}
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Filtros por Status */}
-        <div className="max-w-3xl mx-auto flex items-center gap-2 overflow-x-auto pt-2 pb-0.5 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
-          <span className="text-[10px] uppercase tracking-widest text-white/40 font-black shrink-0 mr-1">
-            Status:
-          </span>
-          {STATUS_FILTERS.map((s) => {
-            const active = statusFilter === s.key;
-            const color = s.key === "todos" ? "#00E5FF" : FEED_STATUS_COLOR[s.key];
-            return (
-              <button
-                key={s.key}
-                onClick={() => setStatusFilter(s.key)}
-                className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase whitespace-nowrap tracking-wide border transition-all"
-                style={
-                  active
-                    ? { backgroundColor: color, color: "#0A0A0B", borderColor: color, boxShadow: `0 0 10px ${color}55` }
-                    : { backgroundColor: "#1A1A1B", color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
-                }
-              >
-                {s.label}
-              </button>
-            );
-          })}
-        </div>
       </header>
 
-      <RadiusFilter
-        category="lojista"
+      <FeedFiltersBar
         accent="#00E5FF"
+        category="lojista"
+        onMacroSearchTerm={(term) => setSearch(term ?? "")}
+        pillLabel="Tipo de Anúncio"
+        pillOptions={FILTERS.map((f) => ({ key: f.key, label: f.label, icon: f.icon }))}
+        pillValue={filter}
+        onPillChange={(k) => setFilter(k as typeof filter)}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
         badge={{
           icon: "🔥",
           text: "3 Novas Oportunidades de Clientes Finais a menos de 5 km de você (Sorocaba/SP)",
         }}
       />
+
 
       {/* Feed com coluna lateral fixa (desktop) */}
       <div className="w-full flex-1 lg:max-w-6xl lg:mx-auto lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6 lg:px-4">
