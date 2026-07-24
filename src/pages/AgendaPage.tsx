@@ -383,7 +383,10 @@ function AppointmentCard({
       className="rounded-2xl border bg-[#1A1A1B] overflow-hidden"
       style={{ borderColor: `${s.color}44` }}
     >
-      <div className="p-4 space-y-3">
+      <button
+        onClick={onOpen}
+        className="w-full text-left p-4 space-y-3 hover:bg-white/[0.02] transition-colors"
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
