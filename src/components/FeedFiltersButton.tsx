@@ -432,3 +432,32 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
 }
 
 export default FeedFiltersButton;
+
+/**
+ * Wrapper que gerencia o estado interno de macro-ramo e emite o termo de
+ * busca associado — assim as páginas de feed não precisam mais criar um
+ * useState só para o macro filtro.
+ */
+export function FeedFiltersBar(
+  props: Omit<FeedFiltersButtonProps, "macroValue" | "onMacroChange"> & {
+    onMacroSearchTerm?: (term: string | null) => void;
+  },
+) {
+  const { onMacroSearchTerm, ...rest } = props;
+  const [macro, setMacro] = useState<string | null>(null);
+  return (
+    <FeedFiltersButton
+      {...rest}
+      macroValue={macro}
+      onMacroChange={(id) => {
+        setMacro(id);
+        if (!id) {
+          onMacroSearchTerm?.(null);
+          return;
+        }
+        const terms = getMacroSearchTerms(id);
+        onMacroSearchTerm?.(terms[0] ?? null);
+      }}
+    />
+  );
+}
