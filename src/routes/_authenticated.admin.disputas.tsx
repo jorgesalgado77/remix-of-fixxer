@@ -150,7 +150,7 @@ function AdminDisputesPage() {
                     {d.appointment_id && (
                       <Link
                         to={"/agenda/$id" as any}
-                        params={{ id: d.appointment_id }}
+                        params={{ id: d.appointment_id } as any}
                         className="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-1"
                       >
                         <ExternalLink className="w-3 h-3" /> Compromisso

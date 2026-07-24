@@ -43,6 +43,7 @@ import { Route as AuthenticatedFeedLojistaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedFeedClienteRouteImport } from './routes/_authenticated.feed.cliente'
 import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authenticated.chat.$peerId'
 import { Route as AuthenticatedAgendaIdRouteImport } from './routes/_authenticated.agenda.$id'
+import { Route as AuthenticatedAdminDisputasRouteImport } from './routes/_authenticated.admin.disputas'
 import { Route as ApiPublicPushDispatchRouteImport } from './routes/api/public/push.dispatch'
 
 const TermsRoute = TermsRouteImport.update({
@@ -219,6 +220,12 @@ const AuthenticatedAgendaIdRoute = AuthenticatedAgendaIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedAgendaRoute,
 } as any)
+const AuthenticatedAdminDisputasRoute =
+  AuthenticatedAdminDisputasRouteImport.update({
+    id: '/disputas',
+    path: '/disputas',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const ApiPublicPushDispatchRoute = ApiPublicPushDispatchRouteImport.update({
   id: '/api/public/push/dispatch',
   path: '/api/public/push/dispatch',
@@ -230,7 +237,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
   '/terms': typeof TermsRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/afiliados': typeof AuthenticatedAfiliadosRoute
   '/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
@@ -250,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
   '/auth/': typeof AuthIndexRoute
+  '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -265,7 +273,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
   '/terms': typeof TermsRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/afiliados': typeof AuthenticatedAfiliadosRoute
   '/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
@@ -284,6 +292,7 @@ export interface FileRoutesByTo {
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
   '/auth': typeof AuthIndexRoute
+  '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -302,7 +311,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
   '/terms': typeof TermsRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/afiliados': typeof AuthenticatedAfiliadosRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
@@ -322,6 +331,7 @@ export interface FileRoutesById {
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
   '/auth/': typeof AuthIndexRoute
+  '/_authenticated/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/_authenticated/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/_authenticated/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/_authenticated/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/prestador/$id'
     | '/r/$code'
     | '/auth/'
+    | '/admin/disputas'
     | '/agenda/$id'
     | '/chat/$peerId'
     | '/feed/cliente'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/prestador/$id'
     | '/r/$code'
     | '/auth'
+    | '/admin/disputas'
     | '/agenda/$id'
     | '/chat/$peerId'
     | '/feed/cliente'
@@ -431,6 +443,7 @@ export interface FileRouteTypes {
     | '/prestador/$id'
     | '/r/$code'
     | '/auth/'
+    | '/_authenticated/admin/disputas'
     | '/_authenticated/agenda/$id'
     | '/_authenticated/chat/$peerId'
     | '/_authenticated/feed/cliente'
@@ -701,6 +714,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgendaIdRouteImport
       parentRoute: typeof AuthenticatedAgendaRoute
     }
+    '/_authenticated/admin/disputas': {
+      id: '/_authenticated/admin/disputas'
+      path: '/disputas'
+      fullPath: '/admin/disputas'
+      preLoaderRoute: typeof AuthenticatedAdminDisputasRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/api/public/push/dispatch': {
       id: '/api/public/push/dispatch'
       path: '/api/public/push/dispatch'
@@ -710,6 +730,17 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminDisputasRoute: typeof AuthenticatedAdminDisputasRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminDisputasRoute: AuthenticatedAdminDisputasRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedAgendaRouteChildren {
   AuthenticatedAgendaIdRoute: typeof AuthenticatedAgendaIdRoute
@@ -753,7 +784,7 @@ const AuthenticatedFeedRouteWithChildren =
   AuthenticatedFeedRoute._addFileChildren(AuthenticatedFeedRouteChildren)
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAfiliadosRoute: typeof AuthenticatedAfiliadosRoute
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRouteWithChildren
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
@@ -768,7 +799,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAfiliadosRoute: AuthenticatedAfiliadosRoute,
   AuthenticatedAgendaRoute: AuthenticatedAgendaRouteWithChildren,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
@@ -817,13 +848,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
