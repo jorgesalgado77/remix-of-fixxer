@@ -1265,11 +1265,16 @@ function QuoteModal({
           </div>
         )}
         <form onSubmit={submit} className="space-y-3 p-4">
-          <Field
+          <CurrencyInputBRL
             label="Preço total (R$)"
             value={price}
-            onChange={setPrice}
-            placeholder="Ex.: 12.480,00"
+            onChange={(v) => {
+              setPrice(v);
+              if (priceError) setPriceError(null);
+            }}
+            error={priceError}
+            accentColor="#A855F7"
+            placeholder="12.480,00"
           />
           <Field
             label="Condições de pagamento"
