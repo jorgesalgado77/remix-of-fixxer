@@ -30,6 +30,7 @@ import {
 } from "@/lib/appointments";
 import { useCurrentCategory } from "@/lib/user-category";
 import { getCategoryTheme, CATEGORY_COLORS } from "@/lib/category-colors";
+import { CheckoutPhotosModal } from "@/components/CheckoutPhotosModal";
 
 export default function AgendaPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
