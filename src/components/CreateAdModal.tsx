@@ -425,9 +425,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   };
 
   const commissionValue = useMemo(() => {
-    const cv = Number(contractValue);
+    const cv = parseCurrencyBRL(contractValue);
     const pct = Number(commissionPct);
-    if (!cv || !pct || Number.isNaN(cv) || Number.isNaN(pct)) return 0;
+    if (!cv || !pct || Number.isNaN(pct)) return 0;
     return (cv * pct) / 100;
   }, [contractValue, commissionPct]);
 
