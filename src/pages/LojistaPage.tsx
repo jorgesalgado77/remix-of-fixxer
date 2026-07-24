@@ -1445,6 +1445,17 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                     })()}
                 </div>
             </div>
+
+            {/* Modais do card "Plano & Moedas" (Passo 7) */}
+            {showExtractModal && <CoinsExtractModal onClose={() => setShowExtractModal(false)} />}
+            {showCoinStore && <CoinPacksStoreModal onClose={() => setShowCoinStore(false)} />}
+            {showPlanModal && (
+                <PlanDetailsModal
+                    currentPlan={planId}
+                    renewsAt={renewsAt}
+                    onClose={() => setShowPlanModal(false)}
+                />
+            )}
         </div>
     );
 }
