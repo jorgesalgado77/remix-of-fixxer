@@ -1083,7 +1083,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-                <MetricCard label="Serviços Criados" value={(12 * multiplier).toString()} icon={<Briefcase />} color="text-blue-400" />
+                <MetricCard label="Serviços Criados" value={(12 * multiplier + createdBoost).toString()} icon={<Briefcase />} color="text-blue-400" />
                 <MetricCard 
                     label="Serviços Pendentes" 
                     value={(5 * multiplier).toString()} 
