@@ -585,11 +585,8 @@ function DisputesSection({
           {disputes.map((d) => {
             const isMine = d.opened_by === userId;
             const canWithdraw = isMine && d.status === "open";
-            const statusColor =
-              d.status === "resolved" ? "#00FF87" :
-              d.status === "reviewing" ? "#00E5FF" :
-              d.status === "open" ? "#FFB020" :
-              d.status === "rejected" ? "#FF3B30" : "#8E8E93";
+            const meta = DISPUTE_STATUS_LABEL[d.status];
+            const statusColor = meta?.color ?? "#8E8E93";
             return (
               <li key={d.id} className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
                 <div className="flex items-center justify-between gap-2">
@@ -597,7 +594,7 @@ function DisputesSection({
                     className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded"
                     style={{ backgroundColor: `${statusColor}25`, color: statusColor }}
                   >
-                    {DISPUTE_STATUS_LABEL[d.status] ?? d.status}
+                    {meta?.icon} {meta?.label ?? d.status}
                   </span>
                   <span className="text-[9px] text-white/40">
                     {new Date(d.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
@@ -607,9 +604,9 @@ function DisputesSection({
                   Solicita: {DISPUTE_ACTION_LABEL[d.requested_action] ?? d.requested_action}
                 </p>
                 {d.reason && <p className="text-[11px] text-white/70 leading-snug">{d.reason}</p>}
-                {d.resolution_notes && (
+                {d.admin_notes && (
                   <p className="text-[10px] text-white/60 italic border-l-2 border-white/20 pl-2 mt-1">
-                    Parecer FIXXER: {d.resolution_notes}
+                    Parecer FIXXER: {d.admin_notes}
                   </p>
                 )}
                 {canWithdraw && (
@@ -622,6 +619,7 @@ function DisputesSection({
                 )}
               </li>
             );
+
           })}
         </ul>
       )}
