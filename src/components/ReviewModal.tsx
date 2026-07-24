@@ -147,15 +147,38 @@ export function ReviewModal({ isOpen, onClose, targetId, targetName, userRole, o
               Sua avaliação ajuda a manter a comunidade FIXXER segura e transparente.
             </p>
           </div>
+
+          {/* Sanfona de custo em moedas */}
+          <div className="rounded-2xl bg-amber-500/5 border border-amber-500/20 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowCostPanel((v) => !v)}
+              className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
+            >
+              <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-amber-300">
+                <Coins className="w-3.5 h-3.5" /> Custo desta ação: {cost} moedas
+              </span>
+              <ChevronDown className={`w-4 h-4 text-amber-300 transition ${showCostPanel ? "rotate-180" : ""}`} />
+            </button>
+            {showCostPanel && (
+              <div className="px-4 pb-3 space-y-1 text-[10px] text-white/70">
+                <p>Serão debitadas <b className="text-amber-300">{cost} moedas</b> ao confirmar a avaliação.</p>
+                <p>Seu saldo atual: <b className="text-white">{balance} moedas</b>.</p>
+                {balance < cost && (
+                  <p className="text-[10px] text-[#FF3B30] font-black uppercase">⚠️ Saldo insuficiente — recarregue na Loja de Moedas.</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || balance < cost}
             className="w-full py-4 rounded-2xl bg-[#00FF87] text-black font-black uppercase italic text-xs hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar Avaliação"}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Confirmar (−${cost} moedas)`}
           </button>
         </DialogFooter>
       </DialogContent>
