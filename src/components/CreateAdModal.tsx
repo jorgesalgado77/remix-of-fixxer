@@ -39,7 +39,7 @@ interface CreateAdModalProps {
   defaultCategory?: CategoryKey;
 }
 
-type PriceType = "fixo" | "comissao";
+type PriceType = "fixo" | "comissao" | "fixo_comissao";
 type Priority = "baixa" | "media" | "alta" | "urgente";
 
 interface UploadItem {
@@ -58,7 +58,12 @@ const SERVICE_TYPES = [
   "Montagem",
   "Assistência",
   "Vistoria",
+  "🚚 Frete",
+  "📝 Outro",
 ] as const;
+
+const FREIGHT_TYPE = "🚚 Frete";
+const OTHER_SERVICE_TYPE = "📝 Outro";
 
 const TECH_SPECS = [
   { id: "veiculo", label: "Possuir veículo próprio" },
@@ -119,6 +124,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [submitting, setSubmitting] = useState(false);
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
   const [viewer, setViewer] = useState<{ index: number; zoom: number } | null>(null);
+
+  // Novos campos: frete e outro
+  const [freightVolumes, setFreightVolumes] = useState("");
+  const [freightWeight, setFreightWeight] = useState("");
+  const [otherServiceText, setOtherServiceText] = useState("");
 
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = getCategoryTheme(defaultCategory);
@@ -208,6 +218,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       rooms, title, startDate, deadline, priority,
       description, notes, techSpecs, otherChecked, otherText,
       priceType, fixedValue, contractValue, commissionPct,
+      freightVolumes, freightWeight, otherServiceText,
       files: payload,
     };
   };
@@ -270,6 +281,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       setFixedValue(d.fixedValue || "");
       setContractValue(d.contractValue || "");
       setCommissionPct(d.commissionPct || "");
+      setFreightVolumes(d.freightVolumes || "");
+      setFreightWeight(d.freightWeight || "");
+      setOtherServiceText(d.otherServiceText || "");
       filesCacheRef.current.clear();
       const restored: UploadItem[] = (d.files || []).map((f: any) => {
         const file = dataUrlToFile(f.dataUrl, f.name, f.type);
@@ -355,6 +369,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     open, serviceTypes, neighborhood, city, uf, rooms, title, startDate, deadline,
     priority, description, notes, techSpecs, otherChecked, otherText,
     priceType, fixedValue, contractValue, commissionPct,
+    freightVolumes, freightWeight, otherServiceText,
   ]);
 
 
@@ -478,6 +493,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setContractValue("");
     setCommissionPct("");
     setPriceType("fixo");
+    setFreightVolumes("");
+    setFreightWeight("");
+    setOtherServiceText("");
     filesCacheRef.current.clear();
   };
 
@@ -503,6 +521,27 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       if (!commissionPct || Number.isNaN(pct) || pct <= 0 || pct > 100)
         return "Informe uma porcentagem válida (entre 0 e 100).";
     }
+    if (priceType === "fixo_comissao") {
+      const fv = Number(fixedValue);
+      const cv = Number(contractValue);
+      const pct = Number(commissionPct);
+      if (!fixedValue || Number.isNaN(fv) || fv <= 0)
+        return "Informe o valor fixo garantido (> 0).";
+      if (!contractValue || Number.isNaN(cv) || cv <= 0)
+        return "Informe o valor do contrato para calcular a comissão.";
+      if (!commissionPct || Number.isNaN(pct) || pct <= 0 || pct > 100)
+        return "Informe uma porcentagem de comissão válida (0–100).";
+    }
+    if (serviceTypes.includes(FREIGHT_TYPE)) {
+      const v = Number(freightVolumes);
+      const w = Number(freightWeight);
+      if (!freightVolumes || Number.isNaN(v) || v <= 0)
+        return "Informe a quantidade de volumes do frete.";
+      if (!freightWeight || Number.isNaN(w) || w <= 0)
+        return "Informe o peso médio estimado do frete (kg).";
+    }
+    if (serviceTypes.includes(OTHER_SERVICE_TYPE) && !otherServiceText.trim())
+      return 'Especifique o serviço marcado como "Outro".';
     if (otherChecked && !otherText.trim())
       return 'Especifique o item "Outro" nas especificações técnicas.';
     if (files.some((i) => i.progress < 100 && !i.error))
@@ -512,6 +551,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
 
   const priceDisplay = useMemo(() => {
     if (priceType === "fixo") return formatBRL(fixedValue);
+    if (priceType === "fixo_comissao") {
+      const total = Number(fixedValue || 0) + commissionValue;
+      return `${formatBRL(fixedValue)} + ${commissionPct || 0}% = ${formatBRL(total)}`;
+    }
     return `Comissão: ${formatBRL(commissionValue)} (${commissionPct || 0}%)`;
   }, [priceType, fixedValue, commissionValue, commissionPct]);
 
@@ -520,9 +563,15 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       ...techSpecs.map((id) => TECH_SPECS.find((t) => t.id === id)?.label).filter(Boolean),
       ...(otherChecked && otherText.trim() ? [`Outro: ${otherText.trim()}`] : []),
     ];
-    const base = {
+    // Concatena "Outro: <texto>" ao serviço final
+    const finalServiceTypes = serviceTypes.map((t) =>
+      t === OTHER_SERVICE_TYPE && otherServiceText.trim()
+        ? `Outro: ${otherServiceText.trim()}`
+        : t,
+    );
+    const base: any = {
       category: defaultCategory,
-      service_types: serviceTypes,
+      service_types: finalServiceTypes,
       location: {
         neighborhood: neighborhood.trim(),
         city: city.trim(),
@@ -544,7 +593,23 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         order,
       })),
     };
+    if (serviceTypes.includes(FREIGHT_TYPE)) {
+      base.freight = {
+        volumes: Number(freightVolumes),
+        weight_kg: Number(freightWeight),
+      };
+    }
     if (priceType === "fixo") return { ...base, fixed_value: Number(fixedValue) };
+    if (priceType === "fixo_comissao") {
+      return {
+        ...base,
+        fixed_value: Number(fixedValue),
+        contract_value: Number(contractValue),
+        commission_percent: Number(commissionPct),
+        commission_value: commissionValue,
+        total_value: Number(fixedValue) + commissionValue,
+      };
+    }
     return {
       ...base,
       contract_value: Number(contractValue),
@@ -563,9 +628,67 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setSubmitting(true);
     try {
       const payload = buildPayload();
-      console.log("[CreateAdModal] payload =>", payload);
-      await new Promise((r) => setTimeout(r, 600));
-      toast.success("Serviço publicado com sucesso!");
+      // Sessão atual do lojista
+      const { data: sessionData } = await supabaseExternal.auth.getSession();
+      const uid = sessionData?.session?.user?.id ?? null;
+      const row: any = {
+        lojista_id: uid,
+        title: payload.title,
+        description: payload.description,
+        service_types: (payload as any).service_types,
+        neighborhood: (payload as any).location.neighborhood,
+        city: (payload as any).location.city,
+        uf: (payload as any).location.uf,
+        rooms: payload.rooms,
+        start_date: payload.start_date,
+        deadline: payload.deadline,
+        priority: payload.priority,
+        notes: payload.notes,
+        tech_specs: (payload as any).tech_specs,
+        price_type: payload.price_type,
+        fixed_value: (payload as any).fixed_value ?? null,
+        contract_value: (payload as any).contract_value ?? null,
+        commission_percent: (payload as any).commission_percent ?? null,
+        commission_value: (payload as any).commission_value ?? null,
+        total_value: (payload as any).total_value ?? null,
+        freight: (payload as any).freight ?? null,
+        files: (payload as any).files,
+        category: payload.category,
+        status: "PENDENTE",
+      };
+      let insertedId: string | null = null;
+      try {
+        const { data, error } = await supabaseExternal
+          .from("service_orders")
+          .insert(row)
+          .select("id")
+          .single();
+        if (error) throw error;
+        insertedId = data?.id ?? null;
+      } catch (dbErr: any) {
+        // Fallback: persiste em localStorage para não perder o dado quando a tabela não existir
+        console.warn("[CreateAdModal] Falha ao gravar em service_orders — usando fallback local.", dbErr?.message);
+        const key = "fixxer:service_orders:local";
+        const prev = JSON.parse(localStorage.getItem(key) || "[]");
+        insertedId = `local-${Date.now()}`;
+        prev.unshift({ id: insertedId, created_at: new Date().toISOString(), ...row });
+        localStorage.setItem(key, JSON.stringify(prev.slice(0, 100)));
+      }
+      // Incrementa contador local (métricas)
+      try {
+        const cKey = "fixxer:os:created:count";
+        const n = Number(localStorage.getItem(cKey) || "0") + 1;
+        localStorage.setItem(cKey, String(n));
+      } catch { /* ignore */ }
+      // Dissemina para os feeds/dashboards abertos
+      try {
+        window.dispatchEvent(
+          new CustomEvent("fixxer:os-created", {
+            detail: { id: insertedId, row, payload, authorName: authorProfile.name, authorLogo: authorProfile.logoUrl },
+          }),
+        );
+      } catch { /* ignore */ }
+      toast.success("Serviço publicado com sucesso e disponível no feed!");
       discardDraft();
       resetForm();
       onClose();
@@ -734,13 +857,13 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       onClick={onClose}
     >
       <div
-        className="w-full md:max-w-5xl max-h-[92vh] overflow-y-auto bg-[#0A0A0B] border border-white/10 rounded-t-3xl md:rounded-3xl shadow-2xl"
-        style={theme.glow}
+        className="w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[92vh] flex flex-col bg-[#0A0A0B] border border-white/10 rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden"
+        style={{ ...theme.glow, paddingTop: "env(safe-area-inset-top)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header — fixo no topo (mesmo com teclado aberto) */}
         <div
-          className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur"
+          className="shrink-0 flex items-center justify-between px-5 py-4 border-b bg-[#1A1A1B]"
           style={{ borderColor: `rgba(${theme.rgb}, 0.25)` }}
         >
           <div>
@@ -772,7 +895,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[1fr_360px] gap-0">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin grid lg:grid-cols-[1fr_360px] gap-0">
           {/* FORM */}
           <form
             onSubmit={handleSubmit}
@@ -811,6 +934,70 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 })}
               </div>
             </div>
+
+            {/* Frete — condicional */}
+            {serviceTypes.includes(FREIGHT_TYPE) && (
+              <div
+                className="rounded-xl p-3 border grid grid-cols-1 md:grid-cols-2 gap-3"
+                style={{ borderColor: `rgba(${theme.rgb}, 0.35)`, ...theme.bgSoft }}
+              >
+                <div className="md:col-span-2">
+                  <p className="text-[10px] uppercase font-black tracking-wider" style={{ color: theme.hex }}>
+                    🚚 Detalhes do Frete
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-black text-white/70">
+                    Quantidade de Volumes
+                  </Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={freightVolumes}
+                    onChange={(e) => setFreightVolumes(e.target.value)}
+                    placeholder="Ex.: 12 caixas/volumes"
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-black text-white/70">
+                    Peso Médio Estimado (kg)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={freightWeight}
+                    onChange={(e) => setFreightWeight(e.target.value)}
+                    placeholder="Ex.: 150"
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Outro — condicional */}
+            {serviceTypes.includes(OTHER_SERVICE_TYPE) && (
+              <div
+                className="rounded-xl p-3 border space-y-2"
+                style={{ borderColor: `rgba(${theme.rgb}, 0.35)`, ...theme.bgSoft }}
+              >
+                <Label className="text-[10px] uppercase font-black tracking-wider" style={{ color: theme.hex }}>
+                  📝 Especifique o tipo de serviço
+                </Label>
+                <Input
+                  value={otherServiceText}
+                  onChange={(e) => setOtherServiceText(e.target.value)}
+                  placeholder='Ex.: "Montagem de Fachada / Vidros Especializados"'
+                  maxLength={120}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <p className="text-[9px] text-white/50">
+                  Este texto será concatenado ao tipo de serviço final da O.S.
+                </p>
+              </div>
+            )}
+
 
             {/* Local de Execução */}
             <div className="space-y-2">
@@ -1080,11 +1267,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                 Tipo de Preço
               </Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {(
                   [
-                    { id: "fixo", label: "Valor Fixo" },
-                    { id: "comissao", label: "Comissão" },
+                    { id: "fixo", label: "💵 Valor Fixo" },
+                    { id: "comissao", label: "% Comissão" },
+                    { id: "fixo_comissao", label: "💵 + % Fixo + Comissão" },
                   ] as { id: PriceType; label: string }[]
                 ).map((opt) => {
                   const active = priceType === opt.id;
@@ -1110,10 +1298,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
-            {priceType === "fixo" && (
+            {(priceType === "fixo" || priceType === "fixo_comissao") && (
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                  Valor Fixo (R$)
+                  Valor Fixo {priceType === "fixo_comissao" ? "Garantido " : ""}(R$)
                 </Label>
                 <Input
                   type="number"
@@ -1127,7 +1315,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             )}
 
-            {priceType === "comissao" && (
+            {(priceType === "comissao" || priceType === "fixo_comissao") && (
               <div className="grid md:grid-cols-3 gap-3">
                 <div className="space-y-2">
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">

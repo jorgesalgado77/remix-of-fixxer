@@ -1016,6 +1016,23 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
 
     const multiplier = getMultiplier();
 
+    // Contador incremental de O.S. criadas nesta sessão (persistido em localStorage)
+    const [createdBoost, setCreatedBoost] = useState<number>(() => {
+        if (typeof window === "undefined") return 0;
+        return Number(localStorage.getItem("fixxer:os:created:count") || "0");
+    });
+    useEffect(() => {
+        const handler = () => {
+            setCreatedBoost(Number(localStorage.getItem("fixxer:os:created:count") || "0"));
+        };
+        window.addEventListener("fixxer:os-created", handler);
+        window.addEventListener("storage", handler);
+        return () => {
+            window.removeEventListener("fixxer:os-created", handler);
+            window.removeEventListener("storage", handler);
+        };
+    }, []);
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Filtros Globais - Agora Responsivos */}
@@ -1066,7 +1083,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-                <MetricCard label="Serviços Criados" value={(12 * multiplier).toString()} icon={<Briefcase />} color="text-blue-400" />
+                <MetricCard label="Serviços Criados" value={(12 * multiplier + createdBoost).toString()} icon={<Briefcase />} color="text-blue-400" />
                 <MetricCard 
                     label="Serviços Pendentes" 
                     value={(5 * multiplier).toString()} 
