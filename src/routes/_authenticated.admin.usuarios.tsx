@@ -273,7 +273,7 @@ function AdminUsuariosPage() {
         </div>
       </div>
 
-      {/* Lista */}
+      {/* Lista virtualizada */}
       {loading ? (
         <div className="py-16 flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
@@ -283,20 +283,15 @@ function AdminUsuariosPage() {
           Nenhum usuário encontrado com os filtros atuais.
         </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((u) => (
-            <UserCard
-              key={u.id}
-              u={u}
-              menuOpen={menuOpen === u.id}
-              onToggleMenu={() => setMenuOpen(menuOpen === u.id ? null : u.id)}
-              onView={() => { setViewUser(u); setMenuOpen(null); }}
-              onCoins={() => { setCoinModalUser(u); setMenuOpen(null); }}
-              onPlan={() => { setPlanModalUser(u); setMenuOpen(null); }}
-              onToggleBlock={() => { void toggleBlock(u, setUsers); setMenuOpen(null); }}
-            />
-          ))}
-        </div>
+        <VirtualUserList
+          users={filtered}
+          menuOpen={menuOpen}
+          onToggleMenu={(uid) => setMenuOpen(menuOpen === uid ? null : uid)}
+          onView={(u) => { navigate({ to: "/admin/usuarios/$id" as any, params: { id: u.id } as any }); }}
+          onCoins={(u) => { setCoinModalUser(u); setMenuOpen(null); }}
+          onPlan={(u) => { setPlanModalUser(u); setMenuOpen(null); }}
+          onToggleBlock={(u) => { void toggleBlock(u, setUsers); setMenuOpen(null); }}
+        />
       )}
 
       {coinModalUser && (
