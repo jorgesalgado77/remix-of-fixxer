@@ -931,7 +931,11 @@ function ProfilePage() {
                     onChange={(next: string[]) => setProfile({ ...profile, business_category: next.join(',') })}
                     customValue={(profile?.custom_branch || '').split('||').map((s: string) => s.trim()).filter(Boolean)}
                     onCustomChange={(next: string[]) => setProfile({ ...profile, custom_branch: next.join('||') })}
+                    chargeUserId={profile?.id}
                   />
+                  <p className="text-[10px] text-amber-400/90 mt-2 font-bold">
+                    💰 1º ramo customizado grátis. A partir do 2º: 10 moedas cada.
+                  </p>
                 </div>
               )}
 
