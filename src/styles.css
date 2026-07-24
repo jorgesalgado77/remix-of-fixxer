@@ -178,23 +178,23 @@
   }
 
   /* Momentum scroll iOS / Android para overflows verticais / bidimensionais.
-     Mantém overscroll-behavior-y: contain para não arrastar a página inteira,
-     mas NÃO trava o gesto no eixo Y — evita rolagem "presa". */
+     NÃO usar overscroll-behavior nem touch-action de forma agressiva aqui —
+     containers marcados como overflow-x-auto (tiras de chips/mídia) estavam
+     "roubando" o gesto vertical do body, travando a rolagem do feed. */
   [class*="overflow-y-auto"],
   [class*="overflow-auto"] {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
   }
 
-  /* Tiras horizontais (chips, carrosséis): permitem que o gesto vertical
-     seja repassado ao scroller pai. Sem isso o toque sobre a tira “trava”
-     a rolagem vertical da página inteira em mobile. */
-  [class*="overflow-x-auto"] {
+  /* Para tiras estritamente horizontais, marque manualmente com a classe
+     .h-scroll (opt-in) para restringir o gesto ao eixo X sem afetar o resto. */
+  .h-scroll {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     touch-action: pan-x;
   }
 }
+
 
 /* Utilitário: altura de viewport dinâmica com fallback estático */
 @utility h-dvh-safe {
