@@ -1118,7 +1118,9 @@ function ConversationPage() {
       </div>
       {scheduleOpen && (
         <ScheduleAppointmentModal
-          inviteeId={peerId}
+          open={scheduleOpen}
+          peerId={peerId}
+          peerName={peerName}
           onClose={() => setScheduleOpen(false)}
         />
       )}
