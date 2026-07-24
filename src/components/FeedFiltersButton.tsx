@@ -99,15 +99,48 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     return () => window.removeEventListener("fixxer:radius-change", handler as EventListener);
   }, [category]);
 
-  // Trava o scroll do body enquanto o modal está aberto.
+  // Trava o scroll do body enquanto o modal está aberto + Escape fecha.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  // Atalhos globais: "/" foca a 1ª busca visível, "f" abre o modal de filtros.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (isEditable) return;
+      if (e.key === "/") {
+        const input = document.querySelector<HTMLInputElement>(
+          'input[type="search"], input[placeholder*="uscar" i]',
+        );
+        if (input) {
+          e.preventDefault();
+          input.focus();
+        }
+      } else if (e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
 
   // Notifica externo quando o raio muda (após interação inicial).
   useEffect(() => {
