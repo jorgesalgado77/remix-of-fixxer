@@ -33,6 +33,7 @@ import { getCategoryTheme, CATEGORY_COLORS } from "@/lib/category-colors";
 import { CheckoutPhotosModal } from "@/components/CheckoutPhotosModal";
 
 export default function AgendaPage() {
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
