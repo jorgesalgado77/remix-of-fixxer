@@ -125,6 +125,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
   const [viewer, setViewer] = useState<{ index: number; zoom: number } | null>(null);
 
+  // Novos campos: frete e outro
+  const [freightVolumes, setFreightVolumes] = useState("");
+  const [freightWeight, setFreightWeight] = useState("");
+  const [otherServiceText, setOtherServiceText] = useState("");
+
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = getCategoryTheme(defaultCategory);
 
