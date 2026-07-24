@@ -638,14 +638,14 @@ function DisputeModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [action, setAction] = useState<DisputeAction>(hasEscrow ? "refund_full" : "review_case");
+  const [action, setAction] = useState<DisputeAction>(hasEscrow ? "full_refund" : "refund_review");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const options: { value: DisputeAction; label: string; hint: string }[] = [
-    { value: "refund_full", label: "Reembolso integral", hint: "Devolver 100% do sinal ao cliente." },
-    { value: "refund_partial", label: "Reembolso parcial", hint: "Dividir custódia entre as partes." },
-    { value: "release_to_provider", label: "Liberar ao prestador", hint: "Serviço foi prestado — liberar valor." },
-    { value: "review_case", label: "Análise geral", hint: "Solicitar mediação FIXXER sem definição prévia." },
+    { value: "full_refund",     label: "Reembolso integral",       hint: "Devolver 100% do sinal ao cliente." },
+    { value: "partial_refund",  label: "Reembolso parcial",        hint: "Dividir custódia entre as partes." },
+    { value: "reverse_release", label: "Estornar liberação",       hint: "Reverter valor já liberado ao prestador." },
+    { value: "refund_review",   label: "Revisão do reembolso",     hint: "Solicitar mediação FIXXER sem definição prévia." },
   ];
   const submit = async () => {
     if (reason.trim().length < 10) {
@@ -654,7 +654,7 @@ function DisputeModal({
     }
     try {
       setSaving(true);
-      await openDispute({ appointmentId, requestedAction: action, reason: reason.trim() });
+      await openDispute({ appointment_id: appointmentId, requested_action: action, reason: reason.trim() });
       onCreated();
     } catch (e: any) {
       toast.error("Falha ao abrir contestação", { description: e?.message });
@@ -662,6 +662,7 @@ function DisputeModal({
       setSaving(false);
     }
   };
+
   return (
     <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
