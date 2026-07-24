@@ -551,34 +551,44 @@ export default function FeedClientePage() {
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0A0A0B]/90 border-b border-white/10">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-2">
           <Link
             to="/cliente"
             className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:border-[#00FF87]/50 transition-all shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
-          <div className="flex-1 relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar serviços, lojas ou móveis..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-xs font-medium text-white placeholder:text-muted-foreground focus:border-[#00FF87] outline-none transition-all"
-            />
-          </div>
+          <FeedFiltersBar
+            accent="#00FF87"
+            category="cliente"
+            searchInput={
+              <div className="relative w-full">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar serviços, lojas..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-9 py-2 text-xs font-medium text-white placeholder:text-muted-foreground focus:border-[#00FF87] outline-none transition-all"
+                />
+                {query && (
+                  <button
+                    onClick={() => setQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/50"
+                    aria-label="Limpar busca"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            }
+            onMacroSearchTerm={(term) => setQuery(term ?? "")}
+            badge={{
+              icon: "🌟",
+              text: "5 Lojas de Planejados verificadas a menos de 8 km de você",
+            }}
+          />
         </div>
       </header>
-
-      <FeedFiltersBar
-        accent="#00FF87"
-        category="cliente"
-        onMacroSearchTerm={(term) => setQuery(term ?? "")}
-        badge={{
-          icon: "🌟",
-          text: "5 Lojas de Planejados verificadas a menos de 8 km de você",
-        }}
-      />
 
 
       <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
