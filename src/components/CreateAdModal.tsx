@@ -685,22 +685,44 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validação por campo (destaca inline + escolhe primeira mensagem para o toast)
+    const needFixed = priceType === "fixo" || priceType === "fixo_comissao";
+    const needContract = priceType === "comissao" || priceType === "fixo_comissao";
+    const needPct = priceType === "comissao" || priceType === "fixo_comissao";
+    const pctNum = Number(commissionPct);
+    const fixedErr = needFixed
+      ? sharedAssertBRL("Valor Fixo", fixedValue, { required: true, min: 0.01 })
+      : null;
+    const contractErr = needContract
+      ? sharedAssertBRL("Valor do Contrato", contractValue, { required: true, min: 0.01 })
+      : null;
+    const pctErr = needPct
+      ? !commissionPct || Number.isNaN(pctNum) || pctNum <= 0 || pctNum > 100
+        ? "Comissão: informe um percentual entre 0 e 100."
+        : null
+      : null;
+    const nextErrors = {
+      fixedValue: fixedErr,
+      contractValue: contractErr,
+      commissionPct: pctErr,
+    };
+    setFieldErrors(nextErrors);
+    // Foca no primeiro campo com erro para acessibilidade
+    const firstMoneyErr = fixedErr || contractErr || pctErr;
+    if (firstMoneyErr) {
+      toast.error(firstMoneyErr);
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(
+          '[data-currency-error="true"], [data-field-error="true"]',
+        );
+        el?.focus?.();
+        el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      });
+      return;
+    }
     const err = validate();
     if (err) {
       toast.error(err);
-      return;
-    }
-    // Validação de integridade dos valores monetários mascarados
-    const integrityErrors = [
-      (priceType === "fixo" || priceType === "fixo_comissao")
-        ? assertCurrencyIntegrity("Valor Fixo", fixedValue)
-        : null,
-      (priceType === "comissao" || priceType === "fixo_comissao")
-        ? assertCurrencyIntegrity("Valor do Contrato", contractValue)
-        : null,
-    ].filter(Boolean) as string[];
-    if (integrityErrors.length) {
-      toast.error(integrityErrors[0]);
       return;
     }
     setSubmitting(true);
