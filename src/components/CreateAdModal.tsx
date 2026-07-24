@@ -1267,11 +1267,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
                 Tipo de Preço
               </Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {(
                   [
-                    { id: "fixo", label: "Valor Fixo" },
-                    { id: "comissao", label: "Comissão" },
+                    { id: "fixo", label: "💵 Valor Fixo" },
+                    { id: "comissao", label: "% Comissão" },
+                    { id: "fixo_comissao", label: "💵 + % Fixo + Comissão" },
                   ] as { id: PriceType; label: string }[]
                 ).map((opt) => {
                   const active = priceType === opt.id;
