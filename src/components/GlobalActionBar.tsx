@@ -3,7 +3,7 @@ import { Activity, PlusCircle, Store, MessageCircle, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { resolveFeedRoute } from "@/lib/chat-preferences";
-import { CreateAdModal } from "@/components/CreateAdModal";
+import { PublishPickerModal } from "@/components/PublishPickerModal";
 import type { CategoryKey } from "@/lib/category-colors";
 
 /**
@@ -144,10 +144,10 @@ export function GlobalActionBar() {
       <button
         onClick={() => setCreateOpen(true)}
         className={`flex flex-col items-center gap-1 ${createOpen ? "text-primary" : "text-muted-foreground"}`}
-        aria-label="Criar anúncio"
+        aria-label="Publicar"
       >
         <PlusCircle className="w-5 h-5" />
-        <span className="text-[8px] font-black uppercase italic">Criar</span>
+        <span className="text-[8px] font-black uppercase italic">Publicar</span>
       </button>
 
       <div className="flex flex-col items-center gap-1 relative">
@@ -184,7 +184,7 @@ export function GlobalActionBar() {
         <span className="text-[8px] font-black uppercase italic">Menu</span>
       </button>
     </div>
-    <CreateAdModal
+    <PublishPickerModal
       open={createOpen}
       onClose={() => setCreateOpen(false)}
       defaultCategory={(["lojista","prestador","fornecedor","cliente","admin"].includes(role) ? role : "lojista") as CategoryKey}
