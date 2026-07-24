@@ -113,6 +113,16 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
 
   const [open, setOpen] = useState(false);
   const [radius, setRadius] = useState<number>(() => readStoredRadius(category));
+  const [applying, setApplying] = useState(false);
+
+  // Flash "Aplicando…" por ~350ms sempre que um filtro relevante muda,
+  // dando feedback visual imediato mesmo quando o resultado atualiza rápido.
+  useEffect(() => {
+    setApplying(true);
+    const t = setTimeout(() => setApplying(false), 350);
+    return () => clearTimeout(t);
+  }, [macroValue, pillValue, statusValue, radius]);
+
 
   // Sincroniza raio quando outra tela dispara o evento global.
   useEffect(() => {
@@ -242,16 +252,17 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
 
           {typeof resultCount === "number" && (
             <div
-              className="hidden sm:flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest shrink-0"
+              className="flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest shrink-0"
               style={{
                 borderColor: hexToRgba(accent, 0.35),
                 color: accent,
                 backgroundColor: hexToRgba(accent, 0.06),
               }}
               aria-live="polite"
+              aria-busy={loading || applying}
             >
-              {loading ? (
-                <span className="animate-pulse">Buscando…</span>
+              {loading || applying ? (
+                <span className="animate-pulse">Aplicando…</span>
               ) : (
                 <>
                   {resultCount} {resultLabel}
@@ -260,6 +271,7 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
               )}
             </div>
           )}
+
 
           {!searchInput && (
             <div
