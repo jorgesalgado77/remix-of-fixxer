@@ -1298,10 +1298,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
-            {priceType === "fixo" && (
+            {(priceType === "fixo" || priceType === "fixo_comissao") && (
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                  Valor Fixo (R$)
+                  Valor Fixo {priceType === "fixo_comissao" ? "Garantido " : ""}(R$)
                 </Label>
                 <Input
                   type="number"
@@ -1315,7 +1315,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             )}
 
-            {priceType === "comissao" && (
+            {(priceType === "comissao" || priceType === "fixo_comissao") && (
               <div className="grid md:grid-cols-3 gap-3">
                 <div className="space-y-2">
                   <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
