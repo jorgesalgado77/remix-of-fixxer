@@ -172,6 +172,22 @@ function RootComponent() {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
+    // Inicializa saldo de moedas em tempo real assim que houver sessão
+    void (async () => {
+      try {
+        const [{ supabase }, { initCoinsForUser }] = await Promise.all([
+          import("@/integrations/supabase/client"),
+          import("@/lib/coins"),
+        ]);
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user?.id) await initCoinsForUser(data.session.user.id);
+        supabase.auth.onAuthStateChange((event, session) => {
+          if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user?.id) {
+            void initCoinsForUser(session.user.id);
+          }
+        });
+      } catch (e) { console.warn("[coins init] falhou", e); }
+    })();
   }, []);
 
   // Rotas públicas/marketing/auth onde a barra não deve aparecer

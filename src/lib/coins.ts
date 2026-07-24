@@ -1,0 +1,192 @@
+/**
+ * FIXXER - Serviço de Saldo de Moedas + Extrato
+ * ------------------------------------------------------------
+ * Persistência: Supabase externo (tabelas `user_coins` + `coin_transactions`).
+ * Fallback offline: localStorage.
+ * Realtime: canal Postgres Changes escuta INSERT em `coin_transactions`
+ * e UPDATE em `user_coins` do usuário logado -> atualiza badge sem F5.
+ */
+import { supabaseExternal } from "@/lib/supabaseExternal";
+
+export type CoinTxType = "credit" | "debit";
+export type CoinTxSource =
+  | "purchase_pack"
+  | "plan_monthly"
+  | "bonus"
+  | "refund"
+  | "action_consume"
+  | "admin_adjust";
+
+export interface CoinTransaction {
+  id: string;
+  user_id: string;
+  type: CoinTxType;
+  source: CoinTxSource;
+  amount: number;           // positivo (o tipo indica sinal)
+  description: string;
+  reference?: string | null;
+  created_at: string;       // ISO
+}
+
+const LS_BAL = (uid: string) => `fixxer_coins_balance_${uid}`;
+const LS_TX  = (uid: string) => `fixxer_coins_tx_${uid}`;
+
+const listeners = new Set<(balance: number) => void>();
+let currentBalance = 0;
+let currentUserId: string | null = null;
+let realtimeChannel: any = null;
+
+function readLocalBalance(uid: string): number {
+  try {
+    const raw = localStorage.getItem(LS_BAL(uid));
+    return raw ? Number(raw) || 0 : 0;
+  } catch { return 0; }
+}
+function writeLocalBalance(uid: string, v: number) {
+  try { localStorage.setItem(LS_BAL(uid), String(v)); } catch {/* ignore */}
+}
+function readLocalTx(uid: string): CoinTransaction[] {
+  try {
+    const raw = localStorage.getItem(LS_TX(uid));
+    return raw ? (JSON.parse(raw) as CoinTransaction[]) : [];
+  } catch { return []; }
+}
+function writeLocalTx(uid: string, list: CoinTransaction[]) {
+  try { localStorage.setItem(LS_TX(uid), JSON.stringify(list.slice(0, 200))); } catch {/* ignore */}
+}
+
+function notify(v: number) {
+  currentBalance = v;
+  listeners.forEach((fn) => { try { fn(v); } catch {/* ignore */} });
+}
+
+export function getCachedBalance(): number { return currentBalance; }
+
+export function subscribeBalance(fn: (v: number) => void): () => void {
+  listeners.add(fn);
+  fn(currentBalance);
+  return () => { listeners.delete(fn); };
+}
+
+export async function initCoinsForUser(userId: string): Promise<number> {
+  currentUserId = userId;
+  // fallback local imediato
+  const local = readLocalBalance(userId);
+  notify(local);
+
+  // busca remoto
+  try {
+    const { data, error } = await supabaseExternal
+      .from("user_coins")
+      .select("balance")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!error && data && typeof data.balance === "number") {
+      writeLocalBalance(userId, data.balance);
+      notify(data.balance);
+    }
+  } catch (e) {
+    console.warn("[coins] supabase indisponível", e);
+  }
+
+  // realtime
+  try {
+    if (realtimeChannel) {
+      try { supabaseExternal.removeChannel(realtimeChannel); } catch {/* ignore */}
+    }
+    realtimeChannel = supabaseExternal
+      .channel(`coins:${userId}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "user_coins", filter: `user_id=eq.${userId}` },
+        (payload: any) => {
+          const b = payload?.new?.balance;
+          if (typeof b === "number") { writeLocalBalance(userId, b); notify(b); }
+        })
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "coin_transactions", filter: `user_id=eq.${userId}` },
+        (payload: any) => {
+          const tx = payload?.new as CoinTransaction | undefined;
+          if (!tx) return;
+          const list = readLocalTx(userId);
+          writeLocalTx(userId, [tx, ...list]);
+          window.dispatchEvent(new CustomEvent("fixxer:coin-tx", { detail: tx }));
+        })
+      .subscribe();
+  } catch (e) {
+    console.warn("[coins] realtime falhou", e);
+  }
+
+  return currentBalance;
+}
+
+export async function fetchTransactions(userId: string, limit = 100): Promise<CoinTransaction[]> {
+  try {
+    const { data, error } = await supabaseExternal
+      .from("coin_transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (!error && Array.isArray(data)) {
+      writeLocalTx(userId, data as CoinTransaction[]);
+      return data as CoinTransaction[];
+    }
+  } catch (e) { console.warn("[coins] tx fetch falhou", e); }
+  return readLocalTx(userId);
+}
+
+/** Consome moedas do usuário localmente + no remoto (best effort). */
+export async function consumeCoins(userId: string, amount: number, description: string, source: CoinTxSource = "action_consume", reference?: string): Promise<{ ok: boolean; balance: number; error?: string }> {
+  if (amount <= 0) return { ok: true, balance: currentBalance };
+  const next = Math.max(0, currentBalance - amount);
+  writeLocalBalance(userId, next);
+  notify(next);
+  const tx: CoinTransaction = {
+    id: `local_${Date.now()}`,
+    user_id: userId,
+    type: "debit", source, amount, description,
+    reference: reference ?? null,
+    created_at: new Date().toISOString(),
+  };
+  writeLocalTx(userId, [tx, ...readLocalTx(userId)]);
+  window.dispatchEvent(new CustomEvent("fixxer:coin-tx", { detail: tx }));
+
+  try {
+    const { error } = await supabaseExternal.rpc("consume_coins", {
+      p_user: userId, p_amount: amount, p_description: description, p_source: source, p_reference: reference ?? null,
+    });
+    if (error) throw error;
+    return { ok: true, balance: next };
+  } catch (e: any) {
+    return { ok: true, balance: next, error: e?.message ?? String(e) };
+  }
+}
+
+/** Credita moedas (compra de pacote, franquia mensal, bônus). */
+export async function creditCoins(userId: string, amount: number, description: string, source: CoinTxSource = "purchase_pack", reference?: string): Promise<{ ok: boolean; balance: number; error?: string }> {
+  if (amount <= 0) return { ok: true, balance: currentBalance };
+  const next = currentBalance + amount;
+  writeLocalBalance(userId, next);
+  notify(next);
+  const tx: CoinTransaction = {
+    id: `local_${Date.now()}`,
+    user_id: userId,
+    type: "credit", source, amount, description,
+    reference: reference ?? null,
+    created_at: new Date().toISOString(),
+  };
+  writeLocalTx(userId, [tx, ...readLocalTx(userId)]);
+  window.dispatchEvent(new CustomEvent("fixxer:coin-tx", { detail: tx }));
+
+  try {
+    const { error } = await supabaseExternal.rpc("credit_coins", {
+      p_user: userId, p_amount: amount, p_description: description, p_source: source, p_reference: reference ?? null,
+    });
+    if (error) throw error;
+    return { ok: true, balance: next };
+  } catch (e: any) {
+    return { ok: true, balance: next, error: e?.message ?? String(e) };
+  }
+}
+
+export function getCurrentUserId(): string | null { return currentUserId; }
