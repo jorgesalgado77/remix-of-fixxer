@@ -1016,6 +1016,23 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
 
     const multiplier = getMultiplier();
 
+    // Contador incremental de O.S. criadas nesta sessão (persistido em localStorage)
+    const [createdBoost, setCreatedBoost] = React.useState<number>(() => {
+        if (typeof window === "undefined") return 0;
+        return Number(localStorage.getItem("fixxer:os:created:count") || "0");
+    });
+    React.useEffect(() => {
+        const handler = () => {
+            setCreatedBoost(Number(localStorage.getItem("fixxer:os:created:count") || "0"));
+        };
+        window.addEventListener("fixxer:os-created", handler);
+        window.addEventListener("storage", handler);
+        return () => {
+            window.removeEventListener("fixxer:os-created", handler);
+            window.removeEventListener("storage", handler);
+        };
+    }, []);
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Filtros Globais - Agora Responsivos */}
