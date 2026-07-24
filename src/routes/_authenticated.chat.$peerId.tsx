@@ -41,6 +41,7 @@ import { downloadAttachment } from "@/lib/attachment-download";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory } from "@/lib/user-category";
+import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
 
 function roleToCategory(role: string | null | undefined): CategoryKey {
   const r = (role || "").toLowerCase();
