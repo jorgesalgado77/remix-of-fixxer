@@ -641,20 +641,22 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         weight_kg: Number(freightWeight),
       };
     }
-    if (priceType === "fixo") return { ...base, fixed_value: Number(fixedValue) };
+    const fvNum = parseCurrencyBRL(fixedValue);
+    const cvNum = parseCurrencyBRL(contractValue);
+    if (priceType === "fixo") return { ...base, fixed_value: fvNum };
     if (priceType === "fixo_comissao") {
       return {
         ...base,
-        fixed_value: Number(fixedValue),
-        contract_value: Number(contractValue),
+        fixed_value: fvNum,
+        contract_value: cvNum,
         commission_percent: Number(commissionPct),
         commission_value: commissionValue,
-        total_value: Number(fixedValue) + commissionValue,
+        total_value: fvNum + commissionValue,
       };
     }
     return {
       ...base,
-      contract_value: Number(contractValue),
+      contract_value: cvNum,
       commission_percent: Number(commissionPct),
       commission_value: commissionValue,
     };
