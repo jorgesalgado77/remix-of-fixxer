@@ -304,7 +304,7 @@ function AdminUsuariosPage() {
           setUsers((cur) => cur.map((x) => x.id === planModalUser.id ? { ...x, plan, plan_cycle: cycle } : x));
         }} />
       )}
-      {viewUser && <ViewProfileModal user={viewUser} onClose={() => setViewUser(null)} />}
+      
     </div>
   );
 }
