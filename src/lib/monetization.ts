@@ -340,18 +340,58 @@ export function getCoinPack(id: string): CoinPack | null {
 
 /** Verifica se uma ação está habilitada e se há saldo suficiente antes de consumir.
  *  Bloqueio automático: se a ação está desabilitada no /admin/monetizacao,
- *  retorna { ok:false, reason:'disabled' } e nenhuma moeda é debitada. */
+ *  retorna { ok:false, reason:'disabled' } e nenhuma moeda é debitada.
+ *  Idempotência: mesma chave -> nunca debita duas vezes (protege duplo-clique / retry).
+ *  Eventos globais:
+ *    - `fixxer:insufficient-coins` -> abre modal de aviso + oferta de pacotes
+ *    - `fixxer:coin-receipt`       -> exibe comprovante com saldo restante
+ */
 export async function spendCoinsForAction(
   userId: string,
   actionKey: string,
   reference?: string,
-): Promise<{ ok: boolean; reason?: "disabled" | "insufficient" | "error"; cost?: number; error?: string }> {
+  opts?: { idempotencyKey?: string; silent?: boolean },
+): Promise<{ ok: boolean; reason?: "disabled" | "insufficient" | "error"; cost?: number; balance?: number; duplicated?: boolean; error?: string }> {
   const action = getActionCost(actionKey);
   if (!action) return { ok: false, reason: "disabled" };
   if (!action.enabled) return { ok: false, reason: "disabled", cost: action.coins };
+
   const { consumeCoins, getCachedBalance } = await import("@/lib/coins");
-  if (getCachedBalance() < action.coins) return { ok: false, reason: "insufficient", cost: action.coins };
-  const res = await consumeCoins(userId, action.coins, action.label, "action_consume", reference);
+  const balanceBefore = getCachedBalance();
+
+  if (balanceBefore < action.coins) {
+    if (typeof window !== "undefined" && !opts?.silent) {
+      window.dispatchEvent(new CustomEvent("fixxer:insufficient-coins", {
+        detail: {
+          actionKey,
+          actionLabel: action.label,
+          cost: action.coins,
+          balance: balanceBefore,
+          shortfall: action.coins - balanceBefore,
+        },
+      }));
+    }
+    return { ok: false, reason: "insufficient", cost: action.coins, balance: balanceBefore };
+  }
+
+  const idem = opts?.idempotencyKey
+    ?? `${actionKey}:${reference ?? "_"}:${Math.floor(Date.now() / 2000)}`;
+
+  const res = await consumeCoins(userId, action.coins, action.label, "action_consume", reference, idem);
   if (res.error) return { ok: false, reason: "error", cost: action.coins, error: res.error };
-  return { ok: true, cost: action.coins };
+
+  if (typeof window !== "undefined" && !opts?.silent && !res.duplicated) {
+    window.dispatchEvent(new CustomEvent("fixxer:coin-receipt", {
+      detail: {
+        actionKey,
+        actionLabel: action.label,
+        amount: action.coins,
+        balance: res.balance,
+        reference: reference ?? null,
+        at: new Date().toISOString(),
+      },
+    }));
+  }
+
+  return { ok: true, cost: action.coins, balance: res.balance, duplicated: res.duplicated };
 }
