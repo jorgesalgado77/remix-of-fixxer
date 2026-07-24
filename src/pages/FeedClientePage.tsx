@@ -568,6 +568,19 @@ export default function FeedClientePage() {
         </div>
       </header>
 
+      <div className="max-w-3xl mx-auto px-4 pt-3">
+        <MacroBranchChips
+          value={null}
+          onChange={(id) => {
+            if (!id) { setQuery(""); return; }
+            const terms = getMacroSearchTerms(id);
+            setQuery(terms[0] ?? "");
+          }}
+          accent="#00FF87"
+        />
+      </div>
+
+
       <RadiusFilter
         category="cliente"
         accent="#00FF87"
