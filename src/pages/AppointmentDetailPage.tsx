@@ -48,6 +48,7 @@ import {
 } from "@/lib/appointment-disputes";
 import { generateAppointmentPdf, downloadPdf, summarizeRefund } from "@/lib/appointment-pdf";
 import { CheckoutPhotosModal } from "@/components/CheckoutPhotosModal";
+import { ComplaintButton } from "@/components/ComplaintButton";
 import { useMediaUpload } from "@/hooks/use-media-upload";
 
 
