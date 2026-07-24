@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { buildReferralUrl, suggestAffiliateCode } from "@/lib/affiliates";
-import { Copy, Users, TrendingUp, Wallet, Sparkles, Check, Share2, Percent, Link2 } from "lucide-react";
+import { Copy, Users, TrendingUp, Wallet, Sparkles, Check, Share2, Percent, Link2, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/afiliados")({
