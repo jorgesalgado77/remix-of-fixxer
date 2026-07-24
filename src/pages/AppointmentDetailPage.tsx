@@ -393,6 +393,8 @@ export default function AppointmentDetailPage() {
         <DisputesSection
           disputes={disputes}
           userId={userId}
+          appointmentId={apt.id}
+          onReload={load}
           onWithdraw={async (id) => {
             await withBusy(`with-${id}`, async () => {
               await withdrawDispute(id);
