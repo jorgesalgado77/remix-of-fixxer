@@ -1,4 +1,5 @@
-import { X, Bookmark, MessageSquare, MapPin, Clock, Star, Play } from "lucide-react";
+import { useState } from "react";
+import { X, Bookmark, MessageSquare, MapPin, Clock, Star, Play, Lock, Coins, Loader2, Zap } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import {
