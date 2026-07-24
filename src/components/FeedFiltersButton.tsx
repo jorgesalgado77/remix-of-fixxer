@@ -39,6 +39,10 @@ export type FeedFiltersButtonProps = {
   badge?: { icon?: string; text: string };
   // ------- busca inline -------
   searchInput?: ReactNode;
+  // ------- contagem de resultados (opcional) -------
+  resultCount?: number;
+  resultLabel?: string; // singular; usado como "{n} {label}" e pluralizado com "s"
+  loading?: boolean;
 };
 
 const RADIUS_OPTIONS: { value: number; label: string }[] = [
@@ -82,6 +86,9 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     onRadiusChange,
     badge,
     searchInput,
+    resultCount,
+    resultLabel = "resultado",
+    loading,
   } = props;
 
   const [open, setOpen] = useState(false);
@@ -210,6 +217,27 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
             </span>
           )}
         </button>
+
+        {typeof resultCount === "number" && (
+          <div
+            className="hidden sm:flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest shrink-0"
+            style={{
+              borderColor: hexToRgba(accent, 0.35),
+              color: accent,
+              backgroundColor: hexToRgba(accent, 0.06),
+            }}
+            aria-live="polite"
+          >
+            {loading ? (
+              <span className="animate-pulse">Buscando…</span>
+            ) : (
+              <>
+                {resultCount} {resultLabel}
+                {resultCount === 1 ? "" : "s"}
+              </>
+            )}
+          </div>
+        )}
 
         {!searchInput && (
           <div

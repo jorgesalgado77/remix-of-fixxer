@@ -795,6 +795,8 @@ export default function FeedLojistaPage() {
           <FeedFiltersBar
             accent="#00E5FF"
             category="lojista"
+            resultCount={visible.length}
+            resultLabel="publicação"
             searchInput={
               <div className="relative w-full">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
