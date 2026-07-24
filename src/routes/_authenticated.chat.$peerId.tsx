@@ -695,6 +695,8 @@ function ConversationPage() {
   const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
 
   const peerTheme = getCategoryTheme(roleToCategory(peerRole));
+  const ownCategory = useCurrentCategory();
+  const ownTheme = getCategoryTheme(ownCategory);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col pb-32">
