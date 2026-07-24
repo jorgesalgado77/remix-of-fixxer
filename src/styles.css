@@ -155,7 +155,7 @@
   }
 
   html::-webkit-scrollbar {
-    width: 6px;
+    width: 5px;
   }
 
   html::-webkit-scrollbar-track {
@@ -176,4 +176,23 @@
     color: var(--color-foreground);
     -webkit-tap-highlight-color: transparent;
   }
+
+  /* Momentum scroll iOS / Android para todos os overflows internos */
+  [class*="overflow-y-auto"],
+  [class*="overflow-x-auto"],
+  [class*="overflow-auto"] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
 }
+
+/* Utilitário: altura de viewport dinâmica com fallback estático */
+@utility h-dvh-safe {
+  height: 100vh;
+  height: 100dvh;
+}
+@utility min-h-dvh-safe {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
