@@ -137,6 +137,30 @@ const parseCurrencyBRL = (masked: string) => {
   return Number(digits) / 100;
 };
 
+/**
+ * Verifica integridade entre string mascarada e número gerado.
+ * Retorna string de erro ou null.
+ */
+const assertCurrencyIntegrity = (label: string, masked: string): string | null => {
+  if (!masked) return null;
+  const n = parseCurrencyBRL(masked);
+  if (!Number.isFinite(n) || n < 0) return `${label}: valor numérico inválido.`;
+  const back = maskCurrencyBRL(masked);
+  if (back !== masked) return `${label}: formato monetário inconsistente (${masked} ≠ ${back}).`;
+  if (n > 9_999_999_999.99) return `${label}: valor acima do limite permitido.`;
+  return null;
+};
+
+/** Handlers reutilizáveis para inputs de moeda BRL. */
+const currencyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Bloqueia caracteres numéricos científicos e sinais
+  if (["e", "E", "+", "-", ",", "."].includes(e.key)) e.preventDefault();
+};
+const currencyFocusSelect = (e: React.FocusEvent<HTMLInputElement>) => {
+  // Facilita edição: seleciona tudo ao focar
+  requestAnimationFrame(() => e.target.select());
+};
+
 const UF_LIST = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
@@ -669,9 +693,32 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       toast.error(err);
       return;
     }
+    // Validação de integridade dos valores monetários mascarados
+    const integrityErrors = [
+      (priceType === "fixo" || priceType === "fixo_comissao")
+        ? assertCurrencyIntegrity("Valor Fixo", fixedValue)
+        : null,
+      (priceType === "comissao" || priceType === "fixo_comissao")
+        ? assertCurrencyIntegrity("Valor do Contrato", contractValue)
+        : null,
+    ].filter(Boolean) as string[];
+    if (integrityErrors.length) {
+      toast.error(integrityErrors[0]);
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = buildPayload();
+      // Sanidade final: todo campo monetário no payload deve ser número finito ≥ 0
+      const moneyFields = ["fixed_value", "contract_value", "commission_value", "total_value"] as const;
+      for (const f of moneyFields) {
+        const v = (payload as any)[f];
+        if (v !== undefined && v !== null && (!Number.isFinite(v) || v < 0)) {
+          toast.error(`Campo monetário inválido (${f}). Revise os valores.`);
+          setSubmitting(false);
+          return;
+        }
+      }
       // Sessão atual do lojista
       const { data: sessionData } = await supabaseExternal.auth.getSession();
       const uid = sessionData?.session?.user?.id ?? null;
@@ -1355,8 +1402,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   <Input
                     type="text"
                     inputMode="numeric"
+                    autoComplete="off"
                     value={fixedValue}
                     onChange={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
+                    onKeyDown={currencyKeyDown}
+                    onFocus={currencyFocusSelect}
+                    onBlur={(e) => setFixedValue(maskCurrencyBRL(e.target.value))}
                     placeholder="0,00"
                     className="bg-white/5 border-white/10 text-white pl-10"
                   />
@@ -1375,8 +1426,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                     <Input
                       type="text"
                       inputMode="numeric"
+                      autoComplete="off"
                       value={contractValue}
                       onChange={(e) => setContractValue(maskCurrencyBRL(e.target.value))}
+                      onKeyDown={currencyKeyDown}
+                      onFocus={currencyFocusSelect}
+                      onBlur={(e) => setContractValue(maskCurrencyBRL(e.target.value))}
                       placeholder="50.000,00"
                       className="bg-white/5 border-white/10 text-white pl-10"
                     />
