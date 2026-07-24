@@ -521,6 +521,27 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       if (!commissionPct || Number.isNaN(pct) || pct <= 0 || pct > 100)
         return "Informe uma porcentagem válida (entre 0 e 100).";
     }
+    if (priceType === "fixo_comissao") {
+      const fv = Number(fixedValue);
+      const cv = Number(contractValue);
+      const pct = Number(commissionPct);
+      if (!fixedValue || Number.isNaN(fv) || fv <= 0)
+        return "Informe o valor fixo garantido (> 0).";
+      if (!contractValue || Number.isNaN(cv) || cv <= 0)
+        return "Informe o valor do contrato para calcular a comissão.";
+      if (!commissionPct || Number.isNaN(pct) || pct <= 0 || pct > 100)
+        return "Informe uma porcentagem de comissão válida (0–100).";
+    }
+    if (serviceTypes.includes(FREIGHT_TYPE)) {
+      const v = Number(freightVolumes);
+      const w = Number(freightWeight);
+      if (!freightVolumes || Number.isNaN(v) || v <= 0)
+        return "Informe a quantidade de volumes do frete.";
+      if (!freightWeight || Number.isNaN(w) || w <= 0)
+        return "Informe o peso médio estimado do frete (kg).";
+    }
+    if (serviceTypes.includes(OTHER_SERVICE_TYPE) && !otherServiceText.trim())
+      return 'Especifique o serviço marcado como "Outro".';
     if (otherChecked && !otherText.trim())
       return 'Especifique o item "Outro" nas especificações técnicas.';
     if (files.some((i) => i.progress < 100 && !i.error))
