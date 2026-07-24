@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Star, ShieldCheck, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Star, ShieldCheck, Loader2, Coins, ChevronDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,12 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchMonetizationConfig,
+  getActionCost,
+  spendCoinsForAction,
+} from "@/lib/monetization";
+import { getCachedBalance, subscribeBalance } from "@/lib/coins";
 
 interface ReviewModalProps {
   isOpen: boolean;
