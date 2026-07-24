@@ -28,8 +28,8 @@ import {
   type Appointment,
   type AppointmentStatus,
 } from "@/lib/appointments";
-import { useCurrentCategory } from "@/hooks/useCurrentCategory";
-import { getCategoryTheme } from "@/lib/category-colors";
+import { useCurrentCategory } from "@/lib/user-category";
+import { getCategoryTheme, CATEGORY_COLORS } from "@/lib/category-colors";
 
 export default function AgendaPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
