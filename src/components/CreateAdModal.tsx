@@ -1249,7 +1249,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             <div className="grid md:grid-cols-3 gap-3">
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                  Data de Início
+                  {macroFieldCfg?.startLabel ?? "Data de Início"}
                 </Label>
                 <Input
                   type="date"
@@ -1260,7 +1260,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
-                  Prazo de Execução
+                  {macroFieldCfg?.deadlineLabel ?? "Prazo de Execução"}
                 </Label>
                 <Input
                   type="date"
