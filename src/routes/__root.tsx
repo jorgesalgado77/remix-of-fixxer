@@ -186,7 +186,9 @@ function RootComponent() {
       {/* Cores --primary/--ring por categoria aplicadas globalmente (inclusive fora do layout autenticado). */}
       <div style={getCategoryCssVars(category)} className="contents">
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <GlobalErrorBoundary>
+          <Outlet />
+        </GlobalErrorBoundary>
         {!hideBar && <GlobalActionBar />}
         <Toaster closeButton duration={2000} />
       </div>
