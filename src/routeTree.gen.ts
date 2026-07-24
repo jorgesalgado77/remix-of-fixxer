@@ -28,6 +28,7 @@ import { Route as AuthenticatedPrestadorRouteImport } from './routes/_authentica
 import { Route as AuthenticatedParceiroRouteImport } from './routes/_authenticated.parceiro'
 import { Route as AuthenticatedLojistaRouteImport } from './routes/_authenticated.lojista'
 import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated.feed'
+import { Route as AuthenticatedExtratoRouteImport } from './routes/_authenticated.extrato'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated.cliente'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
@@ -141,6 +142,11 @@ const AuthenticatedLojistaRoute = AuthenticatedLojistaRouteImport.update({
 const AuthenticatedFeedRoute = AuthenticatedFeedRouteImport.update({
   id: '/feed',
   path: '/feed',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedExtratoRoute = AuthenticatedExtratoRouteImport.update({
+  id: '/extrato',
+  path: '/extrato',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/extrato': typeof AuthenticatedExtratoRoute
   '/feed': typeof AuthenticatedFeedRouteWithChildren
   '/lojista': typeof AuthenticatedLojistaRoute
   '/parceiro': typeof AuthenticatedParceiroRoute
@@ -303,6 +310,7 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/extrato': typeof AuthenticatedExtratoRoute
   '/lojista': typeof AuthenticatedLojistaRoute
   '/parceiro': typeof AuthenticatedParceiroRoute
   '/prestador': typeof AuthenticatedPrestadorRoute
@@ -344,6 +352,7 @@ export interface FileRoutesById {
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/extrato': typeof AuthenticatedExtratoRoute
   '/_authenticated/feed': typeof AuthenticatedFeedRouteWithChildren
   '/_authenticated/lojista': typeof AuthenticatedLojistaRoute
   '/_authenticated/parceiro': typeof AuthenticatedParceiroRoute
@@ -386,6 +395,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/cliente'
     | '/dashboard'
+    | '/extrato'
     | '/feed'
     | '/lojista'
     | '/parceiro'
@@ -425,6 +435,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/cliente'
     | '/dashboard'
+    | '/extrato'
     | '/lojista'
     | '/parceiro'
     | '/prestador'
@@ -465,6 +476,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat'
     | '/_authenticated/cliente'
     | '/_authenticated/dashboard'
+    | '/_authenticated/extrato'
     | '/_authenticated/feed'
     | '/_authenticated/lojista'
     | '/_authenticated/parceiro'
@@ -646,6 +658,13 @@ declare module '@tanstack/react-router' {
       path: '/feed'
       fullPath: '/feed'
       preLoaderRoute: typeof AuthenticatedFeedRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/extrato': {
+      id: '/_authenticated/extrato'
+      path: '/extrato'
+      fullPath: '/extrato'
+      preLoaderRoute: typeof AuthenticatedExtratoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -868,6 +887,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedExtratoRoute: typeof AuthenticatedExtratoRoute
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRouteWithChildren
   AuthenticatedLojistaRoute: typeof AuthenticatedLojistaRoute
   AuthenticatedParceiroRoute: typeof AuthenticatedParceiroRoute
@@ -883,6 +903,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedExtratoRoute: AuthenticatedExtratoRoute,
   AuthenticatedFeedRoute: AuthenticatedFeedRouteWithChildren,
   AuthenticatedLojistaRoute: AuthenticatedLojistaRoute,
   AuthenticatedParceiroRoute: AuthenticatedParceiroRoute,
@@ -926,13 +947,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
