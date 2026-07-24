@@ -90,14 +90,13 @@ export function ChatAppointmentsBanner({ userId, peerId }: Props) {
     }
     const iso = new Date(`${rescheduleDate}T${rescheduleTime}:00`).toISOString();
     const id = rescheduleFor.id;
-    withBusy(id, () =>
-      proposeReschedule(id, iso).then(() => {
-        toast.success("🔄 Novo horário proposto!");
-        setRescheduleFor(null);
-        setRescheduleDate("");
-        setRescheduleTime("");
-      }),
-    );
+    void withBusy(id, async () => {
+      await proposeReschedule(id, iso);
+      toast.success("🔄 Novo horário proposto!");
+      setRescheduleFor(null);
+      setRescheduleDate("");
+      setRescheduleTime("");
+    });
   };
 
   if (!userId || items.length === 0) return null;
