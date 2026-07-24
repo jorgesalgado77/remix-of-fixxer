@@ -558,6 +558,8 @@ export default function FeedClientePage() {
           <FeedFiltersBar
             accent="#00FF87"
             category="cliente"
+            resultCount={filtered.length}
+            resultLabel="serviço"
             searchInput={
               <div className="relative w-full">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
