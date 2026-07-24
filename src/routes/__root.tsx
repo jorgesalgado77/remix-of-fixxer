@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { GlobalActionBar } from "@/components/GlobalActionBar";
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
