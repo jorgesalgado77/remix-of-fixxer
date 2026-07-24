@@ -1,3 +1,4 @@
+import { RadiusFilter } from "@/components/RadiusFilter";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -566,6 +567,15 @@ export default function FeedClientePage() {
           </div>
         </div>
       </header>
+
+      <RadiusFilter
+        category="cliente"
+        accent="#00FF87"
+        badge={{
+          icon: "🌟",
+          text: "5 Lojas de Planejados verificadas a menos de 8 km de você",
+        }}
+      />
 
       <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
         {/* BANNER PUBLICAR NECESSIDADE */}

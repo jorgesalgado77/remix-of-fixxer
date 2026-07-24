@@ -1,3 +1,4 @@
+import { RadiusFilter } from "@/components/RadiusFilter";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -786,6 +787,15 @@ export default function FeedParceiroPage() {
           })}
         </div>
       </header>
+
+      <RadiusFilter
+        category="fornecedor"
+        accent="#A855F7"
+        badge={{
+          icon: "📦",
+          text: "6 Lojistas buscando orçamentos de Marmoraria e Vidro na sua cidade",
+        }}
+      />
 
       {/* FEED */}
       <main className="mx-auto max-w-3xl px-4 py-4">
