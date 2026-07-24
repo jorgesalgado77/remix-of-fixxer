@@ -3,6 +3,7 @@ import { X, Calendar as CalendarIcon, MapPin, DollarSign, Loader2 } from "lucide
 import { toast } from "sonner";
 import { createAppointment, APPOINTMENT_TYPES, type AppointmentType } from "@/lib/appointments";
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
+import { parseCurrencyBRL } from "@/lib/currency-brl";
 
 type Props = {
   open: boolean;
