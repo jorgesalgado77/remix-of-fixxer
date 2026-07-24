@@ -935,6 +935,70 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
+            {/* Frete — condicional */}
+            {serviceTypes.includes(FREIGHT_TYPE) && (
+              <div
+                className="rounded-xl p-3 border grid grid-cols-1 md:grid-cols-2 gap-3"
+                style={{ borderColor: `rgba(${theme.rgb}, 0.35)`, ...theme.bgSoft }}
+              >
+                <div className="md:col-span-2">
+                  <p className="text-[10px] uppercase font-black tracking-wider" style={{ color: theme.hex }}>
+                    🚚 Detalhes do Frete
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-black text-white/70">
+                    Quantidade de Volumes
+                  </Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={freightVolumes}
+                    onChange={(e) => setFreightVolumes(e.target.value)}
+                    placeholder="Ex.: 12 caixas/volumes"
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-black text-white/70">
+                    Peso Médio Estimado (kg)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={freightWeight}
+                    onChange={(e) => setFreightWeight(e.target.value)}
+                    placeholder="Ex.: 150"
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Outro — condicional */}
+            {serviceTypes.includes(OTHER_SERVICE_TYPE) && (
+              <div
+                className="rounded-xl p-3 border space-y-2"
+                style={{ borderColor: `rgba(${theme.rgb}, 0.35)`, ...theme.bgSoft }}
+              >
+                <Label className="text-[10px] uppercase font-black tracking-wider" style={{ color: theme.hex }}>
+                  📝 Especifique o tipo de serviço
+                </Label>
+                <Input
+                  value={otherServiceText}
+                  onChange={(e) => setOtherServiceText(e.target.value)}
+                  placeholder='Ex.: "Montagem de Fachada / Vidros Especializados"'
+                  maxLength={120}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <p className="text-[9px] text-white/50">
+                  Este texto será concatenado ao tipo de serviço final da O.S.
+                </p>
+              </div>
+            )}
+
+
             {/* Local de Execução */}
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
