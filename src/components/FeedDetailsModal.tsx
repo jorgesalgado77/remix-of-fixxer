@@ -33,16 +33,37 @@ export function FeedDetailsModal({
   onSave,
   onChat,
   onClose,
+  locked = false,
+  unlockCost = 5,
+  onUnlock,
+  onCandidatar,
 }: {
   data: FeedDetailsData | null;
   isSaved: boolean;
   onSave: () => void;
   onChat: () => void;
   onClose: () => void;
+  /** Se true, oculta descrição, contato e chat até desbloquear (custa `unlockCost` moedas). */
+  locked?: boolean;
+  unlockCost?: number;
+  onUnlock?: () => Promise<boolean> | boolean;
+  /** Aparece quando desbloqueado — botão "⚡ Candidatar-se". */
+  onCandidatar?: () => void;
 }) {
+  const [unlocking, setUnlocking] = useState(false);
   if (!data) return null;
   const theme = getCategoryTheme(data.category);
   const statusColor = data.status ? FEED_STATUS_COLOR[data.status] : null;
+
+  const doUnlock = async () => {
+    if (!onUnlock) return;
+    try {
+      setUnlocking(true);
+      await onUnlock();
+    } finally {
+      setUnlocking(false);
+    }
+  };
 
   return (
     <div
