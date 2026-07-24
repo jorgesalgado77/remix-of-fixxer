@@ -816,13 +816,20 @@ function ConversationPage() {
                 return (
                   <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                     <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm relative ${
+                      className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm relative border ${
                         mine
                           ? m._failed
-                            ? "bg-red-500/20 border border-red-500/40 text-white rounded-br-sm"
-                            : "bg-primary text-primary-foreground rounded-br-sm"
-                          : "bg-[#1A1A1B] border border-white/10 text-white rounded-bl-sm"
+                            ? "bg-red-500/20 border-red-500/40 text-white rounded-br-sm"
+                            : "text-white rounded-br-sm"
+                          : "bg-[#1A1A1B] text-white rounded-bl-sm"
                       } ${m._pending ? "opacity-70" : ""}`}
+                      style={
+                        mine && !m._failed
+                          ? { backgroundColor: `rgba(${ownTheme.rgb}, 0.22)`, borderColor: ownTheme.hex }
+                          : !mine
+                            ? { borderColor: `rgba(${peerTheme.rgb}, 0.35)` }
+                            : undefined
+                      }
                     >
                       {m.attachment_url && (
                         <AttachmentBlock
