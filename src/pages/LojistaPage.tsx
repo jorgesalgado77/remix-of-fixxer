@@ -80,6 +80,12 @@ import { CSS } from "@dnd-kit/utilities";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy } from "@dnd-kit/sortable";
 import { compressImage } from "@/utils/image-compression";
+import { subscribeBalance, getCachedBalance } from "@/lib/coins";
+import { useMonetization } from "@/hooks/use-monetization";
+import { CoinsExtractModal } from "@/components/CoinsExtractModal";
+import { CoinPacksStoreModal } from "@/components/CoinPacksStoreModal";
+import { PlanDetailsModal } from "@/components/PlanDetailsModal";
+import type { PlanId } from "@/lib/monetization";
 
 export function LojistaDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
