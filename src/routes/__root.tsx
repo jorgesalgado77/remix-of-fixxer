@@ -180,10 +180,14 @@ function RootComponent() {
           import("@/lib/coins"),
         ]);
         const { data } = await supabase.auth.getSession();
-        if (data.session?.user?.id) await initCoinsForUser(data.session.user.id);
+        if (data.session?.user?.id) {
+          await initCoinsForUser(data.session.user.id);
+          void subscribeBlockedStatus(data.session.user.id);
+        }
         supabase.auth.onAuthStateChange((event, session) => {
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user?.id) {
             void initCoinsForUser(session.user.id);
+            void subscribeBlockedStatus(session.user.id);
           }
         });
       } catch (e) { console.warn("[coins init] falhou", e); }
