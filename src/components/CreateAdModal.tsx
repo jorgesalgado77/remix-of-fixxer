@@ -90,6 +90,18 @@ const SERVICE_TYPE_LABEL: Record<string, string> = {
   [OTHER_SERVICE_TYPE]: "Outro",
 };
 
+/** Cor oficial por tipo de serviço — usada nos ícones do seletor. */
+const SERVICE_TYPE_COLOR: Record<string, string> = {
+  "Projeto": "#00E5FF",        // Ciano Elétrico
+  "Medição": "#A855F7",        // Violeta
+  "Conferência": "#00FF87",    // Verde Neon
+  "Montagem": "#FF9F0A",       // Âmbar
+  "Assistência": "#FF3B6B",    // Rosa/Vermelho
+  "Vistoria": "#FFD600",       // Dourado
+  [FREIGHT_TYPE]: "#38BDF8",   // Azul Céu
+  [OTHER_SERVICE_TYPE]: "#94A3B8", // Slate
+};
+
 const TECH_SPECS = [
   { id: "veiculo", label: "Possuir veículo próprio" },
   { id: "ferramental", label: "Possuir ferramental completo" },
@@ -1021,7 +1033,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                         onChange={() => toggleServiceType(t)}
                         className="accent-current w-3.5 h-3.5"
                       />
-                      <Icon className="w-4 h-4 shrink-0" style={{ color: active ? theme.hex : "rgba(255,255,255,0.55)" }} />
+                      <Icon
+                        className="w-4 h-4 shrink-0"
+                        style={{ color: SERVICE_TYPE_COLOR[t] ?? "#94A3B8" }}
+                        strokeWidth={2.4}
+                      />
                       <span className="truncate">{label}</span>
                     </label>
                   );
