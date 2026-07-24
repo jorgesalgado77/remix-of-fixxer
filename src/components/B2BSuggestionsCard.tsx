@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Sparkles, ChevronRight, Handshake } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getB2BSuggestions, type B2BSuggestion } from "@/lib/activity-branches";
-import { useCurrentCategory } from "@/hooks/use-current-category";
+import { useCurrentCategory } from "@/lib/user-category";
 import { getCategoryTheme } from "@/lib/category-colors";
 
 /**
