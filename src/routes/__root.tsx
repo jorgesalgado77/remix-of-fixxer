@@ -17,6 +17,7 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { fixAuthAndPreview } from "../lib/preview-fixer";
+import { subscribeBlockedStatus } from "../lib/blocked-guard";
 import { useContextualCategory, getCategoryCssVars } from "../lib/user-category";
 
 function NotFoundComponent() {
@@ -180,10 +181,14 @@ function RootComponent() {
           import("@/lib/coins"),
         ]);
         const { data } = await supabase.auth.getSession();
-        if (data.session?.user?.id) await initCoinsForUser(data.session.user.id);
+        if (data.session?.user?.id) {
+          await initCoinsForUser(data.session.user.id);
+          void subscribeBlockedStatus(data.session.user.id);
+        }
         supabase.auth.onAuthStateChange((event, session) => {
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user?.id) {
             void initCoinsForUser(session.user.id);
+            void subscribeBlockedStatus(session.user.id);
           }
         });
       } catch (e) { console.warn("[coins init] falhou", e); }

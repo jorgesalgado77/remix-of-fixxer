@@ -1,0 +1,67 @@
+// Deslogamento automático quando o admin bloqueia o usuário.
+// Escuta `postgres_changes` na linha do profile logado e força signOut + redirect.
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+let currentChannel: any = null;
+let currentUserId: string | null = null;
+
+async function enforceBlockedNow(userId: string) {
+  try {
+    // Cancela queries em vôo e limpa storage local
+    try {
+      const { data } = await supabase.from("profiles").select("status").eq("id", userId).maybeSingle();
+      if (data?.status !== "bloqueado") return;
+    } catch { /* seguir mesmo em erro para não travar UI */ }
+    try { await supabase.auth.signOut(); } catch {}
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("fixxer_authenticated");
+        localStorage.removeItem("fixxer_user_role");
+        localStorage.removeItem("fixxer_user_category");
+        localStorage.removeItem("fixxer_user_id");
+      } catch {}
+      toast.error("Sua conta foi SUSPENSA pelo administrador. Sessão encerrada.");
+      setTimeout(() => { window.location.replace("/auth?blocked=1"); }, 400);
+    }
+  } catch (e) {
+    console.warn("[blocked-guard] falha ao aplicar bloqueio", e);
+  }
+}
+
+export async function subscribeBlockedStatus(userId: string) {
+  if (!userId) return;
+  if (currentChannel && currentUserId === userId) return; // já assinado
+  // Descarta canal anterior se usuário mudou
+  if (currentChannel) {
+    try { await supabase.removeChannel(currentChannel); } catch {}
+    currentChannel = null;
+  }
+  currentUserId = userId;
+
+  // Checa imediatamente ao iniciar (evita reingresso via cache)
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", userId)
+      .maybeSingle();
+    if (data?.status === "bloqueado") {
+      await enforceBlockedNow(userId);
+      return;
+    }
+  } catch (e) { /* segue mesmo com erro */ }
+
+  currentChannel = supabase
+    .channel(`profile:blocked:${userId}`)
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${userId}` },
+      async (payload: any) => {
+        if (payload?.new?.status === "bloqueado") {
+          await enforceBlockedNow(userId);
+        }
+      }
+    )
+    .subscribe();
+}

@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Users, Search, Filter, Coins, ShieldOff, ShieldCheck, Star, Eye,
   MoreVertical, ArrowLeft, Crown, Award, Medal, Building2, X,
@@ -86,7 +87,7 @@ function AdminUsuariosPage() {
 
   const [coinModalUser, setCoinModalUser] = useState<AdminUser | null>(null);
   const [planModalUser, setPlanModalUser] = useState<AdminUser | null>(null);
-  const [viewUser, setViewUser] = useState<AdminUser | null>(null);
+  const [menuOpenAnchor, _setMenuOpenAnchor] = useState<string | null>(null); void menuOpenAnchor; void _setMenuOpenAnchor;
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   // Gate admin
@@ -272,7 +273,7 @@ function AdminUsuariosPage() {
         </div>
       </div>
 
-      {/* Lista */}
+      {/* Lista virtualizada */}
       {loading ? (
         <div className="py-16 flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
@@ -282,20 +283,15 @@ function AdminUsuariosPage() {
           Nenhum usuário encontrado com os filtros atuais.
         </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((u) => (
-            <UserCard
-              key={u.id}
-              u={u}
-              menuOpen={menuOpen === u.id}
-              onToggleMenu={() => setMenuOpen(menuOpen === u.id ? null : u.id)}
-              onView={() => { setViewUser(u); setMenuOpen(null); }}
-              onCoins={() => { setCoinModalUser(u); setMenuOpen(null); }}
-              onPlan={() => { setPlanModalUser(u); setMenuOpen(null); }}
-              onToggleBlock={() => { void toggleBlock(u, setUsers); setMenuOpen(null); }}
-            />
-          ))}
-        </div>
+        <VirtualUserList
+          users={filtered}
+          menuOpen={menuOpen}
+          onToggleMenu={(uid) => setMenuOpen(menuOpen === uid ? null : uid)}
+          onView={(u) => { navigate({ to: "/admin/usuarios/$id" as any, params: { id: u.id } as any }); }}
+          onCoins={(u) => { setCoinModalUser(u); setMenuOpen(null); }}
+          onPlan={(u) => { setPlanModalUser(u); setMenuOpen(null); }}
+          onToggleBlock={(u) => { void toggleBlock(u, setUsers); setMenuOpen(null); }}
+        />
       )}
 
       {coinModalUser && (
@@ -308,7 +304,7 @@ function AdminUsuariosPage() {
           setUsers((cur) => cur.map((x) => x.id === planModalUser.id ? { ...x, plan, plan_cycle: cycle } : x));
         }} />
       )}
-      {viewUser && <ViewProfileModal user={viewUser} onClose={() => setViewUser(null)} />}
+      
     </div>
   );
 }
@@ -604,6 +600,61 @@ function ModalShell({ title, children, onClose, wide }: { title: string; childre
           <button onClick={onClose} className="p-2 rounded-xl bg-white/5 border border-white/10 text-white"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------ Virtualized List ------------ */
+function VirtualUserList({
+  users, menuOpen, onToggleMenu, onView, onCoins, onPlan, onToggleBlock,
+}: {
+  users: AdminUser[];
+  menuOpen: string | null;
+  onToggleMenu: (id: string) => void;
+  onView: (u: AdminUser) => void;
+  onCoins: (u: AdminUser) => void;
+  onPlan: (u: AdminUser) => void;
+  onToggleBlock: (u: AdminUser) => void;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: users.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 108,
+    overscan: 8,
+  });
+
+  return (
+    <div
+      ref={parentRef}
+      className="rounded-2xl border border-white/10 bg-black/20"
+      style={{ height: "min(70vh, 780px)", overflow: "auto", contain: "strict" }}
+    >
+      <div style={{ height: virtualizer.getTotalSize(), width: "100%", position: "relative" }}>
+        {virtualizer.getVirtualItems().map((row) => {
+          const u = users[row.index];
+          return (
+            <div
+              key={u.id}
+              style={{
+                position: "absolute", top: 0, left: 0, right: 0,
+                transform: `translateY(${row.start}px)`,
+                paddingLeft: 8, paddingRight: 8, paddingBottom: 8,
+              }}
+            >
+              <UserCard
+                u={u}
+                menuOpen={menuOpen === u.id}
+                onToggleMenu={() => onToggleMenu(u.id)}
+                onView={() => onView(u)}
+                onCoins={() => onCoins(u)}
+                onPlan={() => onPlan(u)}
+                onToggleBlock={() => onToggleBlock(u)}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

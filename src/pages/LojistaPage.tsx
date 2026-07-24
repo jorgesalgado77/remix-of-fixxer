@@ -2539,7 +2539,11 @@ function ProfileView({
                         </DndContext>
                     </div>
 
-                    <PhotoSectionsManager value={photoSections} onChange={setPhotoSections} />
+                    <PhotoSectionsManager
+                        value={photoSections}
+                        onChange={setPhotoSections}
+                        chargeUserId={typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_id') || undefined) : undefined}
+                    />
 
                     <div className="space-y-4 pt-6 border-t border-white/5">
 
@@ -2639,10 +2643,34 @@ function ProfileView({
                         </div>
                         <Button
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                                 if (specialties.length >= 10) {
                                     toast.warning("Limite de 10 especialidades atingido.");
                                     return;
+                                }
+                                // 1ª especialidade grátis; a partir da 2ª cobra 10 moedas.
+                                if (specialties.length >= 1) {
+                                    try {
+                                        const uidRaw = (typeof window !== 'undefined')
+                                          ? (localStorage.getItem('fixxer_user_id') || '')
+                                          : '';
+                                        const { data: { user } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getUser());
+                                        const uid = user?.id || uidRaw;
+                                        if (uid) {
+                                            const { spendCoinsForAction, getActionCost } = await import('@/lib/monetization');
+                                            const cost = getActionCost('extra_specialty')?.coins ?? 10;
+                                            if (!confirm(`Adicionar uma especialidade extra custa ${cost} moedas. Confirmar?`)) return;
+                                            const res = await spendCoinsForAction(uid, 'extra_specialty');
+                                            if (!res.ok) {
+                                                if (res.reason === 'insufficient') { toast.error(`Saldo insuficiente. Necessário: ${res.cost} moedas.`); return; }
+                                                if (res.reason !== 'disabled') { toast.error('Falha ao debitar moedas', { description: (res as any).error }); return; }
+                                            } else {
+                                                toast.success(`−${res.cost} moedas · Nova especialidade liberada.`);
+                                            }
+                                        }
+                                    } catch (e: any) {
+                                        console.warn('[extra_specialty]', e);
+                                    }
                                 }
                                 setSpecialties(prev => [...prev, {
                                     id: `sp-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,

@@ -47,6 +47,7 @@ import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminMonetizacaoRouteImport } from './routes/_authenticated.admin.monetizacao'
 import { Route as AuthenticatedAdminDisputasRouteImport } from './routes/_authenticated.admin.disputas'
 import { Route as ApiPublicPushDispatchRouteImport } from './routes/api/public/push.dispatch'
+import { Route as AuthenticatedAdminUsuariosIdRouteImport } from './routes/_authenticated.admin.usuarios.$id'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -245,6 +246,12 @@ const ApiPublicPushDispatchRoute = ApiPublicPushDispatchRouteImport.update({
   path: '/api/public/push/dispatch',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminUsuariosIdRoute =
+  AuthenticatedAdminUsuariosIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedAdminUsuariosRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -273,7 +280,7 @@ export interface FileRoutesByFullPath {
   '/auth/': typeof AuthIndexRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
-  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -283,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/preferencias/notificacoes': typeof AuthenticatedPreferenciasNotificacoesRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/feed/': typeof AuthenticatedFeedIndexRoute
+  '/admin/usuarios/$id': typeof AuthenticatedAdminUsuariosIdRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
 }
 export interface FileRoutesByTo {
@@ -310,7 +318,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
-  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -320,6 +328,7 @@ export interface FileRoutesByTo {
   '/preferencias/notificacoes': typeof AuthenticatedPreferenciasNotificacoesRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/feed': typeof AuthenticatedFeedIndexRoute
+  '/admin/usuarios/$id': typeof AuthenticatedAdminUsuariosIdRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
 }
 export interface FileRoutesById {
@@ -351,7 +360,7 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/_authenticated/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
-  '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
   '/_authenticated/agenda/$id': typeof AuthenticatedAgendaIdRoute
   '/_authenticated/chat/$peerId': typeof AuthenticatedChatPeerIdRoute
   '/_authenticated/feed/cliente': typeof AuthenticatedFeedClienteRoute
@@ -361,6 +370,7 @@ export interface FileRoutesById {
   '/_authenticated/preferencias/notificacoes': typeof AuthenticatedPreferenciasNotificacoesRoute
   '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/_authenticated/feed/': typeof AuthenticatedFeedIndexRoute
+  '/_authenticated/admin/usuarios/$id': typeof AuthenticatedAdminUsuariosIdRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
 }
 export interface FileRouteTypes {
@@ -402,6 +412,7 @@ export interface FileRouteTypes {
     | '/preferencias/notificacoes'
     | '/api/public/setup-db'
     | '/feed/'
+    | '/admin/usuarios/$id'
     | '/api/public/push/dispatch'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -439,6 +450,7 @@ export interface FileRouteTypes {
     | '/preferencias/notificacoes'
     | '/api/public/setup-db'
     | '/feed'
+    | '/admin/usuarios/$id'
     | '/api/public/push/dispatch'
   id:
     | '__root__'
@@ -479,6 +491,7 @@ export interface FileRouteTypes {
     | '/_authenticated/preferencias/notificacoes'
     | '/api/public/setup-db'
     | '/_authenticated/feed/'
+    | '/_authenticated/admin/usuarios/$id'
     | '/api/public/push/dispatch'
   fileRoutesById: FileRoutesById
 }
@@ -768,19 +781,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPushDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/usuarios/$id': {
+      id: '/_authenticated/admin/usuarios/$id'
+      path: '/$id'
+      fullPath: '/admin/usuarios/$id'
+      preLoaderRoute: typeof AuthenticatedAdminUsuariosIdRouteImport
+      parentRoute: typeof AuthenticatedAdminUsuariosRoute
+    }
   }
 }
+
+interface AuthenticatedAdminUsuariosRouteChildren {
+  AuthenticatedAdminUsuariosIdRoute: typeof AuthenticatedAdminUsuariosIdRoute
+}
+
+const AuthenticatedAdminUsuariosRouteChildren: AuthenticatedAdminUsuariosRouteChildren =
+  {
+    AuthenticatedAdminUsuariosIdRoute: AuthenticatedAdminUsuariosIdRoute,
+  }
+
+const AuthenticatedAdminUsuariosRouteWithChildren =
+  AuthenticatedAdminUsuariosRoute._addFileChildren(
+    AuthenticatedAdminUsuariosRouteChildren,
+  )
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminDisputasRoute: typeof AuthenticatedAdminDisputasRoute
   AuthenticatedAdminMonetizacaoRoute: typeof AuthenticatedAdminMonetizacaoRoute
-  AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
+  AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRouteWithChildren
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminDisputasRoute: AuthenticatedAdminDisputasRoute,
   AuthenticatedAdminMonetizacaoRoute: AuthenticatedAdminMonetizacaoRoute,
-  AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
+  AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRouteWithChildren,
 }
 
 const AuthenticatedAdminRouteWithChildren =
