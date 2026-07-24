@@ -141,45 +141,14 @@ const formatBRL = (v: string | number) => {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
-/** Máscara de moeda BRL — recebe o valor digitado e retorna string formatada "12.345,67". */
-const maskCurrencyBRL = (raw: string) => {
-  const digits = (raw || "").replace(/\D/g, "").slice(0, 14);
-  if (!digits) return "";
-  const n = Number(digits) / 100;
-  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
-
-/** Converte string mascarada BRL para número. */
-const parseCurrencyBRL = (masked: string) => {
-  if (!masked) return 0;
-  const digits = masked.replace(/\D/g, "");
-  if (!digits) return 0;
-  return Number(digits) / 100;
-};
-
-/**
- * Verifica integridade entre string mascarada e número gerado.
- * Retorna string de erro ou null.
- */
-const assertCurrencyIntegrity = (label: string, masked: string): string | null => {
-  if (!masked) return null;
-  const n = parseCurrencyBRL(masked);
-  if (!Number.isFinite(n) || n < 0) return `${label}: valor numérico inválido.`;
-  const back = maskCurrencyBRL(masked);
-  if (back !== masked) return `${label}: formato monetário inconsistente (${masked} ≠ ${back}).`;
-  if (n > 9_999_999_999.99) return `${label}: valor acima do limite permitido.`;
-  return null;
-};
-
-/** Handlers reutilizáveis para inputs de moeda BRL. */
-const currencyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-  // Bloqueia caracteres numéricos científicos e sinais
-  if (["e", "E", "+", "-", ",", "."].includes(e.key)) e.preventDefault();
-};
-const currencyFocusSelect = (e: React.FocusEvent<HTMLInputElement>) => {
-  // Facilita edição: seleciona tudo ao focar
-  requestAnimationFrame(() => e.target.select());
-};
+// Reexporta helpers centralizados em @/lib/currency-brl (fonte única de verdade)
+const maskCurrencyBRL = sharedMaskBRL;
+const parseCurrencyBRL = sharedParseBRL;
+const assertCurrencyIntegrity = (label: string, masked: string) =>
+  sharedAssertBRL(label, masked);
+const currencyKeyDown = sharedKeyDown;
+const currencyFocusSelect = sharedFocusSelect;
+const currencyPaste = sharedPaste;
 
 const UF_LIST = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
