@@ -39,7 +39,7 @@ interface CreateAdModalProps {
   defaultCategory?: CategoryKey;
 }
 
-type PriceType = "fixo" | "comissao";
+type PriceType = "fixo" | "comissao" | "fixo_comissao";
 type Priority = "baixa" | "media" | "alta" | "urgente";
 
 interface UploadItem {
@@ -58,7 +58,12 @@ const SERVICE_TYPES = [
   "Montagem",
   "Assistência",
   "Vistoria",
+  "🚚 Frete",
+  "📝 Outro",
 ] as const;
+
+const FREIGHT_TYPE = "🚚 Frete";
+const OTHER_SERVICE_TYPE = "📝 Outro";
 
 const TECH_SPECS = [
   { id: "veiculo", label: "Possuir veículo próprio" },
