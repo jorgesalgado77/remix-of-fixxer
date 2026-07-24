@@ -864,34 +864,25 @@ function ProfilePage() {
                   </div>
                 </div>
               )}
-              {/* CAMPOS ESPECÍFICOS: FORNECEDOR */}
-              {profile?.role === 'fornecedor' && (
+              {/* MATRIZ MULTI-SETORIAL DE RAMOS DE ATIVIDADE */}
+              {(profile?.role === 'fornecedor' || profile?.role === 'prestador' || profile?.role === 'lojista') && (
                 <div className="pt-8 space-y-6">
                   <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                     <Briefcase className="w-6 h-6 text-primary" />
-                    <h3 className="text-xl font-black uppercase tracking-tighter">Ramo de Atuação</h3>
+                    <div>
+                      <h3 className="text-xl font-black uppercase tracking-tighter">Ramos de Atividade</h3>
+                      <p className="text-[11px] text-white/50 mt-1">Selecione todos os ramos e subcategorias em que atua. Use "Outro" para ramos específicos.</p>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {['Marmoraria', 'Vidraçaria', 'Eletricista', 'Serralheria', 'Pintor', 'Gesseiro', 'Automação', 'Loja de Ferragens'].map(ramo => (
-                      <label key={ramo} className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer hover:border-primary/30 transition-all">
-                        <input 
-                          type="checkbox" 
-                          checked={profile?.business_category?.includes(ramo)}
-                          onChange={(e) => {
-                            const current = profile?.business_category?.split(',') || [];
-                            const next = e.target.checked 
-                              ? [...current.filter(Boolean), ramo]
-                              : current.filter((s: string) => s !== ramo);
-                            setProfile({...profile, business_category: next.join(',')});
-                          }}
-                          className="w-5 h-5 accent-primary bg-black border-white/20 rounded-md" 
-                        />
-                        <span className="text-xs font-bold">{ramo}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <ActivityBranchSelector
+                    value={(profile?.business_category || '').split(',').map((s: string) => s.trim()).filter(Boolean)}
+                    onChange={(next) => setProfile({ ...profile, business_category: next.join(',') })}
+                    customValue={(profile?.custom_branch || '').split('||').map((s: string) => s.trim()).filter(Boolean)}
+                    onCustomChange={(next) => setProfile({ ...profile, custom_branch: next.join('||') })}
+                  />
                 </div>
               )}
+
             </section>
           </div>
 
