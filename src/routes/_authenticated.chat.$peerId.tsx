@@ -1083,6 +1083,14 @@ function ConversationPage() {
             >
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
             </button>
+            <button
+              onClick={() => setScheduleOpen(true)}
+              title="Propor agendamento"
+              className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center"
+              aria-label="Propor agendamento"
+            >
+              <CalendarPlus className="w-4 h-4" />
+            </button>
             <textarea
               value={content}
               onChange={(e) => { setContent(e.target.value); setDraftText(peerId, e.target.value); sendTyping(); }}
