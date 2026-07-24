@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { SlidersHorizontal, X, MapPin, Sparkles, Flame, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
+import { getMacroSearchTerms } from "@/components/MacroBranchChips";
 import {
   FEED_STATUS_COLOR,
   STATUS_FILTERS,
