@@ -42,6 +42,9 @@ export default function AgendaPage() {
   });
   const [filterStatus, setFilterStatus] = useState<AppointmentStatus | "all">("all");
   const [busy, setBusy] = useState<string | null>(null);
+  const [photoModal, setPhotoModal] = useState<
+    { appointment: Appointment; mode: "checkin" | "checkout" } | null
+  >(null);
 
   const category = useCurrentCategory();
   const theme = getCategoryTheme(category);
