@@ -1213,11 +1213,21 @@ function QuoteModal({
   const [delivery, setDelivery] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!price.trim() || !payment.trim() || !delivery.trim()) {
-      toast.error("Preencha preço, condições e prazo.");
+    const perr = assertCurrencyIntegrity("Preço total", price, {
+      required: true,
+      min: 0.01,
+    });
+    if (perr) {
+      setPriceError(perr);
+      toast.error(perr);
+      return;
+    }
+    if (!payment.trim() || !delivery.trim()) {
+      toast.error("Preencha condições e prazo.");
       return;
     }
     setSubmitting(true);
