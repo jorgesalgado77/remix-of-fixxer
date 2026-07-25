@@ -294,11 +294,61 @@ function ChatInboxPage() {
     // não estiver ativo no projeto.
     const onMessageSent = (e: Event) => {
       const row = (e as CustomEvent).detail?.row as MessageRow | undefined;
-      if (!row || idSetRef.current.has(row.id)) return;
-      idSetRef.current.add(row.id);
-      setMessages((prev) => [row, ...prev]);
+      if (!row) return;
+      const clientId = row._clientId ?? row.client_message_id ?? undefined;
+      setMessages((prev) => {
+        const idx = prev.findIndex(
+          (x) => x.id === row.id || (clientId && (x._clientId === clientId || x.id === clientId)),
+        );
+        if (idx >= 0) {
+          const next = prev.slice();
+          const old = next[idx];
+          if (old.attachment_url && old.attachment_url.startsWith("blob:")) {
+            try { URL.revokeObjectURL(old.attachment_url); } catch {}
+          }
+          next[idx] = { ...row, _pending: false, _failed: false, _clientId: clientId };
+          idSetRef.current.add(row.id);
+          return next;
+        }
+        idSetRef.current.add(row.id);
+        return [{ ...row, _pending: false, _failed: false }, ...prev];
+      });
     };
     window.addEventListener("fixxer:message-sent", onMessageSent as any);
+
+    // Envio otimista: a conversa aparece imediatamente na inbox com status
+    // "enviando" antes mesmo do INSERT concluir na tabela messages.
+    const onMessageSending = (e: Event) => {
+      const row = (e as CustomEvent).detail?.row as MessageRow | undefined;
+      if (!row) return;
+      const clientId = row._clientId;
+      setMessages((prev) => {
+        const idx = prev.findIndex(
+          (x) => x.id === row.id || (clientId && x._clientId === clientId),
+        );
+        if (idx >= 0) {
+          const next = prev.slice();
+          next[idx] = { ...next[idx], ...row, _pending: true, _failed: false };
+          return next;
+        }
+        return [{ ...row, _pending: true, _failed: false }, ...prev];
+      });
+    };
+    window.addEventListener("fixxer:message-sending", onMessageSending as any);
+
+    // Falha de envio: marca o card com estado de erro sem removê-lo.
+    const onMessageFailed = (e: Event) => {
+      const clientId = (e as CustomEvent).detail?.clientId as string | undefined;
+      if (!clientId) return;
+      setMessages((prev) =>
+        prev.map((x) =>
+          x._clientId === clientId || x.id === clientId
+            ? { ...x, _pending: false, _failed: true }
+            : x,
+        ),
+      );
+    };
+    window.addEventListener("fixxer:message-failed", onMessageFailed as any);
 
 
     // Cross-tab sync: qualquer mudança em chaves de leitura/prefs em outra aba
