@@ -573,18 +573,22 @@ function ConversationPage() {
 
 
   const sendTyping = () => {
-    if (!presenceRef.current || !userId) return;
+    if (!userId) return;
     const now = Date.now();
     if (now - lastTypingSentRef.current >= 1500) {
       lastTypingSentRef.current = now;
       try {
-        presenceRef.current.send({ type: "broadcast", event: "typing", payload: { from: userId } });
+        presenceRef.current?.send({ type: "broadcast", event: "typing", payload: { from: userId } });
+      } catch {}
+      try {
+        inboxTypingChannelRef.current?.send({ type: "broadcast", event: "typing", payload: { from: userId } });
       } catch {}
     }
     // agenda "typing-stop" após 3s de inatividade
     if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
     stopTypingTimerRef.current = setTimeout(sendTypingStop, 3000);
   };
+
 
   const doUpload = async (
     file: File,
