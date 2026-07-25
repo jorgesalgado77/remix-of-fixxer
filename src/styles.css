@@ -221,3 +221,11 @@
   min-height: 100dvh;
 }
 
+
+/* =========================================================
+   Feed performance — cheap windowing for low-end devices
+   ========================================================= */
+@utility feed-item-cv {
+  content-visibility: auto;
+  contain-intrinsic-size: 520px;
+}
