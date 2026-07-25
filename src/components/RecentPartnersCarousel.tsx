@@ -372,7 +372,16 @@ export function RecentPartnersCarousel() {
   };
 
   // ---- Navegação por teclado no carrossel ----
+  // Enter/Espaço → abre /perfil/:id (redundante ao comportamento nativo do <button>,
+  // mas explícito para leitores de tela e para reforçar o contrato de interação).
+  // Setas/Home/End → move o foco entre cards com scroll suave.
   const onCardKeyDown = (e: React.KeyboardEvent, idx: number) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const p = sortedItems[idx];
+      if (p) openProfile(p);
+      return;
+    }
     if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "Home" || e.key === "End") {
       e.preventDefault();
       const last = sortedItems.length - 1;
