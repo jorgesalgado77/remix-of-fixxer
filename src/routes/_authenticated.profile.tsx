@@ -1660,9 +1660,10 @@ function ProfilePage() {
                         </div>
                       </div>
                     ))}
-                    <label className="w-full aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group">
+                    <label className="w-full aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all cursor-pointer group text-center px-2">
                       <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
-                      <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleMediaUpload(e, 'image')} />
+                      <span className="text-[8px] text-white/50 leading-tight">{UPLOAD_LIMITS.image.hint}<br/>máx {UPLOAD_LIMITS.image.maxLabel}</span>
+                      <input type="file" className="sr-only" accept="image/*" multiple onChange={(e) => handleMediaUpload(e, 'image')} aria-label="Enviar novas imagens" />
                     </label>
                   </div>
                 </div>
@@ -1671,12 +1672,18 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Play className="w-3 h-3" /> Vídeos & Demonstrações
-                    <span className="ml-auto text-[9px] text-amber-400/90">💰 1 grátis · +10 moedas/vídeo extra</span>
+                    <span className="ml-auto text-[9px] text-amber-400/90">💰 1 grátis · +10 moedas/vídeo extra · ← → p/ reordenar</span>
                   </h4>
-                  <div className="grid grid-cols-1 gap-4">
+                  <p className="text-[9px] text-white/60 -mt-2">
+                    Formatos aceitos: <b>{UPLOAD_LIMITS.video.hint}</b> · Tamanho máx.: <b>{UPLOAD_LIMITS.video.maxLabel}</b>. Foque um vídeo (Tab) e use setas para reordenar.
+                  </p>
+                  <div className="grid grid-cols-1 gap-4" role="list" aria-label="Vídeos enviados, reordenáveis por arrastar ou setas do teclado">
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'video').map((vid: any, i: number) => (
                       <div
                         key={i}
+                        role="listitem"
+                        tabIndex={0}
+                        aria-label={`Vídeo ${i + 1} de ${profile?.portfolio_media?.filter((f: any) => f.type === 'video').length || 0}. Setas para reordenar.`}
                         draggable
                         onDragStart={() => { dragRef.current = { list: 'video', index: i }; }}
                         onDragOver={(ev) => ev.preventDefault()}
@@ -1686,7 +1693,11 @@ function ProfilePage() {
                           if (src && src.list === 'video') reorderMedia('video', src.index, i);
                           dragRef.current = null;
                         }}
-                        className="relative group rounded-2xl overflow-hidden bg-black aspect-video border border-white/5"
+                        onKeyDown={(ev) => {
+                          const total = profile?.portfolio_media?.filter((f: any) => f.type === 'video').length || 0;
+                          handleReorderKeyDown(ev, 'video', i, total);
+                        }}
+                        className="relative group rounded-2xl overflow-hidden bg-black aspect-video border border-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         <video src={vid.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" controls />
                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
@@ -1713,11 +1724,13 @@ function ProfilePage() {
                         </div>
                       </div>
                     ))}
-                    <label className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer group">
+                    <label className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all cursor-pointer group text-center">
                       <Play className="w-8 h-8 text-muted-foreground group-hover:text-primary" />
                       <span className="text-xs font-bold uppercase text-muted-foreground group-hover:text-primary">Upload de Vídeo</span>
-                      <input type="file" className="hidden" accept="video/*" onChange={(e) => handleMediaUpload(e, 'video')} />
+                      <span className="text-[9px] text-white/50 normal-case">{UPLOAD_LIMITS.video.hint} · máx {UPLOAD_LIMITS.video.maxLabel}</span>
+                      <input type="file" className="sr-only" accept="video/*" onChange={(e) => handleMediaUpload(e, 'video')} aria-label="Enviar novo vídeo" />
                     </label>
+
                   </div>
                 </div>
 
