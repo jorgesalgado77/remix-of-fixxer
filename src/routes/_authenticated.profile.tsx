@@ -100,7 +100,7 @@ function validateFileForType(
 ): { ok: true } | { ok: false; reason: string } {
   const cfg = UPLOAD_LIMITS[type];
   const isImageOnDoc = type === 'document' && file.type.startsWith('image/');
-  if (!cfg.accept.includes(file.type as any) && !isImageOnDoc) {
+  if (!(cfg.accept as readonly string[]).includes(file.type) && !isImageOnDoc) {
     return { ok: false, reason: `Formato não aceito (${file.type || 'desconhecido'}). Envie: ${cfg.hint}.` };
   }
   if (file.size > cfg.maxBytes) {
