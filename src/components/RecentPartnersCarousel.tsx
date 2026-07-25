@@ -236,7 +236,7 @@ export function RecentPartnersCarousel() {
     try {
       const { data, error } = await supabaseExternal
         .from("profiles")
-        .select("id, full_name, name, avatar_url, avatar, photo_url, role, activity_branch, category, city, uf, state, location, address, rating, created_at")
+        .select("id, full_name, name, avatar_url, avatar, photo_url, role, activity_branch, category, city, uf, state, location, address, rating, created_at, vehicle_type, vehicle_description, vehicle_details, offerings_notes")
         .order("created_at", { ascending: false })
         .order("rating", { ascending: false })
         .limit(120);
