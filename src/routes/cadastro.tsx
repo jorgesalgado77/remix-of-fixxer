@@ -248,12 +248,9 @@ function RegisterComponent() {
                 <InputField label="Nome Comercial" placeholder="Minha Marcenaria" />
               </>
             ) : (
-              <MaskedInputField 
-                mask="999.999.999-99"
-                label="CPF" 
-                placeholder="000.000.000-00" 
+              <CpfCnpjField
                 value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
+                onChange={setCpf}
               />
             )}
 
