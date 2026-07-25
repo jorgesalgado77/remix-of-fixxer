@@ -317,7 +317,7 @@ export function RecentPartnersCarousel() {
     return enriched;
   }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo]);
 
-  // ---- IntersectionObserver: pré-carrega /perfil/:id quando o card se aproxima da viewport ----
+  // ---- IntersectionObserver: pré-carrega /perfil/:id + foto quando o card se aproxima ----
   useEffect(() => {
     if (typeof window === "undefined" || typeof IntersectionObserver === "undefined") return;
     const root = scrollerRef.current;
@@ -326,14 +326,25 @@ export function RecentPartnersCarousel() {
       (entries) => {
         for (const e of entries) {
           if (!e.isIntersecting) continue;
-          const id = (e.target as HTMLElement).dataset.partnerId;
+          const el = e.target as HTMLElement;
+          const id = el.dataset.partnerId;
           if (id) preloadProfile(id);
+          const avatar = el.dataset.partnerAvatar;
+          if (avatar) preloadImage(avatar);
         }
       },
-      { root, rootMargin: "0px 300px 0px 300px", threshold: 0.01 },
+      { root, rootMargin: "0px 400px 0px 400px", threshold: 0.01 },
     );
     for (const el of cardRefs.current) if (el) io.observe(el);
     return () => io.disconnect();
+  }, [sortedItems]);
+
+  // Pré-carrega ansiosamente as fotos válidas dos primeiros cards visíveis (reduz flicker inicial).
+  useEffect(() => {
+    for (const p of sortedItems.slice(0, 8)) {
+      const raw = safeStr(p.avatar_url) || safeStr(p.avatar) || safeStr(p.photo_url);
+      if (isValidImageUrl(raw)) preloadImage(raw);
+    }
   }, [sortedItems]);
 
 
