@@ -339,9 +339,13 @@ export function RecentPartnersCarousel() {
       const liveDist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
       const storedRaw = p.distance_km ?? p.distance;
       const storedDist = storedRaw != null ? Number(storedRaw) : null;
-      const dist = Number.isFinite(liveDist as number)
-        ? (liveDist as number)
-        : (storedDist != null && Number.isFinite(storedDist) ? storedDist : null);
+      // Se o card representa o próprio usuário logado, a distância é sempre 0 km.
+      const isSelf = !!currentUserId && p.id === currentUserId;
+      const dist = isSelf
+        ? 0
+        : Number.isFinite(liveDist as number)
+          ? (liveDist as number)
+          : (storedDist != null && Number.isFinite(storedDist) ? storedDist : null);
       return { ...p, _coords: coords, _distanceKm: dist };
     });
 
