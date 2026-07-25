@@ -69,7 +69,8 @@ const MOCK_PROFILES: FavProfile[] = [
     id: "mock-p-1",
     userId: "mock-jorge-salgado",
     name: "Jorge Salgado",
-    avatarUrl: null,
+    avatarUrl:
+      "https://ui-avatars.com/api/?name=Jorge+Salgado&background=FF7A00&color=fff&size=256&bold=true&format=png",
     kind: "prestador",
     branch: "Conferente Técnico",
     city: "Votorantim",
@@ -81,9 +82,10 @@ const MOCK_PROFILES: FavProfile[] = [
     id: "mock-p-2",
     userId: "mock-eletrotech",
     name: "EletroTech Soluções",
-    avatarUrl: null,
-    kind: "lojista",
-    branch: "Materiais Elétricos",
+    avatarUrl:
+      "https://ui-avatars.com/api/?name=EletroTech&background=B18CFF&color=fff&size=256&bold=true&format=png",
+    kind: "parceiro",
+    branch: "Materiais Elétricos B2B",
     city: "Sorocaba",
     state: "SP",
     rating: 4.9,
@@ -145,11 +147,13 @@ function priceBRL(v: number | null | undefined) {
 /* ============================ PÁGINA ============================ */
 
 type TabKey = "perfis" | "anuncios";
+type KindFilter = "todos" | "prestador" | "parceiro";
 
 function FavoritosPage() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
   const [tab, setTab] = useState<TabKey>("perfis");
+  const [kindFilter, setKindFilter] = useState<KindFilter>("todos");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [profiles, setProfiles] = useState<FavProfile[]>([]);
@@ -206,7 +210,7 @@ function FavoritosPage() {
         return {
           id: r.id,
           userId: r.favorited_user_id,
-          name: p.full_name || p.name || "Profissional Fixxer",
+          name: p.full_name || p.name || "Perfil salvo",
           avatarUrl: p.avatar_url || p.avatar || p.photo_url || null,
           kind: classifyRole(p.role),
           branch: p.activity_branch || null,
@@ -354,13 +358,15 @@ function FavoritosPage() {
   /* ============ FILTRO DE BUSCA ============ */
   const filteredProfiles = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return profiles;
-    return profiles.filter((p) =>
+    let list = profiles;
+    if (kindFilter !== "todos") list = list.filter((p) => p.kind === kindFilter);
+    if (!q) return list;
+    return list.filter((p) =>
       [p.name, p.branch, p.city, p.state, KIND_META[p.kind].label]
         .filter(Boolean)
         .some((s) => String(s).toLowerCase().includes(q)),
     );
-  }, [profiles, query]);
+  }, [profiles, query, kindFilter]);
 
   const filteredAds = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -418,6 +424,23 @@ function FavoritosPage() {
       <main className="max-w-5xl mx-auto px-4 pt-6">
         {tab === "perfis" && (
           <section id="panel-perfis" role="tabpanel" aria-labelledby="tab-perfis" aria-live="polite">
+            {/* Sub-filtros por tipo de perfil */}
+            <div
+              className="flex gap-2 overflow-x-auto pb-3 -mx-1 px-1 scrollbar-thin"
+              role="radiogroup"
+              aria-label="Filtrar perfis por tipo"
+            >
+              <FilterPill active={kindFilter === "todos"} onClick={() => setKindFilter("todos")} color="#00FF87" rgb="0,255,135">
+                🟢 Todos
+              </FilterPill>
+              <FilterPill active={kindFilter === "prestador"} onClick={() => setKindFilter("prestador")} color="#FF9F0A" rgb="255,159,10">
+                🛠️ Prestadores
+              </FilterPill>
+              <FilterPill active={kindFilter === "parceiro"} onClick={() => setKindFilter("parceiro")} color="#A855F7" rgb="168,85,247">
+                🚚 Parceiros B2B
+              </FilterPill>
+            </div>
+
             {loadingProfiles ? (
               <SkeletonGrid />
             ) : filteredProfiles.length === 0 ? (
@@ -508,6 +531,30 @@ function TabPill({
   );
 }
 
+function FilterPill({
+  active, onClick, color, rgb, children,
+}: { active: boolean; onClick: () => void; color: string; rgb: string; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      onClick={onClick}
+      className={[
+        "px-3.5 h-9 rounded-full text-[10px] font-black uppercase italic tracking-wider border whitespace-nowrap transition-all",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+      ].join(" ")}
+      style={
+        active
+          ? { color: "#000", background: color, borderColor: color, boxShadow: `0 0 14px rgba(${rgb},0.45)`, ["--tw-ring-color" as any]: color }
+          : { color, background: `rgba(${rgb},0.08)`, borderColor: `rgba(${rgb},0.4)`, ["--tw-ring-color" as any]: color }
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
 function ProfileCard({
   fav, userCoords, onChat, onView, onRemove,
 }: {
@@ -526,24 +573,38 @@ function ProfileCard({
       className="rounded-2xl bg-black/40 border border-white/10 overflow-hidden flex flex-col hover:border-white/20 transition-all"
       style={{ boxShadow: `0 0 0 1px rgba(${meta.rgb},0.15) inset` }}
     >
-      {/* Topo com avatar */}
-      <div className="relative h-32 bg-gradient-to-b from-white/[0.04] to-transparent flex items-center justify-center">
+      {/* Topo com foto full-width */}
+      <div
+        className="relative h-36 w-full overflow-hidden bg-zinc-900"
+        style={{ borderBottom: `1px solid rgba(${meta.rgb},0.4)` }}
+      >
         {fav.avatarUrl ? (
           <img
             src={fav.avatarUrl}
             alt={fav.name}
             loading="lazy"
-            className="w-24 h-24 rounded-full object-cover border-2"
-            style={{ borderColor: meta.color, boxShadow: `0 0 18px rgba(${meta.rgb},0.35)` }}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              const el = e.currentTarget as HTMLImageElement;
+              el.onerror = null;
+              el.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fav.name)}&background=${meta.color.replace("#","")}&color=fff&size=256&bold=true&format=png`;
+            }}
           />
         ) : (
           <div
-            className="w-24 h-24 rounded-full border-2 flex items-center justify-center bg-black/60"
-            style={{ borderColor: meta.color, color: meta.color }}
+            className="h-full w-full flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, rgba(${meta.rgb},0.18), rgba(0,0,0,0.6))`, color: meta.color }}
             aria-hidden="true"
           >
-            <Icon className="w-10 h-10" />
+            <Icon className="w-14 h-14" />
+          </div>
+        )}
+
+        {/* Nota */}
+        {fav.rating != null && (
+          <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm border border-amber-400/50 text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Star className="w-3 h-3 fill-amber-400" aria-hidden="true" />
+            {fav.rating.toFixed(1)}
           </div>
         )}
 
@@ -568,12 +629,6 @@ function ProfileCard({
           >
             {meta.emoji} {meta.label}
           </span>
-          {fav.rating != null && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-400">
-              <Star className="w-3 h-3 fill-amber-400" aria-hidden="true" />
-              {fav.rating.toFixed(1)}
-            </span>
-          )}
         </div>
 
         <h3 className="text-sm font-black uppercase italic truncate" title={fav.name}>{fav.name}</h3>
