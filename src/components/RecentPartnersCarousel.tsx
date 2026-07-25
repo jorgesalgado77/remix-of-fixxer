@@ -260,14 +260,20 @@ export function RecentPartnersCarousel() {
 
   useEffect(() => {
     let cancelled = false;
-    // Se não havia cache, mostramos o fallback para não deixar vazio durante a 1ª busca.
-    if (!cached && items.length === 0) setItems(FALLBACK_PARTNERS);
+    // Não pré-populamos com FALLBACK aqui: deixamos o skeleton aparecer durante a 1ª busca
+    // quando não há cache. Se o fetch falhar/vazio, o próprio fetchPartners cai no fallback.
     (async () => {
       await fetchPartners();
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [fetchPartners, cached, items.length]);
+  }, [fetchPartners, cached]);
+
+  // Quando a geolocalização do usuário fica disponível, limpamos descartes manuais
+  // para que os badges "Sem localização" sejam recriados/reavaliados com o novo contexto.
+  useEffect(() => {
+    if (userCoords) setDismissedNoGeo(new Set());
+  }, [userCoords]);
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;
