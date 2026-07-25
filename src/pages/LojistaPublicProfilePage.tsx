@@ -26,6 +26,8 @@ import {
   Heart,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { useUserCoords, cityCoords } from "@/lib/geo-distance";
+import { haversineKm } from "@/lib/activity-branches";
 import { useFavoriteUser } from "@/hooks/useFavoriteUser";
 import { createProfileRefetchHandler, type ProfileLike } from "@/lib/profile-refetch";
 import { isMockPeerId, getMockProfile, getMockPeerName } from "@/lib/mock-chat";
