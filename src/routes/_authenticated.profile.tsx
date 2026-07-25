@@ -311,20 +311,72 @@ function ProfilePage() {
     }
   };
 
+  const bioLen = (profile?.about_bio || '').length;
+  const bioOverLimit = bioLen > BIO_MAX_LENGTH;
+  const radiusInvalid =
+    profile?.default_radius != null && !isAllowedRadius(profile.default_radius);
+  const canSave = !saving && !bioOverLimit && !radiusInvalid;
+
   const handleSave = async () => {
-    setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update(profile)
-      .eq('id', profile.id);
-      
-    if (error) {
-      toast.error("Erro ao salvar perfil");
-    } else {
-      toast.success("Perfil atualizado com sucesso!");
+    if (!profile?.id) {
+      toast.error("Perfil não carregado.", { description: "Recarregue a página e tente novamente." });
+      return;
     }
-    setSaving(false);
+    if (bioOverLimit) {
+      toast.error(`O campo "Sobre" excede o limite (${bioLen}/${BIO_MAX_LENGTH}).`, {
+        description: "Reduza o texto antes de salvar.",
+      });
+      return;
+    }
+    if (radiusInvalid) {
+      toast.error("Raio de atuação inválido.", {
+        description: `Escolha um dos valores permitidos: ${ALLOWED_RADII_KM.join(", ")} km.`,
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(profile)
+        .eq('id', profile.id);
+
+      if (error) {
+        toast.error("Erro ao salvar perfil", {
+          description: error.message || "Falha desconhecida ao gravar no banco.",
+        });
+        return;
+      }
+
+      // Refetch imediato para refletir activity_branch/default_radius/about_bio
+      const { data: fresh, error: refetchErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profile.id)
+        .single();
+
+      if (fresh && !refetchErr) {
+        setProfile(fresh);
+        try {
+          window.dispatchEvent(
+            new CustomEvent('fixxer:profile-updated', { detail: { id: fresh.id } }),
+          );
+        } catch { /* noop */ }
+      }
+
+      toast.success("Perfil atualizado com sucesso!", {
+        description: refetchErr ? "Salvo, mas houve falha ao recarregar. Atualize a página." : undefined,
+      });
+    } catch (e: any) {
+      toast.error("Erro inesperado ao salvar perfil", {
+        description: e?.message || String(e),
+      });
+    } finally {
+      setSaving(false);
+    }
   };
+
 
   const handleCepLookup = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
