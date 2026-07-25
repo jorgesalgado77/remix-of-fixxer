@@ -603,29 +603,55 @@ function WorkModesVehicleSection({ accent, navigate }: { accent: string; navigat
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
+    let channel: any = null;
+    let currentUid: string | null = null;
+
+    const applyRow = (row: any) => {
+      const extras = row?.custom_sections?.__extras || {};
+      const wm: string[] = Array.isArray(row?.work_modes)
+        ? row.work_modes
+        : (Array.isArray(extras.work_modes) ? extras.work_modes : []);
+      setWorkModes(wm.filter(Boolean));
+      setVehicleType(String(row?.vehicle_type ?? extras.vehicle_type ?? "") || "");
+      setVehicleDesc(String(row?.vehicle_description ?? extras.vehicle_description ?? "") || "");
+      setNotes(String(row?.offerings_notes ?? extras.offerings_notes ?? "") || "");
+      setRole((row?.role as string) || null);
+    };
+
     (async () => {
       try {
         const { data: sess } = await supabaseExternal.auth.getUser();
         const uid = sess.user?.id;
         if (!uid) { setLoading(false); return; }
+        currentUid = uid;
         const { data } = await supabaseExternal
           .from("profiles")
           .select("role, work_modes, vehicle_type, vehicle_description, offerings_notes, custom_sections")
           .eq("id", uid)
           .maybeSingle();
-        const extras = (data as any)?.custom_sections?.__extras || {};
-        const wm: string[] = Array.isArray((data as any)?.work_modes)
-          ? (data as any).work_modes
-          : (Array.isArray(extras.work_modes) ? extras.work_modes : []);
-        setWorkModes(wm.filter(Boolean));
-        setVehicleType(String((data as any)?.vehicle_type ?? extras.vehicle_type ?? "") || "");
-        setVehicleDesc(String((data as any)?.vehicle_description ?? extras.vehicle_description ?? "") || "");
-        setNotes(String((data as any)?.offerings_notes ?? extras.offerings_notes ?? "") || "");
-        setRole(((data as any)?.role as string) || null);
+        applyRow(data);
+
+        // 🔴 Realtime: sincroniza a prévia com alterações feitas no /profile.
+        try {
+          channel = supabaseExternal
+            .channel(`cfg-wm-${uid}`)
+            .on(
+              "postgres_changes" as any,
+              { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${uid}` },
+              (payload: any) => applyRow(payload?.new),
+            )
+            .subscribe();
+        } catch { /* ignore */ }
       } catch { /* silencioso */ }
       finally { setLoading(false); }
     })();
+
+    return () => {
+      try { if (channel) supabaseExternal.removeChannel(channel); } catch { /* ignore */ }
+      currentUid = null;
+    };
   }, []);
+
 
   const goEdit = () => {
     try { navigate({ to: "/profile" as any, hash: "aceita-trabalhos" as any }); }
