@@ -807,15 +807,24 @@ function ConversationPage() {
       row = (data as unknown as MessageRow) ?? null;
     } catch (err: any) {
       const msg = String(err?.message || "");
-      // Fallback quando client_message_id ainda não existe no schema.
-      if (msg.includes("client_message_id") || err?.code === "42703") {
-        delete payload.client_message_id;
+      const code = String(err?.code || "");
+      // Fallback quando:
+      //  - a coluna client_message_id ainda não existe (42703)
+      //  - não existe índice único em client_message_id para o ON CONFLICT (42P10)
+      const missingColumn = code === "42703" || msg.includes("client_message_id");
+      const lower = msg.toLowerCase();
+      const missingUniqueIndex =
+        code === "42P10" ||
+        lower.includes("no unique or exclusion constraint") ||
+        lower.includes("on conflict specification");
+      if (missingColumn || missingUniqueIndex) {
+        if (missingColumn) delete payload.client_message_id;
         try {
           const data = await sendWithRetry(async () => {
             const { data, error } = await supabaseExternal
               .from("messages")
               .insert(payload)
-              .select("id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name")
+              .select("id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name, client_message_id")
               .maybeSingle();
             if (error) throw error;
             return data;
