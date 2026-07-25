@@ -193,7 +193,7 @@ export function OfferingsPicker({
                   checked={active}
                   onChange={() => toggle(item)}
                   disabled={charging}
-                  className="w-5 h-5 accent-primary"
+                  className="w-5 h-5 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214] rounded"
                   aria-label={`Oferece ${item}`}
                 />
                 <span className="text-xs font-bold flex-1">{item}</span>
@@ -215,7 +215,7 @@ export function OfferingsPicker({
                     onClick={() => setVehicleExpanded((v) => !v)}
                     aria-expanded={vehicleExpanded}
                     aria-controls="vehicle-details"
-                    className="w-full flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 hover:bg-primary/10 rounded-xl px-3 py-2 border border-primary/20"
+                    className="w-full flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 hover:bg-primary/10 rounded-xl px-3 py-2 border border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]"
                   >
                     <span className="inline-flex items-center gap-2">
                       <Car className="w-3 h-3" /> Características do Veículo
@@ -238,11 +238,12 @@ export function OfferingsPicker({
                               key={v}
                               type="button"
                               onClick={() => onVehicleTypeChange?.(vehicleType === v ? '' : v)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214] ${
                                 vehicleType === v
                                   ? 'bg-primary text-black border-primary'
                                   : 'bg-white/5 border-white/10 hover:border-primary/50'
                               }`}
+                              aria-pressed={vehicleType === v}
                             >
                               {v}
                             </button>

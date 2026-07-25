@@ -103,7 +103,7 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="shrink-0 inline-flex items-center gap-1 rounded-xl bg-white/10 hover:bg-white/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white"
+            className="shrink-0 inline-flex items-center gap-1 rounded-xl bg-white/10 hover:bg-white/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]"
             aria-label="Alterar ramo principal"
           >
             <Pencil className="w-3 h-3" /> Alterar
@@ -114,7 +114,7 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
         <button
           type="button"
           onClick={enableCustom}
-          className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed p-3 text-left transition-all min-w-0 overflow-hidden active:scale-[0.98]"
+          className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed p-3 text-left transition-all min-w-0 overflow-hidden active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]"
           style={{ borderColor: "rgba(255,255,255,0.18)", background: "transparent" }}
         >
           <span className="text-xl shrink-0" aria-hidden>📝</span>
@@ -136,7 +136,7 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
               key={m.id}
               type="button"
               onClick={() => pickMacro(m.label)}
-              className="w-full flex items-center gap-3 rounded-2xl border p-3 text-left transition-all min-w-0 overflow-hidden active:scale-[0.98]"
+              className="w-full flex items-center gap-3 rounded-2xl border p-3 text-left transition-all min-w-0 overflow-hidden active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]"
               style={{
                 borderColor: active ? accent : "rgba(255,255,255,0.1)",
                 background: active ? `${accent}18` : "rgba(255,255,255,0.03)",
@@ -155,7 +155,7 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
         <button
           type="button"
           onClick={enableCustom}
-          className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed p-3 text-left transition-all min-w-0 overflow-hidden sm:col-span-2 active:scale-[0.98]"
+          className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed p-3 text-left transition-all min-w-0 overflow-hidden sm:col-span-2 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]"
           style={{
             borderColor: showCustom ? accent : "rgba(255,255,255,0.18)",
             background: showCustom ? `${accent}18` : "transparent",

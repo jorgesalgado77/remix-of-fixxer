@@ -36,6 +36,7 @@ import { ALLOWED_RADII_KM, isAllowedRadius, BIO_MAX_LENGTH } from "@/lib/branch-
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
 import { LiveProfilePreview } from "@/components/LiveProfilePreview";
+import { AutosaveStatusPill } from "@/components/AutosaveStatusPill";
 import { saveDraft, loadDraft, clearDraft, markPending, pickDraftPatch } from "@/lib/profile-draft";
 
 function roleToCategory(role?: string | null): CategoryKey {
@@ -63,6 +64,7 @@ function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [brands, setBrands] = useState<string[]>([]);
   const [newBrand, setNewBrand] = useState("");
@@ -471,6 +473,7 @@ function ProfilePage() {
         mergedFresh = normalizeMasks(mergedFresh);
         setProfile(mergedFresh);
         lastSavedSnapshotRef.current = JSON.stringify(mergedFresh);
+        setLastSavedAt(Date.now());
         try {
           window.dispatchEvent(
             new CustomEvent('fixxer:profile-updated', { detail: { id: fresh.id } }),
@@ -603,6 +606,19 @@ function ProfilePage() {
         ["--ring" as any]: theme.hex,
       }}
     >
+      {/* Pílula flutuante de autosave — reflete estado de qualquer campo do perfil */}
+      {!profileId && (
+        <AutosaveStatusPill
+          saving={saving}
+          autoSaving={autoSaving}
+          lastSavedAt={lastSavedAt}
+          isDirty={
+            !!profile?.id &&
+            JSON.stringify(profile) !== lastSavedSnapshotRef.current
+          }
+        />
+      )}
+
       {/* 1. CABEÇALHO DO PERFIL */}
       <div className="relative h-64 w-full group">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#121214]/80 z-10 pointer-events-none" />

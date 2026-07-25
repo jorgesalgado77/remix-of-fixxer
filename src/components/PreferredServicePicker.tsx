@@ -219,7 +219,7 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
                   type="button"
                   disabled={disabled}
                   onClick={() => togglePreferredService(b)}
-                  className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
+                  className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]"
                   style={{
                     borderColor: active ? accent : "rgba(255,255,255,0.12)",
                     background: active ? `${accent}22` : "rgba(255,255,255,0.03)",
