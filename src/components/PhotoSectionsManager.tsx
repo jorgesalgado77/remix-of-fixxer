@@ -62,11 +62,12 @@ export interface PhotoLimits {
 export const DEFAULT_LIMITS: PhotoLimits = {
   imgMaxMB: 8,
   sectionTotalMaxMB: 80,
-  maxShowroom: 20,
-  maxAssemblies: 20,
+  maxShowroom: 10,
+  maxAssemblies: 0,
   maxCustomSections: 5,
   maxCustomPhotos: 10,
 };
+
 
 const BUCKET = 'media';
 
@@ -138,12 +139,12 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
   const flatPhotos = useMemo(() => {
     const list: { url: string; thumb: string; sectionName: string }[] = [];
     safe.showroom.forEach((p) => list.push({ url: getUrl(p), thumb: getThumb(p), sectionName: 'Show Room' }));
-    safe.assemblies.forEach((p) => list.push({ url: getUrl(p), thumb: getThumb(p), sectionName: 'Montagens Realizadas' }));
     safe.custom.forEach((s) =>
       s.photos.forEach((p) => list.push({ url: getUrl(p), thumb: getThumb(p), sectionName: s.name })),
     );
     return list;
   }, [safe]);
+
 
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const openLightbox = (url: string) => {
@@ -417,19 +418,8 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
         busy={busyKey === 'showroom'}
         progressList={busyKey === 'showroom' ? [...inProgress, ...errorList] : []}
       />
-      <PhotoBlock
-        title="Montagens Realizadas"
-        icon={<ImageIcon className="w-3 h-3 text-primary" />}
-        photos={safe.assemblies}
-        max={L.maxAssemblies}
-        onAdd={handleAddAssemblies}
-        onRemove={removeAssemblies}
-        onReplace={replaceAssemblies}
-        onReorder={reorderAssemblies}
-        onOpen={openLightbox}
-        busy={busyKey === 'assemblies'}
-        progressList={busyKey === 'assemblies' ? [...inProgress, ...errorList] : []}
-      />
+
+
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
