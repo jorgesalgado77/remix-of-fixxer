@@ -1792,8 +1792,10 @@ function ConversationPage() {
           onClose={() => setScheduleOpen(false)}
         />
       )}
+      <ChatSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
+
 }
 
 function AttachmentBlock({
