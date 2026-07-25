@@ -7,15 +7,10 @@ import { haversineKm } from "@/lib/activity-branches";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 
 /**
- * Seção "Lojistas e Parceiros Fornecedores Recentes" — carrossel horizontal
- * dedicado ao painel do Prestador. Diferente de `RecentPartnersCarousel`,
- * este componente:
- *  - Mostra APENAS Lojistas e Parceiros Fornecedores (nunca prestadores).
- *  - Prioriza Lojistas do MESMO RAMO PRINCIPAL do prestador logado
- *    (comparando `business_category` / `custom_branch`), depois completa
- *    com fornecedores e outros lojistas.
- *  - Reaproveita as mesmas colunas seguras do Supabase externo para
- *    evitar erros 400 do PostgREST em colunas inexistentes.
+ * Seção "Lojistas e Clientes Finais Recentes" — carrossel horizontal
+ * dedicado ao painel do Prestador. Mostra APENAS Lojistas e Clientes Finais
+ * (nunca prestadores nem fornecedores B2B). Prioriza Lojistas do MESMO RAMO
+ * PRINCIPAL do prestador logado, depois completa com demais lojistas e clientes.
  */
 
 type Row = {
@@ -35,15 +30,15 @@ type Row = {
   lng: number | null;
 };
 
-type Kind = "lojista" | "fornecedor";
+type Kind = "lojista" | "cliente";
 type Card = Row & { _kind: Kind; _branch: string | null };
 
-const CACHE_KEY = "fixxer_recent_stores_v1";
+const CACHE_KEY = "fixxer_recent_stores_v2";
 
 function classify(role: string | null | undefined): Kind | null {
   const r = (role || "").toLowerCase();
   if (r.includes("lojista")) return "lojista";
-  if (r.includes("fornec") || r.includes("parceiro") || r.includes("b2b")) return "fornecedor";
+  if (r.includes("cliente") || r === "user" || r === "usuario" || r === "usuário" || r.includes("final")) return "cliente";
   return null;
 }
 
@@ -78,19 +73,19 @@ const KIND_META: Record<Kind, { emoji: string; label: string; color: string; bor
     borderClass: "border-[#00FF87]",
     gradientClass: "from-[#00FF87]/25 via-[#00FF87]/10 to-transparent",
   },
-  fornecedor: {
-    emoji: "🚚",
-    label: "Parceiro Fornecedor",
-    color: "#A855F7",
-    borderClass: "border-[#A855F7]",
-    gradientClass: "from-[#A855F7]/25 via-[#A855F7]/10 to-transparent",
+  cliente: {
+    emoji: "🙋",
+    label: "Cliente Final",
+    color: "#22C55E",
+    borderClass: "border-[#22C55E]",
+    gradientClass: "from-[#22C55E]/25 via-[#22C55E]/10 to-transparent",
   },
 };
 
 const FALLBACK: Card[] = [
   { id: "mock-loja-alpha", full_name: "Móveis Alpha", display_name: "Móveis Alpha", company_name: "Móveis Alpha Ltda", avatar_url: null, role: "lojista", business_category: "Móveis Planejados", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Móveis Planejados" },
   { id: "mock-loja-beta", full_name: "Casa Design", display_name: "Casa Design", company_name: null, avatar_url: null, role: "lojista", business_category: "Decoração", custom_branch: null, city: "Votorantim", state: "SP", rating: 4.8, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Decoração" },
-  { id: "mock-fornec-real", full_name: "Ferragens Real", display_name: "Ferragens Real", company_name: null, avatar_url: null, role: "fornecedor", business_category: "Ferragens B2B", custom_branch: null, city: "Osasco", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Ferragens B2B" },
+  { id: "mock-cliente-final", full_name: "Ana Souza", display_name: "Ana Souza", company_name: null, avatar_url: null, role: "cliente", business_category: null, custom_branch: null, city: "Sorocaba", state: "SP", rating: 5.0, created_at: null, lat: null, lng: null, _kind: "cliente", _branch: null },
 ];
 
 function readCache(): Card[] | null {
@@ -154,18 +149,28 @@ export function RecentStoresCarousel() {
         }
       } catch { /* tabela pode não existir — segue */ }
 
-      // 2) IDs autoritativos de fornecedores/parceiros.
-      const supplierIds = new Set<string>();
+      // 2) IDs conhecidos que NÃO devem aparecer (prestadores e fornecedores).
+      const excludeIds = new Set<string>();
+      try {
+        const { data: prov } = await supabaseExternal
+          .from("provider_profiles")
+          .select("user_id, id")
+          .limit(500);
+        for (const s of (prov as any[]) ?? []) {
+          const uid = s?.user_id || s?.id;
+          if (uid) excludeIds.add(String(uid));
+        }
+      } catch { /* opcional */ }
       try {
         const { data: sup } = await supabaseExternal
           .from("supplier_profiles")
           .select("user_id, id")
-          .limit(200);
+          .limit(500);
         for (const s of (sup as any[]) ?? []) {
           const uid = s?.user_id || s?.id;
-          if (uid) supplierIds.add(String(uid));
+          if (uid) excludeIds.add(String(uid));
         }
-      } catch { /* tabela opcional */ }
+      } catch { /* opcional */ }
 
       // 3) Perfis reais — sem exigir role preenchida (real users podem ter role="user").
       const { data, error } = await supabaseExternal
@@ -177,10 +182,15 @@ export function RecentStoresCarousel() {
 
       const rows: Card[] = ((data as unknown as Row[]) ?? [])
         .map((r) => {
+          const rid = String(r.id);
           let kind: Kind | null = null;
-          if (storeIds.has(String(r.id))) kind = "lojista";
-          else if (supplierIds.has(String(r.id))) kind = "fornecedor";
-          else kind = classify(r.role);
+          if (storeIds.has(rid)) kind = "lojista";
+          else if (excludeIds.has(rid)) kind = null; // prestador/fornecedor: ignora
+          else {
+            const c = classify(r.role);
+            // Se não é lojista/prestador/fornecedor conhecido, trata como cliente final.
+            kind = c ?? "cliente";
+          }
           if (!kind) return null;
           return { ...r, _kind: kind, _branch: mainBranchOf(r.business_category, r.custom_branch) } as Card;
         })
@@ -253,28 +263,28 @@ export function RecentStoresCarousel() {
 
   return (
     <section
-      aria-label="Lojistas e parceiros fornecedores recentes"
+      aria-label="Lojistas e clientes finais recentes"
       className="bg-[#1A1A1B] border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden"
     >
       <header className="mb-3 md:mb-4 w-full block">
         <h3 className="w-full block font-black italic uppercase text-white text-sm md:text-base tracking-wide leading-tight">
-          🏬 Lojistas e Parceiros Fornecedores Recentes
+          🏬 Lojistas e Clientes Finais Recentes
         </h3>
         <p className="w-full block text-[11px] md:text-xs text-muted-foreground mt-1 leading-snug">
-          Conecte-se com lojistas e fornecedores recomendados na sua região
-          {myBranch ? <> — priorizando <b className="text-white/80">{myBranch}</b>.</> : "."}
+          Conecte-se com lojistas e clientes finais na sua região
+          {myBranch ? <> — priorizando lojistas de <b className="text-white/80">{myBranch}</b>.</> : "."}
         </p>
 
         <div
           role="toolbar"
-          aria-label="Filtros de lojistas e fornecedores"
+          aria-label="Filtros de lojistas e clientes finais"
           className="mt-2 flex items-center gap-2 overflow-x-auto scrollbar-none w-full pt-2 pb-1"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
           {([
             { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
             { v: "lojista" as const, label: "🏬 Lojistas", color: "#00FF87" },
-            { v: "fornecedor" as const, label: "🚚 Fornecedores", color: "#A855F7" },
+            { v: "cliente" as const, label: "🙋 Clientes Finais", color: "#22C55E" },
           ]).map((opt) => {
             const active = kindFilter === opt.v;
             return (
@@ -329,7 +339,7 @@ export function RecentStoresCarousel() {
       ) : showEmpty ? (
         <div className="flex flex-col items-center text-center py-10 px-4 border border-dashed border-white/10 rounded-2xl">
           <Store className="w-10 h-10 text-white/40 mb-2" />
-          <p className="text-sm font-bold text-white">Nenhum lojista ou fornecedor por aqui.</p>
+          <p className="text-sm font-bold text-white">Nenhum lojista ou cliente final por aqui.</p>
         </div>
       ) : (
         <div
