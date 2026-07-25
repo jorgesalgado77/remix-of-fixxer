@@ -2,8 +2,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Store, Hammer, Truck, ArrowLeft, CheckCircle2, Loader2, Eye, EyeOff, ShieldCheck, Copy, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import { attachReferralAfterSignup, getStoredReferralCode } from "@/lib/affiliates";
+
 
 export const Route = createFileRoute("/cadastro")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -122,18 +124,21 @@ function RegisterComponent() {
 
       // 3. Verificação de sessão
       if (authData.user) {
-        // Se já tiver sessão, tenta o perfil manual
+        // Persistir dados de contato coletados no cadastro em ambos os clientes
+        const contactPayload: any = {
+          id: authData.user.id,
+          full_name: fullName,
+          role: role,
+          cnpj_cpf: (role === "lojista" ? cnpj : cpf) || null,
+          phone: phone || null,
+          whatsapp: cellphone || null,
+          contact_email: email || null,
+        };
+        try { await supabaseExternal.from('profiles').upsert(contactPayload, { onConflict: 'id' }); } catch (pe) { console.warn("upsert externo:", pe); }
         if (authData.session) {
-          try {
-            await supabase.from('profiles').upsert({
-              id: authData.user.id,
-              full_name: fullName,
-              role: role,
-            });
-          } catch (pe) {
-            console.error("Erro no upsert de perfil:", pe);
-          }
+          try { await supabase.from('profiles').upsert(contactPayload); } catch (pe) { console.error("Erro no upsert de perfil:", pe); }
         }
+
 
         // Attach referral (se veio de link /r/:code)
         try {
@@ -264,11 +269,12 @@ function RegisterComponent() {
               />
               <MaskedInputField 
                 mask="(99) 99999-9999"
-                label="Celular" 
+                label="WhatsApp" 
                 placeholder="(00) 00000-0000" 
                 value={cellphone}
                 onChange={(e) => setCellphone(e.target.value)}
               />
+
             </div>
             
             <InputField 

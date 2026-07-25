@@ -3,18 +3,25 @@ import { useState } from 'react';
 
 // Máscaras simplificadas e seguras
 export const applyPhoneMask = (value: string) => {
-  const v = value.replace(/\D/g, '');
+  const v = value.replace(/\D/g, '').slice(0, 11);
   if (v.length <= 10) {
     // (99) 9999-9999
     if (v.length > 6) return `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6, 10)}`;
     if (v.length > 2) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
     return v ? `(${v}` : "";
-  } else {
-    // (99) 99999-9999
-    const limited = v.slice(0, 11);
-    return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(7, 11)}`;
   }
+  // (99) 99999-9999
+  return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7, 11)}`;
 };
+
+// WhatsApp é sempre celular com 11 dígitos: (99) 99999-9999
+export const applyWhatsappMask = (value: string) => {
+  const v = value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 7) return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7, 11)}`;
+  if (v.length > 2) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
+  return v ? `(${v}` : "";
+};
+
 
 export const applyCnpjCpfMask = (value: string) => {
   let v = value.replace(/\D/g, '');
@@ -36,9 +43,11 @@ export const MaskedInput = ({ value, onChange, mask, placeholder, ...props }: an
     const val = e.target.value;
     let masked = val;
     if (mask === 'phone') masked = applyPhoneMask(val);
+    else if (mask === 'whatsapp') masked = applyWhatsappMask(val);
     else if (mask === 'cep') masked = applyCepMask(val);
     else masked = applyCnpjCpfMask(val);
     onChange(masked);
   };
-  return <input value={value} onChange={handleChange} placeholder={placeholder} inputMode={mask === 'phone' || mask === 'cep' || mask === 'cnpj' ? 'numeric' : undefined} {...props} />;
+  return <input value={value} onChange={handleChange} placeholder={placeholder} inputMode={mask === 'phone' || mask === 'whatsapp' || mask === 'cep' || mask === 'cnpj' ? 'numeric' : undefined} {...props} />;
 };
+
