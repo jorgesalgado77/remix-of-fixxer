@@ -43,9 +43,11 @@ export const MaskedInput = ({ value, onChange, mask, placeholder, ...props }: an
     const val = e.target.value;
     let masked = val;
     if (mask === 'phone') masked = applyPhoneMask(val);
+    else if (mask === 'whatsapp') masked = applyWhatsappMask(val);
     else if (mask === 'cep') masked = applyCepMask(val);
     else masked = applyCnpjCpfMask(val);
     onChange(masked);
   };
-  return <input value={value} onChange={handleChange} placeholder={placeholder} inputMode={mask === 'phone' || mask === 'cep' || mask === 'cnpj' ? 'numeric' : undefined} {...props} />;
+  return <input value={value} onChange={handleChange} placeholder={placeholder} inputMode={mask === 'phone' || mask === 'whatsapp' || mask === 'cep' || mask === 'cnpj' ? 'numeric' : undefined} {...props} />;
 };
+
