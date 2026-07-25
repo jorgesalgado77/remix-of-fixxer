@@ -1256,6 +1256,44 @@ function ProfilePage() {
               {profile?.role === 'prestador' && (
                 <div className="pt-8 space-y-6">
 
+                  {/* ACEITA TRABALHOS COMO */}
+                  <div className="pt-6 space-y-3 border-t border-white/5">
+                    <h4 className="text-sm font-black uppercase tracking-tighter text-white">💼 Aceita trabalhos como</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Selecione todos os formatos de contratação que você aceita. Aparecerá no seu perfil público.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {['Contratos FreeLancer MEI', 'Contratos Fixos MEI', 'Contratação CLT', 'Serviços Individuais'].map((mode) => {
+                        const list: string[] = Array.isArray(profile?.work_modes) ? profile.work_modes : [];
+                        const active = list.some((m) => m.toLowerCase() === mode.toLowerCase());
+                        return (
+                          <label
+                            key={mode}
+                            className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${
+                              active
+                                ? 'bg-primary/15 border-primary/60'
+                                : 'bg-white/5 border-white/10 hover:border-primary/40'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={active}
+                              onChange={() => {
+                                const next = active
+                                  ? list.filter((m) => m.toLowerCase() !== mode.toLowerCase())
+                                  : [...list, mode];
+                                setProfile({ ...profile, work_modes: next });
+                              }}
+                              className="w-5 h-5 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214] rounded"
+                              aria-label={`Aceita ${mode}`}
+                            />
+                            <span className="text-xs font-bold flex-1">{mode}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* OFERECE */}
                   <div className="pt-6 space-y-4 border-t border-white/5">
                     <OfferingsPicker
