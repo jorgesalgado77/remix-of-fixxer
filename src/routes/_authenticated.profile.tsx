@@ -32,6 +32,7 @@ import { ActivityBranchSelector } from "@/components/ActivityBranchSelector";
 import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { PreferredServicePicker } from "@/components/PreferredServicePicker";
 import { OfferingsPicker } from "@/components/OfferingsPicker";
+import { SpecialtiesEditor, type Specialty } from "@/components/SpecialtiesEditor";
 import { ALLOWED_RADII_KM, isAllowedRadius, BIO_MAX_LENGTH } from "@/lib/branch-search";
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
@@ -1585,6 +1586,16 @@ function ProfilePage() {
                     accent={theme.hex}
                     planId={(String(profile?.plan_id || 'free').toLowerCase() as any)}
                   />
+
+                  {/* ESPECIALIDADES */}
+                  <div className="pt-8 border-t border-white/5">
+                    <SpecialtiesEditor
+                      value={Array.isArray(profile?.specialties) ? profile.specialties : []}
+                      onChange={(next: Specialty[]) => setProfile({ ...profile, specialties: next })}
+                      planId={(String(profile?.plan_id || 'free').toLowerCase() as any)}
+                      userId={profile?.id}
+                    />
+                  </div>
 
                 </div>
               )}

@@ -74,7 +74,7 @@ export const DEFAULT_MONETIZATION: MonetizationConfig = {
     { key: "reply_review",         label: "Responder Avaliação",                      coins: 10,  enabled: true },
     { key: "extra_photo_session",  label: "Sessão de Foto Extra",                     coins: 15,  enabled: true },
     { key: "extra_photo",          label: "Foto Extra na Galeria/Showroom",           coins: 5,   enabled: true },
-    { key: "extra_specialty",      label: "Especialidade Extra",                      coins: 10,  enabled: true },
+    { key: "extra_specialty",      label: "Especialidade Extra",                      coins: 15,  enabled: true },
     { key: "extra_video",          label: "Vídeo Extra",                              coins: 10,  enabled: true },
     { key: "cnpj_validation",      label: "Validação de CNPJ",                        coins: 50,  enabled: true },
     { key: "badge_bronze",         label: "Selo de Verificação Bronze",               coins: 30,  enabled: true },
