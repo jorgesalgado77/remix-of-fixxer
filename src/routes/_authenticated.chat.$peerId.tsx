@@ -24,7 +24,10 @@ import {
   MoreVertical,
   Ban,
   FileDown,
+  Settings,
 } from "lucide-react";
+import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
+
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -56,6 +59,9 @@ import {
   sendWithRetry,
   validateChatIdentities,
 } from "@/lib/chat-send";
+import { startGlobalPresence, subscribeGlobalPresence, isPeerOnline } from "@/lib/chat-presence";
+import { playIncomingMessageSound } from "@/lib/chat-sound";
+
 
 function roleToCategory(role: string | null | undefined): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -248,6 +254,8 @@ function ConversationPage() {
   // Presença + typing
   const [peerOnline, setPeerOnline] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   const presenceRef = useRef<any>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSentRef = useRef<number>(0);
@@ -391,6 +399,10 @@ function ConversationPage() {
         return;
       }
       setUserId(uid);
+      startGlobalPresence(uid);
+      if (isPeerOnline(peerId)) setPeerOnline(true);
+
+
 
       // === MODO MOCK (peerId "mock-*") ===
       if (isMockPeerId(peerId)) {
@@ -516,8 +528,14 @@ function ConversationPage() {
               } else {
                 idSetRef.current.add(m.id);
                 setMessages((prev) => [...prev, m]);
+                // Som de nova mensagem recebida (só para incoming novo)
+                const incoming = m.recipient_id === uid && m.sender_id !== uid;
+                if (incoming && !isConversationMuted(uid, peerId)) {
+                  try { playIncomingMessageSound(); } catch {}
+                }
               }
               if (m.recipient_id === uid && payload?.eventType !== "UPDATE") markIncomingRead(uid);
+
             },
           )
           .subscribe();
@@ -626,6 +644,15 @@ function ConversationPage() {
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
     if (nearBottom) el.scrollTop = el.scrollHeight;
   }, [messages, peerTyping]);
+
+  // Presença global — reflete o status online do peer mesmo antes do canal por-par sincronizar
+  useEffect(() => {
+    const unsub = subscribeGlobalPresence((set) => {
+      if (peerId && set.has(peerId)) setPeerOnline(true);
+    });
+    return () => { unsub(); };
+  }, [peerId]);
+
 
   const loadingOlderRef = useRef(false);
   const loadOlder = async () => {
@@ -1272,6 +1299,14 @@ function ConversationPage() {
             </div>
 
           </div>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="w-9 h-9 shrink-0 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-white"
+            aria-label="Configurações do chat"
+            title="Configurações do chat"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
           <HeaderActionsMenu
             muted={muted}
             archived={archived}
@@ -1282,6 +1317,7 @@ function ConversationPage() {
             onBlock={toggleBlock}
             onExport={exportConversation}
           />
+
 
         </div>
       </header>
@@ -1756,8 +1792,10 @@ function ConversationPage() {
           onClose={() => setScheduleOpen(false)}
         />
       )}
+      <ChatSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
+
 }
 
 function AttachmentBlock({

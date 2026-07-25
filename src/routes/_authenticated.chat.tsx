@@ -15,7 +15,13 @@ import {
   X,
   CheckCheck,
   AlertCircle,
+  Settings,
 } from "lucide-react";
+import { startGlobalPresence, subscribeGlobalPresence } from "@/lib/chat-presence";
+import { playIncomingMessageSound } from "@/lib/chat-sound";
+import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
+import { isConversationMuted } from "@/lib/chat-preferences";
+
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -197,6 +203,9 @@ function ChatInboxPage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [prefsVersion, setPrefsVersion] = useState(0);
   const [typingByPeer, setTypingByPeer] = useState<Record<string, number>>({});
+  const [onlineSet, setOnlineSet] = useState<Set<string>>(() => new Set());
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
 
   const idSetRef = useRef<Set<string>>(new Set());
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -302,12 +311,14 @@ function ChatInboxPage() {
       await hydrateChatPreferences(uid);
       await loadFirstPage(uid);
       await markAllAsRead(uid);
+      startGlobalPresence(uid);
 
       try {
         const channelName = `chat-inbox-${Math.random().toString(36).slice(2)}`;
         channel = supabaseExternal
           .channel(channelName)
           .on(
+
             "postgres_changes" as any,
             { event: "*", schema: "public", table: "messages" },
             async (payload: any) => {
@@ -315,12 +326,21 @@ function ChatInboxPage() {
               if (m && !idSetRef.current.has(m.id)) {
                 idSetRef.current.add(m.id);
                 setMessages((prev) => [m, ...prev]);
+                // Toca som apenas para mensagens novas recebidas por mim, se a
+                // conversa não estiver silenciada individualmente e a página
+                // estiver visível (evita spam quando aba oculta).
+                const incoming = m.recipient_id === uid && m.sender_id !== uid;
+                const isHidden = typeof document !== "undefined" && document.visibilityState === "hidden";
+                if (incoming && !isHidden && !isConversationMuted(uid, m.sender_id)) {
+                  try { playIncomingMessageSound(); } catch {}
+                }
               } else {
                 // atualização (read flag etc.) — refaz primeira página
                 await loadFirstPage(uid);
               }
               await markAllAsRead(uid);
             },
+
           )
           .subscribe();
       } catch {}
@@ -504,6 +524,14 @@ function ChatInboxPage() {
       if (expire) clearInterval(expire);
     };
   }, [userId]);
+
+  // Presença global: mantém um Set com todos os UIDs online no chat.
+  useEffect(() => {
+    const unsub = subscribeGlobalPresence((set) => setOnlineSet(set));
+    return () => { unsub(); };
+  }, []);
+
+
 
 
 
@@ -781,6 +809,15 @@ function ChatInboxPage() {
             <Archive className="w-3.5 h-3.5" />
             {showArchived ? "Ativas" : `Arquivadas${archivedCount ? ` · ${archivedCount}` : ""}`}
           </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setSettingsOpen(true); }}
+            className="w-9 h-9 rounded-xl border bg-white/5 border-white/10 text-muted-foreground hover:text-white flex items-center justify-center"
+            aria-label="Configurações do chat"
+            title="Configurações do chat"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
         </div>
 
         <div className="relative mb-2">
@@ -865,11 +902,19 @@ function ChatInboxPage() {
                           </span>
                         </span>
                       )}
+                      {onlineSet.has(c.peerId) && (
+                        <span
+                          className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-black"
+                          aria-label="Online agora"
+                          title="Online agora"
+                        />
+                      )}
                       {c.muted && (
                         <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-black border border-white/20 flex items-center justify-center">
                           <BellOff className="w-3 h-3 text-muted-foreground" />
                         </span>
                       )}
+
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
@@ -1000,6 +1045,8 @@ function ChatInboxPage() {
           </>
         )}
       </div>
+      <ChatSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
+
 }
