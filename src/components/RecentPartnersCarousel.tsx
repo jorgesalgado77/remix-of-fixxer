@@ -124,12 +124,12 @@ const KIND_META: Record<PartnerKind, { emoji: string; label: string; color: stri
 };
 
 const FALLBACK_PARTNERS: PartnerCard[] = [
-  { id: "mock-jorge-salgado", full_name: "Jorge Salgado", avatar_url: null, role: "prestador", activity_branch: "Conferente Técnico", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
-  { id: "mock-carlos-silva", full_name: "Carlos Silva", avatar_url: null, role: "prestador", activity_branch: "Montador de Móveis", city: "Sorocaba", uf: "SP", rating: 4.9, created_at: null, _kind: "prestador" },
-  { id: "mock-mdf-cia", full_name: "Mdf & Cia Atacado", avatar_url: null, role: "fornecedor", activity_branch: "Insumos e Ferragens", city: "Sorocaba", uf: "SP", rating: 4.8, created_at: null, _kind: "fornecedor" },
-  { id: "mock-ana-paula", full_name: "Ana Paula", avatar_url: null, role: "prestador", activity_branch: "Designer de Interiores", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
-  { id: "mock-ferragens-real", full_name: "Ferragens Real", avatar_url: null, role: "fornecedor", activity_branch: "Ferragens B2B", city: "Osasco", uf: "SP", rating: 4.9, created_at: null, _kind: "fornecedor" },
-  { id: "mock-rodrigo-marques", full_name: "Rodrigo Marques", avatar_url: null, role: "prestador", activity_branch: "Marcenaria Fina", city: "Campinas", uf: "SP", rating: 4.7, created_at: null, _kind: "prestador" },
+  { id: "mock-jorge-salgado", full_name: "Jorge Salgado", avatar_url: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&auto=format&fit=crop&q=70", role: "prestador", activity_branch: "Conferente Técnico", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
+  { id: "mock-carlos-silva", full_name: "Carlos Silva", avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=70", role: "prestador", activity_branch: "Montador de Móveis", city: "Sorocaba", uf: "SP", rating: 4.9, created_at: null, _kind: "prestador" },
+  { id: "mock-mdf-cia", full_name: "Mdf & Cia Atacado", avatar_url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&auto=format&fit=crop&q=70", role: "fornecedor", activity_branch: "Insumos e Ferragens", city: "Sorocaba", uf: "SP", rating: 4.8, created_at: null, _kind: "fornecedor" },
+  { id: "mock-ana-paula", full_name: "Ana Paula", avatar_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=70", role: "prestador", activity_branch: "Designer de Interiores", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
+  { id: "mock-ferragens-real", full_name: "Ferragens Real", avatar_url: "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?w=400&auto=format&fit=crop&q=70", role: "fornecedor", activity_branch: "Ferragens B2B", city: "Osasco", uf: "SP", rating: 4.9, created_at: null, _kind: "fornecedor" },
+  { id: "mock-rodrigo-marques", full_name: "Rodrigo Marques", avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=70", role: "prestador", activity_branch: "Marcenaria Fina", city: "Campinas", uf: "SP", rating: 4.7, created_at: null, _kind: "prestador" },
 ];
 
 // ------- Cache SWR (localStorage) -------
@@ -289,9 +289,8 @@ export function RecentPartnersCarousel() {
     const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
     const enriched: Enriched[] = base.map((p) => {
       const coords = cityCoords(p.city) ?? null;
-      const dist = (sortMode === "nearby" && userCoords && coords)
-        ? haversineKm(userCoords, coords)
-        : null;
+      // Distância é sempre calculada quando há coords válidas — o card mostra em qualquer modo.
+      const dist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
       return { ...p, _coords: coords, _distanceKm: Number.isFinite(dist as number) ? (dist as number) : null };
     });
 
@@ -589,12 +588,13 @@ export function RecentPartnersCarousel() {
               ? `${city}, ${stateVal}`
               : (city || safeStr(p.location) || safeStr(p.address) || "");
             const branchText = safeStr(p.activity_branch) || safeStr(p.category) || meta.label;
-            // Distância: só quando temos coords válidas do perfil E do usuário, e modo "nearby".
-            const hasGeo = sortMode === "nearby" && !!userCoords && p._coords != null && p._distanceKm != null;
-            const distance = hasGeo
-              ? (p._distanceKm! < 10 ? p._distanceKm!.toFixed(1) : Math.round(p._distanceKm!).toString())
+            // Distância: mostrada sempre que houver coords válidas do usuário E do perfil (qualquer modo).
+            const hasGeo = !!userCoords && p._coords != null && p._distanceKm != null;
+            const distanceKm = hasGeo ? p._distanceKm! : null;
+            const distanceLabel = distanceKm != null
+              ? (distanceKm < 10 ? distanceKm.toFixed(1) : Math.round(distanceKm).toString())
               : null;
-            // Badge removível: modo "nearby" ativo mas perfil sem coordenadas mapeáveis.
+            // Badge removível no topo esquerdo: apenas no modo "nearby" quando o perfil não tem coords mapeáveis.
             const showNoGeoBadge = sortMode === "nearby" && !!userCoords && p._coords == null;
             const label = `Abrir perfil de ${displayName}, ${meta.label}${branchText ? `, ${branchText}` : ""}${location ? `, ${location}` : ""}, avaliação ${rating.toFixed(1)} de 5`;
             return (
@@ -623,9 +623,9 @@ export function RecentPartnersCarousel() {
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     {rating.toFixed(1)}
                   </span>
-                  {distance && (
+                  {distanceLabel && (
                     <span className="absolute top-2 left-2 z-10 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm" aria-hidden="true">
-                      📍 {distance} km
+                      📍 {distanceLabel} km
                     </span>
                   )}
                   {showNoGeoBadge && (
@@ -669,7 +669,11 @@ export function RecentPartnersCarousel() {
                   >
                     {meta.emoji} {branchText}
                   </p>
-                  {location ? (
+                  {distanceLabel && location ? (
+                    <p className="text-[10px] text-emerald-400 font-semibold mt-1 truncate" title={`a ${distanceLabel} km de você • ${location}`}>
+                      📍 a {distanceLabel} km • {location}
+                    </p>
+                  ) : location ? (
                     <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
                       <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
                       <span className="truncate">📍 {location}</span>
