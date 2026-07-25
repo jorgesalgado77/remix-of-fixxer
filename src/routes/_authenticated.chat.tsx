@@ -15,7 +15,13 @@ import {
   X,
   CheckCheck,
   AlertCircle,
+  Settings,
 } from "lucide-react";
+import { startGlobalPresence, subscribeGlobalPresence } from "@/lib/chat-presence";
+import { playIncomingMessageSound } from "@/lib/chat-sound";
+import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
+import { isConversationMuted } from "@/lib/chat-preferences";
+
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
