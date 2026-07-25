@@ -714,8 +714,18 @@ export function LojistaPublicProfilePage() {
                   <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase italic mt-1 flex-wrap">
                     <MapPin className="w-3 h-3 text-primary" />
                     {profile?.city || "Cidade"} / {profile?.state || "UF"}
+                    {distanceLabel && (
+                      <span className="text-primary/90">• {distanceLabel} de você</span>
+                    )}
                     <AvailabilityBadge userId={profile?.user_id ?? null} />
                   </div>
+                  {primaryPosition && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-400/50 text-[11px] font-black uppercase italic text-amber-300">
+                        ★ {primaryPosition}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Reputação */}
