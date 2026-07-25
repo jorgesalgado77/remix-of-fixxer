@@ -24,6 +24,8 @@ interface Props {
   vehicleType?: string | null;
   /** Descrição/caracteristicas do veículo */
   vehicleDescription?: string | null;
+  /** 📦 Especialidades cadastradas em /profile */
+  specialties?: Array<{ id?: string; title?: string; description?: string; featured?: boolean }> | null;
 }
 
 /**
