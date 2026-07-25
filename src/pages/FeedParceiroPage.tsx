@@ -784,6 +784,7 @@ export default function FeedParceiroPage() {
   };
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} accent="#A855F7">
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur">
@@ -1182,6 +1183,7 @@ export default function FeedParceiroPage() {
         onClose={() => setDetailsFor(null)}
       />
     </div>
+    </PullToRefresh>
   );
 }
 
