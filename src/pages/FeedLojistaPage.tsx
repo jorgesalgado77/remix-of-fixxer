@@ -18,6 +18,8 @@ import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
+import { usePostUnlock } from "@/hooks/use-post-unlock";
+import { Lock, Coins, Loader2 } from "lucide-react";
 
 import {
   ArrowLeft,
