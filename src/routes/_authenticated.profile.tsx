@@ -65,12 +65,28 @@ function ProfilePage() {
       ]);
       
       if (profileRes.data) {
-        setProfile(profileRes.data);
-        // Sincroniza raio de atuação salvo para uso como padrão nos feeds
-        if (!profileId && profileRes.data.service_radius_km != null) {
+        let merged: any = profileRes.data;
+        // Recupera rascunho offline (não aplica em perfis públicos de terceiros)
+        if (!profileId) {
           try {
-            const cat = roleToCategory(profileRes.data.role);
-            localStorage.setItem(`fixxer_radius_${cat}`, String(profileRes.data.service_radius_km));
+            const draft = loadDraft(idToLoad);
+            const patch = pickDraftPatch(profileRes.data, draft);
+            if (patch) {
+              merged = { ...profileRes.data, ...patch };
+              toast.info("Rascunho recuperado do dispositivo.", {
+                description: draft?.pending
+                  ? "Você tinha alterações pendentes — clique em Salvar para reenviar."
+                  : "Restauramos suas edições não salvas.",
+              });
+            }
+          } catch { /* noop */ }
+        }
+        setProfile(merged);
+        // Sincroniza raio de atuação salvo para uso como padrão nos feeds
+        if (!profileId && merged.service_radius_km != null) {
+          try {
+            const cat = roleToCategory(merged.role);
+            localStorage.setItem(`fixxer_radius_${cat}`, String(merged.service_radius_km));
           } catch { /* noop */ }
         }
       }
