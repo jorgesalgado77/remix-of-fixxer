@@ -38,6 +38,7 @@ import { PlanBadge } from "@/components/PlanBadge";
 import { LiveProfilePreview } from "@/components/LiveProfilePreview";
 import { AutosaveStatusPill } from "@/components/AutosaveStatusPill";
 import { saveDraft, loadDraft, clearDraft, markPending, pickDraftPatch } from "@/lib/profile-draft";
+import { detectPixKeyType, validatePixKey, PIX_KEY_TYPE_LABELS, type PixKeyType } from "@/lib/pix-key";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
