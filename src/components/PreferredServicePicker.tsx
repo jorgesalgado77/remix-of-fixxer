@@ -34,7 +34,7 @@ function toCsv(arr: string[]): string {
   return arr.filter(Boolean).join("||");
 }
 
-export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(--primary))" }: Props) {
+export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(--primary))", planId = "free" }: Props) {
   const macroLabel: string | undefined = profile?.activity_branch;
 
   const macro = useMemo(() => {
@@ -51,10 +51,13 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
 
   const preferredService: string = profile?.preferred_service || "";
   const roles: string[] = parseCsv(profile?.job_roles);
+  const quota = quotaFor(planId);
+  const overQuota = Math.max(0, roles.length - quota);
 
   const { roles: sharedRoles, addRole } = useJobRoles(preferredService);
   const [newRole, setNewRole] = useState("");
   const [query, setQuery] = useState("");
+  const [charging, setCharging] = useState(false);
 
   const setPreferredService = (label: string) => {
     setProfile({
@@ -65,16 +68,42 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
     });
   };
 
-  const toggleRole = (name: string) => {
+  const chargeExtraIfNeeded = async (nextLen: number): Promise<boolean> => {
+    if (nextLen <= quota) return true;
+    const uid = getCurrentUserId();
+    if (!uid) { toast.error("Faça login para desbloquear cargos extras."); return false; }
+    const balance = getCachedBalance();
+    if (balance < EXTRA_COST) {
+      toast.error(`Saldo insuficiente. Cada cargo extra custa ${EXTRA_COST} moedas.`);
+      return false;
+    }
+    const ok = window.confirm(`Seu plano permite ${quota} cargo(s). Deseja gastar ${EXTRA_COST} moedas por este cargo extra?`);
+    if (!ok) return false;
+    setCharging(true);
+    try {
+      const res = await consumeCoins(uid, EXTRA_COST, "Cargo extra no perfil", "action_consume", {
+        operation: "extra_job_role",
+      });
+      if (!res.ok) { toast.error("Não foi possível debitar as moedas."); return false; }
+      toast.success(`-${EXTRA_COST} moedas • Cargo extra desbloqueado.`);
+      return true;
+    } finally {
+      setCharging(false);
+    }
+  };
+
+  const toggleRole = async (name: string) => {
     const has = roles.includes(name);
     let next: string[];
     if (has) {
       next = roles.filter((r) => r !== name);
     } else {
       if (roles.length >= MAX_ROLES) {
-        toast.warning(`Limite de ${MAX_ROLES} cargos atingido.`);
+        toast.warning(`Limite máximo de ${MAX_ROLES} cargos.`);
         return;
       }
+      const paid = await chargeExtraIfNeeded(roles.length + 1);
+      if (!paid) return;
       next = [...roles, name];
     }
     setProfile({ ...profile, job_roles: toCsv(next) });
@@ -90,15 +119,19 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
     const v = newRole.trim();
     if (!v) return;
     if (roles.length >= MAX_ROLES) {
-      toast.warning(`Limite de ${MAX_ROLES} cargos atingido.`);
+      toast.warning(`Limite máximo de ${MAX_ROLES} cargos.`);
       return;
+    }
+    if (!roles.includes(v)) {
+      const paid = await chargeExtraIfNeeded(roles.length + 1);
+      if (!paid) return;
     }
     await addRole(v);
     if (!roles.includes(v)) {
       setProfile({ ...profile, job_roles: toCsv([...roles, v]) });
     }
     setNewRole("");
-    toast.success(`Cargo "${v}" adicionado à lista compartilhada.`);
+    toast.success(`Cargo "${v}" adicionado.`);
   };
 
   const filteredShared = useMemo(() => {
