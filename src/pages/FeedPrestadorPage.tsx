@@ -1,7 +1,9 @@
 import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FeedCardSkeletonList } from "@/components/FeedCardSkeleton";
+import { thumbSrc } from "@/lib/feed-thumb";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
@@ -443,6 +445,7 @@ const FILTERS: { key: "todas" | Subcategory; label: string; icon: React.ReactNod
 ];
 
 const SAVES_STORAGE_KEY = "fixxer_prestador_saves_v1";
+const PAGE_SIZE = 10;
 
 // =============================================================================
 // COMPONENTES AUXILIARES
@@ -731,7 +734,7 @@ function Lightbox({ job, index, onClose }: { job: JobPost; index: number; onClos
 // CARD DE O.S.
 // =============================================================================
 
-function JobCard({
+function JobCardImpl({
   job,
   saved,
   applied,
@@ -878,9 +881,10 @@ function JobCard({
                 {item.type === "video" ? (
                   <>
                     <img
-                      src={item.poster || item.url}
+                      src={thumbSrc(item.poster || item.url, 640)}
                       alt=""
                       loading="lazy"
+                      decoding="async"
                       className={`w-full h-full object-cover opacity-80 group-hover/media:opacity-100 transition-opacity ${
                         locked ? "blur-md" : ""
                       }`}
@@ -893,9 +897,10 @@ function JobCard({
                   </>
                 ) : (
                   <img
-                    src={item.url}
+                    src={thumbSrc(item.url, 640)}
                     alt=""
                     loading="lazy"
+                    decoding="async"
                     className={`w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-500 ${
                       locked ? "blur-md" : ""
                     }`}
@@ -992,6 +997,8 @@ function JobCard({
     </article>
   );
 }
+
+const JobCard = memo(JobCardImpl);
 
 // =============================================================================
 // PÁGINA PRINCIPAL
@@ -1106,7 +1113,7 @@ export default function FeedPrestadorPage() {
   }, [debouncedSearch, filter, statusFilter]);
 
   // Paginação por scroll infinito
-  const paged = useMemo(() => filtered.slice(0, page * 4), [filtered, page]);
+  const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
   const hasMore = paged.length < filtered.length;
 
   useEffect(() => {
@@ -1310,19 +1317,18 @@ export default function FeedPrestadorPage() {
 
         {/* Sentinel de scroll infinito */}
         {!searching && filtered.length > 0 && (
-          <div ref={sentinelRef} className="py-4 text-center">
-            {loadingMore && (
-              <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                <div className="w-4 h-4 border-2 border-[#FF9F0A] border-t-transparent rounded-full animate-spin" />
-                Carregando mais vagas...
+          <>
+            {hasMore ? (
+              <>
+                <div ref={sentinelRef} aria-hidden className="h-1 w-full" />
+                <FeedCardSkeletonList count={2} accent="rgba(255,159,10,0.25)" />
+              </>
+            ) : (
+              <div className="py-4 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                — Fim do feed —
               </div>
             )}
-            {!hasMore && !loadingMore && (
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                — Fim do feed —
-              </span>
-            )}
-          </div>
+          </>
         )}
       </main>
 
