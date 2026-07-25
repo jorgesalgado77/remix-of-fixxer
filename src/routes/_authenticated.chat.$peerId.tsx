@@ -1080,9 +1080,17 @@ function ConversationPage() {
                         />
                       )}
                       {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
-                      {m._pending && uploading && m._draftFile && (
-                        <div className="mt-2 w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
-                          <div className="h-full bg-white/80 transition-all" style={{ width: `${uploadPct}%` }} />
+                      {m._pending && m._uploading && m._draftFile && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 bg-black/30 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="h-full bg-white/80 transition-all"
+                              style={{ width: `${m._uploadPct ?? 0}%` }}
+                            />
+                          </div>
+                          <span className="text-[9px] font-bold tabular-nums opacity-80">
+                            {Math.round(m._uploadPct ?? 0)}%
+                          </span>
                         </div>
                       )}
                       <p className={`text-[9px] mt-1 flex items-center gap-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
