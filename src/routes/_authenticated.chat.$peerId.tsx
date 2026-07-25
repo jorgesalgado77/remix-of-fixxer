@@ -232,6 +232,7 @@ function ConversationPage() {
           setPeerAvatar(mock.peerAvatar);
           setPeerRole(mock.peerRole);
           setPeerOnline(!!mock.online);
+          setLinkedAd(mock.linkedAd ?? null);
           const mockRows: MessageRow[] = mock.messages.map((m) => ({
             id: `${peerId}-${m.id}`,
             sender_id: m.fromMe ? uid : peerId,
