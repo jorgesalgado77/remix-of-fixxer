@@ -25,6 +25,7 @@ import { toast } from "sonner";
 
 import { ReviewModal } from "@/components/ReviewModal";
 import { EscrowBadge } from "@/components/EscrowBadge";
+import { PanelActions } from "@/components/PanelActions";
 
 
 export const Route = createFileRoute("/_authenticated/prestador")({
