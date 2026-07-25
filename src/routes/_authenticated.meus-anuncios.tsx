@@ -271,8 +271,6 @@ function MeusAnunciosPage() {
 
         {loading ? (
           <SkeletonList />
-        ) : false ? (
-          null
         ) : filtered.length === 0 ? (
           <EmptyPanel hasQuery={!!query} onCreate={() => setCreating(true)} />
         ) : (
