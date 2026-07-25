@@ -56,6 +56,9 @@ import {
   sendWithRetry,
   validateChatIdentities,
 } from "@/lib/chat-send";
+import { startGlobalPresence, subscribeGlobalPresence, isPeerOnline } from "@/lib/chat-presence";
+import { playIncomingMessageSound } from "@/lib/chat-sound";
+
 
 function roleToCategory(role: string | null | undefined): CategoryKey {
   const r = (role || "").toLowerCase();
