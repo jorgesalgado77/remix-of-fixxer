@@ -141,26 +141,61 @@ export function RecentStoresCarousel() {
 
   const fetchList = useCallback(async () => {
     try {
+      // 1) IDs autoritativos de lojistas via store_profiles (fonte primária).
+      const storeIds = new Set<string>();
+      try {
+        const { data: stores } = await supabaseExternal
+          .from("store_profiles")
+          .select("user_id, id")
+          .limit(200);
+        for (const s of (stores as any[]) ?? []) {
+          const uid = s?.user_id || s?.id;
+          if (uid) storeIds.add(String(uid));
+        }
+      } catch { /* tabela pode não existir — segue */ }
+
+      // 2) IDs autoritativos de fornecedores/parceiros.
+      const supplierIds = new Set<string>();
+      try {
+        const { data: sup } = await supabaseExternal
+          .from("supplier_profiles")
+          .select("user_id, id")
+          .limit(200);
+        for (const s of (sup as any[]) ?? []) {
+          const uid = s?.user_id || s?.id;
+          if (uid) supplierIds.add(String(uid));
+        }
+      } catch { /* tabela opcional */ }
+
+      // 3) Perfis reais — sem exigir role preenchida (real users podem ter role="user").
       const { data, error } = await supabaseExternal
         .from("profiles")
         .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, rating, created_at, lat, lng")
-        .not("role", "is", null)
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
+
       const rows: Card[] = ((data as unknown as Row[]) ?? [])
         .map((r) => {
-          const kind = classify(r.role);
+          let kind: Kind | null = null;
+          if (storeIds.has(String(r.id))) kind = "lojista";
+          else if (supplierIds.has(String(r.id))) kind = "fornecedor";
+          else kind = classify(r.role);
           if (!kind) return null;
           return { ...r, _kind: kind, _branch: mainBranchOf(r.business_category, r.custom_branch) } as Card;
         })
         .filter((x): x is Card => !!x)
         .slice(0, 60);
+
       if (rows.length > 0) {
-        setItems(rows);
-        writeCache(rows);
+        // Prioriza usuários reais; concatena mocks apenas se a lista real for muito curta.
+        const merged = rows.length < 2
+          ? [...rows, ...FALLBACK.filter((f) => !rows.some((r) => r.id === f.id))]
+          : rows;
+        setItems(merged);
+        writeCache(merged);
       } else {
-        setItems((prev) => (prev.length > 0 ? prev : FALLBACK));
+        setItems(FALLBACK);
       }
       setErrorMsg(null);
     } catch (err) {
