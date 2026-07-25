@@ -863,10 +863,11 @@ function ConversationPage() {
     setMessages((prev) =>
       prev.map((x) =>
         x._clientId === clientId || x.id === clientId
-          ? { ...x, _pending: true, _failed: false, _uploading: !!m._draftFile, _uploadPct: 0 }
+          ? { ...x, _pending: true, _failed: false, _uploading: !!m._draftFile, _uploadPct: 0, _error: undefined }
           : x,
       ),
     );
+
     try {
       window.dispatchEvent(
         new CustomEvent("fixxer:message-sending", {
