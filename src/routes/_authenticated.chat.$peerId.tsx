@@ -1277,7 +1277,11 @@ function ConversationPage() {
         )}
       </div>
 
-      <div className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3">
+      <div
+        className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+      >
+
         <div className="max-w-3xl mx-auto">
           {pendingFiles.length > 0 && (
             <div className="mb-2 space-y-1.5">
