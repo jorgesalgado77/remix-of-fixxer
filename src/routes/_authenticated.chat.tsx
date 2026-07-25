@@ -525,6 +525,14 @@ function ChatInboxPage() {
     };
   }, [userId]);
 
+  // Presença global: mantém um Set com todos os UIDs online no chat.
+  useEffect(() => {
+    const unsub = subscribeGlobalPresence((set) => setOnlineSet(set));
+    return () => { unsub(); };
+  }, []);
+
+
+
 
 
   // Infinite scroll via IntersectionObserver
