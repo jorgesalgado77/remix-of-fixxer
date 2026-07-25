@@ -100,6 +100,7 @@ type MessageRow = {
   // Cliente apenas:
   _pending?: boolean;
   _failed?: boolean;
+  _delivered?: boolean;
   _clientId?: string;
   _draftText?: string;
   _draftFile?: File | null;
