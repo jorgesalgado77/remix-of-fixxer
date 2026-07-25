@@ -271,6 +271,27 @@ export function LojistaPublicProfilePage() {
     };
   }, [profile?.user_id, storeId]);
 
+  // Refetch imediato ao receber sinal de perfil atualizado (dono acabou de salvar)
+  useEffect(() => {
+    const id = profile?.user_id;
+    if (!id) return;
+    const handler = async (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id?: string } | undefined;
+      if (detail?.id && detail.id !== id) return;
+      try {
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("*")
+          .eq("id", id)
+          .single();
+        if (data) setProfile((prev) => ({ ...(prev ?? {}), ...(data as StoreProfile) }));
+      } catch { /* noop */ }
+    };
+    window.addEventListener("fixxer:profile-updated", handler as EventListener);
+    return () => window.removeEventListener("fixxer:profile-updated", handler as EventListener);
+  }, [profile?.user_id]);
+
+
   // Hidrata preferências de galeria por lojista
   useEffect(() => {
     try {
