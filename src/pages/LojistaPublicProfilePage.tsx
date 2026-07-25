@@ -255,23 +255,41 @@ export function LojistaPublicProfilePage() {
           return;
         }
 
-        // Tenta primeiro por user_id (id de autenticação); se não achar, tenta pelo id da linha (PK).
-        // Isso garante compatibilidade com URLs antigas que usavam o PK da tabela.
+        // Fonte primária: tabela `profiles` (onde o próprio dono salva pelo editor).
+        // Compatibilidade: se não achar, tenta a legado `store_profiles`.
         let found: any = null;
+        let storeFallback: any = null;
         if (storeId) {
-          const byUser = await supabaseExternal
-            .from("store_profiles")
+          const byProfileId = await supabaseExternal
+            .from("profiles")
             .select("*")
-            .eq("user_id", storeId)
+            .eq("id", storeId)
             .maybeSingle();
-          if (byUser.data) found = byUser.data;
+          if (byProfileId.data) found = mapProfileRowToStore(byProfileId.data);
+
           if (!found) {
-            const byId = await supabaseExternal
+            const byUser = await supabaseExternal
               .from("store_profiles")
               .select("*")
-              .eq("id", storeId)
+              .eq("user_id", storeId)
               .maybeSingle();
-            if (byId.data) found = byId.data;
+            if (byUser.data) storeFallback = byUser.data;
+            if (!storeFallback) {
+              const byId = await supabaseExternal
+                .from("store_profiles")
+                .select("*")
+                .eq("id", storeId)
+                .maybeSingle();
+              if (byId.data) storeFallback = byId.data;
+            }
+          } else {
+            // Complementa com dados legados (photo_sections, specialties, etc.)
+            const byUser = await supabaseExternal
+              .from("store_profiles")
+              .select("*")
+              .eq("user_id", storeId)
+              .maybeSingle();
+            if (byUser.data) storeFallback = byUser.data;
           }
         } else {
           const anyRow = await supabaseExternal
@@ -279,10 +297,22 @@ export function LojistaPublicProfilePage() {
             .select("*")
             .limit(1)
             .maybeSingle();
-          if (anyRow.data) found = anyRow.data;
+          if (anyRow.data) storeFallback = anyRow.data;
         }
-        if (found) setProfile(found as StoreProfile);
+
+        const merged: any = { ...(storeFallback || {}), ...(found || {}) };
+        // Não deixe arrays vazios do editor sobrescreverem arrays legados populados.
+        (["gallery_urls", "video_urls", "document_urls"] as const).forEach((k) => {
+          const primary = (found as any)?.[k];
+          const legacy = (storeFallback as any)?.[k];
+          if ((!primary || (Array.isArray(primary) && primary.length === 0)) && legacy?.length) {
+            merged[k] = legacy;
+          }
+        });
+
+        if (Object.keys(merged).length > 0) setProfile(merged as StoreProfile);
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
+
 
         // O.S. pendentes deste lojista — usa o user_id resolvido do perfil (ou storeId como fallback)
         const lojistaKey = (found as any)?.user_id || storeId;
