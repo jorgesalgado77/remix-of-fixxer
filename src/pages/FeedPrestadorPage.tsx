@@ -1301,6 +1301,10 @@ export default function FeedPrestadorPage() {
               onChat={openChatWith}
               onLightbox={(job, index) => setLightbox({ job, index })}
               onOpenDetails={setDetailsFor}
+              locked={job.contractor.id !== postUnlock.userId && !postUnlock.isUnlocked(job.id)}
+              unlockCost={postUnlock.cost}
+              unlockBusy={postUnlock.busy === job.id}
+              onUnlock={() => postUnlock.unlock(job.id)}
             />
           ))}
 
