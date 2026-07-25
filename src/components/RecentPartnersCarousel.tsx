@@ -595,11 +595,17 @@ export function RecentPartnersCarousel() {
               : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=70";
             const city = safeStr(p.city);
             const stateVal = normalizeUf(p.uf) || normalizeUf(p.state);
+            // Formato canônico "Cidade/UF" com barra. Fallbacks:
+            // - só cidade → "Cidade"
+            // - só UF     → "UF"
+            // - nenhum    → tenta location/address como último recurso; senão "".
             const location = (city && stateVal)
-              ? `${city}, ${stateVal}`
-              : (city || safeStr(p.location) || safeStr(p.address) || "");
+              ? `${city}/${stateVal}`
+              : (city || stateVal || safeStr(p.location) || safeStr(p.address) || "");
             const branchText = safeStr(p.activity_branch) || safeStr(p.category) || meta.label;
-            // Distância: mostrada sempre que houver coords válidas do usuário E do perfil (qualquer modo).
+            // Distância só é mostrada quando temos coords válidas DOS DOIS lados.
+            // Se o usuário não tiver coords (permissão negada / sem geo), NUNCA renderizamos
+            // valores estimados — o card cai no formato apenas-localização abaixo.
             const hasGeo = !!userCoords && p._coords != null && p._distanceKm != null;
             const distanceKm = hasGeo ? p._distanceKm! : null;
             const distanceLabel = distanceKm != null
