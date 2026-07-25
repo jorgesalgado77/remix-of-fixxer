@@ -1513,6 +1513,9 @@ function ProfilePage() {
                       return (
                       <div
                         key={i}
+                        role="listitem"
+                        tabIndex={0}
+                        aria-label={`Documento ${i + 1} de ${profile?.documents?.filter((f: any) => f.type === 'document').length || 0}: ${doc.name}. Use setas para reordenar, Enter para pré-visualizar.`}
                         draggable
                         onDragStart={() => { dragRef.current = { list: 'doc', index: i }; }}
                         onDragOver={(ev) => ev.preventDefault()}
@@ -1522,8 +1525,14 @@ function ProfilePage() {
                           if (src && src.list === 'doc') reorderMedia('doc', src.index, i);
                           dragRef.current = null;
                         }}
-                        className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 transition-all cursor-grab active:cursor-grabbing"
+                        onKeyDown={(ev) => {
+                          const total = profile?.documents?.filter((f: any) => f.type === 'document').length || 0;
+                          if (ev.key === 'Enter') { ev.preventDefault(); setPreview({ open: true, url: doc.url, name: doc.name, kind }); return; }
+                          handleReorderKeyDown(ev, 'doc', i, total);
+                        }}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all cursor-grab active:cursor-grabbing"
                       >
+
                         <div className="flex items-center gap-3 overflow-hidden">
                           <button
                             type="button"
