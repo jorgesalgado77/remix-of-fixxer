@@ -194,31 +194,41 @@ function JobCard({ id, client, category, value, status }: any) {
 
 /* ==================== BOTÃO DE DISPONIBILIDADE ==================== */
 function AvailabilityToggle() {
-  const LS_KEY = "fixxer_availability_v1";
   const [available, setAvailable] = useState<boolean>(true);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    try {
-      const v = localStorage.getItem(LS_KEY);
-      if (v !== null) setAvailable(v === "1");
-    } catch { /* ignore */ }
+    let cancelled = false;
+    import("@/lib/availability").then(({ getMyAvailability }) => {
+      getMyAvailability().then((v) => { if (!cancelled) setAvailable(v); });
+    });
+    return () => { cancelled = true; };
   }, []);
 
-  const toggle = () => {
+  const toggle = async () => {
+    if (busy) return;
     const next = !available;
     setAvailable(next);
-    try { localStorage.setItem(LS_KEY, next ? "1" : "0"); } catch { /* ignore */ }
+    setBusy(true);
     try {
-      window.dispatchEvent(new CustomEvent("fixxer:availability-changed", { detail: { available: next } }));
-    } catch { /* ignore */ }
-    if (next) {
-      toast.success("Você está DISPONÍVEL na plataforma.", {
-        description: "Clientes podem localizar seu perfil e enviar mensagens agora.",
-      });
-    } else {
-      toast("Você está INDISPONÍVEL.", {
-        description: "Perfil pausado — nenhuma nova solicitação chegará até você reativar.",
-      });
+      const { setMyAvailability } = await import("@/lib/availability");
+      await setMyAvailability(next);
+      try {
+        window.dispatchEvent(new CustomEvent("fixxer:availability-changed", { detail: { available: next } }));
+      } catch { /* ignore */ }
+      if (next) {
+        toast.success("Você está DISPONÍVEL na plataforma.", {
+          description: "Clientes podem localizar seu perfil e enviar mensagens agora.",
+        });
+      } else {
+        toast("Você está INDISPONÍVEL.", {
+          description: "Perfil pausado — nenhuma nova solicitação chegará até você reativar.",
+        });
+      }
+    } catch {
+      toast.error("Não foi possível salvar sua disponibilidade agora.");
+    } finally {
+      setBusy(false);
     }
   };
 

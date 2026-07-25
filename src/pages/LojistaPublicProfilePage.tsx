@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 
 
 
@@ -581,9 +582,10 @@ export function LojistaPublicProfilePage() {
                   <h1 className="text-xl md:text-3xl font-black uppercase italic tracking-tight">
                     {profile?.company_name || "Lojista FIXXER"}
                   </h1>
-                  <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase italic mt-1">
+                  <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase italic mt-1 flex-wrap">
                     <MapPin className="w-3 h-3 text-primary" />
                     {profile?.city || "Cidade"} / {profile?.state || "UF"}
+                    <AvailabilityBadge userId={profile?.user_id ?? null} />
                   </div>
                 </div>
 

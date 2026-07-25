@@ -4,6 +4,7 @@ import { Star, MapPin, UserCircle2, RefreshCw, UsersRound, AlertTriangle, ArrowU
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
+import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 
 /**
  * Seção "Prestadores e Parceiros Recentes" — carrossel horizontal.
@@ -707,6 +708,9 @@ export function RecentPartnersCarousel() {
                     </p>
                   ) : null}
 
+                  <div className="mt-2">
+                    <AvailabilityBadge userId={p.id} />
+                  </div>
                 </div>
               </button>
             );

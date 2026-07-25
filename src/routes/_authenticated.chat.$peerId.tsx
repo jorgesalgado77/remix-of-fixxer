@@ -141,6 +141,29 @@ function ConversationPage() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [linkedAd, setLinkedAd] = useState<MockLinkedAd | null>(null);
   const [guardBlocked, setGuardBlocked] = useState(false);
+  const [peerAvailable, setPeerAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!peerId || (typeof peerId === "string" && peerId.startsWith("mock-"))) return;
+    (async () => {
+      try {
+        const { guardContactAttempt } = await import("@/lib/availability");
+        const res = await guardContactAttempt(peerId);
+        if (cancelled) return;
+        setPeerAvailable(res.allowed);
+        if (!res.allowed) {
+          try {
+            const { toast } = await import("sonner");
+            toast.warning("Usuário indisponível", {
+              description: "Ele foi avisado da sua tentativa e você será notificado quando voltar.",
+            });
+          } catch { /* ignore */ }
+        }
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, [peerId]);
 
   // Anexos + progresso (multi-arquivo)
   const [pendingFiles, setPendingFiles] = useState<File[]>(() => getDraftFiles(peerId));
@@ -1293,6 +1316,14 @@ function ConversationPage() {
                   );
                 })}
               </div>
+            </div>
+          )}
+          {peerAvailable === false && (
+            <div className="mb-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-[11px] font-bold leading-snug">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                Este usuário está <strong>indisponível</strong> no momento. Sua tentativa foi registrada — ele será avisado ao voltar.
+              </span>
             </div>
           )}
           {guardBlocked && (

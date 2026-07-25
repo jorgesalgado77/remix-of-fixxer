@@ -8,6 +8,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useUserCoords, cityCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/favoritos")({
   head: () => ({
@@ -192,6 +193,11 @@ function FavoritosPage() {
   const userCoords = useUserCoords();
   const [tab, setTab] = useState<TabKey>("perfis");
   const [kindFilter, setKindFilter] = useState<KindFilter>("todos");
+  const [pendingRemoval, setPendingRemoval] = useState<
+    | { kind: "profile"; item: FavProfile }
+    | { kind: "ad"; item: FavAd }
+    | null
+  >(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [userResolved, setUserResolved] = useState(false);
@@ -554,7 +560,7 @@ function FavoritosPage() {
                       userCoords={userCoords}
                       onChat={() => openChat(fav)}
                       onView={() => openProfile(fav)}
-                      onRemove={() => removeProfile(fav)}
+                      onRemove={() => setPendingRemoval({ kind: "profile", item: fav })}
                     />
                   ))}
                 </div>
@@ -593,7 +599,7 @@ function FavoritosPage() {
                       key={ad.id}
                       ad={ad}
                       userCoords={userCoords}
-                      onRemove={() => removeAd(ad)}
+                      onRemove={() => setPendingRemoval({ kind: "ad", item: ad })}
                       onOpen={() => {
                         if (ad.postId) {
                           navigate({ to: "/feed" as any }).catch(() => { window.location.href = "/feed"; });
@@ -620,6 +626,33 @@ function FavoritosPage() {
           </section>
         )}
       </main>
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        destructive
+        title={
+          pendingRemoval?.kind === "ad"
+            ? "Remover anúncio dos favoritos?"
+            : "Remover perfil dos favoritos?"
+        }
+        description={
+          pendingRemoval?.kind === "ad"
+            ? `“${pendingRemoval.item.title}” não aparecerá mais em Anúncios Salvos.`
+            : pendingRemoval?.kind === "profile"
+              ? `${pendingRemoval.item.name} sairá da sua lista de perfis favoritados.`
+              : undefined
+        }
+        confirmLabel="Sim, remover"
+        cancelLabel="Cancelar"
+        onCancel={() => setPendingRemoval(null)}
+        onConfirm={() => {
+          const p = pendingRemoval;
+          setPendingRemoval(null);
+          if (!p) return;
+          if (p.kind === "profile") removeProfile(p.item);
+          else removeAd(p.item);
+        }}
+      />
     </div>
   );
 }
