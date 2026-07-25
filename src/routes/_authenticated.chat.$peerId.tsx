@@ -805,6 +805,75 @@ function ConversationPage() {
         </button>
       </header>
 
+      {linkedAd && (
+        <div
+          className="sticky top-[64px] z-[9] px-4 py-3 border-b backdrop-blur-xl"
+          style={{
+            background: `linear-gradient(180deg, rgba(${peerTheme.rgb},0.14) 0%, rgba(0,0,0,0.85) 100%)`,
+            borderColor: `rgba(${peerTheme.rgb},0.35)`,
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-[9px] font-black uppercase tracking-widest mb-1"
+                style={{ color: peerTheme.hex }}
+              >
+                📌 {linkedAd.category}
+              </p>
+              <p className="text-sm font-black italic leading-tight mb-1.5 line-clamp-2">
+                {linkedAd.title}
+              </p>
+              <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+                {typeof linkedAd.distanceKm === "number" && (
+                  <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-muted-foreground">
+                    📍 {linkedAd.distanceKm.toFixed(1).replace(".", ",")} km
+                  </span>
+                )}
+                {typeof linkedAd.price === "number" && (
+                  <span
+                    className="px-2 py-0.5 rounded-full border font-black"
+                    style={{
+                      color: peerTheme.hex,
+                      borderColor: `rgba(${peerTheme.rgb},0.5)`,
+                      backgroundColor: `rgba(${peerTheme.rgb},0.12)`,
+                    }}
+                  >
+                    R$ {linkedAd.price.toLocaleString("pt-BR")}
+                  </span>
+                )}
+                {typeof linkedAd.priceMin === "number" && typeof linkedAd.priceMax === "number" && (
+                  <span
+                    className="px-2 py-0.5 rounded-full border font-black"
+                    style={{
+                      color: peerTheme.hex,
+                      borderColor: `rgba(${peerTheme.rgb},0.5)`,
+                      backgroundColor: `rgba(${peerTheme.rgb},0.12)`,
+                    }}
+                  >
+                    R$ {linkedAd.priceMin.toLocaleString("pt-BR")} – R$ {linkedAd.priceMax.toLocaleString("pt-BR")}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setScheduleOpen(true)}
+              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl font-black italic uppercase text-[10px] tracking-widest transition-all hover:scale-[1.03]"
+              style={{
+                backgroundColor: peerTheme.hex,
+                color: "#000",
+                boxShadow: `0 0 18px rgba(${peerTheme.rgb},0.55)`,
+              }}
+              aria-label="Propor agendamento"
+            >
+              <CalendarPlus className="w-4 h-4" />
+              <span className="hidden sm:inline">Propor Agendamento</span>
+              <span className="sm:hidden">Agendar</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         <ChatAppointmentsBanner userId={userId} peerId={peerId} />
         {hasMore && !loading && messages.length > 0 && (
