@@ -38,6 +38,7 @@ import {
 import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
+import { sanitizeContactText, CONTACT_GUARD_WARNING } from "@/lib/contact-guard";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt } from "@/lib/mock-chat";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory, setContextCategoryOverride } from "@/lib/user-category";
