@@ -32,6 +32,9 @@ const CITY_COORDS: Record<string, Coords> = {
   recife: { lat: -8.0476, lng: -34.8770 },
 };
 
+// Cache memoizado por chave de cidade normalizada (evita reprocessar strings a cada render).
+const CITY_LOOKUP_CACHE = new Map<string, Coords | null>();
+
 function normalizeCity(raw?: string | null): string | null {
   if (!raw) return null;
   const first = raw.split(/[\/,-]/)[0]?.trim().toLowerCase();
@@ -41,7 +44,11 @@ function normalizeCity(raw?: string | null): string | null {
 export function cityCoords(city?: string | null): Coords | null {
   const k = normalizeCity(city);
   if (!k) return null;
-  return CITY_COORDS[k] ?? null;
+  const cached = CITY_LOOKUP_CACHE.get(k);
+  if (cached !== undefined) return cached;
+  const resolved = CITY_COORDS[k] ?? null;
+  CITY_LOOKUP_CACHE.set(k, resolved);
+  return resolved;
 }
 
 export function useUserCoords(): Coords | null {
@@ -57,21 +64,27 @@ export function useUserCoords(): Coords | null {
 
   useEffect(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    let cancelled = false;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (cancelled) return;
         const next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setCoords(next);
-        try {
-          window.localStorage.setItem(LS_KEY, JSON.stringify(next));
-        } catch {
-          /* ignore */
-        }
+        // Só atualiza estado se realmente mudou — evita re-renderizações desnecessárias
+        // em componentes que dependem da identidade do objeto (ex.: sortedItems memoizado).
+        setCoords((prev) => {
+          if (prev && Math.abs(prev.lat - next.lat) < 1e-6 && Math.abs(prev.lng - next.lng) < 1e-6) {
+            return prev;
+          }
+          try { window.localStorage.setItem(LS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+          return next;
+        });
       },
       () => {
-        /* usuário negou ou indisponível — silencioso */
+        /* Permissão negada / indisponível — fallback silencioso, mantém coords do cache. */
       },
       { timeout: 6000, maximumAge: 5 * 60_000 },
     );
+    return () => { cancelled = true; };
   }, []);
 
   return coords;
