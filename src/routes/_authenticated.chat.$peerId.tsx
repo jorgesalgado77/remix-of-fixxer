@@ -183,6 +183,8 @@ function ConversationPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
   const idSetRef = useRef<Set<string>>(new Set());
+  const [dragActive, setDragActive] = useState(false);
+  const dragCounterRef = useRef(0);
 
   const selectCols =
     "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name, client_message_id";
