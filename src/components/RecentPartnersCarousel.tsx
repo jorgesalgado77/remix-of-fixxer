@@ -623,9 +623,9 @@ export function RecentPartnersCarousel() {
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     {rating.toFixed(1)}
                   </span>
-                  {distance && (
+                  {distanceLabel && (
                     <span className="absolute top-2 left-2 z-10 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm" aria-hidden="true">
-                      📍 {distance} km
+                      📍 {distanceLabel} km
                     </span>
                   )}
                   {showNoGeoBadge && (
