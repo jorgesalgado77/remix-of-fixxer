@@ -888,7 +888,7 @@ export default function FeedParceiroPage() {
               return (
                 <li
                   key={r.id}
-                  className="overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
+                  className="feed-item-cv overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
                   style={{
                     borderColor: accentRgba(0.35),
                     boxShadow: `0 0 18px ${accentRgba(0.1)}`,
