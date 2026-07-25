@@ -241,6 +241,7 @@ function ConversationPage() {
             content: m.content,
             created_at: mockMessageIsoAt(m.minutesAgo),
             read: true,
+            _delivered: true,
             attachment_url: m.attachment?.url ?? null,
             attachment_type: m.attachment?.type ?? null,
             attachment_name: m.attachment?.name ?? null,
