@@ -71,6 +71,7 @@ type Conversation = {
   unread: number;
   archived: boolean;
   muted: boolean;
+  linkedAd?: MockLinkedAd | null;
 };
 
 const PAGE_SIZE = 100;
