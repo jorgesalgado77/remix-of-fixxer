@@ -519,8 +519,14 @@ function ConversationPage() {
               } else {
                 idSetRef.current.add(m.id);
                 setMessages((prev) => [...prev, m]);
+                // Som de nova mensagem recebida (só para incoming novo)
+                const incoming = m.recipient_id === uid && m.sender_id !== uid;
+                if (incoming && !isConversationMuted(uid, peerId)) {
+                  try { playIncomingMessageSound(); } catch {}
+                }
               }
               if (m.recipient_id === uid && payload?.eventType !== "UPDATE") markIncomingRead(uid);
+
             },
           )
           .subscribe();
