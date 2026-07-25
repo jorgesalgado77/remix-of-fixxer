@@ -591,9 +591,10 @@ export function RecentPartnersCarousel() {
             // ---- Normalização defensiva de campos do perfil ----
             const displayName = safeStr(p.full_name) || safeStr(p.name) || "Profissional";
             const rawAvatar = safeStr(p.avatar_url) || safeStr(p.avatar) || safeStr(p.photo_url);
-            const avatarUrl = isValidImageUrl(rawAvatar)
-              ? rawAvatar
-              : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=70";
+            // Sem fallback de terceiros (Unsplash). Se o avatar do Supabase estiver
+            // ausente/quebrado, PartnerAvatar renderiza o placeholder temático (UserCircle2).
+            const avatarUrl = isValidImageUrl(rawAvatar) ? rawAvatar : null;
+
             const city = safeStr(p.city);
             const stateVal = normalizeUf(p.uf) || normalizeUf(p.state);
             // Formato canônico "Cidade, UF" com vírgula. Fallbacks:
