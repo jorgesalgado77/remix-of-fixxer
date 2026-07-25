@@ -577,15 +577,37 @@ function ConversationPage() {
 
     // === MODO MOCK: sem persistência, com auto-resposta simulada ===
     if (isMockPeerId(peerId)) {
-      setTimeout(() => {
+      // Enriquecer as linhas otimistas com URLs de blob para pré-visualizar
+      // imagens/vídeos anexados diretamente nos balões (sem ir ao Storage).
+      const optimIds = new Set(optimisticRows.map((r) => r.id));
+      const enriched = optimisticRows.map((r) => {
+        if (!r._draftFile) return r;
+        try {
+          return {
+            ...r,
+            attachment_url: URL.createObjectURL(r._draftFile),
+            attachment_type: r._draftFile.type || "application/octet-stream",
+            attachment_name: r._draftFile.name,
+          };
+        } catch {
+          return r;
+        }
+      });
+      setMessages((prev) => prev.map((m) => (optimIds.has(m.id) ? enriched.find((e) => e.id === m.id)! : m)));
+
+      const clientIds = optimBatch.map((o) => o.clientId);
+      const patchMine = (patch: Partial<MessageRow>) =>
         setMessages((prev) =>
-          prev.map((m) =>
-            optimBatch.some((o) => o.clientId === m._clientId)
-              ? { ...m, _pending: false, read: true }
-              : m,
-          ),
+          prev.map((m) => (clientIds.includes(m._clientId ?? "") ? { ...m, ...patch } : m)),
         );
-      }, 400);
+
+      // 1) Enviada (single check)
+      setTimeout(() => patchMine({ _pending: false, read: false, _delivered: false }), 350);
+      // 2) Entregue (double check cinza)
+      setTimeout(() => patchMine({ _delivered: true }), 1100);
+      // 3) Lida (double check colorido) — o peer "visualizou" antes de responder
+      setTimeout(() => patchMine({ read: true }), 1900);
+
       const replies = [
         "Perfeito, anotado! 👍",
         "Combinado. Assim que fechar, te aviso por aqui.",
@@ -605,9 +627,10 @@ function ConversationPage() {
             content: reply,
             created_at: new Date().toISOString(),
             read: true,
+            _delivered: true,
           },
         ]);
-      }, 2200);
+      }, 2400);
       setSending(false);
       return;
     }
