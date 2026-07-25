@@ -615,7 +615,8 @@ export function RecentPartnersCarousel() {
             // Distância só é mostrada quando temos coords válidas DOS DOIS lados.
             // Se o usuário não tiver coords (permissão negada / sem geo), NUNCA renderizamos
             // valores estimados — o card cai no formato apenas-localização abaixo.
-            const hasGeo = !!userCoords && p._coords != null && p._distanceKm != null;
+            // Distância exibida quando temos valor válido (live via geo OU persistido em profiles.distance_km).
+            const hasGeo = p._distanceKm != null && Number.isFinite(p._distanceKm);
             const distanceKm = hasGeo ? p._distanceKm! : null;
             const distanceLabel = distanceKm != null
               ? (distanceKm < 10 ? distanceKm.toFixed(1) : Math.round(distanceKm).toString())
