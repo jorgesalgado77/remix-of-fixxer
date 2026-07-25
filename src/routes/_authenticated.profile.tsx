@@ -1301,12 +1301,34 @@ function ProfilePage() {
                     <FileText className="w-3 h-3" /> Documentos (PDF, DOC, XLS)
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {profile?.documents?.filter((f: any) => f.type === 'document').map((doc: any, i: number) => (
+                    {profile?.documents?.filter((f: any) => f.type === 'document').map((doc: any, i: number) => {
+                      const ext = (doc.name?.split('.').pop() || '').toLowerCase();
+                      const isPdf = ext === 'pdf';
+                      const isImg = ['png','jpg','jpeg','webp','gif','avif','svg'].includes(ext);
+                      return (
                       <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 transition-all">
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center text-primary flex-shrink-0">
-                            <File className="w-4 h-4" />
-                          </div>
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center relative"
+                            title={`Abrir ${doc.name}`}
+                          >
+                            {isImg ? (
+                              <img src={doc.url} alt={doc.name} className="w-full h-full object-cover" loading="lazy" />
+                            ) : isPdf ? (
+                              <>
+                                <embed src={`${doc.url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`} type="application/pdf" className="w-full h-full pointer-events-none" />
+                                <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-red-500/90 text-white uppercase">PDF</span>
+                              </>
+                            ) : (
+                              <>
+                                <File className="w-5 h-5 text-primary" />
+                                <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-primary/80 text-black uppercase truncate">{ext || 'DOC'}</span>
+                              </>
+                            )}
+                          </a>
                           <div className="truncate">
                             <p className="text-[11px] font-bold text-white truncate">{doc.name}</p>
                             <p className="text-[9px] text-muted-foreground uppercase">{doc.size || 'N/A'}</p>
@@ -1324,14 +1346,16 @@ function ProfilePage() {
                           </button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                     <label className="border-2 border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group">
                       <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                       <span className="text-[9px] font-black uppercase text-muted-foreground group-hover:text-primary">Novo Documento</span>
-                      <input type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" onChange={(e) => handleMediaUpload(e, 'document')} />
+                      <input type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,image/*" onChange={(e) => handleMediaUpload(e, 'document')} />
                     </label>
                   </div>
                 </div>
+
 
                 {/* IMAGENS / GALERIA PINTEREST */}
                 <div className="space-y-4">
