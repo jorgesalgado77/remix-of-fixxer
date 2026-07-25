@@ -343,30 +343,65 @@ function ProfilePage() {
 
       const updatedPortfolio = [...(profile.portfolio_media || []), ...newMedia];
       const updatedDocs = [...(profile.documents || []), ...newDocs];
-      
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          portfolio_media: updatedPortfolio, 
-          documents: updatedDocs 
-        })
-        .eq('id', profile.id);
 
-      if (updateError) throw updateError;
+      // Payload com fallback: se as colunas `portfolio_media` / `documents`
+      // não existirem no schema do Supabase, movemos para
+      // `custom_sections.__extras` (JSONB) para não perder o dado.
+      const basePayload: any = {
+        portfolio_media: updatedPortfolio,
+        documents: updatedDocs,
+        custom_sections: profile.custom_sections ?? {},
+      };
+      const extras: Record<string, unknown> = {
+        ...((basePayload.custom_sections as any)?.__extras || {}),
+      };
 
-      setProfile({ 
-        ...profile, 
-        portfolio_media: updatedPortfolio, 
-        documents: updatedDocs 
+      let lastError: any = null;
+      let attempts = 0;
+      while (attempts < 6) {
+        attempts++;
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update(basePayload)
+          .eq('id', profile.id);
+        if (!updateError) { lastError = null; break; }
+        lastError = updateError;
+        const msg = updateError.message || '';
+        const m =
+          msg.match(/'([^']+)'\s+column/i) ||
+          msg.match(/column\s+"([^"]+)"/i) ||
+          msg.match(/Could not find the '([^']+)'/i);
+        const col = m?.[1];
+        if (col && col in basePayload && col !== 'custom_sections' && col !== 'id') {
+          console.warn(`[media.upload] Coluna inexistente "${col}" — movendo para custom_sections.__extras`);
+          extras[col] = basePayload[col];
+          delete basePayload[col];
+          basePayload.custom_sections = {
+            ...(basePayload.custom_sections || {}),
+            __extras: extras,
+          };
+          continue;
+        }
+        break;
+      }
+
+      if (lastError) throw lastError;
+
+      setProfile({
+        ...profile,
+        portfolio_media: updatedPortfolio,
+        documents: updatedDocs,
+        custom_sections: basePayload.custom_sections ?? profile.custom_sections,
       });
-      
+
       toast.success(`${newMedia.length + newDocs.length} arquivo(s) salvos com sucesso!`);
     } catch (error: any) {
-      toast.error("Erro ao salvar arquivos: " + error.message);
+      toast.error("Erro ao salvar arquivos: " + (error?.message || 'falha desconhecida'));
     } finally {
       setSaving(false);
     }
   };
+
 
 
   const handleAddNewBrand = async () => {
