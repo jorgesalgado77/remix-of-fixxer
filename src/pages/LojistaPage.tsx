@@ -1944,7 +1944,7 @@ function ProfileView({
         if (files.length === 0) return;
 
         // Limite para galeria
-        if (type === 'gallery' && (galleryUrls.length + files.length) > 12) {
+        if (type === 'gallery' && (galleryUrls.length + files.length) > 10) {
             toast.error("Limite da Galeria", {
                 description: "Você pode ter no máximo 12 fotos na galeria."
             });
@@ -2634,7 +2634,7 @@ function ProfileView({
                                 >
                                     <CheckCircle2 className="w-3 h-3 mr-1.5" /> {selectedMedia.length === (galleryUrls.length + videoUrls.length) ? 'Desmarcar' : 'Selecionar Tudo'}
                                 </Button>
-                                <span className="text-[8px] opacity-50">{galleryUrls.length}/12</span>
+                                <span className="text-[8px] opacity-50">{galleryUrls.length}/10</span>
                             </div>
                         </div>
                         
@@ -2661,7 +2661,7 @@ function ProfileView({
                                     ))}
                                 </SortableContext>
                                 
-                                {galleryUrls.length < 12 && (
+                                {galleryUrls.length < 10 && (
                                     <label className="aspect-square rounded-2xl border border-white/5 bg-white/5 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all cursor-pointer group">
                                         <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'gallery')} />
                                         <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
