@@ -266,12 +266,17 @@ function ConversationPage() {
     }, 350);
   };
 
+  const inboxTypingChannelRef = useRef<any>(null);
   const sendTypingStop = () => {
-    if (!presenceRef.current || !userId) return;
+    if (!userId) return;
     try {
-      presenceRef.current.send({ type: "broadcast", event: "typing-stop", payload: { from: userId } });
+      presenceRef.current?.send({ type: "broadcast", event: "typing-stop", payload: { from: userId } });
+    } catch {}
+    try {
+      inboxTypingChannelRef.current?.send({ type: "broadcast", event: "typing-stop", payload: { from: userId } });
     } catch {}
   };
+
   const acceptIncomingFiles = useCallback((picked: File[]) => {
     if (picked.length === 0) return;
     const remaining = MAX_FILES - pendingFiles.length;
