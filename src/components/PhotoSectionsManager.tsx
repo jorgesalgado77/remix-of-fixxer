@@ -62,11 +62,12 @@ export interface PhotoLimits {
 export const DEFAULT_LIMITS: PhotoLimits = {
   imgMaxMB: 8,
   sectionTotalMaxMB: 80,
-  maxShowroom: 20,
-  maxAssemblies: 20,
+  maxShowroom: 10,
+  maxAssemblies: 0,
   maxCustomSections: 5,
   maxCustomPhotos: 10,
 };
+
 
 const BUCKET = 'media';
 
