@@ -117,8 +117,16 @@ export function GlobalActionBar() {
     <>
     <div className="fixed bottom-0 left-0 right-0 bg-black/85 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around pb-safe">
       <button
-        onClick={() => navigate({ to: "/dashboard/lojista" as any })}
-        className={`flex flex-col items-center gap-1 ${isActive("/dashboard") && !hash ? "text-primary" : "text-muted-foreground"}`}
+        onClick={() => {
+          const target =
+            role === "lojista" ? "/lojista" :
+            role === "fornecedor" ? "/parceiro" :
+            role === "cliente" ? "/cliente" :
+            role === "admin" ? "/admin" :
+            "/prestador";
+          navigate({ to: target as any });
+        }}
+        className={`flex flex-col items-center gap-1 ${(isActive("/dashboard") || isActive("/lojista") || isActive("/prestador") || isActive("/parceiro") || isActive("/cliente")) && !hash ? "text-primary" : "text-muted-foreground"}`}
       >
         <Activity className="w-5 h-5" />
         <span className="text-[8px] font-black uppercase italic">Painel</span>
