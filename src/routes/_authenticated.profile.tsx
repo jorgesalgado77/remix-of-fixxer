@@ -9,6 +9,7 @@ import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { PushToggle } from "@/components/PushToggle";
 import { AffiliateBanner } from "@/components/AffiliateBanner";
 import { ActivityBranchSelector } from "@/components/ActivityBranchSelector";
+import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
 
