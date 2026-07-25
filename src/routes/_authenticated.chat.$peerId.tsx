@@ -340,8 +340,14 @@ function ConversationPage() {
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
-      const uid = data?.user?.id ?? getFallbackUid();
+      const uid = data?.user?.id ?? getAuthUid();
       if (cancelled) return;
+      if (!isUuid(uid)) {
+        // Sem sessão válida — não há como escrever em messages (RLS + uuid).
+        toast.error("Sessão expirada", { description: "Faça login novamente para conversar." });
+        try { navigate({ to: "/auth" as any }); } catch { window.location.href = "/auth"; }
+        return;
+      }
       setUserId(uid);
 
       // === MODO MOCK (peerId "mock-*") ===
