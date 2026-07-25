@@ -28,7 +28,7 @@ import {
   setConversationMuted,
 } from "@/lib/chat-preferences";
 import { enqueueMarkAllRead, enqueueMarkConversationRead } from "@/lib/chat-read-queue";
-import { MOCK_CONVERSATIONS, mockMessageIsoAt } from "@/lib/mock-chat";
+import { MOCK_CONVERSATIONS, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
 import { getMockSeenAt, markMockConversationSeen } from "@/lib/chat-drafts";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 
