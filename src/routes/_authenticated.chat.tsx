@@ -12,7 +12,9 @@ import {
   Loader2,
   Paperclip,
   UserCircle2,
+  X,
 } from "lucide-react";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
