@@ -659,7 +659,9 @@ function ConversationPage() {
       // mesmo se o Realtime ainda não estiver ativo na tabela messages.
       try {
         window.dispatchEvent(
-          new CustomEvent("fixxer:message-sent", { detail: { row } }),
+          new CustomEvent("fixxer:message-sent", {
+            detail: { row: { ...row, _clientId: clientId } },
+          }),
         );
       } catch {}
     }
