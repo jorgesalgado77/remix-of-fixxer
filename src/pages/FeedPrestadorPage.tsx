@@ -21,6 +21,9 @@ import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchC
 import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { usePostUnlock } from "@/hooks/use-post-unlock";
 import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { FeedErrorState } from "@/components/FeedErrorState";
+import { useFeedPreload } from "@/hooks/use-feed-preload";
 
 import {
   ArrowLeft,
@@ -1027,6 +1030,9 @@ export default function FeedPrestadorPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [savesRemote, setSavesRemote] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Debounce de busca
@@ -1090,8 +1096,20 @@ export default function FeedPrestadorPage() {
         }
       } catch (err) {
         console.warn("[feed] falha ao sincronizar dados do prestador:", err);
+        setLoadError(err instanceof Error ? err.message : "Falha de conexão");
       }
     })();
+  }, [reloadKey]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoadError(null);
+    setPage(1);
+    setReloadKey((k) => k + 1);
+    // dá tempo do estado propagar para dar feedback visual
+    await new Promise((r) => setTimeout(r, 400));
+    setRefreshing(false);
+    toast.success("Feed atualizado");
   }, []);
 
   // Persistir salvos localmente
