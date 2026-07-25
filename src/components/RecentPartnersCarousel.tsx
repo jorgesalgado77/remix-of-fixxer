@@ -588,12 +588,13 @@ export function RecentPartnersCarousel() {
               ? `${city}, ${stateVal}`
               : (city || safeStr(p.location) || safeStr(p.address) || "");
             const branchText = safeStr(p.activity_branch) || safeStr(p.category) || meta.label;
-            // Distância: só quando temos coords válidas do perfil E do usuário, e modo "nearby".
-            const hasGeo = sortMode === "nearby" && !!userCoords && p._coords != null && p._distanceKm != null;
-            const distance = hasGeo
-              ? (p._distanceKm! < 10 ? p._distanceKm!.toFixed(1) : Math.round(p._distanceKm!).toString())
+            // Distância: mostrada sempre que houver coords válidas do usuário E do perfil (qualquer modo).
+            const hasGeo = !!userCoords && p._coords != null && p._distanceKm != null;
+            const distanceKm = hasGeo ? p._distanceKm! : null;
+            const distanceLabel = distanceKm != null
+              ? (distanceKm < 10 ? distanceKm.toFixed(1) : Math.round(distanceKm).toString())
               : null;
-            // Badge removível: modo "nearby" ativo mas perfil sem coordenadas mapeáveis.
+            // Badge removível no topo esquerdo: apenas no modo "nearby" quando o perfil não tem coords mapeáveis.
             const showNoGeoBadge = sortMode === "nearby" && !!userCoords && p._coords == null;
             const label = `Abrir perfil de ${displayName}, ${meta.label}${branchText ? `, ${branchText}` : ""}${location ? `, ${location}` : ""}, avaliação ${rating.toFixed(1)} de 5`;
             return (
