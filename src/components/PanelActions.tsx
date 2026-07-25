@@ -159,6 +159,11 @@ function AvailabilityToggle() {
     "bg-red-600 border-red-500 text-white hover:bg-red-700 shadow-[0_0_18px_rgba(239,68,68,0.45)]";
 
   const nextLabel = available ? "Indisponível" : "Disponível";
+  const statusLabel = loadingInitial
+    ? "Carregando…"
+    : available
+      ? "Disponível"
+      : "Indisponível";
 
   return (
     <>
@@ -173,36 +178,24 @@ function AvailabilityToggle() {
           setConfirmOpen(true);
         }}
         title={
-          available
-            ? "Disponibilidade ATIVA — clique para pausar"
-            : "Disponibilidade PAUSADA — clique para reativar"
+          loadingInitial
+            ? "Carregando disponibilidade…"
+            : available
+              ? `Disponibilidade ATIVA (${statusLabel}) — clique para pausar`
+              : `Disponibilidade PAUSADA (${statusLabel}) — clique para reativar`
         }
         aria-label={`Alternar disponibilidade. Atualmente ${available ? "disponível" : "indisponível"}. Clique para definir como ${nextLabel.toLowerCase()}.`}
-        className={`flex items-center gap-2 h-11 px-4 rounded-xl border transition-all text-[10px] font-black uppercase italic tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-60 disabled:cursor-not-allowed ${
+        className={`flex items-center justify-center h-11 w-11 rounded-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-60 disabled:cursor-not-allowed ${
           available ? activeStyle : pausedStyle
         }`}
       >
-        <span
-          className={`relative w-9 h-5 rounded-full transition-colors ${
-            available ? "bg-white/30" : "bg-black/30"
-          }`}
-          aria-hidden="true"
-        >
-          <span
-            className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
-            style={{ transform: available ? "translateX(16px)" : "translateX(0)" }}
-          />
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          {loadingInitial ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-          ) : available ? (
-            <Zap className="w-3.5 h-3.5" aria-hidden="true" />
-          ) : (
-            <PowerOff className="w-3.5 h-3.5" aria-hidden="true" />
-          )}
-          {loadingInitial ? "Carregando…" : available ? "Disponível" : "Indisponível"}
-        </span>
+        {loadingInitial ? (
+          <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+        ) : available ? (
+          <Zap className="w-5 h-5" aria-hidden="true" />
+        ) : (
+          <PowerOff className="w-5 h-5" aria-hidden="true" />
+        )}
         {/* Região viva para leitores de tela */}
         <span role="status" aria-live="polite" className="sr-only">
           {busy
