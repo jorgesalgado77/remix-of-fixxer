@@ -856,7 +856,7 @@ function ProfilePage() {
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
               ) : (
-                <div className="w-full h-full bg-white/5 flex items-center justify-center text-4xl font-black">{profile?.full_name?.charAt(0)}</div>
+                <div className="w-full h-full bg-white/5 flex items-center justify-center text-4xl font-black">{(profile?.display_name || profile?.full_name || '?').charAt(0)}</div>
               )}
             </div>
             <label className="absolute bottom-2 right-2 cursor-pointer bg-primary text-black p-2 rounded-lg shadow-lg hover:scale-110 transition-all">
