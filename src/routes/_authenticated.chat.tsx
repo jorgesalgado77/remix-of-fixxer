@@ -666,10 +666,15 @@ function ChatInboxPage() {
             <ul className="space-y-2">
               {visible.map((c) => {
                 const theme = getCategoryTheme(roleToCategory(c.peerRole));
+                const historySnippet =
+                  activeTerms.length > 0 && !normStr(c.lastMessage || "").includes(activeTerms[0])
+                    ? buildHistorySnippet(messagesByPeer.get(c.peerId) || "", activeTerms)
+                    : null;
                 return (
                 <li key={c.peerId} className="relative">
                   <button
                     onClick={() => openConversation(c.peerId)}
+
                     className="w-full flex items-center gap-3 bg-[#1A1A1B] border-2 rounded-2xl p-4 text-left transition-all hover:bg-white/[0.03]"
                     style={{ borderColor: `rgba(${theme.rgb}, 0.35)`, boxShadow: `0 0 14px rgba(${theme.rgb}, 0.10)` }}
                   >
