@@ -63,7 +63,10 @@ function ClientePortal() {
         </div>
       </header>
 
+      <CoinBalancePlanCard />
+
       <main>
+
         {activeTab === 'jornada' && <JornadaObra glassClass={glassClass} />}
         {activeTab === 'publicar' && <PublicarNecessidade glassClass={glassClass} />}
         {activeTab === 'contratacoes' && <MinhasContratacoes glassClass={glassClass} />}
