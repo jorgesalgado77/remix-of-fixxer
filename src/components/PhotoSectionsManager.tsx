@@ -432,6 +432,21 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
     onChange({ ...safe, custom: next });
   };
 
+  // Sensores dedicados para arrastar seções (independentes das grades de fotos)
+  const sectionSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const handleSectionDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = safe.custom.findIndex((s) => s.id === active.id);
+    const newIdx = safe.custom.findIndex((s) => s.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    onChange({ ...safe, custom: arrayMove(safe.custom, oldIdx, newIdx) });
+  };
+
+
   const inProgress = uploadProgress.filter((p) => !p.error && p.progress < 100);
   const errorList = uploadProgress.filter((p) => p.error);
 
