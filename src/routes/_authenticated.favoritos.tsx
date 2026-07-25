@@ -147,11 +147,13 @@ function priceBRL(v: number | null | undefined) {
 /* ============================ PÁGINA ============================ */
 
 type TabKey = "perfis" | "anuncios";
+type KindFilter = "todos" | "prestador" | "parceiro";
 
 function FavoritosPage() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
   const [tab, setTab] = useState<TabKey>("perfis");
+  const [kindFilter, setKindFilter] = useState<KindFilter>("todos");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [profiles, setProfiles] = useState<FavProfile[]>([]);
