@@ -15,6 +15,9 @@ import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetails
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity } from "@/lib/currency-brl";
 import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { FeedErrorState } from "@/components/FeedErrorState";
+import { useFeedPreload } from "@/hooks/use-feed-preload";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -557,6 +560,9 @@ export default function FeedParceiroPage() {
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Persistência local imediata dos favoritos
   useEffect(() => {
@@ -616,8 +622,19 @@ export default function FeedParceiroPage() {
         }
       } catch (err) {
         console.warn("[feed] falha ao sincronizar dados B2B:", err);
+        setLoadError(err instanceof Error ? err.message : "Falha de conexão");
       }
     })();
+  }, [reloadKey]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoadError(null);
+    setPage(1);
+    setReloadKey((k) => k + 1);
+    await new Promise((r) => setTimeout(r, 400));
+    setRefreshing(false);
+    toast.success("Feed atualizado");
   }, []);
 
   const filtered = useMemo(() => {
