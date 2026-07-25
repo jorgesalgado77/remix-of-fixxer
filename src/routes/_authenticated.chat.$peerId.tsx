@@ -576,18 +576,29 @@ function ConversationPage() {
         });
       });
     }
-    const optimisticRows: MessageRow[] = optimBatch.map((o) => ({
-      id: o.clientId,
-      sender_id: userId,
-      recipient_id: peerId,
-      content: o.text || null,
-      created_at: new Date().toISOString(),
-      read: false,
-      _pending: true,
-      _clientId: o.clientId,
-      _draftText: o.text,
-      _draftFile: o.file,
-    }));
+    const optimisticRows: MessageRow[] = optimBatch.map((o) => {
+      let previewUrl: string | null = null;
+      let previewType: string | null = null;
+      if (o.file && (o.file.type.startsWith("image/") || o.file.type.startsWith("video/"))) {
+        try { previewUrl = URL.createObjectURL(o.file); previewType = o.file.type; } catch {}
+      }
+      return {
+        id: o.clientId,
+        sender_id: userId,
+        recipient_id: peerId,
+        content: o.text || null,
+        created_at: new Date().toISOString(),
+        read: false,
+        _pending: true,
+        _clientId: o.clientId,
+        _draftText: o.text,
+        _draftFile: o.file,
+        // Preview local imediato (persiste mesmo se o upload falhar)
+        attachment_url: previewUrl,
+        attachment_type: previewType,
+        attachment_name: o.file?.name ?? null,
+      };
+    });
     setMessages((prev) => [...prev, ...optimisticRows]);
     setContent("");
     setPendingFiles([]);
