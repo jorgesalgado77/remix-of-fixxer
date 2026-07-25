@@ -531,18 +531,23 @@ export function RecentPartnersCarousel() {
           {sortedItems.map((p, idx) => {
             const meta = KIND_META[p._kind];
             const rating = typeof p.rating === "number" && p.rating > 0 ? p.rating : 5.0;
-            // ---- Normalização de campos do perfil (fallback entre chaves do Supabase) ----
-            const displayName = p.full_name || p.name || "Profissional";
-            const avatarUrl = p.avatar_url || p.avatar || p.photo_url || null;
-            const stateVal = p.uf || p.state || null;
-            const location = (p.city && stateVal)
-              ? `${p.city}, ${stateVal}`
-              : (p.location || p.city || p.address || "");
-            const branchText = p.activity_branch || p.category || meta.label;
-            const distance = sortMode === "nearby" && userCoords
-
-              ? (() => { const c = cityCoords(p.city); if (!c) return null; const km = haversineKm(userCoords, c); return Number.isFinite(km) ? (km < 10 ? km.toFixed(1) : Math.round(km).toString()) : null; })()
+            // ---- Normalização defensiva de campos do perfil ----
+            const displayName = safeStr(p.full_name) || safeStr(p.name) || "Profissional";
+            const rawAvatar = safeStr(p.avatar_url) || safeStr(p.avatar) || safeStr(p.photo_url);
+            const avatarUrl = isValidImageUrl(rawAvatar) ? rawAvatar : null;
+            const city = safeStr(p.city);
+            const stateVal = normalizeUf(p.uf) || normalizeUf(p.state);
+            const location = (city && stateVal)
+              ? `${city}, ${stateVal}`
+              : (city || safeStr(p.location) || safeStr(p.address) || "");
+            const branchText = safeStr(p.activity_branch) || safeStr(p.category) || meta.label;
+            // Distância: só quando temos coords válidas do perfil E do usuário, e modo "nearby".
+            const hasGeo = sortMode === "nearby" && !!userCoords && p._coords != null && p._distanceKm != null;
+            const distance = hasGeo
+              ? (p._distanceKm! < 10 ? p._distanceKm!.toFixed(1) : Math.round(p._distanceKm!).toString())
               : null;
+            // Badge removível: modo "nearby" ativo mas perfil sem coordenadas mapeáveis.
+            const showNoGeoBadge = sortMode === "nearby" && !!userCoords && p._coords == null;
             const label = `Abrir perfil de ${displayName}, ${meta.label}${branchText ? `, ${branchText}` : ""}${location ? `, ${location}` : ""}, avaliação ${rating.toFixed(1)} de 5`;
             return (
               <button
@@ -559,41 +564,52 @@ export function RecentPartnersCarousel() {
                 aria-posinset={idx + 1}
                 aria-setsize={sortedItems.length}
               >
+                <PartnerAvatar
+                  src={avatarUrl}
+                  alt={`Foto de ${displayName}`}
+                  color={meta.color}
+                />
 
-                <div className="relative w-full h-40 bg-black/40">
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={`Foto de ${displayName}`}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-40 w-full object-cover rounded-t-xl"
-                      onError={(e) => {
-                        const el = e.currentTarget;
-                        el.style.display = "none";
-                        const fb = el.nextElementSibling as HTMLElement | null;
-                        if (fb) fb.style.display = "flex";
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className="absolute inset-0 items-center justify-center bg-gradient-to-br from-black/60 to-black/30"
-                    style={{ display: avatarUrl ? "none" : "flex" }}
-                    aria-hidden="true"
-                  >
-                    <UserCircle2 className="w-14 h-14" style={{ color: meta.color, opacity: 0.7 }} />
-                  </div>
-
-                  <span className="absolute top-2 right-2 text-xs font-bold text-yellow-400 bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1" aria-hidden="true">
+                <div className="relative w-full h-0">
+                  <span className="absolute -top-[168px] right-2 text-xs font-bold text-yellow-400 bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1" aria-hidden="true">
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     {rating.toFixed(1)}
                   </span>
                   {distance && (
-                    <span className="absolute top-2 left-2 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm" aria-hidden="true">
+                    <span className="absolute -top-[168px] left-2 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm" aria-hidden="true">
                       📍 {distance} km
                     </span>
                   )}
+                  {showNoGeoBadge && (
+                    <span
+                      className="absolute -top-[168px] left-2 text-[10px] font-bold text-white/90 bg-black/70 border border-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1"
+                      role="note"
+                      aria-label="Perfil sem localização mapeável"
+                    >
+                      📍 Sem localização
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Remover ${displayName} da lista Mais próximos`}
+                        className="ml-0.5 -mr-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDismissedNoGeo((prev) => { const n = new Set(prev); n.add(p.id); return n; });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDismissedNoGeo((prev) => { const n = new Set(prev); n.add(p.id); return n; });
+                          }
+                        }}
+                      >
+                        <X className="w-2.5 h-2.5" aria-hidden="true" />
+                      </span>
+                    </span>
+                  )}
                 </div>
+
 
                 <div className={`relative p-3 bg-gradient-to-t ${meta.gradientClass}`}>
                   <p className="font-black text-white text-sm truncate leading-tight">
