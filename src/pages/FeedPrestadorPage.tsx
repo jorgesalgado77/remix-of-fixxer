@@ -818,6 +818,7 @@ function JobCardImpl({
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                   <MapPin className="w-2.5 h-2.5 text-[#FF9F0A]" /> {job.city}/{job.state}
+                  {distanceLabel && <span className="text-white/40 normal-case ml-1">• {distanceLabel}</span>}
                 </span>
                 <RatingStars value={job.rating} />
               </div>
