@@ -74,6 +74,30 @@ function writeUrlParams(next: Partial<Record<string, string | null>>) {
 }
 
 
+
+
+// ---- Validações defensivas de dados de perfil ----
+/** URL de imagem aceitável: http(s), data:image ou blob. Descarta strings vazias/inválidas. */
+function isValidImageUrl(u: string | null | undefined): u is string {
+  if (!u || typeof u !== "string") return false;
+  const s = u.trim();
+  if (!s || s === "null" || s === "undefined") return false;
+  return /^(https?:\/\/|data:image\/|blob:)/i.test(s);
+}
+/** UF válida: 2 letras. Aceita qualquer caso, normaliza para maiúsculo na saída. */
+function normalizeUf(uf: string | null | undefined): string | null {
+  if (!uf) return null;
+  const s = String(uf).trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(s) ? s : null;
+}
+/** Retorna string não-vazia ou null (evita renderizar "null"/"undefined"). */
+function safeStr(v: unknown): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!s || s === "null" || s === "undefined") return null;
+  return s;
+}
+
 function classifyRole(role: string | null | undefined): PartnerKind | null {
   const r = (role || "").toLowerCase();
   if (r.includes("lojista") || r.includes("cliente") || r.includes("casual") || r.includes("admin")) return null;
