@@ -32,10 +32,22 @@ export function PublishPickerModal({ open, onClose, defaultCategory }: Props) {
     if (typeof window !== "undefined") {
       try { window.sessionStorage.setItem("fixxer_publish_kind", kind); } catch { /* ignore */ }
     }
+    const handleClose = () => { setKind(null); onClose(); };
+    // Fluxo 100% separado: "ad" → formulário comercial exclusivo.
+    // "request" continua no CreateAdModal (cotação/solicitação de serviço).
+    if (kind === "ad") {
+      return (
+        <CommercialAdModal
+          open
+          onClose={handleClose}
+          defaultCategory={defaultCategory}
+        />
+      );
+    }
     return (
       <CreateAdModal
         open
-        onClose={() => { setKind(null); onClose(); }}
+        onClose={handleClose}
         defaultCategory={defaultCategory}
       />
     );
