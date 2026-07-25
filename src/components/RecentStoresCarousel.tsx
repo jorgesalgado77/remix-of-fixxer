@@ -339,7 +339,7 @@ export function RecentStoresCarousel() {
       ) : showEmpty ? (
         <div className="flex flex-col items-center text-center py-10 px-4 border border-dashed border-white/10 rounded-2xl">
           <Store className="w-10 h-10 text-white/40 mb-2" />
-          <p className="text-sm font-bold text-white">Nenhum lojista ou fornecedor por aqui.</p>
+          <p className="text-sm font-bold text-white">Nenhum lojista ou cliente final por aqui.</p>
         </div>
       ) : (
         <div
