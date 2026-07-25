@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Star, MapPin, UserCircle2, RefreshCw, UsersRound, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { Star, MapPin, UserCircle2, RefreshCw, UsersRound, AlertTriangle, ArrowUpDown, X } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
