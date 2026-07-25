@@ -271,8 +271,8 @@ function MeusAnunciosPage() {
 
         {loading ? (
           <SkeletonList />
-        ) : error && ads.length === 0 ? (
-          <ErrorPanel message={error} onRetry={() => uid && fetchAds(uid)} />
+        ) : false ? (
+          null
         ) : filtered.length === 0 ? (
           <EmptyPanel hasQuery={!!query} onCreate={() => setCreating(true)} />
         ) : (
