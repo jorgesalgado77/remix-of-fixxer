@@ -348,40 +348,8 @@ function ChatInboxPage() {
 
   const conversationsWithMock: Conversation[] = useMemo(() => {
     if (!userId) return conversations;
-    const archivedSet = getArchivedSet(userId);
-    const mutedSet = getMutedSet(userId);
-    const mock: Conversation[] = MOCK_CONVERSATIONS.map((c) => {
-      const last = c.messages[c.messages.length - 1];
-      const lastAt = mockMessageIsoAt(last?.minutesAgo ?? 0);
-      const seenAt = getMockSeenAt(c.peerId);
-      const unread = c.messages.filter((m) => {
-        if (m.fromMe) return false;
-        if (m.minutesAgo > 60) return false; // "novas" na última hora
-        const msgAt = Date.now() - m.minutesAgo * 60_000;
-        return msgAt > seenAt; // zera após abrir a conversa
-      }).length;
-      return {
-        peerId: c.peerId,
-        peerName: c.peerName,
-        peerAvatar: c.peerAvatar,
-        peerRole: c.peerRole,
-        lastMessage: last?.content ?? "",
-        lastAttachmentType: null,
-        lastMessageId: null,
-        lastAt,
-        unread,
-        archived: archivedSet.has(c.peerId),
-        muted: mutedSet.has(c.peerId),
-        linkedAd: c.linkedAd ?? null,
-      };
-    });
-    // Evita duplicar caso o peerId já exista nas reais
-    const existing = new Set(conversations.map((c) => c.peerId));
-    const merged = [...conversations, ...mock.filter((m) => !existing.has(m.peerId))];
-    // Ordena estritamente pela data/hora da última mensagem, com desempate
-    // determinístico por peerId para evitar reordenações aleatórias entre
-    // mocks que compartilham o mesmo minuto de referência.
-    return merged.sort((a, b) => {
+    // Somente conversas reais entre usuários — sem mocks.
+    return [...conversations].sort((a, b) => {
       const diff = new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
       if (diff !== 0) return diff;
       return a.peerId.localeCompare(b.peerId);
@@ -393,7 +361,8 @@ function ChatInboxPage() {
     const terms = q.split(/\s+/).filter(Boolean);
     const base = conversationsWithMock
       .filter((c) => (showArchived ? c.archived : !c.archived))
-      .filter((c) => c.peerId.startsWith("mock-") || canSeeConversationWith(role, c.peerRole));
+      .filter((c) => canSeeConversationWith(role, c.peerRole));
+
     if (!q) return base;
     type Scored = Conversation & { _score: number };
     const scored: Scored[] = [];
