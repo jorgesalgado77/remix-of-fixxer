@@ -599,7 +599,7 @@ function FavoritosPage() {
                       key={ad.id}
                       ad={ad}
                       userCoords={userCoords}
-                      onRemove={() => removeAd(ad)}
+                      onRemove={() => setPendingRemoval({ kind: "ad", item: ad })}
                       onOpen={() => {
                         if (ad.postId) {
                           navigate({ to: "/feed" as any }).catch(() => { window.location.href = "/feed"; });
