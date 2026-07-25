@@ -401,14 +401,25 @@ function ConversationPage() {
       } catch {}
     })();
 
-    // Ao trocar de rota / recarregar / esconder aba: envia typing-stop e derruba presença
+    // Ao trocar de rota / recarregar / esconder aba: envia typing-stop.
+    // Ao VOLTAR o foco: re-marca a conversa como lida (sincroniza com o peer).
     const onHide = () => { sendTypingStop(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        const uid = userId || getFallbackUid();
+        if (uid && !isMockPeerId(peerId)) markIncomingRead(uid);
+      }
+    };
     document.addEventListener("visibilitychange", onHide);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     window.addEventListener("pagehide", onHide);
 
     return () => {
       cancelled = true;
       document.removeEventListener("visibilitychange", onHide);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
       window.removeEventListener("pagehide", onHide);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
@@ -536,7 +547,16 @@ function ConversationPage() {
     if (row) {
       idSetRef.current.add(row.id);
       setMessages((prev) =>
-        prev.map((m) => (m._clientId === clientId || m.id === clientId ? { ...row!, _clientId: clientId } : m)),
+        prev.map((m) => {
+          if (m._clientId === clientId || m.id === clientId) {
+            // Revoga blob URL de preview local antes de substituir pela URL do servidor
+            if (m.attachment_url && m.attachment_url.startsWith("blob:")) {
+              try { URL.revokeObjectURL(m.attachment_url); } catch {}
+            }
+            return { ...row!, _clientId: clientId };
+          }
+          return m;
+        }),
       );
     }
   };
@@ -576,18 +596,29 @@ function ConversationPage() {
         });
       });
     }
-    const optimisticRows: MessageRow[] = optimBatch.map((o) => ({
-      id: o.clientId,
-      sender_id: userId,
-      recipient_id: peerId,
-      content: o.text || null,
-      created_at: new Date().toISOString(),
-      read: false,
-      _pending: true,
-      _clientId: o.clientId,
-      _draftText: o.text,
-      _draftFile: o.file,
-    }));
+    const optimisticRows: MessageRow[] = optimBatch.map((o) => {
+      let previewUrl: string | null = null;
+      let previewType: string | null = null;
+      if (o.file && (o.file.type.startsWith("image/") || o.file.type.startsWith("video/"))) {
+        try { previewUrl = URL.createObjectURL(o.file); previewType = o.file.type; } catch {}
+      }
+      return {
+        id: o.clientId,
+        sender_id: userId,
+        recipient_id: peerId,
+        content: o.text || null,
+        created_at: new Date().toISOString(),
+        read: false,
+        _pending: true,
+        _clientId: o.clientId,
+        _draftText: o.text,
+        _draftFile: o.file,
+        // Preview local imediato (persiste mesmo se o upload falhar)
+        attachment_url: previewUrl,
+        attachment_type: previewType,
+        attachment_name: o.file?.name ?? null,
+      };
+    });
     setMessages((prev) => [...prev, ...optimisticRows]);
     setContent("");
     setPendingFiles([]);
