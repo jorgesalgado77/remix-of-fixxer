@@ -24,7 +24,10 @@ import {
   MoreVertical,
   Ban,
   FileDown,
+  Settings,
 } from "lucide-react";
+import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
+
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
