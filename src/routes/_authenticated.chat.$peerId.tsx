@@ -269,23 +269,23 @@ function ConversationPage() {
     }
   }, [pendingFiles, peerId]);
 
-  const onDragEnter = (e: React.DragEvent) => {
+  const onDragEnter = (e: ReactDragEvent) => {
     if (!e.dataTransfer?.types?.includes("Files")) return;
     e.preventDefault();
     dragCounterRef.current += 1;
     setDragActive(true);
   };
-  const onDragOver = (e: React.DragEvent) => {
+  const onDragOver = (e: ReactDragEvent) => {
     if (!e.dataTransfer?.types?.includes("Files")) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
   };
-  const onDragLeave = (e: React.DragEvent) => {
+  const onDragLeave = (e: ReactDragEvent) => {
     e.preventDefault();
     dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
     if (dragCounterRef.current === 0) setDragActive(false);
   };
-  const onDrop = (e: React.DragEvent) => {
+  const onDrop = (e: ReactDragEvent) => {
     e.preventDefault();
     dragCounterRef.current = 0;
     setDragActive(false);
