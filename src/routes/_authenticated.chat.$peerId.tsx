@@ -147,6 +147,24 @@ function ConversationPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [downloads, setDownloads] = useState<Record<string, { pct: number; loading: boolean }>>({});
 
+  // Miniaturas locais (blob URLs) para imagens/vídeos anexados antes de enviar.
+  const pendingPreviews = useMemo(() => {
+    const map = new Map<File, string>();
+    for (const f of pendingFiles) {
+      if (f.type.startsWith("image/") || f.type.startsWith("video/")) {
+        try { map.set(f, URL.createObjectURL(f)); } catch {}
+      }
+    }
+    return map;
+  }, [pendingFiles]);
+  useEffect(() => {
+    return () => {
+      for (const url of pendingPreviews.values()) {
+        try { URL.revokeObjectURL(url); } catch {}
+      }
+    };
+  }, [pendingPreviews]);
+
   // Confirmação de descarte de rascunho (dois cliques)
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
   const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
