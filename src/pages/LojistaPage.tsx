@@ -56,7 +56,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
 import { CreateAdModal } from "@/components/CreateAdModal";
-import type { CategoryKey } from "@/lib/category-colors";
+import { CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
 import {
   evaluateProfileCompleteness,
   describeMissing,
