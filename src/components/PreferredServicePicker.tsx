@@ -1,17 +1,27 @@
 import { useMemo, useState } from "react";
-import { Check, Star, Plus, X, Search, Briefcase, Sparkles } from "lucide-react";
+import { Check, Star, Plus, X, Search, Briefcase, Sparkles, Coins } from "lucide-react";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
 import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { useJobRoles } from "@/hooks/use-job-roles";
 import { toast } from "sonner";
+import { consumeCoins, getCachedBalance, getCurrentUserId } from "@/lib/coins";
+import type { PlanId } from "@/lib/monetization";
 
 type Props = {
   profile: any;
   setProfile: (p: any) => void;
   accent?: string;
+  planId?: PlanId;
 };
 
 const MAX_ROLES = 10;
+const EXTRA_COST = 15;
+
+function quotaFor(plan: PlanId): number {
+  if (plan === "premium") return 5;
+  if (plan === "pro" || plan === "basico") return 3;
+  return 1;
+}
 
 function parseCsv(v?: string | null): string[] {
   return String(v ?? "")
