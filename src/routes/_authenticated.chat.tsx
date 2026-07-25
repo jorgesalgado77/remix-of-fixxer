@@ -12,7 +12,9 @@ import {
   Loader2,
   Paperclip,
   UserCircle2,
+  X,
 } from "lucide-react";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
@@ -356,8 +358,29 @@ function ChatInboxPage() {
     });
   }, [conversations, userId, prefsVersion]);
 
+  // Índice de busca: junta todas as mensagens trocadas com cada peer
+  const messagesByPeer = useMemo(() => {
+    if (!userId) return new Map<string, string>();
+    const map = new Map<string, string[]>();
+    for (const m of messages) {
+      const peerId = m.sender_id === userId ? m.recipient_id : m.sender_id;
+      if (!peerId) continue;
+      const arr = map.get(peerId) ?? [];
+      if (m.content) arr.push(m.content);
+      if (m.attachment_name) arr.push(m.attachment_name);
+      map.set(peerId, arr);
+    }
+    const out = new Map<string, string>();
+    for (const [k, v] of map.entries()) out.set(k, v.join(" \n "));
+    return out;
+  }, [messages, userId]);
+
+  const norm = (s: string) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const raw = query.trim();
+    const q = norm(raw);
     const terms = q.split(/\s+/).filter(Boolean);
     const base = conversationsWithMock
       .filter((c) => (showArchived ? c.archived : !c.archived))
@@ -367,18 +390,26 @@ function ChatInboxPage() {
     type Scored = Conversation & { _score: number };
     const scored: Scored[] = [];
     for (const c of base) {
-      const name = c.peerName.toLowerCase();
-      const msg = (c.lastMessage || "").toLowerCase();
-      const adTitle = (c.linkedAd?.title || "").toLowerCase();
-      const adCategory = (c.linkedAd?.category || "").toLowerCase();
+      const name = norm(c.peerName);
+      const roleTxt = norm(c.peerRole || "");
+      const lastMsg = norm(c.lastMessage || "");
+      const allMsgs = norm(messagesByPeer.get(c.peerId) || "");
+      const adTitle = norm(c.linkedAd?.title || "");
+      const adCategory = norm(c.linkedAd?.category || "");
       let score = 0;
+      let matchedAll = true;
       for (const t of terms) {
-        if (name.includes(t)) score += name.startsWith(t) ? 6 : 4;
-        if (adTitle.includes(t)) score += adTitle.startsWith(t) ? 5 : 3;
-        if (adCategory.includes(t)) score += 1;
-        if (msg.includes(t)) score += 2;
+        let termScore = 0;
+        if (name.includes(t)) termScore += name.startsWith(t) ? 8 : 5;
+        if (roleTxt.includes(t)) termScore += 3;
+        if (adTitle.includes(t)) termScore += adTitle.startsWith(t) ? 5 : 3;
+        if (adCategory.includes(t)) termScore += 1;
+        if (lastMsg.includes(t)) termScore += 3;
+        else if (allMsgs.includes(t)) termScore += 2;
+        if (termScore === 0) { matchedAll = false; break; }
+        score += termScore;
       }
-      if (score === 0) continue;
+      if (!matchedAll || score === 0) continue;
       const ageH = (Date.now() - new Date(c.lastAt).getTime()) / 36e5;
       if (ageH < 24) score += 1;
       scored.push({ ...c, _score: score });
@@ -389,7 +420,8 @@ function ChatInboxPage() {
       if (diff !== 0) return diff;
       return a.peerId.localeCompare(b.peerId);
     });
-  }, [conversationsWithMock, query, showArchived, role]);
+  }, [conversationsWithMock, query, showArchived, role, messagesByPeer]);
+
 
   const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
   const archivedCount = conversationsWithMock.filter((c) => c.archived).length;
@@ -482,16 +514,33 @@ function ChatInboxPage() {
           </button>
         </div>
 
-        <div className="relative mb-4">
+        <div className="relative mb-2">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onClick={(e) => e.stopPropagation()}
-            placeholder="Buscar por contato, anúncio ou palavras-chave..."
-            className="w-full bg-[#1A1A1B] border border-white/10 rounded-2xl pl-10 pr-4 py-3 text-sm outline-none focus:border-primary/50"
+            placeholder="Buscar por contato, cargo, mensagem..."
+            aria-label="Buscar conversas"
+            className="w-full bg-[#1A1A1B] border border-white/10 rounded-2xl pl-10 pr-10 py-3 text-sm outline-none focus:border-primary/50"
           />
+          {query && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setQuery(""); }}
+              aria-label="Limpar busca"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
+        {query.trim() && (
+          <p className="mb-3 text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+            {visible.length} resultado{visible.length === 1 ? "" : "s"} para "{query.trim()}"
+          </p>
+        )}
+
 
         {loading ? (
           <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
