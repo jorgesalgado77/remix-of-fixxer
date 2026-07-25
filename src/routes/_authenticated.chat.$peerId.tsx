@@ -838,19 +838,21 @@ function ConversationPage() {
         const attachment = await uploadPromises[i];
         await persistMessage(o.clientId, o.text, attachment);
       } catch (e: any) {
+        const errMsg = e?.message || "Erro desconhecido de rede";
         toast.error(
           filesToSend.length > 1
             ? `Falha ao enviar item ${i + 1}/${optimBatch.length}`
             : "Falha ao enviar",
-          { description: e?.message },
+          { description: errMsg },
         );
-        patchRow(o.clientId, { _pending: false, _failed: true, _uploading: false });
+        patchRow(o.clientId, { _pending: false, _failed: true, _uploading: false, _error: errMsg });
         try {
           window.dispatchEvent(
-            new CustomEvent("fixxer:message-failed", { detail: { clientId: o.clientId } }),
+            new CustomEvent("fixxer:message-failed", { detail: { clientId: o.clientId, error: errMsg } }),
           );
         } catch {}
       }
+
     }
     setSending(false);
   };
