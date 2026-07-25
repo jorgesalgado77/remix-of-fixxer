@@ -357,6 +357,7 @@ export function LojistaPublicProfilePage() {
         });
 
         const profileCandidate = Object.keys(merged).length > 0 ? (merged as StoreProfile) : null;
+        if (cancelled) return;
         if (profileCandidate) setProfile(profileCandidate);
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
 
