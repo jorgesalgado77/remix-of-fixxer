@@ -981,6 +981,7 @@ function ProfilePage() {
                   <div className="pt-6 space-y-4 border-t border-white/5">
                     <OfferingsPicker
                       selected={Array.isArray(profile?.offerings) ? profile.offerings : []}
+                      planId={(String(profile?.plan_id || 'free').toLowerCase() as any)}
                       onChange={(next: string[]) => {
                         const hasVehicle = next.some((s: string) => s.toLowerCase() === 'veículo próprio');
                         setProfile({ ...profile, offerings: next, has_vehicle: hasVehicle });
@@ -990,6 +991,7 @@ function ProfilePage() {
                       onVehicleTypeChange={(v: string) => setProfile({ ...profile, vehicle_type: v })}
                       onVehicleDescriptionChange={(v: string) => setProfile({ ...profile, vehicle_description: v })}
                     />
+
 
                     {profile?.has_vehicle && (
                       <div className="space-y-4 pl-2 border-l-2 border-primary/30">
