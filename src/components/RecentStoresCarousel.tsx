@@ -1,0 +1,410 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Star, MapPin, UserCircle2, RefreshCw, Store, AlertTriangle } from "lucide-react";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+import { useUserCoords } from "@/lib/geo-distance";
+import { haversineKm } from "@/lib/activity-branches";
+import { AvailabilityBadge } from "@/components/AvailabilityBadge";
+
+/**
+ * Seção "Lojistas e Parceiros Fornecedores Recentes" — carrossel horizontal
+ * dedicado ao painel do Prestador. Diferente de `RecentPartnersCarousel`,
+ * este componente:
+ *  - Mostra APENAS Lojistas e Parceiros Fornecedores (nunca prestadores).
+ *  - Prioriza Lojistas do MESMO RAMO PRINCIPAL do prestador logado
+ *    (comparando `business_category` / `custom_branch`), depois completa
+ *    com fornecedores e outros lojistas.
+ *  - Reaproveita as mesmas colunas seguras do Supabase externo para
+ *    evitar erros 400 do PostgREST em colunas inexistentes.
+ */
+
+type Row = {
+  id: string;
+  full_name: string | null;
+  display_name: string | null;
+  company_name: string | null;
+  avatar_url: string | null;
+  role: string | null;
+  business_category: string | null;
+  custom_branch: string | null;
+  city: string | null;
+  state: string | null;
+  rating: number | null;
+  created_at: string | null;
+  lat: number | null;
+  lng: number | null;
+};
+
+type Kind = "lojista" | "fornecedor";
+type Card = Row & { _kind: Kind; _branch: string | null };
+
+const CACHE_KEY = "fixxer_recent_stores_v1";
+
+function classify(role: string | null | undefined): Kind | null {
+  const r = (role || "").toLowerCase();
+  if (r.includes("lojista")) return "lojista";
+  if (r.includes("fornec") || r.includes("parceiro") || r.includes("b2b")) return "fornecedor";
+  return null;
+}
+
+function safeStr(v: unknown): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return !s || s === "null" || s === "undefined" ? null : s;
+}
+
+function isValidImageUrl(u: string | null | undefined): u is string {
+  if (!u) return false;
+  const s = String(u).trim();
+  return /^(https?:\/\/|data:image\/|blob:)/i.test(s);
+}
+
+function normalizeUf(uf: string | null): string | null {
+  if (!uf) return null;
+  const s = uf.trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(s) ? s : null;
+}
+
+function mainBranchOf(bc: string | null | undefined, cb: string | null | undefined): string | null {
+  const first = safeStr(bc)?.split(",")[0]?.trim();
+  return first || safeStr(cb);
+}
+
+const KIND_META: Record<Kind, { emoji: string; label: string; color: string; borderClass: string; gradientClass: string }> = {
+  lojista: {
+    emoji: "🏬",
+    label: "Lojista",
+    color: "#00FF87",
+    borderClass: "border-[#00FF87]",
+    gradientClass: "from-[#00FF87]/25 via-[#00FF87]/10 to-transparent",
+  },
+  fornecedor: {
+    emoji: "🚚",
+    label: "Parceiro Fornecedor",
+    color: "#A855F7",
+    borderClass: "border-[#A855F7]",
+    gradientClass: "from-[#A855F7]/25 via-[#A855F7]/10 to-transparent",
+  },
+};
+
+const FALLBACK: Card[] = [
+  { id: "mock-loja-alpha", full_name: "Móveis Alpha", display_name: "Móveis Alpha", company_name: "Móveis Alpha Ltda", avatar_url: null, role: "lojista", business_category: "Móveis Planejados", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Móveis Planejados" },
+  { id: "mock-loja-beta", full_name: "Casa Design", display_name: "Casa Design", company_name: null, avatar_url: null, role: "lojista", business_category: "Decoração", custom_branch: null, city: "Votorantim", state: "SP", rating: 4.8, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Decoração" },
+  { id: "mock-fornec-real", full_name: "Ferragens Real", display_name: "Ferragens Real", company_name: null, avatar_url: null, role: "fornecedor", business_category: "Ferragens B2B", custom_branch: null, city: "Osasco", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Ferragens B2B" },
+];
+
+function readCache(): Card[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { items: Card[] };
+    return parsed?.items?.length ? parsed.items : null;
+  } catch { return null; }
+}
+function writeCache(items: Card[]) {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(CACHE_KEY, JSON.stringify({ items, ts: Date.now() })); } catch { /* ignore */ }
+}
+
+export function RecentStoresCarousel() {
+  const navigate = useNavigate();
+  const userCoords = useUserCoords();
+  const cached = useMemo(() => readCache(), []);
+  const [items, setItems] = useState<Card[]>(() => cached ?? []);
+  const [loading, setLoading] = useState(!cached);
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [myBranch, setMyBranch] = useState<string | null>(null);
+  const [kindFilter, setKindFilter] = useState<"all" | Kind>("all");
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  // Descobre o ramo principal do prestador logado para priorizar lojistas do mesmo ramo.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return;
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("business_category, custom_branch")
+          .eq("id", uid)
+          .maybeSingle();
+        if (cancelled) return;
+        setMyBranch(mainBranchOf((data as any)?.business_category, (data as any)?.custom_branch));
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const fetchList = useCallback(async () => {
+    try {
+      const { data, error } = await supabaseExternal
+        .from("profiles")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, rating, created_at, lat, lng")
+        .not("role", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      const rows: Card[] = ((data as unknown as Row[]) ?? [])
+        .map((r) => {
+          const kind = classify(r.role);
+          if (!kind) return null;
+          return { ...r, _kind: kind, _branch: mainBranchOf(r.business_category, r.custom_branch) } as Card;
+        })
+        .filter((x): x is Card => !!x)
+        .slice(0, 60);
+      if (rows.length > 0) {
+        setItems(rows);
+        writeCache(rows);
+      } else {
+        setItems((prev) => (prev.length > 0 ? prev : FALLBACK));
+      }
+      setErrorMsg(null);
+    } catch (err) {
+      if (typeof console !== "undefined") console.debug("[RecentStoresCarousel] fallback:", err);
+      setItems((prev) => (prev.length > 0 ? prev : FALLBACK));
+      setErrorMsg(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await fetchList();
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [fetchList]);
+
+  const handleRefresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    await fetchList();
+    setTimeout(() => setRefreshing(false), 300);
+  }, [fetchList, refreshing]);
+
+  // Ordena: (1) Lojistas do mesmo ramo principal → (2) demais Lojistas → (3) Fornecedores.
+  // Dentro de cada grupo, mais recentes primeiro.
+  const sortedItems = useMemo(() => {
+    const filtered = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
+    const branchKey = (myBranch || "").toLowerCase();
+    const bucket = (p: Card) => {
+      if (p._kind === "lojista") {
+        if (branchKey && (p._branch || "").toLowerCase() === branchKey) return 0;
+        return 1;
+      }
+      return 2;
+    };
+    return [...filtered].sort((a, b) => {
+      const ba = bucket(a);
+      const bb = bucket(b);
+      if (ba !== bb) return ba - bb;
+      const ta = a.created_at ? Date.parse(a.created_at) : 0;
+      const tb = b.created_at ? Date.parse(b.created_at) : 0;
+      return tb - ta;
+    });
+  }, [items, myBranch, kindFilter]);
+
+  const openProfile = (p: Card) => {
+    const path = `/perfil/${encodeURIComponent(p.id)}`;
+    try { navigate({ to: path as any }); } catch { window.location.href = path; }
+  };
+
+  const showSkeleton = loading && items.length === 0;
+  const showEmpty = !loading && sortedItems.length === 0;
+
+  return (
+    <section
+      aria-label="Lojistas e parceiros fornecedores recentes"
+      className="bg-[#1A1A1B] border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden"
+    >
+      <header className="mb-3 md:mb-4 w-full block">
+        <h3 className="w-full block font-black italic uppercase text-white text-sm md:text-base tracking-wide leading-tight">
+          🏬 Lojistas e Parceiros Fornecedores Recentes
+        </h3>
+        <p className="w-full block text-[11px] md:text-xs text-muted-foreground mt-1 leading-snug">
+          Conecte-se com lojistas e fornecedores recomendados na sua região
+          {myBranch ? <> — priorizando <b className="text-white/80">{myBranch}</b>.</> : "."}
+        </p>
+
+        <div
+          role="toolbar"
+          aria-label="Filtros de lojistas e fornecedores"
+          className="mt-2 flex items-center gap-2 overflow-x-auto scrollbar-none w-full pt-2 pb-1"
+          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+        >
+          {([
+            { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
+            { v: "lojista" as const, label: "🏬 Lojistas", color: "#00FF87" },
+            { v: "fornecedor" as const, label: "🚚 Fornecedores", color: "#A855F7" },
+          ]).map((opt) => {
+            const active = kindFilter === opt.v;
+            return (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => setKindFilter(opt.v)}
+                className="shrink-0 whitespace-nowrap text-[11px] md:text-xs font-bold px-3 py-1.5 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                style={active
+                  ? { background: opt.color, color: "#000", borderColor: opt.color, ["--tw-ring-color" as any]: opt.color }
+                  : { color: "rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.12)", ["--tw-ring-color" as any]: opt.color }}
+                aria-pressed={active}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="shrink-0 whitespace-nowrap inline-flex items-center gap-1 text-[11px] md:text-xs font-bold text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5 transition disabled:opacity-50"
+            aria-label="Atualizar lista"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+            <span className="hidden md:inline">Atualizar</span>
+          </button>
+        </div>
+      </header>
+
+      {showSkeleton ? (
+        <div className="flex gap-3 pb-2 overflow-x-hidden" aria-hidden="true">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="w-44 flex-shrink-0 rounded-2xl bg-[#1A1A1B] border border-white/10 overflow-hidden">
+              <div className="w-full h-36 bg-white/5 animate-pulse" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
+                <div className="h-2.5 w-1/2 rounded bg-white/5 animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : errorMsg ? (
+        <div role="alert" className="flex flex-col items-center text-center py-10 px-4 border border-dashed border-red-500/30 bg-red-500/5 rounded-2xl">
+          <AlertTriangle className="w-10 h-10 text-red-400 mb-2" />
+          <p className="text-sm font-bold text-white">Não foi possível carregar.</p>
+          <button onClick={handleRefresh} className="mt-4 text-xs font-bold bg-[#00FF87] text-black rounded-full px-4 py-2">
+            Tentar novamente
+          </button>
+        </div>
+      ) : showEmpty ? (
+        <div className="flex flex-col items-center text-center py-10 px-4 border border-dashed border-white/10 rounded-2xl">
+          <Store className="w-10 h-10 text-white/40 mb-2" />
+          <p className="text-sm font-bold text-white">Nenhum lojista ou fornecedor por aqui.</p>
+        </div>
+      ) : (
+        <div
+          ref={scrollerRef}
+          role="list"
+          className="flex gap-3 pb-2 overflow-x-auto snap-x snap-mandatory scrollbar-none"
+          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+        >
+          {sortedItems.map((p) => {
+            const meta = KIND_META[p._kind];
+            const rating = typeof p.rating === "number" && p.rating > 0 ? p.rating : 5.0;
+            const displayName = safeStr(p.display_name) || safeStr(p.company_name) || safeStr(p.full_name) || "Parceiro FIXXER";
+            const rawAvatar = safeStr(p.avatar_url);
+            const avatarUrl = isValidImageUrl(rawAvatar) ? rawAvatar : null;
+            const city = safeStr(p.city);
+            const stateVal = normalizeUf(p.state);
+            const location = (city && stateVal) ? `${city}, ${stateVal}` : (city || stateVal || "");
+            const branchText = p._branch || meta.label;
+
+            const rowCoords = (p.lat != null && p.lng != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)))
+              ? { lat: Number(p.lat), lng: Number(p.lng) } : null;
+            const dist = (userCoords && rowCoords) ? haversineKm(userCoords, rowCoords) : null;
+            const distanceLabel = dist != null && Number.isFinite(dist)
+              ? (dist < 10 ? dist.toFixed(1) : Math.round(dist).toString())
+              : null;
+            const sameBranch = myBranch && p._branch && myBranch.toLowerCase() === p._branch.toLowerCase();
+
+            return (
+              <button
+                key={p.id}
+                type="button"
+                role="listitem"
+                onClick={() => openProfile(p)}
+                className={`w-44 flex-shrink-0 snap-start rounded-2xl bg-[#1A1A1B] overflow-hidden border-2 ${meta.borderClass} text-left transition-transform active:scale-[0.98] hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black`}
+                style={{ boxShadow: `0 0 12px ${meta.color}22`, ["--tw-ring-color" as any]: meta.color }}
+                aria-label={`Abrir perfil de ${displayName}, ${meta.label}`}
+              >
+                <div className="relative w-full h-36 bg-black/40">
+                  <StoreAvatar src={avatarUrl} alt={`Foto de ${displayName}`} color={meta.color} />
+                  <span className="absolute top-2 right-2 z-10 text-xs font-bold text-yellow-400 bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    {rating.toFixed(1)}
+                  </span>
+                  {distanceLabel && (
+                    <span className="absolute top-2 left-2 z-10 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                      📍 {distanceLabel} km
+                    </span>
+                  )}
+                  {sameBranch && (
+                    <span
+                      className="absolute bottom-2 left-2 z-10 text-[9px] font-black uppercase tracking-wider bg-black/80 px-2 py-0.5 rounded-full border"
+                      style={{ borderColor: meta.color, color: meta.color }}
+                      title="Mesmo ramo principal do seu perfil"
+                    >
+                      ⭐ Mesmo ramo
+                    </span>
+                  )}
+                </div>
+
+                <div className={`relative p-3 bg-gradient-to-t ${meta.gradientClass}`}>
+                  <p className="font-black text-white text-sm truncate leading-tight">{displayName}</p>
+                  <p className="text-[11px] font-bold mt-0.5 truncate" style={{ color: meta.color }} title={branchText}>
+                    {meta.emoji} {branchText}
+                  </p>
+                  {location && (
+                    <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
+                      <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
+                      <span className="truncate">📍 {location}</span>
+                    </p>
+                  )}
+                  <div className="mt-2">
+                    <AvailabilityBadge userId={p.id} />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function StoreAvatar({ src, alt, color }: { src: string | null; alt: string; color: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const showImg = !!src && !failed;
+  const blurStyle: React.CSSProperties = {
+    background: `radial-gradient(120% 90% at 30% 20%, ${color}33 0%, ${color}11 45%, #000000 100%)`,
+  };
+  return (
+    <>
+      <div className="absolute inset-0 transition-opacity duration-300" style={{ ...blurStyle, opacity: showImg && loaded ? 0 : 1 }} aria-hidden="true">
+        {!showImg && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <UserCircle2 className="w-14 h-14" style={{ color, opacity: 0.7 }} />
+          </div>
+        )}
+      </div>
+      {showImg && (
+        <img
+          src={src!}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+        />
+      )}
+    </>
+  );
+}
