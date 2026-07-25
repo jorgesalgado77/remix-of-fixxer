@@ -122,6 +122,9 @@ function ProfilePage() {
   const [brands, setBrands] = useState<string[]>([]);
   const [newBrand, setNewBrand] = useState("");
   const [isAddingBrand, setIsAddingBrand] = useState(false);
+  const [productTypes, setProductTypes] = useState<string[]>(["Fabricação Própria", "Revenda", "Serviços"]);
+  const [newProductType, setNewProductType] = useState("");
+  const [isAddingProductType, setIsAddingProductType] = useState(false);
   const [lightbox, setLightbox] = useState<{ isOpen: boolean; type: string; url: string; index: number }>({ isOpen: false, type: '', url: '', index: 0 });
   const [uploads, setUploads] = useState<Array<{ id: string; name: string; type: 'image'|'video'|'document'; status: 'uploading'|'success'|'error'; error?: string; file?: File }>>([]);
   const [preview, setPreview] = useState<{ open: boolean; url: string; name: string; kind: 'image'|'video'|'pdf'|'other' }>({ open: false, url: '', name: '', kind: 'other' });
@@ -142,9 +145,10 @@ function ProfilePage() {
       const idToLoad = profileId || user?.id;
       if (!idToLoad) return;
 
-      const [profileRes, brandsRes, postRes] = await Promise.all([
+      const [profileRes, brandsRes, productTypesRes, postRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', idToLoad).single(),
         supabase.from('brand_flags').select('name').order('name', { ascending: true }),
+        supabase.from('product_types').select('name').order('name', { ascending: true }),
         postId ? supabase.from('feed_posts').select('*').eq('id', postId).single() : Promise.resolve({ data: null })
       ]);
       
@@ -186,6 +190,13 @@ function ProfilePage() {
         }
       }
       if (brandsRes.data) setBrands(brandsRes.data.map(b => b.name));
+      if (productTypesRes?.data && productTypesRes.data.length > 0) {
+        const merged = Array.from(new Set([
+          "Fabricação Própria", "Revenda", "Serviços",
+          ...productTypesRes.data.map((p: any) => p.name),
+        ]));
+        setProductTypes(merged);
+      }
       if (postRes?.data) setTargetPost(postRes.data);
       setLoading(false);
     }
@@ -845,7 +856,7 @@ function ProfilePage() {
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
               ) : (
-                <div className="w-full h-full bg-white/5 flex items-center justify-center text-4xl font-black">{profile?.full_name?.charAt(0)}</div>
+                <div className="w-full h-full bg-white/5 flex items-center justify-center text-4xl font-black">{(profile?.display_name || profile?.full_name || '?').charAt(0)}</div>
               )}
             </div>
             <label className="absolute bottom-2 right-2 cursor-pointer bg-primary text-black p-2 rounded-lg shadow-lg hover:scale-110 transition-all">
@@ -856,7 +867,7 @@ function ProfilePage() {
 
           <div className="flex-1 pb-4">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-4xl font-black text-white tracking-tighter">{profile?.full_name || 'Usuário'}</h1>
+              <h1 className="text-4xl font-black text-white tracking-tighter">{profile?.display_name || profile?.full_name || 'Usuário'}</h1>
               <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
                 <Star className="w-4 h-4 text-primary fill-primary" />
                 <span className="text-primary font-black text-sm">{profile?.karma_score || '5.0'}</span>
@@ -1293,47 +1304,95 @@ function ProfilePage() {
 
 
 
-              {/* CAMPOS ESPECÍFICOS: LOJISTA */}
+              {/* CAMPOS ESPECÍFICOS: LOJISTA — Tipo de Produto (multi-seleção) */}
               {profile?.role === 'lojista' && (
                 <div className="pt-8 space-y-6">
                   <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                     <Building className="w-6 h-6 text-primary" />
-                    <h3 className="text-xl font-black uppercase tracking-tighter">Configuração de Bandeira</h3>
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Tipo de Produto</h3>
                   </div>
                   <div className="space-y-4">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Selecione a Bandeira / Fabricante</label>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                      Selecione um ou mais tipos que sua loja oferece
+                    </label>
                     <div className="flex flex-wrap gap-2">
-                      {brands.map(brand => (
-                        <button
-                          key={brand}
-                          onClick={() => setProfile({...profile, brand_flag: brand})}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${profile?.brand_flag === brand ? 'bg-primary text-black border-primary' : 'bg-white/5 border-white/10 hover:border-primary/50'}`}
-                        >
-                          {brand}
-                        </button>
-                      ))}
+                      {productTypes.map(pt => {
+                        const selected: string[] = Array.isArray(profile?.product_types) ? profile.product_types : [];
+                        const isOn = selected.includes(pt);
+                        return (
+                          <button
+                            key={pt}
+                            type="button"
+                            aria-pressed={isOn}
+                            onClick={() => {
+                              const next = isOn ? selected.filter(x => x !== pt) : [...selected, pt];
+                              setProfile({ ...profile, product_types: next });
+                            }}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isOn ? 'bg-primary text-black border-primary' : 'bg-white/5 border-white/10 hover:border-primary/50'}`}
+                          >
+                            {isOn ? '✓ ' : ''}{pt}
+                          </button>
+                        );
+                      })}
                       <button
-                        onClick={() => setIsAddingBrand(true)}
+                        type="button"
+                        onClick={() => setIsAddingProductType(true)}
                         className="px-4 py-2 rounded-xl text-xs font-bold bg-white/5 border border-dashed border-white/20 hover:border-primary text-muted-foreground hover:text-primary transition-all flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" />
-                        Outra Bandeira
+                        Outro
                       </button>
                     </div>
 
-                    {isAddingBrand && (
+                    {isAddingProductType && (
                       <div className="flex gap-2 animate-in slide-in-from-top-2 duration-300">
-                        <input 
+                        <input
                           autoFocus
-                          value={newBrand}
-                          onChange={e => setNewBrand(e.target.value)}
-                          placeholder="Digite a nova bandeira..."
+                          value={newProductType}
+                          onChange={e => setNewProductType(e.target.value)}
+                          placeholder="Ex.: Locação, Assinatura, Consultoria..."
                           className="flex-1 bg-white/5 border border-white/10 p-3 rounded-xl text-sm outline-none focus:border-primary"
                         />
-                        <button onClick={handleAddNewBrand} className="bg-primary text-black font-bold px-4 rounded-xl text-xs">Adicionar</button>
-                        <button onClick={() => setIsAddingBrand(false)} className="bg-white/5 px-4 rounded-xl text-xs">Cancelar</button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const name = newProductType.trim();
+                            if (!name) return;
+                            if (productTypes.some(p => p.toLowerCase() === name.toLowerCase())) {
+                              toast.info("Este tipo já está na lista.");
+                              return;
+                            }
+                            // Persiste no catálogo compartilhado (ficará disponível para outros lojistas)
+                            const { error } = await supabase.from('product_types').insert({ name });
+                            if (error && !String(error.message || '').toLowerCase().includes('duplicate')) {
+                              toast.error("Não foi possível salvar o novo tipo.", { description: error.message });
+                              return;
+                            }
+                            const nextList = Array.from(new Set([...productTypes, name])).sort();
+                            setProductTypes(nextList);
+                            const selected: string[] = Array.isArray(profile?.product_types) ? profile.product_types : [];
+                            setProfile({ ...profile, product_types: [...selected, name] });
+                            setNewProductType("");
+                            setIsAddingProductType(false);
+                            toast.success(`"${name}" adicionado e disponível para outros lojistas.`);
+                          }}
+                          className="bg-primary text-black font-bold px-4 rounded-xl text-xs"
+                        >
+                          Adicionar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setIsAddingProductType(false); setNewProductType(""); }}
+                          className="bg-white/5 px-4 rounded-xl text-xs"
+                        >
+                          Cancelar
+                        </button>
                       </div>
                     )}
+
+                    <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                      💡 As opções personalizadas ("Outro") ficam disponíveis para outros lojistas escolherem também.
+                    </p>
                   </div>
                 </div>
               )}
