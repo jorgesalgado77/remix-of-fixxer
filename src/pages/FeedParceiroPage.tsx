@@ -14,6 +14,7 @@ import {
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity } from "@/lib/currency-brl";
+import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
 import { toast } from "sonner";
 import {
   ArrowLeft,
