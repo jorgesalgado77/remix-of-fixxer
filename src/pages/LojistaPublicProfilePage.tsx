@@ -29,6 +29,12 @@ import {
   Loader2,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import {
+  categoryFromProfilePath,
+  publicProfilePathFor,
+  resolvePublicProfileCategory,
+  type PublicProfileCategory,
+} from "@/lib/public-profile-category";
 import { useUserCoords, cityCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
 import { useFavoriteUser } from "@/hooks/useFavoriteUser";
@@ -188,13 +194,9 @@ export function LojistaPublicProfilePage() {
   const params = useParams({ strict: false }) as { id?: string };
   const location = useLocation();
   const navigate = useNavigate();
-  const category: CategoryKey = useMemo(() => {
-    const p = location.pathname || "";
-    if (p.startsWith("/prestador")) return "prestador";
-    if (p.startsWith("/parceiro")) return "fornecedor";
-    if (p.startsWith("/cliente")) return "cliente";
-    return "lojista";
-  }, [location.pathname]);
+  const routeCategory = useMemo<PublicProfileCategory>(() => categoryFromProfilePath(location.pathname) ?? "lojista", [location.pathname]);
+  const [resolvedCategory, setResolvedCategory] = useState<PublicProfileCategory>(routeCategory);
+  const category: CategoryKey = resolvedCategory;
   const theme = useMemo(() => getCategoryTheme(category), [category]);
   const themeStyle = {
     ["--primary" as any]: theme.hex,
@@ -229,6 +231,10 @@ export function LojistaPublicProfilePage() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [contactLoading, setContactLoading] = useState(false);
+
+  useEffect(() => {
+    setResolvedCategory(routeCategory);
+  }, [routeCategory, storeId]);
 
   useEffect(() => {
     let mounted = true;
@@ -348,8 +354,21 @@ export function LojistaPublicProfilePage() {
           }
         });
 
-        if (Object.keys(merged).length > 0) setProfile(merged as StoreProfile);
+        const profileCandidate = Object.keys(merged).length > 0 ? (merged as StoreProfile) : null;
+        if (profileCandidate) setProfile(profileCandidate);
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
+
+        if (storeId && !isMockPeerId(storeId)) {
+          const detectedCategory = await resolvePublicProfileCategory(storeId, {
+            profile: profileCandidate,
+            routeHint: routeCategory,
+          });
+          setResolvedCategory(detectedCategory);
+          const expectedPath = publicProfilePathFor(detectedCategory, storeId);
+          if (location.pathname !== expectedPath) {
+            navigate({ to: expectedPath as any, replace: true });
+          }
+        }
 
 
         // O.S. pendentes deste lojista — usa o user_id resolvido do perfil (ou storeId como fallback)
@@ -377,7 +396,7 @@ export function LojistaPublicProfilePage() {
       }
     };
     load();
-  }, [storeId]);
+  }, [storeId, routeCategory, location.pathname, navigate]);
 
   // Realtime: reflete alterações do perfil (fotos/vídeos/seções) em tempo real
   useEffect(() => {
