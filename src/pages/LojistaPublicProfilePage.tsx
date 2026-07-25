@@ -203,6 +203,15 @@ export function LojistaPublicProfilePage() {
   const [profile, setProfile] = useState<StoreProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("sobre");
+  // 🔎 Filtros rápidos de compatibilidade (aplicados às ofertas em "🎁 Oferece").
+  // Cada filtro representa um chip clicável no header (work_modes + veículo).
+  const [compatFilters, setCompatFilters] = useState<Set<string>>(() => new Set());
+  const toggleCompat = (key: string) => setCompatFilters((prev) => {
+    const n = new Set(prev);
+    if (n.has(key)) n.delete(key); else n.add(key);
+    return n;
+  });
+  const clearCompat = () => setCompatFilters(new Set());
   const [photoFilter, setPhotoFilter] = useState("Todas");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<"Todos" | "Fotos" | "Documentos">("Todos");
   const PAGE_SIZE = 12;
