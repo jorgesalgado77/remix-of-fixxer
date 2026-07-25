@@ -5,6 +5,7 @@ import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { useJobRoles } from "@/hooks/use-job-roles";
 import { toast } from "sonner";
 import { consumeCoins, getCachedBalance, getCurrentUserId } from "@/lib/coins";
+import { confirmCoins } from "@/components/ConfirmCoinsDialog";
 import type { PlanId } from "@/lib/monetization";
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
 };
 
 const MAX_ROLES = 10;
+const MAX_PREFERRED = 3;
 const EXTRA_COST = 15;
 
 function quotaFor(plan: PlanId): number {
@@ -49,23 +51,37 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
       .filter((l) => !l.toLowerCase().startsWith("📝"));
   }, [macro]);
 
-  const preferredService: string = profile?.preferred_service || "";
+  // Suporta legado (string única) e novo formato (CSV via ||)
+  const preferredServices: string[] = useMemo(
+    () => parseCsv(profile?.preferred_service),
+    [profile?.preferred_service],
+  );
+  const primaryPreferred = preferredServices[0] || "";
   const roles: string[] = parseCsv(profile?.job_roles);
   const quota = quotaFor(planId);
   const overQuota = Math.max(0, roles.length - quota);
 
-  const { roles: sharedRoles, addRole } = useJobRoles(preferredService);
+  const { roles: sharedRoles, addRole } = useJobRoles(primaryPreferred);
   const [newRole, setNewRole] = useState("");
   const [query, setQuery] = useState("");
   const [charging, setCharging] = useState(false);
 
-  const setPreferredService = (label: string) => {
-    setProfile({
-      ...profile,
-      preferred_service: label,
-      // ao trocar de serviço preferencial, limpamos os cargos anteriores
-      job_roles: "",
-    });
+  const togglePreferredService = (label: string) => {
+    const has = preferredServices.includes(label);
+    let next: string[];
+    if (has) {
+      next = preferredServices.filter((s) => s !== label);
+    } else {
+      if (preferredServices.length >= MAX_PREFERRED) {
+        toast.warning(`Máximo de ${MAX_PREFERRED} serviços preferenciais.`);
+        return;
+      }
+      next = [...preferredServices, label];
+    }
+    // Se remover o serviço principal, limpa cargos (que dependem dele)
+    const patch: any = { ...profile, preferred_service: toCsv(next) };
+    if (has && label === primaryPreferred) patch.job_roles = "";
+    setProfile(patch);
   };
 
   const chargeExtraIfNeeded = async (nextLen: number): Promise<boolean> => {
@@ -77,7 +93,17 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
       toast.error(`Saldo insuficiente. Cada cargo extra custa ${EXTRA_COST} moedas.`);
       return false;
     }
-    const ok = window.confirm(`Seu plano permite ${quota} cargo(s). Deseja gastar ${EXTRA_COST} moedas por este cargo extra?`);
+    const ok = await confirmCoins({
+      title: "Cargo extra",
+      description: (
+        <>
+          Seu plano permite <b>{quota}</b> cargo(s) gratuito(s). Deseja gastar{" "}
+          <b className="text-amber-300">{EXTRA_COST} moedas</b> por este cargo extra?
+        </>
+      ),
+      cost: EXTRA_COST,
+      confirmLabel: "Gastar moedas",
+    });
     if (!ok) return false;
     setCharging(true);
     try {
@@ -149,7 +175,7 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
         accent={accent}
       />
 
-      {/* SUBCATEGORIAS DO MACRO -> SERVIÇO PREFERENCIAL */}
+      {/* SUBCATEGORIAS DO MACRO -> SERVIÇOS PREFERENCIAIS (até 3) */}
       {macro && branches.length > 0 && (
         <div className="pt-6 border-t border-white/5 space-y-3">
           <div className="flex items-center gap-3">
@@ -157,20 +183,24 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
             <div className="min-w-0">
               <h4 className="text-sm font-black uppercase tracking-tight text-white">Serviço Preferencial</h4>
               <p className="text-[11px] text-white/50 mt-1 break-words">
-                Escolha a subcategoria da sua categoria principal <b>{macro.label}</b> que melhor representa seu serviço.
+                Escolha até <b>{MAX_PREFERRED}</b> subcategorias de <b>{macro.label}</b>. Clique novamente para desmarcar.
+                {" "}
+                <span className="text-white/40">({preferredServices.length}/{MAX_PREFERRED})</span>
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {branches.map((b) => {
-              const active = preferredService === b;
+              const active = preferredServices.includes(b);
+              const disabled = !active && preferredServices.length >= MAX_PREFERRED;
               return (
                 <button
                   key={b}
                   type="button"
-                  onClick={() => setPreferredService(b)}
-                  className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-bold transition-all active:scale-95"
+                  disabled={disabled}
+                  onClick={() => togglePreferredService(b)}
+                  className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
                   style={{
                     borderColor: active ? accent : "rgba(255,255,255,0.12)",
                     background: active ? `${accent}22` : "rgba(255,255,255,0.03)",
@@ -178,7 +208,7 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
                   }}
                   aria-pressed={active}
                 >
-                  {active && <Check className="w-3 h-3" style={{ color: accent }} />}
+                  {active ? <Check className="w-3 h-3" style={{ color: accent }} /> : <Plus className="w-3 h-3" />}
                   {b}
                 </button>
               );
@@ -187,14 +217,14 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
         </div>
       )}
 
-      {/* CARGOS — apenas após escolher o serviço preferencial */}
-      {preferredService && (
+      {/* CARGOS — apenas após escolher pelo menos um serviço preferencial */}
+      {primaryPreferred && (
         <div className="pt-6 border-t border-white/5 space-y-4">
           <div className="flex items-center gap-3">
             <Briefcase className="w-4 h-4" style={{ color: accent }} />
             <div className="min-w-0">
               <h4 className="text-sm font-black uppercase tracking-tight text-white">
-                Cargos em <span style={{ color: accent }}>{preferredService}</span>
+                Cargos em <span style={{ color: accent }}>{primaryPreferred}</span>
               </h4>
               <p className="text-[11px] text-white/50 mt-1 break-words">
                 Plano <b>{planId.toUpperCase()}</b> inclui <b>{quota}</b> cargo(s). Extras custam{" "}
@@ -210,7 +240,6 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
             </div>
           )}
 
-          {/* Cargos já selecionados (ordem = preferencial primeiro) */}
           {roles.length > 0 && (
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 space-y-2">
               <p className="text-[10px] font-black uppercase tracking-widest text-white/60">
@@ -258,7 +287,6 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
             </div>
           )}
 
-          {/* Busca + adicionar */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" aria-hidden />
@@ -287,11 +315,10 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
             </button>
           </div>
 
-          {/* Sugestões da lista compartilhada */}
           <div className="flex flex-wrap gap-2">
             {filteredShared.length === 0 && (
               <p className="text-[11px] text-white/40 italic">
-                Nenhum cargo cadastrado ainda para <b>{preferredService}</b>. Seja o primeiro a sugerir!
+                Nenhum cargo cadastrado ainda para <b>{primaryPreferred}</b>. Seja o primeiro a sugerir!
               </p>
             )}
             {filteredShared.map((r) => {
