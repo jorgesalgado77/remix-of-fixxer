@@ -665,8 +665,12 @@ export function RecentPartnersCarousel() {
             // Distância exibida quando temos valor válido (live via geo OU persistido em profiles.distance_km).
             const hasGeo = p._distanceKm != null && Number.isFinite(p._distanceKm);
             const distanceKm = hasGeo ? p._distanceKm! : null;
+            // Formatação PT-BR: usa vírgula decimal e arredondamento consistente
+            // (< 10 km → 1 casa decimal; ≥ 10 km → inteiro).
             const distanceLabel = distanceKm != null
-              ? (distanceKm < 10 ? distanceKm.toFixed(1) : Math.round(distanceKm).toString())
+              ? (distanceKm < 10
+                  ? distanceKm.toFixed(1).replace(".", ",")
+                  : Math.round(distanceKm).toString())
               : null;
             // Badge removível no topo esquerdo: apenas no modo "nearby" quando o perfil não tem coords mapeáveis.
             const showNoGeoBadge = sortMode === "nearby" && !!userCoords && p._coords == null;
