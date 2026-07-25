@@ -193,7 +193,7 @@ export function OfferingsPicker({
                   checked={active}
                   onChange={() => toggle(item)}
                   disabled={charging}
-                  className="w-5 h-5 accent-primary"
+                  className="w-5 h-5 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214] rounded"
                   aria-label={`Oferece ${item}`}
                 />
                 <span className="text-xs font-bold flex-1">{item}</span>
