@@ -372,6 +372,7 @@ function ChatInboxPage() {
         unread,
         archived: archivedSet.has(c.peerId),
         muted: mutedSet.has(c.peerId),
+        linkedAd: c.linkedAd ?? null,
       };
     });
     // Evita duplicar caso o peerId já exista nas reais
