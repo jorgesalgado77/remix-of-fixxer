@@ -70,6 +70,10 @@ function ProfilePage() {
   const [newBrand, setNewBrand] = useState("");
   const [isAddingBrand, setIsAddingBrand] = useState(false);
   const [lightbox, setLightbox] = useState<{ isOpen: boolean; type: string; url: string; index: number }>({ isOpen: false, type: '', url: '', index: 0 });
+  const [uploads, setUploads] = useState<Array<{ id: string; name: string; type: 'image'|'video'|'document'; status: 'uploading'|'success'|'error'; error?: string }>>([]);
+  const [preview, setPreview] = useState<{ open: boolean; url: string; name: string; kind: 'image'|'video'|'pdf'|'other' }>({ open: false, url: '', name: '', kind: 'other' });
+  const dragRef = useRef<{ list: 'doc'|'image'|'video'; index: number } | null>(null);
+
   const lastSavedSnapshotRef = useRef<string>('');
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -262,7 +266,8 @@ function ProfilePage() {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        
+        const uploadId = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`;
+
         // Validation
         if (type === 'image') {
           if (!allowedImageTypes.includes(file.type)) {
@@ -293,114 +298,176 @@ function ProfilePage() {
           }
         }
 
-        let processedFile = file;
-        if (type === 'image') {
-          try {
-            processedFile = await compressImage(file);
-          } catch (err) {
-            console.error("Erro na compressão:", err);
-            // Fallback to original if compression fails
+        // Adiciona à barra de progresso (estado: enviando)
+        setUploads((prev) => [...prev, { id: uploadId, name: file.name, type, status: 'uploading' }]);
+
+        try {
+          let processedFile = file;
+          if (type === 'image') {
+            try {
+              processedFile = await compressImage(file);
+            } catch (err) {
+              console.error("Erro na compressão:", err);
+            }
           }
-        }
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
-        const filePath = `${type}s/${fileName}`;
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
+          const filePath = `${type}s/${fileName}`;
 
-        const uploadWithRetry = async (retries = 2): Promise<any> => {
-          try {
-            const { error: uploadError } = await supabase.storage
-              .from('media')
-              .upload(filePath, processedFile);
-            if (uploadError) throw uploadError;
-            return true;
-          } catch (err) {
-            if (retries > 0) return uploadWithRetry(retries - 1);
-            throw err;
-          }
-        };
+          const uploadWithRetry = async (retries = 2): Promise<any> => {
+            try {
+              const { error: uploadError } = await supabase.storage
+                .from('media')
+                .upload(filePath, processedFile);
+              if (uploadError) throw uploadError;
+              return true;
+            } catch (err) {
+              if (retries > 0) return uploadWithRetry(retries - 1);
+              throw err;
+            }
+          };
 
-        await uploadWithRetry();
+          await uploadWithRetry();
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('media')
-          .getPublicUrl(filePath);
+          const { data: { publicUrl } } = supabase.storage
+            .from('media')
+            .getPublicUrl(filePath);
 
-        const item = { 
-          name: file.name, 
-          url: publicUrl, 
-          type, 
-          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-          created_at: new Date().toISOString()
-        };
+          const item = {
+            name: file.name,
+            url: publicUrl,
+            type,
+            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+            created_at: new Date().toISOString()
+          };
 
-        if (type === 'document') {
-          newDocs.push(item);
-        } else {
-          newMedia.push(item);
+          if (type === 'document') newDocs.push(item);
+          else newMedia.push(item);
+
+          setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'success' } : u));
+        } catch (err: any) {
+          console.error('[upload] falha em', file.name, err);
+          const message = err?.message || 'Falha no upload';
+          setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'error', error: message } : u));
+          toast.error(`Falha ao enviar "${file.name}"`, { description: message });
         }
       }
 
       const updatedPortfolio = [...(profile.portfolio_media || []), ...newMedia];
       const updatedDocs = [...(profile.documents || []), ...newDocs];
 
-      // Payload com fallback: se as colunas `portfolio_media` / `documents`
-      // não existirem no schema do Supabase, movemos para
-      // `custom_sections.__extras` (JSONB) para não perder o dado.
-      const basePayload: any = {
-        portfolio_media: updatedPortfolio,
-        documents: updatedDocs,
-        custom_sections: profile.custom_sections ?? {},
-      };
-      const extras: Record<string, unknown> = {
-        ...((basePayload.custom_sections as any)?.__extras || {}),
-      };
-
-      let lastError: any = null;
-      let attempts = 0;
-      while (attempts < 6) {
-        attempts++;
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update(basePayload)
-          .eq('id', profile.id);
-        if (!updateError) { lastError = null; break; }
-        lastError = updateError;
-        const msg = updateError.message || '';
-        const m =
-          msg.match(/'([^']+)'\s+column/i) ||
-          msg.match(/column\s+"([^"]+)"/i) ||
-          msg.match(/Could not find the '([^']+)'/i);
-        const col = m?.[1];
-        if (col && col in basePayload && col !== 'custom_sections' && col !== 'id') {
-          console.warn(`[media.upload] Coluna inexistente "${col}" — movendo para custom_sections.__extras`);
-          extras[col] = basePayload[col];
-          delete basePayload[col];
-          basePayload.custom_sections = {
-            ...(basePayload.custom_sections || {}),
-            __extras: extras,
-          };
-          continue;
-        }
-        break;
+      if (newMedia.length === 0 && newDocs.length === 0) {
+        return; // nada persistir
       }
 
-      if (lastError) throw lastError;
-
-      setProfile({
-        ...profile,
-        portfolio_media: updatedPortfolio,
-        documents: updatedDocs,
-        custom_sections: basePayload.custom_sections ?? profile.custom_sections,
-      });
-
+      await persistMedia(updatedPortfolio, updatedDocs);
       toast.success(`${newMedia.length + newDocs.length} arquivo(s) salvos com sucesso!`);
+
+      // Limpa a lista após 3s dos sucessos
+      setTimeout(() => {
+        setUploads((prev) => prev.filter((u) => u.status !== 'success'));
+      }, 3000);
     } catch (error: any) {
       toast.error("Erro ao salvar arquivos: " + (error?.message || 'falha desconhecida'));
     } finally {
       setSaving(false);
+      // libera o input para permitir reenvio do mesmo arquivo
+      try { (e.target as HTMLInputElement).value = ''; } catch {}
     }
   };
+
+  // Persiste portfolio_media / documents com fallback para custom_sections.__extras
+  const persistMedia = async (portfolio: any[], docs: any[]) => {
+    if (!profile?.id) return;
+    const basePayload: any = {
+      portfolio_media: portfolio,
+      documents: docs,
+      custom_sections: profile.custom_sections ?? {},
+    };
+    const extras: Record<string, unknown> = { ...((basePayload.custom_sections as any)?.__extras || {}) };
+    let lastError: any = null;
+    let attempts = 0;
+    while (attempts < 6) {
+      attempts++;
+      const { error } = await supabase.from('profiles').update(basePayload).eq('id', profile.id);
+      if (!error) { lastError = null; break; }
+      lastError = error;
+      const msg = error.message || '';
+      const m =
+        msg.match(/'([^']+)'\s+column/i) ||
+        msg.match(/column\s+"([^"]+)"/i) ||
+        msg.match(/Could not find the '([^']+)'/i);
+      const col = m?.[1];
+      if (col && col in basePayload && col !== 'custom_sections' && col !== 'id') {
+        console.warn(`[persistMedia] Coluna inexistente "${col}" — movendo para custom_sections.__extras`);
+        extras[col] = basePayload[col];
+        delete basePayload[col];
+        basePayload.custom_sections = { ...(basePayload.custom_sections || {}), __extras: extras };
+        continue;
+      }
+      break;
+    }
+    if (lastError) throw lastError;
+    setProfile((prev: any) => ({
+      ...prev,
+      portfolio_media: portfolio,
+      documents: docs,
+      custom_sections: basePayload.custom_sections ?? prev?.custom_sections,
+    }));
+  };
+
+  // Remove um item (documento/imagem/vídeo) e persiste automaticamente.
+  const removeMediaItem = async (list: 'doc'|'image'|'video', index: number) => {
+    try {
+      const currentDocs = [...(profile?.documents || [])];
+      const currentMedia = [...(profile?.portfolio_media || [])];
+      if (list === 'doc') {
+        const docItems = currentDocs.filter((f: any) => f.type === 'document');
+        const target = docItems[index];
+        if (!target) return;
+        const nextDocs = currentDocs.filter((d: any) => d !== target);
+        await persistMedia(currentMedia, nextDocs);
+      } else {
+        const kind = list;
+        const items = currentMedia.filter((f: any) => f.type === kind);
+        const target = items[index];
+        if (!target) return;
+        const nextMedia = currentMedia.filter((d: any) => d !== target);
+        await persistMedia(nextMedia, currentDocs);
+      }
+      toast.success('Item removido');
+    } catch (err: any) {
+      toast.error('Falha ao remover', { description: err?.message });
+    }
+  };
+
+  // Reordena preservando a ordem global de portfolio_media / documents.
+  const reorderMedia = async (list: 'doc'|'image'|'video', fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    try {
+      if (list === 'doc') {
+        const currentDocs = [...(profile?.documents || [])];
+        const docItems = currentDocs.filter((f: any) => f.type === 'document');
+        const others = currentDocs.filter((f: any) => f.type !== 'document');
+        const [moved] = docItems.splice(fromIdx, 1);
+        docItems.splice(toIdx, 0, moved);
+        await persistMedia(profile?.portfolio_media || [], [...others, ...docItems]);
+      } else {
+        const kind = list;
+        const currentMedia = [...(profile?.portfolio_media || [])];
+        const items = currentMedia.filter((f: any) => f.type === kind);
+        const others = currentMedia.filter((f: any) => f.type !== kind);
+        const [moved] = items.splice(fromIdx, 1);
+        items.splice(toIdx, 0, moved);
+        await persistMedia([...others, ...items], profile?.documents || []);
+      }
+    } catch (err: any) {
+      toast.error('Falha ao reordenar', { description: err?.message });
+    }
+  };
+
+
 
 
 
@@ -1293,27 +1360,76 @@ function ProfilePage() {
                 <Upload className="w-5 h-5 text-primary" />
                 <h3 className="text-lg font-black uppercase tracking-tighter">Mídia & Documentos</h3>
               </div>
-              
+
+              {/* Painel de status dos uploads */}
+              {uploads.length > 0 && (
+                <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-2" role="status" aria-live="polite">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                      Envios em andamento ({uploads.filter(u => u.status === 'uploading').length}/{uploads.length})
+                    </p>
+                    {uploads.every(u => u.status !== 'uploading') && (
+                      <button
+                        onClick={() => setUploads([])}
+                        className="text-[9px] font-black uppercase text-muted-foreground hover:text-white"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  {uploads.map((u) => (
+                    <div key={u.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="truncate text-white/80 max-w-[70%]" title={u.name}>{u.name}</span>
+                        <span className={`font-black uppercase ${u.status === 'success' ? 'text-emerald-400' : u.status === 'error' ? 'text-red-400' : 'text-amber-300'}`}>
+                          {u.status === 'uploading' ? 'Enviando…' : u.status === 'success' ? '✓ Concluído' : '✕ Falhou'}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div className={`h-full transition-all ${u.status === 'success' ? 'bg-emerald-400 w-full' : u.status === 'error' ? 'bg-red-400 w-full' : 'bg-primary w-2/3 animate-pulse'}`} />
+                      </div>
+                      {u.status === 'error' && u.error && (
+                        <p className="text-[9px] text-red-300/90 italic">{u.error}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="space-y-8">
                 {/* DOCUMENTOS */}
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <FileText className="w-3 h-3" /> Documentos (PDF, DOC, XLS)
+                    <span className="ml-auto text-[9px] text-white/50 normal-case italic">Arraste para reordenar</span>
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {profile?.documents?.filter((f: any) => f.type === 'document').map((doc: any, i: number) => {
                       const ext = (doc.name?.split('.').pop() || '').toLowerCase();
                       const isPdf = ext === 'pdf';
                       const isImg = ['png','jpg','jpeg','webp','gif','avif','svg'].includes(ext);
+                      const kind: 'image'|'pdf'|'other' = isImg ? 'image' : isPdf ? 'pdf' : 'other';
                       return (
-                      <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 transition-all">
+                      <div
+                        key={i}
+                        draggable
+                        onDragStart={() => { dragRef.current = { list: 'doc', index: i }; }}
+                        onDragOver={(ev) => ev.preventDefault()}
+                        onDrop={(ev) => {
+                          ev.preventDefault();
+                          const src = dragRef.current;
+                          if (src && src.list === 'doc') reorderMedia('doc', src.index, i);
+                          dragRef.current = null;
+                        }}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 transition-all cursor-grab active:cursor-grabbing"
+                      >
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <a
-                            href={doc.url}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => setPreview({ open: true, url: doc.url, name: doc.name, kind })}
                             className="w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center relative"
-                            title={`Abrir ${doc.name}`}
+                            title={`Pré-visualizar ${doc.name}`}
+                            aria-label={`Pré-visualizar ${doc.name}`}
                           >
                             {isImg ? (
                               <img src={doc.url} alt={doc.name} className="w-full h-full object-cover" loading="lazy" />
@@ -1328,20 +1444,34 @@ function ProfilePage() {
                                 <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-primary/80 text-black uppercase truncate">{ext || 'DOC'}</span>
                               </>
                             )}
-                          </a>
+                          </button>
                           <div className="truncate">
                             <p className="text-[11px] font-bold text-white truncate">{doc.name}</p>
                             <p className="text-[9px] text-muted-foreground uppercase">{doc.size || 'N/A'}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <a href={doc.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                          <button
+                            type="button"
+                            onClick={() => setPreview({ open: true, url: doc.url, name: doc.name, kind })}
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                            title="Pré-visualizar"
+                            aria-label="Pré-visualizar"
+                          >
+                            <Search className="w-4 h-4" />
+                          </button>
+                          <a href={doc.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors" title="Abrir em nova aba">
                             <ExternalLink className="w-4 h-4" />
                           </a>
-                          <button onClick={() => {
-                            const next = profile.documents.filter((_: any, idx: number) => idx !== i);
-                            setProfile({...profile, documents: next});
-                          }} className="text-muted-foreground hover:text-red-500 transition-colors">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Remover "${doc.name}"?`)) removeMediaItem('doc', i);
+                            }}
+                            className="text-muted-foreground hover:text-red-500 transition-colors"
+                            title="Remover"
+                            aria-label="Remover documento"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -1361,23 +1491,51 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Camera className="w-3 h-3" /> Galeria de Imagens
-                    <span className="ml-auto text-[9px] text-amber-400/90">💰 6 grátis · +5 moedas/foto extra</span>
+                    <span className="ml-auto text-[9px] text-amber-400/90">💰 6 grátis · +5 moedas/foto extra · arraste p/ reordenar</span>
                   </h4>
-                  <div className="columns-2 gap-3 space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'image').map((img: any, i: number) => (
-                      <div key={i} className="relative group rounded-xl overflow-hidden cursor-pointer break-inside-avoid shadow-lg" onClick={() => setLightbox({ isOpen: true, type: 'image', url: img.url, index: i })}>
-                        <img src={img.url} alt="Portfolio" className="w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      <div
+                        key={i}
+                        draggable
+                        onDragStart={() => { dragRef.current = { list: 'image', index: i }; }}
+                        onDragOver={(ev) => ev.preventDefault()}
+                        onDrop={(ev) => {
+                          ev.preventDefault();
+                          const src = dragRef.current;
+                          if (src && src.list === 'image') reorderMedia('image', src.index, i);
+                          dragRef.current = null;
+                        }}
+                        className="relative group rounded-xl overflow-hidden cursor-grab active:cursor-grabbing shadow-lg aspect-square"
+                        onClick={() => setPreview({ open: true, url: img.url, name: img.name || 'Imagem', kind: 'image' })}
+                      >
+                        <img src={img.url} alt={img.name || 'Portfolio'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                          <button onClick={(e) => { e.stopPropagation(); /* edit logic */ }} className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-primary hover:text-black"><Save className="w-4 h-4" /></button>
-                          <button onClick={(e) => {
-                            e.stopPropagation();
-                            const next = profile.portfolio_media.filter((_: any, idx: number) => idx !== i);
-                            setProfile({...profile, portfolio_media: next});
-                          }} className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-red-500"><Trash2 className="w-4 h-4" /></button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setPreview({ open: true, url: img.url, name: img.name || 'Imagem', kind: 'image' }); }}
+                            className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-primary hover:text-black"
+                            title="Pré-visualizar"
+                            aria-label="Pré-visualizar imagem"
+                          >
+                            <Search className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Remover esta imagem?')) removeMediaItem('image', i);
+                            }}
+                            className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-red-500"
+                            title="Remover"
+                            aria-label="Remover imagem"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
-                    <label className="w-full aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group break-inside-avoid">
+                    <label className="w-full aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group">
                       <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
                       <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleMediaUpload(e, 'image')} />
                     </label>
@@ -1392,13 +1550,41 @@ function ProfilePage() {
                   </h4>
                   <div className="grid grid-cols-1 gap-4">
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'video').map((vid: any, i: number) => (
-                      <div key={i} className="relative group rounded-2xl overflow-hidden bg-black aspect-video border border-white/5">
+                      <div
+                        key={i}
+                        draggable
+                        onDragStart={() => { dragRef.current = { list: 'video', index: i }; }}
+                        onDragOver={(ev) => ev.preventDefault()}
+                        onDrop={(ev) => {
+                          ev.preventDefault();
+                          const src = dragRef.current;
+                          if (src && src.list === 'video') reorderMedia('video', src.index, i);
+                          dragRef.current = null;
+                        }}
+                        className="relative group rounded-2xl overflow-hidden bg-black aspect-video border border-white/5"
+                      >
                         <video src={vid.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" controls />
                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                           <button onClick={() => {
-                            const next = profile.portfolio_media.filter((_: any, idx: number) => idx !== i);
-                            setProfile({...profile, portfolio_media: next});
-                          }} className="bg-black/60 p-2 rounded-xl backdrop-blur-md hover:bg-red-500"><Trash2 className="w-4 h-4" /></button>
+                          <button
+                            type="button"
+                            onClick={() => setPreview({ open: true, url: vid.url, name: vid.name || 'Vídeo', kind: 'other' })}
+                            className="bg-black/60 p-2 rounded-xl backdrop-blur-md hover:bg-primary hover:text-black"
+                            title="Pré-visualizar"
+                            aria-label="Pré-visualizar vídeo"
+                          >
+                            <Search className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm('Remover este vídeo?')) removeMediaItem('video', i);
+                            }}
+                            className="bg-black/60 p-2 rounded-xl backdrop-blur-md hover:bg-red-500"
+                            title="Remover"
+                            aria-label="Remover vídeo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -1409,6 +1595,8 @@ function ProfilePage() {
                     </label>
                   </div>
                 </div>
+
+
 
                 {/* DEPOIMENTOS */}
                 <div className="pt-4 border-t border-white/5 space-y-4">
@@ -1478,7 +1666,62 @@ function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* MODAL DE PRÉ-VISUALIZAÇÃO (imagem / PDF / documento) */}
+      {preview.open && (
+        <div
+          className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Pré-visualização de ${preview.name}`}
+          onClick={() => setPreview({ ...preview, open: false })}
+        >
+          <div className="relative w-full max-w-5xl h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3 gap-3">
+              <p className="text-xs sm:text-sm font-black text-white truncate flex-1" title={preview.name}>
+                {preview.name}
+              </p>
+              <a
+                href={preview.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] font-black uppercase bg-white/10 hover:bg-primary hover:text-black px-3 py-2 rounded-xl transition-all flex items-center gap-2"
+              >
+                <ExternalLink className="w-3 h-3" /> Abrir
+              </a>
+              <button
+                onClick={() => setPreview({ ...preview, open: false })}
+                className="text-white/70 hover:text-white bg-white/10 hover:bg-red-500/80 p-2 rounded-xl transition-all"
+                aria-label="Fechar pré-visualização"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 bg-black/40 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10">
+              {preview.kind === 'image' ? (
+                <img src={preview.url} alt={preview.name} className="max-w-full max-h-full object-contain" />
+              ) : preview.kind === 'pdf' ? (
+                <iframe src={preview.url} title={preview.name} className="w-full h-full bg-white" />
+              ) : (
+                <div className="flex flex-col items-center gap-3 text-center p-8">
+                  <File className="w-16 h-16 text-primary" />
+                  <p className="text-sm text-white/80">Este tipo de arquivo não pode ser pré-visualizado no navegador.</p>
+                  <a
+                    href={preview.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 px-4 py-2 rounded-xl bg-primary text-black text-xs font-black uppercase"
+                  >
+                    Abrir em nova aba
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
 
