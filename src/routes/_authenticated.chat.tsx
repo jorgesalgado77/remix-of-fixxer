@@ -866,7 +866,7 @@ function ChatInboxPage() {
           <>
             <ul className="space-y-2">
               {visible.map((c) => {
-                const theme = getCategoryTheme(roleToCategory(c.peerRole));
+                const theme = getPeerTheme(c.peerRole);
                 const historySnippet =
                   activeTerms.length > 0 && !normStr(c.lastMessage || "").includes(activeTerms[0])
                     ? buildHistorySnippet(messagesByPeer.get(c.peerId) || "", activeTerms)
