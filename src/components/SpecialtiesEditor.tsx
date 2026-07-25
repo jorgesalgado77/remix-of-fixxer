@@ -1,6 +1,16 @@
 import { useMemo, useState } from "react";
 import { Sparkles, Plus, Trash2, Star, StarOff, Coins } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export type Specialty = {
   id: string;
@@ -52,42 +62,16 @@ export function SpecialtiesEditor({
   const [draftTitle, setDraftTitle] = useState("");
   const [draftSubtitle, setDraftSubtitle] = useState("");
   const [charging, setCharging] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const extrasCount = Math.max(0, list.length - quota);
   const extrasCost = extrasCount * EXTRA_COST;
   const canAddFree = list.length < quota;
   const reachedMax = list.length >= MAX_SPECIALTIES;
 
-  const addSpecialty = async () => {
+  const commitFree = () => {
     const title = draftTitle.trim();
-    if (!title) { toast.error("Informe o título principal da especialidade."); return; }
-    if (reachedMax) { toast.error(`Limite máximo de ${MAX_SPECIALTIES} especialidades atingido.`); return; }
-
-    // cobra moedas se ultrapassar cota do plano
-    if (!canAddFree) {
-      if (!userId) { toast.error("Faça login para adicionar especialidades extras."); return; }
-      setCharging(true);
-      try {
-        const { spendCoinsForAction } = await import("@/lib/monetization");
-        const res: any = await spendCoinsForAction(userId, "extra_specialty", `specialty:${title}`);
-        if (!res?.ok) {
-          if (res?.reason === "insufficient") {
-            toast.error(`Saldo insuficiente. Cada especialidade extra custa ${EXTRA_COST} moedas.`);
-          } else {
-            toast.error("Não foi possível debitar as moedas.", { description: res?.error });
-          }
-          setCharging(false);
-          return;
-        }
-        toast.success(`−${EXTRA_COST} moedas · Especialidade extra liberada.`);
-      } catch (err: any) {
-        toast.error("Erro ao processar cobrança.", { description: err?.message });
-        setCharging(false);
-        return;
-      }
-      setCharging(false);
-    }
-
     const item: Specialty = {
       id: uid(),
       title,
@@ -97,6 +81,53 @@ export function SpecialtiesEditor({
     onChange([...list, item]);
     setDraftTitle("");
     setDraftSubtitle("");
+  };
+
+  const handleAddClick = async () => {
+    const title = draftTitle.trim();
+    if (!title) { toast.error("Informe o título principal da especialidade."); return; }
+    if (reachedMax) { toast.error(`Limite máximo de ${MAX_SPECIALTIES} especialidades atingido.`); return; }
+
+    if (canAddFree) { commitFree(); return; }
+
+    // Precisa cobrar → abre confirmação com saldo atual
+    if (!userId) { toast.error("Faça login para adicionar especialidades extras."); return; }
+    try {
+      const { getCachedBalance } = await import("@/lib/coins");
+      setBalance(getCachedBalance());
+    } catch {
+      setBalance(null);
+    }
+    setConfirmOpen(true);
+  };
+
+  const confirmPaidAdd = async () => {
+    const title = draftTitle.trim();
+    if (!title || !userId) { setConfirmOpen(false); return; }
+    setCharging(true);
+    try {
+      const { spendCoinsForAction } = await import("@/lib/monetization");
+      const res: any = await spendCoinsForAction(userId, "extra_specialty", `specialty:${title}`);
+      if (!res?.ok) {
+        if (res?.reason === "insufficient") {
+          toast.error(`Saldo insuficiente. Cada especialidade extra custa ${EXTRA_COST} moedas.`);
+        } else {
+          toast.error("Não foi possível debitar as moedas.", { description: res?.error });
+        }
+        setCharging(false);
+        setConfirmOpen(false);
+        return;
+      }
+      toast.success(`−${EXTRA_COST} moedas · Especialidade extra liberada.`, {
+        description: typeof res.balance === "number" ? `Saldo restante: ${res.balance} moedas.` : undefined,
+      });
+      commitFree();
+    } catch (err: any) {
+      toast.error("Erro ao processar cobrança.", { description: err?.message });
+    } finally {
+      setCharging(false);
+      setConfirmOpen(false);
+    }
   };
 
   const updateItem = (id: string, patch: Partial<Specialty>) => {
@@ -187,7 +218,7 @@ export function SpecialtiesEditor({
 
         <button
           type="button"
-          onClick={addSpecialty}
+          onClick={handleAddClick}
           disabled={charging || reachedMax || !draftTitle.trim()}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-black uppercase text-xs tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition"
         >
@@ -260,6 +291,47 @@ export function SpecialtiesEditor({
           ))}
         </ul>
       )}
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-amber-400" />
+              Confirmar cobrança de {EXTRA_COST} moedas
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  Você já usou a cota grátis do plano <b>{planLabel(plan)}</b> ({quota} especialidade{quota > 1 ? "s" : ""}).
+                  Adicionar <b>"{draftTitle.trim()}"</b> como especialidade extra vai debitar
+                  <b> {EXTRA_COST} moedas</b> da sua carteira.
+                </p>
+                {balance !== null && (
+                  <div className="rounded-lg bg-white/5 border border-white/10 p-3 space-y-1 text-xs">
+                    <div className="flex justify-between"><span className="text-white/60">Saldo atual:</span><b>{balance} moedas</b></div>
+                    <div className="flex justify-between"><span className="text-white/60">Custo:</span><b className="text-amber-300">− {EXTRA_COST} moedas</b></div>
+                    <div className="flex justify-between border-t border-white/10 pt-1"><span className="text-white/60">Saldo após:</span><b className={balance - EXTRA_COST < 0 ? "text-red-400" : "text-emerald-300"}>{balance - EXTRA_COST} moedas</b></div>
+                  </div>
+                )}
+                <p className="text-[11px] text-white/50">
+                  A transação será registrada no seu histórico de moedas com a referência
+                  <code className="mx-1 px-1 py-0.5 bg-white/5 rounded text-[10px]">specialty:{draftTitle.trim().slice(0, 24)}</code>.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={charging}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmPaidAdd(); }}
+              disabled={charging || (balance !== null && balance < EXTRA_COST)}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-black"
+            >
+              {charging ? "Processando..." : `Confirmar e pagar ${EXTRA_COST} moedas`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

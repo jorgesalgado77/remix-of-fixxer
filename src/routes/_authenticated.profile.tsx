@@ -1620,6 +1620,7 @@ function ProfilePage() {
                 offeringsNotes={profile?.offerings_notes}
                 vehicleType={profile?.vehicle_type}
                 vehicleDescription={profile?.vehicle_description}
+                specialties={Array.isArray(profile?.specialties) ? profile.specialties : []}
               />
             )}
             {/* CENTRAL DE MÍDIA COMPACTA - REFORMULADA */}
