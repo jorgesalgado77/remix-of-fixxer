@@ -136,6 +136,11 @@ const PAGE_SIZE = 30;
 function isImageType(t?: string | null) {
   return !!t && t.startsWith("image/");
 }
+function isAudioType(t?: string | null, name?: string | null) {
+  if (t && t.startsWith("audio/")) return true;
+  if (name && /\.(webm|mp3|wav|ogg|m4a|flac|aac|opus)$/i.test(name)) return true;
+  return false;
+}
 
 function newClientId(): string {
   const g: any = typeof globalThis !== "undefined" ? globalThis : {};
