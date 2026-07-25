@@ -248,10 +248,17 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
               <p className="text-[11px] text-white/50 mt-1 break-words">
                 Plano <b>{planId.toUpperCase()}</b> inclui <b>{quota}</b> cargo(s). Extras custam{" "}
                 <b className="text-amber-300">{EXTRA_COST} 🪙</b> cada (até {MAX_ROLES} no total).
-                O <b>1º da lista</b> é o preferencial (destacado).
+                Saldo atual: <b className="text-amber-300">{balance} 🪙</b>. O <b>1º da lista</b> é o preferencial (destacado).
               </p>
             </div>
           </div>
+
+          {inlineWarn && (
+            <div className="text-[11px] font-bold text-red-300 bg-red-500/10 border border-red-500/40 rounded-xl px-3 py-2 flex items-start gap-2" role="alert">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{inlineWarn}</span>
+            </div>
+          )}
 
           {overQuota > 0 && (
             <div className="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 inline-flex items-center gap-2">
