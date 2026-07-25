@@ -14,6 +14,7 @@ import { ALLOWED_RADII_KM, isAllowedRadius, BIO_MAX_LENGTH } from "@/lib/branch-
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
 import { LiveProfilePreview } from "@/components/LiveProfilePreview";
+import { saveDraft, loadDraft, clearDraft, markPending, pickDraftPatch } from "@/lib/profile-draft";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -64,12 +65,28 @@ function ProfilePage() {
       ]);
       
       if (profileRes.data) {
-        setProfile(profileRes.data);
-        // Sincroniza raio de atuação salvo para uso como padrão nos feeds
-        if (!profileId && profileRes.data.service_radius_km != null) {
+        let merged: any = profileRes.data;
+        // Recupera rascunho offline (não aplica em perfis públicos de terceiros)
+        if (!profileId) {
           try {
-            const cat = roleToCategory(profileRes.data.role);
-            localStorage.setItem(`fixxer_radius_${cat}`, String(profileRes.data.service_radius_km));
+            const draft = loadDraft(idToLoad);
+            const patch = pickDraftPatch(profileRes.data, draft);
+            if (patch) {
+              merged = { ...profileRes.data, ...patch };
+              toast.info("Rascunho recuperado do dispositivo.", {
+                description: draft?.pending
+                  ? "Você tinha alterações pendentes — clique em Salvar para reenviar."
+                  : "Restauramos suas edições não salvas.",
+              });
+            }
+          } catch { /* noop */ }
+        }
+        setProfile(merged);
+        // Sincroniza raio de atuação salvo para uso como padrão nos feeds
+        if (!profileId && merged.service_radius_km != null) {
+          try {
+            const cat = roleToCategory(merged.role);
+            localStorage.setItem(`fixxer_radius_${cat}`, String(merged.service_radius_km));
           } catch { /* noop */ }
         }
       }
@@ -345,6 +362,10 @@ function ProfilePage() {
         .eq('id', profile.id);
 
       if (error) {
+        // marca rascunho como pendente para retry automático quando a conexão voltar
+        if (profileId == null && profile?.id) {
+          markPending(profile.id, true);
+        }
         toast.error("Erro ao salvar perfil", {
           description: error.message || "Falha desconhecida ao gravar no banco.",
         });
@@ -367,10 +388,16 @@ function ProfilePage() {
         } catch { /* noop */ }
       }
 
+      // Limpa rascunho offline — a versão do servidor é a fonte de verdade agora
+      if (profile?.id) clearDraft(profile.id);
+
       toast.success("Perfil atualizado com sucesso!", {
         description: refetchErr ? "Salvo, mas houve falha ao recarregar. Atualize a página." : undefined,
       });
     } catch (e: any) {
+      if (profileId == null && profile?.id) {
+        markPending(profile.id, true);
+      }
       toast.error("Erro inesperado ao salvar perfil", {
         description: e?.message || String(e),
       });
@@ -378,6 +405,47 @@ function ProfilePage() {
       setSaving(false);
     }
   };
+
+  // Persiste rascunho local a cada mudança nos campos "leves"
+  useEffect(() => {
+    if (loading || profileId) return; // não persiste em modo "visualização de terceiros"
+    if (!profile?.id) return;
+    saveDraft(
+      profile.id,
+      {
+        about_bio: profile.about_bio ?? null,
+        default_radius: profile.default_radius ?? null,
+        activity_branch: profile.activity_branch ?? null,
+        custom_sections: profile.custom_sections ?? null,
+      },
+      false,
+    );
+  }, [
+    loading,
+    profileId,
+    profile?.id,
+    profile?.about_bio,
+    profile?.default_radius,
+    profile?.activity_branch,
+    profile?.custom_sections,
+  ]);
+
+  // Reenvia rascunho pendente automaticamente quando a conexão volta
+  useEffect(() => {
+    if (profileId) return;
+    const onOnline = () => {
+      if (!profile?.id) return;
+      const draft = loadDraft(profile.id);
+      if (draft?.pending && !saving) {
+        toast.info("Conexão restabelecida — reenviando seu rascunho...");
+        handleSave();
+      }
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId, profile?.id, saving]);
+
 
 
   const handleCepLookup = async (cep: string) => {
