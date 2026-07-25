@@ -9,6 +9,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { formatDistanceFromCity } from "@/lib/geo-distance";
 import {
   ArrowLeft,
   Search,
@@ -872,6 +873,7 @@ export default function FeedClientePage() {
               onChat={() => openChat(vendor)}
               onProfile={() => openProfile(vendor)}
               onOpenLightbox={(index) => setLightbox({ vendor, index })}
+              userCoords={userCoords}
             />
           ))}
 
@@ -931,6 +933,7 @@ function VendorCardImpl({
   onChat,
   onProfile,
   onOpenLightbox,
+  userCoords,
 }: {
   vendor: Vendor;
   glassClass: string;
@@ -939,6 +942,7 @@ function VendorCardImpl({
   onChat: () => void;
   onProfile: () => void;
   onOpenLightbox: (index: number) => void;
+  userCoords: { lat: number; lng: number } | null;
 }) {
   const [carouselIdx, setCarouselIdx] = useState(0);
   const isLoja = vendor.kind === "loja";
@@ -997,6 +1001,11 @@ function VendorCardImpl({
           <div className="flex items-center gap-1 mt-0.5 text-[9px] text-muted-foreground font-bold uppercase tracking-widest">
             <MapPin className="w-2.5 h-2.5" />
             {vendor.city}/{vendor.state}
+            {formatDistanceFromCity(vendor.city, userCoords) && (
+              <span className="normal-case text-white/40 ml-1">
+                • {formatDistanceFromCity(vendor.city, userCoords)}
+              </span>
+            )}
           </div>
         </div>
       </div>

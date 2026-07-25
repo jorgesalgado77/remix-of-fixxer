@@ -21,6 +21,7 @@ import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { usePostUnlock } from "@/hooks/use-post-unlock";
+import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
 import { Lock, Coins, Loader2 } from "lucide-react";
 
 import {
@@ -1248,6 +1249,8 @@ function PostCardImpl({
   const status = getFeedStatus(post.id);
   const statusColor = FEED_STATUS_COLOR[status];
   const profileHref = authorHref(post);
+  const userCoords = useUserCoords();
+  const distanceLabel = formatDistanceFromCity(post.city, userCoords);
 
   return (
     <article
@@ -1317,6 +1320,7 @@ function PostCardImpl({
             <span className="inline-flex items-center gap-1">
               <MapPin className="w-3 h-3" />
               {post.city}
+              {distanceLabel && <span className="text-white/40">• {distanceLabel}</span>}
             </span>
             <span className="inline-flex items-center gap-1">
               <Clock className="w-3 h-3" />
