@@ -845,7 +845,8 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         {(() => {
-                          const key: CategoryKey = userRole;
+                          const key: CategoryKey = "lojista";
+
 
                           const icon = key === 'prestador' ? '🛠️' : key === 'fornecedor' ? '🚚' : key === 'cliente' ? '👤' : key === 'admin' ? '👑' : '🏪';
                           return (
@@ -2707,7 +2708,7 @@ function ProfileView({
                     <PhotoSectionsManager
                         value={photoSections}
                         onChange={setPhotoSections}
-                        chargeUserId={typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_id') || undefined) : undefined}
+                        chargeUserId={undefined}
                     />
 
                     <div className="space-y-4 pt-6 border-t border-white/5">
@@ -2816,11 +2817,9 @@ function ProfileView({
                                 // 1ª especialidade grátis; a partir da 2ª cobra 10 moedas.
                                 if (specialties.length >= 1) {
                                     try {
-                                        const uidRaw = (typeof window !== 'undefined')
-                                          ? (localStorage.getItem('fixxer_user_id') || '')
-                                          : '';
                                         const { data: { user } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getUser());
-                                        const uid = user?.id || uidRaw;
+                                        const uid = user?.id;
+
                                         if (uid) {
                                             const { spendCoinsForAction, getActionCost } = await import('@/lib/monetization');
                                             const cost = getActionCost('extra_specialty')?.coins ?? 10;
@@ -2949,28 +2948,14 @@ function ProfileView({
                             setIsSaving(true);
                             const toastId = toast.loading("Salvando perfil...");
                             try {
-                                // 2) Identidade: sessão real ou fallback via email do localStorage
+                                // Identidade 100% via sessão real do Supabase (sem localStorage).
                                 const { data: authData } = await supabaseExternal.auth.getUser();
-                                let userId = authData?.user?.id as string | undefined;
-                                let userEmailLocal = authData?.user?.email as string | undefined;
-                                if (!userEmailLocal && typeof window !== 'undefined') {
-                                    userEmailLocal = localStorage.getItem('fixxer_user_email') || undefined;
-                                }
-                                if (!userEmailLocal) {
+                                const userId = authData?.user?.id;
+                                const userEmailLocal = authData?.user?.email;
+                                if (!userId || !userEmailLocal) {
                                     throw new Error("Sessão expirada. Faça login novamente para salvar o perfil.");
                                 }
-                                if (!userId) {
-                                    const enc = new TextEncoder().encode(`fixxer:${userEmailLocal.toLowerCase()}`);
-                                    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', enc));
-                                    hash[6] = (hash[6] & 0x0f) | 0x50;
-                                    hash[8] = (hash[8] & 0x3f) | 0x80;
-                                    const hex = Array.from(hash.slice(0, 16))
-                                        .map((b) => b.toString(16).padStart(2, '0')).join('');
-                                    userId = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
-                                    if (typeof window !== 'undefined') {
-                                        localStorage.setItem('fixxer_derived_user_id', userId);
-                                    }
-                                }
+
 
                                 const formData = {
                                     user_id: userId,
