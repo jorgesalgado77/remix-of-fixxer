@@ -1360,27 +1360,76 @@ function ProfilePage() {
                 <Upload className="w-5 h-5 text-primary" />
                 <h3 className="text-lg font-black uppercase tracking-tighter">Mídia & Documentos</h3>
               </div>
-              
+
+              {/* Painel de status dos uploads */}
+              {uploads.length > 0 && (
+                <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-2" role="status" aria-live="polite">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                      Envios em andamento ({uploads.filter(u => u.status === 'uploading').length}/{uploads.length})
+                    </p>
+                    {uploads.every(u => u.status !== 'uploading') && (
+                      <button
+                        onClick={() => setUploads([])}
+                        className="text-[9px] font-black uppercase text-muted-foreground hover:text-white"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  {uploads.map((u) => (
+                    <div key={u.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="truncate text-white/80 max-w-[70%]" title={u.name}>{u.name}</span>
+                        <span className={`font-black uppercase ${u.status === 'success' ? 'text-emerald-400' : u.status === 'error' ? 'text-red-400' : 'text-amber-300'}`}>
+                          {u.status === 'uploading' ? 'Enviando…' : u.status === 'success' ? '✓ Concluído' : '✕ Falhou'}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div className={`h-full transition-all ${u.status === 'success' ? 'bg-emerald-400 w-full' : u.status === 'error' ? 'bg-red-400 w-full' : 'bg-primary w-2/3 animate-pulse'}`} />
+                      </div>
+                      {u.status === 'error' && u.error && (
+                        <p className="text-[9px] text-red-300/90 italic">{u.error}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="space-y-8">
                 {/* DOCUMENTOS */}
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <FileText className="w-3 h-3" /> Documentos (PDF, DOC, XLS)
+                    <span className="ml-auto text-[9px] text-white/50 normal-case italic">Arraste para reordenar</span>
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {profile?.documents?.filter((f: any) => f.type === 'document').map((doc: any, i: number) => {
                       const ext = (doc.name?.split('.').pop() || '').toLowerCase();
                       const isPdf = ext === 'pdf';
                       const isImg = ['png','jpg','jpeg','webp','gif','avif','svg'].includes(ext);
+                      const kind: 'image'|'pdf'|'other' = isImg ? 'image' : isPdf ? 'pdf' : 'other';
                       return (
-                      <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 transition-all">
+                      <div
+                        key={i}
+                        draggable
+                        onDragStart={() => { dragRef.current = { list: 'doc', index: i }; }}
+                        onDragOver={(ev) => ev.preventDefault()}
+                        onDrop={(ev) => {
+                          ev.preventDefault();
+                          const src = dragRef.current;
+                          if (src && src.list === 'doc') reorderMedia('doc', src.index, i);
+                          dragRef.current = null;
+                        }}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 transition-all cursor-grab active:cursor-grabbing"
+                      >
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <a
-                            href={doc.url}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => setPreview({ open: true, url: doc.url, name: doc.name, kind })}
                             className="w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center relative"
-                            title={`Abrir ${doc.name}`}
+                            title={`Pré-visualizar ${doc.name}`}
+                            aria-label={`Pré-visualizar ${doc.name}`}
                           >
                             {isImg ? (
                               <img src={doc.url} alt={doc.name} className="w-full h-full object-cover" loading="lazy" />
@@ -1395,20 +1444,34 @@ function ProfilePage() {
                                 <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-primary/80 text-black uppercase truncate">{ext || 'DOC'}</span>
                               </>
                             )}
-                          </a>
+                          </button>
                           <div className="truncate">
                             <p className="text-[11px] font-bold text-white truncate">{doc.name}</p>
                             <p className="text-[9px] text-muted-foreground uppercase">{doc.size || 'N/A'}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <a href={doc.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                          <button
+                            type="button"
+                            onClick={() => setPreview({ open: true, url: doc.url, name: doc.name, kind })}
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                            title="Pré-visualizar"
+                            aria-label="Pré-visualizar"
+                          >
+                            <Search className="w-4 h-4" />
+                          </button>
+                          <a href={doc.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors" title="Abrir em nova aba">
                             <ExternalLink className="w-4 h-4" />
                           </a>
-                          <button onClick={() => {
-                            const next = profile.documents.filter((_: any, idx: number) => idx !== i);
-                            setProfile({...profile, documents: next});
-                          }} className="text-muted-foreground hover:text-red-500 transition-colors">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Remover "${doc.name}"?`)) removeMediaItem('doc', i);
+                            }}
+                            className="text-muted-foreground hover:text-red-500 transition-colors"
+                            title="Remover"
+                            aria-label="Remover documento"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -1428,23 +1491,51 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Camera className="w-3 h-3" /> Galeria de Imagens
-                    <span className="ml-auto text-[9px] text-amber-400/90">💰 6 grátis · +5 moedas/foto extra</span>
+                    <span className="ml-auto text-[9px] text-amber-400/90">💰 6 grátis · +5 moedas/foto extra · arraste p/ reordenar</span>
                   </h4>
-                  <div className="columns-2 gap-3 space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'image').map((img: any, i: number) => (
-                      <div key={i} className="relative group rounded-xl overflow-hidden cursor-pointer break-inside-avoid shadow-lg" onClick={() => setLightbox({ isOpen: true, type: 'image', url: img.url, index: i })}>
-                        <img src={img.url} alt="Portfolio" className="w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      <div
+                        key={i}
+                        draggable
+                        onDragStart={() => { dragRef.current = { list: 'image', index: i }; }}
+                        onDragOver={(ev) => ev.preventDefault()}
+                        onDrop={(ev) => {
+                          ev.preventDefault();
+                          const src = dragRef.current;
+                          if (src && src.list === 'image') reorderMedia('image', src.index, i);
+                          dragRef.current = null;
+                        }}
+                        className="relative group rounded-xl overflow-hidden cursor-grab active:cursor-grabbing shadow-lg aspect-square"
+                        onClick={() => setPreview({ open: true, url: img.url, name: img.name || 'Imagem', kind: 'image' })}
+                      >
+                        <img src={img.url} alt={img.name || 'Portfolio'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                          <button onClick={(e) => { e.stopPropagation(); /* edit logic */ }} className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-primary hover:text-black"><Save className="w-4 h-4" /></button>
-                          <button onClick={(e) => {
-                            e.stopPropagation();
-                            const next = profile.portfolio_media.filter((_: any, idx: number) => idx !== i);
-                            setProfile({...profile, portfolio_media: next});
-                          }} className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-red-500"><Trash2 className="w-4 h-4" /></button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setPreview({ open: true, url: img.url, name: img.name || 'Imagem', kind: 'image' }); }}
+                            className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-primary hover:text-black"
+                            title="Pré-visualizar"
+                            aria-label="Pré-visualizar imagem"
+                          >
+                            <Search className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Remover esta imagem?')) removeMediaItem('image', i);
+                            }}
+                            className="bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-red-500"
+                            title="Remover"
+                            aria-label="Remover imagem"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
-                    <label className="w-full aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group break-inside-avoid">
+                    <label className="w-full aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group">
                       <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
                       <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleMediaUpload(e, 'image')} />
                     </label>
@@ -1459,13 +1550,41 @@ function ProfilePage() {
                   </h4>
                   <div className="grid grid-cols-1 gap-4">
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'video').map((vid: any, i: number) => (
-                      <div key={i} className="relative group rounded-2xl overflow-hidden bg-black aspect-video border border-white/5">
+                      <div
+                        key={i}
+                        draggable
+                        onDragStart={() => { dragRef.current = { list: 'video', index: i }; }}
+                        onDragOver={(ev) => ev.preventDefault()}
+                        onDrop={(ev) => {
+                          ev.preventDefault();
+                          const src = dragRef.current;
+                          if (src && src.list === 'video') reorderMedia('video', src.index, i);
+                          dragRef.current = null;
+                        }}
+                        className="relative group rounded-2xl overflow-hidden bg-black aspect-video border border-white/5"
+                      >
                         <video src={vid.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" controls />
                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                           <button onClick={() => {
-                            const next = profile.portfolio_media.filter((_: any, idx: number) => idx !== i);
-                            setProfile({...profile, portfolio_media: next});
-                          }} className="bg-black/60 p-2 rounded-xl backdrop-blur-md hover:bg-red-500"><Trash2 className="w-4 h-4" /></button>
+                          <button
+                            type="button"
+                            onClick={() => setPreview({ open: true, url: vid.url, name: vid.name || 'Vídeo', kind: 'other' })}
+                            className="bg-black/60 p-2 rounded-xl backdrop-blur-md hover:bg-primary hover:text-black"
+                            title="Pré-visualizar"
+                            aria-label="Pré-visualizar vídeo"
+                          >
+                            <Search className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm('Remover este vídeo?')) removeMediaItem('video', i);
+                            }}
+                            className="bg-black/60 p-2 rounded-xl backdrop-blur-md hover:bg-red-500"
+                            title="Remover"
+                            aria-label="Remover vídeo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -1476,6 +1595,8 @@ function ProfilePage() {
                     </label>
                   </div>
                 </div>
+
+
 
                 {/* DEPOIMENTOS */}
                 <div className="pt-4 border-t border-white/5 space-y-4">
