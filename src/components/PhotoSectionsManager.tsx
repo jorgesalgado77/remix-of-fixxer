@@ -21,6 +21,7 @@ import { processImage } from '@/utils/image-compression';
 import { validateImage } from '@/utils/image-validation';
 import { supabaseExternal } from '@/lib/supabaseExternal';
 import { ImageEditorModal } from '@/components/ImageEditorModal';
+import { confirmCoins } from '@/components/ConfirmCoinsDialog';
 import {
   DndContext,
   PointerSensor,
