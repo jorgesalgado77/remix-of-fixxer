@@ -47,30 +47,15 @@ import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { sanitizeContactText, CONTACT_GUARD_WARNING } from "@/lib/contact-guard";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
-import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+import { getCategoryTheme, getPeerTheme, resolvePeerCategory, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory, setContextCategoryOverride } from "@/lib/user-category";
-import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
-import { ChatAppointmentsBanner } from "@/components/ChatAppointmentsBanner";
-import { ChatEmojiPicker } from "@/components/Chat/EmojiPicker";
-import { ChatVoiceRecorder } from "@/components/Chat/VoiceRecorder";
-import {
-  isUuid as isValidUuid,
-  classifyChatError,
-  sendWithRetry,
-  validateChatIdentities,
-} from "@/lib/chat-send";
+import { classifyChatError, sendWithRetry, validateChatIdentities } from "@/lib/chat-send";
 import { startGlobalPresence, subscribeGlobalPresence, isPeerOnline } from "@/lib/chat-presence";
 import { playIncomingMessageSound } from "@/lib/chat-sound";
-
-
-function roleToCategory(role: string | null | undefined): CategoryKey {
-  const r = (role || "").toLowerCase();
-  if (r.includes("lojista")) return "lojista";
-  if (r.includes("fornec") || r.includes("parceiro")) return "fornecedor";
-  if (r.includes("cliente") || r.includes("casual")) return "cliente";
-  if (r.includes("admin")) return "admin";
-  return "prestador";
-}
+import { ChatEmojiPicker } from "@/components/Chat/EmojiPicker";
+import { ChatVoiceRecorder } from "@/components/Chat/VoiceRecorder";
+import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
+import { ChatAppointmentsBanner } from "@/components/ChatAppointmentsBanner";
 import {
   clearDraft,
   getDraftFiles,
@@ -189,7 +174,7 @@ function ConversationPage() {
     if (!peerId) return;
     const isMock = typeof peerId === "string" && peerId.startsWith("mock-");
     if (isMock) return;
-    if (!isValidUuid(peerId)) {
+    if (!isUuid(peerId)) {
       toast.error("Conversa inválida", {
         description: "O identificador do contato não é válido. Voltando para a lista.",
       });
@@ -1212,17 +1197,19 @@ function ConversationPage() {
 
   const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
 
-  const peerCategory = roleToCategory(peerRole);
-  const peerTheme = getCategoryTheme(peerCategory);
+  const peerCategory = resolvePeerCategory(peerRole);
+  const peerTheme = getPeerTheme(peerRole);
   const ownCategory = useCurrentCategory();
   const ownTheme = getCategoryTheme(ownCategory);
 
   // Aplica a cor do interlocutor no tema global enquanto a conversa está aberta.
+  // Só sobrescreve quando a categoria do peer é confiável — evita aplicar
+  // tema neutro/errado no restante da UI global.
   useEffect(() => {
-    if (!peerRole) return;
+    if (!peerCategory) return;
     setContextCategoryOverride(peerCategory);
     return () => setContextCategoryOverride(null);
-  }, [peerCategory, peerRole]);
+  }, [peerCategory]);
 
   return (
     <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-32 overscroll-contain">

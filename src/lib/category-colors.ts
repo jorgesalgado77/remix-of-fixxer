@@ -57,3 +57,44 @@ export function getCategoryTheme(cat: CategoryKey) {
     fill: { fill: hex, color: hex },
   };
 }
+
+/** Tema neutro (cinza) para quando a categoria do peer é desconhecida. */
+export const NEUTRAL_THEME = {
+  hex: "#9CA3AF",
+  rgb: "156, 163, 175",
+  label: "Usuário",
+  highlight: undefined as string | undefined,
+  color: { color: "#9CA3AF" },
+  bgSoft: { backgroundColor: "rgba(156, 163, 175, 0.10)" },
+  bgSolid: { backgroundColor: "#9CA3AF", color: "#0A0A0B" },
+  borderSoft: { borderColor: "rgba(156, 163, 175, 0.30)" },
+  borderStrong: { borderColor: "#9CA3AF" },
+  glow: { boxShadow: "0 0 22px rgba(156, 163, 175, 0.22)" },
+  glowStrong: { boxShadow: "0 0 26px rgba(156, 163, 175, 0.45)" },
+  fill: { fill: "#9CA3AF", color: "#9CA3AF" },
+};
+
+/**
+ * Deriva a categoria a partir do role textual do PEER (destinatário).
+ * Retorna null quando não há sinal confiável (nunca "chuta" prestador).
+ * Reconhece lojista, prestador, fornecedor (fornec/parceiro/b2b), cliente e admin.
+ */
+export function resolvePeerCategory(role: string | null | undefined): CategoryKey | null {
+  const r = String(role || "").toLowerCase().trim();
+  if (!r) return null;
+  if (r.includes("lojista") || r.includes("loja") || r.includes("store")) return "lojista";
+  if (r.includes("prestador") || r.includes("provider") || r.includes("servi")) return "prestador";
+  if (r.includes("fornec") || r.includes("parceiro") || r.includes("b2b") || r.includes("supplier")) return "fornecedor";
+  if (r.includes("cliente") || r.includes("customer") || r.includes("casual") || r.includes("final")) return "cliente";
+  if (r.includes("admin")) return "admin";
+  return null;
+}
+
+/**
+ * Retorna sempre um objeto de tema para o peer: usa a categoria oficial
+ * quando resolvida, ou o tema neutro (cinza) como fallback seguro.
+ */
+export function getPeerTheme(role: string | null | undefined) {
+  const cat = resolvePeerCategory(role);
+  return cat ? getCategoryTheme(cat) : NEUTRAL_THEME;
+}
