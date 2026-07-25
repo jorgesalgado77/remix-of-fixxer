@@ -291,6 +291,47 @@ export function SpecialtiesEditor({
           ))}
         </ul>
       )}
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-amber-400" />
+              Confirmar cobrança de {EXTRA_COST} moedas
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  Você já usou a cota grátis do plano <b>{planLabel(plan)}</b> ({quota} especialidade{quota > 1 ? "s" : ""}).
+                  Adicionar <b>"{draftTitle.trim()}"</b> como especialidade extra vai debitar
+                  <b> {EXTRA_COST} moedas</b> da sua carteira.
+                </p>
+                {balance !== null && (
+                  <div className="rounded-lg bg-white/5 border border-white/10 p-3 space-y-1 text-xs">
+                    <div className="flex justify-between"><span className="text-white/60">Saldo atual:</span><b>{balance} moedas</b></div>
+                    <div className="flex justify-between"><span className="text-white/60">Custo:</span><b className="text-amber-300">− {EXTRA_COST} moedas</b></div>
+                    <div className="flex justify-between border-t border-white/10 pt-1"><span className="text-white/60">Saldo após:</span><b className={balance - EXTRA_COST < 0 ? "text-red-400" : "text-emerald-300"}>{balance - EXTRA_COST} moedas</b></div>
+                  </div>
+                )}
+                <p className="text-[11px] text-white/50">
+                  A transação será registrada no seu histórico de moedas com a referência
+                  <code className="mx-1 px-1 py-0.5 bg-white/5 rounded text-[10px]">specialty:{draftTitle.trim().slice(0, 24)}</code>.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={charging}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmPaidAdd(); }}
+              disabled={charging || (balance !== null && balance < EXTRA_COST)}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-black"
+            >
+              {charging ? "Processando..." : `Confirmar e pagar ${EXTRA_COST} moedas`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
