@@ -218,7 +218,7 @@ export function SpecialtiesEditor({
 
         <button
           type="button"
-          onClick={addSpecialty}
+          onClick={handleAddClick}
           disabled={charging || reachedMax || !draftTitle.trim()}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-black uppercase text-xs tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition"
         >
