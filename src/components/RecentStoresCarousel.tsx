@@ -73,12 +73,12 @@ const KIND_META: Record<Kind, { emoji: string; label: string; color: string; bor
     borderClass: "border-[#00FF87]",
     gradientClass: "from-[#00FF87]/25 via-[#00FF87]/10 to-transparent",
   },
-  fornecedor: {
-    emoji: "🚚",
-    label: "Parceiro Fornecedor",
-    color: "#A855F7",
-    borderClass: "border-[#A855F7]",
-    gradientClass: "from-[#A855F7]/25 via-[#A855F7]/10 to-transparent",
+  cliente: {
+    emoji: "🙋",
+    label: "Cliente Final",
+    color: "#22C55E",
+    borderClass: "border-[#22C55E]",
+    gradientClass: "from-[#22C55E]/25 via-[#22C55E]/10 to-transparent",
   },
 };
 
