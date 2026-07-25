@@ -109,13 +109,8 @@ export function LojistaDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
 
-  const [userRole, setUserRole] = useState<CategoryKey>(() => {
-    if (typeof window === "undefined") return "lojista";
-    const r = (localStorage.getItem("fixxer_user_role") || "lojista").toLowerCase();
-    return (["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(r)
-      ? r
-      : "lojista") as CategoryKey;
-  });
+  const [userRole, setUserRole] = useState<CategoryKey>("lojista");
+
   const [rating, setRating] = useState(4.9);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -216,20 +211,24 @@ export function LojistaDashboard() {
     };
   }, [userRole]);
 
-  // Sincroniza o papel do usuário se ele mudar em outro lugar (auth, admin, etc.)
+  // Sincroniza o papel do usuário a partir da sessão real (Supabase).
   useEffect(() => {
-    const syncRole = () => {
-      if (typeof window === "undefined") return;
-      const r = (localStorage.getItem("fixxer_user_role") || "lojista").toLowerCase();
-      if (["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(r)) {
-        setUserRole(r as CategoryKey);
-      }
+    let alive = true;
+    const syncRole = async () => {
+      try {
+        const { getCurrentCategory } = await import("@/lib/current-user");
+        const c = await getCurrentCategory(true);
+        if (alive && ["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(c)) {
+          setUserRole(c as CategoryKey);
+        }
+      } catch { /* ignore */ }
     };
-    window.addEventListener("storage", syncRole);
-    window.addEventListener("fixxer:role-changed", syncRole as any);
+    syncRole();
+    window.addEventListener("fixxer:identity-change", syncRole as any);
     return () => {
-      window.removeEventListener("storage", syncRole);
-      window.removeEventListener("fixxer:role-changed", syncRole as any);
+      alive = false;
+      window.removeEventListener("fixxer:identity-change", syncRole as any);
+
     };
   }, []);
 
