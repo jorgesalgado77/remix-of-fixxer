@@ -43,14 +43,26 @@ function ConfiguracoesPage() {
 
   const [email, setEmail] = useState<string>("");
   const [name, setName] = useState<string>("");
-  const [darkMode, setDarkMode] = useState<boolean>(true);
+  const [uid, setUid] = useState<string | null>(null);
+  const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
   const [pushEnabled, setPushEnabled] = useState<boolean>(true);
   const [emailAlerts, setEmailAlerts] = useState<boolean>(true);
   const [saving, setSaving] = useState(false);
+  const [autoSavedAt, setAutoSavedAt] = useState<number | null>(null);
 
+  // Bootstrap: carrega dados + tema inicial + assina realtime do próprio perfil.
   useEffect(() => {
+    let unsubTheme: (() => void) | null = null;
+    let realtimeChannel: any = null;
+
     (async () => {
       try {
+        // Tema
+        const { getTheme, subscribeTheme } = await import("@/lib/theme");
+        setThemeMode(getTheme());
+        unsubTheme = subscribeTheme((m) => setThemeMode(m));
+
+        // Sessão + e-mail
         const { data } = await supabase.auth.getUser();
         const em =
           data.user?.email ??
@@ -58,21 +70,72 @@ function ConfiguracoesPage() {
             ? localStorage.getItem("fixxer_user_email") ?? ""
             : "");
         setEmail(em);
-        setName(
-          (data.user?.user_metadata as any)?.name ??
+
+        // Descobre uid no Supabase EXTERNO (fonte da verdade dos perfis)
+        let externalUid: string | null = null;
+        try {
+          const { data: extSess } = await supabaseExternal.auth.getUser();
+          externalUid = extSess.user?.id ?? null;
+        } catch { /* ignore */ }
+        if (!externalUid && typeof window !== "undefined") {
+          externalUid = localStorage.getItem("fixxer_user_id");
+        }
+        setUid(externalUid);
+
+        // Carrega display_name direto de profiles (fonte da verdade)
+        let dbName = "";
+        if (externalUid) {
+          const { data: prof } = await supabaseExternal
+            .from("profiles")
+            .select("display_name, full_name")
+            .eq("id", externalUid)
+            .maybeSingle();
+          dbName =
+            String((prof as any)?.display_name ?? "") ||
+            String((prof as any)?.full_name ?? "");
+        }
+        if (!dbName) {
+          dbName =
+            (data.user?.user_metadata as any)?.name ??
             (typeof window !== "undefined"
               ? localStorage.getItem("fixxer_user_name") ?? ""
-              : ""),
-        );
+              : "");
+        }
+        setName(dbName);
+
+        // Preferências de notificação (locais)
         if (typeof window !== "undefined") {
-          setDarkMode(localStorage.getItem("fixxer_theme") !== "light");
           setPushEnabled(localStorage.getItem("fixxer_push_enabled") !== "0");
           setEmailAlerts(localStorage.getItem("fixxer_email_alerts") !== "0");
+        }
+
+        // Realtime: se o perfil for alterado no /profile, reflete aqui.
+        if (externalUid) {
+          try {
+            realtimeChannel = supabaseExternal
+              .channel(`cfg-profile-${externalUid}`)
+              .on(
+                "postgres_changes" as any,
+                { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${externalUid}` },
+                (payload: any) => {
+                  const next =
+                    String(payload?.new?.display_name ?? "") ||
+                    String(payload?.new?.full_name ?? "");
+                  if (next) setName(next);
+                },
+              )
+              .subscribe();
+          } catch { /* ignore */ }
         }
       } catch {
         /* silencioso */
       }
     })();
+
+    return () => {
+      try { unsubTheme?.(); } catch { /* ignore */ }
+      try { if (realtimeChannel) supabaseExternal.removeChannel(realtimeChannel); } catch { /* ignore */ }
+    };
   }, []);
 
   const persist = (key: string, value: string) => {
@@ -84,16 +147,39 @@ function ConfiguracoesPage() {
   };
 
   const handleSaveProfile = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      toast.error("Informe um nome de exibição.");
+      return;
+    }
     try {
       setSaving(true);
-      persist("fixxer_user_name", name.trim());
-      // Best-effort — se sessão estiver ativa, atualiza metadata.
+      persist("fixxer_user_name", trimmed);
+
+      // Fonte da verdade: profiles.display_name (Supabase externo)
+      if (uid) {
+        const { error } = await supabaseExternal
+          .from("profiles")
+          .update({ display_name: trimmed })
+          .eq("id", uid);
+        if (error) throw error;
+      }
+
+      // Best-effort — sincroniza metadata da sessão interna
       try {
-        await supabase.auth.updateUser({ data: { name: name.trim() } });
+        await supabase.auth.updateUser({ data: { name: trimmed } });
       } catch {
         /* ignore */
       }
-      toast.success("Perfil atualizado.");
+
+      setAutoSavedAt(Date.now());
+      toast.success("Nome de exibição atualizado.", {
+        description: "Aparece imediatamente no perfil público e nos cards.",
+      });
+    } catch (e: any) {
+      toast.error("Não foi possível salvar.", {
+        description: e?.message ?? "Tente novamente em instantes.",
+      });
     } finally {
       setSaving(false);
     }
