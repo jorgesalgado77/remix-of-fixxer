@@ -1297,6 +1297,14 @@ export default function FeedPrestadorPage() {
 
       {/* CONTEÚDO */}
       <main className="max-w-5xl mx-auto px-4 py-4 space-y-4">
+        {loadError && (
+          <FeedErrorState
+            accent="#FF9F0A"
+            busy={refreshing}
+            message={loadError}
+            onRetry={handleRefresh}
+          />
+        )}
         <B2BSuggestionsCard />
         {/* Skeleton de busca */}
         {searching && (
@@ -1329,21 +1337,22 @@ export default function FeedPrestadorPage() {
 
         {!searching &&
           paged.map((job) => (
-            <JobCard
-              key={job.id}
-              job={job}
-              saved={saved.has(job.id)}
-              applied={applied.has(job.id)}
-              onToggleSave={toggleSave}
-              onApply={setApplyFor}
-              onChat={openChatWith}
-              onLightbox={(job, index) => setLightbox({ job, index })}
-              onOpenDetails={setDetailsFor}
-              locked={job.contractor.id !== postUnlock.userId && !postUnlock.isUnlocked(job.id)}
-              unlockCost={postUnlock.cost}
-              unlockBusy={postUnlock.busy === job.id}
-              onUnlock={() => { void postUnlock.unlock(job.id); }}
-            />
+            <div key={job.id} className="feed-item-cv">
+              <JobCard
+                job={job}
+                saved={saved.has(job.id)}
+                applied={applied.has(job.id)}
+                onToggleSave={toggleSave}
+                onApply={setApplyFor}
+                onChat={openChatWith}
+                onLightbox={(job, index) => setLightbox({ job, index })}
+                onOpenDetails={setDetailsFor}
+                locked={job.contractor.id !== postUnlock.userId && !postUnlock.isUnlocked(job.id)}
+                unlockCost={postUnlock.cost}
+                unlockBusy={postUnlock.busy === job.id}
+                onUnlock={() => { void postUnlock.unlock(job.id); }}
+              />
+            </div>
           ))}
 
         {/* Sentinel de scroll infinito */}
