@@ -882,6 +882,11 @@ function ConversationPage() {
       setMessages((prev) =>
         prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true, _uploading: false } : x)),
       );
+      try {
+        window.dispatchEvent(
+          new CustomEvent("fixxer:message-failed", { detail: { clientId } }),
+        );
+      } catch {}
     }
   };
 
