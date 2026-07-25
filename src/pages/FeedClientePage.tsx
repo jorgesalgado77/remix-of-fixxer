@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { formatDistanceFromCity } from "@/lib/geo-distance";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { FeedErrorState } from "@/components/FeedErrorState";
+import { useFeedPreload } from "@/hooks/use-feed-preload";
 import {
   ArrowLeft,
   Search,
@@ -244,6 +247,19 @@ export default function FeedClientePage() {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoadError(null);
+    setVisibleCount(PAGE_SIZE);
+    setReloadKey((k) => k + 1);
+    await new Promise((r) => setTimeout(r, 400));
+    setRefreshing(false);
+    toast.success("Feed atualizado");
+  }, []);
 
   const loadMyNeeds = useCallback(async (uid: string) => {
     const { data, error } = await supabaseExternal
@@ -385,7 +401,7 @@ export default function FeedClientePage() {
           }, 300);
         }
       },
-      { rootMargin: "300px" },
+      { rootMargin: "800px" },
     );
     io.observe(el);
     return () => io.disconnect();
