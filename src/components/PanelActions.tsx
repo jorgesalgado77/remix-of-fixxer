@@ -151,6 +151,7 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
           to={myProfileHref}
           label="Meu Perfil Público"
           tip="Ver como meu perfil público aparece para outros usuários"
+          onClick={handleProfileClick}
         >
           <UserCircle2 className="w-5 h-5" aria-hidden="true" />
         </IconLink>
