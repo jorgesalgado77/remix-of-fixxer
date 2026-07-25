@@ -379,7 +379,17 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
     if (chargeUserId && safe.custom.length >= freeSessionsQuota) {
       const { spendCoinsForAction, getActionCost } = await import('@/lib/monetization');
       const cost = getActionCost('extra_photo_session')?.coins ?? 15;
-      const ok = confirm(`Esta nova sessão de fotos custará ${cost} moedas. Confirmar?`);
+      const ok = await confirmCoins({
+        title: 'Nova seção personalizada',
+        cost,
+        description: (
+          <>
+            Você já usou sua cota grátis de <strong>{freeSessionsQuota}</strong> seção(ões). Criar
+            mais uma custará <strong>{cost} moedas</strong>. Deseja continuar?
+          </>
+        ),
+        confirmLabel: `Debitar ${cost} moedas`,
+      });
       if (!ok) return;
       const res = await spendCoinsForAction(chargeUserId, 'extra_photo_session');
       if (!res.ok) {
