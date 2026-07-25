@@ -1162,16 +1162,40 @@ export function LojistaPublicProfilePage() {
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
                         🎁 Oferece
+                        {compatFilters.size > 0 && (
+                          <span className="ml-2 px-2 py-0.5 rounded bg-primary/15 text-primary text-[9px] font-black tracking-widest border border-primary/30">
+                            FILTRO ATIVO
+                          </span>
+                        )}
                       </p>
-                      {offerings.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {offerings.map((o, i) => (
-                            <span key={`${o}-${i}`} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-bold uppercase italic text-emerald-300">
-                              {o}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {offerings.length > 0 && (() => {
+                        // Aplicação do filtro de compatibilidade (chips do header).
+                        // Um chip `wm:xxx` casa se a oferta contém "xxx"; `veh:yyy` idem.
+                        const activeTerms = Array.from(compatFilters).map((k) => k.split(":", 2)[1] || "");
+                        const matches = (o: string) => activeTerms.length === 0
+                          || activeTerms.some((t) => t && o.toLowerCase().includes(t));
+                        return (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {offerings.map((o, i) => {
+                              const ok = matches(o);
+                              return (
+                                <span
+                                  key={`${o}-${i}`}
+                                  className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold uppercase italic transition ${
+                                    ok
+                                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                                      : "bg-white/2 border-white/10 text-white/30 line-through"
+                                  }`}
+                                  aria-disabled={!ok}
+                                >
+                                  {o}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+
                       {vehicle && Object.keys(vehicle).length > 0 && (
                         <div className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1 mb-3">
                           <p className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
