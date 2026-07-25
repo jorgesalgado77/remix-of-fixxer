@@ -188,7 +188,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
     setIsFavorited(next); // otimista
     setCount((c) => Math.max(0, c + (next ? 1 : -1))); // otimista imediato
     setLoading(true);
-    const lsKey = `${LS_PREFIX}${currentUserId}:${favoritedUserId}`;
+    const lsKey = composeKey(currentUserId, favoritedUserId)!;
     const countLsKey = `${LS_COUNT_PREFIX}${favoritedUserId}`;
     try {
       if (next) {
