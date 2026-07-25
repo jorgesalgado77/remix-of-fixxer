@@ -242,6 +242,11 @@ function ConfiguracoesPage() {
           />
         </Section>
 
+        {/* Disponibilidade & auditoria */}
+        <AvailabilityAuditSection accent={theme.hex} />
+
+
+
         {/* Aparência */}
         <Section title="Aparência" icon={<Palette className="w-4 h-4" />} accent={theme.hex}>
           <Toggle
