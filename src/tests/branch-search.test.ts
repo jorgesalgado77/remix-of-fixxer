@@ -55,7 +55,7 @@ describe("findSimilar() — fuzzy search 'Outro'", () => {
   it("é o mesmo motor que decide exibir o botão 'Usar Categoria Oficial'", () => {
     // Simula fluxo: usuário digita algo, componente pede sugestão;
     // se veio string, o botão é renderizado com esse texto.
-    const typed = "cabeleireira";
+    const typed = "manicure";
     const suggestion = findSimilar(typed, ALL);
     expect(suggestion).not.toBeNull();
     // Ao clicar no botão, o valor externo deve virar a sugestão oficial:
