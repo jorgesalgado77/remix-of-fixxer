@@ -46,7 +46,7 @@ describe("chat-peer-profile", () => {
     const p = await resolvePeerProfile("00000000-0000-0000-0000-000000000001");
     expect(p.name).toBe("Conversa");
     expect(p.avatarUrl).toBeNull();
-    expect(p.initials).toBe("?");
+    expect(p.initials).toBe("C");
     expect(p.source).toContain("fallback");
   });
 
