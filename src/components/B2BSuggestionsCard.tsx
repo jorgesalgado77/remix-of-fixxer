@@ -44,6 +44,36 @@ const PRESETS: Record<CategoryKey, Preset> = {
   },
 };
 
+const FALLBACK_SUGGESTIONS: Record<CategoryKey, B2BSuggestion[]> = {
+  lojista: [
+    { title: "Fornecedores de Peças & Acessórios", hint: "Amplie seu catálogo com parceiros B2B", icon: "🔧" },
+    { title: "Prestadores de Instalação", hint: "Ofereça serviço completo aos clientes", icon: "🛠️" },
+    { title: "Logística & Entrega", hint: "Parceiros para agilizar suas entregas", icon: "🚚" },
+    { title: "Marketing & Divulgação", hint: "Aumente a visibilidade da sua loja", icon: "📣" },
+  ],
+  prestador: [
+    { title: "Lojistas do seu Ramo", hint: "Encontre lojas que precisam do seu serviço", icon: "🏬" },
+    { title: "Fornecedores de Insumos", hint: "Materiais e ferramentas com desconto B2B", icon: "📦" },
+    { title: "Parcerias entre Prestadores", hint: "Complete serviços com outros profissionais", icon: "🤝" },
+    { title: "Clientes Corporativos", hint: "Contratos recorrentes na sua região", icon: "🏢" },
+  ],
+  fornecedor: [
+    { title: "Lojistas Revendedores", hint: "Amplie sua rede de distribuição", icon: "🏬" },
+    { title: "Prestadores Parceiros", hint: "Ofereça produtos + serviço", icon: "🛠️" },
+    { title: "Distribuidores Regionais", hint: "Cobertura ampliada na sua área", icon: "🚚" },
+    { title: "Clientes Corporativos", hint: "Vendas em escala B2B", icon: "🏢" },
+  ],
+  cliente: [
+    { title: "Prestadores Próximos", hint: "Profissionais avaliados na sua região", icon: "🛠️" },
+    { title: "Lojas Recomendadas", hint: "Produtos e serviços da sua área", icon: "🏬" },
+    { title: "Serviços Emergenciais", hint: "Atendimento rápido quando precisar", icon: "⚡" },
+    { title: "Ofertas & Promoções", hint: "Descontos exclusivos para você", icon: "🎁" },
+  ],
+  admin: [
+    { title: "Sugestões da Plataforma", hint: "Parceiros em destaque no FIXXER", icon: "✨" },
+  ],
+};
+
 function keyFor(cat: CategoryKey) {
   return `${DISMISS_KEY_BASE}_${cat}`;
 }
@@ -190,7 +220,9 @@ function B2BSuggestionsCardInner() {
       window.removeEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
   }, []);
 
-  if (suggestions.length === 0) return null;
+  // Fallback: se não houver sugestões calculadas, usa presets fixos por categoria.
+  const displaySuggestions =
+    suggestions.length > 0 ? suggestions : FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador;
 
   // Estado OCULTO: mostra chip discreto para reexibir.
   if (dismissed) {
@@ -255,7 +287,7 @@ function B2BSuggestionsCardInner() {
       </div>
 
       <div className="grid gap-1.5">
-        {suggestions.map((s) => (
+        {displaySuggestions.map((s) => (
           <button
             key={s.title}
             className="w-full text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors"
