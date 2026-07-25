@@ -247,6 +247,11 @@ function ConfiguracoesPage() {
         {/* Disponibilidade & auditoria */}
         <AvailabilityAuditSection accent={theme.hex} />
 
+        {/* 💼 Modos de trabalho e veículo — prévia + atalho para o editor de perfil */}
+        <WorkModesVehicleSection accent={theme.hex} navigate={navigate} />
+
+
+
 
 
         {/* Aparência */}
