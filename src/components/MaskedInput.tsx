@@ -26,11 +26,19 @@ export const applyCnpjCpfMask = (value: string) => {
   return v;
 };
 
+export const applyCepMask = (value: string) => {
+  const d = String(value || '').replace(/\D/g, '').slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+};
+
 export const MaskedInput = ({ value, onChange, mask, placeholder, ...props }: any) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    const masked = mask === 'phone' ? applyPhoneMask(val) : applyCnpjCpfMask(val);
+    let masked = val;
+    if (mask === 'phone') masked = applyPhoneMask(val);
+    else if (mask === 'cep') masked = applyCepMask(val);
+    else masked = applyCnpjCpfMask(val);
     onChange(masked);
   };
-  return <input value={value} onChange={handleChange} placeholder={placeholder} {...props} />;
+  return <input value={value} onChange={handleChange} placeholder={placeholder} inputMode={mask === 'phone' || mask === 'cep' || mask === 'cnpj' ? 'numeric' : undefined} {...props} />;
 };

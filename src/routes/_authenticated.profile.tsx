@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
@@ -42,11 +42,14 @@ export const Route = createFileRoute("/_authenticated/profile")({
 function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [brands, setBrands] = useState<string[]>([]);
   const [newBrand, setNewBrand] = useState("");
   const [isAddingBrand, setIsAddingBrand] = useState(false);
   const [lightbox, setLightbox] = useState<{ isOpen: boolean; type: string; url: string; index: number }>({ isOpen: false, type: '', url: '', index: 0 });
+  const lastSavedSnapshotRef = useRef<string>('');
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   const { id: profileId, context: postId } = Route.useSearch() as { id?: string; context?: string };
@@ -68,13 +71,22 @@ function ProfilePage() {
       
       if (profileRes.data) {
         let merged: any = profileRes.data;
+        // Reidrata campos "extras" persistidos em custom_sections.__extras
+        // (campos que ainda não existem como coluna própria na tabela `profiles`).
+        try {
+          const extras = (merged?.custom_sections as any)?.__extras;
+          if (extras && typeof extras === 'object') {
+            // extras não sobrescreve valores já vindos como colunas do banco
+            merged = { ...extras, ...merged };
+          }
+        } catch { /* noop */ }
         // Recupera rascunho offline (não aplica em perfis públicos de terceiros)
         if (!profileId) {
           try {
             const draft = loadDraft(idToLoad);
             const patch = pickDraftPatch(profileRes.data, draft);
             if (patch) {
-              merged = { ...profileRes.data, ...patch };
+              merged = { ...merged, ...patch };
               toast.info("Rascunho recuperado do dispositivo.", {
                 description: draft?.pending
                   ? "Você tinha alterações pendentes — clique em Salvar para reenviar."
@@ -84,6 +96,7 @@ function ProfilePage() {
           } catch { /* noop */ }
         }
         setProfile(merged);
+        lastSavedSnapshotRef.current = JSON.stringify(merged);
         // Sincroniza raio de atuação salvo para uso como padrão nos feeds
         if (!profileId && merged.service_radius_km != null) {
           try {
@@ -338,31 +351,35 @@ function ProfilePage() {
     profile?.default_radius != null && !isAllowedRadius(profile.default_radius);
   const canSave = !saving && !bioOverLimit && !radiusInvalid;
 
-  const handleSave = async () => {
+  const handleSave = async (opts?: { silent?: boolean }) => {
+    const silent = !!opts?.silent;
     if (!profile?.id) {
-      toast.error("Perfil não carregado.", { description: "Recarregue a página e tente novamente." });
+      if (!silent) toast.error("Perfil não carregado.", { description: "Recarregue a página e tente novamente." });
       return;
     }
     if (bioOverLimit) {
-      toast.error(`O campo "Sobre" excede o limite (${bioLen}/${BIO_MAX_LENGTH}).`, {
-        description: "Reduza o texto antes de salvar.",
-      });
+      if (!silent) toast.error(`O campo "Sobre" excede o limite (${bioLen}/${BIO_MAX_LENGTH}).`);
       return;
     }
     if (radiusInvalid) {
-      toast.error("Raio de atuação inválido.", {
-        description: `Escolha um dos valores permitidos: ${ALLOWED_RADII_KM.join(", ")} km.`,
-      });
+      if (!silent) toast.error("Raio de atuação inválido.");
       return;
     }
 
-    setSaving(true);
+    if (silent) setAutoSaving(true); else setSaving(true);
     try {
-      // Cria payload mutável — remove colunas que não existem no schema (retry automático)
+      // Payload mutável; se uma coluna não existir no schema, movemos o
+      // valor para custom_sections.__extras (JSONB) para não perder o dado.
       const payload: any = { ...profile };
+      const extras: Record<string, unknown> = {
+        ...((payload.custom_sections as any)?.__extras || {}),
+      };
+      // remove chaves internas/derivadas que nunca devem ir para o banco
+      delete payload.id_temp;
+
       let lastError: any = null;
       let attempts = 0;
-      while (attempts < 10) {
+      while (attempts < 30) {
         attempts++;
         const { error } = await supabase
           .from('profiles')
@@ -370,28 +387,39 @@ function ProfilePage() {
           .eq('id', profile.id);
         if (!error) { lastError = null; break; }
         lastError = error;
-        // Tenta extrair nome da coluna faltante: "Could not find the 'X' column"
-        const m = (error.message || '').match(/'([^']+)'\s+column/i);
-        if (m && m[1] && m[1] in payload) {
-          console.warn(`[profile.save] Removendo coluna inexistente: ${m[1]}`);
-          delete payload[m[1]];
+        const msg = error.message || '';
+        // Suporta duas variantes de mensagem do PostgREST/Postgres
+        const m =
+          msg.match(/'([^']+)'\s+column/i) ||
+          msg.match(/column\s+"([^"]+)"/i) ||
+          msg.match(/Could not find the '([^']+)'/i);
+        const col = m?.[1];
+        if (col && col in payload && col !== 'custom_sections' && col !== 'id') {
+          console.warn(`[profile.save] Coluna inexistente "${col}" — movendo para custom_sections.__extras`);
+          extras[col] = payload[col];
+          delete payload[col];
+          payload.custom_sections = {
+            ...(payload.custom_sections || {}),
+            __extras: extras,
+          };
           continue;
         }
         break;
       }
 
       if (lastError) {
-        if (profileId == null && profile?.id) {
-          markPending(profile.id, true);
+        if (!profileId && profile?.id) markPending(profile.id, true);
+        if (!silent) {
+          toast.error("Erro ao salvar perfil", {
+            description: lastError.message || "Falha desconhecida ao gravar no banco.",
+          });
+        } else {
+          console.warn('[profile.autosave] falha:', lastError.message);
         }
-        toast.error("Erro ao salvar perfil", {
-          description: lastError.message || "Falha desconhecida ao gravar no banco.",
-        });
         return;
       }
 
-
-      // Refetch imediato para refletir activity_branch/default_radius/about_bio
+      // Refetch para refletir estado real (colunas + __extras reidratado)
       const { data: fresh, error: refetchErr } = await supabase
         .from('profiles')
         .select('*')
@@ -399,7 +427,13 @@ function ProfilePage() {
         .single();
 
       if (fresh && !refetchErr) {
-        setProfile(fresh);
+        let mergedFresh: any = fresh;
+        const savedExtras = (fresh?.custom_sections as any)?.__extras;
+        if (savedExtras && typeof savedExtras === 'object') {
+          mergedFresh = { ...savedExtras, ...fresh };
+        }
+        setProfile(mergedFresh);
+        lastSavedSnapshotRef.current = JSON.stringify(mergedFresh);
         try {
           window.dispatchEvent(
             new CustomEvent('fixxer:profile-updated', { detail: { id: fresh.id } }),
@@ -407,23 +441,39 @@ function ProfilePage() {
         } catch { /* noop */ }
       }
 
-      // Limpa rascunho offline — a versão do servidor é a fonte de verdade agora
       if (profile?.id) clearDraft(profile.id);
 
-      toast.success("Perfil atualizado com sucesso!", {
-        description: refetchErr ? "Salvo, mas houve falha ao recarregar. Atualize a página." : undefined,
-      });
+      if (!silent) toast.success("Perfil atualizado com sucesso!");
     } catch (e: any) {
-      if (profileId == null && profile?.id) {
-        markPending(profile.id, true);
+      if (!profileId && profile?.id) markPending(profile.id, true);
+      if (!silent) {
+        toast.error("Erro inesperado ao salvar perfil", {
+          description: e?.message || String(e),
+        });
+      } else {
+        console.warn('[profile.autosave] exceção:', e?.message || e);
       }
-      toast.error("Erro inesperado ao salvar perfil", {
-        description: e?.message || String(e),
-      });
     } finally {
-      setSaving(false);
+      if (silent) setAutoSaving(false); else setSaving(false);
     }
   };
+
+  // 💾 SALVAMENTO AUTOMÁTICO (debounced, silencioso) — dispara 1.5s após a
+  // última edição, comparando um snapshot JSON para evitar loops.
+  useEffect(() => {
+    if (loading || profileId || !profile?.id) return;
+    if (saving || autoSaving) return;
+    const snapshot = JSON.stringify(profile);
+    if (snapshot === lastSavedSnapshotRef.current) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave({ silent: true });
+    }, 1500);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, loading, profileId]);
 
   // Persiste rascunho local a cada mudança nos campos "leves"
   useEffect(() => {
@@ -590,21 +640,26 @@ function ProfilePage() {
               )}
             </div>
           ) : (
-            <button
-              onClick={handleSave}
-              disabled={!canSave}
-              title={
-                bioOverLimit
-                  ? `Reduza o texto de "Sobre" (${bioLen}/${BIO_MAX_LENGTH}).`
-                  : radiusInvalid
-                    ? `Raio inválido. Use ${ALLOWED_RADII_KM.join(", ")} km.`
-                    : undefined
-              }
-              className="mb-4 bg-primary text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:shadow-[0_0_30px_rgba(0,255,135,0.5)] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 uppercase tracking-tighter"
-            >
-              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-              {saving ? 'Salvando...' : 'Salvar Perfil'}
-            </button>
+            <div className="flex flex-col items-end gap-1 mb-4">
+              <button
+                onClick={() => handleSave()}
+                disabled={!canSave}
+                title={
+                  bioOverLimit
+                    ? `Reduza o texto de "Sobre" (${bioLen}/${BIO_MAX_LENGTH}).`
+                    : radiusInvalid
+                      ? `Raio inválido. Use ${ALLOWED_RADII_KM.join(", ")} km.`
+                      : undefined
+                }
+                className="bg-primary text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:shadow-[0_0_30px_rgba(0,255,135,0.5)] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 uppercase tracking-tighter"
+              >
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                {saving ? 'Salvando...' : 'Salvar Perfil'}
+              </button>
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-1.5 h-4">
+                {autoSaving ? (<><Loader2 className="w-3 h-3 animate-spin" /> Salvando automaticamente...</>) : (<>💾 Autosave ativo</>)}
+              </span>
+            </div>
           )}
 
         </div>
@@ -695,13 +750,14 @@ function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="md:col-span-1 space-y-2">
                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">CEP</label>
-                    <input 
-                      value={profile?.cep || ''} 
-                      onChange={e => {
-                        const val = e.target.value;
-                        setProfile({...profile, cep: val});
+                    <MaskedInput
+                      mask="cep"
+                      value={profile?.cep || ''}
+                      onChange={(val: string) => {
+                        setProfile({ ...profile, cep: val });
                         if (val.replace(/\D/g, '').length === 8) handleCepLookup(val);
                       }}
+                      placeholder="00000-000"
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                     />
                   </div>
