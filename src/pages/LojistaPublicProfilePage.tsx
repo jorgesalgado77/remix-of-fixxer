@@ -280,7 +280,7 @@ export function LojistaPublicProfilePage() {
         if (storeId && isMockPeerId(storeId)) {
           const mock = getMockProfile(storeId);
           const name = getMockPeerName(storeId) ?? "Perfil";
-          if (mock) {
+          if (mock && !cancelled) {
             setProfile({
               user_id: storeId,
               company_name: mock.companyName ?? name,
