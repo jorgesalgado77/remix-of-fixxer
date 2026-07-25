@@ -867,7 +867,7 @@ function ProfilePage() {
 
           <div className="flex-1 pb-4">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-4xl font-black text-white tracking-tighter">{profile?.full_name || 'Usuário'}</h1>
+              <h1 className="text-4xl font-black text-white tracking-tighter">{profile?.display_name || profile?.full_name || 'Usuário'}</h1>
               <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
                 <Star className="w-4 h-4 text-primary fill-primary" />
                 <span className="text-primary font-black text-sm">{profile?.karma_score || '5.0'}</span>
