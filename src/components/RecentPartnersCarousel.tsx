@@ -239,19 +239,35 @@ export function RecentPartnersCarousel() {
 
 
   const fetchPartners = useCallback(async (): Promise<{ ok: boolean }> => {
+    // Seleciona APENAS colunas que existem com segurança na tabela `profiles` do
+    // Supabase externo. Qualquer coluna extra faz o PostgREST responder 400 e cai
+    // no fallback silencioso (mock), o que explicava o card mostrando somente
+    // "Jorge Salgado / Carlos Silva" mesmo com prestadores reais cadastrados.
+    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, banner_url, role, business_category, custom_branch, city, state, rating, created_at, lat, lng";
     try {
       const { data, error } = await supabaseExternal
         .from("profiles")
-        .select("id, full_name, name, avatar_url, avatar, photo_url, role, activity_branch, category, city, uf, state, location, address, rating, created_at, vehicle_type, vehicle_description, vehicle_details, offerings_notes")
+        .select(SAFE_COLS)
+        .not("role", "is", null)
         .order("created_at", { ascending: false })
-        .order("rating", { ascending: false })
         .limit(120);
       if (error) throw error;
 
       const rows = ((data as unknown as PartnerRow[]) ?? [])
         .map((r) => {
           const kind = classifyRole(r.role);
-          return kind ? ({ ...r, _kind: kind } as PartnerCard) : null;
+          if (!kind) return null;
+          // Normaliza campos "amigáveis" a partir do que realmente existe no banco.
+          const branch = safeStr(r.business_category) || safeStr(r.custom_branch) || null;
+          const merged: PartnerCard = {
+            ...r,
+            name: safeStr(r.display_name) || safeStr(r.company_name) || safeStr(r.full_name),
+            full_name: safeStr(r.display_name) || safeStr(r.company_name) || safeStr(r.full_name),
+            activity_branch: branch,
+            uf: r.state ?? null,
+            _kind: kind,
+          };
+          return merged;
         })
         .filter((x): x is PartnerCard => !!x)
         .slice(0, 30);
@@ -259,13 +275,11 @@ export function RecentPartnersCarousel() {
         setItems(rows);
         writeCache(rows);
       } else {
-        // Banco vazio ou sem parceiros elegíveis → mock silencioso (sem banner).
         setItems((prev) => (prev.length > 0 ? prev : FALLBACK_PARTNERS));
       }
       setErrorMsg(null);
       return { ok: true };
     } catch (err: unknown) {
-      // Falha na consulta → sempre garante mock silencioso. Nunca exibe banner amarelo.
       if (typeof console !== "undefined") console.debug("[RecentPartnersCarousel] fallback silencioso:", err);
       setItems((prev) => (prev.length > 0 ? prev : FALLBACK_PARTNERS));
       setErrorMsg(null);
