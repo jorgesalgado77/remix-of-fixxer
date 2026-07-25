@@ -1302,25 +1302,41 @@ function ConversationPage() {
                           );
                         })()}
                         {m._pending && <> · <Loader2 className="w-2.5 h-2.5 animate-spin inline" /> enviando</>}
-                        {m._failed && (
-                          <>
-                            {" · "}
-                            <AlertCircle className="w-3 h-3 inline" />
+                        {m._failed && <> · <AlertCircle className="w-3 h-3 inline text-red-300" /> não enviada</>}
+                      </p>
+                      {m._failed && (
+                        <div
+                          role="alert"
+                          className="mt-2 flex flex-col gap-2 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/40 text-red-100 text-[11px] leading-snug"
+                        >
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-black uppercase italic tracking-widest text-red-200">
+                                Falha ao enviar
+                              </p>
+                              <p className="text-red-100/90 break-words">
+                                {m._error || "Não foi possível entregar sua mensagem. Verifique sua conexão."}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
                               onClick={() => retrySend(m)}
-                              className="ml-1 inline-flex items-center gap-1 underline text-white/90 hover:text-white"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/30 border border-red-500/60 hover:bg-red-500/45 text-white font-black uppercase italic tracking-widest text-[10px]"
                             >
-                              <RotateCcw className="w-2.5 h-2.5" /> Reenviar
+                              <RotateCcw className="w-3 h-3" /> Tentar novamente
                             </button>
                             <button
                               onClick={() => discardFailed(m.id)}
-                              className="ml-2 underline text-white/70 hover:text-white"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/80 font-bold uppercase tracking-widest text-[10px]"
                             >
                               Descartar
                             </button>
-                          </>
-                        )}
-                      </p>
+                          </div>
+                        </div>
+                      )}
+
 
                     </div>
                   </div>
