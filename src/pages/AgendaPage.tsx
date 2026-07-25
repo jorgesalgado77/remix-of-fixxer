@@ -43,6 +43,7 @@ export default function AgendaPage() {
   });
   const [filterStatus, setFilterStatus] = useState<AppointmentStatus | "all">("all");
   const [busy, setBusy] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [photoModal, setPhotoModal] = useState<
     { appointment: Appointment; mode: "checkin" | "checkout" } | null
   >(null);
@@ -149,6 +150,7 @@ export default function AgendaPage() {
           onChange={setMonthCursor}
           dots={dotsByDay}
           accent={theme.hex}
+          onSelectDay={setSelectedDay}
         />
 
         {/* Filtros de status */}
@@ -209,6 +211,19 @@ export default function AgendaPage() {
         )}
       </div>
 
+      {selectedDay && (
+        <DayDetailModal
+          dayISO={selectedDay}
+          appointments={dotsByDay.get(selectedDay) ?? []}
+          accent={theme.hex}
+          onClose={() => setSelectedDay(null)}
+          onOpenAppointment={(a) => {
+            setSelectedDay(null);
+            navigate({ to: "/agenda/$id", params: { id: a.id } });
+          }}
+        />
+      )}
+
       {photoModal && (
         <CheckoutPhotosModal
           open={!!photoModal}
@@ -267,11 +282,13 @@ function MonthCalendar({
   onChange,
   dots,
   accent,
+  onSelectDay,
 }: {
   cursor: Date;
   onChange: (d: Date) => void;
   dots: Map<string, Appointment[]>;
   accent: string;
+  onSelectDay: (iso: string) => void;
 }) {
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -286,62 +303,279 @@ function MonthCalendar({
   const monthLabel = firstDay.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const today = new Date().toISOString().slice(0, 10);
 
+  // Dias da semana com cores vibrantes distintas
+  const weekDays: { label: string; full: string; color: string }[] = [
+    { label: "Dom", full: "Domingo", color: "#FF4D6D" },
+    { label: "Seg", full: "Segunda", color: "#FFB020" },
+    { label: "Ter", full: "Terça", color: "#FFD600" },
+    { label: "Qua", full: "Quarta", color: "#00E5A0" },
+    { label: "Qui", full: "Quinta", color: "#38BDF8" },
+    { label: "Sex", full: "Sexta", color: "#A855F7" },
+    { label: "Sáb", full: "Sábado", color: "#F472B6" },
+  ];
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#1A1A1B] p-4">
-      <div className="flex items-center justify-between mb-3">
+    <div
+      className="rounded-3xl border border-white/10 p-4 shadow-2xl"
+      style={{
+        background: `radial-gradient(circle at top left, ${accent}18, transparent 60%), linear-gradient(180deg, #17171A 0%, #0F0F11 100%)`,
+      }}
+    >
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => onChange(new Date(year, month - 1, 1))}
-          className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center"
+          className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition"
           aria-label="Mês anterior"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <div className="text-sm font-black uppercase tracking-tight">{monthLabel}</div>
+        <div className="text-center">
+          <div className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40">Agenda</div>
+          <div className="text-base font-black uppercase tracking-tight capitalize" style={{ color: accent }}>
+            {monthLabel}
+          </div>
+        </div>
         <button
           onClick={() => onChange(new Date(year, month + 1, 1))}
-          className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center"
+          className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition"
           aria-label="Próximo mês"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-1 text-center">
-        {["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => (
-          <div key={i} className="text-[9px] font-black text-white/40 py-1">{d}</div>
+
+      <div className="grid grid-cols-7 gap-1.5 text-center mb-2">
+        {weekDays.map((w) => (
+          <div
+            key={w.full}
+            className="text-[10px] font-black uppercase tracking-widest py-1.5 rounded-lg"
+            style={{ color: w.color, backgroundColor: `${w.color}15` }}
+            title={w.full}
+          >
+            {w.label}
+          </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1.5 text-center">
         {cells.map((d, i) => {
-          if (d === null) return <div key={i} />;
+          if (d === null) return <div key={i} className="aspect-square" />;
           const dayISO = new Date(year, month, d).toISOString().slice(0, 10);
           const dayAppts = dots.get(dayISO) ?? [];
           const isToday = dayISO === today;
+          const weekday = new Date(year, month, d).getDay();
+          const wColor = weekDays[weekday].color;
+          const hasAppts = dayAppts.length > 0;
           return (
-            <div
+            <button
               key={i}
-              className="aspect-square rounded-lg flex flex-col items-center justify-center relative"
+              onClick={() => onSelectDay(dayISO)}
+              className="group aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all hover:scale-[1.05] active:scale-95"
               style={{
-                backgroundColor: isToday ? `${accent}22` : "transparent",
-                border: isToday ? `1px solid ${accent}55` : "1px solid transparent",
+                backgroundColor: isToday
+                  ? `${accent}30`
+                  : hasAppts
+                    ? `${wColor}12`
+                    : "rgba(255,255,255,0.02)",
+                border: isToday
+                  ? `1.5px solid ${accent}`
+                  : hasAppts
+                    ? `1px solid ${wColor}55`
+                    : "1px solid rgba(255,255,255,0.05)",
+                boxShadow: isToday ? `0 0 16px ${accent}55` : undefined,
               }}
+              aria-label={`Dia ${d}, ${dayAppts.length} compromisso(s)`}
             >
-              <span className="text-[11px] font-bold text-white/80">{d}</span>
-              {dayAppts.length > 0 && (
-                <div className="flex gap-0.5 mt-0.5">
+              <span
+                className="text-[13px] font-black leading-none"
+                style={{ color: isToday ? accent : hasAppts ? "#fff" : "rgba(255,255,255,0.65)" }}
+              >
+                {d}
+              </span>
+              {hasAppts && (
+                <div className="flex gap-0.5 mt-1">
                   {dayAppts.slice(0, 3).map((a) => (
                     <div
                       key={a.id}
-                      className="w-1 h-1 rounded-full"
-                      style={{ backgroundColor: APPOINTMENT_STATUS[a.status].color }}
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{
+                        backgroundColor: APPOINTMENT_STATUS[a.status].color,
+                        boxShadow: `0 0 4px ${APPOINTMENT_STATUS[a.status].color}`,
+                      }}
                     />
                   ))}
+                  {dayAppts.length > 3 && (
+                    <span className="text-[7px] font-black text-white/60 ml-0.5">
+                      +{dayAppts.length - 3}
+                    </span>
+                  )}
                 </div>
               )}
-            </div>
+            </button>
           );
         })}
+      </div>
+
+      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-center gap-3 text-[9px] font-black uppercase tracking-widest text-white/40">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: accent }} /> Hoje
+        </span>
+        <span>•</span>
+        <span>Toque em um dia para ver horários</span>
       </div>
     </div>
   );
 }
+
+function DayDetailModal({
+  dayISO,
+  appointments,
+  accent,
+  onClose,
+  onOpenAppointment,
+}: {
+  dayISO: string;
+  appointments: Appointment[];
+  accent: string;
+  onClose: () => void;
+  onOpenAppointment: (a: Appointment) => void;
+}) {
+  const [y, m, d] = dayISO.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const dateLabel = date.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  // Agrupa por hora (00 a 23)
+  const byHour = new Map<number, Appointment[]>();
+  for (const a of appointments) {
+    const h = new Date(a.scheduled_at).getHours();
+    if (!byHour.has(h)) byHour.set(h, []);
+    byHour.get(h)!.push(a);
+  }
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const workingHours = hours.filter((h) => h >= 7 && h <= 22);
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="w-full sm:max-w-lg max-h-[85vh] rounded-t-3xl sm:rounded-3xl border border-white/10 bg-[#101013] overflow-hidden flex flex-col"
+        style={{ boxShadow: `0 -20px 60px ${accent}22` }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="px-5 py-4 border-b border-white/10 flex items-center gap-3"
+          style={{ background: `linear-gradient(135deg, ${accent}22, transparent)` }}
+        >
+          <div
+            className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${accent}22`, border: `1px solid ${accent}55` }}
+          >
+            <CalendarIcon className="w-5 h-5" style={{ color: accent }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[9px] font-black uppercase tracking-widest text-white/40">
+              Detalhes do Dia
+            </div>
+            <div className="text-sm font-black capitalize truncate">{dateLabel}</div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
+            aria-label="Fechar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 p-4 space-y-2">
+          {appointments.length === 0 && (
+            <div className="text-center py-6 space-y-2">
+              <Clock className="w-8 h-8 mx-auto text-white/20" />
+              <p className="text-xs font-bold text-white/60">
+                Nenhum compromisso fixado neste dia.
+              </p>
+              <p className="text-[10px] text-white/40">
+                Horários livres exibidos abaixo.
+              </p>
+            </div>
+          )}
+
+          {workingHours.map((h) => {
+            const slot = byHour.get(h) ?? [];
+            const label = `${String(h).padStart(2, "0")}:00`;
+            return (
+              <div
+                key={h}
+                className="grid grid-cols-[56px_1fr] gap-3 items-start"
+              >
+                <div className="pt-2 text-right">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                    {label}
+                  </span>
+                </div>
+                <div className="min-h-[44px] rounded-xl border border-white/5 bg-white/[0.02] p-2 space-y-1.5">
+                  {slot.length === 0 ? (
+                    <div className="h-full flex items-center px-2">
+                      <span className="text-[10px] text-white/25 italic">Livre</span>
+                    </div>
+                  ) : (
+                    slot.map((a) => {
+                      const s = APPOINTMENT_STATUS[a.status];
+                      const t = APPOINTMENT_TYPES[a.type];
+                      const time = new Date(a.scheduled_at).toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                      return (
+                        <button
+                          key={a.id}
+                          onClick={() => onOpenAppointment(a)}
+                          className="w-full text-left rounded-lg p-2.5 flex items-center gap-2 hover:brightness-125 transition"
+                          style={{
+                            backgroundColor: `${s.color}18`,
+                            border: `1px solid ${s.color}55`,
+                          }}
+                        >
+                          <span className="text-lg shrink-0">{t.icon}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11px] font-black uppercase truncate">
+                              {t.label}
+                            </div>
+                            <div className="text-[10px] text-white/60 truncate">
+                              {time} • {s.icon} {s.label}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div
+          className="px-5 py-3 border-t border-white/10 text-center text-[9px] font-black uppercase tracking-widest text-white/40"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        >
+          {appointments.length} compromisso(s) neste dia
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function AppointmentCard({
   appointment,
