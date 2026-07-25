@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { getCurrentUserId, isCurrentUserAdmin, getCurrentCategory } from "@/lib/current-user";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardRedirect,
@@ -11,54 +11,18 @@ function DashboardRedirect() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const resolveRoleAndNavigate = async () => {
-      const email = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
-      let role = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
+    (async () => {
+      const uid = await getCurrentUserId();
+      if (!uid) { navigate({ to: '/auth' as any }); return; }
 
-      console.log(`[FIXXER REDIRECT]: Resolvendo rota para ${email} (Role: ${role})`);
+      if (await isCurrentUserAdmin()) { navigate({ to: '/admin' as any }); return; }
 
-      // Regra Prioritária Admin Master - Verificação Imediata
-      if (email.trim() === 'jorgericardosalgado@gmail.com') {
-        navigate({ to: '/admin' as any });
-
-
-        return;
-      }
-
-
-      // Se a role não estiver no localStorage, busca no Supabase
-      if (!role) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role, user_type')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          
-          role = profile?.role || profile?.user_type || 'prestador';
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('fixxer_user_role', role);
-          }
-        }
-      }
-
-      // Normalização do redirecionamento por perfil
-      const normalizedRole = role.toLowerCase();
-      if (normalizedRole.includes('lojista')) {
-        navigate({ to: '/lojista' as any });
-      } else if (normalizedRole.includes('parceiro') || normalizedRole.includes('fornecedor')) {
-        navigate({ to: '/parceiro' as any });
-      } else if (normalizedRole.includes('admin')) {
-        navigate({ to: '/admin' as any });
-      } else if (normalizedRole.includes('cliente')) {
-        navigate({ to: '/cliente' as any });
-      } else {
-        navigate({ to: '/prestador' as any });
-      }
-    };
-
-    resolveRoleAndNavigate();
+      const cat = await getCurrentCategory();
+      if (cat === 'lojista') navigate({ to: '/lojista' as any });
+      else if (cat === 'fornecedor') navigate({ to: '/parceiro' as any });
+      else if (cat === 'cliente') navigate({ to: '/cliente' as any });
+      else navigate({ to: '/prestador' as any });
+    })();
   }, [navigate]);
 
   return (

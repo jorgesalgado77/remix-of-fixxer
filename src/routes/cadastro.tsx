@@ -151,24 +151,19 @@ function RegisterComponent() {
         }
 
         toast.success("Cadastro realizado!");
-        
-        // 4. Gravação no localStorage conforme requisito (Fixxer Auth Logic)
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('fixxer_user_email', email.trim().toLowerCase());
-          localStorage.setItem('fixxer_user_category', role);
-          localStorage.setItem('fixxer_authenticated', 'true');
-        }
 
-        toast.success("Cadastro realizado!");
-        
-        // Redirecionamento FORÇADO para a dashboard correta
+        // Não persistimos identidade em localStorage. A sessão Supabase já é a fonte
+        // de verdade; o role será resolvido pelo servidor via user_roles/profiles.
+        try { window.dispatchEvent(new Event('fixxer:identity-change')); } catch {}
+
+        // Redirecionamento para a dashboard correta (categoria vinda do próprio form)
         setTimeout(() => {
-          const isAdmin = email.trim().toLowerCase() === 'jorgericardosalgado@gmail.com';
-          const redirectPath = isAdmin ? '/admin' : `/dashboard/${role === 'casual' ? 'cliente' : role}`;
+          const redirectPath = `/dashboard/${role === 'casual' ? 'cliente' : role}`;
           console.log("Redirecionando para:", redirectPath);
           window.location.href = redirectPath;
-        }, 1000);
+        }, 800);
       }
+
     } catch (error: any) {
       console.error("Erro inesperado no cadastro:", error);
       toast.error("Ocorreu um erro inesperado. Tente novamente.");

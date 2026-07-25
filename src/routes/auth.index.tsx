@@ -77,38 +77,30 @@ function LoginComponent() {
           isAdmin = !!adminRow;
         } catch { /* silencioso */ }
 
-        // Determina o papel real do usuário, priorizando o que está gravado no perfil.
+        // Determina a categoria de destino (apenas para navegação); a autoridade
+        // continua sendo o servidor (user_roles + profiles). Nada é gravado em
+        // localStorage como fonte de identidade.
         const rawRole = (statusRow?.role || statusRow?.user_type || statusRow?.business_category || '').toString().toLowerCase();
-        const role = isAdmin ? 'admin' : (rawRole || 'user');
 
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('fixxer_user_id', data.session.user.id);
-          localStorage.setItem('fixxer_user_email', normalizedEmail);
-          localStorage.setItem('fixxer_authenticated', 'true');
+        let category: 'admin' | 'lojista' | 'prestador' | 'fornecedor' | 'cliente' = 'lojista';
+        if (isAdmin) category = 'admin';
+        else if (rawRole.includes('prestador')) category = 'prestador';
+        else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) category = 'fornecedor';
+        else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) category = 'cliente';
+        else if (rawRole.includes('lojista')) category = 'lojista';
+        else category = 'lojista';
 
-          let category: 'admin' | 'lojista' | 'prestador' | 'fornecedor' | 'cliente' = 'lojista';
-          if (isAdmin) category = 'admin';
-          else if (rawRole.includes('prestador')) category = 'prestador';
-          else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) category = 'fornecedor';
-          else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) category = 'cliente';
-          else if (rawRole.includes('lojista')) category = 'lojista';
-          else category = 'lojista';
+        try { window.dispatchEvent(new Event('fixxer:identity-change')); } catch {}
 
-          // Persistimos o role já normalizado para a UI (badges, temas) usar direto.
-          localStorage.setItem('fixxer_user_role', category);
-          localStorage.setItem('fixxer_user_category', category);
-          window.dispatchEvent(new Event('fixxer:category-change'));
-          window.dispatchEvent(new Event('fixxer:role-changed'));
-
-          if (isAdmin) {
-            window.location.replace('/admin');
-          } else if (category === 'cliente') window.location.replace('/dashboard/cliente');
-          else if (category === 'prestador') window.location.replace('/dashboard/prestador');
-          else if (category === 'fornecedor') window.location.replace('/dashboard/parceiro');
-          else if (category === 'lojista') window.location.replace('/dashboard/lojista');
-          else navigate({ to: '/cadastro' as any });
-        }
+        if (isAdmin) {
+          window.location.replace('/admin');
+        } else if (category === 'cliente') window.location.replace('/dashboard/cliente');
+        else if (category === 'prestador') window.location.replace('/dashboard/prestador');
+        else if (category === 'fornecedor') window.location.replace('/dashboard/parceiro');
+        else if (category === 'lojista') window.location.replace('/dashboard/lojista');
+        else navigate({ to: '/cadastro' as any });
       }
+
     } catch (err: any) {
       setErrorMsg("Falha ao se comunicar com o banco de dados.");
       setLoading(false);

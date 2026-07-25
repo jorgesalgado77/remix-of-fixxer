@@ -8,19 +8,14 @@ let currentUserId: string | null = null;
 
 async function enforceBlockedNow(userId: string) {
   try {
-    // Cancela queries em vôo e limpa storage local
     try {
       const { data } = await supabase.from("profiles").select("status").eq("id", userId).maybeSingle();
       if (data?.status !== "bloqueado") return;
     } catch { /* seguir mesmo em erro para não travar UI */ }
     try { await supabase.auth.signOut(); } catch {}
     if (typeof window !== "undefined") {
-      try {
-        localStorage.removeItem("fixxer_authenticated");
-        localStorage.removeItem("fixxer_user_role");
-        localStorage.removeItem("fixxer_user_category");
-        localStorage.removeItem("fixxer_user_id");
-      } catch {}
+      // A limpeza global de chaves legadas é feita centralmente em current-user
+      // (listener onAuthStateChange → SIGNED_OUT). Aqui apenas notificamos o UX.
       toast.error("Sua conta foi SUSPENSA pelo administrador. Sessão encerrada.");
       setTimeout(() => { window.location.replace("/auth?blocked=1"); }, 400);
     }
@@ -28,6 +23,7 @@ async function enforceBlockedNow(userId: string) {
     console.warn("[blocked-guard] falha ao aplicar bloqueio", e);
   }
 }
+
 
 export async function subscribeBlockedStatus(userId: string) {
   if (!userId) return;

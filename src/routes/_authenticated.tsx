@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { getCurrentUser, isCurrentUserAdmin, clearCurrentUserCache, useCurrentUser, useIsAdmin } from "@/lib/current-user";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCurrentCategory, getCategoryCssVars } from "@/lib/user-category";
@@ -9,19 +9,11 @@ import { useCurrentCategory, getCategoryCssVars } from "@/lib/user-category";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    let storedEmail = null;
-    let storedRole = 'user';
-
-    if (typeof window !== 'undefined') {
-      storedEmail = localStorage.getItem('fixxer_user_email');
-      storedRole = localStorage.getItem('fixxer_user_role') || 'user';
-    }
-
-    return { 
-      session, 
-      userRole: storedRole,
-      userEmail: session?.user?.email || storedEmail
+    // Identidade sempre pela sessão real do Supabase (nunca por localStorage).
+    const user = await getCurrentUser(true);
+    return {
+      userId: user?.id ?? null,
+      userEmail: user?.email ?? null,
     };
   },
   component: AuthenticatedLayout,
@@ -29,53 +21,30 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, loading: userLoading } = useCurrentUser();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
+  const email = user?.email ?? '';
+
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('fixxer_authenticated') === 'true';
+    if (userLoading) return;
+    if (!user) {
+      navigate({ to: "/auth" as any });
+      return;
+    }
+  }, [user, userLoading, navigate]);
 
-      if (!currentSession && !isAuthenticated) {
-        navigate({ to: "/auth" as any });
-        return;
-      }
+  useEffect(() => {
+    if (adminLoading || userLoading) return;
+    if (!user) return;
+    if (!isAdmin && pathname.startsWith('/admin')) {
+      toast.error("Acesso restrito ao Administrador Master.");
+      navigate({ to: "/feed" as any });
+    }
+  }, [user, isAdmin, adminLoading, userLoading, pathname, navigate]);
 
-      const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
-      const storedRole = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
-      setEmail(currentSession?.user?.email || storedEmail);
-      setRole(storedRole);
-
-      // Verificação de admin server-side (RLS + user_roles), nunca por email/localStorage.
-      if (currentSession?.user?.id) {
-        const { data: adminRow } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', currentSession.user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-        const serverAdmin = !!adminRow;
-        setIsAdmin(serverAdmin);
-        if (typeof window !== 'undefined') {
-          if (serverAdmin) localStorage.setItem('fixxer_user_role', 'admin');
-        }
-        // Bloqueia acesso a /admin quando não confirmado pelo servidor.
-        if (!serverAdmin && pathname.startsWith('/admin')) {
-          toast.error("Acesso restrito ao Administrador Master.");
-          navigate({ to: "/feed" as any });
-        }
-      } else {
-        setIsAdmin(false);
-        if (pathname.startsWith('/admin')) {
-          navigate({ to: "/auth" as any });
-        }
-      }
-    };
-    checkAuth();
-
+  useEffect(() => {
     // Notificações Realtime para mudança de status
     const channel = supabaseExternal
       .channel('schema-db-changes')
@@ -84,7 +53,7 @@ function AuthenticatedLayout() {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'service_orders', // ou o nome correto da tabela de O.S.
+          table: 'service_orders',
         },
         (payload) => {
           if (payload.new && payload.old && payload.new.status !== payload.old.status) {
@@ -101,7 +70,8 @@ function AuthenticatedLayout() {
     return () => {
       supabaseExternal.removeChannel(channel);
     };
-  }, [navigate, pathname]);
+  }, []);
+
 
   const showAdminPanel = pathname.startsWith('/admin');
 
@@ -144,10 +114,8 @@ function AuthenticatedLayout() {
 
           <button 
             onClick={async () => {
-              await supabase.auth.signOut();
-              if (typeof window !== 'undefined') {
-                localStorage.clear();
-              }
+              try { await supabaseExternal.auth.signOut(); } catch {}
+              clearCurrentUserCache();
               window.location.href = "/auth";
             }}
             className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-red-400 transition-colors flex items-center gap-1 cursor-pointer"
@@ -155,6 +123,7 @@ function AuthenticatedLayout() {
             <LogOut className="w-4 h-4" />
             Sair
           </button>
+
         </div>
       </nav>
 
