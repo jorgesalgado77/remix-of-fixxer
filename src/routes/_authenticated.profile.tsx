@@ -1131,6 +1131,7 @@ function ProfilePage() {
                 portfolioImages={profile?.portfolio_media}
                 companyName={profile?.company_name}
                 fullName={profile?.full_name}
+                displayName={profile?.display_name}
                 accentHex={theme.hex}
               />
             )}
