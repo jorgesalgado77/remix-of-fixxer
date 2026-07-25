@@ -648,24 +648,29 @@ export function LojistaPublicProfilePage() {
   // Coordenadas do usuário logado para cálculo de distância até o perfil visitado.
   const userCoords = useUserCoords();
   // Se o usuário logado está visualizando o próprio perfil, distância = 0 km.
-  const isSelf = !!currentUserId && !!profile?.user_id && currentUserId === profile.user_id;
+  const isSelf = !!profile?.user_id && !!currentUserId && currentUserId === profile.user_id;
   const distanceKm = useMemo(() => {
     if (isSelf) return 0;
     if (!userCoords) return null;
     const pLat = Number((profile as any)?.lat);
     const pLng = Number((profile as any)?.lng);
-    const target = Number.isFinite(pLat) && Number.isFinite(pLng)
-      ? { lat: pLat, lng: pLng }
-      : cityCoords(profile?.city);
-    if (!target) return null;
+    // Sanity range BR (evita coords lixo tipo 0,0 gerando ~6000 km).
+    const inBR = (lat: number, lng: number) =>
+      Number.isFinite(lat) && Number.isFinite(lng) &&
+      lat >= -35 && lat <= 6 && lng >= -75 && lng <= -30;
+    const target = inBR(pLat, pLng) ? { lat: pLat, lng: pLng } : cityCoords(profile?.city);
+    if (!target || !inBR(target.lat, target.lng)) return null;
     const km = haversineKm(userCoords, target);
-    return Number.isFinite(km) ? km : null;
+    if (!Number.isFinite(km) || km > 8000) return null;
+    return km;
   }, [isSelf, userCoords, profile?.city, (profile as any)?.lat, (profile as any)?.lng]);
+  const formatKm = (km: number) =>
+    km < 10 ? `${km.toFixed(1).replace(".", ",")} km` : `${Math.round(km)} km`;
   const distanceLabel = distanceKm == null
     ? null
     : distanceKm === 0
       ? "0 km (você)"
-      : distanceKm < 10 ? `${distanceKm.toFixed(1)} km` : `${Math.round(distanceKm)} km`;
+      : formatKm(distanceKm);
 
   // Lista unificada de cargos: aceita `positions` (novo formato) ou `job_roles` (CSV "||").
   const positionsList = useMemo<string[]>(() => {
