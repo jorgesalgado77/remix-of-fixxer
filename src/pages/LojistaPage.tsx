@@ -56,7 +56,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
 import { CreateAdModal } from "@/components/CreateAdModal";
-import type { CategoryKey } from "@/lib/category-colors";
+import { CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
 import {
   evaluateProfileCompleteness,
   describeMissing,
@@ -231,6 +231,18 @@ export function LojistaDashboard() {
       window.removeEventListener("fixxer:role-changed", syncRole as any);
     };
   }, []);
+
+  // Se o usuário logado não for lojista/admin, envia para o painel correto da sua categoria.
+  useEffect(() => {
+    if (userRole === 'lojista' || userRole === 'admin') return;
+    const target = userRole === 'prestador' ? '/prestador'
+      : userRole === 'fornecedor' ? '/parceiro'
+      : userRole === 'cliente' ? '/cliente'
+      : null;
+    if (target && typeof window !== 'undefined' && window.location.pathname !== target) {
+      navigate({ to: target as any, replace: true });
+    }
+  }, [userRole, navigate]);
 
   const openPublicProfile = () => {
     const id = profileSummary.id || (typeof window !== "undefined" ? localStorage.getItem("fixxer_lojista_id") : null);
@@ -629,7 +641,7 @@ export function LojistaDashboard() {
         <header className="px-8 py-6 border-b border-white/10 flex items-center justify-between sticky top-0 z-10 bg-[#050505]/80 backdrop-blur-md hidden md:flex">
            <div className="flex items-center gap-4">
                <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
-                  {activeTab === 'dashboard' ? 'Painel Lojista' : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
+                  {activeTab === 'dashboard' ? `Painel ${CATEGORY_LABEL[userRole] ?? 'Lojista'}` : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
                </h2>
            </div>
            <div className="flex items-center gap-4">
@@ -827,7 +839,14 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                         {profile?.companyName || "Complete seu perfil"}
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black uppercase">🏪 Lojista</span>
+                        {(() => {
+                          const r = (typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_role') || 'lojista') : 'lojista').toLowerCase() as CategoryKey;
+                          const key: CategoryKey = (['lojista','prestador','fornecedor','cliente','admin'] as CategoryKey[]).includes(r as CategoryKey) ? (r as CategoryKey) : 'lojista';
+                          const icon = key === 'prestador' ? '🛠️' : key === 'fornecedor' ? '🚚' : key === 'cliente' ? '👤' : key === 'admin' ? '👑' : '🏪';
+                          return (
+                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black uppercase">{icon} {CATEGORY_LABEL[key]}</span>
+                          );
+                        })()}
                         {(profile?.city || profile?.state) && (
                             <span className="flex items-center gap-0.5 text-[8px] font-bold text-muted-foreground uppercase italic truncate">
                                 <MapPin className="w-2.5 h-2.5" />
