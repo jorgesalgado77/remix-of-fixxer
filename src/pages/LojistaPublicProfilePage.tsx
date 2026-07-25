@@ -810,9 +810,9 @@ export function LojistaPublicProfilePage() {
               </div>
 
               {/* Infos */}
-              <div className="flex-1 space-y-3 w-full">
-                <div>
-                  <h1 className="text-xl md:text-3xl font-black uppercase italic tracking-tight">
+              <div className="flex-1 min-w-0 w-full space-y-3 overflow-hidden">
+                <div className="min-w-0">
+                  <h1 className="text-xl md:text-3xl font-black uppercase italic tracking-tight break-words">
                     {profile?.company_name || "Lojista FIXXER"}
                   </h1>
                   <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase italic mt-1 flex-wrap">
