@@ -545,21 +545,34 @@ function FavoritosPage() {
                 cta={{ label: "Explorar Feed", to: "/feed" }}
               />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProfiles.map((fav) => (
-                  <ProfileCard
-                    key={fav.id}
-                    fav={fav}
-                    userCoords={userCoords}
-                    onChat={() => openChat(fav)}
-                    onView={() => openProfile(fav)}
-                    onRemove={() => removeProfile(fav)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredProfiles.slice(0, visibleProfiles).map((fav) => (
+                    <ProfileCard
+                      key={fav.id}
+                      fav={fav}
+                      userCoords={userCoords}
+                      onChat={() => openChat(fav)}
+                      onView={() => openProfile(fav)}
+                      onRemove={() => removeProfile(fav)}
+                    />
+                  ))}
+                </div>
+                {visibleProfiles < filteredProfiles.length && (
+                  <div className="flex justify-center pt-6">
+                    <button
+                      onClick={() => setVisibleProfiles((n) => n + PAGE_SIZE)}
+                      className="h-11 px-6 rounded-full bg-white/5 border border-white/10 hover:border-primary/50 text-[11px] font-black uppercase italic tracking-widest"
+                    >
+                      Carregar mais ({filteredProfiles.length - visibleProfiles})
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         )}
+
 
         {tab === "anuncios" && (
           <section id="panel-anuncios" role="tabpanel" aria-labelledby="tab-anuncios" aria-live="polite">
