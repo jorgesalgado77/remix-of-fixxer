@@ -113,12 +113,17 @@ export function OfferingsPicker({
       return;
     }
     if (selected.length >= MAX_SELECTED) {
+      setInlineWarn(`Limite máximo de ${MAX_SELECTED} ofertas atingido — remova alguma para adicionar outra.`);
       toast.warning(`Limite máximo de ${MAX_SELECTED} ofertas.`);
       return;
     }
     const nextLen = selected.length + 1;
+    if (nextLen > quota && balance < EXTRA_COST) {
+      setInlineWarn(`Seu plano ${planId.toUpperCase()} inclui apenas ${quota} oferta(s). Cada extra custa ${EXTRA_COST} 🪙 e você tem ${balance} 🪙.`);
+    }
     const paid = await chargeExtraIfNeeded(nextLen);
     if (!paid) return;
+    setInlineWarn(null);
     onChange([...selected, name]);
     if (name.toLowerCase() === 'veículo próprio') setVehicleExpanded(true);
   };
