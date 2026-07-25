@@ -161,6 +161,8 @@ function ConversationPage() {
   const [peerName, setPeerName] = useState<string>("Conversa");
   const [peerAvatar, setPeerAvatar] = useState<string | null>(null);
   const [peerRole, setPeerRole] = useState<string | null>(null);
+  const [peerInitials, setPeerInitials] = useState<string>("?");
+  const [peerLoading, setPeerLoading] = useState<boolean>(true);
   const [content, setContent] = useState<string>(() => getDraftText(peerId));
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -423,45 +425,20 @@ function ConversationPage() {
       await hydrateChatPreferences(uid);
 
       try {
-        // Tenta pelo id primário e, se não achar, pelo user_id (schemas variam).
-        let anyP: any = null;
-        const { data: p1 } = await supabaseExternal
-          .from("profiles")
-          .select("id, user_id, full_name, display_name, avatar_url, role")
-          .eq("id", peerId)
-          .maybeSingle();
-        anyP = p1;
-        if (!anyP) {
-          const { data: p2 } = await supabaseExternal
-            .from("profiles")
-            .select("id, user_id, full_name, display_name, avatar_url, role")
-            .eq("user_id", peerId)
-            .maybeSingle();
-          anyP = p2;
+        setPeerLoading(true);
+        const { resolvePeerProfile } = await import("@/lib/chat-peer-profile");
+        const resolved = await resolvePeerProfile(peerId);
+        if (!cancelled) {
+          setPeerName(resolved.name);
+          setPeerAvatar(resolved.avatarUrl);
+          setPeerRole(resolved.role);
+          setPeerInitials(resolved.initials);
         }
-        if (anyP && !cancelled) {
-          setPeerName(anyP.display_name || anyP.full_name || "Conversa");
-          setPeerAvatar(anyP.avatar_url ?? null);
-          setPeerRole(anyP.role ?? null);
-        }
-        // Fallback para foto/nome vindos de store_profiles quando profiles está vazio.
-        const uidForStore = (anyP?.user_id as string | undefined) || peerId;
-        if (uidForStore && (!anyP?.avatar_url || !anyP?.display_name)) {
-          try {
-            const { data: sp } = await supabaseExternal
-              .from("store_profiles")
-              .select("logo_url, company_name, display_name")
-              .eq("user_id", uidForStore)
-              .maybeSingle();
-            if (sp && !cancelled) {
-              if (!anyP?.avatar_url && (sp as any).logo_url) setPeerAvatar((sp as any).logo_url);
-              if (!anyP?.display_name && ((sp as any).display_name || (sp as any).company_name)) {
-                setPeerName(((sp as any).display_name || (sp as any).company_name) as string);
-              }
-            }
-          } catch {}
-        }
-      } catch {}
+      } catch (e) {
+        console.warn("[chat] falha ao resolver perfil do destinatário", e);
+      } finally {
+        if (!cancelled) setPeerLoading(false);
+      }
 
 
 
@@ -1234,9 +1211,11 @@ function ConversationPage() {
           >
             {peerAvatar ? (
               <img src={peerAvatar} alt={peerName} className="w-full h-full object-cover" />
+            ) : peerLoading ? (
+              <span className="w-full h-full animate-pulse bg-white/10" aria-label="Carregando avatar" />
             ) : (
               <span className="font-black italic text-base" style={{ color: peerTheme.hex }}>
-                {peerName.slice(0, 1).toUpperCase()}
+                {peerInitials}
               </span>
             )}
             {peerOnline && (
@@ -1244,7 +1223,11 @@ function ConversationPage() {
             )}
           </button>
           <div className="flex-1 min-w-0">
-            <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
+            {peerLoading ? (
+              <span className="block h-3.5 w-32 rounded bg-white/10 animate-pulse" aria-label="Carregando nome" />
+            ) : (
+              <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
+            )}
             <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
               <span
                 className="shrink-0 text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest"
