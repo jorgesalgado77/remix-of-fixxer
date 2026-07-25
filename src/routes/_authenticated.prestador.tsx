@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import {
   Briefcase,
@@ -8,23 +8,18 @@ import {
   Clock,
   DollarSign,
   MessageSquare,
-  Settings,
   ChevronRight,
   TrendingUp,
   ShieldCheck,
   PlusCircle,
   Camera,
   Hammer,
-  PowerOff,
-  Zap,
-  Calendar,
-  Megaphone,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
-import { ReviewModal } from "@/components/ReviewModal";
 import { EscrowBadge } from "@/components/EscrowBadge";
+import { PanelActions } from "@/components/PanelActions";
+
+
 
 
 export const Route = createFileRoute("/_authenticated/prestador")({
@@ -53,33 +48,7 @@ function PrestadorDashboard() {
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Controle de Agendas, O.S. e Reputação</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 md:gap-3">
-          <Link
-            to="/agenda"
-            className="flex items-center gap-2 h-11 px-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-[10px] tracking-widest hover:bg-white/10 hover:border-primary/40 transition-all"
-            title="Abrir minha agenda de compromissos"
-            aria-label="Acessar Agenda"
-          >
-            <Calendar className="w-4 h-4 text-primary" /> Agenda
-          </Link>
-          <Link
-            to="/meus-anuncios"
-            className="flex items-center gap-2 h-11 px-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-[10px] tracking-widest hover:bg-white/10 hover:border-primary/40 transition-all"
-            title="Gerenciar meus anúncios publicados"
-            aria-label="Acessar Meus Anúncios"
-          >
-            <Megaphone className="w-4 h-4 text-primary" /> Meus Anúncios
-          </Link>
-          <Link
-            to="/configuracoes"
-            className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-primary/40 transition-all"
-            title="Configurações do sistema — preferências, notificações e segurança"
-            aria-label="Abrir configurações do sistema"
-          >
-            <Settings className="w-5 h-5" />
-          </Link>
-          <AvailabilityToggle />
-        </div>
+        <PanelActions />
       </header>
 
 
@@ -192,78 +161,3 @@ function JobCard({ id, client, category, value, status }: any) {
   );
 }
 
-/* ==================== BOTÃO DE DISPONIBILIDADE ==================== */
-function AvailabilityToggle() {
-  const [available, setAvailable] = useState<boolean>(true);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    import("@/lib/availability").then(({ getMyAvailability }) => {
-      getMyAvailability().then((v) => { if (!cancelled) setAvailable(v); });
-    });
-    return () => { cancelled = true; };
-  }, []);
-
-  const toggle = async () => {
-    if (busy) return;
-    const next = !available;
-    setAvailable(next);
-    setBusy(true);
-    try {
-      const { setMyAvailability } = await import("@/lib/availability");
-      await setMyAvailability(next);
-      try {
-        window.dispatchEvent(new CustomEvent("fixxer:availability-changed", { detail: { available: next } }));
-      } catch { /* ignore */ }
-      if (next) {
-        toast.success("Você está DISPONÍVEL na plataforma.", {
-          description: "Clientes podem localizar seu perfil e enviar mensagens agora.",
-        });
-      } else {
-        toast("Você está INDISPONÍVEL.", {
-          description: "Perfil pausado — nenhuma nova solicitação chegará até você reativar.",
-        });
-      }
-    } catch {
-      toast.error("Não foi possível salvar sua disponibilidade agora.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const activeStyle =
-    "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 shadow-[0_0_18px_rgba(16,185,129,0.35)]";
-  const pausedStyle =
-    "bg-white/5 border-white/15 text-white/60 hover:bg-white/10";
-
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={available}
-      onClick={toggle}
-      title={
-        available
-          ? "Disponibilidade ATIVA — seu perfil aparece nas buscas e pode receber contatos"
-          : "Disponibilidade PAUSADA — perfil oculto para novas solicitações. Clique para reativar."
-      }
-      aria-label={available ? "Definir como indisponível" : "Definir como disponível"}
-      className={`flex items-center gap-2 h-11 px-3 rounded-xl border transition-all text-[10px] font-black uppercase italic tracking-widest ${available ? activeStyle : pausedStyle}`}
-    >
-      <span
-        className={`relative w-9 h-5 rounded-full transition-colors ${available ? "bg-emerald-500" : "bg-white/20"}`}
-        aria-hidden
-      >
-        <span
-          className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
-          style={{ transform: available ? "translateX(16px)" : "translateX(0)" }}
-        />
-      </span>
-      <span className="hidden md:inline-flex items-center gap-1.5">
-        {available ? <Zap className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
-        {available ? "Disponível" : "Pausado"}
-      </span>
-    </button>
-  );
-}

@@ -67,6 +67,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { EscrowBadge } from "@/components/EscrowBadge";
+import { PanelActions } from "@/components/PanelActions";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { IMaskInput } from "react-imask";
@@ -733,6 +734,7 @@ export function LojistaDashboard() {
                   </div>
                 )}
               </div>
+              <PanelActions />
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 <span className="text-[10px] font-black text-primary uppercase italic">Sessão Ativa</span>
