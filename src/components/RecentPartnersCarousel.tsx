@@ -382,63 +382,71 @@ export function RecentPartnersCarousel() {
         </div>
       )}
 
-      <header className="mb-3 md:mb-4 flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="font-black italic uppercase text-white text-sm md:text-base tracking-wide">
+      {/* ---- HEADER RESPONSIVO (mobile-first) ---------------------------------
+           Linha 1: título + subtítulo ocupam 100% da largura (sem compressão lateral).
+           Linha 2: barra horizontal rolável com pílulas de filtro + ordenação + refresh.
+      ------------------------------------------------------------------------- */}
+      <header className="mb-3 md:mb-4 w-full block">
+        <div className="w-full block">
+          <h3 className="w-full block font-black italic uppercase text-white text-sm md:text-base tracking-wide leading-tight">
             👥 Prestadores e Parceiros Recentes
           </h3>
-          <p className="text-[11px] md:text-xs text-muted-foreground mt-1">
+          <p className="w-full block text-[11px] md:text-xs text-muted-foreground mt-1 leading-snug">
             Conecte-se com profissionais e fornecedores recomendados na sua região.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+
+        <div
+          role="toolbar"
+          aria-label="Filtros e ordenação de parceiros"
+          className="mt-2 flex items-center gap-2 overflow-x-auto scrollbar-none w-full pt-2 pb-1"
+          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+        >
           {/* Filtro por categoria: Todos / 🛠️ Prestadores / 🚚 Parceiros B2B */}
-          <div role="group" aria-label="Filtrar por categoria" className="inline-flex items-center bg-white/5 border border-white/10 rounded-full p-0.5">
-            {([
-              { v: "all" as const, label: "Todos", color: "#00FF87" },
-              { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
-              { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
-            ]).map((opt) => {
-              const active = kindFilter === opt.v;
-              return (
-                <button
-                  key={opt.v}
-                  type="button"
-                  onClick={() => setKindFilter(opt.v)}
-                  aria-pressed={active}
-                  className="text-[10px] md:text-[11px] font-bold px-2.5 py-1 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-                  style={active
-                    ? { background: opt.color, color: "#000", ["--tw-ring-color" as any]: opt.color }
-                    : { color: "rgba(255,255,255,0.7)", ["--tw-ring-color" as any]: opt.color }}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-          <label className="sr-only" htmlFor="partners-sort">Ordenar por</label>
-          <div className="relative">
-            <ArrowUpDown className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-white/60 pointer-events-none" aria-hidden="true" />
-            <select
-              id="partners-sort"
-              value={sortMode}
-              onChange={(e) => setSortMode(e.target.value as SortMode)}
-              className="appearance-none text-[11px] md:text-xs font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full pl-7 pr-3 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00FF87] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-              aria-label="Ordenar parceiros"
-            >
-              <option value="recent" className="bg-[#1A1A1B]">Recentes</option>
-              <option value="rating" className="bg-[#1A1A1B]">Melhor avaliados</option>
-              <option value="nearby" className="bg-[#1A1A1B]" disabled={!userCoords}>
-                Mais próximos {userCoords ? "" : "(ative a localização)"}
-              </option>
-            </select>
-          </div>
+          {([
+            { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
+            { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
+            { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
+          ]).map((opt) => {
+            const active = kindFilter === opt.v;
+            return (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => setKindFilter(opt.v)}
+                aria-pressed={active}
+                className="shrink-0 whitespace-nowrap text-[11px] md:text-xs font-bold px-3 py-1.5 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                style={active
+                  ? { background: opt.color, color: "#000", borderColor: opt.color, ["--tw-ring-color" as any]: opt.color }
+                  : { color: "rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.12)", ["--tw-ring-color" as any]: opt.color }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+
+          {/* Ordenação como pílula (cicla entre modos) */}
+          <button
+            type="button"
+            onClick={() => {
+              const options: SortMode[] = userCoords
+                ? ["recent", "rating", "nearby"]
+                : ["recent", "rating"];
+              const i = options.indexOf(sortMode);
+              setSortMode(options[(i + 1) % options.length] ?? "recent");
+            }}
+            className="shrink-0 whitespace-nowrap inline-flex items-center gap-1 text-[11px] md:text-xs font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00FF87] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            aria-label={`Ordenação atual: ${sortMode === "rating" ? "Melhor avaliados" : sortMode === "nearby" ? "Mais próximos" : "Recentes"}. Toque para alternar.`}
+          >
+            <ArrowUpDown className="w-3.5 h-3.5" aria-hidden="true" />
+            {sortMode === "rating" ? "Melhor avaliados" : sortMode === "nearby" ? "Mais próximos" : "Recentes"}
+          </button>
 
           <button
             type="button"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="inline-flex items-center gap-1 text-[11px] md:text-xs font-bold text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5 transition disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00FF87] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            className="shrink-0 whitespace-nowrap inline-flex items-center gap-1 text-[11px] md:text-xs font-bold text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5 transition disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00FF87] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             aria-label="Atualizar lista de parceiros"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
@@ -447,24 +455,8 @@ export function RecentPartnersCarousel() {
         </div>
       </header>
 
-      {/* Banner de erro leve (mantém cards visíveis) */}
-      {errorMsg && !showBlockingError && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mb-3 flex items-center gap-2 text-[11px] md:text-xs font-semibold text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-3 py-2"
-        >
-          <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
-          <span className="flex-1 truncate">{errorMsg}</span>
-          <button
-            type="button"
-            onClick={handleRefresh}
-            className="shrink-0 underline hover:text-yellow-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 rounded"
-          >
-            Tentar novamente
-          </button>
-        </div>
-      )}
+      {/* Banner amarelo removido — falhas caem silenciosamente para o mock fallback. */}
+
 
       {showSkeleton ? (
         <div className="flex gap-3 pb-2 overflow-x-hidden" aria-hidden="true">
