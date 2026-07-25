@@ -17,6 +17,8 @@ import {
   Hammer,
   PowerOff,
   Zap,
+  Calendar,
+  Megaphone,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -51,19 +53,32 @@ function PrestadorDashboard() {
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Controle de Agendas, O.S. e Reputação</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Link to="/feed/prestador" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_hsl(var(--primary)/0.4)] transition-all">
-            <Briefcase className="w-4 h-4" /> Acessar Feed da Categoria
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <Link
+            to="/agenda"
+            className="flex items-center gap-2 h-11 px-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-[10px] tracking-widest hover:bg-white/10 hover:border-primary/40 transition-all"
+            title="Abrir minha agenda de compromissos"
+            aria-label="Acessar Agenda"
+          >
+            <Calendar className="w-4 h-4 text-primary" /> Agenda
           </Link>
-          <AvailabilityToggle />
+          <Link
+            to="/meus-anuncios"
+            className="flex items-center gap-2 h-11 px-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-[10px] tracking-widest hover:bg-white/10 hover:border-primary/40 transition-all"
+            title="Gerenciar meus anúncios publicados"
+            aria-label="Acessar Meus Anúncios"
+          >
+            <Megaphone className="w-4 h-4 text-primary" /> Meus Anúncios
+          </Link>
           <Link
             to="/configuracoes"
-            className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-primary/40 transition-all"
+            className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-primary/40 transition-all"
             title="Configurações do sistema — preferências, notificações e segurança"
             aria-label="Abrir configurações do sistema"
           >
             <Settings className="w-5 h-5" />
           </Link>
+          <AvailabilityToggle />
         </div>
       </header>
 
