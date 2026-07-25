@@ -129,26 +129,40 @@ function ProfilePage() {
         console.warn("Compressão falhou, usando original:", err);
       }
 
+      const { supabaseExternal } = await import("@/lib/supabaseExternal");
       const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const filePath = `profiles/${profile.id}/${type}-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage.from('media').getPublicUrl(filePath);
+      // Tenta primeiro no cliente externo (fonte de verdade). Faz fallback para o interno se necessário.
+      let publicUrl: string | null = null;
+      try {
+        const { error: upErr } = await supabaseExternal.storage
+          .from('media')
+          .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
+        if (upErr) throw upErr;
+        publicUrl = supabaseExternal.storage.from('media').getPublicUrl(filePath).data.publicUrl;
+      } catch (extErr) {
+        console.warn("[upload] externo falhou, tentando interno:", extErr);
+        const { error: upErr2 } = await supabase.storage
+          .from('media')
+          .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
+        if (upErr2) throw upErr2;
+        publicUrl = supabase.storage.from('media').getPublicUrl(filePath).data.publicUrl;
+      }
 
       const field = type === 'avatar' ? 'avatar_url' : 'banner_url';
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ [field]: publicUrl })
-        .eq('id', profile.id);
-      if (updateError) throw updateError;
+
+      // Atualiza no externo (fonte de verdade) e replica no interno best-effort.
+      try {
+        const { error } = await supabaseExternal.from('profiles').update({ [field]: publicUrl }).eq('id', profile.id);
+        if (error) throw error;
+      } catch (extUpdErr) {
+        console.warn("[profile update] externo falhou, tentando interno:", extUpdErr);
+        await supabase.from('profiles').update({ [field]: publicUrl }).eq('id', profile.id);
+      }
 
       setProfile({ ...profile, [field]: publicUrl });
-      toast.success("Mídia atualizada!", { id: toastId });
+      toast.success(type === 'banner' ? "Banner atualizado!" : "Foto atualizada!", { id: toastId });
     } catch (error: any) {
       console.error("Upload error:", error);
       const msg = error?.message || String(error);
@@ -162,6 +176,7 @@ function ProfilePage() {
       e.target.value = '';
     }
   };
+
 
   const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document') => {
     const files = e.target.files;
@@ -520,19 +535,21 @@ function ProfilePage() {
   const handleCepLookup = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
+    // Mantém o CEP mascarado no formato 00000-000 (não sobrescreve com dígitos puros)
+    const maskedCep = `${cleanCep.slice(0, 5)}-${cleanCep.slice(5)}`;
 
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       const data = await response.json();
       if (!data.erro) {
-        setProfile({
-          ...profile,
-          cep: cleanCep,
-          street: data.logradouro,
-          neighborhood: data.bairro,
-          city: data.localidade,
-          state: data.uf
-        });
+        setProfile((prev: any) => ({
+          ...prev,
+          cep: maskedCep,
+          street: data.logradouro || prev?.street || '',
+          neighborhood: data.bairro || prev?.neighborhood || '',
+          city: data.localidade || prev?.city || '',
+          state: data.uf || prev?.state || '',
+        }));
         toast.success("Endereço preenchido via CEP!");
       }
     } catch (e) {
@@ -570,12 +587,17 @@ function ProfilePage() {
         {profile?.banner_url ? (
           <img src={profile.banner_url} className="w-full h-full object-cover" alt="Banner" />
         ) : (
-          <div className="w-full h-full bg-white/5 border-b border-white/10" />
+          <div className="w-full h-full bg-gradient-to-br from-white/[0.04] to-white/[0.02] border-b border-white/10 flex flex-col items-center justify-center gap-2 text-white/50">
+            <Camera className="w-8 h-8" />
+            <span className="text-xs font-black uppercase tracking-widest">Adicione seu banner</span>
+          </div>
         )}
-        <label className="absolute right-6 bottom-6 z-20 cursor-pointer bg-black/60 hover:bg-primary hover:text-black p-3 rounded-xl backdrop-blur-md border border-white/10 transition-all active:scale-95">
-          <Camera className="w-5 h-5" />
+        <label className="absolute right-6 bottom-6 z-20 cursor-pointer bg-black/60 hover:bg-primary hover:text-black px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/10 transition-all active:scale-95 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+          <Camera className="w-4 h-4" />
+          {profile?.banner_url ? 'Trocar Banner' : 'Enviar Banner'}
           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner')} />
         </label>
+
       </div>
 
       <div className="max-w-5xl mx-auto px-6 -mt-20 relative z-30">
@@ -979,6 +1001,7 @@ function ProfilePage() {
                   <div className="pt-6 space-y-4 border-t border-white/5">
                     <OfferingsPicker
                       selected={Array.isArray(profile?.offerings) ? profile.offerings : []}
+                      planId={(String(profile?.plan_id || 'free').toLowerCase() as any)}
                       onChange={(next: string[]) => {
                         const hasVehicle = next.some((s: string) => s.toLowerCase() === 'veículo próprio');
                         setProfile({ ...profile, offerings: next, has_vehicle: hasVehicle });
@@ -988,6 +1011,7 @@ function ProfilePage() {
                       onVehicleTypeChange={(v: string) => setProfile({ ...profile, vehicle_type: v })}
                       onVehicleDescriptionChange={(v: string) => setProfile({ ...profile, vehicle_description: v })}
                     />
+
 
                     {profile?.has_vehicle && (
                       <div className="space-y-4 pl-2 border-l-2 border-primary/30">
@@ -1127,7 +1151,9 @@ function ProfilePage() {
                     profile={profile}
                     setProfile={setProfile}
                     accent={theme.hex}
+                    planId={(String(profile?.plan_id || 'free').toLowerCase() as any)}
                   />
+
                 </div>
               )}
 

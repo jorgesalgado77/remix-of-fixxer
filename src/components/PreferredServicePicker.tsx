@@ -1,17 +1,27 @@
 import { useMemo, useState } from "react";
-import { Check, Star, Plus, X, Search, Briefcase, Sparkles } from "lucide-react";
+import { Check, Star, Plus, X, Search, Briefcase, Sparkles, Coins } from "lucide-react";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
 import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { useJobRoles } from "@/hooks/use-job-roles";
 import { toast } from "sonner";
+import { consumeCoins, getCachedBalance, getCurrentUserId } from "@/lib/coins";
+import type { PlanId } from "@/lib/monetization";
 
 type Props = {
   profile: any;
   setProfile: (p: any) => void;
   accent?: string;
+  planId?: PlanId;
 };
 
 const MAX_ROLES = 10;
+const EXTRA_COST = 15;
+
+function quotaFor(plan: PlanId): number {
+  if (plan === "premium") return 5;
+  if (plan === "pro" || plan === "basico") return 3;
+  return 1;
+}
 
 function parseCsv(v?: string | null): string[] {
   return String(v ?? "")
@@ -24,7 +34,7 @@ function toCsv(arr: string[]): string {
   return arr.filter(Boolean).join("||");
 }
 
-export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(--primary))" }: Props) {
+export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(--primary))", planId = "free" }: Props) {
   const macroLabel: string | undefined = profile?.activity_branch;
 
   const macro = useMemo(() => {
@@ -41,10 +51,13 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
 
   const preferredService: string = profile?.preferred_service || "";
   const roles: string[] = parseCsv(profile?.job_roles);
+  const quota = quotaFor(planId);
+  const overQuota = Math.max(0, roles.length - quota);
 
   const { roles: sharedRoles, addRole } = useJobRoles(preferredService);
   const [newRole, setNewRole] = useState("");
   const [query, setQuery] = useState("");
+  const [charging, setCharging] = useState(false);
 
   const setPreferredService = (label: string) => {
     setProfile({
@@ -55,16 +68,42 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
     });
   };
 
-  const toggleRole = (name: string) => {
+  const chargeExtraIfNeeded = async (nextLen: number): Promise<boolean> => {
+    if (nextLen <= quota) return true;
+    const uid = getCurrentUserId();
+    if (!uid) { toast.error("Faça login para desbloquear cargos extras."); return false; }
+    const balance = getCachedBalance();
+    if (balance < EXTRA_COST) {
+      toast.error(`Saldo insuficiente. Cada cargo extra custa ${EXTRA_COST} moedas.`);
+      return false;
+    }
+    const ok = window.confirm(`Seu plano permite ${quota} cargo(s). Deseja gastar ${EXTRA_COST} moedas por este cargo extra?`);
+    if (!ok) return false;
+    setCharging(true);
+    try {
+      const res = await consumeCoins(uid, EXTRA_COST, "Cargo extra no perfil", "action_consume", {
+        operation: "extra_job_role",
+      });
+      if (!res.ok) { toast.error("Não foi possível debitar as moedas."); return false; }
+      toast.success(`-${EXTRA_COST} moedas • Cargo extra desbloqueado.`);
+      return true;
+    } finally {
+      setCharging(false);
+    }
+  };
+
+  const toggleRole = async (name: string) => {
     const has = roles.includes(name);
     let next: string[];
     if (has) {
       next = roles.filter((r) => r !== name);
     } else {
       if (roles.length >= MAX_ROLES) {
-        toast.warning(`Limite de ${MAX_ROLES} cargos atingido.`);
+        toast.warning(`Limite máximo de ${MAX_ROLES} cargos.`);
         return;
       }
+      const paid = await chargeExtraIfNeeded(roles.length + 1);
+      if (!paid) return;
       next = [...roles, name];
     }
     setProfile({ ...profile, job_roles: toCsv(next) });
@@ -80,15 +119,19 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
     const v = newRole.trim();
     if (!v) return;
     if (roles.length >= MAX_ROLES) {
-      toast.warning(`Limite de ${MAX_ROLES} cargos atingido.`);
+      toast.warning(`Limite máximo de ${MAX_ROLES} cargos.`);
       return;
+    }
+    if (!roles.includes(v)) {
+      const paid = await chargeExtraIfNeeded(roles.length + 1);
+      if (!paid) return;
     }
     await addRole(v);
     if (!roles.includes(v)) {
       setProfile({ ...profile, job_roles: toCsv([...roles, v]) });
     }
     setNewRole("");
-    toast.success(`Cargo "${v}" adicionado à lista compartilhada.`);
+    toast.success(`Cargo "${v}" adicionado.`);
   };
 
   const filteredShared = useMemo(() => {
@@ -154,11 +197,18 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
                 Cargos em <span style={{ color: accent }}>{preferredService}</span>
               </h4>
               <p className="text-[11px] text-white/50 mt-1 break-words">
-                Selecione até {MAX_ROLES} cargos. O <b>1º da lista</b> é o cargo preferencial (destacado).
-                Digite um novo cargo e ele será salvo para toda a plataforma.
+                Plano <b>{planId.toUpperCase()}</b> inclui <b>{quota}</b> cargo(s). Extras custam{" "}
+                <b className="text-amber-300">{EXTRA_COST} 🪙</b> cada (até {MAX_ROLES} no total).
+                O <b>1º da lista</b> é o preferencial (destacado).
               </p>
             </div>
           </div>
+
+          {overQuota > 0 && (
+            <div className="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 inline-flex items-center gap-2">
+              <Coins className="w-3 h-3" /> {overQuota} cargo(s) extra • {overQuota * EXTRA_COST} 🪙 debitadas
+            </div>
+          )}
 
           {/* Cargos já selecionados (ordem = preferencial primeiro) */}
           {roles.length > 0 && (
@@ -225,11 +275,15 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
             <button
               type="button"
               onClick={handleAddRole}
-              disabled={!newRole.trim() || roles.length >= MAX_ROLES}
-              className="inline-flex items-center gap-1 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest disabled:opacity-40"
+              disabled={!newRole.trim() || roles.length >= MAX_ROLES || charging}
+              className="shrink-0 inline-flex items-center gap-1 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-wide disabled:opacity-40 whitespace-nowrap"
               style={{ background: accent, color: "#000" }}
+              title={roles.length >= quota ? `Cargo extra: ${EXTRA_COST} 🪙` : "Adicionar cargo"}
             >
               <Plus className="w-3 h-3" /> Add
+              {roles.length >= quota && roles.length < MAX_ROLES && (
+                <span className="ml-1 text-[9px] font-black">{EXTRA_COST}🪙</span>
+              )}
             </button>
           </div>
 
