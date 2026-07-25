@@ -362,6 +362,10 @@ function ProfilePage() {
         .eq('id', profile.id);
 
       if (error) {
+        // marca rascunho como pendente para retry automático quando a conexão voltar
+        if (profileId == null && profile?.id) {
+          markPending(profile.id, true);
+        }
         toast.error("Erro ao salvar perfil", {
           description: error.message || "Falha desconhecida ao gravar no banco.",
         });
@@ -384,10 +388,16 @@ function ProfilePage() {
         } catch { /* noop */ }
       }
 
+      // Limpa rascunho offline — a versão do servidor é a fonte de verdade agora
+      if (profile?.id) clearDraft(profile.id);
+
       toast.success("Perfil atualizado com sucesso!", {
         description: refetchErr ? "Salvo, mas houve falha ao recarregar. Atualize a página." : undefined,
       });
     } catch (e: any) {
+      if (profileId == null && profile?.id) {
+        markPending(profile.id, true);
+      }
       toast.error("Erro inesperado ao salvar perfil", {
         description: e?.message || String(e),
       });
@@ -395,6 +405,47 @@ function ProfilePage() {
       setSaving(false);
     }
   };
+
+  // Persiste rascunho local a cada mudança nos campos "leves"
+  useEffect(() => {
+    if (loading || profileId) return; // não persiste em modo "visualização de terceiros"
+    if (!profile?.id) return;
+    saveDraft(
+      profile.id,
+      {
+        about_bio: profile.about_bio ?? null,
+        default_radius: profile.default_radius ?? null,
+        activity_branch: profile.activity_branch ?? null,
+        custom_sections: profile.custom_sections ?? null,
+      },
+      false,
+    );
+  }, [
+    loading,
+    profileId,
+    profile?.id,
+    profile?.about_bio,
+    profile?.default_radius,
+    profile?.activity_branch,
+    profile?.custom_sections,
+  ]);
+
+  // Reenvia rascunho pendente automaticamente quando a conexão volta
+  useEffect(() => {
+    if (profileId) return;
+    const onOnline = () => {
+      if (!profile?.id) return;
+      const draft = loadDraft(profile.id);
+      if (draft?.pending && !saving) {
+        toast.info("Conexão restabelecida — reenviando seu rascunho...");
+        handleSave();
+      }
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId, profile?.id, saving]);
+
 
 
   const handleCepLookup = async (cep: string) => {
