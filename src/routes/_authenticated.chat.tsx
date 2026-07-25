@@ -75,7 +75,7 @@ type MessageRow = {
   _clientId?: string;
 };
 
-type PeerInfo = { name: string; avatar: string | null; role: string | null };
+type PeerInfo = { name: string; avatar: string | null; role: string | null; isFallback?: boolean; initials?: string };
 
 type LastStatus = "pending" | "failed" | "sent" | null;
 
@@ -84,6 +84,8 @@ type Conversation = {
   peerName: string;
   peerAvatar: string | null;
   peerRole: string | null;
+  peerIsFallback: boolean;
+  peerInitials: string;
   lastMessage: string;
   lastAttachmentType: string | null;
   lastMessageId: string | null;
@@ -107,6 +109,12 @@ function getStoredRole(): string {
 
 function normStr(s: string) {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function initialsOfPeerName(name: string) {
+  const clean = String(name || "Conversa").trim();
+  const parts = clean.split(/\s+/).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "C";
 }
 
 /**
@@ -223,6 +231,27 @@ function ChatInboxPage() {
     async (uid: string) => {
       setLoading(true);
       const data = await runQuery(uid);
+      const peerIds = Array.from(
+        new Set(data.map((m) => (m.sender_id === uid ? m.recipient_id : m.sender_id)).filter(Boolean)),
+      );
+      // Ao abrir/reabrir a lista, invalida nomes/fotos em memória para buscar
+      // os dados públicos mais recentes do usuário correto (user_id do peer).
+      try {
+        const { clearPeerCache, fallbackPeer } = await import("@/lib/chat-peer-profile");
+        const fallbackMap: Record<string, PeerInfo> = {};
+        for (const peerId of peerIds) {
+          clearPeerCache(peerId);
+          const fallback = fallbackPeer(peerId);
+          fallbackMap[peerId] = {
+            name: fallback.name,
+            avatar: null,
+            role: null,
+            isFallback: true,
+            initials: fallback.initials,
+          };
+        }
+        if (peerIds.length > 0) setPeers((prev) => ({ ...prev, ...fallbackMap }));
+      } catch {}
       idSetRef.current = new Set(data.map((m) => m.id));
       setMessages(data);
       setHasMore(data.length === PAGE_SIZE);
@@ -512,6 +541,8 @@ function ChatInboxPage() {
             name: p.name || "Conversa",
             avatar: p.avatarUrl ?? null,
             role: p.role ?? null,
+            isFallback: p.isFallback,
+            initials: p.initials,
           };
           if (p.role) roleCache[p.id] = p.role;
         }
@@ -541,9 +572,11 @@ function ChatInboxPage() {
       if (!existing) {
         byPeer.set(peerId, {
           peerId,
-          peerName: info?.name || "Usuário",
+          peerName: info?.name || "Conversa",
           peerAvatar: info?.avatar ?? null,
           peerRole: info?.role ?? null,
+          peerIsFallback: info?.isFallback ?? !info,
+          peerInitials: info?.initials || initialsOfPeerName(info?.name || "Conversa"),
           lastMessage: m.content || "",
           lastAttachmentType: m.attachment_type ?? null,
           lastMessageId: m.id,
@@ -822,10 +855,15 @@ function ChatInboxPage() {
                       className="w-12 h-12 rounded-full bg-white/5 border-2 flex items-center justify-center overflow-hidden shrink-0 relative"
                       style={{ borderColor: theme.hex, boxShadow: `0 0 10px rgba(${theme.rgb}, 0.35)` }}
                     >
-                      {c.peerAvatar ? (
+                      {c.peerAvatar && !c.peerIsFallback ? (
                         <img src={c.peerAvatar} alt={c.peerName} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="font-black italic" style={{ color: theme.hex }}>{c.peerName.slice(0, 1).toUpperCase()}</span>
+                        <span className="relative flex h-full w-full items-center justify-center bg-white/5" aria-label="Avatar padrão">
+                          <UserCircle2 className="h-7 w-7 text-muted-foreground/70" />
+                          <span className="absolute bottom-1 right-1 min-w-4 h-4 px-0.5 rounded-full bg-black/80 border border-white/15 flex items-center justify-center text-[8px] font-black italic" style={{ color: theme.hex }}>
+                            {c.peerInitials}
+                          </span>
+                        </span>
                       )}
                       {c.muted && (
                         <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-black border border-white/20 flex items-center justify-center">

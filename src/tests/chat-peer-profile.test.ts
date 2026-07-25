@@ -4,8 +4,15 @@ const chain = (rows: any) => ({
   select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: rows, error: null }) }) }),
 });
 
-const state: { publicProfile: any; profiles: any; store: any; profilesByUser: any; provider: any } = {
+const chainByColumn = (rows: Record<string, any>) => ({
+  select: () => ({
+    eq: (col: string) => ({ maybeSingle: async () => ({ data: rows[col] ?? null, error: null }) }),
+  }),
+});
+
+const state: { publicProfile: any; publicProfileById: any; profiles: any; store: any; profilesByUser: any; provider: any } = {
   publicProfile: null,
+  publicProfileById: null,
   profiles: null,
   profilesByUser: null,
   provider: null,
@@ -15,7 +22,7 @@ const state: { publicProfile: any; profiles: any; store: any; profilesByUser: an
 vi.mock("@/lib/supabaseExternal", () => ({
   supabaseExternal: {
     from(table: string) {
-      if (table === "profiles_public") return chain(state.publicProfile);
+      if (table === "profiles_public") return chainByColumn({ user_id: state.publicProfile, id: state.publicProfileById });
       if (table === "profiles") {
         // Retorna primeiro por id, depois por user_id conforme chamadas subsequentes
         return {
@@ -41,6 +48,7 @@ import { resolvePeerProfile, clearPeerCache, initialsOf } from "@/lib/chat-peer-
 beforeEach(() => {
   state.profiles = null;
   state.publicProfile = null;
+  state.publicProfileById = null;
   state.profilesByUser = null;
   state.provider = null;
   state.store = null;
@@ -54,7 +62,16 @@ describe("chat-peer-profile", () => {
     const p = await resolvePeerProfile("u0");
     expect(p.name).toBe("Nome Público");
     expect(p.avatarUrl).toBe("http://public.png");
-    expect(p.source).toContain("profiles_public.id");
+    expect(p.source).toContain("profiles_public.user_id");
+  });
+
+  it("prioritizes profiles_public.user_id over a row id match to avoid wrong peer data", async () => {
+    state.publicProfile = { id: "row-a", user_id: "u-correto", display_name: "Peer Correto", avatar_url: "http://right.png" };
+    state.publicProfileById = { id: "u-correto", user_id: "outro-dono", display_name: "Perfil Errado", avatar_url: "http://wrong.png" };
+    const p = await resolvePeerProfile("u-correto");
+    expect(p.name).toBe("Peer Correto");
+    expect(p.avatarUrl).toBe("http://right.png");
+    expect(p.source).toContain("profiles_public.user_id");
   });
 
   it("returns fallback when nothing is found", async () => {
@@ -114,6 +131,20 @@ describe("chat-peer-profile", () => {
     state.profiles = null; // Se re-consultasse, retornaria vazio.
     const b = await resolvePeerProfile("u5");
     expect(b.name).toBe(a.name);
+  });
+
+  it("refresh option bypasses cache to load latest display name/avatar", async () => {
+    state.profilesByUser = { id: "row-u7", user_id: "u7", display_name: "Nome Antigo", avatar_url: "http://old.png" };
+    const a = await resolvePeerProfile("u7");
+    expect(a.name).toBe("Nome Antigo");
+
+    state.profilesByUser = { id: "row-u7", user_id: "u7", display_name: "Nome Novo", avatar_url: "http://new.png" };
+    const cached = await resolvePeerProfile("u7");
+    expect(cached.name).toBe("Nome Antigo");
+
+    const refreshed = await resolvePeerProfile("u7", { refresh: true });
+    expect(refreshed.name).toBe("Nome Novo");
+    expect(refreshed.avatarUrl).toBe("http://new.png");
   });
 
   it("initialsOf handles edge cases", () => {

@@ -17,6 +17,7 @@ export type PeerProfile = {
   initials: string;
   avatarUrl: string | null;
   role: string | null;
+  isFallback: boolean;
   source: string[]; // origens dos dados encontrados (para diagnóstico)
   diagnostics: string[];
 };
@@ -46,6 +47,7 @@ export function fallbackPeer(peerId: string): PeerProfile {
     initials: "C",
     avatarUrl: null,
     role: null,
+    isFallback: true,
     source: ["fallback"],
     diagnostics: ["fallback: nenhum dado público de perfil encontrado"],
   };
@@ -168,20 +170,23 @@ async function querySingle(table: string, column: string, value: string, diagnos
   }
 }
 
-export async function resolvePeerProfile(peerId: string): Promise<PeerProfile> {
+export async function resolvePeerProfile(peerId: string, options?: { refresh?: boolean }): Promise<PeerProfile> {
   if (!peerId) return fallbackPeer("");
   const cached = CACHE.get(peerId);
-  if (cached && Date.now() - cached.at < TTL_MS) return cached.value;
+  if (!options?.refresh && cached && Date.now() - cached.at < TTL_MS) return cached.value;
 
   const source: string[] = [];
   const diagnostics: string[] = [];
   let current = { name: "", avatarUrl: null as string | null, role: null as string | null, ownerUid: null as string | null };
 
+  // O `peerId` do chat é o UUID do auth.users. Por isso, priorizamos
+  // user_id antes de id para não confundir o dono do perfil com o id interno
+  // da linha/perfil.
   // A view pública é a primeira fonte porque a tabela `profiles` pode estar
   // corretamente protegida por RLS e bloquear leitura direta de terceiros.
   for (const [table, columns] of [
-    ["profiles_public", ["id", "user_id"]],
-    ["profiles", ["id", "user_id"]],
+    ["profiles_public", ["user_id", "id"]],
+    ["profiles", ["user_id", "id"]],
   ] as const) {
     for (const column of columns) {
       if (current.name && current.avatarUrl && current.role && current.ownerUid) break;
@@ -217,6 +222,7 @@ export async function resolvePeerProfile(peerId: string): Promise<PeerProfile> {
     initials: initialsOf(finalName),
     avatarUrl: current.avatarUrl || null,
     role: current.role,
+    isFallback: source.length === 0,
     source: source.length ? source : ["fallback"],
     diagnostics,
   };
