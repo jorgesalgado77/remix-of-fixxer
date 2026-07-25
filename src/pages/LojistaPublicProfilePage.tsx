@@ -116,6 +116,14 @@ function mapProfileRowToStore(p: any): StoreProfile {
         ? merged.offerings.split(/[,;\n]/).map((s: string) => s.trim()).filter(Boolean)
         : [],
     positions: Array.isArray(merged.positions) ? merged.positions : [],
+    work_modes: Array.isArray(merged.work_modes) ? merged.work_modes : [],
+    vehicle_details: (() => {
+      const existing = merged.vehicle_details && typeof merged.vehicle_details === 'object' ? merged.vehicle_details : null;
+      const composed: Record<string, any> = { ...(existing || {}) };
+      if (merged.vehicle_type && !composed.Tipo) composed.Tipo = merged.vehicle_type;
+      if (merged.vehicle_description && !composed.Descrição) composed.Descrição = merged.vehicle_description;
+      return Object.keys(composed).length ? composed : null;
+    })(),
   };
 }
 
