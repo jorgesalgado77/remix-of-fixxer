@@ -3,6 +3,7 @@ import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft, Terminal, Eye, EyeOf
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/")({
