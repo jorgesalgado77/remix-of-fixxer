@@ -216,6 +216,7 @@ function RootComponent() {
         {!hideBar && <GlobalActionBar />}
         <CoinFeedbackBridge />
         <CoinConfirmProvider />
+        <OfflineBanner />
         <Toaster closeButton duration={2000} />
       </div>
     </QueryClientProvider>
