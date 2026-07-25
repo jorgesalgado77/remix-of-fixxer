@@ -626,8 +626,9 @@ export function LojistaPublicProfilePage() {
                   <button
                     type="button"
                     onClick={favorite.toggle}
-                    disabled={favorite.loading || favorite.isSelf}
+                    disabled={favorite.loading || favorite.isSelf || !favorite.ready}
                     aria-pressed={favorite.isFavorited}
+                    aria-busy={favorite.loading}
                     aria-label={favorite.isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                     title={favorite.isSelf ? "Você não pode favoritar o próprio perfil" : (favorite.isFavorited ? "Favorito" : "Favoritar")}
                     className="w-full md:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-black uppercase italic tracking-widest text-xs md:text-sm bg-black/40 backdrop-blur-sm border-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
@@ -640,14 +641,32 @@ export function LojistaPublicProfilePage() {
                       ["--tw-ring-color" as any]: `rgb(${theme.rgb})`,
                     }}
                   >
-                    <Heart
-                      className="w-4 h-4"
-                      fill={favorite.isFavorited ? "#FF3B5C" : "none"}
-                      strokeWidth={2.5}
-                      aria-hidden="true"
-                    />
-                    {favorite.isFavorited ? "Favorito" : "Favoritar"}
+                    {favorite.loading ? (
+                      <span
+                        className="inline-block w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Heart
+                        className="w-4 h-4"
+                        fill={favorite.isFavorited ? "#FF3B5C" : "none"}
+                        strokeWidth={2.5}
+                        aria-hidden="true"
+                      />
+                    )}
+                    {favorite.loading
+                      ? "Salvando…"
+                      : favorite.isFavorited ? "Favorito" : "Favoritar"}
+                    <span
+                      className="ml-1 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-[10px] font-black bg-black/60 border"
+                      style={{ borderColor: `rgb(${theme.rgb})`, color: `rgb(${theme.rgb})` }}
+                      aria-label={`${favorite.count} ${favorite.count === 1 ? "pessoa favoritou" : "pessoas favoritaram"}`}
+                      title={`${favorite.count} ${favorite.count === 1 ? "favorito" : "favoritos"}`}
+                    >
+                      {favorite.count}
+                    </span>
                   </button>
+
                 </div>
               </div>
             </div>
