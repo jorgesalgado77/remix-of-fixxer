@@ -104,6 +104,9 @@ type MessageRow = {
   _clientId?: string;
   _draftText?: string;
   _draftFile?: File | null;
+  _uploadPct?: number;
+  _uploading?: boolean;
+  _batchIndex?: number;
 };
 
 const PAGE_SIZE = 30;
