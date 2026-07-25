@@ -82,7 +82,8 @@ export function QuickMenuSheet({ open, onOpenChange }: Props) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-t border-white/10 bg-black/95 backdrop-blur-2xl p-0 max-h-[85vh] overflow-y-auto pb-safe"
+        className="rounded-t-3xl border-t border-white/10 bg-black/95 backdrop-blur-2xl p-0 max-h-[85vh] overflow-y-auto"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 112px)" }}
       >
         <div
           className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20"
