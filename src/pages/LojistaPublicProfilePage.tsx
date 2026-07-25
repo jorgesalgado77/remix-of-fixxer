@@ -964,7 +964,7 @@ export function LojistaPublicProfilePage() {
                 : typeof profile?.offerings === 'string' && profile.offerings
                   ? String(profile.offerings).split(/[,;\n]/).map((s) => s.trim()).filter(Boolean)
                   : [];
-              const positions: any[] = Array.isArray(profile?.positions) ? profile!.positions! : [];
+              const positions: string[] = positionsList;
               const vehicle = profile?.vehicle_details && typeof profile.vehicle_details === 'object' ? profile.vehicle_details : null;
               const radiusKm = Number((profile as any)?.service_radius_km);
               const hasRadius = Number.isFinite(radiusKm) && radiusKm > 0;
@@ -972,10 +972,10 @@ export function LojistaPublicProfilePage() {
               if (profile?.neighborhood) locationItems.push({ label: 'Bairro', value: profile.neighborhood });
               if (profile?.city) locationItems.push({ label: 'Cidade', value: profile.city });
               if (profile?.state) locationItems.push({ label: 'Estado', value: profile.state });
-              if (distanceLabel) locationItems.push({ label: 'Distância', value: `${distanceLabel} de você` });
+              if (distanceLabel) locationItems.push({ label: 'Distância', value: isSelf ? distanceLabel : `${distanceLabel} de você` });
 
               const hasAny =
-                branch || preferred.length || offerings.length || positions.length || profile?.offerings_notes || vehicle || locationItems.length || hasRadius;
+                branch || preferred.length || offerings.length || positions.length || profile?.offerings_notes || vehicle || locationItems.length || hasRadius || businessHours.length;
               if (!hasAny) return null;
 
               return (
@@ -995,12 +995,12 @@ export function LojistaPublicProfilePage() {
 
                   {positions.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Cargos</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
+                        Cargos ({positions.length})
+                      </p>
                       <div className="flex flex-wrap gap-2">
-                        {positions.map((p: any, i: number) => {
-                          const label = typeof p === 'string' ? p : (p?.title || p?.name || p?.role);
-                          const primary = typeof p === 'object' && p?.primary;
-                          if (!label) return null;
+                        {positions.map((label, i) => {
+                          const primary = primaryPosition && label === primaryPosition && i === 0;
                           return (
                             <span
                               key={`${label}-${i}`}
@@ -1013,6 +1013,24 @@ export function LojistaPublicProfilePage() {
                       </div>
                     </div>
                   )}
+
+                  {businessHours.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                        <Clock className="w-3 h-3" /> Dias e Horários de Atendimento
+                      </p>
+                      <ul className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1">
+                        {businessHours.map((r, i) => (
+                          <li key={`${r.day}-${i}`} className="flex justify-between items-center gap-3 text-[11px] py-1 border-b border-white/5 last:border-b-0">
+                            <span className="text-muted-foreground uppercase font-black tracking-widest text-[9px]">{r.day}</span>
+                            <span className="text-white/90 font-bold">{r.hours}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+
 
                   {hasRadius && (
                     <div>
