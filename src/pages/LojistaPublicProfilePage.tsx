@@ -186,6 +186,7 @@ const basename = (url: string): string => {
 export function LojistaPublicProfilePage() {
   const params = useParams({ strict: false }) as { id?: string };
   const location = useLocation();
+  const navigate = useNavigate();
   const category: CategoryKey = useMemo(() => {
     const p = location.pathname || "";
     if (p.startsWith("/prestador")) return "prestador";
