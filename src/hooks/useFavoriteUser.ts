@@ -130,7 +130,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
     (async () => {
       await syncCount();
       if (currentUserId) {
-        const lsKey = `${LS_PREFIX}${currentUserId}:${favoritedUserId}`;
+        const lsKey = composeKey(currentUserId, favoritedUserId)!;
         try {
           const { data, error } = await supabaseExternal
             .from("favorite_users")
