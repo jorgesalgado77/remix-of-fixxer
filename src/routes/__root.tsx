@@ -213,7 +213,14 @@ function RootComponent() {
         <GlobalErrorBoundary>
           <Outlet />
         </GlobalErrorBoundary>
-        {!hideBar && <GlobalActionBar />}
+        {!hideBar && (
+          <>
+            <div className="fixed top-3 right-3 z-[110]">
+              <NotificationsCenter />
+            </div>
+            <GlobalActionBar />
+          </>
+        )}
         <CoinFeedbackBridge />
         <CoinConfirmProvider />
         <OfflineBanner />
