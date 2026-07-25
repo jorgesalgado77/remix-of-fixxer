@@ -146,11 +146,17 @@ function firstText(...values: unknown[]): string | null {
 }
 
 function firstUrl(...values: unknown[]): string | null {
+  const isUrlish = (s: string) => {
+    const v = s.trim();
+    if (!v) return false;
+    // aceita http(s), data URIs, blob:, protocolo-relativo e paths absolutos/relativos
+    return /^(https?:|data:|blob:|\/\/|\/)/i.test(v) || /\.(png|jpe?g|webp|gif|avif|svg)(\?|#|$)/i.test(v);
+  };
   for (const value of values) {
-    if (typeof value === "string" && /^https?:\/\//i.test(value.trim())) return value.trim();
+    if (typeof value === "string" && isUrlish(value)) return value.trim();
     if (Array.isArray(value)) {
-      const hit = value.find((item) => typeof item === "string" && /^https?:\/\//i.test(item.trim()));
-      if (hit) return hit.trim();
+      const hit = value.find((item) => typeof item === "string" && isUrlish(item));
+      if (hit) return (hit as string).trim();
     }
   }
   return null;
@@ -265,27 +271,39 @@ function FavoritosPage() {
         (stores ?? []).forEach((p: any) => { storeProfilesByUserId[p.user_id] = p; });
       } catch { /* silencioso — segue só com profiles */ }
 
+      // Busca resiliente em provider_profiles (prestador). Se a tabela não existir, ignora.
+      let providerProfilesByUserId: Record<string, any> = {};
+      try {
+        const { data: provs } = await supabaseExternal
+          .from("provider_profiles")
+          .select("*")
+          .in("user_id", ids);
+        (provs ?? []).forEach((p: any) => { providerProfilesByUserId[p.user_id] = p; });
+      } catch { /* silencioso */ }
+
       const mapped: FavProfile[] = rows.map((r: any) => {
         const p = profilesById[r.favorited_user_id] || {};
         const sp = storeProfilesByUserId[r.favorited_user_id] || {};
+        const pp = providerProfilesByUserId[r.favorited_user_id] || {};
         const displayName = firstText(
-          sp.social_name,
-          sp.company_name,
-          p.full_name,
-          p.name,
-          p.display_name,
-          p.email,
+          pp.full_name, pp.display_name,
+          sp.social_name, sp.company_name,
+          p.full_name, p.name, p.display_name, p.email,
         ) || "Perfil salvo";
         return {
           id: r.id,
           userId: r.favorited_user_id,
           name: displayName,
-          avatarUrl: firstUrl(sp.logo_url, sp.avatar_url, sp.photo_url, p.avatar_url, p.avatar, p.photo_url, p.profile_photo_url, p.profile_image_url),
-          kind: classifyRole(firstText(p.role, p.user_type, p.business_category, sp.role, sp.user_type, sp.business_category)),
-          branch: firstText(sp.activity_branch, p.activity_branch, Array.isArray(p.categories) ? p.categories[0] : null),
-          city: firstText(sp.city, p.city),
-          state: firstText(sp.state, p.state, p.uf),
-          rating: typeof p.rating === "number" ? p.rating : null,
+          avatarUrl: firstUrl(
+            pp.avatar_url, pp.photo_url, pp.profile_photo_url, pp.image_url,
+            sp.logo_url, sp.avatar_url, sp.photo_url, sp.image_url,
+            p.avatar_url, p.avatar, p.photo_url, p.profile_photo_url, p.profile_image_url, p.image_url,
+          ),
+          kind: classifyRole(firstText(pp.role, p.role, p.user_type, p.business_category, sp.role, sp.user_type, sp.business_category)),
+          branch: firstText(pp.activity_branch, sp.activity_branch, p.activity_branch, Array.isArray(p.categories) ? p.categories[0] : null),
+          city: firstText(pp.city, sp.city, p.city),
+          state: firstText(pp.state, sp.state, p.state, p.uf),
+          rating: typeof pp.rating === "number" ? pp.rating : (typeof p.rating === "number" ? p.rating : null),
         };
       });
       setProfiles(mapped.length > 0 ? mapped : scopedMockProfiles(currentUserEmail));

@@ -12,14 +12,12 @@ import { toast } from "sonner";
  *   voltar para a página pública.
  * - Assina Realtime em `favorite_users` para manter o contador ao vivo.
  */
-const LS_PREFIX = "fixxer_favorite_user_v1:";
-const LS_COUNT_PREFIX = "fixxer_favorite_user_count_v1:";
+const LS_PREFIX = "fixxer_favorite_user_v1:";      // <currentUserId>:<favoritedUserId>
+const LS_COUNT_PREFIX = "fixxer_favorite_user_count_v1:"; // agregado público por alvo
 const LS_CURRENT_USER = "fixxer_favorite_current_user_v1";
 
 function readCachedCurrentUser(): string | null {
   try {
-    // `fixxer_user_id` é atualizado no login atual. Ele tem prioridade para não
-    // reaproveitar favoritos do usuário anterior no mesmo navegador.
     return window.localStorage.getItem("fixxer_user_id") || window.localStorage.getItem(LS_CURRENT_USER);
   } catch { return null; }
 }
@@ -30,9 +28,34 @@ function readCachedCount(id: string | null | undefined): number {
     return raw ? Math.max(0, parseInt(raw, 10) || 0) : 0;
   } catch { return 0; }
 }
+function composeKey(currentId: string | null | undefined, favId: string | null | undefined): string | null {
+  if (!currentId || !favId) return null;
+  return `${LS_PREFIX}${currentId}:${favId}`;
+}
 function readCachedFavorited(currentId: string | null, favId: string | null | undefined): boolean {
-  if (!currentId || !favId) return false;
-  try { return window.localStorage.getItem(`${LS_PREFIX}${currentId}:${favId}`) === "1"; } catch { return false; }
+  const key = composeKey(currentId, favId);
+  if (!key) return false;
+  try { return window.localStorage.getItem(key) === "1"; } catch { return false; }
+}
+/**
+ * Ao trocar de conta no mesmo navegador, removemos chaves de favorito escritas
+ * por qualquer *outro* usuário. Assim evitamos que a nova sessão "herde" o
+ * estado de favoritos do usuário anterior enquanto o Supabase ainda sincroniza.
+ */
+function purgeForeignFavoriteKeys(currentId: string | null | undefined) {
+  if (typeof window === "undefined" || !currentId) return;
+  try {
+    const toRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (!k || !k.startsWith(LS_PREFIX)) continue;
+      // formato esperado: fixxer_favorite_user_v1:<currentUserId>:<favoritedUserId>
+      const rest = k.slice(LS_PREFIX.length);
+      const owner = rest.split(":")[0];
+      if (owner && owner !== currentId) toRemove.push(k);
+    }
+    toRemove.forEach((k) => window.localStorage.removeItem(k));
+  } catch { /* ignore */ }
 }
 
 export function useFavoriteUser(favoritedUserId: string | null | undefined) {
@@ -59,6 +82,10 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
         const uid = data?.user?.id ?? cachedUid ?? null;
         if (cancelled) return;
         setCurrentUserId(uid);
+        // Sempre que confirmamos o dono da sessão, limpamos favoritos escritos
+        // por qualquer outra conta neste navegador (chave composta protege leitura,
+        // mas removemos o lixo para não ocupar storage indefinidamente).
+        purgeForeignFavoriteKeys(uid);
         try {
           if (uid) window.localStorage.setItem(LS_CURRENT_USER, uid);
           else window.localStorage.removeItem(LS_CURRENT_USER);
@@ -103,7 +130,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
     (async () => {
       await syncCount();
       if (currentUserId) {
-        const lsKey = `${LS_PREFIX}${currentUserId}:${favoritedUserId}`;
+        const lsKey = composeKey(currentUserId, favoritedUserId)!;
         try {
           const { data, error } = await supabaseExternal
             .from("favorite_users")
@@ -161,7 +188,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
     setIsFavorited(next); // otimista
     setCount((c) => Math.max(0, c + (next ? 1 : -1))); // otimista imediato
     setLoading(true);
-    const lsKey = `${LS_PREFIX}${currentUserId}:${favoritedUserId}`;
+    const lsKey = composeKey(currentUserId, favoritedUserId)!;
     const countLsKey = `${LS_COUNT_PREFIX}${favoritedUserId}`;
     try {
       if (next) {
