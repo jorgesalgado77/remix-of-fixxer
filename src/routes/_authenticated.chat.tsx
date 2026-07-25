@@ -378,7 +378,14 @@ function ChatInboxPage() {
     // Evita duplicar caso o peerId já exista nas reais
     const existing = new Set(conversations.map((c) => c.peerId));
     const merged = [...conversations, ...mock.filter((m) => !existing.has(m.peerId))];
-    return merged.sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime());
+    // Ordena estritamente pela data/hora da última mensagem, com desempate
+    // determinístico por peerId para evitar reordenações aleatórias entre
+    // mocks que compartilham o mesmo minuto de referência.
+    return merged.sort((a, b) => {
+      const diff = new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+      if (diff !== 0) return diff;
+      return a.peerId.localeCompare(b.peerId);
+    });
   }, [conversations, userId, prefsVersion]);
 
   const visible = useMemo(() => {
