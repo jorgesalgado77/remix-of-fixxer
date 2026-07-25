@@ -13,10 +13,11 @@ import {
   Paperclip,
   UserCircle2,
   X,
-  Check,
+  Check as _Check,
   CheckCheck,
   AlertCircle,
 } from "lucide-react";
+void _Check;
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
