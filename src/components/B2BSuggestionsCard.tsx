@@ -93,9 +93,10 @@ function readRadius(): number {
  * candidatos reais pelo raio de atuação e reordena por recência.
  */
 function B2BSuggestionsCardInner() {
-  const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
-  const [dismissed, setDismissed] = useState<boolean>(() => readDismissed());
   const category = useCurrentCategory();
+  const preset = PRESETS[category] ?? PRESETS.prestador;
+  const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
+  const [dismissed, setDismissed] = useState<boolean>(() => readDismissed(category));
   const theme = getCategoryTheme(category);
   const branchesRef = useRef<string[]>([]);
   const userLocRef = useRef<{ lat: number; lng: number } | null>(null);
