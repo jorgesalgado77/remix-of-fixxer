@@ -21,6 +21,7 @@ import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { usePostUnlock } from "@/hooks/use-post-unlock";
+import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
 import { Lock, Coins, Loader2 } from "lucide-react";
 
 import {
