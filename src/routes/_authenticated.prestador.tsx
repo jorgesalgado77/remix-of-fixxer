@@ -38,7 +38,7 @@ function PrestadorDashboard() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
-                MEU <span className="text-[#00FF87]">PAINEL</span>
+                MEU <span className="text-primary">PAINEL</span>
               </h1>
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-500 uppercase">
                 <Star className="w-2 h-2 fill-current" /> 4.9
@@ -48,10 +48,15 @@ function PrestadorDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/feed/prestador" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
+          <Link to="/feed/prestador" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_hsl(var(--primary)/0.4)] transition-all">
             <Briefcase className="w-4 h-4" /> Acessar Feed da Categoria
           </Link>
-          <Link to="/profile" className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
+          <Link
+            to="/profile"
+            className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-primary/40 transition-all"
+            title="Meu Perfil — editar dados, foto e vitrine"
+            aria-label="Abrir meu perfil"
+          >
             <User className="w-5 h-5" />
           </Link>
         </div>
