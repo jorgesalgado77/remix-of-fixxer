@@ -44,21 +44,25 @@ const PRESETS: Record<CategoryKey, Preset> = {
   },
 };
 
-function readDismissed(): boolean {
+function keyFor(cat: CategoryKey) {
+  return `${DISMISS_KEY_BASE}_${cat}`;
+}
+
+function readDismissed(cat: CategoryKey): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return window.localStorage.getItem(DISMISS_KEY) === "1";
+    return window.localStorage.getItem(keyFor(cat)) === "1";
   } catch {
     return false;
   }
 }
 
-function writeDismissed(v: boolean) {
+function writeDismissed(cat: CategoryKey, v: boolean) {
   try {
-    if (v) window.localStorage.setItem(DISMISS_KEY, "1");
-    else window.localStorage.removeItem(DISMISS_KEY);
+    if (v) window.localStorage.setItem(keyFor(cat), "1");
+    else window.localStorage.removeItem(keyFor(cat));
     window.dispatchEvent(
-      new CustomEvent("fixxer:b2b-suggestions-visibility", { detail: { dismissed: v } }),
+      new CustomEvent("fixxer:b2b-suggestions-visibility", { detail: { dismissed: v, category: cat } }),
     );
   } catch {
     /* noop */
