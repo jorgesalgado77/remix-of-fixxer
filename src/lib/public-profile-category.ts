@@ -98,16 +98,8 @@ export async function resolvePublicProfileCategory(
   userId: string,
   options?: { profile?: any; routeHint?: PublicProfileCategory | null },
 ): Promise<PublicProfileCategory> {
-  const fromLoadedProfile = categoryFromRow(options?.profile);
-  if (fromLoadedProfile && fromLoadedProfile !== "cliente") return fromLoadedProfile;
-
-  // A linha principal do perfil é a fonte mais atual quando contém um papel explícito.
-  for (const table of ["profiles_public", "profiles"] as const) {
-    const category = await queryProfileCategory(table, userId);
-    if (category && category !== "cliente") return category;
-  }
-
-  // Tabelas especializadas corrigem cadastros antigos com role genérico (ex.: "user").
+  // Tabelas especializadas são a fonte autoritativa visual. Elas corrigem
+  // cadastros antigos em que profiles.role ficou genérico ou incorreto.
   const specialized: Array<{ table: string; category: PublicProfileCategory }> = [
     { table: "provider_profiles", category: "prestador" },
     { table: "supplier_profiles", category: "fornecedor" },
@@ -117,7 +109,10 @@ export async function resolvePublicProfileCategory(
     if (await hasSpecializedRow(source.table, userId)) return source.category;
   }
 
+  const fromLoadedProfile = categoryFromRow(options?.profile);
   if (fromLoadedProfile) return fromLoadedProfile;
+
+  // Fallback quando a política/RLS não permite ler as tabelas especializadas.
   for (const table of ["profiles_public", "profiles"] as const) {
     const category = await queryProfileCategory(table, userId);
     if (category) return category;
