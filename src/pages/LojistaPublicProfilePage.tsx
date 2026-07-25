@@ -665,34 +665,58 @@ export function LojistaPublicProfilePage() {
     return positionsList[0] ?? null;
   }, [profile?.positions, positionsList]);
 
-  // Horários e dias de atendimento (aceita string, array de dias, ou objeto por dia).
+  // Horários e dias de atendimento.
+  // Aceita múltiplos formatos legados/atuais:
+  //   - `working_days` (array PT-BR: "Seg","Ter"...) + `work_start_time`/`work_end_time` (atual)
+  //   - `business_hours` / `attendance_hours` / `working_hours` (string OU objeto por dia)
+  //   - `attendance_days` / `weekdays` (array) + `business_hours` como string
   const businessHours = useMemo(() => {
-    const raw = (profile as any)?.business_hours
-      ?? (profile as any)?.attendance_hours
-      ?? (profile as any)?.working_hours
-      ?? null;
-    const days = (profile as any)?.attendance_days ?? (profile as any)?.weekdays ?? null;
+    const p: any = profile || {};
+    const raw = p.business_hours ?? p.attendance_hours ?? p.working_hours ?? null;
+    const legacyDays = p.attendance_days ?? p.weekdays ?? null;
+
     const dayLabels: Record<string, string> = {
       monday: 'Segunda', tuesday: 'Terça', wednesday: 'Quarta', thursday: 'Quinta',
       friday: 'Sexta', saturday: 'Sábado', sunday: 'Domingo',
-      seg: 'Segunda', ter: 'Terça', qua: 'Quarta', qui: 'Quinta', sex: 'Sexta', sab: 'Sábado', dom: 'Domingo',
+      seg: 'Segunda', ter: 'Terça', qua: 'Quarta', qui: 'Quinta',
+      sex: 'Sexta', sab: 'Sábado', sáb: 'Sábado', dom: 'Domingo',
     };
     const rows: { day: string; hours: string }[] = [];
+
+    // 1) Formato ATUAL do editor: working_days + work_start_time + work_end_time.
+    const workingDays: string[] = Array.isArray(p.working_days) ? p.working_days.filter(Boolean) : [];
+    const startT = String(p.work_start_time ?? '').trim();
+    const endT = String(p.work_end_time ?? '').trim();
+    if (workingDays.length > 0 || startT || endT) {
+      const daysLabel = workingDays.length
+        ? workingDays.map((d: string) => dayLabels[String(d).toLowerCase()] ?? d).join(', ')
+        : 'Todos os dias';
+      const hoursLabel = (startT && endT)
+        ? `${startT} — ${endT}`
+        : (startT || endT || 'Sob consulta');
+      rows.push({ day: daysLabel, hours: hoursLabel });
+      return rows;
+    }
+
+    // 2) business_hours como objeto por dia.
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
       for (const [k, v] of Object.entries(raw)) {
         if (!v) continue;
         const label = dayLabels[k.toLowerCase()] ?? k;
-        const hours = typeof v === 'string' ? v : (v as any)?.open && (v as any)?.close ? `${(v as any).open} - ${(v as any).close}` : String(v);
+        const hours = typeof v === 'string'
+          ? v
+          : (v as any)?.open && (v as any)?.close ? `${(v as any).open} - ${(v as any).close}` : String(v);
         rows.push({ day: label, hours });
       }
-    } else if (Array.isArray(days) && days.length) {
+    } else if (Array.isArray(legacyDays) && legacyDays.length) {
       const hoursStr = typeof raw === 'string' && raw ? raw : 'Sob consulta';
-      rows.push({ day: days.map((d: string) => dayLabels[String(d).toLowerCase()] ?? d).join(', '), hours: hoursStr });
+      rows.push({ day: legacyDays.map((d: string) => dayLabels[String(d).toLowerCase()] ?? d).join(', '), hours: hoursStr });
     } else if (typeof raw === 'string' && raw.trim()) {
       rows.push({ day: 'Atendimento', hours: raw.trim() });
     }
     return rows;
   }, [profile]);
+
 
   const submitReview = async () => {
     if (!newComment.trim()) {
