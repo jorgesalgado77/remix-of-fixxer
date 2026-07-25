@@ -533,7 +533,7 @@ export function LojistaDashboard() {
                         icon={<Heart className="w-5 h-5 text-red-500 fill-red-500/20"/>} 
                         label="Favoritos" 
                         active={false} 
-                        onClick={() => setShowFavoritesModal(true)} 
+                        onClick={() => { setMobileMenuOpen(false); navigate({ to: '/favoritos' as any }).catch(() => { window.location.href = '/favoritos'; }); }} 
                       />
 
                       <NavButtonWithTooltip 
