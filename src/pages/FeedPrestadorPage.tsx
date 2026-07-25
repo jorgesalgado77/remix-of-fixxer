@@ -1137,6 +1137,12 @@ export default function FeedPrestadorPage() {
 
   // Paginação por scroll infinito
   const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  useFeedPreload(
+    filtered,
+    paged.length,
+    PAGE_SIZE,
+    (job) => job.attachments?.[0] ?? null,
+  );
   const hasMore = paged.length < filtered.length;
 
   useEffect(() => {
@@ -1155,7 +1161,7 @@ export default function FeedPrestadorPage() {
           }, 400);
         }
       },
-      { rootMargin: "120px" },
+      { rootMargin: "800px" },
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
