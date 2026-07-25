@@ -194,9 +194,18 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
       );
       if (extras > 0 && perPhoto > 0) {
         const total = extras * perPhoto;
-        const ok = confirm(
-          `Você está enviando ${extras} foto(s) além da cota grátis (${freePhotosPerSection}/seção).\n\nCusto estimado: ${total} moedas (${perPhoto} moedas por foto extra).\n\nConfirmar upload?`,
-        );
+        const ok = await confirmCoins({
+          title: 'Confirmar fotos extras',
+          cost: total,
+          description: (
+            <>
+              Você está enviando <strong>{extras}</strong> foto(s) além da cota grátis
+              ({freePhotosPerSection}/seção). Será debitado um total de{' '}
+              <strong>{total} moedas</strong> ({perPhoto} por foto extra).
+            </>
+          ),
+          confirmLabel: `Debitar ${total} moedas`,
+        });
         if (!ok) return [];
         let charged = 0;
         for (let i = 0; i < extras; i++) {
