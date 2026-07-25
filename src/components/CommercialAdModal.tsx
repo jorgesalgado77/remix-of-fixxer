@@ -507,7 +507,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
                   onChange={(e) => setPriceFrom(maskCurrencyBRL(e.target.value))}
                   onKeyDown={currencyKeyDown}
                   onFocus={currencyFocusSelect}
-                  onPaste={currencyPaste}
+                  onPaste={currencyPaste(setPriceFrom)}
                   placeholder="R$ 0,00"
                   className="w-full bg-[#111112] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/70 placeholder:text-white/30 outline-none focus:border-white/30 line-through decoration-white/50"
                 />
@@ -523,7 +523,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
                   onChange={(e) => setPriceTo(maskCurrencyBRL(e.target.value))}
                   onKeyDown={currencyKeyDown}
                   onFocus={currencyFocusSelect}
-                  onPaste={currencyPaste}
+                  onPaste={currencyPaste(setPriceTo)}
                   placeholder="R$ 0,00"
                   className="w-full bg-[#111112] border-2 rounded-xl px-3 py-2.5 text-base font-black outline-none transition-colors"
                   style={{ borderColor: `${theme.hex}55`, color: theme.hex, boxShadow: `0 0 10px ${theme.hex}22` }}
