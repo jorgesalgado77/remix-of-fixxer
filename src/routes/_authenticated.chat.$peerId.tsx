@@ -1053,7 +1053,16 @@ function ConversationPage() {
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div
+        ref={scrollRef}
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={`flex-1 overflow-y-auto px-4 py-4 space-y-4 relative ${
+          dragActive ? "outline-dashed outline-2 outline-primary/70 outline-offset-[-8px] bg-primary/5" : ""
+        }`}
+      >
         <ChatAppointmentsBanner userId={userId} peerId={peerId} />
         {hasMore && !loading && messages.length > 0 && (
           <div className="text-center">
