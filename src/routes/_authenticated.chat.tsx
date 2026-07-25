@@ -620,7 +620,9 @@ function ChatInboxPage() {
             aria-label="Buscar conversas"
             className="w-full bg-[#1A1A1B] border border-white/10 rounded-2xl pl-10 pr-10 py-3 text-sm outline-none focus:border-primary/50"
           />
-          {query && (
+          {isSearching ? (
+            <Loader2 className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-primary animate-spin" />
+          ) : query ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setQuery(""); }}
@@ -629,13 +631,20 @@ function ChatInboxPage() {
             >
               <X className="w-4 h-4" />
             </button>
-          )}
+          ) : null}
         </div>
         {query.trim() && (
-          <p className="mb-3 text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
-            {visible.length} resultado{visible.length === 1 ? "" : "s"} para "{query.trim()}"
+          <p className="mb-3 text-[10px] uppercase tracking-widest font-bold text-muted-foreground flex items-center gap-2">
+            {isSearching ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" /> Buscando…
+              </>
+            ) : (
+              <>{visible.length} resultado{visible.length === 1 ? "" : "s"} para "{debouncedQuery.trim()}"</>
+            )}
           </p>
         )}
+
 
 
         {loading ? (
