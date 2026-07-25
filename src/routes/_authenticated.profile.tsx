@@ -1011,6 +1011,8 @@ function ProfilePage() {
                       vehicleDescription={profile?.vehicle_description}
                       onVehicleTypeChange={(v: string) => setProfile({ ...profile, vehicle_type: v })}
                       onVehicleDescriptionChange={(v: string) => setProfile({ ...profile, vehicle_description: v })}
+                      observations={profile?.offerings_notes}
+                      onObservationsChange={(v: string) => setProfile({ ...profile, offerings_notes: v })}
                     />
 
 
