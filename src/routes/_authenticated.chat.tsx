@@ -519,7 +519,7 @@ function ChatInboxPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onClick={(e) => e.stopPropagation()}
-            placeholder="Buscar por contato ou palavras-chave..."
+            placeholder="Buscar por contato, anúncio ou palavras-chave..."
             className="w-full bg-[#1A1A1B] border border-white/10 rounded-2xl pl-10 pr-4 py-3 text-sm outline-none focus:border-primary/50"
           />
         </div>
