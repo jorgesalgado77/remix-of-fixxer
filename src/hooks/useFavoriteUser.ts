@@ -82,6 +82,10 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
         const uid = data?.user?.id ?? cachedUid ?? null;
         if (cancelled) return;
         setCurrentUserId(uid);
+        // Sempre que confirmamos o dono da sessão, limpamos favoritos escritos
+        // por qualquer outra conta neste navegador (chave composta protege leitura,
+        // mas removemos o lixo para não ocupar storage indefinidamente).
+        purgeForeignFavoriteKeys(uid);
         try {
           if (uid) window.localStorage.setItem(LS_CURRENT_USER, uid);
           else window.localStorage.removeItem(LS_CURRENT_USER);
