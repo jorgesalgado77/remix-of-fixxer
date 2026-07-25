@@ -1,5 +1,29 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, ChevronRight, Handshake } from "lucide-react";
+import { Sparkles, ChevronRight, Handshake, EyeOff, Eye } from "lucide-react";
+
+const DISMISS_KEY = "fixxer_b2b_suggestions_dismissed_v1";
+
+function readDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(DISMISS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeDismissed(v: boolean) {
+  try {
+    if (v) window.localStorage.setItem(DISMISS_KEY, "1");
+    else window.localStorage.removeItem(DISMISS_KEY);
+    window.dispatchEvent(
+      new CustomEvent("fixxer:b2b-suggestions-visibility", { detail: { dismissed: v } }),
+    );
+  } catch {
+    /* noop */
+  }
+}
+
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
   getB2BSuggestions,
@@ -25,7 +49,7 @@ function readRadius(): number {
  */
 function B2BSuggestionsCardInner() {
   const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState<boolean>(() => readDismissed());
   const category = useCurrentCategory();
   const theme = getCategoryTheme(category);
   const branchesRef = useRef<string[]>([]);
@@ -109,7 +133,37 @@ function B2BSuggestionsCardInner() {
     };
   }, [recompute]);
 
-  if (dismissed || suggestions.length === 0) return null;
+  // Sincroniza estado quando outra instância/aba altera a visibilidade.
+  useEffect(() => {
+    const onVis = (e: Event) => {
+      const d = (e as CustomEvent).detail as { dismissed?: boolean } | undefined;
+      if (typeof d?.dismissed === "boolean") setDismissed(d.dismissed);
+    };
+    window.addEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
+    return () =>
+      window.removeEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
+  }, []);
+
+  if (suggestions.length === 0) return null;
+
+  // Estado OCULTO: mostra chip discreto para reexibir.
+  if (dismissed) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setDismissed(false);
+          writeDismissed(false);
+        }}
+        className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors"
+        aria-label="Reexibir sugestões de afiliados B2B"
+        title="Reexibir sugestões de afiliados B2B"
+      >
+        <Eye className="w-3.5 h-3.5" style={{ color: theme.hex }} />
+        Mostrar Sugestões de Afiliados
+      </button>
+    );
+  }
 
   return (
     <div
@@ -137,10 +191,15 @@ function B2BSuggestionsCardInner() {
           </div>
         </div>
         <button
-          onClick={() => setDismissed(true)}
-          className="text-[9px] font-black uppercase text-white/40 hover:text-white/70 shrink-0"
-          aria-label="Fechar sugestões"
+          onClick={() => {
+            setDismissed(true);
+            writeDismissed(true);
+          }}
+          className="flex items-center gap-1 text-[9px] font-black uppercase text-white/40 hover:text-white/70 shrink-0"
+          aria-label="Ocultar sugestões (pode reexibir depois)"
+          title="Ocultar — você pode reexibir a qualquer momento"
         >
+          <EyeOff className="w-3 h-3" />
           Ocultar
         </button>
       </div>
@@ -168,4 +227,5 @@ function B2BSuggestionsCardInner() {
 }
 
 export const B2BSuggestionsCard = memo(B2BSuggestionsCardInner);
+
 
