@@ -46,7 +46,8 @@ import {
   Coins,
   Rocket,
   Receipt,
-  Crown
+  Crown,
+  Megaphone
 } from "lucide-react";
 
 import jsPDF from 'jspdf';
