@@ -525,7 +525,7 @@ function ConversationPage() {
     const onHide = () => { sendTypingStop(); };
     const onVisible = () => {
       if (document.visibilityState === "visible") {
-        const uid = userId || getFallbackUid();
+        const uid = userId || getAuthUid();
         if (uid && !isMockPeerId(peerId)) markIncomingRead(uid);
       }
     };
