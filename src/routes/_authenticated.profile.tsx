@@ -13,6 +13,7 @@ import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { ALLOWED_RADII_KM, isAllowedRadius, BIO_MAX_LENGTH } from "@/lib/branch-search";
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
+import { LiveProfilePreview } from "@/components/LiveProfilePreview";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
