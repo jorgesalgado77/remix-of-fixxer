@@ -4,7 +4,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
 import { compressImage } from "@/utils/image-compression";
-import { MaskedInput } from "@/components/MaskedInput";
+import { MaskedInput, applyCepMask } from "@/components/MaskedInput";
+
+// Normaliza campos que devem persistir mascarados (ex.: CEP)
+function normalizeMasks(p: any): any {
+  if (!p) return p;
+  const out = { ...p };
+  if (out.cep) out.cep = applyCepMask(String(out.cep));
+  return out;
+}
+
+// Helpers para computar itens extras (além da cota do plano)
+function parseCsvList(v?: string | null): string[] {
+  return String(v ?? "").split("||").map((s) => s.trim()).filter(Boolean);
+}
+function quotaForPlan(plan?: string | null): number {
+  const p = String(plan || "free").toLowerCase();
+  if (p === "premium") return 5;
+  if (p === "pro" || p === "basico") return 3;
+  return 1;
+}
+const EXTRA_ITEM_COST = 15;
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { PushToggle } from "@/components/PushToggle";
 import { AffiliateBanner } from "@/components/AffiliateBanner";
