@@ -1445,19 +1445,35 @@ function ProfilePage() {
               {/* Painel de status dos uploads */}
               {uploads.length > 0 && (
                 <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-2" role="status" aria-live="polite">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary">
                       Envios em andamento ({uploads.filter(u => u.status === 'uploading').length}/{uploads.length})
+                      {uploads.some(u => u.status === 'error') && (
+                        <span className="ml-2 text-red-400">· {uploads.filter(u => u.status === 'error').length} falha(s)</span>
+                      )}
                     </p>
-                    {uploads.every(u => u.status !== 'uploading') && (
-                      <button
-                        onClick={() => setUploads([])}
-                        className="text-[9px] font-black uppercase text-muted-foreground hover:text-white"
-                      >
-                        Limpar
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {uploads.some(u => u.status === 'error' && u.file) && (
+                        <button
+                          type="button"
+                          onClick={retryFailedUploads}
+                          className="text-[9px] font-black uppercase px-2 py-1 rounded-md bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                        >
+                          ↻ Reenviar falhas
+                        </button>
+                      )}
+                      {uploads.every(u => u.status !== 'uploading') && (
+                        <button
+                          type="button"
+                          onClick={() => setUploads([])}
+                          className="text-[9px] font-black uppercase text-muted-foreground hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-md px-1"
+                        >
+                          Limpar
+                        </button>
+                      )}
+                    </div>
                   </div>
+
                   {uploads.map((u) => (
                     <div key={u.id} className="space-y-1">
                       <div className="flex items-center justify-between text-[10px]">
