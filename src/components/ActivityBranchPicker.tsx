@@ -103,7 +103,7 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="shrink-0 inline-flex items-center gap-1 rounded-xl bg-white/10 hover:bg-white/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white"
+            className="shrink-0 inline-flex items-center gap-1 rounded-xl bg-white/10 hover:bg-white/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]"
             aria-label="Alterar ramo principal"
           >
             <Pencil className="w-3 h-3" /> Alterar
