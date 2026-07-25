@@ -214,6 +214,7 @@ function RootComponent() {
         </GlobalErrorBoundary>
         {!hideBar && <GlobalActionBar />}
         <CoinFeedbackBridge />
+        <CoinConfirmProvider />
         <Toaster closeButton duration={2000} />
       </div>
     </QueryClientProvider>
