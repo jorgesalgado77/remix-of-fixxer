@@ -11,6 +11,7 @@ import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { formatDistanceFromCity } from "@/lib/geo-distance";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
 import { FeedErrorState } from "@/components/FeedErrorState";
 import { useFeedPreload } from "@/hooks/use-feed-preload";
 import { usePersistedState } from "@/lib/feed-persist";
@@ -618,6 +619,7 @@ export default function FeedClientePage() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
+        <B2BSuggestionsCard />
         {/* BANNER PUBLICAR NECESSIDADE */}
         <button
           onClick={() => setPublishOpen(true)}

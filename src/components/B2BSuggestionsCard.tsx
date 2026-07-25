@@ -1,23 +1,68 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, ChevronRight, Handshake, EyeOff, Eye } from "lucide-react";
+import { Sparkles, ChevronRight, Handshake, EyeOff, Eye, Store, Users, Wrench } from "lucide-react";
+import type { CategoryKey } from "@/lib/category-colors";
 
-const DISMISS_KEY = "fixxer_b2b_suggestions_dismissed_v1";
+const DISMISS_KEY_BASE = "fixxer_b2b_suggestions_dismissed_v1";
 
-function readDismissed(): boolean {
+type Preset = {
+  title: string;
+  subtitle: string;
+  reshowLabel: string;
+  Icon: typeof Handshake;
+};
+
+const PRESETS: Record<CategoryKey, Preset> = {
+  prestador: {
+    title: "Rede de Afiliados B2B",
+    subtitle: "Parcerias sugeridas para o seu ramo",
+    reshowLabel: "Mostrar Sugestões de Afiliados",
+    Icon: Handshake,
+  },
+  lojista: {
+    title: "Rede de Fornecedores & Parceiros",
+    subtitle: "Parceiros B2B sugeridos para sua loja",
+    reshowLabel: "Mostrar Sugestões de Parceiros",
+    Icon: Store,
+  },
+  fornecedor: {
+    title: "Rede de Revendas & Lojistas",
+    subtitle: "Lojistas parceiros sugeridos para você",
+    reshowLabel: "Mostrar Sugestões de Revendas",
+    Icon: Handshake,
+  },
+  cliente: {
+    title: "Serviços Recomendados",
+    subtitle: "Prestadores e lojas próximos ao seu perfil",
+    reshowLabel: "Mostrar Serviços Recomendados",
+    Icon: Wrench,
+  },
+  admin: {
+    title: "Rede de Afiliados B2B",
+    subtitle: "Parcerias sugeridas na plataforma",
+    reshowLabel: "Mostrar Sugestões",
+    Icon: Users,
+  },
+};
+
+function keyFor(cat: CategoryKey) {
+  return `${DISMISS_KEY_BASE}_${cat}`;
+}
+
+function readDismissed(cat: CategoryKey): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return window.localStorage.getItem(DISMISS_KEY) === "1";
+    return window.localStorage.getItem(keyFor(cat)) === "1";
   } catch {
     return false;
   }
 }
 
-function writeDismissed(v: boolean) {
+function writeDismissed(cat: CategoryKey, v: boolean) {
   try {
-    if (v) window.localStorage.setItem(DISMISS_KEY, "1");
-    else window.localStorage.removeItem(DISMISS_KEY);
+    if (v) window.localStorage.setItem(keyFor(cat), "1");
+    else window.localStorage.removeItem(keyFor(cat));
     window.dispatchEvent(
-      new CustomEvent("fixxer:b2b-suggestions-visibility", { detail: { dismissed: v } }),
+      new CustomEvent("fixxer:b2b-suggestions-visibility", { detail: { dismissed: v, category: cat } }),
     );
   } catch {
     /* noop */
@@ -48,9 +93,10 @@ function readRadius(): number {
  * candidatos reais pelo raio de atuação e reordena por recência.
  */
 function B2BSuggestionsCardInner() {
-  const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
-  const [dismissed, setDismissed] = useState<boolean>(() => readDismissed());
   const category = useCurrentCategory();
+  const preset = PRESETS[category] ?? PRESETS.prestador;
+  const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
+  const [dismissed, setDismissed] = useState<boolean>(() => readDismissed(category));
   const theme = getCategoryTheme(category);
   const branchesRef = useRef<string[]>([]);
   const userLocRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -148,22 +194,25 @@ function B2BSuggestionsCardInner() {
 
   // Estado OCULTO: mostra chip discreto para reexibir.
   if (dismissed) {
+    const PresetIcon = preset.Icon;
     return (
       <button
         type="button"
         onClick={() => {
           setDismissed(false);
-          writeDismissed(false);
+          writeDismissed(category, false);
         }}
         className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors"
-        aria-label="Reexibir sugestões de afiliados B2B"
-        title="Reexibir sugestões de afiliados B2B"
+        aria-label={preset.reshowLabel}
+        title={preset.reshowLabel}
       >
         <Eye className="w-3.5 h-3.5" style={{ color: theme.hex }} />
-        Mostrar Sugestões de Afiliados
+        {preset.reshowLabel}
       </button>
     );
   }
+
+  const PresetIcon = preset.Icon;
 
   return (
     <div
@@ -179,21 +228,21 @@ function B2BSuggestionsCardInner() {
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
             style={{ backgroundColor: `${theme.hex}22`, color: theme.hex }}
           >
-            <Handshake className="w-4 h-4" />
+            <PresetIcon className="w-4 h-4" />
           </div>
           <div className="min-w-0">
             <p className="text-[11px] font-black uppercase tracking-tight truncate">
-              Rede de Afiliados B2B
+              {preset.title}
             </p>
             <p className="text-[9px] text-white/50 truncate">
-              Parcerias sugeridas para o seu ramo
+              {preset.subtitle}
             </p>
           </div>
         </div>
         <button
           onClick={() => {
             setDismissed(true);
-            writeDismissed(true);
+            writeDismissed(category, true);
           }}
           className="flex items-center gap-1 text-[9px] font-black uppercase text-white/40 hover:text-white/70 shrink-0"
           aria-label="Ocultar sugestões (pode reexibir depois)"
@@ -202,6 +251,7 @@ function B2BSuggestionsCardInner() {
           <EyeOff className="w-3 h-3" />
           Ocultar
         </button>
+
       </div>
 
       <div className="grid gap-1.5">
