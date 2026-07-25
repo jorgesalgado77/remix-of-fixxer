@@ -23,8 +23,10 @@ import {
   Send,
   Search,
   ArrowUpDown,
+  Heart,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { useFavoriteUser } from "@/hooks/useFavoriteUser";
 import { createProfileRefetchHandler, type ProfileLike } from "@/lib/profile-refetch";
 import { isMockPeerId, getMockProfile, getMockPeerName } from "@/lib/mock-chat";
 import { Button } from "@/components/ui/button";
@@ -482,6 +484,9 @@ export function LojistaPublicProfilePage() {
     window.open(`https://wa.me/${formattedNum}`, "_blank");
   };
 
+  // Botão Favoritar: persiste em favorite_users (Supabase) com fallback local.
+  const favorite = useFavoriteUser(profile?.user_id ?? null);
+
   const submitReview = async () => {
     if (!newComment.trim()) {
       toast.error("Escreva um comentário antes de enviar.");
@@ -608,7 +613,7 @@ export function LojistaPublicProfilePage() {
                 </div>
                 
                 {/* CTA Superior — visível em mobile e desktop */}
-                <div className="pt-4">
+                <div className="pt-4 flex flex-col md:flex-row gap-2 md:gap-3 md:items-center">
                   <Button
                     onClick={handleContactWhatsApp}
                     className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest px-8 h-12 rounded-xl hover:bg-primary/90"
@@ -616,6 +621,33 @@ export function LojistaPublicProfilePage() {
                   >
                     <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
                   </Button>
+
+                  {/* Favoritar — persiste em favorite_users (Supabase) */}
+                  <button
+                    type="button"
+                    onClick={favorite.toggle}
+                    disabled={favorite.loading || favorite.isSelf}
+                    aria-pressed={favorite.isFavorited}
+                    aria-label={favorite.isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                    title={favorite.isSelf ? "Você não pode favoritar o próprio perfil" : (favorite.isFavorited ? "Favorito" : "Favoritar")}
+                    className="w-full md:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-black uppercase italic tracking-widest text-xs md:text-sm bg-black/40 backdrop-blur-sm border-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    style={{
+                      borderColor: `rgb(${theme.rgb})`,
+                      color: favorite.isFavorited ? "#FF3B5C" : `rgb(${theme.rgb})`,
+                      boxShadow: favorite.isFavorited
+                        ? `0 0 18px rgba(255, 59, 92, 0.35)`
+                        : `0 0 12px rgba(${theme.rgb}, 0.20)`,
+                      ["--tw-ring-color" as any]: `rgb(${theme.rgb})`,
+                    }}
+                  >
+                    <Heart
+                      className="w-4 h-4"
+                      fill={favorite.isFavorited ? "#FF3B5C" : "none"}
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    />
+                    {favorite.isFavorited ? "Favorito" : "Favoritar"}
+                  </button>
                 </div>
               </div>
             </div>
