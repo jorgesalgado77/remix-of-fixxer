@@ -18,6 +18,7 @@ import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as PrestadorIdRouteImport } from './routes/prestador.$id'
 import { Route as PerfilLojistaRouteImport } from './routes/perfil.lojista'
+import { Route as PerfilUserIdRouteImport } from './routes/perfil.$userId'
 import { Route as ParceiroIdRouteImport } from './routes/parceiro.$id'
 import { Route as LojistaIdRouteImport } from './routes/lojista.$id'
 import { Route as DashboardPrestadorRouteImport } from './routes/dashboard.prestador'
@@ -93,6 +94,11 @@ const PrestadorIdRoute = PrestadorIdRouteImport.update({
 const PerfilLojistaRoute = PerfilLojistaRouteImport.update({
   id: '/perfil/lojista',
   path: '/perfil/lojista',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerfilUserIdRoute = PerfilUserIdRouteImport.update({
+  id: '/perfil/$userId',
+  path: '/perfil/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParceiroIdRoute = ParceiroIdRouteImport.update({
@@ -289,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/prestador': typeof DashboardPrestadorRoute
   '/lojista/$id': typeof LojistaIdRoute
   '/parceiro/$id': typeof ParceiroIdRoute
+  '/perfil/$userId': typeof PerfilUserIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
@@ -329,6 +336,7 @@ export interface FileRoutesByTo {
   '/dashboard/prestador': typeof DashboardPrestadorRoute
   '/lojista/$id': typeof LojistaIdRoute
   '/parceiro/$id': typeof ParceiroIdRoute
+  '/perfil/$userId': typeof PerfilUserIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
@@ -373,6 +381,7 @@ export interface FileRoutesById {
   '/dashboard/prestador': typeof DashboardPrestadorRoute
   '/lojista/$id': typeof LojistaIdRoute
   '/parceiro/$id': typeof ParceiroIdRoute
+  '/perfil/$userId': typeof PerfilUserIdRoute
   '/perfil/lojista': typeof PerfilLojistaRoute
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
@@ -417,6 +426,7 @@ export interface FileRouteTypes {
     | '/dashboard/prestador'
     | '/lojista/$id'
     | '/parceiro/$id'
+    | '/perfil/$userId'
     | '/perfil/lojista'
     | '/prestador/$id'
     | '/r/$code'
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/dashboard/prestador'
     | '/lojista/$id'
     | '/parceiro/$id'
+    | '/perfil/$userId'
     | '/perfil/lojista'
     | '/prestador/$id'
     | '/r/$code'
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/dashboard/prestador'
     | '/lojista/$id'
     | '/parceiro/$id'
+    | '/perfil/$userId'
     | '/perfil/lojista'
     | '/prestador/$id'
     | '/r/$code'
@@ -531,6 +543,7 @@ export interface RootRouteChildren {
   DashboardPrestadorRoute: typeof DashboardPrestadorRoute
   LojistaIdRoute: typeof LojistaIdRoute
   ParceiroIdRoute: typeof ParceiroIdRoute
+  PerfilUserIdRoute: typeof PerfilUserIdRoute
   PerfilLojistaRoute: typeof PerfilLojistaRoute
   PrestadorIdRoute: typeof PrestadorIdRoute
   RCodeRoute: typeof RCodeRoute
@@ -601,6 +614,13 @@ declare module '@tanstack/react-router' {
       path: '/perfil/lojista'
       fullPath: '/perfil/lojista'
       preLoaderRoute: typeof PerfilLojistaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/perfil/$userId': {
+      id: '/perfil/$userId'
+      path: '/perfil/$userId'
+      fullPath: '/perfil/$userId'
+      preLoaderRoute: typeof PerfilUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/parceiro/$id': {
@@ -960,6 +980,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardPrestadorRoute: DashboardPrestadorRoute,
   LojistaIdRoute: LojistaIdRoute,
   ParceiroIdRoute: ParceiroIdRoute,
+  PerfilUserIdRoute: PerfilUserIdRoute,
   PerfilLojistaRoute: PerfilLojistaRoute,
   PrestadorIdRoute: PrestadorIdRoute,
   RCodeRoute: RCodeRoute,
