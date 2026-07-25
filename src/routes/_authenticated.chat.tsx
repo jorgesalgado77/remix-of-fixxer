@@ -514,16 +514,33 @@ function ChatInboxPage() {
           </button>
         </div>
 
-        <div className="relative mb-4">
+        <div className="relative mb-2">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onClick={(e) => e.stopPropagation()}
-            placeholder="Buscar por contato, anúncio ou palavras-chave..."
-            className="w-full bg-[#1A1A1B] border border-white/10 rounded-2xl pl-10 pr-4 py-3 text-sm outline-none focus:border-primary/50"
+            placeholder="Buscar por contato, cargo, mensagem..."
+            aria-label="Buscar conversas"
+            className="w-full bg-[#1A1A1B] border border-white/10 rounded-2xl pl-10 pr-10 py-3 text-sm outline-none focus:border-primary/50"
           />
+          {query && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setQuery(""); }}
+              aria-label="Limpar busca"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
+        {query.trim() && (
+          <p className="mb-3 text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+            {visible.length} resultado{visible.length === 1 ? "" : "s"} para "{query.trim()}"
+          </p>
+        )}
+
 
         {loading ? (
           <div className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-10 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
