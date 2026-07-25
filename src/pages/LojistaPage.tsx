@@ -586,6 +586,10 @@ export function LojistaDashboard() {
                 disabled={!isProfileComplete}
               />
 
+              <Link to="/meus-anuncios" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider border border-transparent hover:border-white/10">
+                <Megaphone className="w-4 h-4 text-[#00E5FF]" /> Meus Anúncios
+              </Link>
+
               <SidebarButton icon={<Building2 className="w-4 h-4"/>} label="Perfil Empresa" active={false} onClick={openPublicProfile} />
 
               <SidebarButton 
