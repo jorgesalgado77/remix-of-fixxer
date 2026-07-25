@@ -199,23 +199,45 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
   }
 
   const owner = current.ownerUid || peerId;
-  if (!current.name || !current.avatarUrl || !current.role) {
-    for (const [table, columns] of [
-      ["provider_profiles", ["user_id", "id"]],
-      ["store_profiles", ["user_id", "id"]],
-    ] as const) {
-      for (const column of columns) {
-        if (current.name && current.avatarUrl && current.role) break;
-        const row = await querySingle(table, column, owner, diagnostics);
-        if (row) {
-          source.push(`${table}.${column}`);
-          current = absorbRow(row, `${table}.${column}`, current, source, diagnostics);
-        }
+  // Sempre consulta provider_profiles e store_profiles para obter o role
+  // autoritativo. Um valor genérico em profiles.role (ex.: "user") não deve
+  // sobrescrever a categoria real derivada da tabela específica.
+  let storeHit = false;
+  let providerHit = false;
+  for (const [table, columns] of [
+    ["provider_profiles", ["user_id", "id"]],
+    ["store_profiles", ["user_id", "id"]],
+  ] as const) {
+    for (const column of columns) {
+      const row = await querySingle(table, column, owner, diagnostics);
+      if (row) {
+        source.push(`${table}.${column}`);
+        if (table === "store_profiles") storeHit = true;
+        if (table === "provider_profiles") providerHit = true;
+        current = absorbRow(row, `${table}.${column}`, current, source, diagnostics);
+        break;
       }
     }
   }
 
+  // Override autoritativo: a existência de uma linha em store_profiles/provider_profiles
+  // é o sinal mais confiável de categoria — sobrepõe qualquer role genérico do profiles.
+  if (storeHit) current.role = "lojista";
+  else if (providerHit) current.role = "prestador";
+
+
+
+  // Fallback de role a partir da tabela de origem quando a coluna role estiver vazia.
+  // Ex.: se o dado veio de `store_profiles` mas nenhum campo textual de role foi
+  // encontrado, assumimos "lojista". Idem para provider_profiles → "prestador".
+  if (!current.role) {
+    const joined = source.join(" | ");
+    if (/store_profiles/.test(joined)) current.role = "lojista";
+    else if (/provider_profiles/.test(joined)) current.role = "prestador";
+  }
+
   const finalName = current.name || "Conversa";
+
   const result: PeerProfile = {
     id: peerId,
     name: finalName,
