@@ -489,35 +489,37 @@ function ChatInboxPage() {
     return () => io.disconnect();
   }, [userId, loadMore]);
 
-  // Peers
+  // Peers — usa o mesmo resolvedor centralizado do cabeçalho da conversa.
+  // Isso evita nomes/fotos divergentes quando `profiles` está protegido por RLS
+  // e os dados públicos vêm de `profiles_public`, `custom_sections`,
+  // `provider_profiles` ou `store_profiles`.
   useEffect(() => {
     if (!userId || messages.length === 0) return;
     const peerIds = Array.from(
       new Set(messages.map((m) => (m.sender_id === userId ? m.recipient_id : m.sender_id)).filter(Boolean)),
     );
     if (peerIds.length === 0) return;
+    let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabaseExternal
-          .from("profiles")
-          .select("id, full_name, avatar_url, role")
-          .in("id", peerIds);
-        if (data) {
-          const map: Record<string, PeerInfo> = {};
-          const roleCache: Record<string, string> = {};
-          for (const p of data as any[]) {
-            map[p.id] = {
-              name: p.full_name || "Usuário",
-              avatar: p.avatar_url ?? null,
-              role: (p.role as string) ?? null,
-            };
-            if (p.role) roleCache[p.id] = p.role;
-          }
-          setPeers((prev) => ({ ...prev, ...map }));
-          setCachedPeerRoles(roleCache);
+        const { resolvePeerProfile } = await import("@/lib/chat-peer-profile");
+        const resolved = await Promise.all(peerIds.map((id) => resolvePeerProfile(id)));
+        if (cancelled) return;
+        const map: Record<string, PeerInfo> = {};
+        const roleCache: Record<string, string> = {};
+        for (const p of resolved) {
+          map[p.id] = {
+            name: p.name || "Conversa",
+            avatar: p.avatarUrl ?? null,
+            role: p.role ?? null,
+          };
+          if (p.role) roleCache[p.id] = p.role;
         }
+        setPeers((prev) => ({ ...prev, ...map }));
+        setCachedPeerRoles(roleCache);
       } catch {}
     })();
+    return () => { cancelled = true; };
   }, [messages, userId]);
 
   const conversations: Conversation[] = useMemo(() => {

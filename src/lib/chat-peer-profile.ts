@@ -2,10 +2,10 @@
  * FIXXER — Resolução centralizada do perfil do destinatário do chat.
  *
  * Estratégia (com cache em memória):
- *   1) profiles por id
- *   2) profiles por user_id
+ *   1) profiles_public por id/user_id (view segura; não quebra com RLS da tabela privada)
+ *   2) profiles por id/user_id (quando a política permitir)
  *   3) custom_sections.__extras (display_name / avatar)
- *   4) store_profiles (logo_url / company_name / display_name)
+ *   4) provider_profiles / store_profiles (foto e nome públicos por categoria)
  *
  * Retorna SEMPRE um objeto renderizável (name + initials), mesmo em falha.
  */
@@ -18,11 +18,19 @@ export type PeerProfile = {
   avatarUrl: string | null;
   role: string | null;
   source: string[]; // origens dos dados encontrados (para diagnóstico)
+  diagnostics: string[];
 };
 
 const CACHE = new Map<string, { at: number; value: PeerProfile }>();
 const TTL_MS = 60_000;
-const DEBUG = typeof window !== "undefined" && (window as any).__FIXXER_CHAT_DEBUG__ === true;
+function isDebugEnabled() {
+  if (typeof window === "undefined") return false;
+  try {
+    return (window as any).__FIXXER_CHAT_DEBUG__ === true || window.localStorage.getItem("fixxer_chat_debug") === "1";
+  } catch {
+    return (window as any).__FIXXER_CHAT_DEBUG__ === true;
+  }
+}
 
 export function initialsOf(name: string): string {
   const clean = String(name || "").trim();
@@ -32,7 +40,15 @@ export function initialsOf(name: string): string {
 }
 
 export function fallbackPeer(peerId: string): PeerProfile {
-  return { id: peerId, name: "Conversa", initials: "?", avatarUrl: null, role: null, source: ["fallback"] };
+  return {
+    id: peerId,
+    name: "Conversa",
+    initials: "C",
+    avatarUrl: null,
+    role: null,
+    source: ["fallback"],
+    diagnostics: ["fallback: nenhum dado público de perfil encontrado"],
+  };
 }
 
 export function clearPeerCache(peerId?: string) {
@@ -40,12 +56,116 @@ export function clearPeerCache(peerId?: string) {
   else CACHE.clear();
 }
 
-function pickFromExtras(extras: any): { name?: string; avatar?: string } {
+function firstText(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    const text = String(value ?? "").trim();
+    if (text && text.toLowerCase() !== "null" && text.toLowerCase() !== "undefined") return text;
+  }
+  return undefined;
+}
+
+function firstUrl(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    const text = String(value ?? "").trim();
+    if (/^(https?:|blob:|data:image\/)/i.test(text)) return text;
+  }
+  return undefined;
+}
+
+function asRecord(value: unknown): Record<string, any> {
+  return value && typeof value === "object" ? (value as Record<string, any>) : {};
+}
+
+function pickFromExtras(extras: any): { name?: string; avatar?: string; role?: string } {
   if (!extras || typeof extras !== "object") return {};
-  const name = extras.display_name || extras.displayName || extras.full_name || extras.name;
-  const avatar =
-    extras.avatar_url || extras.photo_url || extras.profile_photo || extras.profile_image || extras.image_url;
-  return { name: name ? String(name) : undefined, avatar: avatar ? String(avatar) : undefined };
+  const name = firstText(
+    extras.display_name,
+    extras.displayName,
+    extras.full_name,
+    extras.company_name,
+    extras.social_name,
+    extras.name,
+    extras.responsible_name,
+  );
+  const avatar = firstUrl(
+    extras.avatar_url,
+    extras.photo_url,
+    extras.profile_photo_url,
+    extras.profile_photo,
+    extras.profile_image_url,
+    extras.profile_image,
+    extras.image_url,
+    extras.logo_url,
+    extras.avatar,
+  );
+  const role = firstText(extras.role, extras.user_type, extras.category);
+  return { name, avatar, role };
+}
+
+function absorbRow(
+  row: any,
+  label: string,
+  current: { name: string; avatarUrl: string | null; role: string | null; ownerUid: string | null },
+  source: string[],
+  diagnostics: string[],
+) {
+  const r = asRecord(row);
+  if (!Object.keys(r).length) return current;
+
+  diagnostics.push(`${label}: campos encontrados [${Object.keys(r).sort().join(", ")}]`);
+
+  const extras = pickFromExtras(asRecord(r.custom_sections).__extras ?? r.__extras ?? r.extras);
+  const name = firstText(
+    r.display_name,
+    r.full_name,
+    r.company_name,
+    r.social_name,
+    r.name,
+    r.responsible_name,
+    extras.name,
+  );
+  const avatar = firstUrl(
+    r.avatar_url,
+    r.photo_url,
+    r.profile_photo_url,
+    r.profile_image_url,
+    r.image_url,
+    r.logo_url,
+    r.avatar,
+    extras.avatar,
+  );
+  const role = firstText(r.role, r.user_type, r.category, r.profile_type, extras.role);
+  const ownerUid = firstText(r.user_id, r.owner_id, r.auth_user_id, r.id);
+
+  if (!current.name && name) {
+    current.name = name;
+    source.push(`${label}.name`);
+  }
+  if (!current.avatarUrl && avatar) {
+    current.avatarUrl = avatar;
+    source.push(`${label}.avatar`);
+  }
+  if (!current.role && role) {
+    current.role = role;
+    source.push(`${label}.role`);
+  }
+  if (!current.ownerUid && ownerUid) current.ownerUid = ownerUid;
+  return current;
+}
+
+async function querySingle(table: string, column: string, value: string, diagnostics: string[]) {
+  try {
+    const { data, error } = await supabaseExternal.from(table).select("*").eq(column, value).maybeSingle();
+    if (error) {
+      diagnostics.push(`${table}.${column}: ${error.message}`);
+      return null;
+    }
+    if (!data) diagnostics.push(`${table}.${column}: sem linha`);
+    return data ?? null;
+  } catch (e: any) {
+    diagnostics.push(`${table}.${column}: exceção ${e?.message || String(e)}`);
+    return null;
+  }
 }
 
 export async function resolvePeerProfile(peerId: string): Promise<PeerProfile> {
@@ -54,74 +174,54 @@ export async function resolvePeerProfile(peerId: string): Promise<PeerProfile> {
   if (cached && Date.now() - cached.at < TTL_MS) return cached.value;
 
   const source: string[] = [];
-  let name = "";
-  let avatarUrl: string | null = null;
-  let role: string | null = null;
-  let ownerUid: string | null = null;
+  const diagnostics: string[] = [];
+  let current = { name: "", avatarUrl: null as string | null, role: null as string | null, ownerUid: null as string | null };
 
-  try {
-    let prof: any = null;
-    const { data: p1 } = await supabaseExternal
-      .from("profiles")
-      .select("id, user_id, full_name, display_name, avatar_url, role, custom_sections")
-      .eq("id", peerId)
-      .maybeSingle();
-    prof = p1;
-    if (prof) source.push("profiles.id");
-    if (!prof) {
-      const { data: p2 } = await supabaseExternal
-        .from("profiles")
-        .select("id, user_id, full_name, display_name, avatar_url, role, custom_sections")
-        .eq("user_id", peerId)
-        .maybeSingle();
-      prof = p2;
-      if (prof) source.push("profiles.user_id");
+  // A view pública é a primeira fonte porque a tabela `profiles` pode estar
+  // corretamente protegida por RLS e bloquear leitura direta de terceiros.
+  for (const [table, columns] of [
+    ["profiles_public", ["id", "user_id"]],
+    ["profiles", ["id", "user_id"]],
+  ] as const) {
+    for (const column of columns) {
+      if (current.name && current.avatarUrl && current.role && current.ownerUid) break;
+      const row = await querySingle(table, column, peerId, diagnostics);
+      if (row) {
+        source.push(`${table}.${column}`);
+        current = absorbRow(row, `${table}.${column}`, current, source, diagnostics);
+      }
     }
-    if (prof) {
-      name = prof.display_name || prof.full_name || "";
-      avatarUrl = prof.avatar_url ?? null;
-      role = prof.role ?? null;
-      ownerUid = prof.user_id || prof.id || peerId;
-      const extras = pickFromExtras(prof?.custom_sections?.__extras);
-      if (!name && extras.name) { name = extras.name; source.push("extras.name"); }
-      if (!avatarUrl && extras.avatar) { avatarUrl = extras.avatar; source.push("extras.avatar"); }
-    }
-  } catch (e) {
-    if (DEBUG) console.warn("[chat-peer] profiles lookup failed", e);
   }
 
-  if (!name || !avatarUrl) {
-    try {
-      const { data: sp } = await supabaseExternal
-        .from("store_profiles")
-        .select("logo_url, company_name, display_name")
-        .eq("user_id", ownerUid || peerId)
-        .maybeSingle();
-      if (sp) {
-        if (!name && ((sp as any).display_name || (sp as any).company_name)) {
-          name = (sp as any).display_name || (sp as any).company_name;
-          source.push("store_profiles.name");
-        }
-        if (!avatarUrl && (sp as any).logo_url) {
-          avatarUrl = (sp as any).logo_url;
-          source.push("store_profiles.logo");
+  const owner = current.ownerUid || peerId;
+  if (!current.name || !current.avatarUrl || !current.role) {
+    for (const [table, columns] of [
+      ["provider_profiles", ["user_id", "id"]],
+      ["store_profiles", ["user_id", "id"]],
+    ] as const) {
+      for (const column of columns) {
+        if (current.name && current.avatarUrl && current.role) break;
+        const row = await querySingle(table, column, owner, diagnostics);
+        if (row) {
+          source.push(`${table}.${column}`);
+          current = absorbRow(row, `${table}.${column}`, current, source, diagnostics);
         }
       }
-    } catch (e) {
-      if (DEBUG) console.warn("[chat-peer] store_profiles lookup failed", e);
     }
   }
 
-  const finalName = name || "Conversa";
+  const finalName = current.name || "Conversa";
   const result: PeerProfile = {
     id: peerId,
     name: finalName,
     initials: initialsOf(finalName),
-    avatarUrl: avatarUrl || null,
-    role,
+    avatarUrl: current.avatarUrl || null,
+    role: current.role,
     source: source.length ? source : ["fallback"],
+    diagnostics,
   };
-  if (DEBUG) console.info("[chat-peer] resolved", peerId, result);
-  CACHE.set(peerId, { at: Date.now(), value: result });
+  if (isDebugEnabled()) console.info("[chat-peer] resolved", peerId, result);
+  // Não cacheia fallback puro para permitir recuperação imediata após ajuste de RLS/dados.
+  if (source.length) CACHE.set(peerId, { at: Date.now(), value: result });
   return result;
 }
