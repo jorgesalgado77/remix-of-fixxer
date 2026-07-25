@@ -444,7 +444,25 @@ function ConversationPage() {
           setPeerAvatar(anyP.avatar_url ?? null);
           setPeerRole(anyP.role ?? null);
         }
+        // Fallback para foto/nome vindos de store_profiles quando profiles está vazio.
+        const uidForStore = (anyP?.user_id as string | undefined) || peerId;
+        if (uidForStore && (!anyP?.avatar_url || !anyP?.display_name)) {
+          try {
+            const { data: sp } = await supabaseExternal
+              .from("store_profiles")
+              .select("logo_url, company_name, display_name")
+              .eq("user_id", uidForStore)
+              .maybeSingle();
+            if (sp && !cancelled) {
+              if (!anyP?.avatar_url && (sp as any).logo_url) setPeerAvatar((sp as any).logo_url);
+              if (!anyP?.display_name && ((sp as any).display_name || (sp as any).company_name)) {
+                setPeerName(((sp as any).display_name || (sp as any).company_name) as string);
+              }
+            }
+          } catch {}
+        }
       } catch {}
+
 
 
       setMuted(isConversationMuted(uid, peerId));
