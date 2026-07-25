@@ -1588,11 +1588,13 @@ function ProfilePage() {
                       </div>
                       );
                     })}
-                    <label className="border-2 border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group">
+                    <label className="border-2 border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all cursor-pointer group">
                       <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                       <span className="text-[9px] font-black uppercase text-muted-foreground group-hover:text-primary">Novo Documento</span>
-                      <input type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,image/*" onChange={(e) => handleMediaUpload(e, 'document')} />
+                      <span className="text-[8px] text-white/40 normal-case">{UPLOAD_LIMITS.document.hint} · máx {UPLOAD_LIMITS.document.maxLabel}</span>
+                      <input type="file" className="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,image/*" onChange={(e) => handleMediaUpload(e, 'document')} aria-label="Enviar novo documento" />
                     </label>
+
                   </div>
                 </div>
 
