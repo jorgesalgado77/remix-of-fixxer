@@ -418,6 +418,8 @@ function ConversationPage() {
     return () => {
       cancelled = true;
       document.removeEventListener("visibilitychange", onHide);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
       window.removeEventListener("pagehide", onHide);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
