@@ -564,25 +564,24 @@ export function RecentPartnersCarousel() {
                 aria-posinset={idx + 1}
                 aria-setsize={sortedItems.length}
               >
-                <PartnerAvatar
-                  src={avatarUrl}
-                  alt={`Foto de ${displayName}`}
-                  color={meta.color}
-                />
-
-                <div className="relative w-full h-0">
-                  <span className="absolute -top-[168px] right-2 text-xs font-bold text-yellow-400 bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1" aria-hidden="true">
+                <div className="relative w-full h-40 bg-black/40">
+                  <PartnerAvatar
+                    src={avatarUrl}
+                    alt={`Foto de ${displayName}`}
+                    color={meta.color}
+                  />
+                  <span className="absolute top-2 right-2 z-10 text-xs font-bold text-yellow-400 bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1" aria-hidden="true">
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     {rating.toFixed(1)}
                   </span>
                   {distance && (
-                    <span className="absolute -top-[168px] left-2 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm" aria-hidden="true">
+                    <span className="absolute top-2 left-2 z-10 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm" aria-hidden="true">
                       📍 {distance} km
                     </span>
                   )}
                   {showNoGeoBadge && (
                     <span
-                      className="absolute -top-[168px] left-2 text-[10px] font-bold text-white/90 bg-black/70 border border-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1"
+                      className="absolute top-2 left-2 z-10 text-[10px] font-bold text-white/90 bg-black/70 border border-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1"
                       role="note"
                       aria-label="Perfil sem localização mapeável"
                     >
@@ -610,7 +609,6 @@ export function RecentPartnersCarousel() {
                   )}
                 </div>
 
-
                 <div className={`relative p-3 bg-gradient-to-t ${meta.gradientClass}`}>
                   <p className="font-black text-white text-sm truncate leading-tight">
                     {displayName}
@@ -622,10 +620,14 @@ export function RecentPartnersCarousel() {
                   >
                     {meta.emoji} {branchText}
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
-                    <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
-                    <span className="truncate">📍 {location || "Votorantim, SP"}</span>
-                  </p>
+                  {location ? (
+                    <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
+                      <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
+                      <span className="truncate">📍 {location}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-white/40 italic mt-1 truncate">Localização não informada</p>
+                  )}
 
                 </div>
               </button>
