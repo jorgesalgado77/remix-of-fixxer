@@ -471,6 +471,10 @@ function ProfilePage() {
     }
   };
 
+  // ⚠️ Hooks SEMPRE antes de qualquer early return, para manter a ordem estável
+  // entre renders (evita "Rendered more hooks than during the previous render").
+  const theme = useMemo(() => getCategoryTheme(roleToCategory(profile?.role)), [profile?.role]);
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[80vh] gap-4 bg-[#121214]">
       <Loader2 className="animate-spin text-primary w-12 h-12" />
@@ -478,8 +482,6 @@ function ProfilePage() {
     </div>
   );
 
-
-  const theme = useMemo(() => getCategoryTheme(roleToCategory(profile?.role)), [profile?.role]);
 
   return (
     <div
