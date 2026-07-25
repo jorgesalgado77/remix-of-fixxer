@@ -28,7 +28,7 @@ import {
   setConversationMuted,
 } from "@/lib/chat-preferences";
 import { enqueueMarkAllRead, enqueueMarkConversationRead } from "@/lib/chat-read-queue";
-import { MOCK_CONVERSATIONS, mockMessageIsoAt } from "@/lib/mock-chat";
+import { MOCK_CONVERSATIONS, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
 import { getMockSeenAt, markMockConversationSeen } from "@/lib/chat-drafts";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 
@@ -71,6 +71,7 @@ type Conversation = {
   unread: number;
   archived: boolean;
   muted: boolean;
+  linkedAd?: MockLinkedAd | null;
 };
 
 const PAGE_SIZE = 100;
@@ -371,6 +372,7 @@ function ChatInboxPage() {
         unread,
         archived: archivedSet.has(c.peerId),
         muted: mutedSet.has(c.peerId),
+        linkedAd: c.linkedAd ?? null,
       };
     });
     // Evita duplicar caso o peerId já exista nas reais
@@ -556,14 +558,28 @@ function ChatInboxPage() {
                           {new Date(c.lastAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span
                           className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
                           style={{ backgroundColor: `rgba(${theme.rgb}, 0.15)`, color: theme.hex }}
                         >
                           {theme.label}
                         </span>
+                        {c.linkedAd?.distanceKm != null && (
+                          <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                            📍 {c.linkedAd.distanceKm.toFixed(1).replace(".", ",")} km
+                          </span>
+                        )}
                       </div>
+                      {c.linkedAd?.title && (
+                        <p
+                          className="text-[10px] font-black italic uppercase tracking-tight truncate mt-0.5"
+                          style={{ color: theme.hex }}
+                          title={c.linkedAd.title}
+                        >
+                          📌 {c.linkedAd.title}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                         {c.lastAttachmentType && <Paperclip className="w-3 h-3 shrink-0" />}
                         {c.lastMessage || (c.lastAttachmentType ? "Anexo" : "—")}
