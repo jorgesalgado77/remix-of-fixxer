@@ -1069,6 +1069,12 @@ function ConversationPage() {
               </div>
             </div>
           )}
+          {guardBlocked && (
+            <div className="mb-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/50 text-red-300 text-[11px] font-bold leading-snug">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{CONTACT_GUARD_WARNING}</span>
+            </div>
+          )}
           {uploading && (
             <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
               <Loader2 className="w-3 h-3 animate-spin" />
