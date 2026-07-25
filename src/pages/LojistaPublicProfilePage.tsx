@@ -43,16 +43,33 @@ interface StoreProfile {
   user_id?: string;
   company_name?: string;
   social_name?: string;
+  display_name?: string;
+  full_name?: string;
   cnpj?: string;
+  cep?: string;
+  address?: string;
+  neighborhood?: string;
   city?: string;
   state?: string;
   whatsapp?: string;
+  phone?: string;
   logo_url?: string | null;
   banner_url?: string | null;
-  gallery_urls?: string[];
+  avatar_url?: string | null;
+  gallery_urls?: (string | { url: string; thumbUrl?: string; createdAt?: string })[];
   video_urls?: string[];
   document_urls?: string[];
+  documents?: any[];
+  portfolio_media?: any[];
   activity_branch?: string;
+  main_activity?: string;
+  preferred_services?: string[];
+  offerings?: string[] | string;
+  offerings_notes?: string;
+  positions?: any[];
+  vehicle_details?: Record<string, any>;
+  has_vehicle?: boolean;
+  custom_sections?: any;
   about_bio?: string;
   specialties?: { id: string; title: string; description: string; featured?: boolean }[];
   photo_sections?: {
@@ -61,7 +78,45 @@ interface StoreProfile {
     custom?: { id: string; name: string; photos: (string | { url: string; thumbUrl?: string; createdAt?: string })[] }[];
   } | null;
   created_at?: string;
+  [key: string]: any;
 }
+
+// Converte um registro da tabela `profiles` (usada pelo editor do dono) no
+// formato `StoreProfile` esperado pela página pública, reidratando extras
+// gravados em `custom_sections.__extras` como fallback.
+function mapProfileRowToStore(p: any): StoreProfile {
+  if (!p) return {};
+  const extras = (p?.custom_sections as any)?.__extras || {};
+  const merged: any = { ...extras, ...p };
+  const media = Array.isArray(merged.portfolio_media) ? merged.portfolio_media : [];
+  const docsArr = Array.isArray(merged.documents) ? merged.documents : [];
+  const images = media.filter((m: any) => m?.type === 'image' && m?.url);
+  const videos = media.filter((m: any) => m?.type === 'video' && m?.url);
+  return {
+    ...merged,
+    user_id: merged.id ?? merged.user_id,
+    company_name: merged.display_name || merged.company_name || merged.full_name || 'Perfil FIXXER',
+    social_name: merged.company_name || merged.full_name || merged.display_name,
+    display_name: merged.display_name,
+    full_name: merged.full_name,
+    logo_url: merged.avatar_url ?? merged.logo_url ?? null,
+    banner_url: merged.banner_url ?? null,
+    gallery_urls: images.map((m: any) => ({ url: m.url, createdAt: m.created_at })),
+    video_urls: videos.map((m: any) => m.url).filter(Boolean),
+    document_urls: docsArr
+      .map((d: any) => (typeof d === 'string' ? d : d?.url))
+      .filter(Boolean),
+    activity_branch: merged.activity_branch || merged.main_activity || merged.activity_branch_id,
+    preferred_services: Array.isArray(merged.preferred_services) ? merged.preferred_services : [],
+    offerings: Array.isArray(merged.offerings)
+      ? merged.offerings
+      : typeof merged.offerings === 'string' && merged.offerings.length
+        ? merged.offerings.split(/[,;\n]/).map((s: string) => s.trim()).filter(Boolean)
+        : [],
+    positions: Array.isArray(merged.positions) ? merged.positions : [],
+  };
+}
+
 
 
 interface ServiceOrder {
