@@ -176,3 +176,69 @@ function JobCard({ id, client, category, value, status }: any) {
     </div>
   );
 }
+
+/* ==================== BOTÃO DE DISPONIBILIDADE ==================== */
+function AvailabilityToggle() {
+  const LS_KEY = "fixxer_availability_v1";
+  const [available, setAvailable] = useState<boolean>(true);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(LS_KEY);
+      if (v !== null) setAvailable(v === "1");
+    } catch { /* ignore */ }
+  }, []);
+
+  const toggle = () => {
+    const next = !available;
+    setAvailable(next);
+    try { localStorage.setItem(LS_KEY, next ? "1" : "0"); } catch { /* ignore */ }
+    try {
+      window.dispatchEvent(new CustomEvent("fixxer:availability-changed", { detail: { available: next } }));
+    } catch { /* ignore */ }
+    if (next) {
+      toast.success("Você está DISPONÍVEL na plataforma.", {
+        description: "Clientes podem localizar seu perfil e enviar mensagens agora.",
+      });
+    } else {
+      toast("Você está INDISPONÍVEL.", {
+        description: "Perfil pausado — nenhuma nova solicitação chegará até você reativar.",
+      });
+    }
+  };
+
+  const activeStyle =
+    "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 shadow-[0_0_18px_rgba(16,185,129,0.35)]";
+  const pausedStyle =
+    "bg-white/5 border-white/15 text-white/60 hover:bg-white/10";
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={available}
+      onClick={toggle}
+      title={
+        available
+          ? "Disponibilidade ATIVA — seu perfil aparece nas buscas e pode receber contatos"
+          : "Disponibilidade PAUSADA — perfil oculto para novas solicitações. Clique para reativar."
+      }
+      aria-label={available ? "Definir como indisponível" : "Definir como disponível"}
+      className={`flex items-center gap-2 h-11 px-3 rounded-xl border transition-all text-[10px] font-black uppercase italic tracking-widest ${available ? activeStyle : pausedStyle}`}
+    >
+      <span
+        className={`relative w-9 h-5 rounded-full transition-colors ${available ? "bg-emerald-500" : "bg-white/20"}`}
+        aria-hidden
+      >
+        <span
+          className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
+          style={{ transform: available ? "translateX(16px)" : "translateX(0)" }}
+        />
+      </span>
+      <span className="hidden md:inline-flex items-center gap-1.5">
+        {available ? <Zap className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
+        {available ? "Disponível" : "Pausado"}
+      </span>
+    </button>
+  );
+}
