@@ -571,6 +571,7 @@ export default function FeedClientePage() {
   );
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} accent="#00E5FF">
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0A0A0B]/90 border-b border-white/10">
