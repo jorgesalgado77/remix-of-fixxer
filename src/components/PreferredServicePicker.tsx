@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
-import { Check, Star, Plus, X, Search, Briefcase, Sparkles, Coins } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Check, Star, Plus, X, Search, Briefcase, Sparkles, Coins, AlertTriangle } from "lucide-react";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
 import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { useJobRoles } from "@/hooks/use-job-roles";
 import { toast } from "sonner";
-import { consumeCoins, getCachedBalance, getCurrentUserId } from "@/lib/coins";
+import { consumeCoins, getCachedBalance, getCurrentUserId, subscribeBalance } from "@/lib/coins";
 import { confirmCoins } from "@/components/ConfirmCoinsDialog";
 import type { PlanId } from "@/lib/monetization";
 
@@ -65,6 +65,19 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
   const [newRole, setNewRole] = useState("");
   const [query, setQuery] = useState("");
   const [charging, setCharging] = useState(false);
+  const [balance, setBalance] = useState<number>(getCachedBalance());
+  const [inlineWarn, setInlineWarn] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeBalance(setBalance);
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!inlineWarn) return;
+    const t = setTimeout(() => setInlineWarn(null), 6000);
+    return () => clearTimeout(t);
+  }, [inlineWarn]);
 
   const togglePreferredService = (label: string) => {
     const has = preferredServices.includes(label);
@@ -73,6 +86,7 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
       next = preferredServices.filter((s) => s !== label);
     } else {
       if (preferredServices.length >= MAX_PREFERRED) {
+        setInlineWarn(`Máximo de ${MAX_PREFERRED} serviços preferenciais atingido — desmarque um para trocar.`);
         toast.warning(`Máximo de ${MAX_PREFERRED} serviços preferenciais.`);
         return;
       }
@@ -125,11 +139,16 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
       next = roles.filter((r) => r !== name);
     } else {
       if (roles.length >= MAX_ROLES) {
+        setInlineWarn(`Limite máximo de ${MAX_ROLES} cargos atingido — remova algum para adicionar outro.`);
         toast.warning(`Limite máximo de ${MAX_ROLES} cargos.`);
         return;
       }
+      if (roles.length + 1 > quota && balance < EXTRA_COST) {
+        setInlineWarn(`Seu plano ${planId.toUpperCase()} inclui apenas ${quota} cargo(s). Cada extra custa ${EXTRA_COST} 🪙 e você tem ${balance} 🪙.`);
+      }
       const paid = await chargeExtraIfNeeded(roles.length + 1);
       if (!paid) return;
+      setInlineWarn(null);
       next = [...roles, name];
     }
     setProfile({ ...profile, job_roles: toCsv(next) });
@@ -229,10 +248,17 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
               <p className="text-[11px] text-white/50 mt-1 break-words">
                 Plano <b>{planId.toUpperCase()}</b> inclui <b>{quota}</b> cargo(s). Extras custam{" "}
                 <b className="text-amber-300">{EXTRA_COST} 🪙</b> cada (até {MAX_ROLES} no total).
-                O <b>1º da lista</b> é o preferencial (destacado).
+                Saldo atual: <b className="text-amber-300">{balance} 🪙</b>. O <b>1º da lista</b> é o preferencial (destacado).
               </p>
             </div>
           </div>
+
+          {inlineWarn && (
+            <div className="text-[11px] font-bold text-red-300 bg-red-500/10 border border-red-500/40 rounded-xl px-3 py-2 flex items-start gap-2" role="alert">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{inlineWarn}</span>
+            </div>
+          )}
 
           {overQuota > 0 && (
             <div className="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 inline-flex items-center gap-2">

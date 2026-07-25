@@ -4,7 +4,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
 import { compressImage } from "@/utils/image-compression";
-import { MaskedInput } from "@/components/MaskedInput";
+import { MaskedInput, applyCepMask } from "@/components/MaskedInput";
+
+// Normaliza campos que devem persistir mascarados (ex.: CEP)
+function normalizeMasks(p: any): any {
+  if (!p) return p;
+  const out = { ...p };
+  if (out.cep) out.cep = applyCepMask(String(out.cep));
+  return out;
+}
+
+// Helpers para computar itens extras (além da cota do plano)
+function parseCsvList(v?: string | null): string[] {
+  return String(v ?? "").split("||").map((s) => s.trim()).filter(Boolean);
+}
+function quotaForPlan(plan?: string | null): number {
+  const p = String(plan || "free").toLowerCase();
+  if (p === "premium") return 5;
+  if (p === "pro" || p === "basico") return 3;
+  return 1;
+}
+const EXTRA_ITEM_COST = 15;
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { PushToggle } from "@/components/PushToggle";
 import { AffiliateBanner } from "@/components/AffiliateBanner";
@@ -95,6 +115,7 @@ function ProfilePage() {
             }
           } catch { /* noop */ }
         }
+        merged = normalizeMasks(merged);
         setProfile(merged);
         lastSavedSnapshotRef.current = JSON.stringify(merged);
         // Sincroniza raio de atuação salvo para uso como padrão nos feeds
@@ -447,6 +468,7 @@ function ProfilePage() {
         if (savedExtras && typeof savedExtras === 'object') {
           mergedFresh = { ...savedExtras, ...fresh };
         }
+        mergedFresh = normalizeMasks(mergedFresh);
         setProfile(mergedFresh);
         lastSavedSnapshotRef.current = JSON.stringify(mergedFresh);
         try {
@@ -636,6 +658,20 @@ function ProfilePage() {
                 <BadgeCheck className="w-3 h-3" />
                 {theme.label}
               </span>
+              {(() => {
+                const primaryRole = parseCsvList(profile?.job_roles)[0];
+                if (!primaryRole) return null;
+                return (
+                  <span
+                    className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md flex items-center gap-1 border bg-white/[0.04]"
+                    style={{ borderColor: `${theme.hex}55`, color: theme.hex }}
+                    title="Cargo principal"
+                  >
+                    <Star className="w-3 h-3 fill-current" />
+                    {primaryRole}
+                  </span>
+                );
+              })()}
               {!profileId && (
                 <>
                   <CoinBalanceBadge />
@@ -663,7 +699,30 @@ function ProfilePage() {
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-end gap-1 mb-4">
+            <div className="flex flex-col items-end gap-2 mb-4">
+              {(() => {
+                const planQuota = quotaForPlan(profile?.plan_id);
+                const offeringsList = Array.isArray(profile?.offerings)
+                  ? profile.offerings
+                  : parseCsvList(profile?.offerings);
+                const rolesList = parseCsvList(profile?.job_roles);
+                const offExtra = Math.max(0, offeringsList.length - planQuota);
+                const rolExtra = Math.max(0, rolesList.length - planQuota);
+                const totalExtra = offExtra + rolExtra;
+                if (totalExtra === 0) return null;
+                return (
+                  <div className="text-right text-[10px] font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl px-3 py-2 max-w-[280px]">
+                    Resumo de itens extras (além da cota do plano {String(profile?.plan_id || 'free').toUpperCase()} = {planQuota}):
+                    <ul className="mt-1 space-y-0.5 text-amber-200/90">
+                      {offExtra > 0 && <li>• {offExtra} oferta(s) extra · {offExtra * EXTRA_ITEM_COST} 🪙</li>}
+                      {rolExtra > 0 && <li>• {rolExtra} cargo(s) extra · {rolExtra * EXTRA_ITEM_COST} 🪙</li>}
+                    </ul>
+                    <div className="mt-1 pt-1 border-t border-amber-500/30 font-black">
+                      Total já debitado: {totalExtra * EXTRA_ITEM_COST} 🪙
+                    </div>
+                  </div>
+                );
+              })()}
               <button
                 onClick={() => handleSave()}
                 disabled={!canSave}

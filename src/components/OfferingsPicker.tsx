@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
-import { Plus, Check, X, Car, Coins, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Plus, Check, X, Car, Coins, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { useOfferings, DEFAULT_OFFERINGS } from '@/hooks/use-offerings';
-import { consumeCoins, getCachedBalance, getCurrentUserId } from '@/lib/coins';
+import { consumeCoins, getCachedBalance, getCurrentUserId, subscribeBalance } from '@/lib/coins';
 import { confirmCoins } from '@/components/ConfirmCoinsDialog';
 import { toast } from 'sonner';
 import type { PlanId } from '@/lib/monetization';
@@ -43,6 +43,19 @@ export function OfferingsPicker({
   const [newItem, setNewItem] = useState('');
   const [charging, setCharging] = useState(false);
   const [vehicleExpanded, setVehicleExpanded] = useState(false);
+  const [balance, setBalance] = useState<number>(getCachedBalance());
+  const [inlineWarn, setInlineWarn] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeBalance(setBalance);
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!inlineWarn) return;
+    const t = setTimeout(() => setInlineWarn(null), 6000);
+    return () => clearTimeout(t);
+  }, [inlineWarn]);
 
   const quota = quotaFor(planId);
 
@@ -100,12 +113,17 @@ export function OfferingsPicker({
       return;
     }
     if (selected.length >= MAX_SELECTED) {
+      setInlineWarn(`Limite máximo de ${MAX_SELECTED} ofertas atingido — remova alguma para adicionar outra.`);
       toast.warning(`Limite máximo de ${MAX_SELECTED} ofertas.`);
       return;
     }
     const nextLen = selected.length + 1;
+    if (nextLen > quota && balance < EXTRA_COST) {
+      setInlineWarn(`Seu plano ${planId.toUpperCase()} inclui apenas ${quota} oferta(s). Cada extra custa ${EXTRA_COST} 🪙 e você tem ${balance} 🪙.`);
+    }
     const paid = await chargeExtraIfNeeded(nextLen);
     if (!paid) return;
+    setInlineWarn(null);
     onChange([...selected, name]);
     if (name.toLowerCase() === 'veículo próprio') setVehicleExpanded(true);
   };
@@ -135,7 +153,7 @@ export function OfferingsPicker({
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h4 className="text-sm font-black uppercase tracking-tighter text-white">🎁 Oferece</h4>
         <span className="text-[10px] font-bold text-muted-foreground">
-          {selected.length}/{MAX_SELECTED} • Plano {planId.toUpperCase()} inclui {quota}
+          {selected.length}/{MAX_SELECTED} • Plano {planId.toUpperCase()} inclui {quota} • Saldo: <b className="text-amber-300">{balance} 🪙</b>
         </span>
       </div>
 
@@ -143,6 +161,13 @@ export function OfferingsPicker({
         Marque os itens/recursos que você oferece. Seu plano inclui <b>{quota}</b> gratuita(s).
         Cada oferta extra custa <b className="text-amber-300">{EXTRA_COST} 🪙</b> (até {MAX_SELECTED} no total).
       </p>
+
+      {inlineWarn && (
+        <div className="text-[11px] font-bold text-red-300 bg-red-500/10 border border-red-500/40 rounded-xl px-3 py-2 flex items-start gap-2" role="alert">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{inlineWarn}</span>
+        </div>
+      )}
 
       {overQuota > 0 && (
         <div className="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
