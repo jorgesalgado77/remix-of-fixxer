@@ -1031,7 +1031,45 @@ function ProfilePage() {
                   />
                 </div>
 
+                {/* 💸 CHAVE PIX — recebimento de pagamentos.
+                    Persistida em coluna própria (se existir) ou em custom_sections.__extras
+                    via o mecanismo de fallback do autosave. */}
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
+                    💸 Chave PIX <span className="text-[9px] font-bold text-primary/80 normal-case tracking-normal">— para receber pagamentos</span>
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <select
+                      value={profile?.pix_key_type || 'auto'}
+                      onChange={e => setProfile({ ...profile, pix_key_type: e.target.value })}
+                      className="sm:w-44 bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl outline-none text-xs font-bold uppercase"
+                      aria-label="Tipo da chave PIX"
+                    >
+                      <option value="auto">Automático</option>
+                      <option value="cpf">CPF</option>
+                      <option value="cnpj">CNPJ</option>
+                      <option value="email">E-mail</option>
+                      <option value="phone">Telefone</option>
+                      <option value="random">Aleatória</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={profile?.pix_key || ''}
+                      onChange={e => setProfile({ ...profile, pix_key: e.target.value })}
+                      placeholder="Cole aqui sua chave PIX"
+                      className="flex-1 bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
+                      autoComplete="off"
+                      spellCheck={false}
+                      inputMode="text"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground ml-1">
+                    Sua chave PIX aparece apenas para clientes que iniciarem um pagamento com você.
+                    Nunca é exibida publicamente no perfil.
+                  </p>
+                </div>
               </div>
+
 
               {/* ENDEREÇO ESTRUTURADO */}
               <div className="pt-8 space-y-6">
