@@ -1586,6 +1586,16 @@ function ProfilePage() {
                     planId={(String(profile?.plan_id || 'free').toLowerCase() as any)}
                   />
 
+                  {/* ESPECIALIDADES */}
+                  <div className="pt-8 border-t border-white/5">
+                    <SpecialtiesEditor
+                      value={Array.isArray(profile?.specialties) ? profile.specialties : []}
+                      onChange={(next) => setProfile({ ...profile, specialties: next })}
+                      planId={(String(profile?.plan_id || 'free').toLowerCase() as any)}
+                      userId={profile?.id}
+                    />
+                  </div>
+
                 </div>
               )}
 
