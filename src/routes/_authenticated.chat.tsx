@@ -83,8 +83,75 @@ function getStoredRole(): string {
   return (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
 }
 
+function normStr(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+/**
+ * Renderiza `text` destacando trechos que batem com qualquer termo em `terms`
+ * (busca acento-insensível). Retorna nós React seguros contra XSS (sem dangerouslySetInnerHTML).
+ */
+function Highlight({ text, terms, className = "" }: { text: string; terms: string[]; className?: string }) {
+  if (!text) return null;
+  const cleanTerms = terms.filter((t) => t.length > 0);
+  if (cleanTerms.length === 0) return <>{text}</>;
+  const normalized = normStr(text);
+  type Range = { start: number; end: number };
+  const ranges: Range[] = [];
+  for (const t of cleanTerms) {
+    let from = 0;
+    while (from <= normalized.length) {
+      const idx = normalized.indexOf(t, from);
+      if (idx === -1) break;
+      ranges.push({ start: idx, end: idx + t.length });
+      from = idx + t.length;
+    }
+  }
+  if (ranges.length === 0) return <>{text}</>;
+  ranges.sort((a, b) => a.start - b.start);
+  const merged: Range[] = [];
+  for (const r of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && r.start <= last.end) last.end = Math.max(last.end, r.end);
+    else merged.push({ ...r });
+  }
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  merged.forEach((r, i) => {
+    if (cursor < r.start) parts.push(text.slice(cursor, r.start));
+    parts.push(
+      <mark key={i} className={`bg-primary/30 text-primary rounded px-0.5 ${className}`}>
+        {text.slice(r.start, r.end)}
+      </mark>,
+    );
+    cursor = r.end;
+  });
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <>{parts}</>;
+}
+
+/**
+ * Extrai um trecho curto do histórico contendo o primeiro termo encontrado.
+ * Retorna null quando nenhum termo bater (para não poluir o card).
+ */
+function buildHistorySnippet(fullText: string, terms: string[], radius = 30): string | null {
+  if (!fullText || terms.length === 0) return null;
+  const norm = normStr(fullText);
+  for (const t of terms) {
+    const idx = norm.indexOf(t);
+    if (idx === -1) continue;
+    const start = Math.max(0, idx - radius);
+    const end = Math.min(fullText.length, idx + t.length + radius);
+    const prefix = start > 0 ? "…" : "";
+    const suffix = end < fullText.length ? "…" : "";
+    return prefix + fullText.slice(start, end).replace(/\s+/g, " ").trim() + suffix;
+  }
+  return null;
+}
+
 function ChatInboxPage() {
   const navigate = useNavigate();
+
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string>(getStoredRole);
   const [messages, setMessages] = useState<MessageRow[]>([]);
@@ -94,6 +161,8 @@ function ChatInboxPage() {
   const [hasMore, setHasMore] = useState(true);
   const [markingRead, setMarkingRead] = useState(false);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
   const [showArchived, setShowArchived] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [prefsVersion, setPrefsVersion] = useState(0);
@@ -393,10 +462,21 @@ function ChatInboxPage() {
   const norm = (s: string) =>
     s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+  // Debounce da busca (200ms) para evitar recomputar a lista a cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 200);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const isSearching = query.trim() !== debouncedQuery.trim();
+
+  const activeTerms = useMemo(() => {
+    const q = norm(debouncedQuery.trim());
+    return q.split(/\s+/).filter(Boolean);
+  }, [debouncedQuery]);
+
   const visible = useMemo(() => {
-    const raw = query.trim();
-    const q = norm(raw);
-    const terms = q.split(/\s+/).filter(Boolean);
+    const q = activeTerms.join(" ");
     const base = conversationsWithMock
       .filter((c) => (showArchived ? c.archived : !c.archived))
       .filter((c) => canSeeConversationWith(role, c.peerRole));
@@ -413,7 +493,7 @@ function ChatInboxPage() {
       const adCategory = norm(c.linkedAd?.category || "");
       let score = 0;
       let matchedAll = true;
-      for (const t of terms) {
+      for (const t of activeTerms) {
         let termScore = 0;
         if (name.includes(t)) termScore += name.startsWith(t) ? 8 : 5;
         if (roleTxt.includes(t)) termScore += 3;
@@ -435,7 +515,8 @@ function ChatInboxPage() {
       if (diff !== 0) return diff;
       return a.peerId.localeCompare(b.peerId);
     });
-  }, [conversationsWithMock, query, showArchived, role, messagesByPeer]);
+  }, [conversationsWithMock, activeTerms, showArchived, role, messagesByPeer]);
+
 
 
   const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
@@ -539,7 +620,9 @@ function ChatInboxPage() {
             aria-label="Buscar conversas"
             className="w-full bg-[#1A1A1B] border border-white/10 rounded-2xl pl-10 pr-10 py-3 text-sm outline-none focus:border-primary/50"
           />
-          {query && (
+          {isSearching ? (
+            <Loader2 className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-primary animate-spin" />
+          ) : query ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setQuery(""); }}
@@ -548,13 +631,20 @@ function ChatInboxPage() {
             >
               <X className="w-4 h-4" />
             </button>
-          )}
+          ) : null}
         </div>
         {query.trim() && (
-          <p className="mb-3 text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
-            {visible.length} resultado{visible.length === 1 ? "" : "s"} para "{query.trim()}"
+          <p className="mb-3 text-[10px] uppercase tracking-widest font-bold text-muted-foreground flex items-center gap-2">
+            {isSearching ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" /> Buscando…
+              </>
+            ) : (
+              <>{visible.length} resultado{visible.length === 1 ? "" : "s"} para "{debouncedQuery.trim()}"</>
+            )}
           </p>
         )}
+
 
 
         {loading ? (
@@ -576,10 +666,15 @@ function ChatInboxPage() {
             <ul className="space-y-2">
               {visible.map((c) => {
                 const theme = getCategoryTheme(roleToCategory(c.peerRole));
+                const historySnippet =
+                  activeTerms.length > 0 && !normStr(c.lastMessage || "").includes(activeTerms[0])
+                    ? buildHistorySnippet(messagesByPeer.get(c.peerId) || "", activeTerms)
+                    : null;
                 return (
                 <li key={c.peerId} className="relative">
                   <button
                     onClick={() => openConversation(c.peerId)}
+
                     className="w-full flex items-center gap-3 bg-[#1A1A1B] border-2 rounded-2xl p-4 text-left transition-all hover:bg-white/[0.03]"
                     style={{ borderColor: `rgba(${theme.rgb}, 0.35)`, boxShadow: `0 0 14px rgba(${theme.rgb}, 0.10)` }}
                   >
@@ -600,7 +695,9 @@ function ChatInboxPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-bold uppercase italic text-sm truncate">{c.peerName}</p>
+                        <p className="font-bold uppercase italic text-sm truncate">
+                          <Highlight text={c.peerName} terms={activeTerms} />
+                        </p>
                         <span className="text-[10px] text-muted-foreground shrink-0">
                           {new Date(c.lastAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                         </span>
@@ -610,8 +707,14 @@ function ChatInboxPage() {
                           className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
                           style={{ backgroundColor: `rgba(${theme.rgb}, 0.15)`, color: theme.hex }}
                         >
-                          {theme.label}
+                          <Highlight text={theme.label} terms={activeTerms} />
                         </span>
+                        {c.peerRole && (
+                          <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                            <Highlight text={c.peerRole} terms={activeTerms} />
+                          </span>
+                        )}
+
                         {c.linkedAd?.distanceKm != null && (
                           <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
                             📍 {c.linkedAd.distanceKm.toFixed(1).replace(".", ",")} km
@@ -629,8 +732,19 @@ function ChatInboxPage() {
                       )}
                       <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                         {c.lastAttachmentType && <Paperclip className="w-3 h-3 shrink-0" />}
-                        {c.lastMessage || (c.lastAttachmentType ? "Anexo" : "—")}
+                        {c.lastMessage ? (
+                          <Highlight text={c.lastMessage} terms={activeTerms} />
+                        ) : (
+                          <span>{c.lastAttachmentType ? "Anexo" : "—"}</span>
+                        )}
                       </p>
+                      {historySnippet && (
+                        <p className="text-[10px] italic text-muted-foreground/80 truncate mt-0.5">
+                          <span className="uppercase font-bold tracking-widest mr-1 text-primary/70">Histórico:</span>
+                          <Highlight text={historySnippet} terms={activeTerms} />
+                        </p>
+                      )}
+
                     </div>
                     {c.unread > 0 && !c.muted && (
                       <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">
