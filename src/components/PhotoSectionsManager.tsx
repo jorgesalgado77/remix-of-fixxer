@@ -139,12 +139,12 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
   const flatPhotos = useMemo(() => {
     const list: { url: string; thumb: string; sectionName: string }[] = [];
     safe.showroom.forEach((p) => list.push({ url: getUrl(p), thumb: getThumb(p), sectionName: 'Show Room' }));
-    safe.assemblies.forEach((p) => list.push({ url: getUrl(p), thumb: getThumb(p), sectionName: 'Montagens Realizadas' }));
     safe.custom.forEach((s) =>
       s.photos.forEach((p) => list.push({ url: getUrl(p), thumb: getThumb(p), sectionName: s.name })),
     );
     return list;
   }, [safe]);
+
 
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const openLightbox = (url: string) => {
