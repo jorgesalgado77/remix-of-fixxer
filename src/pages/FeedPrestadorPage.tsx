@@ -1000,6 +1000,7 @@ function JobCard({
 export default function FeedPrestadorPage() {
   const navigate = useNavigate();
   const { glassClass } = usePerformanceMode();
+  const postUnlock = usePostUnlock();
 
   const [filter, setFilter] = useState<"todas" | Subcategory>("todas");
   const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
