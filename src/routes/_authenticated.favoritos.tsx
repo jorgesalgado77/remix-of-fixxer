@@ -193,6 +193,11 @@ function FavoritosPage() {
   const userCoords = useUserCoords();
   const [tab, setTab] = useState<TabKey>("perfis");
   const [kindFilter, setKindFilter] = useState<KindFilter>("todos");
+  const [pendingRemoval, setPendingRemoval] = useState<
+    | { kind: "profile"; item: FavProfile }
+    | { kind: "ad"; item: FavAd }
+    | null
+  >(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [userResolved, setUserResolved] = useState(false);
