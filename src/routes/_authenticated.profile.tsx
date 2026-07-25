@@ -468,6 +468,7 @@ function ProfilePage() {
         if (savedExtras && typeof savedExtras === 'object') {
           mergedFresh = { ...savedExtras, ...fresh };
         }
+        mergedFresh = normalizeMasks(mergedFresh);
         setProfile(mergedFresh);
         lastSavedSnapshotRef.current = JSON.stringify(mergedFresh);
         try {
