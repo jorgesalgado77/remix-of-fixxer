@@ -843,6 +843,11 @@ function ConversationPage() {
           { description: e?.message },
         );
         patchRow(o.clientId, { _pending: false, _failed: true, _uploading: false });
+        try {
+          window.dispatchEvent(
+            new CustomEvent("fixxer:message-failed", { detail: { clientId: o.clientId } }),
+          );
+        } catch {}
       }
     }
     setSending(false);
