@@ -22,6 +22,9 @@ import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { usePostUnlock } from "@/hooks/use-post-unlock";
 import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { FeedErrorState } from "@/components/FeedErrorState";
+import { useFeedPreload } from "@/hooks/use-feed-preload";
 import { Lock, Coins, Loader2 } from "lucide-react";
 
 import {
@@ -562,6 +565,9 @@ export default function FeedLojistaPage() {
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Debounce da busca — evita filtrar a cada tecla e mostra "buscando..."
   useEffect(() => {
@@ -616,9 +622,20 @@ export default function FeedLojistaPage() {
         localStorage.setItem(SAVES_STORAGE_KEY, JSON.stringify([...remote]));
       } catch (err) {
         console.warn("[feed] falha ao sincronizar favoritos:", err);
+        setLoadError(err instanceof Error ? err.message : "Falha de conexão");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reloadKey]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoadError(null);
+    setPage(1);
+    setReloadKey((k) => k + 1);
+    await new Promise((r) => setTimeout(r, 400));
+    setRefreshing(false);
+    toast.success("Feed atualizado");
   }, []);
 
   // Persiste local sempre que muda
@@ -660,6 +677,12 @@ export default function FeedLojistaPage() {
 
   const paged = useMemo(() => visible.slice(0, page * PAGE_SIZE), [visible, page]);
   const hasMore = paged.length < visible.length;
+  useFeedPreload(
+    visible,
+    paged.length,
+    PAGE_SIZE,
+    (post) => post.media?.[0]?.poster ?? post.media?.[0]?.url ?? null,
+  );
 
   // Reset da paginação quando filtro/busca muda
   useEffect(() => {
@@ -683,7 +706,7 @@ export default function FeedLojistaPage() {
           }, 350);
         }
       },
-      { rootMargin: "400px 0px" },
+      { rootMargin: "800px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -787,6 +810,7 @@ export default function FeedLojistaPage() {
   };
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} accent="#00E5FF">
     <div
       className="min-h-screen bg-[#0A0A0B] text-white flex flex-col font-sans pb-32"
       onClick={() => setOpenMenu(null)}
@@ -923,35 +947,44 @@ export default function FeedLojistaPage() {
             />
           ) : (
             <>
+              {loadError && (
+                <FeedErrorState
+                  accent="#00E5FF"
+                  busy={refreshing}
+                  message={loadError}
+                  onRetry={handleRefresh}
+                />
+              )}
               {paged.map((post) => {
                 const locked = !post.author.isMine && !postUnlock.isUnlocked(post.id);
                 return (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    isSaved={saved.has(post.id)}
-                    menuOpen={openMenu === post.id}
-                    onToggleMenu={(e) => {
-                      e.stopPropagation();
-                      setOpenMenu((v) => (v === post.id ? null : post.id));
-                    }}
-                    onCloseMenu={() => setOpenMenu(null)}
-                    onSave={() => toggleSaved(post.id)}
-                    onChat={() => openChat(post)}
-                    onPropose={() => setProposalFor(post)}
-                    onReport={() => setReportFor(post)}
-                    onDelete={() => setDeleteFor(post)}
-                    onEdit={() => toast("Abrindo editor da publicação...")}
-                    onOpenMedia={(index) => setLightbox({ post, index })}
-                    onOpenDetails={() => setDetailsFor(post)}
-                    locked={locked}
-                    unlockCost={postUnlock.cost}
-                    unlockBusy={postUnlock.busy === post.id}
-                    onUnlock={async () => {
-                      const ok = await postUnlock.unlock(post.id);
-                      if (ok) setDetailsFor(post);
-                    }}
-                  />
+                  <div key={post.id} className="feed-item-cv">
+                    <PostCard
+                      post={post}
+                      isSaved={saved.has(post.id)}
+                      menuOpen={openMenu === post.id}
+                      onToggleMenu={(e) => {
+                        e.stopPropagation();
+                        setOpenMenu((v) => (v === post.id ? null : post.id));
+                      }}
+                      onCloseMenu={() => setOpenMenu(null)}
+                      onSave={() => toggleSaved(post.id)}
+                      onChat={() => openChat(post)}
+                      onPropose={() => setProposalFor(post)}
+                      onReport={() => setReportFor(post)}
+                      onDelete={() => setDeleteFor(post)}
+                      onEdit={() => toast("Abrindo editor da publicação...")}
+                      onOpenMedia={(index) => setLightbox({ post, index })}
+                      onOpenDetails={() => setDetailsFor(post)}
+                      locked={locked}
+                      unlockCost={postUnlock.cost}
+                      unlockBusy={postUnlock.busy === post.id}
+                      onUnlock={async () => {
+                        const ok = await postUnlock.unlock(post.id);
+                        if (ok) setDetailsFor(post);
+                      }}
+                    />
+                  </div>
                 );
               })}
 
@@ -1169,6 +1202,7 @@ export default function FeedLojistaPage() {
         }}
       />
     </div>
+    </PullToRefresh>
   );
 }
 

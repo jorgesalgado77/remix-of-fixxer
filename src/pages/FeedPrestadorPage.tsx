@@ -21,6 +21,9 @@ import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchC
 import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { usePostUnlock } from "@/hooks/use-post-unlock";
 import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { FeedErrorState } from "@/components/FeedErrorState";
+import { useFeedPreload } from "@/hooks/use-feed-preload";
 
 import {
   ArrowLeft,
@@ -1027,6 +1030,9 @@ export default function FeedPrestadorPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [savesRemote, setSavesRemote] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Debounce de busca
@@ -1090,8 +1096,20 @@ export default function FeedPrestadorPage() {
         }
       } catch (err) {
         console.warn("[feed] falha ao sincronizar dados do prestador:", err);
+        setLoadError(err instanceof Error ? err.message : "Falha de conexão");
       }
     })();
+  }, [reloadKey]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoadError(null);
+    setPage(1);
+    setReloadKey((k) => k + 1);
+    // dá tempo do estado propagar para dar feedback visual
+    await new Promise((r) => setTimeout(r, 400));
+    setRefreshing(false);
+    toast.success("Feed atualizado");
   }, []);
 
   // Persistir salvos localmente
@@ -1119,6 +1137,12 @@ export default function FeedPrestadorPage() {
 
   // Paginação por scroll infinito
   const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  useFeedPreload(
+    filtered,
+    paged.length,
+    PAGE_SIZE,
+    (job) => job.media?.[0]?.poster ?? job.media?.[0]?.url ?? null,
+  );
   const hasMore = paged.length < filtered.length;
 
   useEffect(() => {
@@ -1137,7 +1161,7 @@ export default function FeedPrestadorPage() {
           }, 400);
         }
       },
-      { rootMargin: "120px" },
+      { rootMargin: "800px" },
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
@@ -1205,7 +1229,9 @@ export default function FeedPrestadorPage() {
   const searching = search !== debouncedSearch;
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} accent="#FF9F0A">
     <div className="min-h-screen bg-[#0A0A0B] text-foreground pb-24 animate-in fade-in duration-500">
+
       {/* TOPBAR FIXO */}
       <header className="sticky top-0 z-50 bg-[#0A0A0B]/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-5xl mx-auto px-4 py-3 space-y-2">
@@ -1271,6 +1297,14 @@ export default function FeedPrestadorPage() {
 
       {/* CONTEÚDO */}
       <main className="max-w-5xl mx-auto px-4 py-4 space-y-4">
+        {loadError && (
+          <FeedErrorState
+            accent="#FF9F0A"
+            busy={refreshing}
+            message={loadError}
+            onRetry={handleRefresh}
+          />
+        )}
         <B2BSuggestionsCard />
         {/* Skeleton de busca */}
         {searching && (
@@ -1303,21 +1337,22 @@ export default function FeedPrestadorPage() {
 
         {!searching &&
           paged.map((job) => (
-            <JobCard
-              key={job.id}
-              job={job}
-              saved={saved.has(job.id)}
-              applied={applied.has(job.id)}
-              onToggleSave={toggleSave}
-              onApply={setApplyFor}
-              onChat={openChatWith}
-              onLightbox={(job, index) => setLightbox({ job, index })}
-              onOpenDetails={setDetailsFor}
-              locked={job.contractor.id !== postUnlock.userId && !postUnlock.isUnlocked(job.id)}
-              unlockCost={postUnlock.cost}
-              unlockBusy={postUnlock.busy === job.id}
-              onUnlock={() => { void postUnlock.unlock(job.id); }}
-            />
+            <div key={job.id} className="feed-item-cv">
+              <JobCard
+                job={job}
+                saved={saved.has(job.id)}
+                applied={applied.has(job.id)}
+                onToggleSave={toggleSave}
+                onApply={setApplyFor}
+                onChat={openChatWith}
+                onLightbox={(job, index) => setLightbox({ job, index })}
+                onOpenDetails={setDetailsFor}
+                locked={job.contractor.id !== postUnlock.userId && !postUnlock.isUnlocked(job.id)}
+                unlockCost={postUnlock.cost}
+                unlockBusy={postUnlock.busy === job.id}
+                onUnlock={() => { void postUnlock.unlock(job.id); }}
+              />
+            </div>
           ))}
 
         {/* Sentinel de scroll infinito */}
@@ -1406,5 +1441,6 @@ export default function FeedPrestadorPage() {
         }}
       />
     </div>
+    </PullToRefresh>
   );
 }

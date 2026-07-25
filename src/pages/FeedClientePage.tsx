@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { formatDistanceFromCity } from "@/lib/geo-distance";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { FeedErrorState } from "@/components/FeedErrorState";
+import { useFeedPreload } from "@/hooks/use-feed-preload";
 import {
   ArrowLeft,
   Search,
@@ -244,6 +247,19 @@ export default function FeedClientePage() {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoadError(null);
+    setVisibleCount(PAGE_SIZE);
+    setReloadKey((k) => k + 1);
+    await new Promise((r) => setTimeout(r, 400));
+    setRefreshing(false);
+    toast.success("Feed atualizado");
+  }, []);
 
   const loadMyNeeds = useCallback(async (uid: string) => {
     const { data, error } = await supabaseExternal
@@ -385,7 +401,7 @@ export default function FeedClientePage() {
           }, 300);
         }
       },
-      { rootMargin: "300px" },
+      { rootMargin: "800px" },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -555,6 +571,7 @@ export default function FeedClientePage() {
   );
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} accent="#00E5FF">
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0A0A0B]/90 border-b border-white/10">
@@ -863,18 +880,27 @@ export default function FeedClientePage() {
               onSuggestion={(term) => setQuery(term)}
             />
           )}
-          {visible.map((vendor) => (
-            <VendorCard
-              key={vendor.id}
-              vendor={vendor}
-              glassClass={glassClass}
-              saved={saved.has(vendor.id)}
-              onToggleSaved={() => toggleSaved(vendor.id)}
-              onChat={() => openChat(vendor)}
-              onProfile={() => openProfile(vendor)}
-              onOpenLightbox={(index) => setLightbox({ vendor, index })}
-              userCoords={userCoords}
+          {loadError && (
+            <FeedErrorState
+              accent="#00E5FF"
+              busy={refreshing}
+              message={loadError}
+              onRetry={handleRefresh}
             />
+          )}
+          {visible.map((vendor) => (
+            <div key={vendor.id} className="feed-item-cv">
+              <VendorCard
+                vendor={vendor}
+                glassClass={glassClass}
+                saved={saved.has(vendor.id)}
+                onToggleSaved={() => toggleSaved(vendor.id)}
+                onChat={() => openChat(vendor)}
+                onProfile={() => openProfile(vendor)}
+                onOpenLightbox={(index) => setLightbox({ vendor, index })}
+                userCoords={userCoords}
+              />
+            </div>
           ))}
 
           {hasMore && (
@@ -918,6 +944,7 @@ export default function FeedClientePage() {
         />
       )}
     </div>
+    </PullToRefresh>
   );
 }
 

@@ -15,6 +15,9 @@ import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetails
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity } from "@/lib/currency-brl";
 import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { FeedErrorState } from "@/components/FeedErrorState";
+import { useFeedPreload } from "@/hooks/use-feed-preload";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -557,6 +560,9 @@ export default function FeedParceiroPage() {
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Persistência local imediata dos favoritos
   useEffect(() => {
@@ -616,8 +622,19 @@ export default function FeedParceiroPage() {
         }
       } catch (err) {
         console.warn("[feed] falha ao sincronizar dados B2B:", err);
+        setLoadError(err instanceof Error ? err.message : "Falha de conexão");
       }
     })();
+  }, [reloadKey]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoadError(null);
+    setPage(1);
+    setReloadKey((k) => k + 1);
+    await new Promise((r) => setTimeout(r, 400));
+    setRefreshing(false);
+    toast.success("Feed atualizado");
   }, []);
 
   const filtered = useMemo(() => {
@@ -637,6 +654,12 @@ export default function FeedParceiroPage() {
   }, [search, activeSector, statusFilter]);
 
   const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  useFeedPreload(
+    filtered,
+    paged.length,
+    PAGE_SIZE,
+    (r) => r.attachment ?? null,
+  );
   const hasMore = paged.length < filtered.length;
 
   useEffect(() => {
@@ -655,7 +678,7 @@ export default function FeedParceiroPage() {
           }, 350);
         }
       },
-      { rootMargin: "120px" },
+      { rootMargin: "800px" },
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
@@ -761,6 +784,7 @@ export default function FeedParceiroPage() {
   };
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} accent="#A855F7">
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur">
@@ -817,6 +841,16 @@ export default function FeedParceiroPage() {
         <div className="mb-4">
           <B2BSuggestionsCard />
         </div>
+        {loadError && (
+          <div className="mb-4">
+            <FeedErrorState
+              accent="#A855F7"
+              busy={refreshing}
+              message={loadError}
+              onRetry={handleRefresh}
+            />
+          </div>
+        )}
         <div className="mb-4 flex items-center justify-between text-xs text-white/50">
           <span>
             {filtered.length} demanda{filtered.length === 1 ? "" : "s"} B2B
@@ -854,7 +888,7 @@ export default function FeedParceiroPage() {
               return (
                 <li
                   key={r.id}
-                  className="overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
+                  className="feed-item-cv overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
                   style={{
                     borderColor: accentRgba(0.35),
                     boxShadow: `0 0 18px ${accentRgba(0.1)}`,
@@ -1159,6 +1193,7 @@ export default function FeedParceiroPage() {
         onClose={() => setDetailsFor(null)}
       />
     </div>
+    </PullToRefresh>
   );
 }
 
