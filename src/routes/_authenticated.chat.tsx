@@ -94,6 +94,8 @@ function ChatInboxPage() {
   const [hasMore, setHasMore] = useState(true);
   const [markingRead, setMarkingRead] = useState(false);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
   const [showArchived, setShowArchived] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [prefsVersion, setPrefsVersion] = useState(0);
