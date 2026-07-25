@@ -37,6 +37,8 @@ type PartnerRow = {
   address?: string | null;
   rating: number | null;
   created_at: string | null;
+  distance_km?: number | string | null;
+  distance?: number | string | null;
 };
 
 
@@ -124,12 +126,12 @@ const KIND_META: Record<PartnerKind, { emoji: string; label: string; color: stri
 };
 
 const FALLBACK_PARTNERS: PartnerCard[] = [
-  { id: "mock-jorge-salgado", full_name: "Jorge Salgado", avatar_url: null, role: "prestador", activity_branch: "Conferente Técnico", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
-  { id: "mock-carlos-silva", full_name: "Carlos Silva", avatar_url: null, role: "prestador", activity_branch: "Montador de Móveis", city: "Sorocaba", uf: "SP", rating: 4.9, created_at: null, _kind: "prestador" },
-  { id: "mock-mdf-cia", full_name: "Mdf & Cia Atacado", avatar_url: null, role: "fornecedor", activity_branch: "Insumos e Ferragens", city: "Sorocaba", uf: "SP", rating: 4.8, created_at: null, _kind: "fornecedor" },
-  { id: "mock-ana-paula", full_name: "Ana Paula", avatar_url: null, role: "prestador", activity_branch: "Designer de Interiores", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
-  { id: "mock-ferragens-real", full_name: "Ferragens Real", avatar_url: null, role: "fornecedor", activity_branch: "Ferragens B2B", city: "Osasco", uf: "SP", rating: 4.9, created_at: null, _kind: "fornecedor" },
-  { id: "mock-rodrigo-marques", full_name: "Rodrigo Marques", avatar_url: null, role: "prestador", activity_branch: "Marcenaria Fina", city: "Campinas", uf: "SP", rating: 4.7, created_at: null, _kind: "prestador" },
+  { id: "mock-jorge-salgado", full_name: "Jorge Salgado", avatar_url: null, role: "prestador", activity_branch: "Conferente Técnico", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, distance_km: 4.8, _kind: "prestador" },
+  { id: "mock-carlos-silva", full_name: "Carlos Silva", avatar_url: null, role: "prestador", activity_branch: "Montador de Móveis", city: "Sorocaba", uf: "SP", rating: 4.9, created_at: null, distance_km: 8.2, _kind: "prestador" },
+  { id: "mock-mdf-cia", full_name: "Mdf & Cia Atacado", avatar_url: null, role: "fornecedor", activity_branch: "Insumos e Ferragens", city: "Sorocaba", uf: "SP", rating: 4.8, created_at: null, distance_km: 9.1, _kind: "fornecedor" },
+  { id: "mock-ana-paula", full_name: "Ana Paula", avatar_url: null, role: "prestador", activity_branch: "Designer de Interiores", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, distance_km: 5.4, _kind: "prestador" },
+  { id: "mock-ferragens-real", full_name: "Ferragens Real", avatar_url: null, role: "fornecedor", activity_branch: "Ferragens B2B", city: "Osasco", uf: "SP", rating: 4.9, created_at: null, distance_km: 92, _kind: "fornecedor" },
+  { id: "mock-rodrigo-marques", full_name: "Rodrigo Marques", avatar_url: null, role: "prestador", activity_branch: "Marcenaria Fina", city: "Campinas", uf: "SP", rating: 4.7, created_at: null, distance_km: 87, _kind: "prestador" },
 
 ];
 
@@ -290,9 +292,14 @@ export function RecentPartnersCarousel() {
     const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
     const enriched: Enriched[] = base.map((p) => {
       const coords = cityCoords(p.city) ?? null;
-      // Distância é sempre calculada quando há coords válidas — o card mostra em qualquer modo.
-      const dist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
-      return { ...p, _coords: coords, _distanceKm: Number.isFinite(dist as number) ? (dist as number) : null };
+      // Distância: prioriza cálculo real via geo do usuário; senão usa distance_km/distance persistido no perfil.
+      const liveDist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
+      const storedRaw = p.distance_km ?? p.distance;
+      const storedDist = storedRaw != null ? Number(storedRaw) : null;
+      const dist = Number.isFinite(liveDist as number)
+        ? (liveDist as number)
+        : (storedDist != null && Number.isFinite(storedDist) ? storedDist : null);
+      return { ...p, _coords: coords, _distanceKm: dist };
     });
 
     if (sortMode === "rating") {
@@ -608,7 +615,8 @@ export function RecentPartnersCarousel() {
             // Distância só é mostrada quando temos coords válidas DOS DOIS lados.
             // Se o usuário não tiver coords (permissão negada / sem geo), NUNCA renderizamos
             // valores estimados — o card cai no formato apenas-localização abaixo.
-            const hasGeo = !!userCoords && p._coords != null && p._distanceKm != null;
+            // Distância exibida quando temos valor válido (live via geo OU persistido em profiles.distance_km).
+            const hasGeo = p._distanceKm != null && Number.isFinite(p._distanceKm);
             const distanceKm = hasGeo ? p._distanceKm! : null;
             const distanceLabel = distanceKm != null
               ? (distanceKm < 10 ? distanceKm.toFixed(1) : Math.round(distanceKm).toString())
