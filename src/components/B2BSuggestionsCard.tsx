@@ -220,7 +220,9 @@ function B2BSuggestionsCardInner() {
       window.removeEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
   }, []);
 
-  if (suggestions.length === 0) return null;
+  // Fallback: se não houver sugestões calculadas, usa presets fixos por categoria.
+  const displaySuggestions =
+    suggestions.length > 0 ? suggestions : FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador;
 
   // Estado OCULTO: mostra chip discreto para reexibir.
   if (dismissed) {
