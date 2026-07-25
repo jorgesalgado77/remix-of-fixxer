@@ -146,11 +146,17 @@ function firstText(...values: unknown[]): string | null {
 }
 
 function firstUrl(...values: unknown[]): string | null {
+  const isUrlish = (s: string) => {
+    const v = s.trim();
+    if (!v) return false;
+    // aceita http(s), data URIs, blob:, protocolo-relativo e paths absolutos/relativos
+    return /^(https?:|data:|blob:|\/\/|\/)/i.test(v) || /\.(png|jpe?g|webp|gif|avif|svg)(\?|#|$)/i.test(v);
+  };
   for (const value of values) {
-    if (typeof value === "string" && /^https?:\/\//i.test(value.trim())) return value.trim();
+    if (typeof value === "string" && isUrlish(value)) return value.trim();
     if (Array.isArray(value)) {
-      const hit = value.find((item) => typeof item === "string" && /^https?:\/\//i.test(item.trim()));
-      if (hit) return hit.trim();
+      const hit = value.find((item) => typeof item === "string" && isUrlish(item));
+      if (hit) return (hit as string).trim();
     }
   }
   return null;
