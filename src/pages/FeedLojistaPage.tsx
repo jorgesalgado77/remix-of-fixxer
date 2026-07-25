@@ -1320,6 +1320,7 @@ function PostCardImpl({
             <span className="inline-flex items-center gap-1">
               <MapPin className="w-3 h-3" />
               {post.city}
+              {distanceLabel && <span className="text-white/40">• {distanceLabel}</span>}
             </span>
             <span className="inline-flex items-center gap-1">
               <Clock className="w-3 h-3" />
