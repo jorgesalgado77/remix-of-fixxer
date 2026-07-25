@@ -203,17 +203,20 @@ function IconLink({
   label,
   tip,
   children,
+  onClick,
 }: {
   to: string;
   label: string;
   tip: string;
   children: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
 }) {
   return (
     <Link
       to={to}
       title={tip}
       aria-label={label}
+      onClick={onClick}
       className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all"
     >
       {children}
