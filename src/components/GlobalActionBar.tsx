@@ -33,6 +33,25 @@ export function GlobalActionBar() {
     navigate({ to: target.to as any, search: (target.search ?? {}) as any });
   };
 
+  const goToPanel = async () => {
+    let resolvedRole = role;
+    try {
+      const { getCurrentCategory } = await import("@/lib/current-user");
+      resolvedRole = await getCurrentCategory(true);
+    } catch {
+      // Mantém a categoria já hidratada pelo hook como fallback.
+    }
+
+    const target =
+      resolvedRole === "lojista" ? "/lojista" :
+      resolvedRole === "fornecedor" ? "/parceiro" :
+      resolvedRole === "cliente" ? "/cliente" :
+      resolvedRole === "admin" ? "/admin" :
+      "/prestador";
+
+    navigate({ to: target as any, replace: true });
+  };
+
 
   // Notificações de novas mensagens — reativas ao usuário logado
   useEffect(() => {
@@ -117,15 +136,7 @@ export function GlobalActionBar() {
     <>
     <div className="fixed bottom-0 left-0 right-0 bg-black/85 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around pb-safe">
       <button
-        onClick={() => {
-          const target =
-            role === "lojista" ? "/lojista" :
-            role === "fornecedor" ? "/parceiro" :
-            role === "cliente" ? "/cliente" :
-            role === "admin" ? "/admin" :
-            "/prestador";
-          navigate({ to: target as any });
-        }}
+        onClick={goToPanel}
         className={`flex flex-col items-center gap-1 ${(isActive("/dashboard") || isActive("/lojista") || isActive("/prestador") || isActive("/parceiro") || isActive("/cliente")) && !hash ? "text-primary" : "text-muted-foreground"}`}
       >
         <Activity className="w-5 h-5" />

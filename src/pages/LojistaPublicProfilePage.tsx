@@ -271,14 +271,16 @@ export function LojistaPublicProfilePage() {
   const [oppUf, setOppUf] = useState<string>("Todas");
 
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
-      setLoading(true);
+      if (!cancelled) setLoading(true);
       try {
         // Perfis mockados (usados durante a construção do sistema)
         if (storeId && isMockPeerId(storeId)) {
           const mock = getMockProfile(storeId);
           const name = getMockPeerName(storeId) ?? "Perfil";
-          if (mock) {
+          if (mock && !cancelled) {
             setProfile({
               user_id: storeId,
               company_name: mock.companyName ?? name,
@@ -355,6 +357,7 @@ export function LojistaPublicProfilePage() {
         });
 
         const profileCandidate = Object.keys(merged).length > 0 ? (merged as StoreProfile) : null;
+        if (cancelled) return;
         if (profileCandidate) setProfile(profileCandidate);
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
 
@@ -363,6 +366,7 @@ export function LojistaPublicProfilePage() {
             profile: profileCandidate,
             routeHint: routeCategory,
           });
+          if (cancelled) return;
           setResolvedCategory(detectedCategory);
           const expectedPath = publicProfilePathFor(detectedCategory, storeId);
           if (location.pathname !== expectedPath) {
@@ -380,22 +384,25 @@ export function LojistaPublicProfilePage() {
             .eq("lojista_id", lojistaKey)
             .eq("status", "PENDENTE")
             .order("created_at", { ascending: false });
-          if (osData) setOrders(osData as ServiceOrder[]);
+          if (!cancelled && osData) setOrders(osData as ServiceOrder[]);
 
           const { data: revData } = await supabaseExternal
             .from("store_reviews")
             .select("*")
             .eq("lojista_id", lojistaKey)
             .order("created_at", { ascending: false });
-          if (revData) setReviews(revData as Review[]);
+          if (!cancelled && revData) setReviews(revData as Review[]);
         }
       } catch (err) {
-        console.error("Erro ao carregar perfil público:", err);
+        if (!cancelled) console.error("Erro ao carregar perfil público:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
+    return () => {
+      cancelled = true;
+    };
   }, [storeId, routeCategory, location.pathname, navigate]);
 
   // Realtime: reflete alterações do perfil (fotos/vídeos/seções) em tempo real
