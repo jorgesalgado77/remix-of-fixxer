@@ -586,6 +586,17 @@ function ProfilePage() {
       if (!silent) toast.error("Raio de atuação inválido.");
       return;
     }
+    // 💼 Validação: prestador deve escolher ao menos um formato em "Aceita trabalhos como"
+    // (bloqueia apenas o save manual — o autosave não interrompe o fluxo de edição).
+    if (!silent && profile?.role === 'prestador') {
+      const wm = Array.isArray(profile?.work_modes) ? profile.work_modes.filter(Boolean) : [];
+      if (wm.length === 0) {
+        toast.error('Escolha ao menos um formato em "💼 Aceita trabalhos como".', {
+          description: 'Selecione entre Contratos FreeLancer MEI, Contratos Fixos MEI, Contratação CLT ou Serviços Individuais.',
+        });
+        return;
+      }
+    }
 
     if (silent) setAutoSaving(true); else setSaving(true);
     try {
@@ -1257,7 +1268,16 @@ function ProfilePage() {
                 <div className="pt-8 space-y-6">
 
                   {/* ACEITA TRABALHOS COMO */}
-                  <div className="pt-6 space-y-3 border-t border-white/5">
+                  <div id="aceita-trabalhos" className="pt-6 space-y-3 border-t border-white/5 scroll-mt-24">
+                    {(() => {
+                      const wmList: string[] = Array.isArray(profile?.work_modes) ? profile.work_modes.filter(Boolean) : [];
+                      if (wmList.length > 0) return null;
+                      return (
+                        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-[11px] text-red-200 font-bold" role="alert">
+                          ⚠️ Escolha ao menos um formato abaixo. Sem isso, o botão <b>Salvar Perfil</b> ficará bloqueado.
+                        </div>
+                      );
+                    })()}
                     <h4 className="text-sm font-black uppercase tracking-tighter text-white">💼 Aceita trabalhos como</h4>
                     <p className="text-xs text-muted-foreground">
                       Selecione todos os formatos de contratação que você aceita. Aparecerá no seu perfil público.
@@ -1471,6 +1491,11 @@ function ProfilePage() {
                 fullName={profile?.full_name}
                 displayName={profile?.display_name}
                 accentHex={theme.hex}
+                workModes={Array.isArray(profile?.work_modes) ? profile.work_modes : []}
+                offerings={Array.isArray(profile?.offerings) ? profile.offerings : []}
+                offeringsNotes={profile?.offerings_notes}
+                vehicleType={profile?.vehicle_type}
+                vehicleDescription={profile?.vehicle_description}
               />
             )}
             {/* CENTRAL DE MÍDIA COMPACTA - REFORMULADA */}

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Eye, FileText, Camera } from "lucide-react";
+import { Eye, FileText, Camera, Gift, Truck, Briefcase } from "lucide-react";
 import type { PhotoSectionsValue, PhotoItem } from "@/components/PhotoSectionsManager";
 
 const getUrl = (p: PhotoItem): string => (typeof p === "string" ? p : p.url);
@@ -14,6 +14,16 @@ interface Props {
   fullName?: string | null;
   displayName?: string | null;
   accentHex?: string;
+  /** 💼 Formatos de contratação aceitos (work_modes) */
+  workModes?: string[] | null;
+  /** 🎁 Itens listados em "Oferece" */
+  offerings?: string[] | null;
+  /** Observações livres da seção Oferece */
+  offeringsNotes?: string | null;
+  /** Tipo do veículo próprio (ex.: Moto, Carro, Van) */
+  vehicleType?: string | null;
+  /** Descrição/caracteristicas do veículo */
+  vehicleDescription?: string | null;
 }
 
 /**
@@ -28,6 +38,11 @@ export function LiveProfilePreview({
   fullName,
   displayName,
   accentHex,
+  workModes,
+  offerings,
+  offeringsNotes,
+  vehicleType,
+  vehicleDescription,
 }: Props) {
   const custom = sections?.custom ?? [];
   const showroom = sections?.showroom ?? [];
@@ -41,6 +56,14 @@ export function LiveProfilePreview({
   const shownDisplayName = (displayName || "").trim();
   const shownCompany = (companyName || fullName || "Seu Perfil").trim();
   const accent = accentHex || "#00FF87";
+
+  const workModesList = Array.isArray(workModes) ? workModes.filter(Boolean) : [];
+  const offeringsList = Array.isArray(offerings) ? offerings.filter(Boolean) : [];
+  const notes = (offeringsNotes || "").trim();
+  const vType = (vehicleType || "").trim();
+  const vDesc = (vehicleDescription || "").trim();
+  const hasVehicle = !!(vType || vDesc);
+  const hasOferece = workModesList.length > 0 || offeringsList.length > 0 || notes.length > 0 || hasVehicle;
 
 
   return (
@@ -93,7 +116,70 @@ export function LiveProfilePreview({
       </div>
 
 
-      {/* Aba Sobre */}
+      {/* 🎁 Oferece (prévia ao vivo) */}
+      {hasOferece && (
+        <div className="space-y-3 rounded-2xl border border-white/10 bg-black/25 p-3">
+          <div className="flex items-center gap-2">
+            <Gift className="w-3.5 h-3.5" style={{ color: accent }} />
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/70">
+              🎁 Oferece
+            </h4>
+          </div>
+
+          {workModesList.length > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-white/40">
+                <Briefcase className="w-3 h-3" /> Aceita trabalhos como
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {workModesList.map((m, i) => (
+                  <span
+                    key={`${m}-${i}`}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase italic border"
+                    style={{ borderColor: `${accent}55`, color: accent, background: `${accent}12` }}
+                  >
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {offeringsList.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {offeringsList.map((o, i) => (
+                <span
+                  key={`${o}-${i}`}
+                  className="px-2 py-0.5 rounded-md bg-white/10 border border-white/10 text-[10px] font-bold uppercase italic text-white/90"
+                >
+                  {o}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {hasVehicle && (
+            <div className="rounded-xl bg-white/5 border border-white/10 p-2 space-y-1">
+              <p className="text-[9px] font-black uppercase tracking-widest text-white/50 flex items-center gap-1.5">
+                <Truck className="w-3 h-3" /> Veículo
+              </p>
+              <div className="text-[11px] text-white/85 flex flex-wrap gap-x-3 gap-y-0.5">
+                {vType && (<span><b className="text-white/50 mr-1">Tipo:</b>{vType}</span>)}
+                {vDesc && (<span className="italic text-white/70">{vDesc}</span>)}
+              </div>
+            </div>
+          )}
+
+          {notes && (
+            <p className="text-[11px] italic text-white/75 border-l-2 pl-2" style={{ borderColor: `${accent}80` }}>
+              {notes}
+            </p>
+          )}
+        </div>
+      )}
+
+
+
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <FileText className="w-3.5 h-3.5" style={{ color: accent }} />

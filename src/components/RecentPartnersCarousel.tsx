@@ -40,6 +40,11 @@ type PartnerRow = {
   created_at: string | null;
   distance_km?: number | string | null;
   distance?: number | string | null;
+  // 🚚 Sincronização de veículo e observações no card (compatibilidade rápida).
+  vehicle_type?: string | null;
+  vehicle_description?: string | null;
+  vehicle_details?: Record<string, any> | null;
+  offerings_notes?: string | null;
 };
 
 
@@ -231,7 +236,7 @@ export function RecentPartnersCarousel() {
     try {
       const { data, error } = await supabaseExternal
         .from("profiles")
-        .select("id, full_name, name, avatar_url, avatar, photo_url, role, activity_branch, category, city, uf, state, location, address, rating, created_at")
+        .select("id, full_name, name, avatar_url, avatar, photo_url, role, activity_branch, category, city, uf, state, location, address, rating, created_at, vehicle_type, vehicle_description, vehicle_details, offerings_notes")
         .order("created_at", { ascending: false })
         .order("rating", { ascending: false })
         .limit(120);
@@ -707,6 +712,34 @@ export function RecentPartnersCarousel() {
                       <span className="truncate">📍 {location}</span>
                     </p>
                   ) : null}
+
+                  {/* 🚚 Chip discreto com o veículo/observação para leitura rápida no card.
+                       Prioriza vehicle_type; se ausente, tenta vehicle_details.Tipo. */}
+                  {(() => {
+                    const veh = p.vehicle_details && typeof p.vehicle_details === 'object' ? p.vehicle_details : null;
+                    const vt = safeStr(p.vehicle_type) || safeStr(veh?.Tipo ?? veh?.tipo);
+                    const vd = safeStr(p.vehicle_description) || safeStr(veh?.Descrição ?? veh?.descricao);
+                    const notes = safeStr(p.offerings_notes);
+                    if (!vt && !vd && !notes) return null;
+                    const vehicleText = [vt, vd].filter(Boolean).join(" — ");
+                    return (
+                      <div className="mt-1.5 space-y-0.5">
+                        {vehicleText && (
+                          <p
+                            className="text-[10px] text-primary/90 font-bold truncate flex items-center gap-1"
+                            title={vehicleText}
+                          >
+                            🚚 <span className="truncate">{vehicleText}</span>
+                          </p>
+                        )}
+                        {notes && (
+                          <p className="text-[10px] italic text-white/60 line-clamp-2" title={notes}>
+                            “{notes}”
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   <div className="mt-2">
                     <AvailabilityBadge userId={p.id} />

@@ -203,6 +203,15 @@ export function LojistaPublicProfilePage() {
   const [profile, setProfile] = useState<StoreProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("sobre");
+  // 🔎 Filtros rápidos de compatibilidade (aplicados às ofertas em "🎁 Oferece").
+  // Cada filtro representa um chip clicável no header (work_modes + veículo).
+  const [compatFilters, setCompatFilters] = useState<Set<string>>(() => new Set());
+  const toggleCompat = (key: string) => setCompatFilters((prev) => {
+    const n = new Set(prev);
+    if (n.has(key)) n.delete(key); else n.add(key);
+    return n;
+  });
+  const clearCompat = () => setCompatFilters(new Set());
   const [photoFilter, setPhotoFilter] = useState("Todas");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<"Todos" | "Fotos" | "Documentos">("Todos");
   const PAGE_SIZE = 12;
@@ -794,7 +803,79 @@ export function LojistaPublicProfilePage() {
                       </span>
                     </div>
                   )}
+
+                  {/* 🎯 Resumo de compatibilidade: work_modes + veículo em chips clicáveis
+                      que filtram a seção "🎁 Oferece" abaixo. */}
+                  {(() => {
+                    const wm: string[] = Array.isArray(profile?.work_modes) ? profile!.work_modes! : [];
+                    const veh = (profile as any)?.vehicle_details && typeof (profile as any).vehicle_details === 'object'
+                      ? (profile as any).vehicle_details as Record<string, any>
+                      : null;
+                    const vehType = String((veh?.Tipo ?? veh?.tipo ?? (profile as any)?.vehicle_type) ?? '').trim();
+                    const vehDesc = String((veh?.Descrição ?? veh?.descricao ?? (profile as any)?.vehicle_description) ?? '').trim();
+                    if (wm.length === 0 && !vehType && !vehDesc) return null;
+                    return (
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-white/50">
+                            Compatibilidade — toque para filtrar 🎁 Oferece
+                          </p>
+                          {compatFilters.size > 0 && (
+                            <button
+                              type="button"
+                              onClick={clearCompat}
+                              className="text-[9px] font-black uppercase tracking-widest text-primary/90 hover:text-primary underline"
+                            >
+                              Limpar filtros ({compatFilters.size})
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {wm.map((m) => {
+                            const key = `wm:${m.toLowerCase()}`;
+                            const active = compatFilters.has(key);
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                aria-pressed={active}
+                                onClick={() => toggleCompat(key)}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase italic border transition ${
+                                  active
+                                    ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.35)]'
+                                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:border-emerald-400'
+                                }`}
+                              >
+                                💼 {m}
+                              </button>
+                            );
+                          })}
+                          {vehType && (() => {
+                            const key = `veh:${vehType.toLowerCase()}`;
+                            const active = compatFilters.has(key);
+                            return (
+                              <button
+                                type="button"
+                                aria-pressed={active}
+                                onClick={() => toggleCompat(key)}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase italic border transition ${
+                                  active
+                                    ? 'bg-primary/25 border-primary text-white shadow-[0_0_10px_rgba(0,255,135,0.35)]'
+                                    : 'bg-primary/10 border-primary/30 text-primary hover:border-primary'
+                                }`}
+                                title={vehDesc || undefined}
+                              >
+                                🚚 {vehType}{vehDesc ? ` — ${vehDesc.slice(0, 32)}${vehDesc.length > 32 ? '…' : ''}` : ''}
+                              </button>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
+
+
 
                 {/* Reputação */}
                 <div className="flex items-center gap-3 flex-wrap">
@@ -1081,16 +1162,40 @@ export function LojistaPublicProfilePage() {
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
                         🎁 Oferece
+                        {compatFilters.size > 0 && (
+                          <span className="ml-2 px-2 py-0.5 rounded bg-primary/15 text-primary text-[9px] font-black tracking-widest border border-primary/30">
+                            FILTRO ATIVO
+                          </span>
+                        )}
                       </p>
-                      {offerings.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {offerings.map((o, i) => (
-                            <span key={`${o}-${i}`} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-bold uppercase italic text-emerald-300">
-                              {o}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {offerings.length > 0 && (() => {
+                        // Aplicação do filtro de compatibilidade (chips do header).
+                        // Um chip `wm:xxx` casa se a oferta contém "xxx"; `veh:yyy` idem.
+                        const activeTerms = Array.from(compatFilters).map((k) => k.split(":", 2)[1] || "");
+                        const matches = (o: string) => activeTerms.length === 0
+                          || activeTerms.some((t) => t && o.toLowerCase().includes(t));
+                        return (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {offerings.map((o, i) => {
+                              const ok = matches(o);
+                              return (
+                                <span
+                                  key={`${o}-${i}`}
+                                  className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold uppercase italic transition ${
+                                    ok
+                                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                                      : "bg-white/2 border-white/10 text-white/30 line-through"
+                                  }`}
+                                  aria-disabled={!ok}
+                                >
+                                  {o}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+
                       {vehicle && Object.keys(vehicle).length > 0 && (
                         <div className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1 mb-3">
                           <p className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
