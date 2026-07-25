@@ -525,7 +525,7 @@ const MOCK_REQUESTS: B2BRequest[] = [
   },
 ];
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 10;
 
 // =============================================================================
 // PÁGINA
@@ -945,6 +945,7 @@ export default function FeedParceiroPage() {
                         src={r.attachment}
                         alt="Anexo técnico"
                         loading="lazy"
+                        decoding="async"
                         className="h-56 w-full object-cover transition group-hover:opacity-90"
                       />
                       <span className="absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-medium text-white/80">
