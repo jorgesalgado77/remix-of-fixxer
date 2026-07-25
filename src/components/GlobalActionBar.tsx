@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { resolveFeedRoute } from "@/lib/chat-preferences";
 import { PublishPickerModal } from "@/components/PublishPickerModal";
+import { QuickMenuSheet } from "@/components/QuickMenuSheet";
 import type { CategoryKey } from "@/lib/category-colors";
 
 /**
