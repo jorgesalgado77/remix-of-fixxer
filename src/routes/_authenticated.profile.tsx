@@ -1603,9 +1603,13 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Camera className="w-3 h-3" /> Galeria de Imagens
-                    <span className="ml-auto text-[9px] text-amber-400/90">💰 6 grátis · +5 moedas/foto extra · arraste p/ reordenar</span>
+                    <span className="ml-auto text-[9px] text-amber-400/90">💰 6 grátis · +5 moedas/foto extra · arraste ou ← → p/ reordenar</span>
                   </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <p className="text-[9px] text-white/60 -mt-2">
+                    Formatos aceitos: <b>{UPLOAD_LIMITS.image.hint}</b> · Tamanho máx.: <b>{UPLOAD_LIMITS.image.maxLabel}</b>. Foque uma imagem (Tab) e use setas para reordenar; Enter abre a prévia.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" role="list" aria-label="Galeria de imagens, reordenável por arrastar ou setas do teclado">
+
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'image').map((img: any, i: number) => (
                       <div
                         key={i}
