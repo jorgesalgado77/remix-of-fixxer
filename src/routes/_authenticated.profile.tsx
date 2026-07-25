@@ -190,6 +190,13 @@ function ProfilePage() {
         }
       }
       if (brandsRes.data) setBrands(brandsRes.data.map(b => b.name));
+      if (productTypesRes?.data && productTypesRes.data.length > 0) {
+        const merged = Array.from(new Set([
+          "Fabricação Própria", "Revenda", "Serviços",
+          ...productTypesRes.data.map((p: any) => p.name),
+        ]));
+        setProductTypes(merged);
+      }
       if (postRes?.data) setTargetPost(postRes.data);
       setLoading(false);
     }
