@@ -396,6 +396,10 @@ function ConversationPage() {
         return;
       }
       setUserId(uid);
+      startGlobalPresence(uid);
+      if (isPeerOnline(peerId)) setPeerOnline(true);
+
+
 
       // === MODO MOCK (peerId "mock-*") ===
       if (isMockPeerId(peerId)) {
