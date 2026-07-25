@@ -745,13 +745,14 @@ function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="md:col-span-1 space-y-2">
                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">CEP</label>
-                    <input 
-                      value={profile?.cep || ''} 
-                      onChange={e => {
-                        const val = e.target.value;
-                        setProfile({...profile, cep: val});
+                    <MaskedInput
+                      mask="cep"
+                      value={profile?.cep || ''}
+                      onChange={(val: string) => {
+                        setProfile({ ...profile, cep: val });
                         if (val.replace(/\D/g, '').length === 8) handleCepLookup(val);
                       }}
+                      placeholder="00000-000"
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                     />
                   </div>
