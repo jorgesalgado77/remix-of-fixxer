@@ -271,8 +271,10 @@ export function LojistaPublicProfilePage() {
   const [oppUf, setOppUf] = useState<string>("Todas");
 
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
-      setLoading(true);
+      if (!cancelled) setLoading(true);
       try {
         // Perfis mockados (usados durante a construção do sistema)
         if (storeId && isMockPeerId(storeId)) {
