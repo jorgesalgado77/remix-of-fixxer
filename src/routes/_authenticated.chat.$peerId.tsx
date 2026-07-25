@@ -991,19 +991,26 @@ function ConversationPage() {
                               ? peerLastReadAt
                               : null;
                           const isRead = !!m.read || !!seenAt;
+                          const isDelivered = isRead || !!m._delivered;
+                          const icon = isRead ? (
+                            <CheckCheck className="w-3 h-3 text-sky-300 inline" />
+                          ) : isDelivered ? (
+                            <CheckCheck className="w-3 h-3 text-white/60 inline" />
+                          ) : (
+                            <Check className="w-3 h-3 inline" />
+                          );
+                          const label = isRead
+                            ? seenAt
+                              ? `Lida ${new Date(seenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                              : "Lida"
+                            : isDelivered
+                              ? "Entregue"
+                              : "Enviada";
                           return (
                             <span className="inline-flex items-center gap-0.5">
                               {" · "}
-                              {isRead ? (
-                                <CheckCheck className="w-3 h-3 text-sky-300 inline" />
-                              ) : (
-                                <Check className="w-3 h-3 inline" />
-                              )}
-                              {isRead
-                                ? seenAt
-                                  ? `Visto ${new Date(seenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-                                  : "Visto"
-                                : "Enviada"}
+                              {icon}
+                              {label}
                             </span>
                           );
                         })()}
