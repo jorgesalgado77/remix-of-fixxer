@@ -1,22 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
-import { 
-  Briefcase, 
-  MapPin, 
-  Star, 
-  CheckCircle2, 
-  Clock, 
-  DollarSign, 
-  MessageSquare, 
-  User, 
+import {
+  Briefcase,
+  MapPin,
+  Star,
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  MessageSquare,
+  Settings,
   ChevronRight,
   TrendingUp,
   ShieldCheck,
   PlusCircle,
   Camera,
-  Hammer
+  Hammer,
+  PowerOff,
+  Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
 import { ReviewModal } from "@/components/ReviewModal";
 import { EscrowBadge } from "@/components/EscrowBadge";
 
@@ -51,16 +55,18 @@ function PrestadorDashboard() {
           <Link to="/feed/prestador" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_hsl(var(--primary)/0.4)] transition-all">
             <Briefcase className="w-4 h-4" /> Acessar Feed da Categoria
           </Link>
+          <AvailabilityToggle />
           <Link
-            to="/profile"
+            to="/configuracoes"
             className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-primary/40 transition-all"
-            title="Meu Perfil — editar dados, foto e vitrine"
-            aria-label="Abrir meu perfil"
+            title="Configurações do sistema — preferências, notificações e segurança"
+            aria-label="Abrir configurações do sistema"
           >
-            <User className="w-5 h-5" />
+            <Settings className="w-5 h-5" />
           </Link>
         </div>
       </header>
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={<Briefcase className="w-5 h-5" />} label="Ativos" value="3" color="text-blue-400" />
@@ -168,5 +174,71 @@ function JobCard({ id, client, category, value, status }: any) {
         </button>
       </div>
     </div>
+  );
+}
+
+/* ==================== BOTÃO DE DISPONIBILIDADE ==================== */
+function AvailabilityToggle() {
+  const LS_KEY = "fixxer_availability_v1";
+  const [available, setAvailable] = useState<boolean>(true);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(LS_KEY);
+      if (v !== null) setAvailable(v === "1");
+    } catch { /* ignore */ }
+  }, []);
+
+  const toggle = () => {
+    const next = !available;
+    setAvailable(next);
+    try { localStorage.setItem(LS_KEY, next ? "1" : "0"); } catch { /* ignore */ }
+    try {
+      window.dispatchEvent(new CustomEvent("fixxer:availability-changed", { detail: { available: next } }));
+    } catch { /* ignore */ }
+    if (next) {
+      toast.success("Você está DISPONÍVEL na plataforma.", {
+        description: "Clientes podem localizar seu perfil e enviar mensagens agora.",
+      });
+    } else {
+      toast("Você está INDISPONÍVEL.", {
+        description: "Perfil pausado — nenhuma nova solicitação chegará até você reativar.",
+      });
+    }
+  };
+
+  const activeStyle =
+    "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 shadow-[0_0_18px_rgba(16,185,129,0.35)]";
+  const pausedStyle =
+    "bg-white/5 border-white/15 text-white/60 hover:bg-white/10";
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={available}
+      onClick={toggle}
+      title={
+        available
+          ? "Disponibilidade ATIVA — seu perfil aparece nas buscas e pode receber contatos"
+          : "Disponibilidade PAUSADA — perfil oculto para novas solicitações. Clique para reativar."
+      }
+      aria-label={available ? "Definir como indisponível" : "Definir como disponível"}
+      className={`flex items-center gap-2 h-11 px-3 rounded-xl border transition-all text-[10px] font-black uppercase italic tracking-widest ${available ? activeStyle : pausedStyle}`}
+    >
+      <span
+        className={`relative w-9 h-5 rounded-full transition-colors ${available ? "bg-emerald-500" : "bg-white/20"}`}
+        aria-hidden
+      >
+        <span
+          className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
+          style={{ transform: available ? "translateX(16px)" : "translateX(0)" }}
+        />
+      </span>
+      <span className="hidden md:inline-flex items-center gap-1.5">
+        {available ? <Zap className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
+        {available ? "Disponível" : "Pausado"}
+      </span>
+    </button>
   );
 }
