@@ -626,6 +626,33 @@ function FavoritosPage() {
           </section>
         )}
       </main>
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        destructive
+        title={
+          pendingRemoval?.kind === "ad"
+            ? "Remover anúncio dos favoritos?"
+            : "Remover perfil dos favoritos?"
+        }
+        description={
+          pendingRemoval?.kind === "ad"
+            ? `“${pendingRemoval.item.title}” não aparecerá mais em Anúncios Salvos.`
+            : pendingRemoval?.kind === "profile"
+              ? `${pendingRemoval.item.name} sairá da sua lista de perfis favoritados.`
+              : undefined
+        }
+        confirmLabel="Sim, remover"
+        cancelLabel="Cancelar"
+        onCancel={() => setPendingRemoval(null)}
+        onConfirm={() => {
+          const p = pendingRemoval;
+          setPendingRemoval(null);
+          if (!p) return;
+          if (p.kind === "profile") removeProfile(p.item);
+          else removeAd(p.item);
+        }}
+      />
     </div>
   );
 }
