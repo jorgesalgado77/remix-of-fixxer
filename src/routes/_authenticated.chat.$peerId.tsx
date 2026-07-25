@@ -1063,6 +1063,16 @@ function ConversationPage() {
           dragActive ? "outline-dashed outline-2 outline-primary/70 outline-offset-[-8px] bg-primary/5" : ""
         }`}
       >
+        {dragActive && (
+          <div className="pointer-events-none sticky top-2 z-20 mx-auto max-w-md text-center bg-primary/15 border-2 border-dashed border-primary/70 rounded-2xl px-6 py-4 backdrop-blur-md">
+            <p className="text-sm font-black uppercase italic tracking-widest text-primary">
+              📎 Solte para anexar
+            </p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
+              Máx {MAX_FILES} arquivos · {MAX_FILE_MB}MB cada
+            </p>
+          </div>
+        )}
         <ChatAppointmentsBanner userId={userId} peerId={peerId} />
         {hasMore && !loading && messages.length > 0 && (
           <div className="text-center">
