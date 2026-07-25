@@ -711,17 +711,34 @@ function ConversationPage() {
       return;
     }
 
-    // === REAL: upload sequencial + persist por mensagem ===
+    // === REAL: uploads em PARALELO com progresso por anexo,
+    // porém persistência em ORDEM (aguarda o item anterior antes de persistir o próximo). ===
     setUploadingIndex(0);
+    const patchRow = (clientId: string, patch: Partial<MessageRow>) =>
+      setMessages((prev) =>
+        prev.map((m) => (m._clientId === clientId ? { ...m, ...patch } : m)),
+      );
+
+    const uploadPromises = optimBatch.map(async (o) => {
+      if (!o.file) return null;
+      try {
+        const attachment = await doUpload(o.file, (pct) =>
+          patchRow(o.clientId, { _uploadPct: pct }),
+        );
+        if (!attachment) throw new Error("Upload cancelado");
+        patchRow(o.clientId, { _uploadPct: 100, _uploading: false });
+        return attachment;
+      } catch (e: any) {
+        patchRow(o.clientId, { _uploading: false, _uploadPct: 0 });
+        throw e;
+      }
+    });
+
     for (let i = 0; i < optimBatch.length; i++) {
       const o = optimBatch[i];
       setUploadingIndex(i);
       try {
-        let attachment: { url: string; type: string; name: string } | null = null;
-        if (o.file) {
-          attachment = await doUpload(o.file);
-          if (!attachment) throw new Error("Upload cancelado");
-        }
+        const attachment = await uploadPromises[i];
         await persistMessage(o.clientId, o.text, attachment);
       } catch (e: any) {
         toast.error(
@@ -730,9 +747,7 @@ function ConversationPage() {
             : "Falha ao enviar",
           { description: e?.message },
         );
-        setMessages((prev) =>
-          prev.map((m) => (m._clientId === o.clientId ? { ...m, _pending: false, _failed: true } : m)),
-        );
+        patchRow(o.clientId, { _pending: false, _failed: true, _uploading: false });
       }
     }
     setSending(false);
