@@ -869,11 +869,6 @@ function JobCard({
             {job.media.map((item, i) => (
               <button
                 key={i}
-        {job.media.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {job.media.map((item, i) => (
-              <button
-                key={i}
                 onClick={() => (locked ? onUnlock?.() : onLightbox(job, i))}
                 className={`relative shrink-0 w-28 h-20 rounded-xl overflow-hidden border border-white/10 bg-black/40 group/media focus:outline-none focus:ring-2 focus:ring-[#FF9F0A]/50 ${
                   locked ? "pointer-events-none" : ""
