@@ -520,7 +520,7 @@ export function RecentPartnersCarousel() {
         <div className="flex gap-3 pb-2 overflow-x-hidden" aria-hidden="true">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="w-44 flex-shrink-0 rounded-2xl bg-[#1A1A1B] border border-white/10 overflow-hidden">
-              <div className="w-full h-40 bg-white/5 animate-pulse" />
+              <div className="w-full h-36 bg-white/5 animate-pulse" />
               <div className="p-3 space-y-2">
                 <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
                 <div className="h-2.5 w-1/2 rounded bg-white/5 animate-pulse" />
@@ -581,7 +581,9 @@ export function RecentPartnersCarousel() {
             // ---- Normalização defensiva de campos do perfil ----
             const displayName = safeStr(p.full_name) || safeStr(p.name) || "Profissional";
             const rawAvatar = safeStr(p.avatar_url) || safeStr(p.avatar) || safeStr(p.photo_url);
-            const avatarUrl = isValidImageUrl(rawAvatar) ? rawAvatar : null;
+            const avatarUrl = isValidImageUrl(rawAvatar)
+              ? rawAvatar
+              : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=70";
             const city = safeStr(p.city);
             const stateVal = normalizeUf(p.uf) || normalizeUf(p.state);
             const location = (city && stateVal)
@@ -613,7 +615,7 @@ export function RecentPartnersCarousel() {
                 aria-posinset={idx + 1}
                 aria-setsize={sortedItems.length}
               >
-                <div className="relative w-full h-40 bg-black/40">
+                <div className="relative w-full h-36 bg-black/40">
                   <PartnerAvatar
                     src={avatarUrl}
                     alt={`Foto de ${displayName}`}
