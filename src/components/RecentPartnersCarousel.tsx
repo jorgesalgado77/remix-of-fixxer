@@ -406,8 +406,16 @@ export function RecentPartnersCarousel() {
           {sortedItems.map((p, idx) => {
             const meta = KIND_META[p._kind];
             const rating = typeof p.rating === "number" && p.rating > 0 ? p.rating : 5.0;
-            const location = [p.city, p.uf].filter(Boolean).join(", ");
+            // ---- Normalização de campos do perfil (fallback entre chaves do Supabase) ----
+            const displayName = p.full_name || p.name || "Profissional";
+            const avatarUrl = p.avatar_url || p.avatar || p.photo_url || null;
+            const stateVal = p.uf || p.state || null;
+            const location = (p.city && stateVal)
+              ? `${p.city}, ${stateVal}`
+              : (p.location || p.city || p.address || "");
+            const branchText = p.activity_branch || p.category || meta.label;
             const distance = sortMode === "nearby" && userCoords
+
               ? (() => { const c = cityCoords(p.city); if (!c) return null; const km = haversineKm(userCoords, c); return Number.isFinite(km) ? (km < 10 ? km.toFixed(1) : Math.round(km).toString()) : null; })()
               : null;
             const label = `Abrir perfil de ${p.full_name || "profissional"}, ${meta.label}${p.activity_branch ? `, ${p.activity_branch}` : ""}${location ? `, ${location}` : ""}, avaliação ${rating.toFixed(1)} de 5`;
