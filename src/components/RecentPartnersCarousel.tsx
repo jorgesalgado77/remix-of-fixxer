@@ -292,9 +292,14 @@ export function RecentPartnersCarousel() {
     const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
     const enriched: Enriched[] = base.map((p) => {
       const coords = cityCoords(p.city) ?? null;
-      // Distância é sempre calculada quando há coords válidas — o card mostra em qualquer modo.
-      const dist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
-      return { ...p, _coords: coords, _distanceKm: Number.isFinite(dist as number) ? (dist as number) : null };
+      // Distância: prioriza cálculo real via geo do usuário; senão usa distance_km/distance persistido no perfil.
+      const liveDist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
+      const storedRaw = p.distance_km ?? p.distance;
+      const storedDist = storedRaw != null ? Number(storedRaw) : null;
+      const dist = Number.isFinite(liveDist as number)
+        ? (liveDist as number)
+        : (storedDist != null && Number.isFinite(storedDist) ? storedDist : null);
+      return { ...p, _coords: coords, _distanceKm: dist };
     });
 
     if (sortMode === "rating") {
