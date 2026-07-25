@@ -619,6 +619,7 @@ export default function FeedClientePage() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
+        <B2BSuggestionsCard />
         {/* BANNER PUBLICAR NECESSIDADE */}
         <button
           onClick={() => setPublishOpen(true)}
