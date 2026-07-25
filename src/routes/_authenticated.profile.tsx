@@ -586,6 +586,17 @@ function ProfilePage() {
       if (!silent) toast.error("Raio de atuação inválido.");
       return;
     }
+    // 💼 Validação: prestador deve escolher ao menos um formato em "Aceita trabalhos como"
+    // (bloqueia apenas o save manual — o autosave não interrompe o fluxo de edição).
+    if (!silent && profile?.role === 'prestador') {
+      const wm = Array.isArray(profile?.work_modes) ? profile.work_modes.filter(Boolean) : [];
+      if (wm.length === 0) {
+        toast.error('Escolha ao menos um formato em "💼 Aceita trabalhos como".', {
+          description: 'Selecione entre Contratos FreeLancer MEI, Contratos Fixos MEI, Contratação CLT ou Serviços Individuais.',
+        });
+        return;
+      }
+    }
 
     if (silent) setAutoSaving(true); else setSaving(true);
     try {
