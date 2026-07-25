@@ -251,6 +251,8 @@ function ConversationPage() {
   // Presença + typing
   const [peerOnline, setPeerOnline] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   const presenceRef = useRef<any>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSentRef = useRef<number>(0);
