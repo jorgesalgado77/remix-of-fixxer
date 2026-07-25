@@ -22,7 +22,7 @@ import {
   UserCircle2,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import {
@@ -35,7 +35,7 @@ import {
   fetchPeerLastReadAt,
   subscribePeerReadReceipts,
 } from "@/lib/chat-preferences";
-import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
+import { enqueueMarkConversationRead, flushChatReadQueue } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { sanitizeContactText, CONTACT_GUARD_WARNING } from "@/lib/contact-guard";
@@ -104,6 +104,9 @@ type MessageRow = {
   _clientId?: string;
   _draftText?: string;
   _draftFile?: File | null;
+  _uploadPct?: number;
+  _uploading?: boolean;
+  _batchIndex?: number;
 };
 
 const PAGE_SIZE = 30;
@@ -180,6 +183,8 @@ function ConversationPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
   const idSetRef = useRef<Set<string>>(new Set());
+  const [dragActive, setDragActive] = useState(false);
+  const dragCounterRef = useRef(0);
 
   const selectCols =
     "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name, client_message_id";
@@ -211,15 +216,27 @@ function ConversationPage() {
     [peerId],
   );
 
-  const markIncomingRead = async (uid: string) => {
-    setMarkingRead(true);
-    try {
-      enqueueMarkConversationRead(uid, peerId);
-      markConversationReadLocal(uid, peerId);
-      window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
-    } finally {
-      setMarkingRead(false);
-    }
+  // Debounce das marcações de lida + confirmação do servidor via flush da fila.
+  // Evita flutuação de status quando o usuário alterna conversas rapidamente.
+  const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const markReadInflightRef = useRef<Promise<void> | null>(null);
+  const markIncomingRead = (uid: string) => {
+    if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
+    markReadTimerRef.current = setTimeout(async () => {
+      setMarkingRead(true);
+      try {
+        enqueueMarkConversationRead(uid, peerId);
+        markConversationReadLocal(uid, peerId);
+        // Aguarda a confirmação do servidor antes de propagar o evento global.
+        const inflight = flushChatReadQueue().catch(() => {});
+        markReadInflightRef.current = inflight;
+        await inflight;
+        window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
+      } finally {
+        setMarkingRead(false);
+        markReadInflightRef.current = null;
+      }
+    }, 350);
   };
 
   const sendTypingStop = () => {
@@ -228,6 +245,54 @@ function ConversationPage() {
       presenceRef.current.send({ type: "broadcast", event: "typing-stop", payload: { from: userId } });
     } catch {}
   };
+  const acceptIncomingFiles = useCallback((picked: File[]) => {
+    if (picked.length === 0) return;
+    const remaining = MAX_FILES - pendingFiles.length;
+    if (remaining <= 0) {
+      toast.error("Limite de anexos atingido", { description: `Máximo ${MAX_FILES} arquivos por mensagem.` });
+      return;
+    }
+    const overflow = picked.length - remaining;
+    const accepted: File[] = [];
+    const rejected: string[] = [];
+    for (const f of picked.slice(0, remaining)) {
+      if (f.size > MAX_FILE_MB * 1024 * 1024) { rejected.push(`${f.name} (>${MAX_FILE_MB}MB)`); continue; }
+      if (f.size === 0) { rejected.push(`${f.name} (vazio)`); continue; }
+      accepted.push(f);
+    }
+    if (rejected.length) toast.error(`${rejected.length} arquivo(s) rejeitado(s)`, { description: rejected.join(" • ") });
+    if (overflow > 0) toast.warning(`${overflow} arquivo(s) ignorado(s)`, { description: `Limite de ${MAX_FILES} anexos por mensagem.` });
+    if (accepted.length) {
+      const merged = [...pendingFiles, ...accepted];
+      setPendingFiles(merged);
+      setDraftFiles(peerId, merged);
+    }
+  }, [pendingFiles, peerId]);
+
+  const onDragEnter = (e: ReactDragEvent) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setDragActive(true);
+  };
+  const onDragOver = (e: ReactDragEvent) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const onDragLeave = (e: ReactDragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+    if (dragCounterRef.current === 0) setDragActive(false);
+  };
+  const onDrop = (e: ReactDragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setDragActive(false);
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    if (files.length > 0) acceptIncomingFiles(files);
+  };
+
 
   useEffect(() => {
     let cancelled = false;
@@ -423,6 +488,7 @@ function ConversationPage() {
       window.removeEventListener("pagehide", onHide);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
+      if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
       if (expireTimer) clearInterval(expireTimer);
       try { sendTypingStop(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
@@ -476,14 +542,20 @@ function ConversationPage() {
     stopTypingTimerRef.current = setTimeout(sendTypingStop, 3000);
   };
 
-  const doUpload = async (file: File) => {
+  const doUpload = async (
+    file: File,
+    onProgress?: (pct: number) => void,
+  ) => {
     if (!userId) return null;
     setUploading(true);
     setUploadPct(0);
     try {
       const ext = file.name.split(".").pop() || "bin";
       const path = `chat/${userId}/${peerId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { publicUrl } = await uploadWithProgress("media", path, file, (p) => setUploadPct(p.percent));
+      const { publicUrl } = await uploadWithProgress("media", path, file, (p) => {
+        setUploadPct(p.percent);
+        onProgress?.(p.percent);
+      });
       return { url: publicUrl, type: file.type || "application/octet-stream", name: file.name };
     } catch (e: any) {
       toast.error("Falha no upload do anexo", { description: e?.message });
@@ -596,23 +668,29 @@ function ConversationPage() {
         });
       });
     }
-    const optimisticRows: MessageRow[] = optimBatch.map((o) => {
+    const optimisticRows: MessageRow[] = optimBatch.map((o, i) => {
       let previewUrl: string | null = null;
       let previewType: string | null = null;
       if (o.file && (o.file.type.startsWith("image/") || o.file.type.startsWith("video/"))) {
         try { previewUrl = URL.createObjectURL(o.file); previewType = o.file.type; } catch {}
       }
+      // created_at incrementa 1ms por item, preservando a ordem original do lote
+      // mesmo que uploads em paralelo terminem em tempos diferentes.
+      const baseTs = Date.now() + i;
       return {
         id: o.clientId,
         sender_id: userId,
         recipient_id: peerId,
         content: o.text || null,
-        created_at: new Date().toISOString(),
+        created_at: new Date(baseTs).toISOString(),
         read: false,
         _pending: true,
         _clientId: o.clientId,
         _draftText: o.text,
         _draftFile: o.file,
+        _batchIndex: i,
+        _uploadPct: o.file ? 0 : undefined,
+        _uploading: !!o.file,
         // Preview local imediato (persiste mesmo se o upload falhar)
         attachment_url: previewUrl,
         attachment_type: previewType,
@@ -684,17 +762,34 @@ function ConversationPage() {
       return;
     }
 
-    // === REAL: upload sequencial + persist por mensagem ===
+    // === REAL: uploads em PARALELO com progresso por anexo,
+    // porém persistência em ORDEM (aguarda o item anterior antes de persistir o próximo). ===
     setUploadingIndex(0);
+    const patchRow = (clientId: string, patch: Partial<MessageRow>) =>
+      setMessages((prev) =>
+        prev.map((m) => (m._clientId === clientId ? { ...m, ...patch } : m)),
+      );
+
+    const uploadPromises = optimBatch.map(async (o) => {
+      if (!o.file) return null;
+      try {
+        const attachment = await doUpload(o.file, (pct) =>
+          patchRow(o.clientId, { _uploadPct: pct }),
+        );
+        if (!attachment) throw new Error("Upload cancelado");
+        patchRow(o.clientId, { _uploadPct: 100, _uploading: false });
+        return attachment;
+      } catch (e: any) {
+        patchRow(o.clientId, { _uploading: false, _uploadPct: 0 });
+        throw e;
+      }
+    });
+
     for (let i = 0; i < optimBatch.length; i++) {
       const o = optimBatch[i];
       setUploadingIndex(i);
       try {
-        let attachment: { url: string; type: string; name: string } | null = null;
-        if (o.file) {
-          attachment = await doUpload(o.file);
-          if (!attachment) throw new Error("Upload cancelado");
-        }
+        const attachment = await uploadPromises[i];
         await persistMessage(o.clientId, o.text, attachment);
       } catch (e: any) {
         toast.error(
@@ -703,9 +798,7 @@ function ConversationPage() {
             : "Falha ao enviar",
           { description: e?.message },
         );
-        setMessages((prev) =>
-          prev.map((m) => (m._clientId === o.clientId ? { ...m, _pending: false, _failed: true } : m)),
-        );
+        patchRow(o.clientId, { _pending: false, _failed: true, _uploading: false });
       }
     }
     setSending(false);
@@ -715,19 +808,30 @@ function ConversationPage() {
     if (!userId) return;
     const clientId = m._clientId || m.id;
     setMessages((prev) =>
-      prev.map((x) => (x._clientId === clientId || x.id === clientId ? { ...x, _pending: true, _failed: false } : x)),
+      prev.map((x) =>
+        x._clientId === clientId || x.id === clientId
+          ? { ...x, _pending: true, _failed: false, _uploading: !!m._draftFile, _uploadPct: 0 }
+          : x,
+      ),
     );
     try {
       let attachment: { url: string; type: string; name: string } | null = null;
       if (m._draftFile) {
-        attachment = await doUpload(m._draftFile);
+        attachment = await doUpload(m._draftFile, (pct) =>
+          setMessages((prev) =>
+            prev.map((x) => (x._clientId === clientId ? { ...x, _uploadPct: pct } : x)),
+          ),
+        );
         if (!attachment) throw new Error("Upload cancelado");
       }
       await persistMessage(clientId, m._draftText || "", attachment);
+      setMessages((prev) =>
+        prev.map((x) => (x._clientId === clientId ? { ...x, _uploading: false, _uploadPct: 100 } : x)),
+      );
     } catch (e: any) {
       toast.error("Retentativa falhou", { description: e?.message });
       setMessages((prev) =>
-        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true } : x)),
+        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true, _uploading: false } : x)),
       );
     }
   };
@@ -950,7 +1054,26 @@ function ConversationPage() {
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div
+        ref={scrollRef}
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={`flex-1 overflow-y-auto px-4 py-4 space-y-4 relative ${
+          dragActive ? "outline-dashed outline-2 outline-primary/70 outline-offset-[-8px] bg-primary/5" : ""
+        }`}
+      >
+        {dragActive && (
+          <div className="pointer-events-none sticky top-2 z-20 mx-auto max-w-md text-center bg-primary/15 border-2 border-dashed border-primary/70 rounded-2xl px-6 py-4 backdrop-blur-md">
+            <p className="text-sm font-black uppercase italic tracking-widest text-primary">
+              📎 Solte para anexar
+            </p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
+              Máx {MAX_FILES} arquivos · {MAX_FILE_MB}MB cada
+            </p>
+          </div>
+        )}
         <ChatAppointmentsBanner userId={userId} peerId={peerId} />
         {hasMore && !loading && messages.length > 0 && (
           <div className="text-center">
@@ -1027,9 +1150,17 @@ function ConversationPage() {
                         />
                       )}
                       {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
-                      {m._pending && uploading && m._draftFile && (
-                        <div className="mt-2 w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
-                          <div className="h-full bg-white/80 transition-all" style={{ width: `${uploadPct}%` }} />
+                      {m._pending && m._uploading && m._draftFile && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 bg-black/30 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="h-full bg-white/80 transition-all"
+                              style={{ width: `${m._uploadPct ?? 0}%` }}
+                            />
+                          </div>
+                          <span className="text-[9px] font-bold tabular-nums opacity-80">
+                            {Math.round(m._uploadPct ?? 0)}%
+                          </span>
                         </div>
                       )}
                       <p className={`text-[9px] mt-1 flex items-center gap-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
@@ -1230,42 +1361,7 @@ function ConversationPage() {
               className="hidden"
               onChange={(e) => {
                 const picked = Array.from(e.target.files ?? []);
-                if (picked.length === 0) return;
-                const remaining = MAX_FILES - pendingFiles.length;
-                if (remaining <= 0) {
-                  toast.error("Limite de anexos atingido", { description: `Máximo ${MAX_FILES} arquivos por mensagem.` });
-                  if (fileRef.current) fileRef.current.value = "";
-                  return;
-                }
-                const overflow = picked.length - remaining;
-                const accepted: File[] = [];
-                const rejected: string[] = [];
-                for (const f of picked.slice(0, remaining)) {
-                  if (f.size > MAX_FILE_MB * 1024 * 1024) {
-                    rejected.push(`${f.name} (>${MAX_FILE_MB}MB)`);
-                    continue;
-                  }
-                  if (f.size === 0) {
-                    rejected.push(`${f.name} (vazio)`);
-                    continue;
-                  }
-                  accepted.push(f);
-                }
-                if (rejected.length) {
-                  toast.error(`${rejected.length} arquivo(s) rejeitado(s)`, {
-                    description: rejected.join(" • "),
-                  });
-                }
-                if (overflow > 0) {
-                  toast.warning(`${overflow} arquivo(s) ignorado(s)`, {
-                    description: `Limite de ${MAX_FILES} anexos por mensagem.`,
-                  });
-                }
-                if (accepted.length) {
-                  const merged = [...pendingFiles, ...accepted];
-                  setPendingFiles(merged);
-                  setDraftFiles(peerId, merged);
-                }
+                acceptIncomingFiles(picked);
                 if (fileRef.current) fileRef.current.value = "";
               }}
             />
