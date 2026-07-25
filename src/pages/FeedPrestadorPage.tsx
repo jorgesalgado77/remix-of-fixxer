@@ -768,6 +768,9 @@ function JobCardImpl({
   const status = getFeedStatus(job.id);
   const statusColor = FEED_STATUS_COLOR[status];
   const contractorHref = isClientFinal ? "/cliente/$id" : "/lojista/$id";
+  const userCoords = useUserCoords();
+  const distanceLabel = formatDistanceFromCity(job.city, userCoords);
+
 
   return (
     <article
