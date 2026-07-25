@@ -55,16 +55,18 @@ function PrestadorDashboard() {
           <Link to="/feed/prestador" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_hsl(var(--primary)/0.4)] transition-all">
             <Briefcase className="w-4 h-4" /> Acessar Feed da Categoria
           </Link>
+          <AvailabilityToggle />
           <Link
-            to="/profile"
+            to="/configuracoes"
             className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-primary/40 transition-all"
-            title="Meu Perfil — editar dados, foto e vitrine"
-            aria-label="Abrir meu perfil"
+            title="Configurações do sistema — preferências, notificações e segurança"
+            aria-label="Abrir configurações do sistema"
           >
-            <User className="w-5 h-5" />
+            <Settings className="w-5 h-5" />
           </Link>
         </div>
       </header>
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={<Briefcase className="w-5 h-5" />} label="Ativos" value="3" color="text-blue-400" />
