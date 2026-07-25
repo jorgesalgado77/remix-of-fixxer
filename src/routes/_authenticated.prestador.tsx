@@ -52,8 +52,10 @@ function PrestadorDashboard() {
         <PanelActions />
       </header>
 
+      <CoinBalancePlanCard />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
         <StatCard icon={<Briefcase className="w-5 h-5" />} label="Ativos" value="3" color="text-blue-400" />
         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} label="Concluídos" value="128" color="text-primary" />
         <StatCard icon={<Star className="w-5 h-5" />} label="Rating" value="4.9" color="text-amber-400" />
