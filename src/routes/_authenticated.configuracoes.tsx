@@ -393,6 +393,78 @@ function Section({
   );
 }
 
+function AvailabilityAuditSection({ accent }: { accent: string }) {
+  const [items, setItems] = useState<AvailabilityAudit[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try { setItems(await getMyAudit(20)); } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const fmt = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString("pt-BR", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+      });
+    } catch { return iso; }
+  };
+
+  return (
+    <Section title="Disponibilidade" icon={<Activity className="w-4 h-4" />} accent={accent}>
+      <p className="text-[11px] text-white/60 leading-snug">
+        Histórico das últimas mudanças no seu status de disponibilidade.
+        Use o botão de disponibilidade no topo do painel para pausar ou reativar.
+      </p>
+
+      {loading ? (
+        <div className="text-[11px] text-white/40">Carregando histórico…</div>
+      ) : items.length === 0 ? (
+        <div className="text-[11px] text-white/40 py-4 text-center border border-dashed border-white/10 rounded-xl">
+          Nenhuma alteração registrada ainda.
+        </div>
+      ) : (
+        <ul className="space-y-2" aria-label="Histórico de disponibilidade">
+          {items.map((it) => (
+            <li
+              key={it.id}
+              className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/10"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{
+                    background: it.is_available ? "#10B981" : "#6B7280",
+                    boxShadow: it.is_available ? "0 0 6px #10B981" : undefined,
+                  }}
+                />
+                <span className="text-[11px] font-black uppercase italic truncate">
+                  {it.is_available ? "Disponível" : "Indisponível"}
+                </span>
+              </div>
+              <span className="text-[10px] text-white/50 tabular-nums shrink-0">{fmt(it.changed_at)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={load}
+          className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase italic hover:bg-white/10"
+        >
+          Atualizar
+        </button>
+      </div>
+    </Section>
+  );
+}
+
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
