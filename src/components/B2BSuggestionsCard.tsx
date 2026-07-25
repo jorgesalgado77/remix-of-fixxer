@@ -133,7 +133,37 @@ function B2BSuggestionsCardInner() {
     };
   }, [recompute]);
 
-  if (dismissed || suggestions.length === 0) return null;
+  // Sincroniza estado quando outra instância/aba altera a visibilidade.
+  useEffect(() => {
+    const onVis = (e: Event) => {
+      const d = (e as CustomEvent).detail as { dismissed?: boolean } | undefined;
+      if (typeof d?.dismissed === "boolean") setDismissed(d.dismissed);
+    };
+    window.addEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
+    return () =>
+      window.removeEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
+  }, []);
+
+  if (suggestions.length === 0) return null;
+
+  // Estado OCULTO: mostra chip discreto para reexibir.
+  if (dismissed) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setDismissed(false);
+          writeDismissed(false);
+        }}
+        className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors"
+        aria-label="Reexibir sugestões de afiliados B2B"
+        title="Reexibir sugestões de afiliados B2B"
+      >
+        <Eye className="w-3.5 h-3.5" style={{ color: theme.hex }} />
+        Mostrar Sugestões de Afiliados
+      </button>
+    );
+  }
 
   return (
     <div
@@ -161,10 +191,15 @@ function B2BSuggestionsCardInner() {
           </div>
         </div>
         <button
-          onClick={() => setDismissed(true)}
-          className="text-[9px] font-black uppercase text-white/40 hover:text-white/70 shrink-0"
-          aria-label="Fechar sugestões"
+          onClick={() => {
+            setDismissed(true);
+            writeDismissed(true);
+          }}
+          className="flex items-center gap-1 text-[9px] font-black uppercase text-white/40 hover:text-white/70 shrink-0"
+          aria-label="Ocultar sugestões (pode reexibir depois)"
+          title="Ocultar — você pode reexibir a qualquer momento"
         >
+          <EyeOff className="w-3 h-3" />
           Ocultar
         </button>
       </div>
@@ -192,4 +227,5 @@ function B2BSuggestionsCardInner() {
 }
 
 export const B2BSuggestionsCard = memo(B2BSuggestionsCardInner);
+
 
