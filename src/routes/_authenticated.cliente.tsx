@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { EscrowBadge } from "@/components/EscrowBadge";
 import { ReviewModal } from "@/components/ReviewModal";
 import { PanelActions } from "@/components/PanelActions";
+import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 
 
 export const Route = createFileRoute("/_authenticated/cliente")({
