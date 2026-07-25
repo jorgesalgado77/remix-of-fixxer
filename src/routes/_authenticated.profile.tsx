@@ -704,6 +704,14 @@ function ProfilePage() {
                     );
                   })}
                 </div>
+                {radiusInvalid && (
+                  <div
+                    role="alert"
+                    className="rounded-2xl border border-red-500/40 bg-red-500/10 p-3 text-[11px] text-red-200 break-words"
+                  >
+                    ⚠️ Raio "{profile?.default_radius}" não é permitido. Escolha um dos valores: {ALLOWED_RADII_KM.join(", ")} km.
+                  </div>
+                )}
               </div>
 
               {/* SOBRE / APRESENTAÇÃO DA EMPRESA */}
@@ -719,17 +727,23 @@ function ProfilePage() {
                 </div>
                 <textarea
                   rows={4}
-                  maxLength={1200}
                   value={profile?.about_bio || ''}
                   onChange={(e) => setProfile({ ...profile, about_bio: e.target.value })}
                   readOnly={!!profileId}
                   placeholder="Conte em poucas palavras sobre sua experiência, especialidades, história e diferenciais de atendimento..."
-                  className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none text-sm leading-relaxed resize-none"
+                  aria-invalid={bioOverLimit}
+                  className={`w-full bg-white/5 border ${bioOverLimit ? 'border-red-500/60 focus:border-red-500' : 'border-white/10 focus:border-primary/50'} focus:ring-1 ${bioOverLimit ? 'focus:ring-red-500/30' : 'focus:ring-primary/20'} p-4 rounded-2xl transition-all outline-none text-sm leading-relaxed resize-none`}
                 />
-                <div className="flex justify-end text-[10px] font-black uppercase tracking-widest text-white/40">
-                  {(profile?.about_bio || '').length}/1200
+                <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-widest">
+                  <span className={bioOverLimit ? 'text-red-400' : 'text-white/40'}>
+                    {bioOverLimit ? `Excedeu ${bioLen - BIO_MAX_LENGTH} caractere(s)` : ''}
+                  </span>
+                  <span className={bioOverLimit ? 'text-red-400' : bioLen > BIO_MAX_LENGTH * 0.9 ? 'text-amber-400' : 'text-white/40'}>
+                    {bioLen}/{BIO_MAX_LENGTH}
+                  </span>
                 </div>
               </div>
+
 
               {/* NOTIFICAÇÕES PUSH */}
               <div className="pt-8 space-y-4">
