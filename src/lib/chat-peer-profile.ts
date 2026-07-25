@@ -215,7 +215,17 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
     }
   }
 
+  // Fallback de role a partir da tabela de origem quando a coluna role estiver vazia.
+  // Ex.: se o dado veio de `store_profiles` mas nenhum campo textual de role foi
+  // encontrado, assumimos "lojista". Idem para provider_profiles → "prestador".
+  if (!current.role) {
+    const joined = source.join(" | ");
+    if (/store_profiles/.test(joined)) current.role = "lojista";
+    else if (/provider_profiles/.test(joined)) current.role = "prestador";
+  }
+
   const finalName = current.name || "Conversa";
+
   const result: PeerProfile = {
     id: peerId,
     name: finalName,
