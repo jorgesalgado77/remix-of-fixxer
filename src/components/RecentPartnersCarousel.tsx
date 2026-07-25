@@ -24,12 +24,17 @@ import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 type PartnerRow = {
   id: string;
   full_name: string | null;
+  display_name?: string | null;
+  company_name?: string | null;
   name?: string | null;
   avatar_url: string | null;
   avatar?: string | null;
   photo_url?: string | null;
+  banner_url?: string | null;
   role: string | null;
   activity_branch: string | null;
+  business_category?: string | null;
+  custom_branch?: string | null;
   category?: string | null;
   city: string | null;
   uf: string | null;
@@ -38,9 +43,10 @@ type PartnerRow = {
   address?: string | null;
   rating: number | null;
   created_at: string | null;
+  lat?: number | null;
+  lng?: number | null;
   distance_km?: number | string | null;
   distance?: number | string | null;
-  // 🚚 Sincronização de veículo e observações no card (compatibilidade rápida).
   vehicle_type?: string | null;
   vehicle_description?: string | null;
   vehicle_details?: Record<string, any> | null;
@@ -53,7 +59,7 @@ type PartnerCard = PartnerRow & { _kind: PartnerKind };
 type SortMode = "recent" | "rating" | "nearby";
 type KindFilter = "all" | PartnerKind;
 
-const CACHE_KEY = "fixxer_recent_partners_v1";
+const CACHE_KEY = "fixxer_recent_partners_v2";
 const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
 const SORT_KEY = "fixxer_recent_partners_sort_v1";
 const FILTER_KEY = "fixxer_recent_partners_filter_v1";
@@ -233,19 +239,35 @@ export function RecentPartnersCarousel() {
 
 
   const fetchPartners = useCallback(async (): Promise<{ ok: boolean }> => {
+    // Seleciona APENAS colunas que existem com segurança na tabela `profiles` do
+    // Supabase externo. Qualquer coluna extra faz o PostgREST responder 400 e cai
+    // no fallback silencioso (mock), o que explicava o card mostrando somente
+    // "Jorge Salgado / Carlos Silva" mesmo com prestadores reais cadastrados.
+    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, banner_url, role, business_category, custom_branch, city, state, rating, created_at, lat, lng";
     try {
       const { data, error } = await supabaseExternal
         .from("profiles")
-        .select("id, full_name, name, avatar_url, avatar, photo_url, role, activity_branch, category, city, uf, state, location, address, rating, created_at, vehicle_type, vehicle_description, vehicle_details, offerings_notes")
+        .select(SAFE_COLS)
+        .not("role", "is", null)
         .order("created_at", { ascending: false })
-        .order("rating", { ascending: false })
         .limit(120);
       if (error) throw error;
 
       const rows = ((data as unknown as PartnerRow[]) ?? [])
         .map((r) => {
           const kind = classifyRole(r.role);
-          return kind ? ({ ...r, _kind: kind } as PartnerCard) : null;
+          if (!kind) return null;
+          // Normaliza campos "amigáveis" a partir do que realmente existe no banco.
+          const branch = safeStr(r.business_category) || safeStr(r.custom_branch) || null;
+          const merged: PartnerCard = {
+            ...r,
+            name: safeStr(r.display_name) || safeStr(r.company_name) || safeStr(r.full_name),
+            full_name: safeStr(r.display_name) || safeStr(r.company_name) || safeStr(r.full_name),
+            activity_branch: branch,
+            uf: r.state ?? null,
+            _kind: kind,
+          };
+          return merged;
         })
         .filter((x): x is PartnerCard => !!x)
         .slice(0, 30);
@@ -253,13 +275,11 @@ export function RecentPartnersCarousel() {
         setItems(rows);
         writeCache(rows);
       } else {
-        // Banco vazio ou sem parceiros elegíveis → mock silencioso (sem banner).
         setItems((prev) => (prev.length > 0 ? prev : FALLBACK_PARTNERS));
       }
       setErrorMsg(null);
       return { ok: true };
     } catch (err: unknown) {
-      // Falha na consulta → sempre garante mock silencioso. Nunca exibe banner amarelo.
       if (typeof console !== "undefined") console.debug("[RecentPartnersCarousel] fallback silencioso:", err);
       setItems((prev) => (prev.length > 0 ? prev : FALLBACK_PARTNERS));
       setErrorMsg(null);
@@ -297,7 +317,10 @@ export function RecentPartnersCarousel() {
   const sortedItems = useMemo<Enriched[]>(() => {
     const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
     const enriched: Enriched[] = base.map((p) => {
-      const coords = cityCoords(p.city) ?? null;
+      const rowCoords = (p.lat != null && p.lng != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)))
+        ? { lat: Number(p.lat), lng: Number(p.lng) }
+        : null;
+      const coords = rowCoords ?? cityCoords(p.city) ?? null;
       // Distância: prioriza cálculo real via geo do usuário; senão usa distance_km/distance persistido no perfil.
       const liveDist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
       const storedRaw = p.distance_km ?? p.distance;
