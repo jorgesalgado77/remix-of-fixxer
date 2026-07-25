@@ -1125,6 +1125,62 @@ function ConversationPage() {
     toast.success(next ? "Notificações silenciadas" : "Notificações reativadas");
   };
 
+  const blockKey = userId ? `fixxer:blocked:${userId}` : "";
+  const isBlocked = (() => {
+    if (typeof window === "undefined" || !blockKey) return false;
+    try {
+      const arr = JSON.parse(localStorage.getItem(blockKey) || "[]");
+      return Array.isArray(arr) && arr.includes(peerId);
+    } catch { return false; }
+  })();
+  const [, forceRender] = useState(0);
+
+  const toggleBlock = () => {
+    if (!userId || !blockKey) return;
+    try {
+      const arr: string[] = JSON.parse(localStorage.getItem(blockKey) || "[]");
+      const set = new Set(arr);
+      const next = !set.has(peerId);
+      if (next) set.add(peerId); else set.delete(peerId);
+      localStorage.setItem(blockKey, JSON.stringify(Array.from(set)));
+      forceRender((n) => n + 1);
+      toast.success(next ? "Usuário bloqueado" : "Usuário desbloqueado");
+      window.dispatchEvent(new Event("fixxer:blocked-change"));
+    } catch (e: any) {
+      toast.error("Falha ao atualizar bloqueio", { description: e?.message });
+    }
+  };
+
+  const exportConversation = () => {
+    try {
+      const lines: string[] = [];
+      lines.push(`Conversa com ${peerName}`);
+      lines.push(`Exportado em ${new Date().toLocaleString("pt-BR")}`);
+      lines.push("".padEnd(40, "-"));
+      for (const m of messages) {
+        const who = m.sender_id === userId ? "Você" : peerName;
+        const when = m.created_at ? new Date(m.created_at).toLocaleString("pt-BR") : "";
+        const body = (m.content || "").trim();
+        const att = m.attachment_url ? ` [anexo: ${m.attachment_name || m.attachment_url}]` : "";
+        lines.push(`[${when}] ${who}: ${body}${att}`);
+      }
+      const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `conversa-${(peerName || "chat").replace(/[^\w-]+/g, "_")}-${stamp}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      toast.success("Conversa exportada");
+    } catch (e: any) {
+      toast.error("Falha ao exportar", { description: e?.message });
+    }
+  };
+
+
   const grouped = useMemo(() => {
     const out: { date: string; items: MessageRow[] }[] = [];
     for (const m of messages) {
