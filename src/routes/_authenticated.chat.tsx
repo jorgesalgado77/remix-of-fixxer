@@ -177,6 +177,8 @@ function ChatInboxPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [prefsVersion, setPrefsVersion] = useState(0);
+  const [typingByPeer, setTypingByPeer] = useState<Record<string, number>>({});
+
   const idSetRef = useRef<Set<string>>(new Set());
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -408,6 +410,54 @@ function ChatInboxPage() {
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
     };
   }, [loadFirstPage]);
+
+  // Escuta broadcasts de "digitando" direcionados à MINHA inbox.
+  // Cada conversation page emite em chat-inbox-{peerId}; aqui subscrevemos
+  // ao canal com meu uid e expiramos automaticamente após 4s.
+  useEffect(() => {
+    if (!userId) return;
+    let ch: any = null;
+    let expire: ReturnType<typeof setInterval> | null = null;
+    try {
+      ch = supabaseExternal
+        .channel(`chat-inbox-${userId}`, { config: { broadcast: { self: false } } })
+        .on("broadcast", { event: "typing" }, ({ payload }: any) => {
+          const from = payload?.from as string | undefined;
+          if (!from || from === userId) return;
+          setTypingByPeer((prev) => ({ ...prev, [from]: Date.now() }));
+        })
+        .on("broadcast", { event: "typing-stop" }, ({ payload }: any) => {
+          const from = payload?.from as string | undefined;
+          if (!from) return;
+          setTypingByPeer((prev) => {
+            if (!prev[from]) return prev;
+            const next = { ...prev };
+            delete next[from];
+            return next;
+          });
+        })
+        .subscribe();
+    } catch {}
+    // Watchdog: expira typings sem heartbeat há > 5s
+    expire = setInterval(() => {
+      setTypingByPeer((prev) => {
+        const now = Date.now();
+        let changed = false;
+        const next: Record<string, number> = {};
+        for (const [k, ts] of Object.entries(prev)) {
+          if (now - ts < 5000) next[k] = ts;
+          else changed = true;
+        }
+        return changed ? next : prev;
+      });
+    }, 1500);
+    return () => {
+      if (ch) { try { supabaseExternal.removeChannel(ch); } catch {} }
+      if (expire) clearInterval(expire);
+    };
+  }, [userId]);
+
+
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -800,22 +850,36 @@ function ChatInboxPage() {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
-                        {c.lastMine && c.lastStatus === "pending" && (
-                          <Loader2 className="w-3 h-3 shrink-0 animate-spin text-muted-foreground/80" aria-label="Enviando" />
-                        )}
-                        {c.lastMine && c.lastStatus === "failed" && (
-                          <AlertCircle className="w-3 h-3 shrink-0 text-red-400" aria-label="Falha no envio" />
-                        )}
-                        {c.lastMine && c.lastStatus === "sent" && (
-                          <CheckCheck className="w-3 h-3 shrink-0 text-muted-foreground/80" aria-label="Enviada" />
-                        )}
-                        {c.lastAttachmentType && <Paperclip className="w-3 h-3 shrink-0" />}
-                        {c.lastMessage ? (
-                          <Highlight text={c.lastMessage} terms={activeTerms} />
+                        {typingByPeer[c.peerId] ? (
+                          <span className="flex items-center gap-1.5 text-primary italic font-bold">
+                            <span className="flex gap-0.5">
+                              <span className="w-1 h-1 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                              <span className="w-1 h-1 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                              <span className="w-1 h-1 rounded-full bg-primary animate-bounce" />
+                            </span>
+                            digitando…
+                          </span>
                         ) : (
-                          <span>{c.lastAttachmentType ? "Anexo" : "—"}</span>
+                          <>
+                            {c.lastMine && c.lastStatus === "pending" && (
+                              <Loader2 className="w-3 h-3 shrink-0 animate-spin text-muted-foreground/80" aria-label="Enviando" />
+                            )}
+                            {c.lastMine && c.lastStatus === "failed" && (
+                              <AlertCircle className="w-3 h-3 shrink-0 text-red-400" aria-label="Falha no envio" />
+                            )}
+                            {c.lastMine && c.lastStatus === "sent" && (
+                              <CheckCheck className="w-3 h-3 shrink-0 text-muted-foreground/80" aria-label="Enviada" />
+                            )}
+                            {c.lastAttachmentType && <Paperclip className="w-3 h-3 shrink-0" />}
+                            {c.lastMessage ? (
+                              <Highlight text={c.lastMessage} terms={activeTerms} />
+                            ) : (
+                              <span>{c.lastAttachmentType ? "Anexo" : "—"}</span>
+                            )}
+                          </>
                         )}
                       </p>
+
                       {historySnippet && (
                         <p className="text-[10px] italic text-muted-foreground/80 truncate mt-0.5">
                           <span className="uppercase font-bold tracking-widest mr-1 text-primary/70">Histórico:</span>

@@ -109,6 +109,8 @@ type MessageRow = {
   _uploadPct?: number;
   _uploading?: boolean;
   _batchIndex?: number;
+  _error?: string;
+
 };
 
 const PAGE_SIZE = 30;
@@ -264,12 +266,17 @@ function ConversationPage() {
     }, 350);
   };
 
+  const inboxTypingChannelRef = useRef<any>(null);
   const sendTypingStop = () => {
-    if (!presenceRef.current || !userId) return;
+    if (!userId) return;
     try {
-      presenceRef.current.send({ type: "broadcast", event: "typing-stop", payload: { from: userId } });
+      presenceRef.current?.send({ type: "broadcast", event: "typing-stop", payload: { from: userId } });
+    } catch {}
+    try {
+      inboxTypingChannelRef.current?.send({ type: "broadcast", event: "typing-stop", payload: { from: userId } });
     } catch {}
   };
+
   const acceptIncomingFiles = useCallback((picked: File[]) => {
     if (picked.length === 0) return;
     const remaining = MAX_FILES - pendingFiles.length;
@@ -489,7 +496,18 @@ function ConversationPage() {
           if (Date.now() - lastPeerHeartbeat > 5000) setPeerTyping(false);
         }, 1500);
       } catch {}
+
+      // Canal secundário para notificar a INBOX do peer sobre typing.
+      // Assim, mesmo com a conversa fechada, ele vê "digitando…" na lista.
+      try {
+        const inboxCh = supabaseExternal.channel(`chat-inbox-${peerId}`, {
+          config: { broadcast: { self: false } },
+        });
+        inboxCh.subscribe();
+        inboxTypingChannelRef.current = inboxCh;
+      } catch {}
     })();
+
 
     // Ao trocar de rota / recarregar / esconder aba: envia typing-stop.
     // Ao VOLTAR o foco: re-marca a conversa como lida (sincroniza com o peer).
@@ -518,9 +536,11 @@ function ConversationPage() {
       try { sendTypingStop(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
       if (presenceChannel) { try { supabaseExternal.removeChannel(presenceChannel); } catch {} }
+      if (inboxTypingChannelRef.current) { try { supabaseExternal.removeChannel(inboxTypingChannelRef.current); } catch {} inboxTypingChannelRef.current = null; }
       if (unsubPeerRead) { try { unsubPeerRead(); } catch {} }
       presenceRef.current = null;
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peerId, loadPage]);
 
@@ -536,36 +556,52 @@ function ConversationPage() {
     if (nearBottom) el.scrollTop = el.scrollHeight;
   }, [messages, peerTyping]);
 
+  const loadingOlderRef = useRef(false);
   const loadOlder = async () => {
-    if (!userId || messages.length === 0 || !hasMore) return;
+    if (!userId || messages.length === 0 || !hasMore || loadingOlderRef.current) return;
+    loadingOlderRef.current = true;
     const oldest = messages[0].created_at;
     const el = scrollRef.current;
     const prevHeight = el?.scrollHeight ?? 0;
-    const older = await loadPage(userId, oldest);
-    const dedup = older.filter((m) => !idSetRef.current.has(m.id));
-    dedup.forEach((m) => idSetRef.current.add(m.id));
-    if (dedup.length === 0) { setHasMore(false); return; }
-    setHasMore(older.length === PAGE_SIZE);
-    setMessages((prev) => [...dedup, ...prev]);
-    requestAnimationFrame(() => {
-      if (!el) return;
-      el.scrollTop = el.scrollHeight - prevHeight;
-    });
+    try {
+      const older = await loadPage(userId, oldest);
+      const dedup = older.filter((m) => !idSetRef.current.has(m.id));
+      dedup.forEach((m) => idSetRef.current.add(m.id));
+      if (dedup.length === 0) { setHasMore(false); return; }
+      setHasMore(older.length === PAGE_SIZE);
+      setMessages((prev) => [...dedup, ...prev]);
+      requestAnimationFrame(() => {
+        if (!el) return;
+        el.scrollTop = el.scrollHeight - prevHeight;
+      });
+    } finally {
+      loadingOlderRef.current = false;
+    }
   };
 
+  const onScrollFeed = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore || loading) return;
+    if (e.currentTarget.scrollTop < 80) void loadOlder();
+  };
+
+
   const sendTyping = () => {
-    if (!presenceRef.current || !userId) return;
+    if (!userId) return;
     const now = Date.now();
     if (now - lastTypingSentRef.current >= 1500) {
       lastTypingSentRef.current = now;
       try {
-        presenceRef.current.send({ type: "broadcast", event: "typing", payload: { from: userId } });
+        presenceRef.current?.send({ type: "broadcast", event: "typing", payload: { from: userId } });
+      } catch {}
+      try {
+        inboxTypingChannelRef.current?.send({ type: "broadcast", event: "typing", payload: { from: userId } });
       } catch {}
     }
     // agenda "typing-stop" após 3s de inatividade
     if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
     stopTypingTimerRef.current = setTimeout(sendTypingStop, 3000);
   };
+
 
   const doUpload = async (
     file: File,
@@ -836,19 +872,21 @@ function ConversationPage() {
         const attachment = await uploadPromises[i];
         await persistMessage(o.clientId, o.text, attachment);
       } catch (e: any) {
+        const errMsg = e?.message || "Erro desconhecido de rede";
         toast.error(
           filesToSend.length > 1
             ? `Falha ao enviar item ${i + 1}/${optimBatch.length}`
             : "Falha ao enviar",
-          { description: e?.message },
+          { description: errMsg },
         );
-        patchRow(o.clientId, { _pending: false, _failed: true, _uploading: false });
+        patchRow(o.clientId, { _pending: false, _failed: true, _uploading: false, _error: errMsg });
         try {
           window.dispatchEvent(
-            new CustomEvent("fixxer:message-failed", { detail: { clientId: o.clientId } }),
+            new CustomEvent("fixxer:message-failed", { detail: { clientId: o.clientId, error: errMsg } }),
           );
         } catch {}
       }
+
     }
     setSending(false);
   };
@@ -859,10 +897,11 @@ function ConversationPage() {
     setMessages((prev) =>
       prev.map((x) =>
         x._clientId === clientId || x.id === clientId
-          ? { ...x, _pending: true, _failed: false, _uploading: !!m._draftFile, _uploadPct: 0 }
+          ? { ...x, _pending: true, _failed: false, _uploading: !!m._draftFile, _uploadPct: 0, _error: undefined }
           : x,
       ),
     );
+
     try {
       window.dispatchEvent(
         new CustomEvent("fixxer:message-sending", {
@@ -899,16 +938,18 @@ function ConversationPage() {
         prev.map((x) => (x._clientId === clientId ? { ...x, _uploading: false, _uploadPct: 100 } : x)),
       );
     } catch (e: any) {
-      toast.error("Retentativa falhou", { description: e?.message });
+      const errMsg = e?.message || "Erro desconhecido de rede";
+      toast.error("Retentativa falhou", { description: errMsg });
       setMessages((prev) =>
-        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true, _uploading: false } : x)),
+        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true, _uploading: false, _error: errMsg } : x)),
       );
       try {
         window.dispatchEvent(
-          new CustomEvent("fixxer:message-failed", { detail: { clientId } }),
+          new CustomEvent("fixxer:message-failed", { detail: { clientId, error: errMsg } }),
         );
       } catch {}
     }
+
   };
 
 
@@ -1146,6 +1187,7 @@ function ConversationPage() {
 
       <div
         ref={scrollRef}
+        onScroll={onScrollFeed}
         onDragEnter={onDragEnter}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
@@ -1166,15 +1208,12 @@ function ConversationPage() {
         )}
         <ChatAppointmentsBanner userId={userId} peerId={peerId} />
         {hasMore && !loading && messages.length > 0 && (
-          <div className="text-center">
-            <button
-              onClick={loadOlder}
-              className="text-[10px] font-black uppercase italic tracking-widest text-primary bg-primary/10 border border-primary/20 rounded-full px-4 py-2 hover:bg-primary/20"
-            >
-              Carregar mensagens anteriores
-            </button>
+          <div className="text-center flex items-center justify-center gap-2 text-[10px] font-black uppercase italic tracking-widest text-muted-foreground">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Carregando mensagens anteriores...
           </div>
         )}
+
 
         {loading ? (
           <div className="text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
@@ -1285,25 +1324,41 @@ function ConversationPage() {
                           );
                         })()}
                         {m._pending && <> · <Loader2 className="w-2.5 h-2.5 animate-spin inline" /> enviando</>}
-                        {m._failed && (
-                          <>
-                            {" · "}
-                            <AlertCircle className="w-3 h-3 inline" />
+                        {m._failed && <> · <AlertCircle className="w-3 h-3 inline text-red-300" /> não enviada</>}
+                      </p>
+                      {m._failed && (
+                        <div
+                          role="alert"
+                          className="mt-2 flex flex-col gap-2 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/40 text-red-100 text-[11px] leading-snug"
+                        >
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-black uppercase italic tracking-widest text-red-200">
+                                Falha ao enviar
+                              </p>
+                              <p className="text-red-100/90 break-words">
+                                {m._error || "Não foi possível entregar sua mensagem. Verifique sua conexão."}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
                               onClick={() => retrySend(m)}
-                              className="ml-1 inline-flex items-center gap-1 underline text-white/90 hover:text-white"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/30 border border-red-500/60 hover:bg-red-500/45 text-white font-black uppercase italic tracking-widest text-[10px]"
                             >
-                              <RotateCcw className="w-2.5 h-2.5" /> Reenviar
+                              <RotateCcw className="w-3 h-3" /> Tentar novamente
                             </button>
                             <button
                               onClick={() => discardFailed(m.id)}
-                              className="ml-2 underline text-white/70 hover:text-white"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/80 font-bold uppercase tracking-widest text-[10px]"
                             >
                               Descartar
                             </button>
-                          </>
-                        )}
-                      </p>
+                          </div>
+                        </div>
+                      )}
+
 
                     </div>
                   </div>
