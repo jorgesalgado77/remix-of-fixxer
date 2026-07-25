@@ -526,14 +526,37 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
                   </Button>
                 </div>
               )}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => removeSection(section.id)}
-                className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-[9px]"
-              >
-                <Trash className="w-3 h-3 mr-1" /> Remover seção
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => moveSection(section.id, -1)}
+                  disabled={sectionIdx === 0}
+                  aria-label="Mover seção para cima"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-white disabled:opacity-30"
+                >
+                  <ArrowUp className="w-3.5 h-3.5" aria-hidden="true" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => moveSection(section.id, 1)}
+                  disabled={sectionIdx === safe.custom.length - 1}
+                  aria-label="Mover seção para baixo"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-white disabled:opacity-30"
+                >
+                  <ArrowDown className="w-3.5 h-3.5" aria-hidden="true" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeSection(section.id)}
+                  aria-label={`Remover seção ${section.name}`}
+                  className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-[9px]"
+                >
+                  <Trash className="w-3 h-3 mr-1" aria-hidden="true" /> Remover
+                </Button>
+              </div>
             </div>
 
             <PhotoGrid
