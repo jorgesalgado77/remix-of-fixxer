@@ -1272,36 +1272,17 @@ function ConversationPage() {
             </div>
 
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={markAsUnread}
-              title="Marcar como não lida"
-              aria-label="Marcar como não lida"
-              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
-            >
-              <MailOpen className="w-4 h-4" />
-            </button>
-            <button
-              onClick={toggleMute}
-              title={muted ? "Reativar notificações" : "Silenciar notificações"}
-              aria-label={muted ? "Reativar notificações" : "Silenciar notificações"}
-              className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
-                muted ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/5 border-white/10 hover:bg-white/10"
-              }`}
-            >
-              {muted ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-            </button>
-            <button
-              onClick={toggleArchive}
-              title={archived ? "Desarquivar" : "Arquivar conversa"}
-              aria-label={archived ? "Desarquivar" : "Arquivar conversa"}
-              className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
-                archived ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/5 border-white/10 hover:bg-white/10"
-              }`}
-            >
-              {archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
-            </button>
-          </div>
+          <HeaderActionsMenu
+            muted={muted}
+            archived={archived}
+            blocked={isBlocked}
+            onUnread={markAsUnread}
+            onMute={toggleMute}
+            onArchive={toggleArchive}
+            onBlock={toggleBlock}
+            onExport={exportConversation}
+          />
+
         </div>
       </header>
 
