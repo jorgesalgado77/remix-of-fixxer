@@ -1,22 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
-import { 
-  Briefcase, 
-  MapPin, 
-  Star, 
-  CheckCircle2, 
-  Clock, 
-  DollarSign, 
-  MessageSquare, 
-  User, 
+import {
+  Briefcase,
+  MapPin,
+  Star,
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  MessageSquare,
+  Settings,
   ChevronRight,
   TrendingUp,
   ShieldCheck,
   PlusCircle,
   Camera,
-  Hammer
+  Hammer,
+  PowerOff,
+  Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
 import { ReviewModal } from "@/components/ReviewModal";
 import { EscrowBadge } from "@/components/EscrowBadge";
 
