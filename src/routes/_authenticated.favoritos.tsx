@@ -560,7 +560,7 @@ function FavoritosPage() {
                       userCoords={userCoords}
                       onChat={() => openChat(fav)}
                       onView={() => openProfile(fav)}
-                      onRemove={() => removeProfile(fav)}
+                      onRemove={() => setPendingRemoval({ kind: "profile", item: fav })}
                     />
                   ))}
                 </div>
