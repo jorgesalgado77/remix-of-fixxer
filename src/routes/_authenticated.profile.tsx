@@ -60,6 +60,57 @@ export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
 });
 
+// ================= LIMITES E FORMATOS DE UPLOAD (visíveis na UI) =================
+const UPLOAD_LIMITS = {
+  image: {
+    maxBytes: 5 * 1024 * 1024,
+    maxLabel: '5 MB',
+    accept: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'],
+    acceptAttr: 'image/*',
+    hint: 'JPG, PNG, WEBP, AVIF ou GIF',
+  },
+  video: {
+    maxBytes: 50 * 1024 * 1024,
+    maxLabel: '50 MB',
+    accept: ['video/mp4', 'video/webm', 'video/quicktime'],
+    acceptAttr: 'video/*',
+    hint: 'MP4, WEBM ou MOV',
+  },
+  document: {
+    maxBytes: 10 * 1024 * 1024,
+    maxLabel: '10 MB',
+    accept: [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+    ],
+    acceptAttr: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,image/*',
+    hint: 'PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX ou TXT',
+  },
+} as const;
+
+function validateFileForType(
+  file: File,
+  type: 'image' | 'video' | 'document'
+): { ok: true } | { ok: false; reason: string } {
+  const cfg = UPLOAD_LIMITS[type];
+  const isImageOnDoc = type === 'document' && file.type.startsWith('image/');
+  if (!(cfg.accept as readonly string[]).includes(file.type) && !isImageOnDoc) {
+    return { ok: false, reason: `Formato não aceito (${file.type || 'desconhecido'}). Envie: ${cfg.hint}.` };
+  }
+  if (file.size > cfg.maxBytes) {
+    const mb = (file.size / (1024 * 1024)).toFixed(1);
+    return { ok: false, reason: `Arquivo muito grande (${mb} MB). Limite: ${cfg.maxLabel}.` };
+  }
+  return { ok: true };
+}
+
+
 function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -70,7 +121,7 @@ function ProfilePage() {
   const [newBrand, setNewBrand] = useState("");
   const [isAddingBrand, setIsAddingBrand] = useState(false);
   const [lightbox, setLightbox] = useState<{ isOpen: boolean; type: string; url: string; index: number }>({ isOpen: false, type: '', url: '', index: 0 });
-  const [uploads, setUploads] = useState<Array<{ id: string; name: string; type: 'image'|'video'|'document'; status: 'uploading'|'success'|'error'; error?: string }>>([]);
+  const [uploads, setUploads] = useState<Array<{ id: string; name: string; type: 'image'|'video'|'document'; status: 'uploading'|'success'|'error'; error?: string; file?: File }>>([]);
   const [preview, setPreview] = useState<{ open: boolean; url: string; name: string; kind: 'image'|'video'|'pdf'|'other' }>({ open: false, url: '', name: '', kind: 'other' });
   const dragRef = useRef<{ list: 'doc'|'image'|'video'; index: number } | null>(null);
 
@@ -205,38 +256,44 @@ function ProfilePage() {
   };
 
 
-  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document') => {
-    const files = e.target.files;
+  // Processa uma lista de arquivos. Se `retryIds` for informado, reutiliza os ids
+  // da barra de progresso (preservando a ordem original), em vez de criar novos.
+  const processMediaFiles = async (
+    files: File[],
+    type: 'image' | 'video' | 'document',
+    retryIds?: string[],
+  ) => {
     if (!files || files.length === 0) return;
 
-    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-    const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
-    const MAX_DOC_SIZE = 10 * 1024 * 1024; // 10MB
-
-    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
-    const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
-    const allowedDocTypes = [
-      'application/pdf', 
-      'application/msword', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'text/plain'
-    ];
+    // ---- Validação prévia (formato + tamanho) — mostra aviso claro ----
+    const validFiles: File[] = [];
+    const validIds: (string | undefined)[] = [];
+    const rejected: { name: string; reason: string }[] = [];
+    files.forEach((file, i) => {
+      const res = validateFileForType(file, type);
+      if (res.ok) {
+        validFiles.push(file);
+        validIds.push(retryIds?.[i]);
+      } else {
+        rejected.push({ name: file.name, reason: res.reason });
+      }
+    });
+    if (rejected.length > 0) {
+      rejected.forEach((r) => toast.error(`"${r.name}" não pode ser enviado`, { description: r.reason }));
+    }
+    if (validFiles.length === 0) return;
 
     try {
       setSaving(true);
-      const newMedia = [];
-      const newDocs = [];
+      const newMedia: any[] = [];
+      const newDocs: any[] = [];
 
-      // ---- Cobrança de excedentes: fotos (5 moedas) / vídeos (10 moedas) ----
-      const FREE_PHOTOS = 6;
-      const FREE_VIDEOS = 1;
-      if (type === 'image' || type === 'video') {
+      // ---- Cobrança de excedentes (apenas em envios novos, não em retry) ----
+      if (!retryIds && (type === 'image' || type === 'video')) {
+        const FREE_PHOTOS = 6;
+        const FREE_VIDEOS = 1;
         const existing = (profile?.portfolio_media || []).filter((f: any) => f.type === type).length;
-        const incoming = files.length;
+        const incoming = validFiles.length;
         const freeLeft = Math.max(0, (type === 'image' ? FREE_PHOTOS : FREE_VIDEOS) - existing);
         const extras = Math.max(0, incoming - freeLeft);
         if (extras > 0 && profile?.id) {
@@ -263,43 +320,17 @@ function ProfilePage() {
         }
       }
 
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        const existingId = validIds[i];
+        const uploadId = existingId || `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`;
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const uploadId = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`;
-
-        // Validation
-        if (type === 'image') {
-          if (!allowedImageTypes.includes(file.type)) {
-            toast.error(`Arquivo "${file.name}" não é uma imagem suportada.`);
-            continue;
-          }
-          if (file.size > MAX_IMAGE_SIZE) {
-            toast.error(`Imagem "${file.name}" excede o limite de 5MB.`);
-            continue;
-          }
-        } else if (type === 'video') {
-          if (!allowedVideoTypes.includes(file.type)) {
-            toast.error(`Arquivo "${file.name}" não é um vídeo suportado.`);
-            continue;
-          }
-          if (file.size > MAX_VIDEO_SIZE) {
-            toast.error(`Vídeo "${file.name}" excede o limite de 50MB.`);
-            continue;
-          }
-        } else if (type === 'document') {
-          if (!allowedDocTypes.includes(file.type)) {
-            toast.error(`Arquivo "${file.name}" não é um documento suportado.`);
-            continue;
-          }
-          if (file.size > MAX_DOC_SIZE) {
-            toast.error(`Documento "${file.name}" excede o limite de 10MB.`);
-            continue;
-          }
+        if (existingId) {
+          // Retry: reseta o item para 'uploading' preservando posição/ordem
+          setUploads((prev) => prev.map((u) => u.id === existingId ? { ...u, status: 'uploading', error: undefined } : u));
+        } else {
+          setUploads((prev) => [...prev, { id: uploadId, name: file.name, type, status: 'uploading', file }]);
         }
-
-        // Adiciona à barra de progresso (estado: enviando)
-        setUploads((prev) => [...prev, { id: uploadId, name: file.name, type, status: 'uploading' }]);
 
         try {
           let processedFile = file;
@@ -349,22 +380,18 @@ function ProfilePage() {
         } catch (err: any) {
           console.error('[upload] falha em', file.name, err);
           const message = err?.message || 'Falha no upload';
-          setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'error', error: message } : u));
+          setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'error', error: message, file } : u));
           toast.error(`Falha ao enviar "${file.name}"`, { description: message });
         }
       }
 
+      if (newMedia.length === 0 && newDocs.length === 0) return;
+
       const updatedPortfolio = [...(profile.portfolio_media || []), ...newMedia];
       const updatedDocs = [...(profile.documents || []), ...newDocs];
-
-      if (newMedia.length === 0 && newDocs.length === 0) {
-        return; // nada persistir
-      }
-
       await persistMedia(updatedPortfolio, updatedDocs);
       toast.success(`${newMedia.length + newDocs.length} arquivo(s) salvos com sucesso!`);
 
-      // Limpa a lista após 3s dos sucessos
       setTimeout(() => {
         setUploads((prev) => prev.filter((u) => u.status !== 'success'));
       }, 3000);
@@ -372,10 +399,64 @@ function ProfilePage() {
       toast.error("Erro ao salvar arquivos: " + (error?.message || 'falha desconhecida'));
     } finally {
       setSaving(false);
-      // libera o input para permitir reenvio do mesmo arquivo
+    }
+  };
+
+  const handleMediaUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: 'image' | 'video' | 'document',
+  ) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    try {
+      await processMediaFiles(files, type);
+    } finally {
       try { (e.target as HTMLInputElement).value = ''; } catch {}
     }
   };
+
+  // Reenvia todos os uploads que falharam, preservando a ordem original.
+  const retryFailedUploads = async () => {
+    const failed = uploads.filter((u) => u.status === 'error' && u.file);
+    if (failed.length === 0) {
+      toast.info('Nenhum upload falho para reenviar.');
+      return;
+    }
+    // Agrupa por tipo mantendo a ordem original (uploads state já é ordenado por inserção).
+    const byType: Record<'image'|'video'|'document', { files: File[]; ids: string[] }> = {
+      image: { files: [], ids: [] },
+      video: { files: [], ids: [] },
+      document: { files: [], ids: [] },
+    };
+    failed.forEach((u) => {
+      byType[u.type].files.push(u.file as File);
+      byType[u.type].ids.push(u.id);
+    });
+    toast.info(`Reenviando ${failed.length} arquivo(s) que falharam…`);
+    for (const t of ['image', 'video', 'document'] as const) {
+      if (byType[t].files.length > 0) {
+        await processMediaFiles(byType[t].files, t, byType[t].ids);
+      }
+    }
+  };
+
+  // Reordena via teclado (setas): move o item da posição atual em ±1.
+  const handleReorderKeyDown = (
+    e: React.KeyboardEvent,
+    list: 'doc' | 'image' | 'video',
+    index: number,
+    total: number,
+  ) => {
+    let target = -1;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') target = Math.max(0, index - 1);
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') target = Math.min(total - 1, index + 1);
+    else if (e.key === 'Home') target = 0;
+    else if (e.key === 'End') target = total - 1;
+    else return;
+    e.preventDefault();
+    if (target !== index) reorderMedia(list, index, target);
+  };
+
+
 
   // Persiste portfolio_media / documents com fallback para custom_sections.__extras
   const persistMedia = async (portfolio: any[], docs: any[]) => {
@@ -1364,19 +1445,35 @@ function ProfilePage() {
               {/* Painel de status dos uploads */}
               {uploads.length > 0 && (
                 <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-2" role="status" aria-live="polite">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary">
                       Envios em andamento ({uploads.filter(u => u.status === 'uploading').length}/{uploads.length})
+                      {uploads.some(u => u.status === 'error') && (
+                        <span className="ml-2 text-red-400">· {uploads.filter(u => u.status === 'error').length} falha(s)</span>
+                      )}
                     </p>
-                    {uploads.every(u => u.status !== 'uploading') && (
-                      <button
-                        onClick={() => setUploads([])}
-                        className="text-[9px] font-black uppercase text-muted-foreground hover:text-white"
-                      >
-                        Limpar
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {uploads.some(u => u.status === 'error' && u.file) && (
+                        <button
+                          type="button"
+                          onClick={retryFailedUploads}
+                          className="text-[9px] font-black uppercase px-2 py-1 rounded-md bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                        >
+                          ↻ Reenviar falhas
+                        </button>
+                      )}
+                      {uploads.every(u => u.status !== 'uploading') && (
+                        <button
+                          type="button"
+                          onClick={() => setUploads([])}
+                          className="text-[9px] font-black uppercase text-muted-foreground hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-md px-1"
+                        >
+                          Limpar
+                        </button>
+                      )}
+                    </div>
                   </div>
+
                   {uploads.map((u) => (
                     <div key={u.id} className="space-y-1">
                       <div className="flex items-center justify-between text-[10px]">
@@ -1401,9 +1498,13 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <FileText className="w-3 h-3" /> Documentos (PDF, DOC, XLS)
-                    <span className="ml-auto text-[9px] text-white/50 normal-case italic">Arraste para reordenar</span>
+                    <span className="ml-auto text-[9px] text-white/50 normal-case italic">Arraste ou use ← → para reordenar</span>
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <p className="text-[9px] text-white/60 -mt-2">
+                    Formatos aceitos: <b>{UPLOAD_LIMITS.document.hint}</b> · Tamanho máx.: <b>{UPLOAD_LIMITS.document.maxLabel}</b>. Foque um item (Tab) e use setas/Home/End para mover; Enter abre a prévia.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="list" aria-label="Documentos enviados, reordenáveis por arrastar ou setas do teclado">
+
                     {profile?.documents?.filter((f: any) => f.type === 'document').map((doc: any, i: number) => {
                       const ext = (doc.name?.split('.').pop() || '').toLowerCase();
                       const isPdf = ext === 'pdf';
@@ -1412,6 +1513,9 @@ function ProfilePage() {
                       return (
                       <div
                         key={i}
+                        role="listitem"
+                        tabIndex={0}
+                        aria-label={`Documento ${i + 1} de ${profile?.documents?.filter((f: any) => f.type === 'document').length || 0}: ${doc.name}. Use setas para reordenar, Enter para pré-visualizar.`}
                         draggable
                         onDragStart={() => { dragRef.current = { list: 'doc', index: i }; }}
                         onDragOver={(ev) => ev.preventDefault()}
@@ -1421,8 +1525,14 @@ function ProfilePage() {
                           if (src && src.list === 'doc') reorderMedia('doc', src.index, i);
                           dragRef.current = null;
                         }}
-                        className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 transition-all cursor-grab active:cursor-grabbing"
+                        onKeyDown={(ev) => {
+                          const total = profile?.documents?.filter((f: any) => f.type === 'document').length || 0;
+                          if (ev.key === 'Enter') { ev.preventDefault(); setPreview({ open: true, url: doc.url, name: doc.name, kind }); return; }
+                          handleReorderKeyDown(ev, 'doc', i, total);
+                        }}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all cursor-grab active:cursor-grabbing"
                       >
+
                         <div className="flex items-center gap-3 overflow-hidden">
                           <button
                             type="button"
@@ -1478,11 +1588,13 @@ function ProfilePage() {
                       </div>
                       );
                     })}
-                    <label className="border-2 border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group">
+                    <label className="border-2 border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all cursor-pointer group">
                       <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                       <span className="text-[9px] font-black uppercase text-muted-foreground group-hover:text-primary">Novo Documento</span>
-                      <input type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,image/*" onChange={(e) => handleMediaUpload(e, 'document')} />
+                      <span className="text-[8px] text-white/40 normal-case">{UPLOAD_LIMITS.document.hint} · máx {UPLOAD_LIMITS.document.maxLabel}</span>
+                      <input type="file" className="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,image/*" onChange={(e) => handleMediaUpload(e, 'document')} aria-label="Enviar novo documento" />
                     </label>
+
                   </div>
                 </div>
 
@@ -1491,12 +1603,19 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Camera className="w-3 h-3" /> Galeria de Imagens
-                    <span className="ml-auto text-[9px] text-amber-400/90">💰 6 grátis · +5 moedas/foto extra · arraste p/ reordenar</span>
+                    <span className="ml-auto text-[9px] text-amber-400/90">💰 6 grátis · +5 moedas/foto extra · arraste ou ← → p/ reordenar</span>
                   </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <p className="text-[9px] text-white/60 -mt-2">
+                    Formatos aceitos: <b>{UPLOAD_LIMITS.image.hint}</b> · Tamanho máx.: <b>{UPLOAD_LIMITS.image.maxLabel}</b>. Foque uma imagem (Tab) e use setas para reordenar; Enter abre a prévia.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" role="list" aria-label="Galeria de imagens, reordenável por arrastar ou setas do teclado">
+
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'image').map((img: any, i: number) => (
                       <div
                         key={i}
+                        role="listitem"
+                        tabIndex={0}
+                        aria-label={`Imagem ${i + 1} de ${profile?.portfolio_media?.filter((f: any) => f.type === 'image').length || 0}. Setas para reordenar, Enter para pré-visualizar.`}
                         draggable
                         onDragStart={() => { dragRef.current = { list: 'image', index: i }; }}
                         onDragOver={(ev) => ev.preventDefault()}
@@ -1506,9 +1625,15 @@ function ProfilePage() {
                           if (src && src.list === 'image') reorderMedia('image', src.index, i);
                           dragRef.current = null;
                         }}
-                        className="relative group rounded-xl overflow-hidden cursor-grab active:cursor-grabbing shadow-lg aspect-square"
+                        onKeyDown={(ev) => {
+                          const total = profile?.portfolio_media?.filter((f: any) => f.type === 'image').length || 0;
+                          if (ev.key === 'Enter') { ev.preventDefault(); setPreview({ open: true, url: img.url, name: img.name || 'Imagem', kind: 'image' }); return; }
+                          handleReorderKeyDown(ev, 'image', i, total);
+                        }}
+                        className="relative group rounded-xl overflow-hidden cursor-grab active:cursor-grabbing shadow-lg aspect-square focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         onClick={() => setPreview({ open: true, url: img.url, name: img.name || 'Imagem', kind: 'image' })}
                       >
+
                         <img src={img.url} alt={img.name || 'Portfolio'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                           <button
@@ -1535,9 +1660,10 @@ function ProfilePage() {
                         </div>
                       </div>
                     ))}
-                    <label className="w-full aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all cursor-pointer group">
+                    <label className="w-full aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all cursor-pointer group text-center px-2">
                       <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
-                      <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleMediaUpload(e, 'image')} />
+                      <span className="text-[8px] text-white/50 leading-tight">{UPLOAD_LIMITS.image.hint}<br/>máx {UPLOAD_LIMITS.image.maxLabel}</span>
+                      <input type="file" className="sr-only" accept="image/*" multiple onChange={(e) => handleMediaUpload(e, 'image')} aria-label="Enviar novas imagens" />
                     </label>
                   </div>
                 </div>
@@ -1546,12 +1672,18 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Play className="w-3 h-3" /> Vídeos & Demonstrações
-                    <span className="ml-auto text-[9px] text-amber-400/90">💰 1 grátis · +10 moedas/vídeo extra</span>
+                    <span className="ml-auto text-[9px] text-amber-400/90">💰 1 grátis · +10 moedas/vídeo extra · ← → p/ reordenar</span>
                   </h4>
-                  <div className="grid grid-cols-1 gap-4">
+                  <p className="text-[9px] text-white/60 -mt-2">
+                    Formatos aceitos: <b>{UPLOAD_LIMITS.video.hint}</b> · Tamanho máx.: <b>{UPLOAD_LIMITS.video.maxLabel}</b>. Foque um vídeo (Tab) e use setas para reordenar.
+                  </p>
+                  <div className="grid grid-cols-1 gap-4" role="list" aria-label="Vídeos enviados, reordenáveis por arrastar ou setas do teclado">
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'video').map((vid: any, i: number) => (
                       <div
                         key={i}
+                        role="listitem"
+                        tabIndex={0}
+                        aria-label={`Vídeo ${i + 1} de ${profile?.portfolio_media?.filter((f: any) => f.type === 'video').length || 0}. Setas para reordenar.`}
                         draggable
                         onDragStart={() => { dragRef.current = { list: 'video', index: i }; }}
                         onDragOver={(ev) => ev.preventDefault()}
@@ -1561,7 +1693,11 @@ function ProfilePage() {
                           if (src && src.list === 'video') reorderMedia('video', src.index, i);
                           dragRef.current = null;
                         }}
-                        className="relative group rounded-2xl overflow-hidden bg-black aspect-video border border-white/5"
+                        onKeyDown={(ev) => {
+                          const total = profile?.portfolio_media?.filter((f: any) => f.type === 'video').length || 0;
+                          handleReorderKeyDown(ev, 'video', i, total);
+                        }}
+                        className="relative group rounded-2xl overflow-hidden bg-black aspect-video border border-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         <video src={vid.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" controls />
                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
@@ -1588,11 +1724,13 @@ function ProfilePage() {
                         </div>
                       </div>
                     ))}
-                    <label className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer group">
+                    <label className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all cursor-pointer group text-center">
                       <Play className="w-8 h-8 text-muted-foreground group-hover:text-primary" />
                       <span className="text-xs font-bold uppercase text-muted-foreground group-hover:text-primary">Upload de Vídeo</span>
-                      <input type="file" className="hidden" accept="video/*" onChange={(e) => handleMediaUpload(e, 'video')} />
+                      <span className="text-[9px] text-white/50 normal-case">{UPLOAD_LIMITS.video.hint} · máx {UPLOAD_LIMITS.video.maxLabel}</span>
+                      <input type="file" className="sr-only" accept="video/*" onChange={(e) => handleMediaUpload(e, 'video')} aria-label="Enviar novo vídeo" />
                     </label>
+
                   </div>
                 </div>
 
