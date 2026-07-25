@@ -258,7 +258,27 @@ export function RecentPartnersCarousel() {
       });
     }
     return arr;
-  }, [items, sortMode, userCoords]);
+  }, [items, sortMode, userCoords, kindFilter]);
+
+  // ---- IntersectionObserver: pré-carrega /perfil/:id quando o card se aproxima da viewport ----
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof IntersectionObserver === "undefined") return;
+    const root = scrollerRef.current;
+    if (!root || sortedItems.length === 0) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const id = (e.target as HTMLElement).dataset.partnerId;
+          if (id) preloadProfile(id);
+        }
+      },
+      { root, rootMargin: "0px 300px 0px 300px", threshold: 0.01 },
+    );
+    for (const el of cardRefs.current) if (el) io.observe(el);
+    return () => io.disconnect();
+  }, [sortedItems]);
+
 
   // ---- Pull-to-refresh (mobile) ----
   const onTouchStart = (e: React.TouchEvent) => {
