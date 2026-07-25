@@ -713,6 +713,34 @@ export function RecentPartnersCarousel() {
                     </p>
                   ) : null}
 
+                  {/* 🚚 Chip discreto com o veículo/observação para leitura rápida no card.
+                       Prioriza vehicle_type; se ausente, tenta vehicle_details.Tipo. */}
+                  {(() => {
+                    const veh = p.vehicle_details && typeof p.vehicle_details === 'object' ? p.vehicle_details : null;
+                    const vt = safeStr(p.vehicle_type) || safeStr(veh?.Tipo ?? veh?.tipo);
+                    const vd = safeStr(p.vehicle_description) || safeStr(veh?.Descrição ?? veh?.descricao);
+                    const notes = safeStr(p.offerings_notes);
+                    if (!vt && !vd && !notes) return null;
+                    const vehicleText = [vt, vd].filter(Boolean).join(" — ");
+                    return (
+                      <div className="mt-1.5 space-y-0.5">
+                        {vehicleText && (
+                          <p
+                            className="text-[10px] text-primary/90 font-bold truncate flex items-center gap-1"
+                            title={vehicleText}
+                          >
+                            🚚 <span className="truncate">{vehicleText}</span>
+                          </p>
+                        )}
+                        {notes && (
+                          <p className="text-[10px] italic text-white/60 line-clamp-2" title={notes}>
+                            “{notes}”
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   <div className="mt-2">
                     <AvailabilityBadge userId={p.id} />
                   </div>
