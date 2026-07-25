@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Megaphone, ClipboardList, X, Info } from "lucide-react";
 import { CreateAdModal } from "@/components/CreateAdModal";
+import { CommercialAdModal } from "@/components/CommercialAdModal";
 import type { CategoryKey } from "@/lib/category-colors";
 import { getActionCost } from "@/lib/monetization";
 
@@ -31,10 +32,22 @@ export function PublishPickerModal({ open, onClose, defaultCategory }: Props) {
     if (typeof window !== "undefined") {
       try { window.sessionStorage.setItem("fixxer_publish_kind", kind); } catch { /* ignore */ }
     }
+    const handleClose = () => { setKind(null); onClose(); };
+    // Fluxo 100% separado: "ad" → formulário comercial exclusivo.
+    // "request" continua no CreateAdModal (cotação/solicitação de serviço).
+    if (kind === "ad") {
+      return (
+        <CommercialAdModal
+          open
+          onClose={handleClose}
+          defaultCategory={defaultCategory}
+        />
+      );
+    }
     return (
       <CreateAdModal
         open
-        onClose={() => { setKind(null); onClose(); }}
+        onClose={handleClose}
         defaultCategory={defaultCategory}
       />
     );
