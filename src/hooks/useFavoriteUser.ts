@@ -145,13 +145,32 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
     const countLsKey = `${LS_COUNT_PREFIX}${favoritedUserId}`;
 
     const syncCount = async () => {
+      // 1) Preferir RPC pública SECURITY DEFINER (não exige RLS de leitura em favorite_users).
+      try {
+        const { data: rpcCount, error: rpcErr } = await supabaseExternal.rpc(
+          "get_favorite_count",
+          { target_uuid: favoritedUserId },
+        );
+        if (cancelled) return;
+        if (!rpcErr && typeof rpcCount === "number") {
+          setCount(rpcCount);
+          try { window.localStorage.setItem(countLsKey, String(rpcCount)); } catch { /* ignore */ }
+          return;
+        }
+        if (rpcErr && isAuthError(rpcErr)) clearFavoriteScope(currentUserId);
+      } catch { /* segue para fallback */ }
+
+      // 2) Fallback: contagem direta (pode falhar sob RLS estrita).
       try {
         const { count: total, error } = await supabaseExternal
           .from("favorite_users")
           .select("id", { count: "exact", head: true })
           .eq("favorited_user_id", favoritedUserId);
         if (cancelled) return;
-        if (error) throw error;
+        if (error) {
+          if (isAuthError(error)) clearFavoriteScope(currentUserId);
+          throw error;
+        }
         const n = typeof total === "number" ? total : 0;
         setCount(n);
         try { window.localStorage.setItem(countLsKey, String(n)); } catch { /* ignore */ }
@@ -159,6 +178,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
         // silencioso — mantém cache local
       }
     };
+
 
     (async () => {
       await syncCount();
