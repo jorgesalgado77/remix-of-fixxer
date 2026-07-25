@@ -21,7 +21,11 @@ import {
   CheckCheck,
   UserCircle2,
   Trash2,
+  MoreVertical,
+  Ban,
+  FileDown,
 } from "lucide-react";
+
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
