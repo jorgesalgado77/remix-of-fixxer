@@ -130,6 +130,14 @@ function readSort(): SortMode {
     return v === "rating" || v === "nearby" ? v : "recent";
   } catch { return "recent"; }
 }
+function readFilter(): KindFilter {
+  if (typeof window === "undefined") return "all";
+  try {
+    const v = window.localStorage.getItem(FILTER_KEY);
+    return v === "prestador" || v === "fornecedor" ? v : "all";
+  } catch { return "all"; }
+}
+
 
 // Cache de "preload" para roles já resolvidos por perfil.
 const roleCache = new Map<string, string | null>();
