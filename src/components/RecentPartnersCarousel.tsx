@@ -124,12 +124,12 @@ const KIND_META: Record<PartnerKind, { emoji: string; label: string; color: stri
 };
 
 const FALLBACK_PARTNERS: PartnerCard[] = [
-  { id: "mock-jorge-salgado", full_name: "Jorge Salgado", avatar_url: null, role: "prestador", activity_branch: "Conferente Técnico", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
-  { id: "mock-carlos-silva", full_name: "Carlos Silva", avatar_url: null, role: "prestador", activity_branch: "Montador de Móveis", city: "Sorocaba", uf: "SP", rating: 4.9, created_at: null, _kind: "prestador" },
-  { id: "mock-mdf-cia", full_name: "Mdf & Cia Atacado", avatar_url: null, role: "fornecedor", activity_branch: "Insumos e Ferragens", city: "Sorocaba", uf: "SP", rating: 4.8, created_at: null, _kind: "fornecedor" },
-  { id: "mock-ana-paula", full_name: "Ana Paula", avatar_url: null, role: "prestador", activity_branch: "Designer de Interiores", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
-  { id: "mock-ferragens-real", full_name: "Ferragens Real", avatar_url: null, role: "fornecedor", activity_branch: "Ferragens B2B", city: "Osasco", uf: "SP", rating: 4.9, created_at: null, _kind: "fornecedor" },
-  { id: "mock-rodrigo-marques", full_name: "Rodrigo Marques", avatar_url: null, role: "prestador", activity_branch: "Marcenaria Fina", city: "Campinas", uf: "SP", rating: 4.7, created_at: null, _kind: "prestador" },
+  { id: "mock-jorge-salgado", full_name: "Jorge Salgado", avatar_url: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&auto=format&fit=crop&q=70", role: "prestador", activity_branch: "Conferente Técnico", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
+  { id: "mock-carlos-silva", full_name: "Carlos Silva", avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=70", role: "prestador", activity_branch: "Montador de Móveis", city: "Sorocaba", uf: "SP", rating: 4.9, created_at: null, _kind: "prestador" },
+  { id: "mock-mdf-cia", full_name: "Mdf & Cia Atacado", avatar_url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&auto=format&fit=crop&q=70", role: "fornecedor", activity_branch: "Insumos e Ferragens", city: "Sorocaba", uf: "SP", rating: 4.8, created_at: null, _kind: "fornecedor" },
+  { id: "mock-ana-paula", full_name: "Ana Paula", avatar_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=70", role: "prestador", activity_branch: "Designer de Interiores", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
+  { id: "mock-ferragens-real", full_name: "Ferragens Real", avatar_url: "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?w=400&auto=format&fit=crop&q=70", role: "fornecedor", activity_branch: "Ferragens B2B", city: "Osasco", uf: "SP", rating: 4.9, created_at: null, _kind: "fornecedor" },
+  { id: "mock-rodrigo-marques", full_name: "Rodrigo Marques", avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=70", role: "prestador", activity_branch: "Marcenaria Fina", city: "Campinas", uf: "SP", rating: 4.7, created_at: null, _kind: "prestador" },
 ];
 
 // ------- Cache SWR (localStorage) -------
