@@ -37,6 +37,8 @@ type PartnerRow = {
   address?: string | null;
   rating: number | null;
   created_at: string | null;
+  distance_km?: number | string | null;
+  distance?: number | string | null;
 };
 
 
