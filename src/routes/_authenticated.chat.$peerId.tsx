@@ -679,6 +679,20 @@ function ConversationPage() {
     text: string,
     attachment: { url: string; type: string; name: string } | null,
   ) => {
+    // Guard duro contra sender_id=local-* / undefined. Se o par for inválido,
+    // devolve o usuário para /auth em vez de gerar 22P02/RLS silenciosa.
+    const identity = validateChatIdentities(userId, peerId);
+    if (!identity.ok) {
+      if (identity.reason === "sender") {
+        bounceToAuth(navigate, peerId, "Não conseguimos identificar seu usuário.");
+      } else if (identity.reason === "peer") {
+        toast.error("Conversa inválida", { description: "Identificador do contato inválido." });
+      } else {
+        toast.error("Você não pode enviar mensagens para si mesmo.");
+      }
+      throw new Error(`invalid-identity:${identity.reason}`);
+    }
+
     const payload: any = {
       sender_id: userId,
       recipient_id: peerId,
@@ -692,34 +706,46 @@ function ConversationPage() {
       payload.attachment_name = attachment.name;
     }
 
-    const tryUpsert = async (cols: string) =>
-      supabaseExternal
+    const tryUpsert = async (cols: string) => {
+      const { data, error } = await supabaseExternal
         .from("messages")
         .upsert(payload, { onConflict: "client_message_id", ignoreDuplicates: false })
         .select(cols)
         .maybeSingle();
+      if (error) throw error;
+      return data;
+    };
 
     let row: MessageRow | null = null;
     try {
-      const { data, error } = await tryUpsert(selectCols);
-      if (error) throw error;
+      const data = await sendWithRetry(() => tryUpsert(selectCols), { retries: 2 });
       row = (data as unknown as MessageRow) ?? null;
     } catch (err: any) {
-      // Fallback quando client_message_id ainda não existe no schema
       const msg = String(err?.message || "");
+      // Fallback quando client_message_id ainda não existe no schema.
       if (msg.includes("client_message_id") || err?.code === "42703") {
         delete payload.client_message_id;
-        const { data, error } = await supabaseExternal
-          .from("messages")
-          .insert(payload)
-          .select("id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name")
-          .maybeSingle();
-        if (error) throw error;
-        row = (data as unknown as MessageRow) ?? null;
+        try {
+          const data = await sendWithRetry(async () => {
+            const { data, error } = await supabaseExternal
+              .from("messages")
+              .insert(payload)
+              .select("id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name")
+              .maybeSingle();
+            if (error) throw error;
+            return data;
+          }, { retries: 2 });
+          row = (data as unknown as MessageRow) ?? null;
+        } catch (err2) {
+          handlePersistError(err2);
+          throw err2;
+        }
       } else {
+        handlePersistError(err);
         throw err;
       }
     }
+
 
     if (row) {
       idSetRef.current.add(row.id);
