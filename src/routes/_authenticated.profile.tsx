@@ -36,6 +36,7 @@ import { ALLOWED_RADII_KM, isAllowedRadius, BIO_MAX_LENGTH } from "@/lib/branch-
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
 import { LiveProfilePreview } from "@/components/LiveProfilePreview";
+import { AutosaveStatusPill } from "@/components/AutosaveStatusPill";
 import { saveDraft, loadDraft, clearDraft, markPending, pickDraftPatch } from "@/lib/profile-draft";
 
 function roleToCategory(role?: string | null): CategoryKey {
