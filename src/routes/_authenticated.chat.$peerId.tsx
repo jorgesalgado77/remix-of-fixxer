@@ -733,6 +733,15 @@ function ConversationPage() {
       };
     });
     setMessages((prev) => [...prev, ...optimisticRows]);
+    // Notifica a inbox imediatamente com status "enviando" para que a conversa
+    // apareça na lista antes mesmo do INSERT concluir.
+    try {
+      for (const row of optimisticRows) {
+        window.dispatchEvent(
+          new CustomEvent("fixxer:message-sending", { detail: { row } }),
+        );
+      }
+    } catch {}
     setContent("");
     setPendingFiles([]);
     clearDraft(peerId);
