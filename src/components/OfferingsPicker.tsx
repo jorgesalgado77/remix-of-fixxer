@@ -238,11 +238,12 @@ export function OfferingsPicker({
                               key={v}
                               type="button"
                               onClick={() => onVehicleTypeChange?.(vehicleType === v ? '' : v)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214] ${
                                 vehicleType === v
                                   ? 'bg-primary text-black border-primary'
                                   : 'bg-white/5 border-white/10 hover:border-primary/50'
                               }`}
+                              aria-pressed={vehicleType === v}
                             >
                               {v}
                             </button>
