@@ -51,6 +51,9 @@ type PartnerRow = {
   vehicle_description?: string | null;
   vehicle_details?: Record<string, any> | null;
   offerings_notes?: string | null;
+  preferred_service?: string | null;
+  preferred_services?: string[] | string | null;
+  job_roles?: string | null;
 };
 
 
