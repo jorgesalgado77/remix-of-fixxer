@@ -1,7 +1,48 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, ChevronRight, Handshake, EyeOff, Eye } from "lucide-react";
+import { Sparkles, ChevronRight, Handshake, EyeOff, Eye, Store, Users, Wrench } from "lucide-react";
+import type { CategoryKey } from "@/lib/category-colors";
 
-const DISMISS_KEY = "fixxer_b2b_suggestions_dismissed_v1";
+const DISMISS_KEY_BASE = "fixxer_b2b_suggestions_dismissed_v1";
+
+type Preset = {
+  title: string;
+  subtitle: string;
+  reshowLabel: string;
+  Icon: typeof Handshake;
+};
+
+const PRESETS: Record<CategoryKey, Preset> = {
+  prestador: {
+    title: "Rede de Afiliados B2B",
+    subtitle: "Parcerias sugeridas para o seu ramo",
+    reshowLabel: "Mostrar Sugestões de Afiliados",
+    Icon: Handshake,
+  },
+  lojista: {
+    title: "Rede de Fornecedores & Parceiros",
+    subtitle: "Parceiros B2B sugeridos para sua loja",
+    reshowLabel: "Mostrar Sugestões de Parceiros",
+    Icon: Store,
+  },
+  fornecedor: {
+    title: "Rede de Revendas & Lojistas",
+    subtitle: "Lojistas parceiros sugeridos para você",
+    reshowLabel: "Mostrar Sugestões de Revendas",
+    Icon: Handshake,
+  },
+  cliente: {
+    title: "Serviços Recomendados",
+    subtitle: "Prestadores e lojas próximos ao seu perfil",
+    reshowLabel: "Mostrar Serviços Recomendados",
+    Icon: Wrench,
+  },
+  admin: {
+    title: "Rede de Afiliados B2B",
+    subtitle: "Parcerias sugeridas na plataforma",
+    reshowLabel: "Mostrar Sugestões",
+    Icon: Users,
+  },
+};
 
 function readDismissed(): boolean {
   if (typeof window === "undefined") return false;
