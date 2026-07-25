@@ -2,7 +2,9 @@ import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { FeedEmptyState } from "@/components/FeedEmptyState";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FeedCardSkeletonList } from "@/components/FeedCardSkeleton";
+import { thumbSrc } from "@/lib/feed-thumb";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
@@ -173,7 +175,7 @@ const MOCK_VENDORS: Vendor[] = [
   },
 ];
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 10;
 
 type SortKey = "relevance" | "reputation" | "nearest";
 
@@ -240,6 +242,7 @@ export default function FeedClientePage() {
   const [editingNeed, setEditingNeed] = useState<MyNeed | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
   const loadMyNeeds = useCallback(async (uid: string) => {
     const { data, error } = await supabaseExternal
@@ -373,15 +376,20 @@ export default function FeedClientePage() {
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((c) => c + PAGE_SIZE);
+        if (entries[0].isIntersecting && !isFetchingNextPage) {
+          setIsFetchingNextPage(true);
+          setTimeout(() => {
+            setVisibleCount((c) => c + PAGE_SIZE);
+            setIsFetchingNextPage(false);
+          }, 300);
         }
       },
       { rootMargin: "300px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [hasMore, visible.length]);
+  }, [hasMore, visible.length, isFetchingNextPage]);
+
 
   const toggleSaved = useCallback(
     async (vendorId: string) => {
@@ -868,12 +876,10 @@ export default function FeedClientePage() {
           ))}
 
           {hasMore && (
-            <div
-              ref={sentinelRef}
-              className="py-8 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
-            >
-              Carregando mais...
-            </div>
+            <>
+              <div ref={sentinelRef} aria-hidden className="h-1 w-full" />
+              <FeedCardSkeletonList count={2} accent="rgba(0,255,135,0.25)" />
+            </>
           )}
           {!hasMore && visible.length > 0 && (
             <div className="py-8 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -917,7 +923,7 @@ export default function FeedClientePage() {
 // CARD
 // =============================================================================
 
-function VendorCard({
+function VendorCardImpl({
   vendor,
   glassClass,
   saved,
@@ -953,8 +959,10 @@ function VendorCard({
       <div className="p-4 flex items-start gap-3">
         <div className="relative shrink-0">
           <img
-            src={vendor.avatar}
+            src={thumbSrc(vendor.avatar, 128)}
             alt={vendor.name}
+            loading="lazy"
+            decoding="async"
             className="w-12 h-12 rounded-xl border object-cover bg-black/40"
             style={{ borderColor: `${vendorHex}55` }}
           />
@@ -1002,8 +1010,10 @@ function VendorCard({
       {vendor.gallery.length > 0 && (
         <div className="relative aspect-[16/10] bg-black/40 group">
           <img
-            src={vendor.gallery[carouselIdx]}
+            src={thumbSrc(vendor.gallery[carouselIdx], 800)}
             alt=""
+            loading="lazy"
+            decoding="async"
             onClick={() => onOpenLightbox(carouselIdx)}
             className="w-full h-full object-cover cursor-zoom-in"
           />
