@@ -944,48 +944,22 @@ function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* VEÍCULO PRÓPRIO */}
+                  {/* OFERECE */}
                   <div className="pt-6 space-y-4 border-t border-white/5">
-                    <h4 className="text-sm font-black uppercase tracking-tighter text-white">🚚 Veículo Próprio</h4>
-
-                    <label className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={profile?.has_vehicle || false}
-                        onChange={e => setProfile({ ...profile, has_vehicle: e.target.checked })}
-                        className="w-5 h-5 accent-primary"
-                      />
-                      <span className="text-xs font-bold">Possuo veículo próprio</span>
-                    </label>
+                    <OfferingsPicker
+                      selected={Array.isArray(profile?.offerings) ? profile.offerings : []}
+                      onChange={(next) => {
+                        const hasVehicle = next.some((s: string) => s.toLowerCase() === 'veículo próprio');
+                        setProfile({ ...profile, offerings: next, has_vehicle: hasVehicle });
+                      }}
+                      vehicleType={profile?.vehicle_type}
+                      vehicleDescription={profile?.vehicle_description}
+                      onVehicleTypeChange={(v) => setProfile({ ...profile, vehicle_type: v })}
+                      onVehicleDescriptionChange={(v) => setProfile({ ...profile, vehicle_description: v })}
+                    />
 
                     {profile?.has_vehicle && (
                       <div className="space-y-4 pl-2 border-l-2 border-primary/30">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Tipo de Veículo</label>
-                          <div className="flex flex-wrap gap-2">
-                            {['Carro', 'Moto', 'Van', 'Caminhonete', 'Caminhão'].map(v => (
-                              <button
-                                key={v}
-                                type="button"
-                                onClick={() => setProfile({ ...profile, vehicle_type: v })}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${profile?.vehicle_type === v ? 'bg-primary text-black border-primary' : 'bg-white/5 border-white/10 hover:border-primary/50'}`}
-                              >
-                                {v}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Descrição do Veículo (marca, modelo, ano, capacidade)</label>
-                          <textarea
-                            value={profile?.vehicle_description || ''}
-                            onChange={e => setProfile({ ...profile, vehicle_description: e.target.value })}
-                            rows={2}
-                            className="w-full bg-white/5 border border-white/10 focus:border-primary/50 p-4 rounded-2xl outline-none text-sm"
-                          />
-                        </div>
-
                         <label className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer">
                           <input
                             type="checkbox"
@@ -995,6 +969,7 @@ function ProfilePage() {
                           />
                           <span className="text-xs font-bold">Disponibilizo veículo para trabalhos de transporte/frete</span>
                         </label>
+
 
                         {profile?.available_for_transport && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
