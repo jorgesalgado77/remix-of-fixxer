@@ -511,12 +511,10 @@ export function RecentPartnersCarousel() {
               <button
                 key={p.id}
                 ref={(el) => { cardRefs.current[idx] = el; }}
+                data-partner-id={p.id}
                 type="button"
                 role="listitem"
                 onClick={() => openProfile(p)}
-                onMouseEnter={() => preloadProfile(p.id)}
-                onFocus={() => preloadProfile(p.id)}
-                onTouchStart={() => preloadProfile(p.id)}
                 onKeyDown={(e) => onCardKeyDown(e, idx)}
                 className={`w-44 flex-shrink-0 snap-start rounded-2xl bg-[#1A1A1B] overflow-hidden border-2 ${meta.borderClass} text-left transition-transform active:scale-[0.98] hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black`}
                 style={{ boxShadow: `0 0 12px ${meta.color}22`, ["--tw-ring-color" as any]: meta.color }}
@@ -524,6 +522,7 @@ export function RecentPartnersCarousel() {
                 aria-posinset={idx + 1}
                 aria-setsize={sortedItems.length}
               >
+
                 <div className="relative w-full h-40 bg-black/40">
                   {avatarUrl ? (
                     <img
