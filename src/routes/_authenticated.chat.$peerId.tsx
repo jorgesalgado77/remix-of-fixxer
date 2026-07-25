@@ -427,7 +427,7 @@ function ConversationPage() {
 
       try {
         setPeerLoading(true);
-        const { clearPeerCache, fallbackPeer, resolvePeerProfile } = await import("@/lib/chat-peer-profile");
+        const { clearPeerCache, resolvePeerProfile } = await import("@/lib/chat-peer-profile");
         // Sempre invalida ao abrir a conversa: evita foto/nome antigos vindos
         // do cache quando o usuário acabou de editar o perfil público.
         clearPeerCache(peerId);
