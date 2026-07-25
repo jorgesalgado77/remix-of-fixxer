@@ -845,8 +845,8 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         {(() => {
-                          const r = (typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_role') || 'lojista') : 'lojista').toLowerCase() as CategoryKey;
-                          const key: CategoryKey = (['lojista','prestador','fornecedor','cliente','admin'] as CategoryKey[]).includes(r as CategoryKey) ? (r as CategoryKey) : 'lojista';
+                          const key: CategoryKey = userRole;
+
                           const icon = key === 'prestador' ? '🛠️' : key === 'fornecedor' ? '🚚' : key === 'cliente' ? '👤' : key === 'admin' ? '👑' : '🏪';
                           return (
                             <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black uppercase">{icon} {CATEGORY_LABEL[key]}</span>
