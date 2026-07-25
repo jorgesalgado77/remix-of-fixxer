@@ -491,14 +491,20 @@ function ConversationPage() {
     stopTypingTimerRef.current = setTimeout(sendTypingStop, 3000);
   };
 
-  const doUpload = async (file: File) => {
+  const doUpload = async (
+    file: File,
+    onProgress?: (pct: number) => void,
+  ) => {
     if (!userId) return null;
     setUploading(true);
     setUploadPct(0);
     try {
       const ext = file.name.split(".").pop() || "bin";
       const path = `chat/${userId}/${peerId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { publicUrl } = await uploadWithProgress("media", path, file, (p) => setUploadPct(p.percent));
+      const { publicUrl } = await uploadWithProgress("media", path, file, (p) => {
+        setUploadPct(p.percent);
+        onProgress?.(p.percent);
+      });
       return { url: publicUrl, type: file.type || "application/octet-stream", name: file.name };
     } catch (e: any) {
       toast.error("Falha no upload do anexo", { description: e?.message });
