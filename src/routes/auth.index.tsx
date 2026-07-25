@@ -47,12 +47,27 @@ function LoginComponent() {
       if (data?.session) {
         const normalizedEmail = email.trim().toLowerCase();
 
-        // Bloqueio de acesso — se profiles.status = 'bloqueado', encerra a sessão e nega login.
-        const { data: statusRow } = await supabase
-          .from('profiles')
-          .select('status, role')
-          .eq('id', data.session.user.id)
-          .maybeSingle();
+        // Bloqueio de acesso — lê o perfil no Supabase externo (fonte de verdade).
+        let statusRow: { status?: string | null; role?: string | null; user_type?: string | null; business_category?: string | null } | null = null;
+        try {
+          const { data: ext } = await supabaseExternal
+            .from('profiles')
+            .select('status, role, user_type, business_category')
+            .eq('id', data.session.user.id)
+            .maybeSingle();
+          statusRow = (ext as any) || null;
+        } catch { /* silencioso */ }
+
+        // Fallback: tenta no cliente interno caso o externo não tenha o registro
+        if (!statusRow) {
+          const { data: intRow } = await supabase
+            .from('profiles')
+            .select('status, role')
+            .eq('id', data.session.user.id)
+            .maybeSingle();
+          statusRow = (intRow as any) || null;
+        }
+
         if (statusRow?.status === 'bloqueado') {
           await supabase.auth.signOut();
           setErrorMsg('Sua conta está SUSPENSA. Contate o suporte para mais informações.');
@@ -61,42 +76,47 @@ function LoginComponent() {
           return;
         }
 
-        // Papel de admin é resolvido server-side via public.user_roles (RLS-safe).
-        const { data: adminRow } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.session.user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-        const isAdmin = !!adminRow;
+        // Papel de admin via public.user_roles (RLS-safe) — no Supabase externo.
+        let isAdmin = false;
+        try {
+          const { data: adminRow } = await supabaseExternal
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', data.session.user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+          isAdmin = !!adminRow;
+        } catch { /* silencioso */ }
 
-        const role = isAdmin ? 'admin' : (statusRow?.role || 'user');
+        // Determina o papel real do usuário, priorizando o que está gravado no perfil.
+        const rawRole = (statusRow?.role || statusRow?.user_type || statusRow?.business_category || '').toString().toLowerCase();
+        const role = isAdmin ? 'admin' : (rawRole || 'user');
+
         if (typeof window !== 'undefined') {
           localStorage.setItem('fixxer_user_id', data.session.user.id);
           localStorage.setItem('fixxer_user_email', normalizedEmail);
           localStorage.setItem('fixxer_authenticated', 'true');
-          localStorage.setItem('fixxer_user_role', role);
 
-          let category = role.toLowerCase();
+          let category: 'admin' | 'lojista' | 'prestador' | 'fornecedor' | 'cliente' = 'lojista';
           if (isAdmin) category = 'admin';
-          else if (category.includes('lojista')) category = 'lojista';
-          else if (category.includes('prestador')) category = 'prestador';
-          else if (category.includes('parceiro') || category.includes('fornecedor')) category = 'parceiro';
-          else if (category.includes('cliente') || category.includes('casual')) category = 'casual';
+          else if (rawRole.includes('prestador')) category = 'prestador';
+          else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) category = 'fornecedor';
+          else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) category = 'cliente';
+          else if (rawRole.includes('lojista')) category = 'lojista';
+          else category = 'lojista';
 
+          // Persistimos o role já normalizado para a UI (badges, temas) usar direto.
+          localStorage.setItem('fixxer_user_role', category);
           localStorage.setItem('fixxer_user_category', category);
           window.dispatchEvent(new Event('fixxer:category-change'));
-        }
+          window.dispatchEvent(new Event('fixxer:role-changed'));
 
-        if (isAdmin) {
-          window.location.replace('/admin');
-        } else {
-
-          const storedCategory = localStorage.getItem('fixxer_user_category');
-          if (storedCategory === 'casual') window.location.replace('/dashboard/cliente');
-          else if (storedCategory === 'lojista') window.location.replace('/dashboard/lojista');
-          else if (storedCategory === 'prestador') window.location.replace('/dashboard/prestador');
-          else if (storedCategory === 'parceiro') window.location.replace('/dashboard/parceiro');
+          if (isAdmin) {
+            window.location.replace('/admin');
+          } else if (category === 'cliente') window.location.replace('/dashboard/cliente');
+          else if (category === 'prestador') window.location.replace('/dashboard/prestador');
+          else if (category === 'fornecedor') window.location.replace('/dashboard/parceiro');
+          else if (category === 'lojista') window.location.replace('/dashboard/lojista');
           else navigate({ to: '/cadastro' as any });
         }
       }
