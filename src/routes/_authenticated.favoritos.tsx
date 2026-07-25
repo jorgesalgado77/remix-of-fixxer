@@ -531,6 +531,30 @@ function TabPill({
   );
 }
 
+function FilterPill({
+  active, onClick, color, rgb, children,
+}: { active: boolean; onClick: () => void; color: string; rgb: string; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      onClick={onClick}
+      className={[
+        "px-3.5 h-9 rounded-full text-[10px] font-black uppercase italic tracking-wider border whitespace-nowrap transition-all",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+      ].join(" ")}
+      style={
+        active
+          ? { color: "#000", background: color, borderColor: color, boxShadow: `0 0 14px rgba(${rgb},0.45)`, ["--tw-ring-color" as any]: color }
+          : { color, background: `rgba(${rgb},0.08)`, borderColor: `rgba(${rgb},0.4)`, ["--tw-ring-color" as any]: color }
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
 function ProfileCard({
   fav, userCoords, onChat, onView, onRemove,
 }: {
