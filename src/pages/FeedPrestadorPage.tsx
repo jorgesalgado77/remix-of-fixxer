@@ -1387,6 +1387,12 @@ export default function FeedPrestadorPage() {
           }
         }}
         onClose={() => setDetailsFor(null)}
+        locked={detailsFor ? detailsFor.contractor.id !== postUnlock.userId && !postUnlock.isUnlocked(detailsFor.id) : false}
+        unlockCost={postUnlock.cost}
+        onUnlock={async () => {
+          if (!detailsFor) return false;
+          return await postUnlock.unlock(detailsFor.id);
+        }}
       />
     </div>
   );
