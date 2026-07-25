@@ -97,6 +97,17 @@ function getAuthUid(): string | null {
   }
 }
 
+/**
+ * Redireciona para /auth quando a sessão sumiu no meio da conversa.
+ * Preserva o peerId como `redirect` para retomar o chat após o login.
+ */
+function bounceToAuth(navigate: (opts: any) => void, peerId: string, reason: string) {
+  try { toast.error("Sessão inválida", { description: reason + " Faça login novamente." }); } catch {}
+  const redirect = `/chat/${peerId}`;
+  try { navigate({ to: "/auth" as any, search: { redirect } as any }); }
+  catch { window.location.href = `/auth?redirect=${encodeURIComponent(redirect)}`; }
+}
+
 
 type MessageRow = {
   id: string;
