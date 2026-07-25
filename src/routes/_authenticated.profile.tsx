@@ -1116,33 +1116,17 @@ function ProfilePage() {
                     </div>
                   </div>
 
-                  <ActivityBranchPicker
-                    value={profile?.activity_branch}
-                    onChange={(next) => setProfile({ ...profile, activity_branch: next })}
+                  <PreferredServicePicker
+                    profile={profile}
+                    setProfile={setProfile}
                     accent={theme.hex}
                   />
-
-                  <div className="pt-6 border-t border-white/5 space-y-3">
-                    <div className="min-w-0">
-                      <h4 className="text-sm font-black uppercase tracking-tight text-white">Subcategorias & Especialidades Adicionais</h4>
-                      <p className="text-[11px] text-white/50 mt-1 break-words">Opcional — refine sua atuação selecionando ramos e subcategorias detalhadas.</p>
-                    </div>
-                    <ActivityBranchSelector
-                      value={(profile?.business_category || '').split(',').map((s: string) => s.trim()).filter(Boolean)}
-                      onChange={(next: string[]) => setProfile({ ...profile, business_category: next.join(',') })}
-                      customValue={(profile?.custom_branch || '').split('||').map((s: string) => s.trim()).filter(Boolean)}
-                      onCustomChange={(next: string[]) => setProfile({ ...profile, custom_branch: next.join('||') })}
-                      chargeUserId={profile?.id}
-                    />
-                    <p className="text-[10px] text-amber-400/90 mt-2 font-bold">
-                      💰 1º ramo customizado grátis. A partir do 2º: 10 moedas cada.
-                    </p>
-                  </div>
                 </div>
               )}
 
             </section>
           </div>
+
 
           <div className="space-y-8">
             {/* PRÉVIA AO VIVO DO PERFIL PÚBLICO */}
