@@ -525,7 +525,13 @@ function ConversationPage() {
    * evitando travamento visual e permitindo retry independente.
    */
   const send = async () => {
-    const text = content.trim();
+    const rawText = content.trim();
+    // Guard anti-bypass: mascara telefones, e-mails, redes sociais e links.
+    const guard = sanitizeContactText(rawText);
+    const text = guard.clean;
+    if (guard.violated) {
+      toast.warning(CONTACT_GUARD_WARNING);
+    }
     const filesToSend = pendingFiles.slice();
     if ((!text && filesToSend.length === 0) || !userId || sending) return;
     setSending(true);
