@@ -1185,7 +1185,6 @@ function SortableSection({
   const dragHandle = (
     <button
       type="button"
-      ref={setNodeRef as any}
       {...attributes}
       {...listeners}
       aria-label="Arrastar seção para reordenar"
