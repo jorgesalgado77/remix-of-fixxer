@@ -254,7 +254,9 @@ function ChatInboxPage() {
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
-      const uid = data?.user?.id ?? (typeof window !== "undefined" ? localStorage.getItem("fixxer_local_uid") : null);
+      const storedUid = typeof window !== "undefined" ? localStorage.getItem("fixxer_user_id") : null;
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uid = data?.user?.id ?? (storedUid && uuidRe.test(storedUid) ? storedUid : null);
       if (cancelled) return;
       setUserId(uid);
       if (!uid) { setLoading(false); return; }
