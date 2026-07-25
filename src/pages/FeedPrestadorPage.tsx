@@ -869,31 +869,127 @@ function JobCard({
             {job.media.map((item, i) => (
               <button
                 key={i}
-                onClick={() => onLightbox(job, i)}
-                className="relative shrink-0 w-28 h-20 rounded-xl overflow-hidden border border-white/10 bg-black/40 group/media focus:outline-none focus:ring-2 focus:ring-[#FF9F0A]/50"
+        {job.media.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {job.media.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => (locked ? onUnlock?.() : onLightbox(job, i))}
+                className={`relative shrink-0 w-28 h-20 rounded-xl overflow-hidden border border-white/10 bg-black/40 group/media focus:outline-none focus:ring-2 focus:ring-[#FF9F0A]/50 ${
+                  locked ? "pointer-events-none" : ""
+                }`}
+                aria-label={locked ? "Mídia bloqueada" : undefined}
               >
                 {item.type === "video" ? (
                   <>
                     <img
                       src={item.poster || item.url}
                       alt=""
-                      className="w-full h-full object-cover opacity-80 group-hover/media:opacity-100 transition-opacity"
+                      loading="lazy"
+                      className={`w-full h-full object-cover opacity-80 group-hover/media:opacity-100 transition-opacity ${
+                        locked ? "blur-md" : ""
+                      }`}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                      <Play className="w-6 h-6 text-white fill-current" />
-                    </div>
+                    {!locked && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <Play className="w-6 h-6 text-white fill-current" />
+                      </div>
+                    )}
                   </>
                 ) : (
                   <img
                     src={item.url}
                     alt=""
-                    className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    className={`w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-500 ${
+                      locked ? "blur-md" : ""
+                    }`}
                   />
+                )}
+                {locked && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <Lock className="w-4 h-4 text-white/80" />
+                  </div>
                 )}
               </button>
             ))}
           </div>
         )}
+
+        {/* VALOR E AÇÕES */}
+        <div className="flex items-center justify-between pt-3 border-t border-white/5">
+          <div className="flex flex-col">
+            <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">
+              Remuneração
+            </span>
+            <span className="text-xs font-black text-[#FF9F0A]">{job.value}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onToggleSave(job.id)}
+              className={`p-2.5 rounded-xl border transition-all ${
+                saved
+                  ? "bg-[#FF9F0A]/10 border-[#FF9F0A]/30 text-[#FF9F0A]"
+                  : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+              }`}
+              aria-label={saved ? "Remover dos salvos" : "Salvar vaga"}
+            >
+              <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+            </button>
+
+            {locked ? (
+              <button
+                onClick={() => onUnlock?.()}
+                disabled={unlockBusy}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FFD600] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,214,0,0.45)] active:scale-[0.98] transition-all disabled:opacity-60"
+                aria-label={`Desbloquear por ${unlockCost} moedas`}
+              >
+                {unlockBusy ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Coins className="w-3.5 h-3.5" />
+                    🔍 Ver Detalhes ({unlockCost} 🪙)
+                  </>
+                )}
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => onChat(job)}
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-[#FF9F0A]/10 hover:border-[#FF9F0A]/30 transition-all"
+                  aria-label="Chat direto"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => onOpenDetails(job)}
+                  className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all"
+                >
+                  Detalhes
+                </button>
+
+                <button
+                  onClick={() => onApply(job)}
+                  disabled={applied}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF9F0A] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,159,10,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {applied ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Candidatado
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5" /> Candidatar-se
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
 
         {/* VALOR E AÇÕES */}
         <div className="flex items-center justify-between pt-3 border-t border-white/5">
