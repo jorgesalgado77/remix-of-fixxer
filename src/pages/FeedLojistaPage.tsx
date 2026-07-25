@@ -18,6 +18,8 @@ import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
 import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
+import { usePostUnlock } from "@/hooks/use-post-unlock";
+import { Lock, Coins, Loader2 } from "lucide-react";
 
 import {
   ArrowLeft,
@@ -550,6 +552,9 @@ export default function FeedLojistaPage() {
   const [proposalMsg, setProposalMsg] = useState("");
   const [proposalError, setProposalError] = useState<string | null>(null);
 
+  // Desbloqueio pago (5 moedas) para ver detalhes completos
+  const postUnlock = usePostUnlock();
+
   // Paginação por scroll infinito
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -915,27 +920,37 @@ export default function FeedLojistaPage() {
             />
           ) : (
             <>
-              {paged.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  isSaved={saved.has(post.id)}
-                  menuOpen={openMenu === post.id}
-                  onToggleMenu={(e) => {
-                    e.stopPropagation();
-                    setOpenMenu((v) => (v === post.id ? null : post.id));
-                  }}
-                  onCloseMenu={() => setOpenMenu(null)}
-                  onSave={() => toggleSaved(post.id)}
-                  onChat={() => openChat(post)}
-                  onPropose={() => setProposalFor(post)}
-                  onReport={() => setReportFor(post)}
-                  onDelete={() => setDeleteFor(post)}
-                  onEdit={() => toast("Abrindo editor da publicação...")}
-                  onOpenMedia={(index) => setLightbox({ post, index })}
-                  onOpenDetails={() => setDetailsFor(post)}
-                />
-              ))}
+              {paged.map((post) => {
+                const locked = !post.author.isMine && !postUnlock.isUnlocked(post.id);
+                return (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    isSaved={saved.has(post.id)}
+                    menuOpen={openMenu === post.id}
+                    onToggleMenu={(e) => {
+                      e.stopPropagation();
+                      setOpenMenu((v) => (v === post.id ? null : post.id));
+                    }}
+                    onCloseMenu={() => setOpenMenu(null)}
+                    onSave={() => toggleSaved(post.id)}
+                    onChat={() => openChat(post)}
+                    onPropose={() => setProposalFor(post)}
+                    onReport={() => setReportFor(post)}
+                    onDelete={() => setDeleteFor(post)}
+                    onEdit={() => toast("Abrindo editor da publicação...")}
+                    onOpenMedia={(index) => setLightbox({ post, index })}
+                    onOpenDetails={() => setDetailsFor(post)}
+                    locked={locked}
+                    unlockCost={postUnlock.cost}
+                    unlockBusy={postUnlock.busy === post.id}
+                    onUnlock={async () => {
+                      const ok = await postUnlock.unlock(post.id);
+                      if (ok) setDetailsFor(post);
+                    }}
+                  />
+                );
+              })}
 
               {hasMore ? (
                 <div
@@ -1139,6 +1154,19 @@ export default function FeedLojistaPage() {
           }
         }}
         onClose={() => setDetailsFor(null)}
+        locked={detailsFor ? !detailsFor.author.isMine && !postUnlock.isUnlocked(detailsFor.id) : false}
+        unlockCost={postUnlock.cost}
+        onUnlock={async () => {
+          if (!detailsFor) return false;
+          return await postUnlock.unlock(detailsFor.id);
+        }}
+        onCandidatar={() => {
+          if (detailsFor) {
+            const p = detailsFor;
+            setDetailsFor(null);
+            setProposalFor(p);
+          }
+        }}
       />
     </div>
   );
@@ -1192,6 +1220,10 @@ function PostCard({
   onEdit,
   onOpenMedia,
   onOpenDetails,
+  locked = false,
+  unlockCost = 5,
+  unlockBusy = false,
+  onUnlock,
 }: {
   post: FeedPost;
   isSaved: boolean;
@@ -1206,6 +1238,10 @@ function PostCard({
   onEdit: () => void;
   onOpenMedia: (index: number) => void;
   onOpenDetails: () => void;
+  locked?: boolean;
+  unlockCost?: number;
+  unlockBusy?: boolean;
+  onUnlock?: () => void | Promise<void>;
 }) {
   const badge = categoryBadge(post.category);
   const theme = getCategoryTheme(post.category);
@@ -1355,7 +1391,14 @@ function PostCard({
             {post.title}
           </h3>
         </button>
-        <p className="text-xs sm:text-[13px] text-white/70 leading-relaxed">{post.description}</p>
+        <p
+          className={`text-xs sm:text-[13px] text-white/70 leading-relaxed ${
+            locked ? "blur-sm select-none pointer-events-none line-clamp-2" : ""
+          }`}
+          aria-hidden={locked || undefined}
+        >
+          {post.description}
+        </p>
         {post.budget && (
           <div
             className="inline-flex items-center gap-1.5 mt-1 px-3 py-1 rounded-full border text-[11px] font-black uppercase tracking-widest"
@@ -1368,12 +1411,19 @@ function PostCard({
 
       {/* Mídias */}
       {post.media.length > 0 && (
-        <div className={`grid gap-2 ${post.media.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+        <div
+          className={`grid gap-2 ${post.media.length === 1 ? "grid-cols-1" : "grid-cols-2"} ${
+            locked ? "relative" : ""
+          }`}
+        >
           {post.media.slice(0, 4).map((m, i) => (
             <button
               key={i}
-              onClick={() => onOpenMedia(i)}
-              className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0A0A0B] aspect-video group"
+              onClick={() => (locked ? onUnlock?.() : onOpenMedia(i))}
+              className={`relative rounded-2xl overflow-hidden border border-white/10 bg-[#0A0A0B] aspect-video group ${
+                locked ? "pointer-events-none" : ""
+              }`}
+              aria-label={locked ? "Mídia bloqueada — desbloqueie para ver" : undefined}
             >
               {m.type === "video" ? (
                 <>
@@ -1382,29 +1432,38 @@ function PostCard({
                       src={m.poster}
                       alt=""
                       loading="lazy"
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-cover ${locked ? "blur-md scale-105" : ""}`}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/30">
                       <ImageIcon className="w-8 h-8" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <div
-                      className="w-12 h-12 rounded-full flex items-center justify-center"
-                      style={{ ...theme.bgSolid, ...theme.glowStrong }}
-                    >
-                      <Play className="w-5 h-5 ml-0.5" fill="currentColor" />
+                  {!locked && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center"
+                        style={{ ...theme.bgSolid, ...theme.glowStrong }}
+                      >
+                        <Play className="w-5 h-5 ml-0.5" fill="currentColor" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </>
               ) : (
                 <img
                   src={m.url}
                   alt={post.title}
                   loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  className={`w-full h-full object-cover group-hover:scale-105 transition-transform ${
+                    locked ? "blur-md scale-110" : ""
+                  }`}
                 />
+              )}
+              {locked && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <Lock className="w-6 h-6 text-white/80" />
+                </div>
               )}
             </button>
           ))}
@@ -1413,19 +1472,42 @@ function PostCard({
 
       {/* Ações */}
       <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
-        <button
-          onClick={onChat}
-          className="flex-1 font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all hover:opacity-90"
-          style={{ ...theme.bgSolid, ...theme.glow }}
-        >
-          <MessageSquare className="w-4 h-4" /> {isClient ? "Chat Direto" : "Chat"}
-        </button>
-        <button
-          onClick={onPropose}
-          className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
-        >
-          <Send className="w-4 h-4" style={theme.color} /> Enviar Proposta
-        </button>
+        {locked ? (
+          <>
+            <button
+              onClick={() => onUnlock?.()}
+              disabled={unlockBusy}
+              className="flex-1 font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all hover:opacity-90 disabled:opacity-60"
+              style={{ backgroundColor: "#FFD600", color: "#0A0A0B", boxShadow: "0 0 18px rgba(255,214,0,0.35)" }}
+              aria-label={`Desbloquear detalhes por ${unlockCost} moedas`}
+            >
+              {unlockBusy ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Coins className="w-4 h-4" />
+                  🔍 Ver Detalhes Completos ({unlockCost} 🪙)
+                </>
+              )}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={onChat}
+              className="flex-1 font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all hover:opacity-90"
+              style={{ ...theme.bgSolid, ...theme.glow }}
+            >
+              <MessageSquare className="w-4 h-4" /> {isClient ? "Chat Direto" : "Chat"}
+            </button>
+            <button
+              onClick={onPropose}
+              className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Send className="w-4 h-4" style={theme.color} /> Enviar Proposta
+            </button>
+          </>
+        )}
         <button
           onClick={onSave}
           aria-pressed={isSaved}

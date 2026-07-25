@@ -17,6 +17,7 @@ import {
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { FeedEmptyState } from "@/components/FeedEmptyState";
+import { usePostUnlock } from "@/hooks/use-post-unlock";
 
 import {
   ArrowLeft,
@@ -41,6 +42,9 @@ import {
   User,
   Store,
   Flame,
+  Lock,
+  Coins,
+  Loader2,
 } from "lucide-react";
 
 // =============================================================================
@@ -736,6 +740,10 @@ function JobCard({
   onChat,
   onLightbox,
   onOpenDetails,
+  locked = false,
+  unlockCost = 5,
+  unlockBusy = false,
+  onUnlock,
 }: {
   job: JobPost;
   saved: boolean;
@@ -745,6 +753,10 @@ function JobCard({
   onChat: (job: JobPost) => void;
   onLightbox: (job: JobPost, index: number) => void;
   onOpenDetails: (job: JobPost) => void;
+  locked?: boolean;
+  unlockCost?: number;
+  unlockBusy?: boolean;
+  onUnlock?: () => void | Promise<void>;
 }) {
   const navigate = useNavigate();
   const isClientFinal = job.type === "cliente_final";
@@ -818,7 +830,12 @@ function JobCard({
           <h4 className="text-[13px] font-black text-white uppercase italic leading-tight group-hover:text-[#FF9F0A] transition-colors">
             {job.title}
           </h4>
-          <p className="text-[10px] text-muted-foreground font-medium leading-relaxed line-clamp-3">
+          <p
+            className={`text-[10px] text-muted-foreground font-medium leading-relaxed line-clamp-3 ${
+              locked ? "blur-sm select-none pointer-events-none" : ""
+            }`}
+            aria-hidden={locked || undefined}
+          >
             {job.description}
           </p>
 
@@ -852,26 +869,42 @@ function JobCard({
             {job.media.map((item, i) => (
               <button
                 key={i}
-                onClick={() => onLightbox(job, i)}
-                className="relative shrink-0 w-28 h-20 rounded-xl overflow-hidden border border-white/10 bg-black/40 group/media focus:outline-none focus:ring-2 focus:ring-[#FF9F0A]/50"
+                onClick={() => (locked ? onUnlock?.() : onLightbox(job, i))}
+                className={`relative shrink-0 w-28 h-20 rounded-xl overflow-hidden border border-white/10 bg-black/40 group/media focus:outline-none focus:ring-2 focus:ring-[#FF9F0A]/50 ${
+                  locked ? "pointer-events-none" : ""
+                }`}
+                aria-label={locked ? "Mídia bloqueada" : undefined}
               >
                 {item.type === "video" ? (
                   <>
                     <img
                       src={item.poster || item.url}
                       alt=""
-                      className="w-full h-full object-cover opacity-80 group-hover/media:opacity-100 transition-opacity"
+                      loading="lazy"
+                      className={`w-full h-full object-cover opacity-80 group-hover/media:opacity-100 transition-opacity ${
+                        locked ? "blur-md" : ""
+                      }`}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                      <Play className="w-6 h-6 text-white fill-current" />
-                    </div>
+                    {!locked && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <Play className="w-6 h-6 text-white fill-current" />
+                      </div>
+                    )}
                   </>
                 ) : (
                   <img
                     src={item.url}
                     alt=""
-                    className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    className={`w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-500 ${
+                      locked ? "blur-md" : ""
+                    }`}
                   />
+                )}
+                {locked && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <Lock className="w-4 h-4 text-white/80" />
+                  </div>
                 )}
               </button>
             ))}
@@ -900,36 +933,56 @@ function JobCard({
               <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
             </button>
 
-            <button
-              onClick={() => onChat(job)}
-              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-[#FF9F0A]/10 hover:border-[#FF9F0A]/30 transition-all"
-              aria-label="Chat direto"
-            >
-              <MessageSquare className="w-4 h-4" />
-            </button>
+            {locked ? (
+              <button
+                onClick={() => onUnlock?.()}
+                disabled={unlockBusy}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FFD600] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,214,0,0.45)] active:scale-[0.98] transition-all disabled:opacity-60"
+                aria-label={`Desbloquear por ${unlockCost} moedas`}
+              >
+                {unlockBusy ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Coins className="w-3.5 h-3.5" />
+                    🔍 Ver Detalhes ({unlockCost} 🪙)
+                  </>
+                )}
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => onChat(job)}
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-[#FF9F0A]/10 hover:border-[#FF9F0A]/30 transition-all"
+                  aria-label="Chat direto"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
 
-            <button
-              onClick={() => onOpenDetails(job)}
-              className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all"
-            >
-              Detalhes
-            </button>
+                <button
+                  onClick={() => onOpenDetails(job)}
+                  className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all"
+                >
+                  Detalhes
+                </button>
 
-            <button
-              onClick={() => onApply(job)}
-              disabled={applied}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF9F0A] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,159,10,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {applied ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Candidatado
-                </>
-              ) : (
-                <>
-                  <Zap className="w-3.5 h-3.5" /> Candidatar-se
-                </>
-              )}
-            </button>
+                <button
+                  onClick={() => onApply(job)}
+                  disabled={applied}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF9F0A] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,159,10,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {applied ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Candidatado
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5" /> Candidatar-se
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -947,6 +1000,7 @@ function JobCard({
 export default function FeedPrestadorPage() {
   const navigate = useNavigate();
   const { glassClass } = usePerformanceMode();
+  const postUnlock = usePostUnlock();
 
   const [filter, setFilter] = useState<"todas" | Subcategory>("todas");
   const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
@@ -1247,6 +1301,10 @@ export default function FeedPrestadorPage() {
               onChat={openChatWith}
               onLightbox={(job, index) => setLightbox({ job, index })}
               onOpenDetails={setDetailsFor}
+              locked={job.contractor.id !== postUnlock.userId && !postUnlock.isUnlocked(job.id)}
+              unlockCost={postUnlock.cost}
+              unlockBusy={postUnlock.busy === job.id}
+              onUnlock={() => { void postUnlock.unlock(job.id); }}
             />
           ))}
 
@@ -1329,6 +1387,12 @@ export default function FeedPrestadorPage() {
           }
         }}
         onClose={() => setDetailsFor(null)}
+        locked={detailsFor ? detailsFor.contractor.id !== postUnlock.userId && !postUnlock.isUnlocked(detailsFor.id) : false}
+        unlockCost={postUnlock.cost}
+        onUnlock={async () => {
+          if (!detailsFor) return false;
+          return await postUnlock.unlock(detailsFor.id);
+        }}
       />
     </div>
   );
