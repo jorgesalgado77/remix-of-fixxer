@@ -175,6 +175,24 @@ async function preloadProfile(id: string) {
   } catch { roleCache.delete(id); }
 }
 
+// ---- Cache de pré-carregamento de imagens (reduz flicker ao rolar horizontal) ----
+// Guarda URLs já pré-carregadas (ou em progresso) durante toda a sessão do app.
+const imagePreloadCache = new Set<string>();
+function preloadImage(url: string | null | undefined) {
+  if (!url || typeof window === "undefined") return;
+  if (imagePreloadCache.has(url)) return;
+  imagePreloadCache.add(url);
+  try {
+    const img = new window.Image();
+    // Prioridade baixa: não competir com hero/feed principal.
+    // @ts-expect-error — atributo válido no HTML padrão.
+    img.fetchPriority = "low";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    img.src = url;
+  } catch { imagePreloadCache.delete(url); }
+}
+
 export function RecentPartnersCarousel() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
