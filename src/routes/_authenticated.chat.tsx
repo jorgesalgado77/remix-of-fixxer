@@ -326,12 +326,21 @@ function ChatInboxPage() {
               if (m && !idSetRef.current.has(m.id)) {
                 idSetRef.current.add(m.id);
                 setMessages((prev) => [m, ...prev]);
+                // Toca som apenas para mensagens novas recebidas por mim, se a
+                // conversa não estiver silenciada individualmente e a página
+                // estiver visível (evita spam quando aba oculta).
+                const incoming = m.recipient_id === uid && m.sender_id !== uid;
+                const isHidden = typeof document !== "undefined" && document.visibilityState === "hidden";
+                if (incoming && !isHidden && !isConversationMuted(uid, m.sender_id)) {
+                  try { playIncomingMessageSound(); } catch {}
+                }
               } else {
                 // atualização (read flag etc.) — refaz primeira página
                 await loadFirstPage(uid);
               }
               await markAllAsRead(uid);
             },
+
           )
           .subscribe();
       } catch {}
