@@ -17,7 +17,11 @@ const LS_COUNT_PREFIX = "fixxer_favorite_user_count_v1:";
 const LS_CURRENT_USER = "fixxer_favorite_current_user_v1";
 
 function readCachedCurrentUser(): string | null {
-  try { return window.localStorage.getItem(LS_CURRENT_USER); } catch { return null; }
+  try {
+    // `fixxer_user_id` é atualizado no login atual. Ele tem prioridade para não
+    // reaproveitar favoritos do usuário anterior no mesmo navegador.
+    return window.localStorage.getItem("fixxer_user_id") || window.localStorage.getItem(LS_CURRENT_USER);
+  } catch { return null; }
 }
 function readCachedCount(id: string | null | undefined): number {
   if (!id) return 0;
@@ -51,7 +55,8 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
     (async () => {
       try {
         const { data } = await supabaseExternal.auth.getUser();
-        const uid = data?.user?.id ?? null;
+        const cachedUid = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null;
+        const uid = data?.user?.id ?? cachedUid ?? null;
         if (cancelled) return;
         setCurrentUserId(uid);
         try {
@@ -59,7 +64,8 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
           else window.localStorage.removeItem(LS_CURRENT_USER);
         } catch { /* ignore */ }
       } catch {
-        if (!cancelled) setCurrentUserId(null);
+        const cachedUid = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null;
+        if (!cancelled) setCurrentUserId(cachedUid ?? null);
       }
     })();
     return () => { cancelled = true; };
@@ -195,7 +201,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
       try {
         const raw = window.localStorage.getItem(countLsKey);
         const n = raw ? Math.max(0, parseInt(raw, 10) || 0) : 0;
-        window.localStorage.setItem(countLsKey, String(Math.max(0, n)));
+        window.localStorage.setItem(countLsKey, String(Math.max(0, n + (next ? 1 : -1))));
       } catch { /* ignore */ }
       toast(next ? "Favorito salvo localmente." : "Removido localmente.", {
         description: "Sincronizaremos automaticamente quando a conexão estiver disponível.",

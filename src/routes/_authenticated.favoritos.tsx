@@ -124,6 +124,38 @@ function classifyRole(role?: string | null): Kind {
   return "cliente";
 }
 
+function normalizeEmail(email?: string | null) {
+  return (email || "").trim().toLowerCase();
+}
+
+function scopedMockProfiles(email?: string | null): FavProfile[] {
+  // Mock obrigatório apenas para o lojista demo Confere Planejados.
+  // Não reutiliza esses cards para outros usuários autenticados.
+  return normalizeEmail(email) === "confere2024@gmail.com" ? MOCK_PROFILES : [];
+}
+
+function scopedMockAds(email?: string | null): FavAd[] {
+  return normalizeEmail(email) === "confere2024@gmail.com" ? MOCK_ADS : [];
+}
+
+function firstText(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function firstUrl(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && /^https?:\/\//i.test(value.trim())) return value.trim();
+    if (Array.isArray(value)) {
+      const hit = value.find((item) => typeof item === "string" && /^https?:\/\//i.test(item.trim()));
+      if (hit) return hit.trim();
+    }
+  }
+  return null;
+}
+
 /* ============================ HELPERS ============================ */
 
 function formatLocation(user: { lat: number; lng: number } | null, city?: string | null, state?: string | null) {
@@ -155,6 +187,8 @@ function FavoritosPage() {
   const [tab, setTab] = useState<TabKey>("perfis");
   const [kindFilter, setKindFilter] = useState<KindFilter>("todos");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [userResolved, setUserResolved] = useState(false);
 
   const [profiles, setProfiles] = useState<FavProfile[]>([]);
   const [ads, setAds] = useState<FavAd[]>([]);
@@ -162,14 +196,29 @@ function FavoritosPage() {
   const [loadingAds, setLoadingAds] = useState(true);
   const [query, setQuery] = useState("");
 
-  // Descobre usuário logado.
+  // Descobre usuário logado e usa fallback local apenas para identificar a conta atual.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const { data } = await supabaseExternal.auth.getUser();
-        if (!cancelled) setCurrentUserId(data?.user?.id ?? null);
-      } catch { if (!cancelled) setCurrentUserId(null); }
+        const authUser = data?.user;
+        const cachedId = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null;
+        const cachedEmail = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_email") : null;
+        if (!cancelled) {
+          setCurrentUserId(authUser?.id ?? cachedId ?? null);
+          setCurrentUserEmail(authUser?.email ?? cachedEmail ?? null);
+          setUserResolved(true);
+        }
+      } catch {
+        const cachedId = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null;
+        const cachedEmail = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_email") : null;
+        if (!cancelled) {
+          setCurrentUserId(cachedId ?? null);
+          setCurrentUserEmail(cachedEmail ?? null);
+          setUserResolved(true);
+        }
+      }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -178,8 +227,9 @@ function FavoritosPage() {
   const fetchProfiles = useCallback(async () => {
     setLoadingProfiles(true);
     try {
+      if (!userResolved) return;
       if (!currentUserId) {
-        setProfiles(MOCK_PROFILES);
+        setProfiles([]);
         return;
       }
       const { data, error } = await supabaseExternal
@@ -191,48 +241,68 @@ function FavoritosPage() {
 
       const rows = data ?? [];
       if (rows.length === 0) {
-        setProfiles(MOCK_PROFILES);
+        setProfiles(scopedMockProfiles(currentUserEmail));
         return;
       }
 
       const ids = rows.map((r: any) => r.favorited_user_id).filter(Boolean);
       let profilesById: Record<string, any> = {};
+      let storeProfilesByUserId: Record<string, any> = {};
       try {
-        const { data: profs } = await supabaseExternal
+        const { data: profs, error: profsError } = await supabaseExternal
           .from("profiles")
-          .select("id, full_name, name, avatar_url, avatar, photo_url, role, activity_branch, city, state, uf, rating")
+          .select("*")
           .in("id", ids);
+        if (profsError) throw profsError;
         (profs ?? []).forEach((p: any) => { profilesById[p.id] = p; });
       } catch { /* silencioso — segue com nomes genéricos */ }
+      try {
+        const { data: stores, error: storesError } = await supabaseExternal
+          .from("store_profiles")
+          .select("*")
+          .in("user_id", ids);
+        if (storesError) throw storesError;
+        (stores ?? []).forEach((p: any) => { storeProfilesByUserId[p.user_id] = p; });
+      } catch { /* silencioso — segue só com profiles */ }
 
       const mapped: FavProfile[] = rows.map((r: any) => {
         const p = profilesById[r.favorited_user_id] || {};
+        const sp = storeProfilesByUserId[r.favorited_user_id] || {};
+        const displayName = firstText(
+          sp.social_name,
+          sp.company_name,
+          p.full_name,
+          p.name,
+          p.display_name,
+          p.email,
+        ) || "Perfil salvo";
         return {
           id: r.id,
           userId: r.favorited_user_id,
-          name: p.full_name || p.name || "Perfil salvo",
-          avatarUrl: p.avatar_url || p.avatar || p.photo_url || null,
-          kind: classifyRole(p.role),
-          branch: p.activity_branch || null,
-          city: p.city || null,
-          state: p.state || p.uf || null,
+          name: displayName,
+          avatarUrl: firstUrl(sp.logo_url, sp.avatar_url, sp.photo_url, p.avatar_url, p.avatar, p.photo_url, p.profile_photo_url, p.profile_image_url),
+          kind: classifyRole(firstText(p.role, p.user_type, p.business_category, sp.role, sp.user_type, sp.business_category)),
+          branch: firstText(sp.activity_branch, p.activity_branch, Array.isArray(p.categories) ? p.categories[0] : null),
+          city: firstText(sp.city, p.city),
+          state: firstText(sp.state, p.state, p.uf),
           rating: typeof p.rating === "number" ? p.rating : null,
         };
       });
-      setProfiles(mapped.length > 0 ? mapped : MOCK_PROFILES);
+      setProfiles(mapped.length > 0 ? mapped : scopedMockProfiles(currentUserEmail));
     } catch (err) {
       if (typeof console !== "undefined") console.debug("[Favoritos] fallback mock perfis:", err);
-      setProfiles(MOCK_PROFILES);
+      setProfiles(scopedMockProfiles(currentUserEmail));
     } finally {
       setLoadingProfiles(false);
     }
-  }, [currentUserId]);
+  }, [currentUserEmail, currentUserId, userResolved]);
 
   /* ================ FETCH ANÚNCIOS SALVOS ================ */
   const fetchAds = useCallback(async () => {
     setLoadingAds(true);
     try {
-      if (!currentUserId) { setAds(MOCK_ADS); return; }
+      if (!userResolved) return;
+      if (!currentUserId) { setAds([]); return; }
       const { data, error } = await supabaseExternal
         .from("favorite_posts")
         .select("id, post_id, created_at")
@@ -241,7 +311,7 @@ function FavoritosPage() {
       if (error) throw error;
 
       const rows = data ?? [];
-      if (rows.length === 0) { setAds(MOCK_ADS); return; }
+      if (rows.length === 0) { setAds(scopedMockAds(currentUserEmail)); return; }
 
       const ids = rows.map((r: any) => r.post_id).filter(Boolean);
       let postsById: Record<string, any> = {};
@@ -268,14 +338,14 @@ function FavoritosPage() {
           category: p.category || null,
         };
       });
-      setAds(mapped.length > 0 ? mapped : MOCK_ADS);
+      setAds(mapped.length > 0 ? mapped : scopedMockAds(currentUserEmail));
     } catch (err) {
       if (typeof console !== "undefined") console.debug("[Favoritos] fallback mock anúncios:", err);
-      setAds(MOCK_ADS);
+      setAds(scopedMockAds(currentUserEmail));
     } finally {
       setLoadingAds(false);
     }
-  }, [currentUserId]);
+  }, [currentUserEmail, currentUserId, userResolved]);
 
   useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
   useEffect(() => { fetchAds(); }, [fetchAds]);
@@ -316,7 +386,8 @@ function FavoritosPage() {
       const { error } = await supabaseExternal
         .from("favorite_users")
         .delete()
-        .eq("id", fav.id);
+        .eq("id", fav.id)
+        .eq("user_id", currentUserId);
       if (error) throw error;
       // Limpa cache local do coração / contador desse alvo.
       try {
@@ -336,14 +407,15 @@ function FavoritosPage() {
       const { error } = await supabaseExternal
         .from("favorite_posts")
         .delete()
-        .eq("id", fav.id);
+        .eq("id", fav.id)
+        .eq("user_id", currentUserId);
       if (error) throw error;
       toast.success("Anúncio removido dos Favoritos.");
     } catch (err) {
       if (typeof console !== "undefined") console.debug("[Favoritos] remove anúncio (silencioso):", err);
       toast("Removido localmente.", { description: "Sincronizaremos quando a conexão voltar." });
     }
-  }, []);
+  }, [currentUserId]);
 
   const openChat = useCallback((fav: FavProfile) => {
     navigate({ to: "/chat/$peerId" as any, params: { peerId: fav.userId } as any })
