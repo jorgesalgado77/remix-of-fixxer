@@ -174,7 +174,7 @@ function ConversationPage() {
     if (!peerId) return;
     const isMock = typeof peerId === "string" && peerId.startsWith("mock-");
     if (isMock) return;
-    if (!isValidUuid(peerId)) {
+    if (!isUuid(peerId)) {
       toast.error("Conversa inválida", {
         description: "O identificador do contato não é válido. Voltando para a lista.",
       });
