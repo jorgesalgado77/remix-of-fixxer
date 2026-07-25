@@ -708,6 +708,9 @@ export function RecentPartnersCarousel() {
                     </p>
                   ) : null}
 
+                  <div className="mt-2">
+                    <AvailabilityBadge userId={p.id} />
+                  </div>
                 </div>
               </button>
             );
