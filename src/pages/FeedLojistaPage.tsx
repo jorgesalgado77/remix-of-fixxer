@@ -1,7 +1,9 @@
 import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FeedCardSkeletonList } from "@/components/FeedCardSkeleton";
+import { thumbSrc } from "@/lib/feed-thumb";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -517,7 +519,7 @@ function categoryBadge(cat: FeedCategory) {
   }
 }
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 10;
 const SAVES_STORAGE_KEY = "fixxer_feed_saves_v1";
 
 const AUTHOR_ROUTE: Record<FeedCategory, string> = {
@@ -953,13 +955,10 @@ export default function FeedLojistaPage() {
               })}
 
               {hasMore ? (
-                <div
-                  ref={sentinelRef}
-                  className="py-6 flex items-center justify-center text-white/50 text-[11px] font-bold uppercase tracking-wide"
-                >
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-[#00E5FF] rounded-full animate-spin mr-2" />
-                  Carregando mais publicações...
-                </div>
+                <>
+                  <div ref={sentinelRef} aria-hidden className="h-1 w-full" />
+                  <FeedCardSkeletonList count={2} accent="rgba(0,229,255,0.25)" />
+                </>
               ) : (
                 <div className="py-6 text-center text-[11px] font-bold uppercase tracking-wide text-white/30">
                   — Fim do feed —
@@ -1206,7 +1205,7 @@ function ModalShell({
   );
 }
 
-function PostCard({
+function PostCardImpl({
   post,
   isSaved,
   menuOpen,
@@ -1429,9 +1428,10 @@ function PostCard({
                 <>
                   {m.poster ? (
                     <img
-                      src={m.poster}
+                      src={thumbSrc(m.poster, 640)}
                       alt=""
                       loading="lazy"
+                      decoding="async"
                       className={`w-full h-full object-cover ${locked ? "blur-md scale-105" : ""}`}
                     />
                   ) : (
@@ -1452,9 +1452,10 @@ function PostCard({
                 </>
               ) : (
                 <img
-                  src={m.url}
+                  src={thumbSrc(m.url, 640)}
                   alt={post.title}
                   loading="lazy"
+                  decoding="async"
                   className={`w-full h-full object-cover group-hover:scale-105 transition-transform ${
                     locked ? "blur-md scale-110" : ""
                   }`}
@@ -1529,3 +1530,6 @@ function PostCard({
     </article>
   );
 }
+
+const PostCard = memo(PostCardImpl);
+
