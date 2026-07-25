@@ -289,9 +289,8 @@ export function RecentPartnersCarousel() {
     const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
     const enriched: Enriched[] = base.map((p) => {
       const coords = cityCoords(p.city) ?? null;
-      const dist = (sortMode === "nearby" && userCoords && coords)
-        ? haversineKm(userCoords, coords)
-        : null;
+      // Distância é sempre calculada quando há coords válidas — o card mostra em qualquer modo.
+      const dist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
       return { ...p, _coords: coords, _distanceKm: Number.isFinite(dist as number) ? (dist as number) : null };
     });
 
