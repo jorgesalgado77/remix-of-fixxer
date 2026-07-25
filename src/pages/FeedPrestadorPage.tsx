@@ -990,61 +990,6 @@ function JobCard({
             )}
           </div>
         </div>
-
-        {/* VALOR E AÇÕES */}
-        <div className="flex items-center justify-between pt-3 border-t border-white/5">
-          <div className="flex flex-col">
-            <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">
-              Remuneração
-            </span>
-            <span className="text-xs font-black text-[#FF9F0A]">{job.value}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onToggleSave(job.id)}
-              className={`p-2.5 rounded-xl border transition-all ${
-                saved
-                  ? "bg-[#FF9F0A]/10 border-[#FF9F0A]/30 text-[#FF9F0A]"
-                  : "bg-white/5 border-white/10 text-white hover:bg-white/10"
-              }`}
-              aria-label={saved ? "Remover dos salvos" : "Salvar vaga"}
-            >
-              <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
-            </button>
-
-            <button
-              onClick={() => onChat(job)}
-              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-[#FF9F0A]/10 hover:border-[#FF9F0A]/30 transition-all"
-              aria-label="Chat direto"
-            >
-              <MessageSquare className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => onOpenDetails(job)}
-              className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all"
-            >
-              Detalhes
-            </button>
-
-            <button
-              onClick={() => onApply(job)}
-              disabled={applied}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF9F0A] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,159,10,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {applied ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Candidatado
-                </>
-              ) : (
-                <>
-                  <Zap className="w-3.5 h-3.5" /> Candidatar-se
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* GLOW DECORATIVO */}
