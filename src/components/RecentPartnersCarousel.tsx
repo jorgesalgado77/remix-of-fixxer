@@ -43,10 +43,36 @@ type PartnerRow = {
 type PartnerKind = "prestador" | "fornecedor";
 type PartnerCard = PartnerRow & { _kind: PartnerKind };
 type SortMode = "recent" | "rating" | "nearby";
+type KindFilter = "all" | PartnerKind;
 
 const CACHE_KEY = "fixxer_recent_partners_v1";
 const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
 const SORT_KEY = "fixxer_recent_partners_sort_v1";
+const FILTER_KEY = "fixxer_recent_partners_filter_v1";
+
+// ---- URL query-string sync (compartilhável / restaurável em reload) ----
+const URL_SORT_PARAM = "partnersSort";
+const URL_FILTER_PARAM = "partnersKind";
+const VALID_SORTS: SortMode[] = ["recent", "rating", "nearby"];
+const VALID_FILTERS: KindFilter[] = ["all", "prestador", "fornecedor"];
+function readUrlParam<T extends string>(name: string, valid: T[]): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = new URLSearchParams(window.location.search).get(name);
+    return v && (valid as string[]).includes(v) ? (v as T) : null;
+  } catch { return null; }
+}
+function writeUrlParams(next: Partial<Record<string, string | null>>) {
+  if (typeof window === "undefined") return;
+  try {
+    const url = new URL(window.location.href);
+    for (const [k, v] of Object.entries(next)) {
+      if (v == null) url.searchParams.delete(k); else url.searchParams.set(k, v);
+    }
+    window.history.replaceState(window.history.state, "", url.toString());
+  } catch { /* ignore */ }
+}
+
 
 function classifyRole(role: string | null | undefined): PartnerKind | null {
   const r = (role || "").toLowerCase();
@@ -104,6 +130,14 @@ function readSort(): SortMode {
     return v === "rating" || v === "nearby" ? v : "recent";
   } catch { return "recent"; }
 }
+function readFilter(): KindFilter {
+  if (typeof window === "undefined") return "all";
+  try {
+    const v = window.localStorage.getItem(FILTER_KEY);
+    return v === "prestador" || v === "fornecedor" ? v : "all";
+  } catch { return "all"; }
+}
+
 
 // Cache de "preload" para roles já resolvidos por perfil.
 const roleCache = new Map<string, string | null>();
@@ -126,7 +160,8 @@ export function RecentPartnersCarousel() {
   const [loading, setLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [sortMode, setSortMode] = useState<SortMode>(() => readSort());
+  const [sortMode, setSortMode] = useState<SortMode>(() => readUrlParam<SortMode>(URL_SORT_PARAM, VALID_SORTS) ?? readSort());
+  const [kindFilter, setKindFilter] = useState<KindFilter>(() => readUrlParam<KindFilter>(URL_FILTER_PARAM, VALID_FILTERS) ?? readFilter());
   const [pull, setPull] = useState(0);
   const startY = useRef<number | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -134,9 +169,16 @@ export function RecentPartnersCarousel() {
   const THRESHOLD = 60;
   const MAX_PULL = 90;
 
+  // Persiste sort/filter em localStorage E na URL (?partnersSort=&partnersKind=)
   useEffect(() => {
     try { window.localStorage.setItem(SORT_KEY, sortMode); } catch { /* ignore */ }
+    writeUrlParams({ [URL_SORT_PARAM]: sortMode === "recent" ? null : sortMode });
   }, [sortMode]);
+  useEffect(() => {
+    try { window.localStorage.setItem(FILTER_KEY, kindFilter); } catch { /* ignore */ }
+    writeUrlParams({ [URL_FILTER_PARAM]: kindFilter === "all" ? null : kindFilter });
+  }, [kindFilter]);
+
 
   const fetchPartners = useCallback(async (): Promise<{ ok: boolean }> => {
     try {
@@ -197,7 +239,8 @@ export function RecentPartnersCarousel() {
 
   // ---- Ordenação em memória ----
   const sortedItems = useMemo(() => {
-    const arr = [...items];
+    const arr = kindFilter === "all" ? [...items] : items.filter((p) => p._kind === kindFilter);
+
     if (sortMode === "rating") {
       arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     } else if (sortMode === "nearby" && userCoords) {
@@ -215,7 +258,27 @@ export function RecentPartnersCarousel() {
       });
     }
     return arr;
-  }, [items, sortMode, userCoords]);
+  }, [items, sortMode, userCoords, kindFilter]);
+
+  // ---- IntersectionObserver: pré-carrega /perfil/:id quando o card se aproxima da viewport ----
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof IntersectionObserver === "undefined") return;
+    const root = scrollerRef.current;
+    if (!root || sortedItems.length === 0) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const id = (e.target as HTMLElement).dataset.partnerId;
+          if (id) preloadProfile(id);
+        }
+      },
+      { root, rootMargin: "0px 300px 0px 300px", threshold: 0.01 },
+    );
+    for (const el of cardRefs.current) if (el) io.observe(el);
+    return () => io.disconnect();
+  }, [sortedItems]);
+
 
   // ---- Pull-to-refresh (mobile) ----
   const onTouchStart = (e: React.TouchEvent) => {
@@ -294,7 +357,31 @@ export function RecentPartnersCarousel() {
             Conecte-se com profissionais e fornecedores recomendados na sua região.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          {/* Filtro por categoria: Todos / 🛠️ Prestadores / 🚚 Parceiros B2B */}
+          <div role="group" aria-label="Filtrar por categoria" className="inline-flex items-center bg-white/5 border border-white/10 rounded-full p-0.5">
+            {([
+              { v: "all" as const, label: "Todos", color: "#00FF87" },
+              { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
+              { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
+            ]).map((opt) => {
+              const active = kindFilter === opt.v;
+              return (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => setKindFilter(opt.v)}
+                  aria-pressed={active}
+                  className="text-[10px] md:text-[11px] font-bold px-2.5 py-1 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                  style={active
+                    ? { background: opt.color, color: "#000", ["--tw-ring-color" as any]: opt.color }
+                    : { color: "rgba(255,255,255,0.7)", ["--tw-ring-color" as any]: opt.color }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
           <label className="sr-only" htmlFor="partners-sort">Ordenar por</label>
           <div className="relative">
             <ArrowUpDown className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-white/60 pointer-events-none" aria-hidden="true" />
@@ -312,6 +399,7 @@ export function RecentPartnersCarousel() {
               </option>
             </select>
           </div>
+
           <button
             type="button"
             onClick={handleRefresh}
@@ -423,12 +511,10 @@ export function RecentPartnersCarousel() {
               <button
                 key={p.id}
                 ref={(el) => { cardRefs.current[idx] = el; }}
+                data-partner-id={p.id}
                 type="button"
                 role="listitem"
                 onClick={() => openProfile(p)}
-                onMouseEnter={() => preloadProfile(p.id)}
-                onFocus={() => preloadProfile(p.id)}
-                onTouchStart={() => preloadProfile(p.id)}
                 onKeyDown={(e) => onCardKeyDown(e, idx)}
                 className={`w-44 flex-shrink-0 snap-start rounded-2xl bg-[#1A1A1B] overflow-hidden border-2 ${meta.borderClass} text-left transition-transform active:scale-[0.98] hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black`}
                 style={{ boxShadow: `0 0 12px ${meta.color}22`, ["--tw-ring-color" as any]: meta.color }}
@@ -436,6 +522,7 @@ export function RecentPartnersCarousel() {
                 aria-posinset={idx + 1}
                 aria-setsize={sortedItems.length}
               >
+
                 <div className="relative w-full h-40 bg-black/40">
                   {avatarUrl ? (
                     <img
@@ -491,7 +578,23 @@ export function RecentPartnersCarousel() {
               </button>
             );
           })}
+          {/* Skeletons durante revalidação em background — mantém a experiência estável */}
+          {refreshing && sortedItems.length > 0 && Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={`sk-${i}`}
+              aria-hidden="true"
+              className="w-44 flex-shrink-0 snap-start rounded-2xl bg-[#1A1A1B] border border-white/10 overflow-hidden opacity-70"
+            >
+              <div className="w-full h-40 bg-white/5 animate-pulse" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
+                <div className="h-2.5 w-1/2 rounded bg-white/5 animate-pulse" />
+                <div className="h-2.5 w-2/3 rounded bg-white/5 animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
+
       )}
     </section>
   );
