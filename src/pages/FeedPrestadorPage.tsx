@@ -42,6 +42,9 @@ import {
   User,
   Store,
   Flame,
+  Lock,
+  Coins,
+  Loader2,
 } from "lucide-react";
 
 // =============================================================================
