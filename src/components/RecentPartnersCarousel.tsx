@@ -369,7 +369,7 @@ export function RecentPartnersCarousel() {
       });
     }
     return enriched;
-  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo]);
+  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo, currentUserId]);
 
   // ---- IntersectionObserver: pré-carrega /perfil/:id + foto quando o card se aproxima ----
   useEffect(() => {
