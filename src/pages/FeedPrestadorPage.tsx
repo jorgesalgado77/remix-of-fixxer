@@ -1304,7 +1304,7 @@ export default function FeedPrestadorPage() {
               locked={job.contractor.id !== postUnlock.userId && !postUnlock.isUnlocked(job.id)}
               unlockCost={postUnlock.cost}
               unlockBusy={postUnlock.busy === job.id}
-              onUnlock={() => postUnlock.unlock(job.id)}
+              onUnlock={() => { void postUnlock.unlock(job.id); }}
             />
           ))}
 
