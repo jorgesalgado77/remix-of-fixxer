@@ -12,6 +12,7 @@ interface Props {
   portfolioImages?: Array<{ url: string; type?: string }>;
   companyName?: string | null;
   fullName?: string | null;
+  displayName?: string | null;
   accentHex?: string;
 }
 
@@ -25,6 +26,7 @@ export function LiveProfilePreview({
   portfolioImages,
   companyName,
   fullName,
+  displayName,
   accentHex,
 }: Props) {
   const custom = sections?.custom ?? [];
@@ -36,8 +38,10 @@ export function LiveProfilePreview({
   );
 
   const bio = (aboutBio || "").trim();
-  const displayName = companyName || fullName || "Seu Perfil";
+  const shownDisplayName = (displayName || "").trim();
+  const shownCompany = (companyName || fullName || "Seu Perfil").trim();
   const accent = accentHex || "#00FF87";
+
 
   return (
     <section
