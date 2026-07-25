@@ -351,31 +351,35 @@ function ProfilePage() {
     profile?.default_radius != null && !isAllowedRadius(profile.default_radius);
   const canSave = !saving && !bioOverLimit && !radiusInvalid;
 
-  const handleSave = async () => {
+  const handleSave = async (opts?: { silent?: boolean }) => {
+    const silent = !!opts?.silent;
     if (!profile?.id) {
-      toast.error("Perfil não carregado.", { description: "Recarregue a página e tente novamente." });
+      if (!silent) toast.error("Perfil não carregado.", { description: "Recarregue a página e tente novamente." });
       return;
     }
     if (bioOverLimit) {
-      toast.error(`O campo "Sobre" excede o limite (${bioLen}/${BIO_MAX_LENGTH}).`, {
-        description: "Reduza o texto antes de salvar.",
-      });
+      if (!silent) toast.error(`O campo "Sobre" excede o limite (${bioLen}/${BIO_MAX_LENGTH}).`);
       return;
     }
     if (radiusInvalid) {
-      toast.error("Raio de atuação inválido.", {
-        description: `Escolha um dos valores permitidos: ${ALLOWED_RADII_KM.join(", ")} km.`,
-      });
+      if (!silent) toast.error("Raio de atuação inválido.");
       return;
     }
 
-    setSaving(true);
+    if (silent) setAutoSaving(true); else setSaving(true);
     try {
-      // Cria payload mutável — remove colunas que não existem no schema (retry automático)
+      // Payload mutável; se uma coluna não existir no schema, movemos o
+      // valor para custom_sections.__extras (JSONB) para não perder o dado.
       const payload: any = { ...profile };
+      const extras: Record<string, unknown> = {
+        ...((payload.custom_sections as any)?.__extras || {}),
+      };
+      // remove chaves internas/derivadas que nunca devem ir para o banco
+      delete payload.id_temp;
+
       let lastError: any = null;
       let attempts = 0;
-      while (attempts < 10) {
+      while (attempts < 30) {
         attempts++;
         const { error } = await supabase
           .from('profiles')
@@ -383,28 +387,39 @@ function ProfilePage() {
           .eq('id', profile.id);
         if (!error) { lastError = null; break; }
         lastError = error;
-        // Tenta extrair nome da coluna faltante: "Could not find the 'X' column"
-        const m = (error.message || '').match(/'([^']+)'\s+column/i);
-        if (m && m[1] && m[1] in payload) {
-          console.warn(`[profile.save] Removendo coluna inexistente: ${m[1]}`);
-          delete payload[m[1]];
+        const msg = error.message || '';
+        // Suporta duas variantes de mensagem do PostgREST/Postgres
+        const m =
+          msg.match(/'([^']+)'\s+column/i) ||
+          msg.match(/column\s+"([^"]+)"/i) ||
+          msg.match(/Could not find the '([^']+)'/i);
+        const col = m?.[1];
+        if (col && col in payload && col !== 'custom_sections' && col !== 'id') {
+          console.warn(`[profile.save] Coluna inexistente "${col}" — movendo para custom_sections.__extras`);
+          extras[col] = payload[col];
+          delete payload[col];
+          payload.custom_sections = {
+            ...(payload.custom_sections || {}),
+            __extras: extras,
+          };
           continue;
         }
         break;
       }
 
       if (lastError) {
-        if (profileId == null && profile?.id) {
-          markPending(profile.id, true);
+        if (!profileId && profile?.id) markPending(profile.id, true);
+        if (!silent) {
+          toast.error("Erro ao salvar perfil", {
+            description: lastError.message || "Falha desconhecida ao gravar no banco.",
+          });
+        } else {
+          console.warn('[profile.autosave] falha:', lastError.message);
         }
-        toast.error("Erro ao salvar perfil", {
-          description: lastError.message || "Falha desconhecida ao gravar no banco.",
-        });
         return;
       }
 
-
-      // Refetch imediato para refletir activity_branch/default_radius/about_bio
+      // Refetch para refletir estado real (colunas + __extras reidratado)
       const { data: fresh, error: refetchErr } = await supabase
         .from('profiles')
         .select('*')
@@ -412,7 +427,13 @@ function ProfilePage() {
         .single();
 
       if (fresh && !refetchErr) {
-        setProfile(fresh);
+        let mergedFresh: any = fresh;
+        const savedExtras = (fresh?.custom_sections as any)?.__extras;
+        if (savedExtras && typeof savedExtras === 'object') {
+          mergedFresh = { ...savedExtras, ...fresh };
+        }
+        setProfile(mergedFresh);
+        lastSavedSnapshotRef.current = JSON.stringify(mergedFresh);
         try {
           window.dispatchEvent(
             new CustomEvent('fixxer:profile-updated', { detail: { id: fresh.id } }),
@@ -420,23 +441,39 @@ function ProfilePage() {
         } catch { /* noop */ }
       }
 
-      // Limpa rascunho offline — a versão do servidor é a fonte de verdade agora
       if (profile?.id) clearDraft(profile.id);
 
-      toast.success("Perfil atualizado com sucesso!", {
-        description: refetchErr ? "Salvo, mas houve falha ao recarregar. Atualize a página." : undefined,
-      });
+      if (!silent) toast.success("Perfil atualizado com sucesso!");
     } catch (e: any) {
-      if (profileId == null && profile?.id) {
-        markPending(profile.id, true);
+      if (!profileId && profile?.id) markPending(profile.id, true);
+      if (!silent) {
+        toast.error("Erro inesperado ao salvar perfil", {
+          description: e?.message || String(e),
+        });
+      } else {
+        console.warn('[profile.autosave] exceção:', e?.message || e);
       }
-      toast.error("Erro inesperado ao salvar perfil", {
-        description: e?.message || String(e),
-      });
     } finally {
-      setSaving(false);
+      if (silent) setAutoSaving(false); else setSaving(false);
     }
   };
+
+  // 💾 SALVAMENTO AUTOMÁTICO (debounced, silencioso) — dispara 1.5s após a
+  // última edição, comparando um snapshot JSON para evitar loops.
+  useEffect(() => {
+    if (loading || profileId || !profile?.id) return;
+    if (saving || autoSaving) return;
+    const snapshot = JSON.stringify(profile);
+    if (snapshot === lastSavedSnapshotRef.current) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave({ silent: true });
+    }, 1500);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, loading, profileId]);
 
   // Persiste rascunho local a cada mudança nos campos "leves"
   useEffect(() => {
