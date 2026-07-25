@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft, Terminal, Eye, EyeOff, AlertTriangle, CheckCircle2, Search } from "lucide-react";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 
@@ -33,7 +32,7 @@ function LoginComponent() {
 
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabaseExternal.auth.signInWithPassword({
         email,
         password,
       });
@@ -58,18 +57,8 @@ function LoginComponent() {
           statusRow = (ext as any) || null;
         } catch { /* silencioso */ }
 
-        // Fallback: tenta no cliente interno caso o externo não tenha o registro
-        if (!statusRow) {
-          const { data: intRow } = await supabase
-            .from('profiles')
-            .select('status, role')
-            .eq('id', data.session.user.id)
-            .maybeSingle();
-          statusRow = (intRow as any) || null;
-        }
-
         if (statusRow?.status === 'bloqueado') {
-          await supabase.auth.signOut();
+          await supabaseExternal.auth.signOut();
           setErrorMsg('Sua conta está SUSPENSA. Contate o suporte para mais informações.');
           toast.error('Acesso suspenso pelo administrador.');
           setLoading(false);
@@ -135,7 +124,7 @@ function LoginComponent() {
 
     setResetLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabaseExternal.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
 
