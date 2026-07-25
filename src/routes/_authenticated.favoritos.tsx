@@ -69,7 +69,8 @@ const MOCK_PROFILES: FavProfile[] = [
     id: "mock-p-1",
     userId: "mock-jorge-salgado",
     name: "Jorge Salgado",
-    avatarUrl: null,
+    avatarUrl:
+      "https://ui-avatars.com/api/?name=Jorge+Salgado&background=FF7A00&color=fff&size=256&bold=true&format=png",
     kind: "prestador",
     branch: "Conferente Técnico",
     city: "Votorantim",
@@ -81,9 +82,10 @@ const MOCK_PROFILES: FavProfile[] = [
     id: "mock-p-2",
     userId: "mock-eletrotech",
     name: "EletroTech Soluções",
-    avatarUrl: null,
-    kind: "lojista",
-    branch: "Materiais Elétricos",
+    avatarUrl:
+      "https://ui-avatars.com/api/?name=EletroTech&background=B18CFF&color=fff&size=256&bold=true&format=png",
+    kind: "parceiro",
+    branch: "Materiais Elétricos B2B",
     city: "Sorocaba",
     state: "SP",
     rating: 4.9,
