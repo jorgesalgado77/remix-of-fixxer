@@ -1613,6 +1613,9 @@ function ProfilePage() {
                     {profile?.portfolio_media?.filter((f: any) => f.type === 'image').map((img: any, i: number) => (
                       <div
                         key={i}
+                        role="listitem"
+                        tabIndex={0}
+                        aria-label={`Imagem ${i + 1} de ${profile?.portfolio_media?.filter((f: any) => f.type === 'image').length || 0}. Setas para reordenar, Enter para pré-visualizar.`}
                         draggable
                         onDragStart={() => { dragRef.current = { list: 'image', index: i }; }}
                         onDragOver={(ev) => ev.preventDefault()}
@@ -1622,9 +1625,15 @@ function ProfilePage() {
                           if (src && src.list === 'image') reorderMedia('image', src.index, i);
                           dragRef.current = null;
                         }}
-                        className="relative group rounded-xl overflow-hidden cursor-grab active:cursor-grabbing shadow-lg aspect-square"
+                        onKeyDown={(ev) => {
+                          const total = profile?.portfolio_media?.filter((f: any) => f.type === 'image').length || 0;
+                          if (ev.key === 'Enter') { ev.preventDefault(); setPreview({ open: true, url: img.url, name: img.name || 'Imagem', kind: 'image' }); return; }
+                          handleReorderKeyDown(ev, 'image', i, total);
+                        }}
+                        className="relative group rounded-xl overflow-hidden cursor-grab active:cursor-grabbing shadow-lg aspect-square focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         onClick={() => setPreview({ open: true, url: img.url, name: img.name || 'Imagem', kind: 'image' })}
                       >
+
                         <img src={img.url} alt={img.name || 'Portfolio'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                           <button
