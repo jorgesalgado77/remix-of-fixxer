@@ -586,24 +586,37 @@ function FavoritosPage() {
                 cta={{ label: "Ir para o Feed", to: "/feed" }}
               />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredAds.map((ad) => (
-                  <AdCard
-                    key={ad.id}
-                    ad={ad}
-                    userCoords={userCoords}
-                    onRemove={() => removeAd(ad)}
-                    onOpen={() => {
-                      if (ad.postId) {
-                        navigate({ to: "/feed" as any }).catch(() => { window.location.href = "/feed"; });
-                      } else {
-                        toast.info("Prévia demo — publique/salve anúncios reais para abrir.");
-                      }
-                    }}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredAds.slice(0, visibleAds).map((ad) => (
+                    <AdCard
+                      key={ad.id}
+                      ad={ad}
+                      userCoords={userCoords}
+                      onRemove={() => removeAd(ad)}
+                      onOpen={() => {
+                        if (ad.postId) {
+                          navigate({ to: "/feed" as any }).catch(() => { window.location.href = "/feed"; });
+                        } else {
+                          toast.info("Prévia demo — publique/salve anúncios reais para abrir.");
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+                {visibleAds < filteredAds.length && (
+                  <div className="flex justify-center pt-6">
+                    <button
+                      onClick={() => setVisibleAds((n) => n + PAGE_SIZE)}
+                      className="h-11 px-6 rounded-full bg-white/5 border border-white/10 hover:border-primary/50 text-[11px] font-black uppercase italic tracking-widest"
+                    >
+                      Carregar mais ({filteredAds.length - visibleAds})
+                    </button>
+                  </div>
+                )}
+              </>
             )}
+
           </section>
         )}
       </main>
