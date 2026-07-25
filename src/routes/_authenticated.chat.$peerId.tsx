@@ -671,6 +671,34 @@ function ConversationPage() {
   };
 
   /**
+   * Classifica o erro do INSERT/UPSERT e reage: sessão inválida → /auth,
+   * RLS → mensagem clara sem retry silencioso, rede → toast informativo
+   * (o retry exponencial acontece dentro de sendWithRetry).
+   */
+  const handlePersistError = (err: unknown) => {
+    const c = classifyChatError(err);
+    if (c.kind === "session") {
+      bounceToAuth(navigate, peerId, "Sua sessão expirou.");
+      return;
+    }
+    if (c.kind === "rls") {
+      toast.error("Sem permissão para enviar", {
+        description: "Faça login novamente ou verifique se o contato ainda existe.",
+      });
+      return;
+    }
+    if (c.kind === "validation") {
+      toast.error("Identificador inválido", { description: c.message });
+      return;
+    }
+    if (c.kind === "network") {
+      toast.error("Falha de rede", { description: "Sem conexão após novas tentativas. Toque em ↻ para tentar de novo." });
+      return;
+    }
+    toast.error("Falha ao enviar", { description: c.message });
+  };
+
+  /**
    * Persistência idempotente: usa `client_message_id` como chave de conflito
    * para que retries após falha parcial de rede não criem duplicatas.
    */
