@@ -527,14 +527,23 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wide text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                aria-label="Fechar filtros sem aplicar mudanças"
+              >
+                <X className="w-3.5 h-3.5" /> Fechar
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
                 className="flex-1 rounded-xl py-2.5 text-[11px] font-black uppercase tracking-widest"
                 style={{
                   backgroundColor: accent,
                   color: "#0A0A0B",
                   boxShadow: `0 0 18px ${hexToRgba(accent, 0.4)}`,
                 }}
+                aria-label="Aplicar filtros e voltar ao feed"
               >
-                Aplicar Filtros
+                Aplicar e Ver Feed
               </button>
             </div>
           </div>
