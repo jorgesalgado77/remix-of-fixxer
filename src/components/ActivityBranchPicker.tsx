@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Search } from "lucide-react";
 import { ACTIVITY_MATRIX, flattenBranches } from "@/lib/activity-branches";
+import { findSimilar } from "@/lib/branch-search";
 
 /**
  * Seletor de "Ramo Principal" com as macro-categorias oficiais + "Outro"
@@ -38,37 +39,6 @@ const MACRO_OPTIONS = ACTIVITY_MATRIX.filter((m) => CORE_MACROS.includes(m.id)).
 
 const CUSTOM_PREFIX = "Outro:";
 
-function normalize(s: string) {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/[^a-z0-9 ]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function findSimilar(query: string, all: string[]): string | null {
-  const q = normalize(query);
-  if (q.length < 3) return null;
-  // 1) match direto por include
-  const includeHit = all.find((l) => {
-    const low = normalize(l);
-    if (low === q) return false;
-    return low.includes(q) || q.includes(low);
-  });
-  if (includeHit) return includeHit;
-  // 2) por palavras-chave (>=2 palavras em comum ou palavra >=4)
-  const words = q.split(" ").filter((w) => w.length >= 3);
-  if (words.length === 0) return null;
-  return (
-    all.find((l) => {
-      const low = normalize(l);
-      const matched = words.filter((w) => low.includes(w));
-      return matched.length >= Math.min(2, words.length) || matched.some((w) => w.length >= 4 && low.includes(w));
-    }) || null
-  );
-}
 
 export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--primary))" }: Props) {
   const initialCustom = value?.toLowerCase().startsWith(CUSTOM_PREFIX.toLowerCase())

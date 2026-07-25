@@ -10,6 +10,7 @@ import { PushToggle } from "@/components/PushToggle";
 import { AffiliateBanner } from "@/components/AffiliateBanner";
 import { ActivityBranchSelector } from "@/components/ActivityBranchSelector";
 import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
+import { ALLOWED_RADII_KM, isAllowedRadius, BIO_MAX_LENGTH } from "@/lib/branch-search";
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
 
@@ -311,20 +312,72 @@ function ProfilePage() {
     }
   };
 
+  const bioLen = (profile?.about_bio || '').length;
+  const bioOverLimit = bioLen > BIO_MAX_LENGTH;
+  const radiusInvalid =
+    profile?.default_radius != null && !isAllowedRadius(profile.default_radius);
+  const canSave = !saving && !bioOverLimit && !radiusInvalid;
+
   const handleSave = async () => {
-    setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update(profile)
-      .eq('id', profile.id);
-      
-    if (error) {
-      toast.error("Erro ao salvar perfil");
-    } else {
-      toast.success("Perfil atualizado com sucesso!");
+    if (!profile?.id) {
+      toast.error("Perfil não carregado.", { description: "Recarregue a página e tente novamente." });
+      return;
     }
-    setSaving(false);
+    if (bioOverLimit) {
+      toast.error(`O campo "Sobre" excede o limite (${bioLen}/${BIO_MAX_LENGTH}).`, {
+        description: "Reduza o texto antes de salvar.",
+      });
+      return;
+    }
+    if (radiusInvalid) {
+      toast.error("Raio de atuação inválido.", {
+        description: `Escolha um dos valores permitidos: ${ALLOWED_RADII_KM.join(", ")} km.`,
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(profile)
+        .eq('id', profile.id);
+
+      if (error) {
+        toast.error("Erro ao salvar perfil", {
+          description: error.message || "Falha desconhecida ao gravar no banco.",
+        });
+        return;
+      }
+
+      // Refetch imediato para refletir activity_branch/default_radius/about_bio
+      const { data: fresh, error: refetchErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profile.id)
+        .single();
+
+      if (fresh && !refetchErr) {
+        setProfile(fresh);
+        try {
+          window.dispatchEvent(
+            new CustomEvent('fixxer:profile-updated', { detail: { id: fresh.id } }),
+          );
+        } catch { /* noop */ }
+      }
+
+      toast.success("Perfil atualizado com sucesso!", {
+        description: refetchErr ? "Salvo, mas houve falha ao recarregar. Atualize a página." : undefined,
+      });
+    } catch (e: any) {
+      toast.error("Erro inesperado ao salvar perfil", {
+        description: e?.message || String(e),
+      });
+    } finally {
+      setSaving(false);
+    }
   };
+
 
   const handleCepLookup = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
@@ -447,15 +500,23 @@ function ProfilePage() {
               )}
             </div>
           ) : (
-            <button 
+            <button
               onClick={handleSave}
-              disabled={saving}
-              className="mb-4 bg-primary text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:shadow-[0_0_30px_rgba(0,255,135,0.5)] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 uppercase tracking-tighter"
+              disabled={!canSave}
+              title={
+                bioOverLimit
+                  ? `Reduza o texto de "Sobre" (${bioLen}/${BIO_MAX_LENGTH}).`
+                  : radiusInvalid
+                    ? `Raio inválido. Use ${ALLOWED_RADII_KM.join(", ")} km.`
+                    : undefined
+              }
+              className="mb-4 bg-primary text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:shadow-[0_0_30px_rgba(0,255,135,0.5)] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 uppercase tracking-tighter"
             >
               {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-              Salvar Perfil
+              {saving ? 'Salvando...' : 'Salvar Perfil'}
             </button>
           )}
+
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -643,6 +704,14 @@ function ProfilePage() {
                     );
                   })}
                 </div>
+                {radiusInvalid && (
+                  <div
+                    role="alert"
+                    className="rounded-2xl border border-red-500/40 bg-red-500/10 p-3 text-[11px] text-red-200 break-words"
+                  >
+                    ⚠️ Raio "{profile?.default_radius}" não é permitido. Escolha um dos valores: {ALLOWED_RADII_KM.join(", ")} km.
+                  </div>
+                )}
               </div>
 
               {/* SOBRE / APRESENTAÇÃO DA EMPRESA */}
@@ -658,17 +727,23 @@ function ProfilePage() {
                 </div>
                 <textarea
                   rows={4}
-                  maxLength={1200}
                   value={profile?.about_bio || ''}
                   onChange={(e) => setProfile({ ...profile, about_bio: e.target.value })}
                   readOnly={!!profileId}
                   placeholder="Conte em poucas palavras sobre sua experiência, especialidades, história e diferenciais de atendimento..."
-                  className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none text-sm leading-relaxed resize-none"
+                  aria-invalid={bioOverLimit}
+                  className={`w-full bg-white/5 border ${bioOverLimit ? 'border-red-500/60 focus:border-red-500' : 'border-white/10 focus:border-primary/50'} focus:ring-1 ${bioOverLimit ? 'focus:ring-red-500/30' : 'focus:ring-primary/20'} p-4 rounded-2xl transition-all outline-none text-sm leading-relaxed resize-none`}
                 />
-                <div className="flex justify-end text-[10px] font-black uppercase tracking-widest text-white/40">
-                  {(profile?.about_bio || '').length}/1200
+                <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-widest">
+                  <span className={bioOverLimit ? 'text-red-400' : 'text-white/40'}>
+                    {bioOverLimit ? `Excedeu ${bioLen - BIO_MAX_LENGTH} caractere(s)` : ''}
+                  </span>
+                  <span className={bioOverLimit ? 'text-red-400' : bioLen > BIO_MAX_LENGTH * 0.9 ? 'text-amber-400' : 'text-white/40'}>
+                    {bioLen}/{BIO_MAX_LENGTH}
+                  </span>
                 </div>
               </div>
+
 
               {/* NOTIFICAÇÕES PUSH */}
               <div className="pt-8 space-y-4">
