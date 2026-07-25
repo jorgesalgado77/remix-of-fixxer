@@ -9,6 +9,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { formatDistanceFromCity } from "@/lib/geo-distance";
 import {
   ArrowLeft,
   Search,
