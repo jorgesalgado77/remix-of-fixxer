@@ -23,8 +23,10 @@ import {
   Send,
   Search,
   ArrowUpDown,
+  Heart,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { useFavoriteUser } from "@/hooks/useFavoriteUser";
 import { createProfileRefetchHandler, type ProfileLike } from "@/lib/profile-refetch";
 import { isMockPeerId, getMockProfile, getMockPeerName } from "@/lib/mock-chat";
 import { Button } from "@/components/ui/button";
