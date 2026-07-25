@@ -124,18 +124,21 @@ function RegisterComponent() {
 
       // 3. Verificação de sessão
       if (authData.user) {
-        // Se já tiver sessão, tenta o perfil manual
+        // Persistir dados de contato coletados no cadastro em ambos os clientes
+        const contactPayload: any = {
+          id: authData.user.id,
+          full_name: fullName,
+          role: role,
+          cnpj_cpf: (role === "lojista" ? cnpj : cpf) || null,
+          phone: phone || null,
+          whatsapp: cellphone || null,
+          contact_email: email || null,
+        };
+        try { await supabaseExternal.from('profiles').upsert(contactPayload, { onConflict: 'id' }); } catch (pe) { console.warn("upsert externo:", pe); }
         if (authData.session) {
-          try {
-            await supabase.from('profiles').upsert({
-              id: authData.user.id,
-              full_name: fullName,
-              role: role,
-            });
-          } catch (pe) {
-            console.error("Erro no upsert de perfil:", pe);
-          }
+          try { await supabase.from('profiles').upsert(contactPayload); } catch (pe) { console.error("Erro no upsert de perfil:", pe); }
         }
+
 
         // Attach referral (se veio de link /r/:code)
         try {
