@@ -67,6 +67,9 @@ export function LiveProfilePreview({
   const vDesc = (vehicleDescription || "").trim();
   const hasVehicle = !!(vType || vDesc);
   const hasOferece = workModesList.length > 0 || offeringsList.length > 0 || notes.length > 0 || hasVehicle;
+  const specialtiesList = Array.isArray(specialties)
+    ? specialties.filter((s) => (s?.title || "").trim().length > 0)
+    : [];
 
 
   return (
