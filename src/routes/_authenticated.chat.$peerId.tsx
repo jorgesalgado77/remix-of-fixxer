@@ -22,7 +22,7 @@ import {
   UserCircle2,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import {
