@@ -841,6 +841,16 @@ export default function FeedParceiroPage() {
         <div className="mb-4">
           <B2BSuggestionsCard />
         </div>
+        {loadError && (
+          <div className="mb-4">
+            <FeedErrorState
+              accent="#A855F7"
+              busy={refreshing}
+              message={loadError}
+              onRetry={handleRefresh}
+            />
+          </div>
+        )}
         <div className="mb-4 flex items-center justify-between text-xs text-white/50">
           <span>
             {filtered.length} demanda{filtered.length === 1 ? "" : "s"} B2B
