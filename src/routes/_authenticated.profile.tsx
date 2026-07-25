@@ -640,21 +640,26 @@ function ProfilePage() {
               )}
             </div>
           ) : (
-            <button
-              onClick={() => handleSave()}
-              disabled={!canSave}
-              title={
-                bioOverLimit
-                  ? `Reduza o texto de "Sobre" (${bioLen}/${BIO_MAX_LENGTH}).`
-                  : radiusInvalid
-                    ? `Raio inválido. Use ${ALLOWED_RADII_KM.join(", ")} km.`
-                    : undefined
-              }
-              className="mb-4 bg-primary text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:shadow-[0_0_30px_rgba(0,255,135,0.5)] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 uppercase tracking-tighter"
-            >
-              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-              {saving ? 'Salvando...' : 'Salvar Perfil'}
-            </button>
+            <div className="flex flex-col items-end gap-1 mb-4">
+              <button
+                onClick={() => handleSave()}
+                disabled={!canSave}
+                title={
+                  bioOverLimit
+                    ? `Reduza o texto de "Sobre" (${bioLen}/${BIO_MAX_LENGTH}).`
+                    : radiusInvalid
+                      ? `Raio inválido. Use ${ALLOWED_RADII_KM.join(", ")} km.`
+                      : undefined
+                }
+                className="bg-primary text-black font-black px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:shadow-[0_0_30px_rgba(0,255,135,0.5)] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 uppercase tracking-tighter"
+              >
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                {saving ? 'Salvando...' : 'Salvar Perfil'}
+              </button>
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-1.5 h-4">
+                {autoSaving ? (<><Loader2 className="w-3 h-3 animate-spin" /> Salvando automaticamente...</>) : (<>💾 Autosave ativo</>)}
+              </span>
+            </div>
           )}
 
         </div>
