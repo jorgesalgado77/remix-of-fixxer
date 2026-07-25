@@ -19,6 +19,7 @@ import {
 import { EscrowBadge } from "@/components/EscrowBadge";
 import { PanelActions } from "@/components/PanelActions";
 import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
+import { RecentStoresCarousel } from "@/components/RecentStoresCarousel";
 
 
 
@@ -53,6 +54,9 @@ function PrestadorDashboard() {
       </header>
 
       <CoinBalancePlanCard />
+
+      <RecentStoresCarousel />
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
