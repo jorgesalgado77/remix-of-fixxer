@@ -149,7 +149,9 @@ function buildHistorySnippet(fullText: string, terms: string[], radius = 30): st
   return null;
 }
 
+function ChatInboxPage() {
   const navigate = useNavigate();
+
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string>(getStoredRole);
   const [messages, setMessages] = useState<MessageRow[]>([]);
