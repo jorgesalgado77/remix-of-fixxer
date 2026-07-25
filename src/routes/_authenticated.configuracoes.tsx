@@ -472,7 +472,122 @@ function AvailabilityAuditSection({ accent }: { accent: string }) {
 }
 
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+// 💼 Prévia + atalho para gerenciar work_modes e características do veículo no editor de perfil.
+function WorkModesVehicleSection({ accent, navigate }: { accent: string; navigate: ReturnType<typeof useNavigate> }) {
+  const [loading, setLoading] = useState(true);
+  const [workModes, setWorkModes] = useState<string[]>([]);
+  const [vehicleType, setVehicleType] = useState<string>("");
+  const [vehicleDesc, setVehicleDesc] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: sess } = await supabaseExternal.auth.getUser();
+        const uid = sess.user?.id;
+        if (!uid) { setLoading(false); return; }
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("role, work_modes, vehicle_type, vehicle_description, offerings_notes, custom_sections")
+          .eq("id", uid)
+          .maybeSingle();
+        const extras = (data as any)?.custom_sections?.__extras || {};
+        const wm: string[] = Array.isArray((data as any)?.work_modes)
+          ? (data as any).work_modes
+          : (Array.isArray(extras.work_modes) ? extras.work_modes : []);
+        setWorkModes(wm.filter(Boolean));
+        setVehicleType(String((data as any)?.vehicle_type ?? extras.vehicle_type ?? "") || "");
+        setVehicleDesc(String((data as any)?.vehicle_description ?? extras.vehicle_description ?? "") || "");
+        setNotes(String((data as any)?.offerings_notes ?? extras.offerings_notes ?? "") || "");
+        setRole(((data as any)?.role as string) || null);
+      } catch { /* silencioso */ }
+      finally { setLoading(false); }
+    })();
+  }, []);
+
+  const goEdit = () => {
+    try { navigate({ to: "/profile" as any, hash: "aceita-trabalhos" as any }); }
+    catch { window.location.href = "/profile#aceita-trabalhos"; }
+  };
+
+  const invalidPrestador = role === "prestador" && workModes.length === 0;
+
+  return (
+    <Section title="Modos de trabalho e veículo" icon={<Briefcase className="w-4 h-4" />} accent={accent}>
+      <p className="text-[11px] text-white/60 -mt-1">
+        Prévia ao vivo dos formatos de contratação e do veículo que aparecem em <b>🎁 Oferece</b> do seu perfil público.
+      </p>
+
+      {loading ? (
+        <div className="h-16 rounded-xl bg-white/5 border border-white/10 animate-pulse" />
+      ) : (
+        <div className="space-y-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-1.5">
+              💼 Aceita trabalhos como
+            </p>
+            {workModes.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {workModes.map((m, i) => (
+                  <span
+                    key={`${m}-${i}`}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase italic border"
+                    style={{ borderColor: `${accent}55`, color: accent, background: `${accent}12` }}
+                  >
+                    {m}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className={`text-[11px] italic ${invalidPrestador ? "text-red-300" : "text-white/40"}`}>
+                {invalidPrestador
+                  ? "⚠️ Você é prestador e não escolheu nenhum formato. É obrigatório escolher ao menos um antes de salvar o perfil."
+                  : "Nenhum formato selecionado."}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-1.5 flex items-center gap-1.5">
+              <Truck className="w-3 h-3" /> Veículo
+            </p>
+            {(vehicleType || vehicleDesc) ? (
+              <div className="rounded-xl bg-white/5 border border-white/10 p-2.5 text-[11px] text-white/85 space-y-0.5">
+                {vehicleType && <div><b className="text-white/50 mr-1">Tipo:</b>{vehicleType}</div>}
+                {vehicleDesc && <div className="italic text-white/70">{vehicleDesc}</div>}
+              </div>
+            ) : (
+              <p className="text-[11px] italic text-white/40">Nenhum veículo cadastrado.</p>
+            )}
+          </div>
+
+          {notes && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-1.5">Observações</p>
+              <p className="text-[11px] italic text-white/75 border-l-2 pl-2" style={{ borderColor: `${accent}80` }}>
+                {notes}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex justify-end pt-1">
+        <button
+          type="button"
+          onClick={goEdit}
+          className="h-10 px-4 rounded-xl text-[11px] font-black uppercase italic border"
+          style={{ background: `${accent}18`, borderColor: `${accent}55`, color: accent }}
+        >
+          Gerenciar no editor de perfil →
+        </button>
+      </div>
+    </Section>
+  );
+}
+
+
   return (
     <label className="block">
       <span className="block text-[10px] font-black uppercase tracking-widest text-white/50 mb-1.5">
