@@ -263,28 +263,39 @@ export function RecentPartnersCarousel() {
     setTimeout(() => setRefreshing(false), 300);
   }, [fetchPartners, refreshing]);
 
-  // ---- Ordenação em memória ----
-  const sortedItems = useMemo(() => {
-    const arr = kindFilter === "all" ? [...items] : items.filter((p) => p._kind === kindFilter);
+  // ---- Ordenação em memória (com coords pré-calculadas para "Mais próximos") ----
+  type Enriched = PartnerCard & { _coords: { lat: number; lng: number } | null; _distanceKm: number | null };
+  const sortedItems = useMemo<Enriched[]>(() => {
+    const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
+    const enriched: Enriched[] = base.map((p) => {
+      const coords = cityCoords(p.city) ?? null;
+      const dist = (sortMode === "nearby" && userCoords && coords)
+        ? haversineKm(userCoords, coords)
+        : null;
+      return { ...p, _coords: coords, _distanceKm: Number.isFinite(dist as number) ? (dist as number) : null };
+    });
 
     if (sortMode === "rating") {
-      arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      enriched.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     } else if (sortMode === "nearby" && userCoords) {
-      arr.sort((a, b) => {
-        const ca = cityCoords(a.city); const cb = cityCoords(b.city);
-        const da = ca ? haversineKm(userCoords, ca) : Number.POSITIVE_INFINITY;
-        const db = cb ? haversineKm(userCoords, cb) : Number.POSITIVE_INFINITY;
+      // Remove cards descartados manualmente (badge "Sem localização" fechado pelo usuário).
+      const filtered = enriched.filter((p) => !dismissedNoGeo.has(p.id));
+      // Cards COM coords sobem; os SEM coords vão para o final (mas ainda visíveis com badge removível).
+      filtered.sort((a, b) => {
+        const da = a._distanceKm ?? Number.POSITIVE_INFINITY;
+        const db = b._distanceKm ?? Number.POSITIVE_INFINITY;
         return da - db;
       });
+      return filtered;
     } else {
-      arr.sort((a, b) => {
+      enriched.sort((a, b) => {
         const ta = a.created_at ? Date.parse(a.created_at) : 0;
         const tb = b.created_at ? Date.parse(b.created_at) : 0;
         return tb - ta;
       });
     }
-    return arr;
-  }, [items, sortMode, userCoords, kindFilter]);
+    return enriched;
+  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo]);
 
   // ---- IntersectionObserver: pré-carrega /perfil/:id quando o card se aproxima da viewport ----
   useEffect(() => {
