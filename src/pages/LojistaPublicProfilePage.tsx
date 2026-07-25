@@ -345,7 +345,7 @@ export function LojistaPublicProfilePage() {
   useEffect(() => {
     const key = profile?.user_id;
     if (!key || (storeId && isMockPeerId(storeId))) return;
-    const channel = supabaseExternal
+    const legacy = supabaseExternal
       .channel(`store-profile-${key}`)
       .on(
         "postgres_changes",
@@ -355,10 +355,26 @@ export function LojistaPublicProfilePage() {
         },
       )
       .subscribe();
+    // Também escuta atualizações da tabela `profiles` (onde o editor salva).
+    const primary = supabaseExternal
+      .channel(`profiles-public-${key}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles", filter: `id=eq.${key}` },
+        (payload: any) => {
+          if (payload?.new) {
+            const mapped = mapProfileRowToStore(payload.new);
+            setProfile((prev) => ({ ...(prev ?? {}), ...mapped }));
+          }
+        },
+      )
+      .subscribe();
     return () => {
-      supabaseExternal.removeChannel(channel);
+      supabaseExternal.removeChannel(legacy);
+      supabaseExternal.removeChannel(primary);
     };
   }, [profile?.user_id, storeId]);
+
 
   // Refetch imediato ao receber sinal de perfil atualizado (dono acabou de salvar)
   useEffect(() => {
