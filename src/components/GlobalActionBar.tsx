@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { resolveFeedRoute } from "@/lib/chat-preferences";
 import { PublishPickerModal } from "@/components/PublishPickerModal";
+import { QuickMenuSheet } from "@/components/QuickMenuSheet";
 import type { CategoryKey } from "@/lib/category-colors";
 
 /**
@@ -17,6 +18,7 @@ export function GlobalActionBar() {
   const hash = location.hash;
   const [unreadCount, setUnreadCount] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const isActive = (target: string) => path.startsWith(target);
   const isHash = (h: string) => path.startsWith("/dashboard/lojista") && hash === h;
@@ -177,13 +179,16 @@ export function GlobalActionBar() {
       </button>
 
       <button
-        onClick={() => navigate({ to: "/dashboard/lojista" as any, hash: "menu" })}
-        className={`flex flex-col items-center gap-1 ${isHash("menu") ? "text-primary" : "text-muted-foreground"}`}
+        onClick={() => setMenuOpen(true)}
+        className={`flex flex-col items-center gap-1 ${menuOpen ? "text-primary" : "text-muted-foreground"}`}
+        aria-label="Abrir menu rápido"
+        title="Menu rápido — perfil, favoritos, agenda e mais"
       >
         <Menu className="w-5 h-5" />
         <span className="text-[8px] font-black uppercase italic">Menu</span>
       </button>
     </div>
+    <QuickMenuSheet open={menuOpen} onOpenChange={setMenuOpen} />
     <PublishPickerModal
       open={createOpen}
       onClose={() => setCreateOpen(false)}

@@ -38,7 +38,7 @@ function PrestadorDashboard() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
-                MEU <span className="text-[#00FF87]">PAINEL</span>
+                MEU <span className="text-primary">PAINEL</span>
               </h1>
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-500 uppercase">
                 <Star className="w-2 h-2 fill-current" /> 4.9
@@ -48,10 +48,15 @@ function PrestadorDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/feed/prestador" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
+          <Link to="/feed/prestador" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_hsl(var(--primary)/0.4)] transition-all">
             <Briefcase className="w-4 h-4" /> Acessar Feed da Categoria
           </Link>
-          <Link to="/profile" className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
+          <Link
+            to="/profile"
+            className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-primary/40 transition-all"
+            title="Meu Perfil — editar dados, foto e vitrine"
+            aria-label="Abrir meu perfil"
+          >
             <User className="w-5 h-5" />
           </Link>
         </div>
@@ -59,7 +64,7 @@ function PrestadorDashboard() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={<Briefcase className="w-5 h-5" />} label="Ativos" value="3" color="text-blue-400" />
-        <StatCard icon={<CheckCircle2 className="w-5 h-5" />} label="Concluídos" value="128" color="text-[#00FF87]" />
+        <StatCard icon={<CheckCircle2 className="w-5 h-5" />} label="Concluídos" value="128" color="text-primary" />
         <StatCard icon={<Star className="w-5 h-5" />} label="Rating" value="4.9" color="text-amber-400" />
         <StatCard icon={<DollarSign className="w-5 h-5" />} label="Saldo" value="R$ 2.4k" color="text-emerald-400" />
       </div>
@@ -82,11 +87,11 @@ function PrestadorDashboard() {
              <h2 className="text-sm font-black text-white uppercase italic mb-6">Minha Vitrine (Público)</h2>
              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                   <div className="w-12 h-12 rounded-xl bg-[#00FF87]/20 flex items-center justify-center text-[#00FF87] font-black italic">M</div>
+                   <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-black italic">M</div>
                    <div>
                       <span className="text-xs font-black text-white uppercase italic">Montador Especialista em Planejados</span>
                       <div className="flex items-center gap-2 mt-1">
-                         <span className="text-[8px] font-bold text-[#00FF87] uppercase">Ativo no Feed</span>
+                         <span className="text-[8px] font-bold text-primary uppercase">Ativo no Feed</span>
                          <span className="text-[8px] text-muted-foreground uppercase">• 1.2k visualizações</span>
                       </div>
                    </div>
@@ -107,7 +112,7 @@ function PrestadorDashboard() {
             <p className="text-[10px] text-muted-foreground font-medium mb-4 italic">
               O saldo de <span className="text-white font-bold tracking-tighter">R$ 1.250,00</span> está retido e será liberado após o upload da foto de conclusão.
             </p>
-            <button className="w-full py-3 rounded-xl bg-[#00FF87]/10 border border-[#00FF87]/20 text-[9px] font-black text-[#00FF87] uppercase tracking-widest flex items-center justify-center gap-2">
+            <button className="w-full py-3 rounded-xl bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest flex items-center justify-center gap-2">
               <Camera className="w-3.5 h-3.5" /> Enviar Comprovação Final
             </button>
           </div>
