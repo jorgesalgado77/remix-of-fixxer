@@ -578,7 +578,23 @@ export function RecentPartnersCarousel() {
               </button>
             );
           })}
+          {/* Skeletons durante revalidação em background — mantém a experiência estável */}
+          {refreshing && sortedItems.length > 0 && Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={`sk-${i}`}
+              aria-hidden="true"
+              className="w-44 flex-shrink-0 snap-start rounded-2xl bg-[#1A1A1B] border border-white/10 overflow-hidden opacity-70"
+            >
+              <div className="w-full h-40 bg-white/5 animate-pulse" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
+                <div className="h-2.5 w-1/2 rounded bg-white/5 animate-pulse" />
+                <div className="h-2.5 w-2/3 rounded bg-white/5 animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
+
       )}
     </section>
   );
