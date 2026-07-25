@@ -536,7 +536,16 @@ function ConversationPage() {
     if (row) {
       idSetRef.current.add(row.id);
       setMessages((prev) =>
-        prev.map((m) => (m._clientId === clientId || m.id === clientId ? { ...row!, _clientId: clientId } : m)),
+        prev.map((m) => {
+          if (m._clientId === clientId || m.id === clientId) {
+            // Revoga blob URL de preview local antes de substituir pela URL do servidor
+            if (m.attachment_url && m.attachment_url.startsWith("blob:")) {
+              try { URL.revokeObjectURL(m.attachment_url); } catch {}
+            }
+            return { ...row!, _clientId: clientId };
+          }
+          return m;
+        }),
       );
     }
   };
