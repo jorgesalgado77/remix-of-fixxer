@@ -484,6 +484,9 @@ export function LojistaPublicProfilePage() {
     window.open(`https://wa.me/${formattedNum}`, "_blank");
   };
 
+  // Botão Favoritar: persiste em favorite_users (Supabase) com fallback local.
+  const favorite = useFavoriteUser(profile?.user_id ?? null);
+
   const submitReview = async () => {
     if (!newComment.trim()) {
       toast.error("Escreva um comentário antes de enviar.");
