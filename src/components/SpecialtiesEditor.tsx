@@ -62,42 +62,16 @@ export function SpecialtiesEditor({
   const [draftTitle, setDraftTitle] = useState("");
   const [draftSubtitle, setDraftSubtitle] = useState("");
   const [charging, setCharging] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const extrasCount = Math.max(0, list.length - quota);
   const extrasCost = extrasCount * EXTRA_COST;
   const canAddFree = list.length < quota;
   const reachedMax = list.length >= MAX_SPECIALTIES;
 
-  const addSpecialty = async () => {
+  const commitFree = () => {
     const title = draftTitle.trim();
-    if (!title) { toast.error("Informe o título principal da especialidade."); return; }
-    if (reachedMax) { toast.error(`Limite máximo de ${MAX_SPECIALTIES} especialidades atingido.`); return; }
-
-    // cobra moedas se ultrapassar cota do plano
-    if (!canAddFree) {
-      if (!userId) { toast.error("Faça login para adicionar especialidades extras."); return; }
-      setCharging(true);
-      try {
-        const { spendCoinsForAction } = await import("@/lib/monetization");
-        const res: any = await spendCoinsForAction(userId, "extra_specialty", `specialty:${title}`);
-        if (!res?.ok) {
-          if (res?.reason === "insufficient") {
-            toast.error(`Saldo insuficiente. Cada especialidade extra custa ${EXTRA_COST} moedas.`);
-          } else {
-            toast.error("Não foi possível debitar as moedas.", { description: res?.error });
-          }
-          setCharging(false);
-          return;
-        }
-        toast.success(`−${EXTRA_COST} moedas · Especialidade extra liberada.`);
-      } catch (err: any) {
-        toast.error("Erro ao processar cobrança.", { description: err?.message });
-        setCharging(false);
-        return;
-      }
-      setCharging(false);
-    }
-
     const item: Specialty = {
       id: uid(),
       title,
@@ -107,6 +81,53 @@ export function SpecialtiesEditor({
     onChange([...list, item]);
     setDraftTitle("");
     setDraftSubtitle("");
+  };
+
+  const handleAddClick = async () => {
+    const title = draftTitle.trim();
+    if (!title) { toast.error("Informe o título principal da especialidade."); return; }
+    if (reachedMax) { toast.error(`Limite máximo de ${MAX_SPECIALTIES} especialidades atingido.`); return; }
+
+    if (canAddFree) { commitFree(); return; }
+
+    // Precisa cobrar → abre confirmação com saldo atual
+    if (!userId) { toast.error("Faça login para adicionar especialidades extras."); return; }
+    try {
+      const { getCachedBalance } = await import("@/lib/coins");
+      setBalance(getCachedBalance());
+    } catch {
+      setBalance(null);
+    }
+    setConfirmOpen(true);
+  };
+
+  const confirmPaidAdd = async () => {
+    const title = draftTitle.trim();
+    if (!title || !userId) { setConfirmOpen(false); return; }
+    setCharging(true);
+    try {
+      const { spendCoinsForAction } = await import("@/lib/monetization");
+      const res: any = await spendCoinsForAction(userId, "extra_specialty", `specialty:${title}`);
+      if (!res?.ok) {
+        if (res?.reason === "insufficient") {
+          toast.error(`Saldo insuficiente. Cada especialidade extra custa ${EXTRA_COST} moedas.`);
+        } else {
+          toast.error("Não foi possível debitar as moedas.", { description: res?.error });
+        }
+        setCharging(false);
+        setConfirmOpen(false);
+        return;
+      }
+      toast.success(`−${EXTRA_COST} moedas · Especialidade extra liberada.`, {
+        description: typeof res.balance === "number" ? `Saldo restante: ${res.balance} moedas.` : undefined,
+      });
+      commitFree();
+    } catch (err: any) {
+      toast.error("Erro ao processar cobrança.", { description: err?.message });
+    } finally {
+      setCharging(false);
+      setConfirmOpen(false);
+    }
   };
 
   const updateItem = (id: string, patch: Partial<Specialty>) => {
