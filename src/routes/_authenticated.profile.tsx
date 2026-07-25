@@ -951,21 +951,36 @@ function ProfilePage() {
                 <div className="pt-8 space-y-6">
                   <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                     <Briefcase className="w-6 h-6 text-primary" />
-                    <div>
-                      <h3 className="text-xl font-black uppercase tracking-tighter">Ramos de Atividade</h3>
-                      <p className="text-[11px] text-white/50 mt-1">Selecione todos os ramos e subcategorias em que atua. Use "Outro" para ramos específicos.</p>
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-black uppercase tracking-tighter">Ramo Principal de Atividade</h3>
+                      <p className="text-[11px] text-white/50 mt-1 break-words">
+                        Selecione uma das 9 categorias oficiais ou digite um ramo customizado — sugerimos automaticamente uma correspondência oficial quando existir.
+                      </p>
                     </div>
                   </div>
-                  <ActivityBranchSelector
-                    value={(profile?.business_category || '').split(',').map((s: string) => s.trim()).filter(Boolean)}
-                    onChange={(next: string[]) => setProfile({ ...profile, business_category: next.join(',') })}
-                    customValue={(profile?.custom_branch || '').split('||').map((s: string) => s.trim()).filter(Boolean)}
-                    onCustomChange={(next: string[]) => setProfile({ ...profile, custom_branch: next.join('||') })}
-                    chargeUserId={profile?.id}
+
+                  <ActivityBranchPicker
+                    value={profile?.activity_branch}
+                    onChange={(next) => setProfile({ ...profile, activity_branch: next })}
+                    accent={theme.hex}
                   />
-                  <p className="text-[10px] text-amber-400/90 mt-2 font-bold">
-                    💰 1º ramo customizado grátis. A partir do 2º: 10 moedas cada.
-                  </p>
+
+                  <div className="pt-6 border-t border-white/5 space-y-3">
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-black uppercase tracking-tight text-white">Subcategorias & Especialidades Adicionais</h4>
+                      <p className="text-[11px] text-white/50 mt-1 break-words">Opcional — refine sua atuação selecionando ramos e subcategorias detalhadas.</p>
+                    </div>
+                    <ActivityBranchSelector
+                      value={(profile?.business_category || '').split(',').map((s: string) => s.trim()).filter(Boolean)}
+                      onChange={(next: string[]) => setProfile({ ...profile, business_category: next.join(',') })}
+                      customValue={(profile?.custom_branch || '').split('||').map((s: string) => s.trim()).filter(Boolean)}
+                      onCustomChange={(next: string[]) => setProfile({ ...profile, custom_branch: next.join('||') })}
+                      chargeUserId={profile?.id}
+                    />
+                    <p className="text-[10px] text-amber-400/90 mt-2 font-bold">
+                      💰 1º ramo customizado grátis. A partir do 2º: 10 moedas cada.
+                    </p>
+                  </div>
                 </div>
               )}
 
