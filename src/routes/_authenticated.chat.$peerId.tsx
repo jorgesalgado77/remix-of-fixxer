@@ -1211,9 +1211,11 @@ function ConversationPage() {
           >
             {peerAvatar ? (
               <img src={peerAvatar} alt={peerName} className="w-full h-full object-cover" />
+            ) : peerLoading ? (
+              <span className="w-full h-full animate-pulse bg-white/10" aria-label="Carregando avatar" />
             ) : (
               <span className="font-black italic text-base" style={{ color: peerTheme.hex }}>
-                {peerName.slice(0, 1).toUpperCase()}
+                {peerInitials}
               </span>
             )}
             {peerOnline && (
@@ -1221,7 +1223,11 @@ function ConversationPage() {
             )}
           </button>
           <div className="flex-1 min-w-0">
-            <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
+            {peerLoading ? (
+              <span className="block h-3.5 w-32 rounded bg-white/10 animate-pulse" aria-label="Carregando nome" />
+            ) : (
+              <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
+            )}
             <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
               <span
                 className="shrink-0 text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest"
