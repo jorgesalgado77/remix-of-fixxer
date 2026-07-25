@@ -520,7 +520,7 @@ export function RecentPartnersCarousel() {
         <div className="flex gap-3 pb-2 overflow-x-hidden" aria-hidden="true">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="w-44 flex-shrink-0 rounded-2xl bg-[#1A1A1B] border border-white/10 overflow-hidden">
-              <div className="w-full h-40 bg-white/5 animate-pulse" />
+              <div className="w-full h-36 bg-white/5 animate-pulse" />
               <div className="p-3 space-y-2">
                 <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
                 <div className="h-2.5 w-1/2 rounded bg-white/5 animate-pulse" />
