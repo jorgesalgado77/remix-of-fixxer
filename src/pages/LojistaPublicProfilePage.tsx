@@ -620,9 +620,11 @@ export function LojistaPublicProfilePage() {
   }, [reviews, reviewCategoryFilter, reviewRatingFilter, reviewDateOrder]);
 
   const handleContactWhatsApp = async () => {
-    if (contactLoading) return; // anti-duplo-clique
+    console.log("[fixxer:contact] click", { contactLoading, profileUserId: profile?.user_id, currentUserId });
+    if (contactLoading) return;
     const peerId = profile?.user_id;
     if (!peerId) {
+      console.warn("[fixxer:contact] sem peerId — profile ainda não hidratado ou sem user_id");
       toast.error("Perfil sem identificador para iniciar conversa.");
       return;
     }
@@ -631,22 +633,29 @@ export function LojistaPublicProfilePage() {
       return;
     }
     setContactLoading(true);
+    // Navegação HARD por URL: garante que a rota /chat/$peerId sempre abra,
+    // mesmo se o TanStack Router estiver em estado inconsistente ou sem match.
+    // O ConversationPage cuida do resto: se não houver histórico, abre sala
+    // vazia; a "conversa" passa a existir na inbox após o primeiro envio.
+    const target = `/chat/${encodeURIComponent(peerId)}`;
+    console.log("[fixxer:contact] navegando para", target);
     try {
-      // TanStack Router: precisa de `to` estático + `params`. Interpolar no `to`
-      // não bate com nenhuma rota registrada e a navegação era silenciosamente ignorada.
-      try {
-        await navigate({ to: "/chat/$peerId", params: { peerId } });
-      } catch {
-        window.location.href = `/chat/${encodeURIComponent(peerId)}`;
-      }
+      await navigate({ to: "/chat/$peerId", params: { peerId } });
+      // Se após 250ms o pathname ainda não trocou, força via location.
+      setTimeout(() => {
+        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/chat/")) {
+          console.warn("[fixxer:contact] navigate silencioso — forçando via location.href");
+          window.location.href = target;
+        }
+      }, 250);
     } catch (e: any) {
-      toast.error("Não foi possível abrir a conversa.", { description: e?.message });
-      // Último recurso: força navegação por URL para não deixar o usuário travado.
-      window.location.href = `/chat/${encodeURIComponent(peerId)}`;
+      console.error("[fixxer:contact] navigate erro", e);
+      window.location.href = target;
     } finally {
-      setTimeout(() => setContactLoading(false), 800);
+      setTimeout(() => setContactLoading(false), 1000);
     }
   };
+
 
 
   // Botão Favoritar: persiste em favorite_users (Supabase) com fallback local.
