@@ -185,8 +185,7 @@ function preloadImage(url: string | null | undefined) {
   try {
     const img = new window.Image();
     // Prioridade baixa: não competir com hero/feed principal.
-    // @ts-expect-error — atributo válido no HTML padrão.
-    img.fetchPriority = "low";
+    (img as any).fetchPriority = "low";
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
     img.src = url;
