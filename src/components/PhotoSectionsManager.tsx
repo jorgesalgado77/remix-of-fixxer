@@ -1165,3 +1165,43 @@ function Lightbox({
     </div>
   );
 }
+
+/** Wrapper sortable para reordenar seções personalizadas via arrastar e soltar. */
+function SortableSection({
+  id,
+  children,
+}: {
+  id: string;
+  children: (args: { dragHandle: React.ReactNode }) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 20 : undefined,
+  };
+  const dragHandle = (
+    <button
+      type="button"
+      ref={setNodeRef as any}
+      {...attributes}
+      {...listeners}
+      aria-label="Arrastar seção para reordenar"
+      title="Arrastar para reordenar"
+      className="h-8 w-8 p-0 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground hover:text-white hover:bg-white/5 cursor-grab active:cursor-grabbing touch-none"
+    >
+      <GripVertical className="w-4 h-4" aria-hidden />
+    </button>
+  );
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="rounded-2xl border border-white/10 bg-black/20 p-4 space-y-3 w-full overflow-hidden"
+    >
+      {children({ dragHandle })}
+    </div>
+  );
+}
