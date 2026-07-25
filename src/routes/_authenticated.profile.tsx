@@ -10,6 +10,7 @@ import { PushToggle } from "@/components/PushToggle";
 import { AffiliateBanner } from "@/components/AffiliateBanner";
 import { ActivityBranchSelector } from "@/components/ActivityBranchSelector";
 import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
+import { PreferredServicePicker } from "@/components/PreferredServicePicker";
 import { ALLOWED_RADII_KM, isAllowedRadius, BIO_MAX_LENGTH } from "@/lib/branch-search";
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
@@ -600,6 +601,17 @@ function ProfilePage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Nome de Exibição</label>
+                  <input
+                    value={profile?.display_name || ''}
+                    onChange={e => setProfile({...profile, display_name: e.target.value})}
+                    readOnly={!!profileId}
+                    placeholder="Como quer ser visto no FIXXER (ex.: Marcenaria do Jorge)"
+                    className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none disabled:opacity-50"
+                  />
+                  <p className="text-[10px] text-white/40 ml-1">Aparece nos cards, feeds e no perfil público.</p>
+                </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Razão Social</label>
                   <input 
@@ -1105,33 +1117,17 @@ function ProfilePage() {
                     </div>
                   </div>
 
-                  <ActivityBranchPicker
-                    value={profile?.activity_branch}
-                    onChange={(next) => setProfile({ ...profile, activity_branch: next })}
+                  <PreferredServicePicker
+                    profile={profile}
+                    setProfile={setProfile}
                     accent={theme.hex}
                   />
-
-                  <div className="pt-6 border-t border-white/5 space-y-3">
-                    <div className="min-w-0">
-                      <h4 className="text-sm font-black uppercase tracking-tight text-white">Subcategorias & Especialidades Adicionais</h4>
-                      <p className="text-[11px] text-white/50 mt-1 break-words">Opcional — refine sua atuação selecionando ramos e subcategorias detalhadas.</p>
-                    </div>
-                    <ActivityBranchSelector
-                      value={(profile?.business_category || '').split(',').map((s: string) => s.trim()).filter(Boolean)}
-                      onChange={(next: string[]) => setProfile({ ...profile, business_category: next.join(',') })}
-                      customValue={(profile?.custom_branch || '').split('||').map((s: string) => s.trim()).filter(Boolean)}
-                      onCustomChange={(next: string[]) => setProfile({ ...profile, custom_branch: next.join('||') })}
-                      chargeUserId={profile?.id}
-                    />
-                    <p className="text-[10px] text-amber-400/90 mt-2 font-bold">
-                      💰 1º ramo customizado grátis. A partir do 2º: 10 moedas cada.
-                    </p>
-                  </div>
                 </div>
               )}
 
             </section>
           </div>
+
 
           <div className="space-y-8">
             {/* PRÉVIA AO VIVO DO PERFIL PÚBLICO */}

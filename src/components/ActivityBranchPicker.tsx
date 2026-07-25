@@ -26,6 +26,7 @@ const CORE_MACROS = [
   "gas_agua_entregas",
   "fitness_esportes",
   "moveis_reformas",
+  "marketing_comunicacao",
   "beleza_estetica",
   "pet_veterinaria",
   "saude_cuidados",
