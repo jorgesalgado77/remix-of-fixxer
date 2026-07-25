@@ -256,38 +256,44 @@ function ProfilePage() {
   };
 
 
-  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document') => {
-    const files = e.target.files;
+  // Processa uma lista de arquivos. Se `retryIds` for informado, reutiliza os ids
+  // da barra de progresso (preservando a ordem original), em vez de criar novos.
+  const processMediaFiles = async (
+    files: File[],
+    type: 'image' | 'video' | 'document',
+    retryIds?: string[],
+  ) => {
     if (!files || files.length === 0) return;
 
-    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-    const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
-    const MAX_DOC_SIZE = 10 * 1024 * 1024; // 10MB
-
-    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
-    const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
-    const allowedDocTypes = [
-      'application/pdf', 
-      'application/msword', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'text/plain'
-    ];
+    // ---- Validação prévia (formato + tamanho) — mostra aviso claro ----
+    const validFiles: File[] = [];
+    const validIds: (string | undefined)[] = [];
+    const rejected: { name: string; reason: string }[] = [];
+    files.forEach((file, i) => {
+      const res = validateFileForType(file, type);
+      if (res.ok) {
+        validFiles.push(file);
+        validIds.push(retryIds?.[i]);
+      } else {
+        rejected.push({ name: file.name, reason: res.reason });
+      }
+    });
+    if (rejected.length > 0) {
+      rejected.forEach((r) => toast.error(`"${r.name}" não pode ser enviado`, { description: r.reason }));
+    }
+    if (validFiles.length === 0) return;
 
     try {
       setSaving(true);
-      const newMedia = [];
-      const newDocs = [];
+      const newMedia: any[] = [];
+      const newDocs: any[] = [];
 
-      // ---- Cobrança de excedentes: fotos (5 moedas) / vídeos (10 moedas) ----
-      const FREE_PHOTOS = 6;
-      const FREE_VIDEOS = 1;
-      if (type === 'image' || type === 'video') {
+      // ---- Cobrança de excedentes (apenas em envios novos, não em retry) ----
+      if (!retryIds && (type === 'image' || type === 'video')) {
+        const FREE_PHOTOS = 6;
+        const FREE_VIDEOS = 1;
         const existing = (profile?.portfolio_media || []).filter((f: any) => f.type === type).length;
-        const incoming = files.length;
+        const incoming = validFiles.length;
         const freeLeft = Math.max(0, (type === 'image' ? FREE_PHOTOS : FREE_VIDEOS) - existing);
         const extras = Math.max(0, incoming - freeLeft);
         if (extras > 0 && profile?.id) {
@@ -314,43 +320,17 @@ function ProfilePage() {
         }
       }
 
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        const existingId = validIds[i];
+        const uploadId = existingId || `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`;
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const uploadId = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`;
-
-        // Validation
-        if (type === 'image') {
-          if (!allowedImageTypes.includes(file.type)) {
-            toast.error(`Arquivo "${file.name}" não é uma imagem suportada.`);
-            continue;
-          }
-          if (file.size > MAX_IMAGE_SIZE) {
-            toast.error(`Imagem "${file.name}" excede o limite de 5MB.`);
-            continue;
-          }
-        } else if (type === 'video') {
-          if (!allowedVideoTypes.includes(file.type)) {
-            toast.error(`Arquivo "${file.name}" não é um vídeo suportado.`);
-            continue;
-          }
-          if (file.size > MAX_VIDEO_SIZE) {
-            toast.error(`Vídeo "${file.name}" excede o limite de 50MB.`);
-            continue;
-          }
-        } else if (type === 'document') {
-          if (!allowedDocTypes.includes(file.type)) {
-            toast.error(`Arquivo "${file.name}" não é um documento suportado.`);
-            continue;
-          }
-          if (file.size > MAX_DOC_SIZE) {
-            toast.error(`Documento "${file.name}" excede o limite de 10MB.`);
-            continue;
-          }
+        if (existingId) {
+          // Retry: reseta o item para 'uploading' preservando posição/ordem
+          setUploads((prev) => prev.map((u) => u.id === existingId ? { ...u, status: 'uploading', error: undefined } : u));
+        } else {
+          setUploads((prev) => [...prev, { id: uploadId, name: file.name, type, status: 'uploading', file }]);
         }
-
-        // Adiciona à barra de progresso (estado: enviando)
-        setUploads((prev) => [...prev, { id: uploadId, name: file.name, type, status: 'uploading' }]);
 
         try {
           let processedFile = file;
@@ -400,22 +380,18 @@ function ProfilePage() {
         } catch (err: any) {
           console.error('[upload] falha em', file.name, err);
           const message = err?.message || 'Falha no upload';
-          setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'error', error: message } : u));
+          setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'error', error: message, file } : u));
           toast.error(`Falha ao enviar "${file.name}"`, { description: message });
         }
       }
 
+      if (newMedia.length === 0 && newDocs.length === 0) return;
+
       const updatedPortfolio = [...(profile.portfolio_media || []), ...newMedia];
       const updatedDocs = [...(profile.documents || []), ...newDocs];
-
-      if (newMedia.length === 0 && newDocs.length === 0) {
-        return; // nada persistir
-      }
-
       await persistMedia(updatedPortfolio, updatedDocs);
       toast.success(`${newMedia.length + newDocs.length} arquivo(s) salvos com sucesso!`);
 
-      // Limpa a lista após 3s dos sucessos
       setTimeout(() => {
         setUploads((prev) => prev.filter((u) => u.status !== 'success'));
       }, 3000);
@@ -423,10 +399,64 @@ function ProfilePage() {
       toast.error("Erro ao salvar arquivos: " + (error?.message || 'falha desconhecida'));
     } finally {
       setSaving(false);
-      // libera o input para permitir reenvio do mesmo arquivo
+    }
+  };
+
+  const handleMediaUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: 'image' | 'video' | 'document',
+  ) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    try {
+      await processMediaFiles(files, type);
+    } finally {
       try { (e.target as HTMLInputElement).value = ''; } catch {}
     }
   };
+
+  // Reenvia todos os uploads que falharam, preservando a ordem original.
+  const retryFailedUploads = async () => {
+    const failed = uploads.filter((u) => u.status === 'error' && u.file);
+    if (failed.length === 0) {
+      toast.info('Nenhum upload falho para reenviar.');
+      return;
+    }
+    // Agrupa por tipo mantendo a ordem original (uploads state já é ordenado por inserção).
+    const byType: Record<'image'|'video'|'document', { files: File[]; ids: string[] }> = {
+      image: { files: [], ids: [] },
+      video: { files: [], ids: [] },
+      document: { files: [], ids: [] },
+    };
+    failed.forEach((u) => {
+      byType[u.type].files.push(u.file as File);
+      byType[u.type].ids.push(u.id);
+    });
+    toast.info(`Reenviando ${failed.length} arquivo(s) que falharam…`);
+    for (const t of ['image', 'video', 'document'] as const) {
+      if (byType[t].files.length > 0) {
+        await processMediaFiles(byType[t].files, t, byType[t].ids);
+      }
+    }
+  };
+
+  // Reordena via teclado (setas): move o item da posição atual em ±1.
+  const handleReorderKeyDown = (
+    e: React.KeyboardEvent,
+    list: 'doc' | 'image' | 'video',
+    index: number,
+    total: number,
+  ) => {
+    let target = -1;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') target = Math.max(0, index - 1);
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') target = Math.min(total - 1, index + 1);
+    else if (e.key === 'Home') target = 0;
+    else if (e.key === 'End') target = total - 1;
+    else return;
+    e.preventDefault();
+    if (target !== index) reorderMedia(list, index, target);
+  };
+
+
 
   // Persiste portfolio_media / documents com fallback para custom_sections.__extras
   const persistMedia = async (portfolio: any[], docs: any[]) => {
