@@ -22,6 +22,9 @@ import { assertCurrencyIntegrity, parseCurrencyBRL } from "@/lib/currency-brl";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { usePostUnlock } from "@/hooks/use-post-unlock";
 import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { FeedErrorState } from "@/components/FeedErrorState";
+import { useFeedPreload } from "@/hooks/use-feed-preload";
 import { Lock, Coins, Loader2 } from "lucide-react";
 
 import {
@@ -562,6 +565,9 @@ export default function FeedLojistaPage() {
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Debounce da busca — evita filtrar a cada tecla e mostra "buscando..."
   useEffect(() => {
@@ -616,9 +622,20 @@ export default function FeedLojistaPage() {
         localStorage.setItem(SAVES_STORAGE_KEY, JSON.stringify([...remote]));
       } catch (err) {
         console.warn("[feed] falha ao sincronizar favoritos:", err);
+        setLoadError(err instanceof Error ? err.message : "Falha de conexão");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reloadKey]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoadError(null);
+    setPage(1);
+    setReloadKey((k) => k + 1);
+    await new Promise((r) => setTimeout(r, 400));
+    setRefreshing(false);
+    toast.success("Feed atualizado");
   }, []);
 
   // Persiste local sempre que muda
