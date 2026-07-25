@@ -658,6 +658,18 @@ export function LojistaPublicProfilePage() {
       <div className="max-w-5xl mx-auto px-4 mt-6 space-y-8">
         {activeTab === "sobre" && (
           <>
+            {/* Bio / Apresentação */}
+            {store?.about_bio && store.about_bio.trim().length > 0 && (
+              <section className="rounded-2xl border border-white/10 bg-black/30 p-5 space-y-2">
+                <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
+                  <User className="w-4 h-4" /> Sobre
+                </h2>
+                <p className="text-sm leading-relaxed text-white/85 whitespace-pre-wrap break-words">
+                  {store.about_bio}
+                </p>
+              </section>
+            )}
+
             {/* Galeria de Fotos */}
             <section className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-3">
