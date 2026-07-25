@@ -49,7 +49,6 @@ function purgeForeignFavoriteKeys(currentId: string | null | undefined) {
     for (let i = 0; i < window.localStorage.length; i++) {
       const k = window.localStorage.key(i);
       if (!k || !k.startsWith(LS_PREFIX)) continue;
-      // formato esperado: fixxer_favorite_user_v1:<currentUserId>:<favoritedUserId>
       const rest = k.slice(LS_PREFIX.length);
       const owner = rest.split(":")[0];
       if (owner && owner !== currentId) toRemove.push(k);
@@ -57,6 +56,40 @@ function purgeForeignFavoriteKeys(currentId: string | null | undefined) {
     toRemove.forEach((k) => window.localStorage.removeItem(k));
   } catch { /* ignore */ }
 }
+
+/**
+ * Ao receber 401/403 do Supabase (token expirado, RLS negando), limpamos
+ * as chaves da conta atual e disparamos um evento para as telas
+ * recarregarem sem exibir dados antigos.
+ */
+function isAuthError(err: any): boolean {
+  if (!err) return false;
+  const status = err?.status ?? err?.code ?? err?.statusCode;
+  const msg = String(err?.message ?? err ?? "").toLowerCase();
+  return (
+    status === 401 ||
+    status === 403 ||
+    status === "401" ||
+    status === "403" ||
+    /jwt|unauthorized|forbidden|not authenticated|permission denied/.test(msg)
+  );
+}
+function clearFavoriteScope(currentId: string | null | undefined) {
+  if (typeof window === "undefined") return;
+  try {
+    const toRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (!k) continue;
+      if (k.startsWith(LS_PREFIX)) {
+        if (!currentId || k.startsWith(`${LS_PREFIX}${currentId}:`)) toRemove.push(k);
+      }
+    }
+    toRemove.forEach((k) => window.localStorage.removeItem(k));
+    window.dispatchEvent(new CustomEvent("fixxer:favorites-invalidated"));
+  } catch { /* ignore */ }
+}
+
 
 export function useFavoriteUser(favoritedUserId: string | null | undefined) {
   // Hidratação síncrona a partir do cache local — evita flicker.
@@ -112,13 +145,32 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
     const countLsKey = `${LS_COUNT_PREFIX}${favoritedUserId}`;
 
     const syncCount = async () => {
+      // 1) Preferir RPC pública SECURITY DEFINER (não exige RLS de leitura em favorite_users).
+      try {
+        const { data: rpcCount, error: rpcErr } = await supabaseExternal.rpc(
+          "get_favorite_count",
+          { target_uuid: favoritedUserId },
+        );
+        if (cancelled) return;
+        if (!rpcErr && typeof rpcCount === "number") {
+          setCount(rpcCount);
+          try { window.localStorage.setItem(countLsKey, String(rpcCount)); } catch { /* ignore */ }
+          return;
+        }
+        if (rpcErr && isAuthError(rpcErr)) clearFavoriteScope(currentUserId);
+      } catch { /* segue para fallback */ }
+
+      // 2) Fallback: contagem direta (pode falhar sob RLS estrita).
       try {
         const { count: total, error } = await supabaseExternal
           .from("favorite_users")
           .select("id", { count: "exact", head: true })
           .eq("favorited_user_id", favoritedUserId);
         if (cancelled) return;
-        if (error) throw error;
+        if (error) {
+          if (isAuthError(error)) clearFavoriteScope(currentUserId);
+          throw error;
+        }
         const n = typeof total === "number" ? total : 0;
         setCount(n);
         try { window.localStorage.setItem(countLsKey, String(n)); } catch { /* ignore */ }
@@ -126,6 +178,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
         // silencioso — mantém cache local
       }
     };
+
 
     (async () => {
       await syncCount();
@@ -139,7 +192,10 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
             .eq("favorited_user_id", favoritedUserId)
             .maybeSingle();
           if (cancelled) return;
-          if (error) throw error;
+          if (error) {
+            if (isAuthError(error)) clearFavoriteScope(currentUserId);
+            throw error;
+          }
           const fav = !!data;
           setIsFavorited(fav);
           try {
@@ -152,6 +208,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
       }
       if (!cancelled) setReady(true);
     })();
+
 
     // Realtime silencioso — se falhar (RLS/permissão/tabela ausente), ignora.
     let channel: ReturnType<typeof supabaseExternal.channel> | null = null;

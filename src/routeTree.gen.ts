@@ -33,6 +33,7 @@ import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated.f
 import { Route as AuthenticatedFavoritosRouteImport } from './routes/_authenticated.favoritos'
 import { Route as AuthenticatedExtratoRouteImport } from './routes/_authenticated.extrato'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated.configuracoes'
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated.cliente'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated.agenda'
@@ -173,6 +174,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedClienteRoute = AuthenticatedClienteRouteImport.update({
   id: '/cliente',
   path: '/cliente',
@@ -288,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/extrato': typeof AuthenticatedExtratoRoute
   '/favoritos': typeof AuthenticatedFavoritosRoute
@@ -331,6 +339,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/extrato': typeof AuthenticatedExtratoRoute
   '/favoritos': typeof AuthenticatedFavoritosRoute
@@ -376,6 +385,7 @@ export interface FileRoutesById {
   '/_authenticated/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/extrato': typeof AuthenticatedExtratoRoute
   '/_authenticated/favoritos': typeof AuthenticatedFavoritosRoute
@@ -422,6 +432,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/chat'
     | '/cliente'
+    | '/configuracoes'
     | '/dashboard'
     | '/extrato'
     | '/favoritos'
@@ -465,6 +476,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/chat'
     | '/cliente'
+    | '/configuracoes'
     | '/dashboard'
     | '/extrato'
     | '/favoritos'
@@ -509,6 +521,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda'
     | '/_authenticated/chat'
     | '/_authenticated/cliente'
+    | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/extrato'
     | '/_authenticated/favoritos'
@@ -733,6 +746,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/cliente': {
       id: '/_authenticated/cliente'
       path: '/cliente'
@@ -945,6 +965,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRouteWithChildren
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExtratoRoute: typeof AuthenticatedExtratoRoute
   AuthenticatedFavoritosRoute: typeof AuthenticatedFavoritosRoute
@@ -963,6 +984,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAgendaRoute: AuthenticatedAgendaRouteWithChildren,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExtratoRoute: AuthenticatedExtratoRoute,
   AuthenticatedFavoritosRoute: AuthenticatedFavoritosRoute,
