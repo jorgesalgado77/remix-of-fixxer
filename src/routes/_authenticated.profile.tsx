@@ -60,6 +60,57 @@ export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
 });
 
+// ================= LIMITES E FORMATOS DE UPLOAD (visíveis na UI) =================
+const UPLOAD_LIMITS = {
+  image: {
+    maxBytes: 5 * 1024 * 1024,
+    maxLabel: '5 MB',
+    accept: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'],
+    acceptAttr: 'image/*',
+    hint: 'JPG, PNG, WEBP, AVIF ou GIF',
+  },
+  video: {
+    maxBytes: 50 * 1024 * 1024,
+    maxLabel: '50 MB',
+    accept: ['video/mp4', 'video/webm', 'video/quicktime'],
+    acceptAttr: 'video/*',
+    hint: 'MP4, WEBM ou MOV',
+  },
+  document: {
+    maxBytes: 10 * 1024 * 1024,
+    maxLabel: '10 MB',
+    accept: [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+    ],
+    acceptAttr: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,image/*',
+    hint: 'PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX ou TXT',
+  },
+} as const;
+
+function validateFileForType(
+  file: File,
+  type: 'image' | 'video' | 'document'
+): { ok: true } | { ok: false; reason: string } {
+  const cfg = UPLOAD_LIMITS[type];
+  const isImageOnDoc = type === 'document' && file.type.startsWith('image/');
+  if (!cfg.accept.includes(file.type as any) && !isImageOnDoc) {
+    return { ok: false, reason: `Formato não aceito (${file.type || 'desconhecido'}). Envie: ${cfg.hint}.` };
+  }
+  if (file.size > cfg.maxBytes) {
+    const mb = (file.size / (1024 * 1024)).toFixed(1);
+    return { ok: false, reason: `Arquivo muito grande (${mb} MB). Limite: ${cfg.maxLabel}.` };
+  }
+  return { ok: true };
+}
+
+
 function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
