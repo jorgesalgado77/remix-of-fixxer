@@ -141,6 +141,29 @@ function ConversationPage() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [linkedAd, setLinkedAd] = useState<MockLinkedAd | null>(null);
   const [guardBlocked, setGuardBlocked] = useState(false);
+  const [peerAvailable, setPeerAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!peerId || (typeof peerId === "string" && peerId.startsWith("mock-"))) return;
+    (async () => {
+      try {
+        const { guardContactAttempt } = await import("@/lib/availability");
+        const res = await guardContactAttempt(peerId);
+        if (cancelled) return;
+        setPeerAvailable(res.allowed);
+        if (!res.allowed) {
+          try {
+            const { toast } = await import("sonner");
+            toast.warning("Usuário indisponível", {
+              description: "Ele foi avisado da sua tentativa e você será notificado quando voltar.",
+            });
+          } catch { /* ignore */ }
+        }
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, [peerId]);
 
   // Anexos + progresso (multi-arquivo)
   const [pendingFiles, setPendingFiles] = useState<File[]>(() => getDraftFiles(peerId));
