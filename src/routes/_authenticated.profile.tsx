@@ -583,7 +583,7 @@ function ProfilePage() {
     >
       {/* 1. CABEÇALHO DO PERFIL */}
       <div className="relative h-64 w-full group">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#121214]/80 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#121214]/80 z-10 pointer-events-none" />
         {profile?.banner_url ? (
           <img src={profile.banner_url} className="w-full h-full object-cover" alt="Banner" />
         ) : (
@@ -592,7 +592,8 @@ function ProfilePage() {
             <span className="text-xs font-black uppercase tracking-widest">Adicione seu banner</span>
           </div>
         )}
-        <label className="absolute right-6 bottom-6 z-20 cursor-pointer bg-black/60 hover:bg-primary hover:text-black px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/10 transition-all active:scale-95 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+        {/* Botão movido para o topo direito para não ser coberto pelo card do avatar */}
+        <label className="absolute right-4 top-4 z-40 cursor-pointer bg-black/70 hover:bg-primary hover:text-black px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/10 transition-all active:scale-95 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest shadow-lg">
           <Camera className="w-4 h-4" />
           {profile?.banner_url ? 'Trocar Banner' : 'Enviar Banner'}
           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner')} />
