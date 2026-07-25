@@ -275,11 +275,15 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
             <button
               type="button"
               onClick={handleAddRole}
-              disabled={!newRole.trim() || roles.length >= MAX_ROLES}
-              className="inline-flex items-center gap-1 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest disabled:opacity-40"
+              disabled={!newRole.trim() || roles.length >= MAX_ROLES || charging}
+              className="shrink-0 inline-flex items-center gap-1 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-wide disabled:opacity-40 whitespace-nowrap"
               style={{ background: accent, color: "#000" }}
+              title={roles.length >= quota ? `Cargo extra: ${EXTRA_COST} 🪙` : "Adicionar cargo"}
             >
               <Plus className="w-3 h-3" /> Add
+              {roles.length >= quota && roles.length < MAX_ROLES && (
+                <span className="ml-1 text-[9px] font-black">{EXTRA_COST}🪙</span>
+              )}
             </button>
           </div>
 
