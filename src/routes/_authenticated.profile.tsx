@@ -266,7 +266,8 @@ function ProfilePage() {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        
+        const uploadId = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`;
+
         // Validation
         if (type === 'image') {
           if (!allowedImageTypes.includes(file.type)) {
@@ -297,114 +298,176 @@ function ProfilePage() {
           }
         }
 
-        let processedFile = file;
-        if (type === 'image') {
-          try {
-            processedFile = await compressImage(file);
-          } catch (err) {
-            console.error("Erro na compressão:", err);
-            // Fallback to original if compression fails
+        // Adiciona à barra de progresso (estado: enviando)
+        setUploads((prev) => [...prev, { id: uploadId, name: file.name, type, status: 'uploading' }]);
+
+        try {
+          let processedFile = file;
+          if (type === 'image') {
+            try {
+              processedFile = await compressImage(file);
+            } catch (err) {
+              console.error("Erro na compressão:", err);
+            }
           }
-        }
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
-        const filePath = `${type}s/${fileName}`;
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
+          const filePath = `${type}s/${fileName}`;
 
-        const uploadWithRetry = async (retries = 2): Promise<any> => {
-          try {
-            const { error: uploadError } = await supabase.storage
-              .from('media')
-              .upload(filePath, processedFile);
-            if (uploadError) throw uploadError;
-            return true;
-          } catch (err) {
-            if (retries > 0) return uploadWithRetry(retries - 1);
-            throw err;
-          }
-        };
+          const uploadWithRetry = async (retries = 2): Promise<any> => {
+            try {
+              const { error: uploadError } = await supabase.storage
+                .from('media')
+                .upload(filePath, processedFile);
+              if (uploadError) throw uploadError;
+              return true;
+            } catch (err) {
+              if (retries > 0) return uploadWithRetry(retries - 1);
+              throw err;
+            }
+          };
 
-        await uploadWithRetry();
+          await uploadWithRetry();
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('media')
-          .getPublicUrl(filePath);
+          const { data: { publicUrl } } = supabase.storage
+            .from('media')
+            .getPublicUrl(filePath);
 
-        const item = { 
-          name: file.name, 
-          url: publicUrl, 
-          type, 
-          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-          created_at: new Date().toISOString()
-        };
+          const item = {
+            name: file.name,
+            url: publicUrl,
+            type,
+            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+            created_at: new Date().toISOString()
+          };
 
-        if (type === 'document') {
-          newDocs.push(item);
-        } else {
-          newMedia.push(item);
+          if (type === 'document') newDocs.push(item);
+          else newMedia.push(item);
+
+          setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'success' } : u));
+        } catch (err: any) {
+          console.error('[upload] falha em', file.name, err);
+          const message = err?.message || 'Falha no upload';
+          setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'error', error: message } : u));
+          toast.error(`Falha ao enviar "${file.name}"`, { description: message });
         }
       }
 
       const updatedPortfolio = [...(profile.portfolio_media || []), ...newMedia];
       const updatedDocs = [...(profile.documents || []), ...newDocs];
 
-      // Payload com fallback: se as colunas `portfolio_media` / `documents`
-      // não existirem no schema do Supabase, movemos para
-      // `custom_sections.__extras` (JSONB) para não perder o dado.
-      const basePayload: any = {
-        portfolio_media: updatedPortfolio,
-        documents: updatedDocs,
-        custom_sections: profile.custom_sections ?? {},
-      };
-      const extras: Record<string, unknown> = {
-        ...((basePayload.custom_sections as any)?.__extras || {}),
-      };
-
-      let lastError: any = null;
-      let attempts = 0;
-      while (attempts < 6) {
-        attempts++;
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update(basePayload)
-          .eq('id', profile.id);
-        if (!updateError) { lastError = null; break; }
-        lastError = updateError;
-        const msg = updateError.message || '';
-        const m =
-          msg.match(/'([^']+)'\s+column/i) ||
-          msg.match(/column\s+"([^"]+)"/i) ||
-          msg.match(/Could not find the '([^']+)'/i);
-        const col = m?.[1];
-        if (col && col in basePayload && col !== 'custom_sections' && col !== 'id') {
-          console.warn(`[media.upload] Coluna inexistente "${col}" — movendo para custom_sections.__extras`);
-          extras[col] = basePayload[col];
-          delete basePayload[col];
-          basePayload.custom_sections = {
-            ...(basePayload.custom_sections || {}),
-            __extras: extras,
-          };
-          continue;
-        }
-        break;
+      if (newMedia.length === 0 && newDocs.length === 0) {
+        return; // nada persistir
       }
 
-      if (lastError) throw lastError;
-
-      setProfile({
-        ...profile,
-        portfolio_media: updatedPortfolio,
-        documents: updatedDocs,
-        custom_sections: basePayload.custom_sections ?? profile.custom_sections,
-      });
-
+      await persistMedia(updatedPortfolio, updatedDocs);
       toast.success(`${newMedia.length + newDocs.length} arquivo(s) salvos com sucesso!`);
+
+      // Limpa a lista após 3s dos sucessos
+      setTimeout(() => {
+        setUploads((prev) => prev.filter((u) => u.status !== 'success'));
+      }, 3000);
     } catch (error: any) {
       toast.error("Erro ao salvar arquivos: " + (error?.message || 'falha desconhecida'));
     } finally {
       setSaving(false);
+      // libera o input para permitir reenvio do mesmo arquivo
+      try { (e.target as HTMLInputElement).value = ''; } catch {}
     }
   };
+
+  // Persiste portfolio_media / documents com fallback para custom_sections.__extras
+  const persistMedia = async (portfolio: any[], docs: any[]) => {
+    if (!profile?.id) return;
+    const basePayload: any = {
+      portfolio_media: portfolio,
+      documents: docs,
+      custom_sections: profile.custom_sections ?? {},
+    };
+    const extras: Record<string, unknown> = { ...((basePayload.custom_sections as any)?.__extras || {}) };
+    let lastError: any = null;
+    let attempts = 0;
+    while (attempts < 6) {
+      attempts++;
+      const { error } = await supabase.from('profiles').update(basePayload).eq('id', profile.id);
+      if (!error) { lastError = null; break; }
+      lastError = error;
+      const msg = error.message || '';
+      const m =
+        msg.match(/'([^']+)'\s+column/i) ||
+        msg.match(/column\s+"([^"]+)"/i) ||
+        msg.match(/Could not find the '([^']+)'/i);
+      const col = m?.[1];
+      if (col && col in basePayload && col !== 'custom_sections' && col !== 'id') {
+        console.warn(`[persistMedia] Coluna inexistente "${col}" — movendo para custom_sections.__extras`);
+        extras[col] = basePayload[col];
+        delete basePayload[col];
+        basePayload.custom_sections = { ...(basePayload.custom_sections || {}), __extras: extras };
+        continue;
+      }
+      break;
+    }
+    if (lastError) throw lastError;
+    setProfile((prev: any) => ({
+      ...prev,
+      portfolio_media: portfolio,
+      documents: docs,
+      custom_sections: basePayload.custom_sections ?? prev?.custom_sections,
+    }));
+  };
+
+  // Remove um item (documento/imagem/vídeo) e persiste automaticamente.
+  const removeMediaItem = async (list: 'doc'|'image'|'video', index: number) => {
+    try {
+      const currentDocs = [...(profile?.documents || [])];
+      const currentMedia = [...(profile?.portfolio_media || [])];
+      if (list === 'doc') {
+        const docItems = currentDocs.filter((f: any) => f.type === 'document');
+        const target = docItems[index];
+        if (!target) return;
+        const nextDocs = currentDocs.filter((d: any) => d !== target);
+        await persistMedia(currentMedia, nextDocs);
+      } else {
+        const kind = list;
+        const items = currentMedia.filter((f: any) => f.type === kind);
+        const target = items[index];
+        if (!target) return;
+        const nextMedia = currentMedia.filter((d: any) => d !== target);
+        await persistMedia(nextMedia, currentDocs);
+      }
+      toast.success('Item removido');
+    } catch (err: any) {
+      toast.error('Falha ao remover', { description: err?.message });
+    }
+  };
+
+  // Reordena preservando a ordem global de portfolio_media / documents.
+  const reorderMedia = async (list: 'doc'|'image'|'video', fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    try {
+      if (list === 'doc') {
+        const currentDocs = [...(profile?.documents || [])];
+        const docItems = currentDocs.filter((f: any) => f.type === 'document');
+        const others = currentDocs.filter((f: any) => f.type !== 'document');
+        const [moved] = docItems.splice(fromIdx, 1);
+        docItems.splice(toIdx, 0, moved);
+        await persistMedia(profile?.portfolio_media || [], [...others, ...docItems]);
+      } else {
+        const kind = list;
+        const currentMedia = [...(profile?.portfolio_media || [])];
+        const items = currentMedia.filter((f: any) => f.type === kind);
+        const others = currentMedia.filter((f: any) => f.type !== kind);
+        const [moved] = items.splice(fromIdx, 1);
+        items.splice(toIdx, 0, moved);
+        await persistMedia([...others, ...items], profile?.documents || []);
+      }
+    } catch (err: any) {
+      toast.error('Falha ao reordenar', { description: err?.message });
+    }
+  };
+
+
 
 
 
