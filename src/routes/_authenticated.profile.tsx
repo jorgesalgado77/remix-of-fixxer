@@ -145,9 +145,10 @@ function ProfilePage() {
       const idToLoad = profileId || user?.id;
       if (!idToLoad) return;
 
-      const [profileRes, brandsRes, postRes] = await Promise.all([
+      const [profileRes, brandsRes, productTypesRes, postRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', idToLoad).single(),
         supabase.from('brand_flags').select('name').order('name', { ascending: true }),
+        supabase.from('product_types').select('name').order('name', { ascending: true }),
         postId ? supabase.from('feed_posts').select('*').eq('id', postId).single() : Promise.resolve({ data: null })
       ]);
       
