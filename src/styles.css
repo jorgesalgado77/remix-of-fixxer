@@ -229,3 +229,124 @@
   content-visibility: auto;
   contain-intrinsic-size: 520px;
 }
+
+/* =========================================================
+   MODO CLARO — html.light
+   Overrides globais para garantir contraste correto em telas
+   que usam cores hardcoded do tema escuro (bg-[#0A0A0B], text-white,
+   bg-white/5, border-white/10, etc). Semanticamente reajusta os
+   tokens shadcn e faz um remap agressivo das classes utilitárias
+   mais usadas no app.
+   ========================================================= */
+html.light {
+  color-scheme: light;
+
+  /* Tokens shadcn — versão clara */
+  --background: oklch(0.985 0.005 240);          /* #F5F7FA */
+  --foreground: oklch(0.22 0.03 260);            /* #0F172A */
+  --card: oklch(1 0 0 / 0.85);
+  --card-foreground: oklch(0.22 0.03 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.03 260);
+  --primary: oklch(0.62 0.18 155);               /* verde acessível AA */
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.94 0.01 250);
+  --secondary-foreground: oklch(0.22 0.03 260);
+  --muted: oklch(0.94 0.01 250);
+  --muted-foreground: oklch(0.42 0.02 260);
+  --accent: oklch(0.62 0.18 155 / 0.12);
+  --accent-foreground: oklch(0.35 0.14 155);
+  --destructive: oklch(0.55 0.22 27);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.22 0.03 260 / 0.14);
+  --input: oklch(0.22 0.03 260 / 0.08);
+  --ring: oklch(0.62 0.18 155);
+  --sidebar: oklch(0.985 0.005 240);
+  --sidebar-foreground: oklch(0.22 0.03 260);
+  --sidebar-border: oklch(0.22 0.03 260 / 0.12);
+}
+
+html.light body {
+  background-color: #F5F7FA;
+  color: #0F172A;
+}
+
+/* Backgrounds pretos hardcoded → claro */
+html.light .bg-black,
+html.light [class*="bg-black/"],
+html.light .bg-\[\#0A0A0B\],
+html.light .bg-\[\#0A0A0B\]\/95,
+html.light .bg-\[\#0A0A0B\]\/90,
+html.light .bg-\[\#0A0A0B\]\/80,
+html.light .bg-\[\#121214\],
+html.light .bg-\[\#000\],
+html.light .bg-\[\#111\],
+html.light .bg-\[\#141416\],
+html.light .bg-\[\#0F0F10\] {
+  background-color: #FFFFFF !important;
+}
+
+/* Superfícies translúcidas brancas → tinta escura suave */
+html.light .bg-white\/5,
+html.light .bg-white\/10,
+html.light .bg-white\/\[0\.03\],
+html.light .bg-white\/\[0\.06\],
+html.light .bg-white\/\[0\.08\] {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Texto branco → tinta escura */
+html.light .text-white {
+  color: #0F172A !important;
+}
+html.light .text-white\/90,
+html.light .text-white\/85,
+html.light .text-white\/80,
+html.light .text-white\/75,
+html.light .text-white\/70 {
+  color: rgba(15, 23, 42, 0.85) !important;
+}
+html.light .text-white\/60,
+html.light .text-white\/50,
+html.light .text-white\/40,
+html.light .text-white\/30 {
+  color: rgba(15, 23, 42, 0.6) !important;
+}
+
+/* Bordas brancas → cinza tinta */
+html.light .border-white\/5,
+html.light .border-white\/10,
+html.light .border-white\/15,
+html.light .border-white\/20,
+html.light .border-white\/25,
+html.light .border-white\/30 {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+/* Cards com backdrop escuro → cartão claro */
+html.light .bg-card\/30,
+html.light .bg-card\/40,
+html.light .bg-card\/50,
+html.light .bg-card\/60,
+html.light .bg-card\/70 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Texto neon verde deve manter presença mas com contraste em fundo claro */
+html.light .text-primary {
+  color: #059669 !important;
+}
+html.light .bg-primary\/10 { background-color: rgba(5, 150, 105, 0.10) !important; }
+html.light .bg-primary\/20 { background-color: rgba(5, 150, 105, 0.18) !important; }
+
+/* Muted foreground em cinza médio */
+html.light .text-muted-foreground {
+  color: #475569 !important;
+}
+
+/* Placeholder mais legível */
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: rgba(15, 23, 42, 0.45) !important;
+}
+
