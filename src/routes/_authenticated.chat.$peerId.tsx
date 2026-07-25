@@ -1165,6 +1165,7 @@ function ConversationPage() {
 
       <div
         ref={scrollRef}
+        onScroll={onScrollFeed}
         onDragEnter={onDragEnter}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
@@ -1185,15 +1186,12 @@ function ConversationPage() {
         )}
         <ChatAppointmentsBanner userId={userId} peerId={peerId} />
         {hasMore && !loading && messages.length > 0 && (
-          <div className="text-center">
-            <button
-              onClick={loadOlder}
-              className="text-[10px] font-black uppercase italic tracking-widest text-primary bg-primary/10 border border-primary/20 rounded-full px-4 py-2 hover:bg-primary/20"
-            >
-              Carregar mensagens anteriores
-            </button>
+          <div className="text-center flex items-center justify-center gap-2 text-[10px] font-black uppercase italic tracking-widest text-muted-foreground">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Carregando mensagens anteriores...
           </div>
         )}
+
 
         {loading ? (
           <div className="text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
