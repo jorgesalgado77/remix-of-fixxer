@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Eye, FileText, Camera, Gift, Truck, Briefcase } from "lucide-react";
+import { Eye, FileText, Camera, Gift, Truck, Briefcase, Sparkles, Star } from "lucide-react";
 import type { PhotoSectionsValue, PhotoItem } from "@/components/PhotoSectionsManager";
 
 const getUrl = (p: PhotoItem): string => (typeof p === "string" ? p : p.url);
