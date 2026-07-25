@@ -239,7 +239,8 @@ export function RecentPartnersCarousel() {
 
   // ---- Ordenação em memória ----
   const sortedItems = useMemo(() => {
-    const arr = [...items];
+    const arr = kindFilter === "all" ? [...items] : items.filter((p) => p._kind === kindFilter);
+
     if (sortMode === "rating") {
       arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     } else if (sortMode === "nearby" && userCoords) {
