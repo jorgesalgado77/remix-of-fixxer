@@ -949,14 +949,14 @@ function ProfilePage() {
                   <div className="pt-6 space-y-4 border-t border-white/5">
                     <OfferingsPicker
                       selected={Array.isArray(profile?.offerings) ? profile.offerings : []}
-                      onChange={(next) => {
+                      onChange={(next: string[]) => {
                         const hasVehicle = next.some((s: string) => s.toLowerCase() === 'veículo próprio');
                         setProfile({ ...profile, offerings: next, has_vehicle: hasVehicle });
                       }}
                       vehicleType={profile?.vehicle_type}
                       vehicleDescription={profile?.vehicle_description}
-                      onVehicleTypeChange={(v) => setProfile({ ...profile, vehicle_type: v })}
-                      onVehicleDescriptionChange={(v) => setProfile({ ...profile, vehicle_description: v })}
+                      onVehicleTypeChange={(v: string) => setProfile({ ...profile, vehicle_type: v })}
+                      onVehicleDescriptionChange={(v: string) => setProfile({ ...profile, vehicle_description: v })}
                     />
 
                     {profile?.has_vehicle && (
