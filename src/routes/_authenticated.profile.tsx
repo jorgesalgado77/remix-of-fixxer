@@ -13,6 +13,7 @@ import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { ALLOWED_RADII_KM, isAllowedRadius, BIO_MAX_LENGTH } from "@/lib/branch-search";
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
+import { LiveProfilePreview } from "@/components/LiveProfilePreview";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -1063,6 +1064,17 @@ function ProfilePage() {
           </div>
 
           <div className="space-y-8">
+            {/* PRÉVIA AO VIVO DO PERFIL PÚBLICO */}
+            {!profileId && (
+              <LiveProfilePreview
+                aboutBio={profile?.about_bio}
+                sections={profile?.custom_sections}
+                portfolioImages={profile?.portfolio_media}
+                companyName={profile?.company_name}
+                fullName={profile?.full_name}
+                accentHex={theme.hex}
+              />
+            )}
             {/* CENTRAL DE MÍDIA COMPACTA - REFORMULADA */}
             <section className="bg-card/30 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] shadow-2xl space-y-6">
               <div className="flex items-center gap-3 border-b border-white/5 pb-4">
