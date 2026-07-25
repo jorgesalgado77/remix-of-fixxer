@@ -828,75 +828,11 @@ export function LojistaPublicProfilePage() {
                     </div>
                   )}
 
-                  {/* 🎯 Resumo de compatibilidade: work_modes + veículo em chips clicáveis
-                      que filtram a seção "🎁 Oferece" abaixo. */}
-                  {(() => {
-                    const wm: string[] = Array.isArray(profile?.work_modes) ? profile!.work_modes! : [];
-                    const veh = (profile as any)?.vehicle_details && typeof (profile as any).vehicle_details === 'object'
-                      ? (profile as any).vehicle_details as Record<string, any>
-                      : null;
-                    const vehType = String((veh?.Tipo ?? veh?.tipo ?? (profile as any)?.vehicle_type) ?? '').trim();
-                    const vehDesc = String((veh?.Descrição ?? veh?.descricao ?? (profile as any)?.vehicle_description) ?? '').trim();
-                    if (wm.length === 0 && !vehType && !vehDesc) return null;
-                    return (
-                      <div className="mt-3 space-y-2">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-white/50">
-                            Compatibilidade — toque para filtrar 🎁 Oferece
-                          </p>
-                          {compatFilters.size > 0 && (
-                            <button
-                              type="button"
-                              onClick={clearCompat}
-                              className="text-[9px] font-black uppercase tracking-widest text-primary/90 hover:text-primary underline"
-                            >
-                              Limpar filtros ({compatFilters.size})
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {wm.map((m) => {
-                            const key = `wm:${m.toLowerCase()}`;
-                            const active = compatFilters.has(key);
-                            return (
-                              <button
-                                key={key}
-                                type="button"
-                                aria-pressed={active}
-                                onClick={() => toggleCompat(key)}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase italic border transition ${
-                                  active
-                                    ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.35)]'
-                                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:border-emerald-400'
-                                }`}
-                              >
-                                💼 {m}
-                              </button>
-                            );
-                          })}
-                          {vehType && (() => {
-                            const key = `veh:${vehType.toLowerCase()}`;
-                            const active = compatFilters.has(key);
-                            return (
-                              <button
-                                type="button"
-                                aria-pressed={active}
-                                onClick={() => toggleCompat(key)}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase italic border transition ${
-                                  active
-                                    ? 'bg-primary/25 border-primary text-white shadow-[0_0_10px_rgba(0,255,135,0.35)]'
-                                    : 'bg-primary/10 border-primary/30 text-primary hover:border-primary'
-                                }`}
-                                title={vehDesc || undefined}
-                              >
-                                🚚 {vehType}{vehDesc ? ` — ${vehDesc.slice(0, 32)}${vehDesc.length > 32 ? '…' : ''}` : ''}
-                              </button>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  {/* Bloco de chips de compatibilidade removido do header a pedido:
+                      as mesmas informações (work_modes, veículo, ofertas) já aparecem
+                      nas seções abaixo ao rolar o perfil. Mantemos apenas o cargo principal
+                      acima e evitamos duplicação visual no topo. */}
+
                 </div>
 
 
