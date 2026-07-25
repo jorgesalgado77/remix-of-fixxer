@@ -72,18 +72,22 @@ export const Route = createFileRoute("/_authenticated/chat/$peerId")({
   component: ConversationPage,
 });
 
-/** UID sintético estável quando não há sessão Supabase (fase de construção / bypass admin). */
-function getFallbackUid(): string {
-  if (typeof window === "undefined") return "local-anon";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(v: string | null | undefined): v is string {
+  return !!v && UUID_RE.test(v);
+}
+/**
+ * Retorna o UUID real do usuário logado — nunca uma string sintética.
+ * Sem UUID válido, o chat não pode operar (RLS + tipo `uuid` em
+ * `messages.sender_id`). O caller deve tratar `null` redirecionando para /auth.
+ */
+function getAuthUid(): string | null {
+  if (typeof window === "undefined") return null;
   try {
-    const cached = localStorage.getItem("fixxer_local_uid");
-    if (cached) return cached;
-    const email = (localStorage.getItem("fixxer_user_email") || "local").toLowerCase();
-    const uid = `local-${btoa(email).replace(/[^a-zA-Z0-9]/g, "").slice(0, 24)}`;
-    localStorage.setItem("fixxer_local_uid", uid);
-    return uid;
+    const stored = localStorage.getItem("fixxer_user_id");
+    return isUuid(stored) ? stored : null;
   } catch {
-    return "local-anon";
+    return null;
   }
 }
 
@@ -336,8 +340,14 @@ function ConversationPage() {
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
-      const uid = data?.user?.id ?? getFallbackUid();
+      const uid = data?.user?.id ?? getAuthUid();
       if (cancelled) return;
+      if (!isUuid(uid)) {
+        // Sem sessão válida — não há como escrever em messages (RLS + uuid).
+        toast.error("Sessão expirada", { description: "Faça login novamente para conversar." });
+        try { navigate({ to: "/auth" as any }); } catch { window.location.href = "/auth"; }
+        return;
+      }
       setUserId(uid);
 
       // === MODO MOCK (peerId "mock-*") ===
@@ -515,7 +525,7 @@ function ConversationPage() {
     const onHide = () => { sendTypingStop(); };
     const onVisible = () => {
       if (document.visibilityState === "visible") {
-        const uid = userId || getFallbackUid();
+        const uid = userId || getAuthUid();
         if (uid && !isMockPeerId(peerId)) markIncomingRead(uid);
       }
     };
