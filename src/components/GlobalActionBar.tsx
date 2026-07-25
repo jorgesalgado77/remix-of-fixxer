@@ -34,6 +34,24 @@ export function GlobalActionBar() {
   };
 
   const goToPanel = async () => {
+    const markPanelNavigation = () => {
+      if (typeof window === "undefined") return;
+      const until = String(Date.now() + 8000);
+      try {
+        sessionStorage.setItem("fixxer:panel-navigation-intent-until", until);
+      } catch {
+        // sessionStorage pode estar indisponível em alguns navegadores.
+      }
+      try {
+        (window as any).__FIXXER_PANEL_NAVIGATION_UNTIL__ = Number(until);
+        window.dispatchEvent(new CustomEvent("fixxer:panel-navigation-intent"));
+      } catch {
+        // best-effort
+      }
+    };
+
+    markPanelNavigation();
+
     let resolvedRole = role;
     try {
       const { getCurrentCategory } = await import("@/lib/current-user");
@@ -49,7 +67,26 @@ export function GlobalActionBar() {
       resolvedRole === "admin" ? "/admin" :
       "/prestador";
 
-    navigate({ to: target as any, replace: true });
+    markPanelNavigation();
+
+    try {
+      await navigate({ to: target as any, replace: true });
+    } catch {
+      if (typeof window !== "undefined") window.location.replace(target);
+      return;
+    }
+
+    // Em perfis públicos há consultas assíncronas que podem terminar depois do clique
+    // e tentar corrigir a URL do perfil visitado. Este fallback garante que a ação
+    // "Painel" vence qualquer redirecionamento tardio do perfil público.
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => {
+        if (window.location.pathname !== target) {
+          markPanelNavigation();
+          window.location.replace(target);
+        }
+      }, 450);
+    }
   };
 
 
