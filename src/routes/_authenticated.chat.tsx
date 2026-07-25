@@ -855,10 +855,15 @@ function ChatInboxPage() {
                       className="w-12 h-12 rounded-full bg-white/5 border-2 flex items-center justify-center overflow-hidden shrink-0 relative"
                       style={{ borderColor: theme.hex, boxShadow: `0 0 10px rgba(${theme.rgb}, 0.35)` }}
                     >
-                      {c.peerAvatar ? (
+                      {c.peerAvatar && !c.peerIsFallback ? (
                         <img src={c.peerAvatar} alt={c.peerName} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="font-black italic" style={{ color: theme.hex }}>{c.peerName.slice(0, 1).toUpperCase()}</span>
+                        <span className="relative flex h-full w-full items-center justify-center bg-white/5" aria-label="Avatar padrão">
+                          <UserCircle2 className="h-7 w-7 text-muted-foreground/70" />
+                          <span className="absolute bottom-1 right-1 min-w-4 h-4 px-0.5 rounded-full bg-black/80 border border-white/15 flex items-center justify-center text-[8px] font-black italic" style={{ color: theme.hex }}>
+                            {c.peerInitials}
+                          </span>
+                        </span>
                       )}
                       {c.muted && (
                         <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-black border border-white/20 flex items-center justify-center">
