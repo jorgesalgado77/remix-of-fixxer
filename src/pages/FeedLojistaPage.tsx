@@ -810,6 +810,7 @@ export default function FeedLojistaPage() {
   };
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} accent="#00E5FF">
     <div
       className="min-h-screen bg-[#0A0A0B] text-white flex flex-col font-sans pb-32"
       onClick={() => setOpenMenu(null)}
