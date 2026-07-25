@@ -49,7 +49,6 @@ function purgeForeignFavoriteKeys(currentId: string | null | undefined) {
     for (let i = 0; i < window.localStorage.length; i++) {
       const k = window.localStorage.key(i);
       if (!k || !k.startsWith(LS_PREFIX)) continue;
-      // formato esperado: fixxer_favorite_user_v1:<currentUserId>:<favoritedUserId>
       const rest = k.slice(LS_PREFIX.length);
       const owner = rest.split(":")[0];
       if (owner && owner !== currentId) toRemove.push(k);
@@ -57,6 +56,40 @@ function purgeForeignFavoriteKeys(currentId: string | null | undefined) {
     toRemove.forEach((k) => window.localStorage.removeItem(k));
   } catch { /* ignore */ }
 }
+
+/**
+ * Ao receber 401/403 do Supabase (token expirado, RLS negando), limpamos
+ * as chaves da conta atual e disparamos um evento para as telas
+ * recarregarem sem exibir dados antigos.
+ */
+function isAuthError(err: any): boolean {
+  if (!err) return false;
+  const status = err?.status ?? err?.code ?? err?.statusCode;
+  const msg = String(err?.message ?? err ?? "").toLowerCase();
+  return (
+    status === 401 ||
+    status === 403 ||
+    status === "401" ||
+    status === "403" ||
+    /jwt|unauthorized|forbidden|not authenticated|permission denied/.test(msg)
+  );
+}
+function clearFavoriteScope(currentId: string | null | undefined) {
+  if (typeof window === "undefined") return;
+  try {
+    const toRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (!k) continue;
+      if (k.startsWith(LS_PREFIX)) {
+        if (!currentId || k.startsWith(`${LS_PREFIX}${currentId}:`)) toRemove.push(k);
+      }
+    }
+    toRemove.forEach((k) => window.localStorage.removeItem(k));
+    window.dispatchEvent(new CustomEvent("fixxer:favorites-invalidated"));
+  } catch { /* ignore */ }
+}
+
 
 export function useFavoriteUser(favoritedUserId: string | null | undefined) {
   // Hidratação síncrona a partir do cache local — evita flicker.
