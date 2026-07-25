@@ -629,7 +629,7 @@ export function LojistaDashboard() {
         <header className="px-8 py-6 border-b border-white/10 flex items-center justify-between sticky top-0 z-10 bg-[#050505]/80 backdrop-blur-md hidden md:flex">
            <div className="flex items-center gap-4">
                <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
-                  {activeTab === 'dashboard' ? 'Painel Lojista' : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
+                  {activeTab === 'dashboard' ? `Painel ${CATEGORY_LABEL[userRole] ?? 'Lojista'}` : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
                </h2>
            </div>
            <div className="flex items-center gap-4">
