@@ -69,6 +69,7 @@ interface StoreProfile {
   offerings?: string[] | string;
   offerings_notes?: string;
   positions?: any[];
+  work_modes?: string[];
   vehicle_details?: Record<string, any>;
   has_vehicle?: boolean;
   custom_sections?: any;
@@ -973,6 +974,7 @@ export function LojistaPublicProfilePage() {
                   ? String(profile.offerings).split(/[,;\n]/).map((s) => s.trim()).filter(Boolean)
                   : [];
               const positions: string[] = positionsList;
+              const workModes: string[] = Array.isArray(profile?.work_modes) ? profile!.work_modes! : [];
               const vehicle = profile?.vehicle_details && typeof profile.vehicle_details === 'object' ? profile.vehicle_details : null;
               const radiusKm = Number((profile as any)?.service_radius_km);
               const hasRadius = Number.isFinite(radiusKm) && radiusKm > 0;
@@ -983,7 +985,7 @@ export function LojistaPublicProfilePage() {
               if (distanceLabel) locationItems.push({ label: 'Distância', value: isSelf ? distanceLabel : `${distanceLabel} de você` });
 
               const hasAny =
-                branch || preferred.length || offerings.length || positions.length || profile?.offerings_notes || vehicle || locationItems.length || hasRadius || businessHours.length;
+                branch || preferred.length || offerings.length || positions.length || workModes.length || profile?.offerings_notes || vehicle || locationItems.length || hasRadius || businessHours.length;
               if (!hasAny) return null;
 
               return (
@@ -991,6 +993,19 @@ export function LojistaPublicProfilePage() {
                   <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
                     <Wrench className="w-4 h-4" /> Perfil Profissional
                   </h2>
+
+                  {workModes.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">💼 Aceita trabalhos como</p>
+                      <div className="flex flex-wrap gap-2">
+                        {workModes.map((m, i) => (
+                          <span key={`${m}-${i}`} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-bold uppercase italic text-emerald-300">
+                            {m}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {branch && (
                     <div>
