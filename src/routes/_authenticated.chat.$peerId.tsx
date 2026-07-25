@@ -375,7 +375,7 @@ function ConversationPage() {
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
-      const uid = data?.user?.id ?? getAuthUid();
+      const uid = data?.user?.id ?? null;
       if (cancelled) return;
       if (!isUuid(uid)) {
         // Sem sessão válida — não há como escrever em messages (RLS + uuid).
@@ -558,12 +558,13 @@ function ConversationPage() {
     // Ao trocar de rota / recarregar / esconder aba: envia typing-stop.
     // Ao VOLTAR o foco: re-marca a conversa como lida (sincroniza com o peer).
     const onHide = () => { sendTypingStop(); };
-    const onVisible = () => {
+    const onVisible = async () => {
       if (document.visibilityState === "visible") {
-        const uid = userId || getAuthUid();
+        const uid = userId || (await getAuthUid());
         if (uid && !isMockPeerId(peerId)) markIncomingRead(uid);
       }
     };
+
     document.addEventListener("visibilitychange", onHide);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
