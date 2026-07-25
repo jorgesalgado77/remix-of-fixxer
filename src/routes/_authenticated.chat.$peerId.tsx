@@ -21,7 +21,11 @@ import {
   CheckCheck,
   UserCircle2,
   Trash2,
+  MoreVertical,
+  Ban,
+  FileDown,
 } from "lucide-react";
+
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
@@ -440,7 +444,25 @@ function ConversationPage() {
           setPeerAvatar(anyP.avatar_url ?? null);
           setPeerRole(anyP.role ?? null);
         }
+        // Fallback para foto/nome vindos de store_profiles quando profiles está vazio.
+        const uidForStore = (anyP?.user_id as string | undefined) || peerId;
+        if (uidForStore && (!anyP?.avatar_url || !anyP?.display_name)) {
+          try {
+            const { data: sp } = await supabaseExternal
+              .from("store_profiles")
+              .select("logo_url, company_name, display_name")
+              .eq("user_id", uidForStore)
+              .maybeSingle();
+            if (sp && !cancelled) {
+              if (!anyP?.avatar_url && (sp as any).logo_url) setPeerAvatar((sp as any).logo_url);
+              if (!anyP?.display_name && ((sp as any).display_name || (sp as any).company_name)) {
+                setPeerName(((sp as any).display_name || (sp as any).company_name) as string);
+              }
+            }
+          } catch {}
+        }
       } catch {}
+
 
 
       setMuted(isConversationMuted(uid, peerId));
@@ -1103,6 +1125,62 @@ function ConversationPage() {
     toast.success(next ? "Notificações silenciadas" : "Notificações reativadas");
   };
 
+  const blockKey = userId ? `fixxer:blocked:${userId}` : "";
+  const isBlocked = (() => {
+    if (typeof window === "undefined" || !blockKey) return false;
+    try {
+      const arr = JSON.parse(localStorage.getItem(blockKey) || "[]");
+      return Array.isArray(arr) && arr.includes(peerId);
+    } catch { return false; }
+  })();
+  const [, forceRender] = useState(0);
+
+  const toggleBlock = () => {
+    if (!userId || !blockKey) return;
+    try {
+      const arr: string[] = JSON.parse(localStorage.getItem(blockKey) || "[]");
+      const set = new Set(arr);
+      const next = !set.has(peerId);
+      if (next) set.add(peerId); else set.delete(peerId);
+      localStorage.setItem(blockKey, JSON.stringify(Array.from(set)));
+      forceRender((n) => n + 1);
+      toast.success(next ? "Usuário bloqueado" : "Usuário desbloqueado");
+      window.dispatchEvent(new Event("fixxer:blocked-change"));
+    } catch (e: any) {
+      toast.error("Falha ao atualizar bloqueio", { description: e?.message });
+    }
+  };
+
+  const exportConversation = () => {
+    try {
+      const lines: string[] = [];
+      lines.push(`Conversa com ${peerName}`);
+      lines.push(`Exportado em ${new Date().toLocaleString("pt-BR")}`);
+      lines.push("".padEnd(40, "-"));
+      for (const m of messages) {
+        const who = m.sender_id === userId ? "Você" : peerName;
+        const when = m.created_at ? new Date(m.created_at).toLocaleString("pt-BR") : "";
+        const body = (m.content || "").trim();
+        const att = m.attachment_url ? ` [anexo: ${m.attachment_name || m.attachment_url}]` : "";
+        lines.push(`[${when}] ${who}: ${body}${att}`);
+      }
+      const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `conversa-${(peerName || "chat").replace(/[^\w-]+/g, "_")}-${stamp}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      toast.success("Conversa exportada");
+    } catch (e: any) {
+      toast.error("Falha ao exportar", { description: e?.message });
+    }
+  };
+
+
   const grouped = useMemo(() => {
     const out: { date: string; items: MessageRow[] }[] = [];
     for (const m of messages) {
@@ -1194,36 +1272,17 @@ function ConversationPage() {
             </div>
 
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={markAsUnread}
-              title="Marcar como não lida"
-              aria-label="Marcar como não lida"
-              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
-            >
-              <MailOpen className="w-4 h-4" />
-            </button>
-            <button
-              onClick={toggleMute}
-              title={muted ? "Reativar notificações" : "Silenciar notificações"}
-              aria-label={muted ? "Reativar notificações" : "Silenciar notificações"}
-              className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
-                muted ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/5 border-white/10 hover:bg-white/10"
-              }`}
-            >
-              {muted ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-            </button>
-            <button
-              onClick={toggleArchive}
-              title={archived ? "Desarquivar" : "Arquivar conversa"}
-              aria-label={archived ? "Desarquivar" : "Arquivar conversa"}
-              className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
-                archived ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/5 border-white/10 hover:bg-white/10"
-              }`}
-            >
-              {archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
-            </button>
-          </div>
+          <HeaderActionsMenu
+            muted={muted}
+            archived={archived}
+            blocked={isBlocked}
+            onUnread={markAsUnread}
+            onMute={toggleMute}
+            onArchive={toggleArchive}
+            onBlock={toggleBlock}
+            onExport={exportConversation}
+          />
+
         </div>
       </header>
 
@@ -1767,3 +1826,66 @@ function AttachmentBlock({
   );
 }
 
+
+function HeaderActionsMenu(props: {
+  muted: boolean;
+  archived: boolean;
+  blocked: boolean;
+  onUnread: () => void;
+  onMute: () => void;
+  onArchive: () => void;
+  onBlock: () => void;
+  onExport: () => void;
+}) {
+  const { muted, archived, blocked, onUnread, onMute, onArchive, onBlock, onExport } = props;
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const item = (label: string, Icon: any, onClick: () => void, danger = false) => (
+    <button
+      onClick={() => { setOpen(false); onClick(); }}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm text-left hover:bg-white/5 ${danger ? "text-red-300" : "text-white"}`}
+    >
+      <Icon className="w-4 h-4 shrink-0" />
+      <span className="truncate">{label}</span>
+    </button>
+  );
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        title="Mais opções"
+        aria-label="Mais opções"
+        aria-expanded={open}
+        className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-2 z-50 w-60 rounded-2xl bg-[#121214] border border-white/10 shadow-2xl overflow-hidden py-1"
+        >
+          {item("Marcar como não lida", MailOpen, onUnread)}
+          {item(muted ? "Reativar notificações" : "Silenciar notificações", muted ? BellOff : Bell, onMute)}
+          {item(archived ? "Desarquivar conversa" : "Arquivar conversa", archived ? ArchiveRestore : Archive, onArchive)}
+          <div className="my-1 h-px bg-white/10" />
+          {item("Exportar conversa", FileDown, onExport)}
+          {item(blocked ? "Desbloquear usuário" : "Bloquear usuário", Ban, onBlock, true)}
+        </div>
+      )}
+    </div>
+  );
+}
