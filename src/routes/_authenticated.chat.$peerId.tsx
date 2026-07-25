@@ -538,22 +538,34 @@ function ConversationPage() {
     if (nearBottom) el.scrollTop = el.scrollHeight;
   }, [messages, peerTyping]);
 
+  const loadingOlderRef = useRef(false);
   const loadOlder = async () => {
-    if (!userId || messages.length === 0 || !hasMore) return;
+    if (!userId || messages.length === 0 || !hasMore || loadingOlderRef.current) return;
+    loadingOlderRef.current = true;
     const oldest = messages[0].created_at;
     const el = scrollRef.current;
     const prevHeight = el?.scrollHeight ?? 0;
-    const older = await loadPage(userId, oldest);
-    const dedup = older.filter((m) => !idSetRef.current.has(m.id));
-    dedup.forEach((m) => idSetRef.current.add(m.id));
-    if (dedup.length === 0) { setHasMore(false); return; }
-    setHasMore(older.length === PAGE_SIZE);
-    setMessages((prev) => [...dedup, ...prev]);
-    requestAnimationFrame(() => {
-      if (!el) return;
-      el.scrollTop = el.scrollHeight - prevHeight;
-    });
+    try {
+      const older = await loadPage(userId, oldest);
+      const dedup = older.filter((m) => !idSetRef.current.has(m.id));
+      dedup.forEach((m) => idSetRef.current.add(m.id));
+      if (dedup.length === 0) { setHasMore(false); return; }
+      setHasMore(older.length === PAGE_SIZE);
+      setMessages((prev) => [...dedup, ...prev]);
+      requestAnimationFrame(() => {
+        if (!el) return;
+        el.scrollTop = el.scrollHeight - prevHeight;
+      });
+    } finally {
+      loadingOlderRef.current = false;
+    }
   };
+
+  const onScrollFeed = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore || loading) return;
+    if (e.currentTarget.scrollTop < 80) void loadOlder();
+  };
+
 
   const sendTyping = () => {
     if (!presenceRef.current || !userId) return;
