@@ -629,7 +629,14 @@ export function LojistaPublicProfilePage() {
                     disabled={favorite.loading || favorite.isSelf || !favorite.ready}
                     aria-pressed={favorite.isFavorited}
                     aria-busy={favorite.loading}
-                    aria-label={favorite.isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                    aria-live="polite"
+                    aria-label={
+                      favorite.loading
+                        ? "Salvando favorito"
+                        : favorite.isFavorited
+                          ? `Remover dos favoritos. ${favorite.count} ${favorite.count === 1 ? "pessoa favoritou" : "pessoas favoritaram"} este perfil.`
+                          : `Adicionar aos favoritos. ${favorite.count} ${favorite.count === 1 ? "pessoa favoritou" : "pessoas favoritaram"} este perfil.`
+                    }
                     title={favorite.isSelf ? "Você não pode favoritar o próprio perfil" : (favorite.isFavorited ? "Favorito" : "Favoritar")}
                     className="w-full md:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-black uppercase italic tracking-widest text-xs md:text-sm bg-black/40 backdrop-blur-sm border-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                     style={{
@@ -654,13 +661,18 @@ export function LojistaPublicProfilePage() {
                         aria-hidden="true"
                       />
                     )}
-                    {favorite.loading
-                      ? "Salvando…"
-                      : favorite.isFavorited ? "Favorito" : "Favoritar"}
+                    <span aria-hidden="true">
+                      {favorite.loading
+                        ? "Salvando…"
+                        : favorite.isFavorited ? "Favorito" : "Favoritar"}
+                    </span>
                     <span
                       className="ml-1 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-[10px] font-black bg-black/60 border"
                       style={{ borderColor: `rgb(${theme.rgb})`, color: `rgb(${theme.rgb})` }}
-                      aria-label={`${favorite.count} ${favorite.count === 1 ? "pessoa favoritou" : "pessoas favoritaram"}`}
+                      role="status"
+                      aria-live="polite"
+                      aria-atomic="true"
+                      aria-label={`${favorite.count} ${favorite.count === 1 ? "pessoa favoritou este perfil" : "pessoas favoritaram este perfil"}`}
                       title={`${favorite.count} ${favorite.count === 1 ? "favorito" : "favoritos"}`}
                     >
                       {favorite.count}
