@@ -65,6 +65,19 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
   const [newRole, setNewRole] = useState("");
   const [query, setQuery] = useState("");
   const [charging, setCharging] = useState(false);
+  const [balance, setBalance] = useState<number>(getCachedBalance());
+  const [inlineWarn, setInlineWarn] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeBalance(setBalance);
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!inlineWarn) return;
+    const t = setTimeout(() => setInlineWarn(null), 6000);
+    return () => clearTimeout(t);
+  }, [inlineWarn]);
 
   const togglePreferredService = (label: string) => {
     const has = preferredServices.includes(label);
