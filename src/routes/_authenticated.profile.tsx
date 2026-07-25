@@ -1268,7 +1268,16 @@ function ProfilePage() {
                 <div className="pt-8 space-y-6">
 
                   {/* ACEITA TRABALHOS COMO */}
-                  <div className="pt-6 space-y-3 border-t border-white/5">
+                  <div id="aceita-trabalhos" className="pt-6 space-y-3 border-t border-white/5 scroll-mt-24">
+                    {(() => {
+                      const wmList: string[] = Array.isArray(profile?.work_modes) ? profile.work_modes.filter(Boolean) : [];
+                      if (wmList.length > 0) return null;
+                      return (
+                        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-[11px] text-red-200 font-bold" role="alert">
+                          ⚠️ Escolha ao menos um formato abaixo. Sem isso, o botão <b>Salvar Perfil</b> ficará bloqueado.
+                        </div>
+                      );
+                    })()}
                     <h4 className="text-sm font-black uppercase tracking-tighter text-white">💼 Aceita trabalhos como</h4>
                     <p className="text-xs text-muted-foreground">
                       Selecione todos os formatos de contratação que você aceita. Aparecerá no seu perfil público.
