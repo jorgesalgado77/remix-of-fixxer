@@ -12,6 +12,8 @@ import {
   ChevronRight,
   Expand,
   GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -21,6 +23,7 @@ import { processImage } from '@/utils/image-compression';
 import { validateImage } from '@/utils/image-validation';
 import { supabaseExternal } from '@/lib/supabaseExternal';
 import { ImageEditorModal } from '@/components/ImageEditorModal';
+import { confirmCoins } from '@/components/ConfirmCoinsDialog';
 import {
   DndContext,
   PointerSensor,
@@ -193,9 +196,18 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
       );
       if (extras > 0 && perPhoto > 0) {
         const total = extras * perPhoto;
-        const ok = confirm(
-          `Você está enviando ${extras} foto(s) além da cota grátis (${freePhotosPerSection}/seção).\n\nCusto estimado: ${total} moedas (${perPhoto} moedas por foto extra).\n\nConfirmar upload?`,
-        );
+        const ok = await confirmCoins({
+          title: 'Confirmar fotos extras',
+          cost: total,
+          description: (
+            <>
+              Você está enviando <strong>{extras}</strong> foto(s) além da cota grátis
+              ({freePhotosPerSection}/seção). Será debitado um total de{' '}
+              <strong>{total} moedas</strong> ({perPhoto} por foto extra).
+            </>
+          ),
+          confirmLabel: `Debitar ${total} moedas`,
+        });
         if (!ok) return [];
         let charged = 0;
         for (let i = 0; i < extras; i++) {
@@ -369,7 +381,17 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
     if (chargeUserId && safe.custom.length >= freeSessionsQuota) {
       const { spendCoinsForAction, getActionCost } = await import('@/lib/monetization');
       const cost = getActionCost('extra_photo_session')?.coins ?? 15;
-      const ok = confirm(`Esta nova sessão de fotos custará ${cost} moedas. Confirmar?`);
+      const ok = await confirmCoins({
+        title: 'Nova seção personalizada',
+        cost,
+        description: (
+          <>
+            Você já usou sua cota grátis de <strong>{freeSessionsQuota}</strong> seção(ões). Criar
+            mais uma custará <strong>{cost} moedas</strong>. Deseja continuar?
+          </>
+        ),
+        confirmLabel: `Debitar ${cost} moedas`,
+      });
       if (!ok) return;
       const res = await spendCoinsForAction(chargeUserId, 'extra_photo_session');
       if (!res.ok) {
@@ -398,6 +420,15 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
     onChange({ ...safe, custom: safe.custom.map((s) => (s.id === id ? { ...s, name } : s)) });
     setEditingId(null);
     setEditingName('');
+  };
+  const moveSection = (id: string, dir: -1 | 1) => {
+    const idx = safe.custom.findIndex((s) => s.id === id);
+    if (idx < 0) return;
+    const target = idx + dir;
+    if (target < 0 || target >= safe.custom.length) return;
+    const next = [...safe.custom];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    onChange({ ...safe, custom: next });
   };
 
   const inProgress = uploadProgress.filter((p) => !p.error && p.progress < 100);
@@ -446,7 +477,7 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
           </Button>
         </div>
 
-        {safe.custom.map((section) => (
+        {safe.custom.map((section, sectionIdx) => (
           <div key={section.id} className="rounded-2xl border border-white/10 bg-black/20 p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               {editingId === section.id ? (
@@ -495,14 +526,37 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
                   </Button>
                 </div>
               )}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => removeSection(section.id)}
-                className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-[9px]"
-              >
-                <Trash className="w-3 h-3 mr-1" /> Remover seção
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => moveSection(section.id, -1)}
+                  disabled={sectionIdx === 0}
+                  aria-label="Mover seção para cima"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-white disabled:opacity-30"
+                >
+                  <ArrowUp className="w-3.5 h-3.5" aria-hidden="true" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => moveSection(section.id, 1)}
+                  disabled={sectionIdx === safe.custom.length - 1}
+                  aria-label="Mover seção para baixo"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-white disabled:opacity-30"
+                >
+                  <ArrowDown className="w-3.5 h-3.5" aria-hidden="true" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeSection(section.id)}
+                  aria-label={`Remover seção ${section.name}`}
+                  className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-[9px]"
+                >
+                  <Trash className="w-3 h-3 mr-1" aria-hidden="true" /> Remover
+                </Button>
+              </div>
             </div>
 
             <PhotoGrid
@@ -650,8 +704,30 @@ function PhotoGrid({
     onReorder(arrayMove(photos, oldIndex, newIndex));
   };
 
+  const count = photos.length;
+  const pct = Math.min(100, Math.round((count / max) * 100));
+  const nearLimit = count >= max;
+  const isEmpty = count === 0;
+
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div
+            role="progressbar"
+            aria-valuenow={count}
+            aria-valuemin={0}
+            aria-valuemax={max}
+            aria-label={`Progresso: ${count} de ${max} fotos`}
+            className={`h-full transition-all ${nearLimit ? 'bg-red-400' : 'bg-primary'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className={`text-[10px] font-black uppercase italic ${nearLimit ? 'text-red-300' : 'text-muted-foreground'}`}>
+          {count}/{max}
+        </span>
+      </div>
+
       <div
         onDragEnter={(e) => {
           e.preventDefault();
@@ -674,6 +750,19 @@ function PhotoGrid({
             : 'border-white/10 bg-black/20'
         }`}
       >
+        {isEmpty && canAdd && !busy && (
+          <div className="text-center py-6 space-y-2">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <ImageIcon className="w-6 h-6 text-primary" aria-hidden="true" />
+            </div>
+            <p className="text-xs font-black uppercase italic text-white">Nenhuma foto ainda</p>
+            <p className="text-[10px] text-muted-foreground max-w-xs mx-auto">
+              Arraste imagens aqui ou toque em <strong>Adicionar</strong> abaixo. Você tem{' '}
+              <strong>{max}</strong> vagas disponíveis nesta seção.
+            </p>
+          </div>
+        )}
+
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={ids} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
