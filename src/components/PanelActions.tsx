@@ -43,7 +43,11 @@ export function PanelActions() {
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 md:gap-3">
+    <div
+      className="flex flex-wrap items-center gap-3 md:gap-4 p-1.5 md:p-2 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm"
+      role="toolbar"
+      aria-label="Ações rápidas do painel"
+    >
       <IconLink to="/agenda" label="Agenda" tip="Abrir minha agenda de compromissos">
         <Calendar className="w-5 h-5" aria-hidden="true" />
       </IconLink>
