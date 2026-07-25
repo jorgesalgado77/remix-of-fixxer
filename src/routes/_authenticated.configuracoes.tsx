@@ -342,16 +342,50 @@ function ConfiguracoesPage() {
 
         {/* Aparência */}
         <Section title="Aparência" icon={<Palette className="w-4 h-4" />} accent={theme.hex}>
-          <Toggle
-            label="Tema escuro"
-            hint="Interface otimizada para uso noturno (recomendado)."
-            value={darkMode}
-            onChange={(v) => {
-              setDarkMode(v);
-              persist("fixxer_theme", v ? "dark" : "light");
-              document.documentElement.classList.toggle("light", !v);
-            }}
-          />
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-1.5">
+              Tema
+            </p>
+            <div
+              role="radiogroup"
+              aria-label="Selecionar tema da interface"
+              className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-white/5 border border-white/10"
+            >
+              {(["dark", "light"] as const).map((opt) => {
+                const active = themeMode === opt;
+                const label = opt === "dark" ? "🌙 Escuro" : "☀️ Claro";
+                const hint =
+                  opt === "dark"
+                    ? "Otimizado para uso noturno"
+                    : "Fundo claro com contraste AA";
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={async () => {
+                      const { setTheme } = await import("@/lib/theme");
+                      setTheme(opt);
+                    }}
+                    className={`flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl text-left transition ${
+                      active
+                        ? "bg-primary/15 border border-primary/40 text-primary"
+                        : "bg-transparent border border-transparent text-white/70 hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <span className="text-[11px] font-black uppercase italic tracking-widest">
+                      {label}
+                    </span>
+                    <span className="text-[10px] text-white/50">{hint}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-white/40 mt-2">
+              O tema é aplicado em toda a plataforma e fica salvo neste dispositivo.
+            </p>
+          </div>
           <div className="flex items-center justify-between px-1 py-2 text-xs text-white/60">
             <span className="flex items-center gap-2">
               <Globe className="w-4 h-4" /> Idioma
@@ -359,6 +393,7 @@ function ConfiguracoesPage() {
             <span className="font-bold text-white/80">Português (Brasil)</span>
           </div>
         </Section>
+
 
         {/* Segurança */}
         <Section title="Segurança" icon={<Shield className="w-4 h-4" />} accent={theme.hex}>
