@@ -858,6 +858,136 @@ export function LojistaPublicProfilePage() {
               </section>
             )}
 
+            {/* Perfil salvo pelo dono — Ramo, Serviços, Oferece, Cargos, Contato */}
+            {(() => {
+              const branch = profile?.activity_branch || profile?.main_activity;
+              const preferred: string[] = Array.isArray(profile?.preferred_services) ? profile!.preferred_services! : [];
+              const offerings: string[] = Array.isArray(profile?.offerings)
+                ? (profile!.offerings as string[])
+                : typeof profile?.offerings === 'string' && profile.offerings
+                  ? String(profile.offerings).split(/[,;\n]/).map((s) => s.trim()).filter(Boolean)
+                  : [];
+              const positions: any[] = Array.isArray(profile?.positions) ? profile!.positions! : [];
+              const vehicle = profile?.vehicle_details && typeof profile.vehicle_details === 'object' ? profile.vehicle_details : null;
+              const contactItems: { label: string; value: string }[] = [];
+              if (profile?.whatsapp) contactItems.push({ label: 'WhatsApp', value: profile.whatsapp });
+              if (profile?.phone) contactItems.push({ label: 'Telefone', value: profile.phone });
+              if (profile?.cep) contactItems.push({ label: 'CEP', value: profile.cep });
+              if (profile?.address) contactItems.push({ label: 'Endereço', value: profile.address });
+              if (profile?.neighborhood) contactItems.push({ label: 'Bairro', value: profile.neighborhood });
+              if (profile?.cnpj) contactItems.push({ label: 'CNPJ', value: profile.cnpj });
+
+              const hasAny =
+                branch || preferred.length || offerings.length || positions.length || profile?.offerings_notes || vehicle || contactItems.length;
+              if (!hasAny) return null;
+
+              return (
+                <section className="rounded-2xl border border-white/10 bg-black/30 p-5 space-y-5">
+                  <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
+                    <Wrench className="w-4 h-4" /> Perfil Profissional
+                  </h2>
+
+                  {branch && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Ramo Principal</p>
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/15 border border-primary/40 text-xs font-black uppercase italic text-primary">
+                        {String(branch)}
+                      </span>
+                    </div>
+                  )}
+
+                  {preferred.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Serviços Preferenciais</p>
+                      <div className="flex flex-wrap gap-2">
+                        {preferred.map((s, i) => (
+                          <span key={`${s}-${i}`} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-bold uppercase italic text-white/90">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(offerings.length > 0 || profile?.offerings_notes || vehicle) && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                        🎁 Oferece
+                      </p>
+                      {offerings.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {offerings.map((o, i) => (
+                            <span key={`${o}-${i}`} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-bold uppercase italic text-emerald-300">
+                              {o}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {vehicle && Object.keys(vehicle).length > 0 && (
+                        <div className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1 mb-3">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                            <Truck className="w-3 h-3" /> Veículo
+                          </p>
+                          <ul className="text-[11px] text-white/85 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                            {Object.entries(vehicle).map(([k, v]) => (
+                              v ? (
+                                <li key={k} className="flex justify-between gap-2 py-0.5 border-b border-white/5 last:border-b-0">
+                                  <span className="text-muted-foreground uppercase text-[9px] font-black tracking-widest">{k}</span>
+                                  <span className="font-bold">{String(v)}</span>
+                                </li>
+                              ) : null
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {profile?.offerings_notes && (
+                        <p className="text-xs italic text-white/70 whitespace-pre-wrap break-words border-l-2 border-primary/40 pl-3">
+                          {profile.offerings_notes}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {positions.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Cargos</p>
+                      <div className="flex flex-wrap gap-2">
+                        {positions.map((p: any, i: number) => {
+                          const label = typeof p === 'string' ? p : (p?.title || p?.name || p?.role);
+                          const primary = typeof p === 'object' && p?.primary;
+                          if (!label) return null;
+                          return (
+                            <span
+                              key={`${label}-${i}`}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase italic border ${primary ? 'bg-amber-500/15 border-amber-400/50 text-amber-300' : 'bg-white/5 border-white/10 text-white/90'}`}
+                            >
+                              {primary && '★ '}{label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {contactItems.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Contato & Localização</p>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {contactItems.map((c) => (
+                          <li key={c.label} className="flex justify-between gap-3 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-[11px]">
+                            <span className="text-muted-foreground uppercase font-black tracking-widest text-[9px]">{c.label}</span>
+                            <span className="font-bold text-white/90 truncate">{c.value}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </section>
+              );
+            })()}
+
+
+
             {/* Galeria de Fotos */}
             <section className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-3">
