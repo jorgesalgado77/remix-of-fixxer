@@ -357,7 +357,31 @@ export function RecentPartnersCarousel() {
             Conecte-se com profissionais e fornecedores recomendados na sua região.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          {/* Filtro por categoria: Todos / 🛠️ Prestadores / 🚚 Parceiros B2B */}
+          <div role="group" aria-label="Filtrar por categoria" className="inline-flex items-center bg-white/5 border border-white/10 rounded-full p-0.5">
+            {([
+              { v: "all" as const, label: "Todos", color: "#00FF87" },
+              { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
+              { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
+            ]).map((opt) => {
+              const active = kindFilter === opt.v;
+              return (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => setKindFilter(opt.v)}
+                  aria-pressed={active}
+                  className="text-[10px] md:text-[11px] font-bold px-2.5 py-1 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                  style={active
+                    ? { background: opt.color, color: "#000", ["--tw-ring-color" as any]: opt.color }
+                    : { color: "rgba(255,255,255,0.7)", ["--tw-ring-color" as any]: opt.color }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
           <label className="sr-only" htmlFor="partners-sort">Ordenar por</label>
           <div className="relative">
             <ArrowUpDown className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-white/60 pointer-events-none" aria-hidden="true" />
@@ -375,6 +399,7 @@ export function RecentPartnersCarousel() {
               </option>
             </select>
           </div>
+
           <button
             type="button"
             onClick={handleRefresh}
