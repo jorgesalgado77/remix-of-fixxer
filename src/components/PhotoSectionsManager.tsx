@@ -493,118 +493,137 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
           </Button>
         </div>
 
-        {safe.custom.map((section, sectionIdx) => (
-          <div key={section.id} className="rounded-2xl border border-white/10 bg-black/20 p-4 space-y-3 w-full overflow-hidden">
-            {/* HEADER 2 LINHAS - Mobile-first, sem estouro */}
-            {editingId === section.id ? (
-              <div className="flex items-center gap-2 w-full">
-                <Input
-                  autoFocus
-                  value={editingName}
-                  onChange={(e) => setEditingName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveSectionName(section.id);
-                  }}
-                  placeholder="Ex.: Cozinhas"
-                  className="h-9 bg-black/40 border-white/10 rounded-lg text-xs flex-1 min-w-0"
-                />
-                <Button
-                  size="sm"
-                  onClick={() => saveSectionName(section.id)}
-                  className="h-9 px-3 bg-primary text-black rounded-lg shrink-0"
-                  aria-label="Salvar nome"
-                >
-                  <Check className="w-3 h-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setEditingId(null);
-                    setEditingName('');
-                  }}
-                  className="h-9 px-3 shrink-0"
-                  aria-label="Cancelar edição"
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
-            ) : (
-              <div className="w-full space-y-2">
-                {/* Linha 1: Título + Contador */}
-                <div className="w-full flex items-center gap-2 min-w-0">
-                  <span className="text-xs font-black uppercase italic text-white truncate flex-1 min-w-0" title={section.name}>
-                    {section.name}
-                  </span>
-                  <span className="text-[10px] font-bold text-muted-foreground shrink-0">
-                    ({section.photos.length}/{L.maxCustomPhotos})
-                  </span>
-                </div>
-                {/* Linha 2: Ações compactas (ícones) */}
-                <div className="w-full flex items-center justify-between gap-1">
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditingId(section.id);
-                        setEditingName(section.name);
-                      }}
-                      aria-label={`Renomear seção ${section.name}`}
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-white/5 rounded-lg"
-                    >
-                      <Pencil className="w-3.5 h-3.5" aria-hidden />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => moveSection(section.id, -1)}
-                      disabled={sectionIdx === 0}
-                      aria-label="Mover seção para cima"
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-white/5 disabled:opacity-30 rounded-lg"
-                    >
-                      <ArrowUp className="w-3.5 h-3.5" aria-hidden />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => moveSection(section.id, 1)}
-                      disabled={sectionIdx === safe.custom.length - 1}
-                      aria-label="Mover seção para baixo"
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-white/5 disabled:opacity-30 rounded-lg"
-                    >
-                      <ArrowDown className="w-3.5 h-3.5" aria-hidden />
-                    </Button>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => removeSection(section.id)}
-                    aria-label={`Remover seção ${section.name}`}
-                    title="Remover seção"
-                    className="h-8 w-8 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg shrink-0"
-                  >
-                    <Trash className="w-3.5 h-3.5" aria-hidden />
-                  </Button>
-                </div>
-              </div>
-            )}
+        <DndContext
+          sensors={sectionSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleSectionDragEnd}
+        >
+          <SortableContext
+            items={safe.custom.map((s) => s.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {safe.custom.map((section, sectionIdx) => (
+              <SortableSection key={section.id} id={section.id}>
+                {({ dragHandle }) => (
+                  <>
+                    {/* HEADER 2 LINHAS - Mobile-first, sem estouro */}
+                    {editingId === section.id ? (
+                      <div className="flex items-center gap-2 w-full">
+                        <Input
+                          autoFocus
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveSectionName(section.id);
+                          }}
+                          placeholder="Ex.: Cozinhas"
+                          className="h-9 bg-black/40 border-white/10 rounded-lg text-xs flex-1 min-w-0"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => saveSectionName(section.id)}
+                          className="h-9 px-3 bg-primary text-black rounded-lg shrink-0"
+                          aria-label="Salvar nome"
+                        >
+                          <Check className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingId(null);
+                            setEditingName('');
+                          }}
+                          className="h-9 px-3 shrink-0"
+                          aria-label="Cancelar edição"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="w-full space-y-2">
+                        {/* Linha 1: Alça de arrastar + Título + Contador */}
+                        <div className="w-full flex items-center gap-2 min-w-0">
+                          {dragHandle}
+                          <span
+                            className="text-xs font-black uppercase italic text-white truncate flex-1 min-w-0"
+                            title={section.name}
+                          >
+                            {section.name}
+                          </span>
+                          <span className="text-[10px] font-bold text-muted-foreground shrink-0">
+                            ({section.photos.length}/{L.maxCustomPhotos})
+                          </span>
+                        </div>
+                        {/* Linha 2: Ações compactas (ícones) */}
+                        <div className="w-full flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingId(section.id);
+                                setEditingName(section.name);
+                              }}
+                              aria-label={`Renomear seção ${section.name}`}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-white/5 rounded-lg"
+                            >
+                              <Pencil className="w-3.5 h-3.5" aria-hidden />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => moveSection(section.id, -1)}
+                              disabled={sectionIdx === 0}
+                              aria-label="Mover seção para cima"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-white/5 disabled:opacity-30 rounded-lg"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" aria-hidden />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => moveSection(section.id, 1)}
+                              disabled={sectionIdx === safe.custom.length - 1}
+                              aria-label="Mover seção para baixo"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-white hover:bg-white/5 disabled:opacity-30 rounded-lg"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" aria-hidden />
+                            </Button>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeSection(section.id)}
+                            aria-label={`Remover seção ${section.name}`}
+                            title="Remover seção"
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg shrink-0"
+                          >
+                            <Trash className="w-3.5 h-3.5" aria-hidden />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
-
-            <PhotoGrid
-              photos={section.photos}
-              max={L.maxCustomPhotos}
-              onAdd={(files) => handleAddCustom(section.id, files)}
-              onRemove={(item) => removeCustom(section.id, item)}
-              onReplace={(item, file) => replaceCustom(section.id, item, file)}
-              onReorder={(next) => reorderCustom(section.id, next)}
-              onOpen={openLightbox}
-              busy={busyKey === section.id}
-              progressList={busyKey === section.id ? [...inProgress, ...errorList] : []}
-            />
-          </div>
-        ))}
+                    <PhotoGrid
+                      photos={section.photos}
+                      max={L.maxCustomPhotos}
+                      onAdd={(files) => handleAddCustom(section.id, files)}
+                      onRemove={(item) => removeCustom(section.id, item)}
+                      onReplace={(item, file) => replaceCustom(section.id, item, file)}
+                      onReorder={(next) => reorderCustom(section.id, next)}
+                      onOpen={openLightbox}
+                      busy={busyKey === section.id}
+                      progressList={busyKey === section.id ? [...inProgress, ...errorList] : []}
+                    />
+                  </>
+                )}
+              </SortableSection>
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
+
 
       {editorFiles && (
         <ImageEditorModal
