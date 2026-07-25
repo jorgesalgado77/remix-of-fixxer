@@ -13,6 +13,9 @@ import {
   Paperclip,
   UserCircle2,
   X,
+  Check,
+  CheckCheck,
+  AlertCircle,
 } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
