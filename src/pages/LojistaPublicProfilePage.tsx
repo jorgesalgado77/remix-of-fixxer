@@ -49,6 +49,7 @@ interface StoreProfile {
   video_urls?: string[];
   document_urls?: string[];
   activity_branch?: string;
+  about_bio?: string;
   specialties?: { id: string; title: string; description: string; featured?: boolean }[];
   photo_sections?: {
     showroom?: (string | { url: string; thumbUrl?: string; createdAt?: string })[];
