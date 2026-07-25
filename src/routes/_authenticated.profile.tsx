@@ -358,21 +358,38 @@ function ProfilePage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(profile)
-        .eq('id', profile.id);
+      // Cria payload mutável — remove colunas que não existem no schema (retry automático)
+      const payload: any = { ...profile };
+      let lastError: any = null;
+      let attempts = 0;
+      while (attempts < 10) {
+        attempts++;
+        const { error } = await supabase
+          .from('profiles')
+          .update(payload)
+          .eq('id', profile.id);
+        if (!error) { lastError = null; break; }
+        lastError = error;
+        // Tenta extrair nome da coluna faltante: "Could not find the 'X' column"
+        const m = (error.message || '').match(/'([^']+)'\s+column/i);
+        if (m && m[1] && m[1] in payload) {
+          console.warn(`[profile.save] Removendo coluna inexistente: ${m[1]}`);
+          delete payload[m[1]];
+          continue;
+        }
+        break;
+      }
 
-      if (error) {
-        // marca rascunho como pendente para retry automático quando a conexão voltar
+      if (lastError) {
         if (profileId == null && profile?.id) {
           markPending(profile.id, true);
         }
         toast.error("Erro ao salvar perfil", {
-          description: error.message || "Falha desconhecida ao gravar no banco.",
+          description: lastError.message || "Falha desconhecida ao gravar no banco.",
         });
         return;
       }
+
 
       // Refetch imediato para refletir activity_branch/default_radius/about_bio
       const { data: fresh, error: refetchErr } = await supabase
@@ -1114,6 +1131,7 @@ function ProfilePage() {
                 portfolioImages={profile?.portfolio_media}
                 companyName={profile?.company_name}
                 fullName={profile?.full_name}
+                displayName={profile?.display_name}
                 accentHex={theme.hex}
               />
             )}
