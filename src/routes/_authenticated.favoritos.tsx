@@ -201,6 +201,10 @@ function FavoritosPage() {
   const [loadingProfiles, setLoadingProfiles] = useState(true);
   const [loadingAds, setLoadingAds] = useState(true);
   const [query, setQuery] = useState("");
+  const PAGE_SIZE = 12;
+  const [visibleProfiles, setVisibleProfiles] = useState(PAGE_SIZE);
+  const [visibleAds, setVisibleAds] = useState(PAGE_SIZE);
+
 
   // Descobre usuário logado e usa fallback local apenas para identificar a conta atual.
   useEffect(() => {
