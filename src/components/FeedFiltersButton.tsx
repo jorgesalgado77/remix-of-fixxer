@@ -224,12 +224,10 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
             searchInput ? "" : "max-w-3xl mx-auto"
           }`}
         >
-          {searchInput && <div className="flex-1 min-w-0">{searchInput}</div>}
-
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex items-center gap-2 rounded-2xl border px-3 py-2 text-[11px] font-black uppercase tracking-wide transition-colors shrink-0"
+            className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors shrink-0"
             style={{
               borderColor: hexToRgba(accent, 0.35),
               backgroundColor: hexToRgba(accent, 0.08),
@@ -239,10 +237,10 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
             aria-label="Abrir filtros"
           >
             <SlidersHorizontal className="w-4 h-4" />
-            Filtros
+            <span>Filtros</span>
             {activeCount > 0 && (
               <span
-                className="ml-1 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full text-[10px] font-black"
+                className="ml-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full text-[10px] font-black"
                 style={{ backgroundColor: accent, color: "#0A0A0B" }}
               >
                 {activeCount}
@@ -250,27 +248,8 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
             )}
           </button>
 
-          {typeof resultCount === "number" && (
-            <div
-              className="flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest shrink-0"
-              style={{
-                borderColor: hexToRgba(accent, 0.35),
-                color: accent,
-                backgroundColor: hexToRgba(accent, 0.06),
-              }}
-              aria-live="polite"
-              aria-busy={loading || applying}
-            >
-              {loading || applying ? (
-                <span className="animate-pulse">Aplicando…</span>
-              ) : (
-                <>
-                  {resultCount} {resultLabel}
-                  {resultCount === 1 ? "" : "s"}
-                </>
-              )}
-            </div>
-          )}
+          {searchInput && <div className="flex-1 w-full min-w-0">{searchInput}</div>}
+
 
 
           {!searchInput && (
