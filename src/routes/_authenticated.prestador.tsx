@@ -112,7 +112,7 @@ function PrestadorDashboard() {
             <p className="text-[10px] text-muted-foreground font-medium mb-4 italic">
               O saldo de <span className="text-white font-bold tracking-tighter">R$ 1.250,00</span> está retido e será liberado após o upload da foto de conclusão.
             </p>
-            <button className="w-full py-3 rounded-xl bg-[#00FF87]/10 border border-[#00FF87]/20 text-[9px] font-black text-[#00FF87] uppercase tracking-widest flex items-center justify-center gap-2">
+            <button className="w-full py-3 rounded-xl bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest flex items-center justify-center gap-2">
               <Camera className="w-3.5 h-3.5" /> Enviar Comprovação Final
             </button>
           </div>
