@@ -133,6 +133,20 @@ describe("chat-peer-profile", () => {
     expect(b.name).toBe(a.name);
   });
 
+  it("refresh option bypasses cache to load latest display name/avatar", async () => {
+    state.profilesByUser = { id: "row-u7", user_id: "u7", display_name: "Nome Antigo", avatar_url: "http://old.png" };
+    const a = await resolvePeerProfile("u7");
+    expect(a.name).toBe("Nome Antigo");
+
+    state.profilesByUser = { id: "row-u7", user_id: "u7", display_name: "Nome Novo", avatar_url: "http://new.png" };
+    const cached = await resolvePeerProfile("u7");
+    expect(cached.name).toBe("Nome Antigo");
+
+    const refreshed = await resolvePeerProfile("u7", { refresh: true });
+    expect(refreshed.name).toBe("Nome Novo");
+    expect(refreshed.avatarUrl).toBe("http://new.png");
+  });
+
   it("initialsOf handles edge cases", () => {
     expect(initialsOf("")).toBe("?");
     expect(initialsOf("único")).toBe("Ú");
