@@ -45,6 +45,7 @@ export function LiveProfilePreview({
   offeringsNotes,
   vehicleType,
   vehicleDescription,
+  specialties,
 }: Props) {
   const custom = sections?.custom ?? [];
   const showroom = sections?.showroom ?? [];
