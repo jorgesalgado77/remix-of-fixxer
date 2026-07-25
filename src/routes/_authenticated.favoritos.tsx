@@ -208,7 +208,7 @@ function FavoritosPage() {
         return {
           id: r.id,
           userId: r.favorited_user_id,
-          name: p.full_name || p.name || "Profissional Fixxer",
+          name: p.full_name || p.name || "Perfil salvo",
           avatarUrl: p.avatar_url || p.avatar || p.photo_url || null,
           kind: classifyRole(p.role),
           branch: p.activity_branch || null,
