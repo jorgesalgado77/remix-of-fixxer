@@ -602,6 +602,7 @@ export function RecentPartnersCarousel() {
                 key={p.id}
                 ref={(el) => { cardRefs.current[idx] = el; }}
                 data-partner-id={p.id}
+                data-partner-avatar={avatarUrl ?? ""}
                 type="button"
                 role="listitem"
                 onClick={() => openProfile(p)}
