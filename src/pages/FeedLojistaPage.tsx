@@ -1154,6 +1154,19 @@ export default function FeedLojistaPage() {
           }
         }}
         onClose={() => setDetailsFor(null)}
+        locked={detailsFor ? !detailsFor.author.isMine && !postUnlock.isUnlocked(detailsFor.id) : false}
+        unlockCost={postUnlock.cost}
+        onUnlock={async () => {
+          if (!detailsFor) return false;
+          return await postUnlock.unlock(detailsFor.id);
+        }}
+        onCandidatar={() => {
+          if (detailsFor) {
+            const p = detailsFor;
+            setDetailsFor(null);
+            setProposalFor(p);
+          }
+        }}
       />
     </div>
   );
