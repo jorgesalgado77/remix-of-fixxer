@@ -617,23 +617,29 @@ function ConversationPage() {
         });
       });
     }
-    const optimisticRows: MessageRow[] = optimBatch.map((o) => {
+    const optimisticRows: MessageRow[] = optimBatch.map((o, i) => {
       let previewUrl: string | null = null;
       let previewType: string | null = null;
       if (o.file && (o.file.type.startsWith("image/") || o.file.type.startsWith("video/"))) {
         try { previewUrl = URL.createObjectURL(o.file); previewType = o.file.type; } catch {}
       }
+      // created_at incrementa 1ms por item, preservando a ordem original do lote
+      // mesmo que uploads em paralelo terminem em tempos diferentes.
+      const baseTs = Date.now() + i;
       return {
         id: o.clientId,
         sender_id: userId,
         recipient_id: peerId,
         content: o.text || null,
-        created_at: new Date().toISOString(),
+        created_at: new Date(baseTs).toISOString(),
         read: false,
         _pending: true,
         _clientId: o.clientId,
         _draftText: o.text,
         _draftFile: o.file,
+        _batchIndex: i,
+        _uploadPct: o.file ? 0 : undefined,
+        _uploading: !!o.file,
         // Preview local imediato (persiste mesmo se o upload falhar)
         attachment_url: previewUrl,
         attachment_type: previewType,
