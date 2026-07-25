@@ -270,6 +270,8 @@ function ChatInboxPage() {
       window.removeEventListener("fixxer:role-changed", syncRole as any);
       window.removeEventListener("fixxer:chat-prefs-changed", onPrefs as any);
       window.removeEventListener("fixxer:messages-read", onPrefs as any);
+      window.removeEventListener("fixxer:message-sent", onMessageSent as any);
+
       try { authSub?.subscription?.unsubscribe(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
     };
