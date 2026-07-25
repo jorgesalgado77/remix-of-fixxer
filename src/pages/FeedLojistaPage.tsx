@@ -677,6 +677,12 @@ export default function FeedLojistaPage() {
 
   const paged = useMemo(() => visible.slice(0, page * PAGE_SIZE), [visible, page]);
   const hasMore = paged.length < visible.length;
+  useFeedPreload(
+    visible,
+    paged.length,
+    PAGE_SIZE,
+    (post) => post.media?.[0]?.poster ?? post.media?.[0]?.url ?? null,
+  );
 
   // Reset da paginação quando filtro/busca muda
   useEffect(() => {
@@ -700,7 +706,7 @@ export default function FeedLojistaPage() {
           }, 350);
         }
       },
-      { rootMargin: "400px 0px" },
+      { rootMargin: "800px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
