@@ -411,6 +411,8 @@ function ChatInboxPage() {
       // Não-lida: incoming, não lida no DB E posterior ao last_read_at local
       const afterLastRead = !lastReadAt || new Date(m.created_at) > new Date(lastReadAt);
       const isUnreadIncoming = m.recipient_id === userId && !m.read && afterLastRead;
+      const mine = m.sender_id === userId;
+      const rowStatus: LastStatus = m._pending ? "pending" : m._failed ? "failed" : "sent";
       if (!existing) {
         byPeer.set(peerId, {
           peerId,
@@ -421,17 +423,21 @@ function ChatInboxPage() {
           lastAttachmentType: m.attachment_type ?? null,
           lastMessageId: m.id,
           lastAt: m.created_at,
+          lastMine: mine,
+          lastStatus: mine ? rowStatus : null,
           unread: isUnreadIncoming ? 1 : 0,
           archived: archivedSet.has(peerId),
           muted: mutedSet.has(peerId),
         });
       } else {
         if (isUnreadIncoming) existing.unread += 1;
-        if (new Date(m.created_at) > new Date(existing.lastAt)) {
+        if (new Date(m.created_at) >= new Date(existing.lastAt)) {
           existing.lastMessage = m.content || "";
           existing.lastAttachmentType = m.attachment_type ?? null;
           existing.lastMessageId = m.id;
           existing.lastAt = m.created_at;
+          existing.lastMine = mine;
+          existing.lastStatus = mine ? rowStatus : null;
         }
       }
     }
