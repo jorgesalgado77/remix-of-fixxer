@@ -275,18 +275,18 @@ export function LojistaPublicProfilePage() {
   useEffect(() => {
     const id = profile?.user_id;
     if (!id) return;
-    const handler = async (e: Event) => {
-      const detail = (e as CustomEvent).detail as { id?: string } | undefined;
-      if (detail?.id && detail.id !== id) return;
-      try {
+    const handler = createProfileRefetchHandler(
+      id,
+      async (uid) => {
         const { data } = await supabaseExternal
           .from("profiles")
           .select("*")
-          .eq("id", id)
+          .eq("id", uid)
           .single();
-        if (data) setProfile((prev) => ({ ...(prev ?? {}), ...(data as StoreProfile) }));
-      } catch { /* noop */ }
-    };
+        return { data: (data ?? null) as ProfileLike | null };
+      },
+      (updater) => setProfile((prev) => updater(prev as ProfileLike | null) as StoreProfile),
+    );
     window.addEventListener("fixxer:profile-updated", handler as EventListener);
     return () => window.removeEventListener("fixxer:profile-updated", handler as EventListener);
   }, [profile?.user_id]);
