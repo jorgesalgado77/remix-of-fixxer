@@ -129,26 +129,40 @@ function ProfilePage() {
         console.warn("Compressão falhou, usando original:", err);
       }
 
+      const { supabaseExternal } = await import("@/lib/supabaseExternal");
       const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const filePath = `profiles/${profile.id}/${type}-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage.from('media').getPublicUrl(filePath);
+      // Tenta primeiro no cliente externo (fonte de verdade). Faz fallback para o interno se necessário.
+      let publicUrl: string | null = null;
+      try {
+        const { error: upErr } = await supabaseExternal.storage
+          .from('media')
+          .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
+        if (upErr) throw upErr;
+        publicUrl = supabaseExternal.storage.from('media').getPublicUrl(filePath).data.publicUrl;
+      } catch (extErr) {
+        console.warn("[upload] externo falhou, tentando interno:", extErr);
+        const { error: upErr2 } = await supabase.storage
+          .from('media')
+          .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
+        if (upErr2) throw upErr2;
+        publicUrl = supabase.storage.from('media').getPublicUrl(filePath).data.publicUrl;
+      }
 
       const field = type === 'avatar' ? 'avatar_url' : 'banner_url';
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ [field]: publicUrl })
-        .eq('id', profile.id);
-      if (updateError) throw updateError;
+
+      // Atualiza no externo (fonte de verdade) e replica no interno best-effort.
+      try {
+        const { error } = await supabaseExternal.from('profiles').update({ [field]: publicUrl }).eq('id', profile.id);
+        if (error) throw error;
+      } catch (extUpdErr) {
+        console.warn("[profile update] externo falhou, tentando interno:", extUpdErr);
+        await supabase.from('profiles').update({ [field]: publicUrl }).eq('id', profile.id);
+      }
 
       setProfile({ ...profile, [field]: publicUrl });
-      toast.success("Mídia atualizada!", { id: toastId });
+      toast.success(type === 'banner' ? "Banner atualizado!" : "Foto atualizada!", { id: toastId });
     } catch (error: any) {
       console.error("Upload error:", error);
       const msg = error?.message || String(error);
@@ -162,6 +176,7 @@ function ProfilePage() {
       e.target.value = '';
     }
   };
+
 
   const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document') => {
     const files = e.target.files;
