@@ -748,18 +748,24 @@ export function RecentPartnersCarousel() {
                     {meta.emoji} {branchText}
                   </p>
                   {(() => {
-                    // 🎯 Cargo Preferencial (preferred_service) — separado por vírgula/;
-                    const raw = safeStr(p.preferred_service)
+                    // 🎖️ Cargo do profissional — job_roles (CSV "||" ou ",") ou preferred_service como fallback.
+                    // Deduplica em relação ao ramo (branchText) para não repetir "Móveis Planejados".
+                    const jobsRaw = safeStr(p.job_roles);
+                    const prefRaw = safeStr(p.preferred_service)
                       || (Array.isArray(p.preferred_services) ? p.preferred_services.filter(Boolean).join(", ") : safeStr(p.preferred_services as any));
+                    const raw = jobsRaw || prefRaw;
                     if (!raw) return null;
-                    const first = raw.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean).slice(0, 2).join(" • ");
-                    if (!first) return null;
+                    const parts = raw.split(/\|\||[,;\n]/).map((s) => s.trim()).filter(Boolean);
+                    const branchNorm = (branchText || "").trim().toLowerCase();
+                    const filtered = parts.filter((s) => s.toLowerCase() !== branchNorm);
+                    if (filtered.length === 0) return null;
+                    const first = filtered.slice(0, 2).join(" • ");
                     return (
                       <p
                         className="text-[10px] font-bold mt-0.5 truncate text-primary/90"
-                        title={`Cargo preferencial: ${raw}`}
+                        title={`Cargo: ${filtered.join(", ")}`}
                       >
-                        🎯 {first}
+                        🎖️ {first}
                       </p>
                     );
                   })()}
