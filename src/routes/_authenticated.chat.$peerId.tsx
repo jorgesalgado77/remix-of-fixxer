@@ -136,6 +136,11 @@ const PAGE_SIZE = 30;
 function isImageType(t?: string | null) {
   return !!t && t.startsWith("image/");
 }
+function isAudioType(t?: string | null, name?: string | null) {
+  if (t && t.startsWith("audio/")) return true;
+  if (name && /\.(webm|mp3|wav|ogg|m4a|flac|aac|opus)$/i.test(name)) return true;
+  return false;
+}
 
 function newClientId(): string {
   const g: any = typeof globalThis !== "undefined" ? globalThis : {};
@@ -274,7 +279,20 @@ function ConversationPage() {
         const { data, error } = await runQuery(selectCols);
         if (error) throw error;
         return ((data as unknown as MessageRow[]) ?? []).reverse();
-      } catch {
+      } catch (err: any) {
+        // Só cai no fallback (sem colunas de anexo) se o erro for de coluna inexistente.
+        // Qualquer outro erro (rede/RLS) NÃO deve silenciosamente ocultar anexos.
+        const msg = String(err?.message || "");
+        const isMissingColumn =
+          err?.code === "42703" ||
+          /column .* does not exist/i.test(msg) ||
+          /attachment_/i.test(msg);
+        if (!isMissingColumn) {
+          console.error("[chat] loadPage falhou", err);
+          toast.error("Falha ao carregar histórico", { description: msg || "Tente novamente." });
+          return [];
+        }
+        console.warn("[chat] Colunas de anexo ausentes na tabela messages — histórico será exibido sem anexos.");
         const { data } = await runQuery("id, sender_id, recipient_id, content, created_at, read");
         return ((data as unknown as MessageRow[]) ?? []).reverse();
       }
@@ -1803,6 +1821,14 @@ function AttachmentBlock({
 }) {
   const image = isImageType(type);
   const video = !!type && type.startsWith("video/");
+  const audio = isAudioType(type, name);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [rate, setRate] = useState(1);
+  const cycleRate = () => {
+    const next = rate === 1 ? 1.5 : rate === 1.5 ? 2 : 1;
+    setRate(next);
+    if (audioRef.current) audioRef.current.playbackRate = next;
+  };
   return (
     <div className="mb-1 space-y-1">
       {image ? (
@@ -1814,6 +1840,28 @@ function AttachmentBlock({
           preload="metadata"
           className="rounded-lg max-h-64 w-full bg-black"
         />
+      ) : audio ? (
+        <div className={`flex items-center gap-2 p-2 rounded-lg ${mine ? "bg-black/20" : "bg-white/5 border border-white/10"}`}>
+          <audio
+            ref={audioRef}
+            src={url}
+            controls
+            preload="metadata"
+            className="flex-1 min-w-0 h-9"
+            onLoadedMetadata={(e) => { (e.currentTarget as HTMLAudioElement).playbackRate = rate; }}
+          />
+          <button
+            type="button"
+            onClick={cycleRate}
+            title="Velocidade de reprodução"
+            aria-label={`Velocidade ${rate}x, clique para alternar`}
+            className={`shrink-0 text-[10px] font-black tabular-nums px-2 h-7 rounded-md ${
+              mine ? "bg-black/30 hover:bg-black/50 text-white" : "bg-white/10 hover:bg-white/20 text-white"
+            }`}
+          >
+            {rate}x
+          </button>
+        </div>
       ) : (
         <div
           className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${
