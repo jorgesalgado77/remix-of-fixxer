@@ -43,16 +43,33 @@ interface StoreProfile {
   user_id?: string;
   company_name?: string;
   social_name?: string;
+  display_name?: string;
+  full_name?: string;
   cnpj?: string;
+  cep?: string;
+  address?: string;
+  neighborhood?: string;
   city?: string;
   state?: string;
   whatsapp?: string;
+  phone?: string;
   logo_url?: string | null;
   banner_url?: string | null;
-  gallery_urls?: string[];
+  avatar_url?: string | null;
+  gallery_urls?: (string | { url: string; thumbUrl?: string; createdAt?: string })[];
   video_urls?: string[];
   document_urls?: string[];
+  documents?: any[];
+  portfolio_media?: any[];
   activity_branch?: string;
+  main_activity?: string;
+  preferred_services?: string[];
+  offerings?: string[] | string;
+  offerings_notes?: string;
+  positions?: any[];
+  vehicle_details?: Record<string, any>;
+  has_vehicle?: boolean;
+  custom_sections?: any;
   about_bio?: string;
   specialties?: { id: string; title: string; description: string; featured?: boolean }[];
   photo_sections?: {
@@ -61,7 +78,45 @@ interface StoreProfile {
     custom?: { id: string; name: string; photos: (string | { url: string; thumbUrl?: string; createdAt?: string })[] }[];
   } | null;
   created_at?: string;
+  [key: string]: any;
 }
+
+// Converte um registro da tabela `profiles` (usada pelo editor do dono) no
+// formato `StoreProfile` esperado pela página pública, reidratando extras
+// gravados em `custom_sections.__extras` como fallback.
+function mapProfileRowToStore(p: any): StoreProfile {
+  if (!p) return {};
+  const extras = (p?.custom_sections as any)?.__extras || {};
+  const merged: any = { ...extras, ...p };
+  const media = Array.isArray(merged.portfolio_media) ? merged.portfolio_media : [];
+  const docsArr = Array.isArray(merged.documents) ? merged.documents : [];
+  const images = media.filter((m: any) => m?.type === 'image' && m?.url);
+  const videos = media.filter((m: any) => m?.type === 'video' && m?.url);
+  return {
+    ...merged,
+    user_id: merged.id ?? merged.user_id,
+    company_name: merged.display_name || merged.company_name || merged.full_name || 'Perfil FIXXER',
+    social_name: merged.company_name || merged.full_name || merged.display_name,
+    display_name: merged.display_name,
+    full_name: merged.full_name,
+    logo_url: merged.avatar_url ?? merged.logo_url ?? null,
+    banner_url: merged.banner_url ?? null,
+    gallery_urls: images.map((m: any) => ({ url: m.url, createdAt: m.created_at })),
+    video_urls: videos.map((m: any) => m.url).filter(Boolean),
+    document_urls: docsArr
+      .map((d: any) => (typeof d === 'string' ? d : d?.url))
+      .filter(Boolean),
+    activity_branch: merged.activity_branch || merged.main_activity || merged.activity_branch_id,
+    preferred_services: Array.isArray(merged.preferred_services) ? merged.preferred_services : [],
+    offerings: Array.isArray(merged.offerings)
+      ? merged.offerings
+      : typeof merged.offerings === 'string' && merged.offerings.length
+        ? merged.offerings.split(/[,;\n]/).map((s: string) => s.trim()).filter(Boolean)
+        : [],
+    positions: Array.isArray(merged.positions) ? merged.positions : [],
+  };
+}
+
 
 
 interface ServiceOrder {
@@ -200,23 +255,41 @@ export function LojistaPublicProfilePage() {
           return;
         }
 
-        // Tenta primeiro por user_id (id de autenticação); se não achar, tenta pelo id da linha (PK).
-        // Isso garante compatibilidade com URLs antigas que usavam o PK da tabela.
+        // Fonte primária: tabela `profiles` (onde o próprio dono salva pelo editor).
+        // Compatibilidade: se não achar, tenta a legado `store_profiles`.
         let found: any = null;
+        let storeFallback: any = null;
         if (storeId) {
-          const byUser = await supabaseExternal
-            .from("store_profiles")
+          const byProfileId = await supabaseExternal
+            .from("profiles")
             .select("*")
-            .eq("user_id", storeId)
+            .eq("id", storeId)
             .maybeSingle();
-          if (byUser.data) found = byUser.data;
+          if (byProfileId.data) found = mapProfileRowToStore(byProfileId.data);
+
           if (!found) {
-            const byId = await supabaseExternal
+            const byUser = await supabaseExternal
               .from("store_profiles")
               .select("*")
-              .eq("id", storeId)
+              .eq("user_id", storeId)
               .maybeSingle();
-            if (byId.data) found = byId.data;
+            if (byUser.data) storeFallback = byUser.data;
+            if (!storeFallback) {
+              const byId = await supabaseExternal
+                .from("store_profiles")
+                .select("*")
+                .eq("id", storeId)
+                .maybeSingle();
+              if (byId.data) storeFallback = byId.data;
+            }
+          } else {
+            // Complementa com dados legados (photo_sections, specialties, etc.)
+            const byUser = await supabaseExternal
+              .from("store_profiles")
+              .select("*")
+              .eq("user_id", storeId)
+              .maybeSingle();
+            if (byUser.data) storeFallback = byUser.data;
           }
         } else {
           const anyRow = await supabaseExternal
@@ -224,13 +297,25 @@ export function LojistaPublicProfilePage() {
             .select("*")
             .limit(1)
             .maybeSingle();
-          if (anyRow.data) found = anyRow.data;
+          if (anyRow.data) storeFallback = anyRow.data;
         }
-        if (found) setProfile(found as StoreProfile);
+
+        const merged: any = { ...(storeFallback || {}), ...(found || {}) };
+        // Não deixe arrays vazios do editor sobrescreverem arrays legados populados.
+        (["gallery_urls", "video_urls", "document_urls"] as const).forEach((k) => {
+          const primary = (found as any)?.[k];
+          const legacy = (storeFallback as any)?.[k];
+          if ((!primary || (Array.isArray(primary) && primary.length === 0)) && legacy?.length) {
+            merged[k] = legacy;
+          }
+        });
+
+        if (Object.keys(merged).length > 0) setProfile(merged as StoreProfile);
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
 
+
         // O.S. pendentes deste lojista — usa o user_id resolvido do perfil (ou storeId como fallback)
-        const lojistaKey = (found as any)?.user_id || storeId;
+        const lojistaKey = (found as any)?.user_id || (storeFallback as any)?.user_id || storeId;
         if (lojistaKey) {
           const { data: osData } = await supabaseExternal
             .from("service_orders")
@@ -260,7 +345,7 @@ export function LojistaPublicProfilePage() {
   useEffect(() => {
     const key = profile?.user_id;
     if (!key || (storeId && isMockPeerId(storeId))) return;
-    const channel = supabaseExternal
+    const legacy = supabaseExternal
       .channel(`store-profile-${key}`)
       .on(
         "postgres_changes",
@@ -270,10 +355,26 @@ export function LojistaPublicProfilePage() {
         },
       )
       .subscribe();
+    // Também escuta atualizações da tabela `profiles` (onde o editor salva).
+    const primary = supabaseExternal
+      .channel(`profiles-public-${key}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles", filter: `id=eq.${key}` },
+        (payload: any) => {
+          if (payload?.new) {
+            const mapped = mapProfileRowToStore(payload.new);
+            setProfile((prev) => ({ ...(prev ?? {}), ...mapped }));
+          }
+        },
+      )
+      .subscribe();
     return () => {
-      supabaseExternal.removeChannel(channel);
+      supabaseExternal.removeChannel(legacy);
+      supabaseExternal.removeChannel(primary);
     };
   }, [profile?.user_id, storeId]);
+
 
   // Refetch imediato ao receber sinal de perfil atualizado (dono acabou de salvar)
   useEffect(() => {
@@ -756,6 +857,136 @@ export function LojistaPublicProfilePage() {
                 </p>
               </section>
             )}
+
+            {/* Perfil salvo pelo dono — Ramo, Serviços, Oferece, Cargos, Contato */}
+            {(() => {
+              const branch = profile?.activity_branch || profile?.main_activity;
+              const preferred: string[] = Array.isArray(profile?.preferred_services) ? profile!.preferred_services! : [];
+              const offerings: string[] = Array.isArray(profile?.offerings)
+                ? (profile!.offerings as string[])
+                : typeof profile?.offerings === 'string' && profile.offerings
+                  ? String(profile.offerings).split(/[,;\n]/).map((s) => s.trim()).filter(Boolean)
+                  : [];
+              const positions: any[] = Array.isArray(profile?.positions) ? profile!.positions! : [];
+              const vehicle = profile?.vehicle_details && typeof profile.vehicle_details === 'object' ? profile.vehicle_details : null;
+              const contactItems: { label: string; value: string }[] = [];
+              if (profile?.whatsapp) contactItems.push({ label: 'WhatsApp', value: profile.whatsapp });
+              if (profile?.phone) contactItems.push({ label: 'Telefone', value: profile.phone });
+              if (profile?.cep) contactItems.push({ label: 'CEP', value: profile.cep });
+              if (profile?.address) contactItems.push({ label: 'Endereço', value: profile.address });
+              if (profile?.neighborhood) contactItems.push({ label: 'Bairro', value: profile.neighborhood });
+              if (profile?.cnpj) contactItems.push({ label: 'CNPJ', value: profile.cnpj });
+
+              const hasAny =
+                branch || preferred.length || offerings.length || positions.length || profile?.offerings_notes || vehicle || contactItems.length;
+              if (!hasAny) return null;
+
+              return (
+                <section className="rounded-2xl border border-white/10 bg-black/30 p-5 space-y-5">
+                  <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
+                    <Wrench className="w-4 h-4" /> Perfil Profissional
+                  </h2>
+
+                  {branch && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Ramo Principal</p>
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/15 border border-primary/40 text-xs font-black uppercase italic text-primary">
+                        {String(branch)}
+                      </span>
+                    </div>
+                  )}
+
+                  {preferred.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Serviços Preferenciais</p>
+                      <div className="flex flex-wrap gap-2">
+                        {preferred.map((s, i) => (
+                          <span key={`${s}-${i}`} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-bold uppercase italic text-white/90">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(offerings.length > 0 || profile?.offerings_notes || vehicle) && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                        🎁 Oferece
+                      </p>
+                      {offerings.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {offerings.map((o, i) => (
+                            <span key={`${o}-${i}`} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-bold uppercase italic text-emerald-300">
+                              {o}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {vehicle && Object.keys(vehicle).length > 0 && (
+                        <div className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1 mb-3">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                            <Truck className="w-3 h-3" /> Veículo
+                          </p>
+                          <ul className="text-[11px] text-white/85 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                            {Object.entries(vehicle).map(([k, v]) => (
+                              v ? (
+                                <li key={k} className="flex justify-between gap-2 py-0.5 border-b border-white/5 last:border-b-0">
+                                  <span className="text-muted-foreground uppercase text-[9px] font-black tracking-widest">{k}</span>
+                                  <span className="font-bold">{String(v)}</span>
+                                </li>
+                              ) : null
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {profile?.offerings_notes && (
+                        <p className="text-xs italic text-white/70 whitespace-pre-wrap break-words border-l-2 border-primary/40 pl-3">
+                          {profile.offerings_notes}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {positions.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Cargos</p>
+                      <div className="flex flex-wrap gap-2">
+                        {positions.map((p: any, i: number) => {
+                          const label = typeof p === 'string' ? p : (p?.title || p?.name || p?.role);
+                          const primary = typeof p === 'object' && p?.primary;
+                          if (!label) return null;
+                          return (
+                            <span
+                              key={`${label}-${i}`}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase italic border ${primary ? 'bg-amber-500/15 border-amber-400/50 text-amber-300' : 'bg-white/5 border-white/10 text-white/90'}`}
+                            >
+                              {primary && '★ '}{label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {contactItems.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Contato & Localização</p>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {contactItems.map((c) => (
+                          <li key={c.label} className="flex justify-between gap-3 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-[11px]">
+                            <span className="text-muted-foreground uppercase font-black tracking-widest text-[9px]">{c.label}</span>
+                            <span className="font-bold text-white/90 truncate">{c.value}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </section>
+              );
+            })()}
+
+
 
             {/* Galeria de Fotos */}
             <section className="space-y-4">
