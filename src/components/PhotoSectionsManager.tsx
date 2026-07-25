@@ -418,19 +418,8 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
         busy={busyKey === 'showroom'}
         progressList={busyKey === 'showroom' ? [...inProgress, ...errorList] : []}
       />
-      <PhotoBlock
-        title="Montagens Realizadas"
-        icon={<ImageIcon className="w-3 h-3 text-primary" />}
-        photos={safe.assemblies}
-        max={L.maxAssemblies}
-        onAdd={handleAddAssemblies}
-        onRemove={removeAssemblies}
-        onReplace={replaceAssemblies}
-        onReorder={reorderAssemblies}
-        onOpen={openLightbox}
-        busy={busyKey === 'assemblies'}
-        progressList={busyKey === 'assemblies' ? [...inProgress, ...errorList] : []}
-      />
+
+
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
