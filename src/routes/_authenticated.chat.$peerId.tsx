@@ -536,9 +536,11 @@ function ConversationPage() {
       try { sendTypingStop(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
       if (presenceChannel) { try { supabaseExternal.removeChannel(presenceChannel); } catch {} }
+      if (inboxTypingChannelRef.current) { try { supabaseExternal.removeChannel(inboxTypingChannelRef.current); } catch {} inboxTypingChannelRef.current = null; }
       if (unsubPeerRead) { try { unsubPeerRead(); } catch {} }
       presenceRef.current = null;
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peerId, loadPage]);
 
