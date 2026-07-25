@@ -1318,6 +1318,14 @@ function ConversationPage() {
               </div>
             </div>
           )}
+          {peerAvailable === false && (
+            <div className="mb-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-[11px] font-bold leading-snug">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                Este usuário está <strong>indisponível</strong> no momento. Sua tentativa foi registrada — ele será avisado ao voltar.
+              </span>
+            </div>
+          )}
           {guardBlocked && (
             <div className="mb-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/50 text-red-300 text-[11px] font-bold leading-snug">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
