@@ -591,6 +591,32 @@ export function LojistaPublicProfilePage() {
   // Botão Favoritar: persiste em favorite_users (Supabase) com fallback local.
   const favorite = useFavoriteUser(profile?.user_id ?? null);
 
+  // Coordenadas do usuário logado para cálculo de distância até o perfil visitado.
+  const userCoords = useUserCoords();
+  const distanceKm = useMemo(() => {
+    if (!userCoords) return null;
+    const pLat = Number((profile as any)?.lat);
+    const pLng = Number((profile as any)?.lng);
+    const target = Number.isFinite(pLat) && Number.isFinite(pLng)
+      ? { lat: pLat, lng: pLng }
+      : cityCoords(profile?.city);
+    if (!target) return null;
+    const km = haversineKm(userCoords, target);
+    return Number.isFinite(km) ? km : null;
+  }, [userCoords, profile?.city, (profile as any)?.lat, (profile as any)?.lng]);
+  const distanceLabel = distanceKm == null
+    ? null
+    : distanceKm < 10 ? `${distanceKm.toFixed(1)} km` : `${Math.round(distanceKm)} km`;
+
+  // Cargo preferencial (posição marcada como primária, ou primeira da lista).
+  const primaryPosition = useMemo(() => {
+    const arr: any[] = Array.isArray(profile?.positions) ? profile!.positions! : [];
+    const pick = arr.find((p) => typeof p === 'object' && p?.primary) || arr[0];
+    if (!pick) return null;
+    const label = typeof pick === 'string' ? pick : (pick?.title || pick?.name || pick?.role);
+    return label ? String(label) : null;
+  }, [profile?.positions]);
+
   const submitReview = async () => {
     if (!newComment.trim()) {
       toast.error("Escreva um comentário antes de enviar.");
