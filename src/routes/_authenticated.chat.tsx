@@ -57,9 +57,16 @@ type MessageRow = {
   attachment_url?: string | null;
   attachment_type?: string | null;
   attachment_name?: string | null;
+  client_message_id?: string | null;
+  // Estado do envio propagado do conversation page:
+  _pending?: boolean;
+  _failed?: boolean;
+  _clientId?: string;
 };
 
 type PeerInfo = { name: string; avatar: string | null; role: string | null };
+
+type LastStatus = "pending" | "failed" | "sent" | null;
 
 type Conversation = {
   peerId: string;
@@ -70,6 +77,8 @@ type Conversation = {
   lastAttachmentType: string | null;
   lastMessageId: string | null;
   lastAt: string;
+  lastMine: boolean;
+  lastStatus: LastStatus;
   unread: number;
   archived: boolean;
   muted: boolean;
