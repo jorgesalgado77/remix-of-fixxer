@@ -904,16 +904,18 @@ function ConversationPage() {
         prev.map((x) => (x._clientId === clientId ? { ...x, _uploading: false, _uploadPct: 100 } : x)),
       );
     } catch (e: any) {
-      toast.error("Retentativa falhou", { description: e?.message });
+      const errMsg = e?.message || "Erro desconhecido de rede";
+      toast.error("Retentativa falhou", { description: errMsg });
       setMessages((prev) =>
-        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true, _uploading: false } : x)),
+        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true, _uploading: false, _error: errMsg } : x)),
       );
       try {
         window.dispatchEvent(
-          new CustomEvent("fixxer:message-failed", { detail: { clientId } }),
+          new CustomEvent("fixxer:message-failed", { detail: { clientId, error: errMsg } }),
         );
       } catch {}
     }
+
   };
 
 
