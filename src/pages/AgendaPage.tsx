@@ -211,6 +211,19 @@ export default function AgendaPage() {
         )}
       </div>
 
+      {selectedDay && (
+        <DayDetailModal
+          dayISO={selectedDay}
+          appointments={dotsByDay.get(selectedDay) ?? []}
+          accent={theme.hex}
+          onClose={() => setSelectedDay(null)}
+          onOpenAppointment={(a) => {
+            setSelectedDay(null);
+            navigate({ to: "/agenda/$id", params: { id: a.id } });
+          }}
+        />
+      )}
+
       {photoModal && (
         <CheckoutPhotosModal
           open={!!photoModal}
