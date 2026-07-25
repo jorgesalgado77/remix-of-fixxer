@@ -743,6 +743,22 @@ export function RecentPartnersCarousel() {
                   >
                     {meta.emoji} {branchText}
                   </p>
+                  {(() => {
+                    // 🎯 Cargo Preferencial (preferred_service) — separado por vírgula/;
+                    const raw = safeStr(p.preferred_service)
+                      || (Array.isArray(p.preferred_services) ? p.preferred_services.filter(Boolean).join(", ") : safeStr(p.preferred_services as any));
+                    if (!raw) return null;
+                    const first = raw.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean).slice(0, 2).join(" • ");
+                    if (!first) return null;
+                    return (
+                      <p
+                        className="text-[10px] font-bold mt-0.5 truncate text-primary/90"
+                        title={`Cargo preferencial: ${raw}`}
+                      >
+                        🎯 {first}
+                      </p>
+                    );
+                  })()}
                   {distanceLabel && location ? (
                     <p className="text-[10px] text-emerald-400 font-semibold mt-1 truncate" title={`a ${distanceLabel} km de você • ${location}`}>
                       📍 a {distanceLabel} km • {location}
