@@ -86,6 +86,7 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
       next = preferredServices.filter((s) => s !== label);
     } else {
       if (preferredServices.length >= MAX_PREFERRED) {
+        setInlineWarn(`Máximo de ${MAX_PREFERRED} serviços preferenciais atingido — desmarque um para trocar.`);
         toast.warning(`Máximo de ${MAX_PREFERRED} serviços preferenciais.`);
         return;
       }
