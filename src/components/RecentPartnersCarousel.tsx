@@ -615,7 +615,7 @@ export function RecentPartnersCarousel() {
                 aria-posinset={idx + 1}
                 aria-setsize={sortedItems.length}
               >
-                <div className="relative w-full h-40 bg-black/40">
+                <div className="relative w-full h-36 bg-black/40">
                   <PartnerAvatar
                     src={avatarUrl}
                     alt={`Foto de ${displayName}`}
