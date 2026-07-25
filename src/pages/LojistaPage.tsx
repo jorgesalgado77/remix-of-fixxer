@@ -733,6 +733,7 @@ export function LojistaDashboard() {
                   </div>
                 )}
               </div>
+              <PanelActions />
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 <span className="text-[10px] font-black text-primary uppercase italic">Sessão Ativa</span>
