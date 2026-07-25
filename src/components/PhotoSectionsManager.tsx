@@ -419,6 +419,15 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
     setEditingId(null);
     setEditingName('');
   };
+  const moveSection = (id: string, dir: -1 | 1) => {
+    const idx = safe.custom.findIndex((s) => s.id === id);
+    if (idx < 0) return;
+    const target = idx + dir;
+    if (target < 0 || target >= safe.custom.length) return;
+    const next = [...safe.custom];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    onChange({ ...safe, custom: next });
+  };
 
   const inProgress = uploadProgress.filter((p) => !p.error && p.progress < 100);
   const errorList = uploadProgress.filter((p) => p.error);
