@@ -55,11 +55,23 @@ const KIND_META: Record<PartnerKind, { emoji: string; label: string; color: stri
   },
 };
 
+// Fallback obrigatório para o Preview: exibido quando o Supabase não retorna registros.
+// Inclui os 4 perfis pedidos + 2 extras para garantir carrossel cheio.
+const FALLBACK_PARTNERS: PartnerCard[] = [
+  { id: "mock-jorge-salgado", full_name: "Jorge Salgado", avatar_url: null, role: "prestador", activity_branch: "Conferente Técnico", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
+  { id: "mock-carlos-silva", full_name: "Carlos Silva", avatar_url: null, role: "prestador", activity_branch: "Montador de Móveis", city: "Sorocaba", uf: "SP", rating: 4.9, created_at: null, _kind: "prestador" },
+  { id: "mock-mdf-cia", full_name: "Mdf & Cia Atacado", avatar_url: null, role: "fornecedor", activity_branch: "Insumos e Ferragens", city: "Sorocaba", uf: "SP", rating: 4.8, created_at: null, _kind: "fornecedor" },
+  { id: "mock-ana-paula", full_name: "Ana Paula", avatar_url: null, role: "prestador", activity_branch: "Designer de Interiores", city: "Votorantim", uf: "SP", rating: 5.0, created_at: null, _kind: "prestador" },
+  { id: "mock-ferragens-real", full_name: "Ferragens Real", avatar_url: null, role: "fornecedor", activity_branch: "Ferragens B2B", city: "Osasco", uf: "SP", rating: 4.9, created_at: null, _kind: "fornecedor" },
+  { id: "mock-rodrigo-marques", full_name: "Rodrigo Marques", avatar_url: null, role: "prestador", activity_branch: "Marcenaria Fina", city: "Campinas", uf: "SP", rating: 4.7, created_at: null, _kind: "prestador" },
+];
+
 export function RecentPartnersCarousel() {
   const navigate = useNavigate();
   const [items, setItems] = useState<PartnerCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [usingFallback, setUsingFallback] = useState(false);
   const [pull, setPull] = useState(0);
   const startY = useRef<number | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -81,9 +93,16 @@ export function RecentPartnersCarousel() {
         })
         .filter((x): x is PartnerCard => !!x)
         .slice(0, 30);
-      setItems(rows);
+      if (rows.length > 0) {
+        setItems(rows);
+        setUsingFallback(false);
+      } else {
+        setItems(FALLBACK_PARTNERS);
+        setUsingFallback(true);
+      }
     } catch {
-      setItems([]);
+      setItems(FALLBACK_PARTNERS);
+      setUsingFallback(true);
     }
   }, []);
 
