@@ -171,6 +171,8 @@ function RootComponent() {
   const category = useContextualCategory(pathname);
 
   useEffect(() => {
+    // Aplica o tema (Escuro/Claro) o quanto antes para evitar flash.
+    void import("../lib/theme").then((m) => m.initTheme());
     fixAuthAndPreview();
     void import("../lib/chat-read-queue").then((m) => m.initChatReadQueue());
     // Registra Service Worker para push notifications (best-effort)
