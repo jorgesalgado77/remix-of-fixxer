@@ -21,6 +21,27 @@ import {
  * Todos os controles são navegáveis por teclado (Tab/Enter/Espaço).
  */
 export function PanelActions() {
+  const [myProfileHref, setMyProfileHref] = useState<string>("/perfil/lojista");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { supabaseExternal } = await import("@/lib/supabaseExternal");
+        const { data } = await supabaseExternal.auth.getUser();
+        const uid =
+          data?.user?.id ||
+          (typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null);
+        if (!cancelled && uid) setMyProfileHref(`/perfil/${uid}`);
+      } catch {
+        /* mantém fallback */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="flex flex-wrap items-center gap-2 md:gap-3">
       <IconLink to="/agenda" label="Agenda" tip="Abrir minha agenda de compromissos">
@@ -29,6 +50,13 @@ export function PanelActions() {
       <IconLink to="/meus-anuncios" label="Meus Anúncios" tip="Gerenciar meus anúncios publicados">
         <Megaphone className="w-5 h-5" aria-hidden="true" />
       </IconLink>
+      <IconLink
+        to={myProfileHref}
+        label="Meu Perfil Público"
+        tip="Ver como meu perfil público aparece para outros usuários"
+      >
+        <UserCircle2 className="w-5 h-5" aria-hidden="true" />
+      </IconLink>
       <IconLink to="/configuracoes" label="Configurações" tip="Configurações do sistema — preferências, notificações e segurança">
         <Settings className="w-5 h-5" aria-hidden="true" />
       </IconLink>
@@ -36,6 +64,7 @@ export function PanelActions() {
     </div>
   );
 }
+
 
 function IconLink({
   to,
