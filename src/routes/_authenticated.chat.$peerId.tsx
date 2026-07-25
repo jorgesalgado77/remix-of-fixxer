@@ -1197,17 +1197,19 @@ function ConversationPage() {
 
   const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
 
-  const peerCategory = roleToCategory(peerRole);
-  const peerTheme = getCategoryTheme(peerCategory);
+  const peerCategory = resolvePeerCategory(peerRole);
+  const peerTheme = getPeerTheme(peerRole);
   const ownCategory = useCurrentCategory();
   const ownTheme = getCategoryTheme(ownCategory);
 
   // Aplica a cor do interlocutor no tema global enquanto a conversa está aberta.
+  // Só sobrescreve quando a categoria do peer é confiável — evita aplicar
+  // tema neutro/errado no restante da UI global.
   useEffect(() => {
-    if (!peerRole) return;
+    if (!peerCategory) return;
     setContextCategoryOverride(peerCategory);
     return () => setContextCategoryOverride(null);
-  }, [peerCategory, peerRole]);
+  }, [peerCategory]);
 
   return (
     <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-32 overscroll-contain">
