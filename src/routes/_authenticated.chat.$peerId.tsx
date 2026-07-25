@@ -1299,6 +1299,14 @@ function ConversationPage() {
             </div>
 
           </div>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="w-9 h-9 shrink-0 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-white"
+            aria-label="Configurações do chat"
+            title="Configurações do chat"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
           <HeaderActionsMenu
             muted={muted}
             archived={archived}
@@ -1309,6 +1317,7 @@ function ConversationPage() {
             onBlock={toggleBlock}
             onExport={exportConversation}
           />
+
 
         </div>
       </header>
