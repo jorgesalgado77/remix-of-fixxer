@@ -1430,6 +1430,18 @@ function ConversationPage() {
             >
               <CalendarPlus className="w-4 h-4" />
             </button>
+            <ChatEmojiPicker
+              disabled={uploading || sending}
+              onPick={(emo) => {
+                const next = (content ?? "") + emo;
+                setContent(next);
+                setDraftText(peerId, next);
+              }}
+            />
+            <ChatVoiceRecorder
+              disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
+              onRecorded={(file) => acceptIncomingFiles([file])}
+            />
             <textarea
               value={content}
               onChange={(e) => { setContent(e.target.value); setDraftText(peerId, e.target.value); sendTyping(); }}
