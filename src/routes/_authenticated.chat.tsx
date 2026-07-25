@@ -83,7 +83,72 @@ function getStoredRole(): string {
   return (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
 }
 
-function ChatInboxPage() {
+function normStr(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+/**
+ * Renderiza `text` destacando trechos que batem com qualquer termo em `terms`
+ * (busca acento-insensível). Retorna nós React seguros contra XSS (sem dangerouslySetInnerHTML).
+ */
+function Highlight({ text, terms, className = "" }: { text: string; terms: string[]; className?: string }) {
+  if (!text) return null;
+  const cleanTerms = terms.filter((t) => t.length > 0);
+  if (cleanTerms.length === 0) return <>{text}</>;
+  const normalized = normStr(text);
+  type Range = { start: number; end: number };
+  const ranges: Range[] = [];
+  for (const t of cleanTerms) {
+    let from = 0;
+    while (from <= normalized.length) {
+      const idx = normalized.indexOf(t, from);
+      if (idx === -1) break;
+      ranges.push({ start: idx, end: idx + t.length });
+      from = idx + t.length;
+    }
+  }
+  if (ranges.length === 0) return <>{text}</>;
+  ranges.sort((a, b) => a.start - b.start);
+  const merged: Range[] = [];
+  for (const r of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && r.start <= last.end) last.end = Math.max(last.end, r.end);
+    else merged.push({ ...r });
+  }
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  merged.forEach((r, i) => {
+    if (cursor < r.start) parts.push(text.slice(cursor, r.start));
+    parts.push(
+      <mark key={i} className={`bg-primary/30 text-primary rounded px-0.5 ${className}`}>
+        {text.slice(r.start, r.end)}
+      </mark>,
+    );
+    cursor = r.end;
+  });
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <>{parts}</>;
+}
+
+/**
+ * Extrai um trecho curto do histórico contendo o primeiro termo encontrado.
+ * Retorna null quando nenhum termo bater (para não poluir o card).
+ */
+function buildHistorySnippet(fullText: string, terms: string[], radius = 30): string | null {
+  if (!fullText || terms.length === 0) return null;
+  const norm = normStr(fullText);
+  for (const t of terms) {
+    const idx = norm.indexOf(t);
+    if (idx === -1) continue;
+    const start = Math.max(0, idx - radius);
+    const end = Math.min(fullText.length, idx + t.length + radius);
+    const prefix = start > 0 ? "…" : "";
+    const suffix = end < fullText.length ? "…" : "";
+    return prefix + fullText.slice(start, end).replace(/\s+/g, " ").trim() + suffix;
+  }
+  return null;
+}
+
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string>(getStoredRole);
