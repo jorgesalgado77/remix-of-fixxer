@@ -224,6 +224,17 @@ export function RecentPartnersCarousel() {
   const [pull, setPull] = useState(0);
   // Cards descartados manualmente pelo usuário quando não têm coordenadas válidas (badge "Sem localização").
   const [dismissedNoGeo, setDismissedNoGeo] = useState<Set<string>>(() => new Set());
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabaseExternal.auth.getUser();
+        if (!cancelled) setCurrentUserId(data?.user?.id ?? null);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const startY = useRef<number | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
