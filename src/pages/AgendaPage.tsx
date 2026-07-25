@@ -150,6 +150,7 @@ export default function AgendaPage() {
           onChange={setMonthCursor}
           dots={dotsByDay}
           accent={theme.hex}
+          onSelectDay={setSelectedDay}
         />
 
         {/* Filtros de status */}
