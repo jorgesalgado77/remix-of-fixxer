@@ -602,7 +602,11 @@ function ProfilePage() {
                         key={opt.value}
                         type="button"
                         onClick={() => {
-                          setProfile({ ...profile, service_radius_km: opt.value });
+                          setProfile({
+                            ...profile,
+                            service_radius_km: opt.value,
+                            default_radius: opt.value,
+                          });
                           try {
                             const cat = roleToCategory(profile?.role);
                             localStorage.setItem(`fixxer_radius_${cat}`, String(opt.value));
