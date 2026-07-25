@@ -100,6 +100,7 @@ type MessageRow = {
   // Cliente apenas:
   _pending?: boolean;
   _failed?: boolean;
+  _delivered?: boolean;
   _clientId?: string;
   _draftText?: string;
   _draftFile?: File | null;
@@ -145,6 +146,24 @@ function ConversationPage() {
   const [uploadingIndex, setUploadingIndex] = useState(0); // índice do arquivo atual
   const fileRef = useRef<HTMLInputElement>(null);
   const [downloads, setDownloads] = useState<Record<string, { pct: number; loading: boolean }>>({});
+
+  // Miniaturas locais (blob URLs) para imagens/vídeos anexados antes de enviar.
+  const pendingPreviews = useMemo(() => {
+    const map = new Map<File, string>();
+    for (const f of pendingFiles) {
+      if (f.type.startsWith("image/") || f.type.startsWith("video/")) {
+        try { map.set(f, URL.createObjectURL(f)); } catch {}
+      }
+    }
+    return map;
+  }, [pendingFiles]);
+  useEffect(() => {
+    return () => {
+      for (const url of pendingPreviews.values()) {
+        try { URL.revokeObjectURL(url); } catch {}
+      }
+    };
+  }, [pendingPreviews]);
 
   // Confirmação de descarte de rascunho (dois cliques)
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
@@ -240,6 +259,7 @@ function ConversationPage() {
             content: m.content,
             created_at: mockMessageIsoAt(m.minutesAgo),
             read: true,
+            _delivered: true,
             attachment_url: m.attachment?.url ?? null,
             attachment_type: m.attachment?.type ?? null,
             attachment_name: m.attachment?.name ?? null,
@@ -575,15 +595,37 @@ function ConversationPage() {
 
     // === MODO MOCK: sem persistência, com auto-resposta simulada ===
     if (isMockPeerId(peerId)) {
-      setTimeout(() => {
+      // Enriquecer as linhas otimistas com URLs de blob para pré-visualizar
+      // imagens/vídeos anexados diretamente nos balões (sem ir ao Storage).
+      const optimIds = new Set(optimisticRows.map((r) => r.id));
+      const enriched = optimisticRows.map((r) => {
+        if (!r._draftFile) return r;
+        try {
+          return {
+            ...r,
+            attachment_url: URL.createObjectURL(r._draftFile),
+            attachment_type: r._draftFile.type || "application/octet-stream",
+            attachment_name: r._draftFile.name,
+          };
+        } catch {
+          return r;
+        }
+      });
+      setMessages((prev) => prev.map((m) => (optimIds.has(m.id) ? enriched.find((e) => e.id === m.id)! : m)));
+
+      const clientIds = optimBatch.map((o) => o.clientId);
+      const patchMine = (patch: Partial<MessageRow>) =>
         setMessages((prev) =>
-          prev.map((m) =>
-            optimBatch.some((o) => o.clientId === m._clientId)
-              ? { ...m, _pending: false, read: true }
-              : m,
-          ),
+          prev.map((m) => (clientIds.includes(m._clientId ?? "") ? { ...m, ...patch } : m)),
         );
-      }, 400);
+
+      // 1) Enviada (single check)
+      setTimeout(() => patchMine({ _pending: false, read: false, _delivered: false }), 350);
+      // 2) Entregue (double check cinza)
+      setTimeout(() => patchMine({ _delivered: true }), 1100);
+      // 3) Lida (double check colorido) — o peer "visualizou" antes de responder
+      setTimeout(() => patchMine({ read: true }), 1900);
+
       const replies = [
         "Perfeito, anotado! 👍",
         "Combinado. Assim que fechar, te aviso por aqui.",
@@ -603,9 +645,10 @@ function ConversationPage() {
             content: reply,
             created_at: new Date().toISOString(),
             read: true,
+            _delivered: true,
           },
         ]);
-      }, 2200);
+      }, 2400);
       setSending(false);
       return;
     }
@@ -966,19 +1009,26 @@ function ConversationPage() {
                               ? peerLastReadAt
                               : null;
                           const isRead = !!m.read || !!seenAt;
+                          const isDelivered = isRead || !!m._delivered;
+                          const icon = isRead ? (
+                            <CheckCheck className="w-3 h-3 text-sky-300 inline" />
+                          ) : isDelivered ? (
+                            <CheckCheck className="w-3 h-3 text-white/60 inline" />
+                          ) : (
+                            <Check className="w-3 h-3 inline" />
+                          );
+                          const label = isRead
+                            ? seenAt
+                              ? `Lida ${new Date(seenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                              : "Lida"
+                            : isDelivered
+                              ? "Entregue"
+                              : "Enviada";
                           return (
                             <span className="inline-flex items-center gap-0.5">
                               {" · "}
-                              {isRead ? (
-                                <CheckCheck className="w-3 h-3 text-sky-300 inline" />
-                              ) : (
-                                <Check className="w-3 h-3 inline" />
-                              )}
-                              {isRead
-                                ? seenAt
-                                  ? `Visto ${new Date(seenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-                                  : "Visto"
-                                : "Enviada"}
+                              {icon}
+                              {label}
                             </span>
                           );
                         })()}
@@ -1044,20 +1094,34 @@ function ConversationPage() {
                 {pendingFiles.map((f, idx) => {
                   const isImg = f.type.startsWith("image/");
                   const isVid = f.type.startsWith("video/");
+                  const preview = pendingPreviews.get(f);
                   return (
-                    <div key={`${f.name}-${idx}`} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs max-w-[240px]">
-                      {isImg ? <ImageIcon className="w-3.5 h-3.5 text-primary shrink-0" />
-                        : isVid ? <VideoIcon className="w-3.5 h-3.5 text-primary shrink-0" />
-                        : <FileText className="w-3.5 h-3.5 text-primary shrink-0" />}
-                      <span className="truncate max-w-[110px]">{f.name}</span>
-                      <span className="text-muted-foreground text-[10px]">{Math.round(f.size / 1024)}KB</span>
+                    <div key={`${f.name}-${idx}`} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-2 py-1.5 text-xs max-w-[260px]">
+                      {isImg && preview ? (
+                        <img src={preview} alt={f.name} className="w-10 h-10 rounded-md object-cover shrink-0 border border-white/10" />
+                      ) : isVid && preview ? (
+                        <div className="relative w-10 h-10 rounded-md overflow-hidden shrink-0 border border-white/10 bg-black">
+                          <video src={preview} className="w-full h-full object-cover" muted />
+                          <VideoIcon className="w-3 h-3 text-white absolute bottom-0.5 right-0.5 drop-shadow" />
+                        </div>
+                      ) : isImg ? (
+                        <ImageIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                      ) : isVid ? (
+                        <VideoIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                      ) : (
+                        <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                      )}
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate max-w-[130px]">{f.name}</span>
+                        <span className="text-muted-foreground text-[10px]">{Math.round(f.size / 1024)}KB</span>
+                      </div>
                       <button
                         onClick={() => {
                           const next = pendingFiles.filter((_, i) => i !== idx);
                           setPendingFiles(next);
                           setDraftFiles(peerId, next);
                         }}
-                        className="w-5 h-5 rounded-md hover:bg-white/10 flex items-center justify-center"
+                        className="w-5 h-5 rounded-md hover:bg-white/10 flex items-center justify-center ml-auto"
                         aria-label={`Remover ${f.name}`}
                         disabled={uploading || sending}
                       >
