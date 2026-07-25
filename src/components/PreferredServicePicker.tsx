@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
-import { Check, Star, Plus, X, Search, Briefcase, Sparkles, Coins } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Check, Star, Plus, X, Search, Briefcase, Sparkles, Coins, AlertTriangle } from "lucide-react";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
 import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { useJobRoles } from "@/hooks/use-job-roles";
 import { toast } from "sonner";
-import { consumeCoins, getCachedBalance, getCurrentUserId } from "@/lib/coins";
+import { consumeCoins, getCachedBalance, getCurrentUserId, subscribeBalance } from "@/lib/coins";
 import { confirmCoins } from "@/components/ConfirmCoinsDialog";
 import type { PlanId } from "@/lib/monetization";
 
