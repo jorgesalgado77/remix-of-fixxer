@@ -28,14 +28,14 @@ function AdminDisputesPage() {
   const [selected, setSelected] = useState<DisputeWithContext | null>(null);
 
   useEffect(() => {
-    const email = (localStorage.getItem("fixxer_user_email") || "").trim().toLowerCase();
-    const role = (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
-    if (email !== "jorgericardosalgado@gmail.com" && role !== "admin") {
-      navigate({ to: "/dashboard" as any });
-      return;
-    }
-    setOk(true);
+    (async () => {
+      const { isCurrentUserAdmin } = await import("@/lib/current-user");
+      const ok = await isCurrentUserAdmin(true);
+      if (!ok) { navigate({ to: "/dashboard" as any }); return; }
+      setOk(true);
+    })();
   }, [navigate]);
+
 
   const load = useCallback(async () => {
     try {

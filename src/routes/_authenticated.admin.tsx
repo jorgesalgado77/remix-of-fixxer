@@ -45,20 +45,18 @@ export function AdminDashboardComponent() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const checkAdminAccess = async () => {
-      const email = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_email') || '' : '';
-      const role = typeof window !== 'undefined' ? localStorage.getItem('fixxer_user_role') || '' : '';
-      
-      if (email.trim() !== 'jorgericardosalgado@gmail.com' && role.toLowerCase() !== 'admin') {
+    (async () => {
+      const { isCurrentUserAdmin } = await import("@/lib/current-user");
+      const ok = await isCurrentUserAdmin(true);
+      if (!ok) {
         console.warn("[ADMIN SECURITY]: Acesso negado. Redirecionando para a Dashboard...");
         navigate({ to: '/dashboard' as any });
         return;
       }
       setLoading(false);
-    };
-
-    checkAdminAccess();
+    })();
   }, [navigate]);
+
 
   if (loading) {
     return (

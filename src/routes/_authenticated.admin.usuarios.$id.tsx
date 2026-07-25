@@ -49,14 +49,14 @@ function AuditoriaUsuarioPage() {
   const [chats, setChats] = useState<any[]>([]);
 
   useEffect(() => {
-    const email = typeof window !== "undefined" ? localStorage.getItem("fixxer_user_email") || "" : "";
-    const role  = typeof window !== "undefined" ? localStorage.getItem("fixxer_user_role")  || "" : "";
-    if (email.trim() !== "jorgericardosalgado@gmail.com" && role.toLowerCase() !== "admin") {
-      window.location.replace("/dashboard");
-      return;
-    }
-    setAuthOk(true);
+    (async () => {
+      const { isCurrentUserAdmin } = await import("@/lib/current-user");
+      const ok = await isCurrentUserAdmin(true);
+      if (!ok) { window.location.replace("/dashboard"); return; }
+      setAuthOk(true);
+    })();
   }, []);
+
 
   useEffect(() => {
     if (!authOk) return;
