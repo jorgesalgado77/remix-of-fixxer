@@ -1672,9 +1672,10 @@ function ConversationPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
               }}
-              rows={2}
+              rows={1}
               placeholder="Escreva uma mensagem..."
-              className="flex-1 min-w-0 bg-[#1A1A1B] border border-white/10 rounded-2xl px-4 py-3 text-base leading-relaxed outline-none focus:border-primary/50 resize-none min-h-[52px] max-h-40"
+              className="flex-1 min-w-0 bg-[#1A1A1B] border border-white/10 rounded-2xl px-4 py-3 text-base leading-normal outline-none focus:border-primary/50 resize-none min-h-[44px] max-h-40"
+
             />
             <button
               onClick={send}
