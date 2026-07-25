@@ -411,6 +411,54 @@ function ChatInboxPage() {
     };
   }, [loadFirstPage]);
 
+  // Escuta broadcasts de "digitando" direcionados à MINHA inbox.
+  // Cada conversation page emite em chat-inbox-{peerId}; aqui subscrevemos
+  // ao canal com meu uid e expiramos automaticamente após 4s.
+  useEffect(() => {
+    if (!userId) return;
+    let ch: any = null;
+    let expire: ReturnType<typeof setInterval> | null = null;
+    try {
+      ch = supabaseExternal
+        .channel(`chat-inbox-${userId}`, { config: { broadcast: { self: false } } })
+        .on("broadcast", { event: "typing" }, ({ payload }: any) => {
+          const from = payload?.from as string | undefined;
+          if (!from || from === userId) return;
+          setTypingByPeer((prev) => ({ ...prev, [from]: Date.now() }));
+        })
+        .on("broadcast", { event: "typing-stop" }, ({ payload }: any) => {
+          const from = payload?.from as string | undefined;
+          if (!from) return;
+          setTypingByPeer((prev) => {
+            if (!prev[from]) return prev;
+            const next = { ...prev };
+            delete next[from];
+            return next;
+          });
+        })
+        .subscribe();
+    } catch {}
+    // Watchdog: expira typings sem heartbeat há > 5s
+    expire = setInterval(() => {
+      setTypingByPeer((prev) => {
+        const now = Date.now();
+        let changed = false;
+        const next: Record<string, number> = {};
+        for (const [k, ts] of Object.entries(prev)) {
+          if (now - ts < 5000) next[k] = ts;
+          else changed = true;
+        }
+        return changed ? next : prev;
+      });
+    }, 1500);
+    return () => {
+      if (ch) { try { supabaseExternal.removeChannel(ch); } catch {} }
+      if (expire) clearInterval(expire);
+    };
+  }, [userId]);
+
+
+
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
     if (!sentinelRef.current || !userId) return;
