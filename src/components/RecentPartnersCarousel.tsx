@@ -187,6 +187,8 @@ export function RecentPartnersCarousel() {
   const [sortMode, setSortMode] = useState<SortMode>(() => readUrlParam<SortMode>(URL_SORT_PARAM, VALID_SORTS) ?? readSort());
   const [kindFilter, setKindFilter] = useState<KindFilter>(() => readUrlParam<KindFilter>(URL_FILTER_PARAM, VALID_FILTERS) ?? readFilter());
   const [pull, setPull] = useState(0);
+  // Cards descartados manualmente pelo usuário quando não têm coordenadas válidas (badge "Sem localização").
+  const [dismissedNoGeo, setDismissedNoGeo] = useState<Set<string>>(() => new Set());
   const startY = useRef<number | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
