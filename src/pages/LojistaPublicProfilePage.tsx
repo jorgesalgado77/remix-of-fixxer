@@ -900,10 +900,16 @@ export function LojistaPublicProfilePage() {
                 <div className="pt-4 flex flex-col md:flex-row gap-2 md:gap-3 md:items-center">
                   <Button
                     onClick={handleContactWhatsApp}
-                    className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest px-8 h-12 rounded-xl hover:bg-primary/90"
+                    disabled={contactLoading}
+                    aria-busy={contactLoading}
+                    className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest px-8 h-12 rounded-xl hover:bg-primary/90 disabled:opacity-70 disabled:cursor-wait"
                     style={{ boxShadow: `0 0 20px rgba(${theme.rgb}, 0.30)` }}
                   >
-                    <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
+                    {contactLoading ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Abrindo conversa…</>
+                    ) : (
+                      <><MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato</>
+                    )}
                   </Button>
 
                   {/* Favoritar — persiste em favorite_users (Supabase) */}
