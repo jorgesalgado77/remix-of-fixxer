@@ -317,7 +317,10 @@ export function RecentPartnersCarousel() {
   const sortedItems = useMemo<Enriched[]>(() => {
     const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
     const enriched: Enriched[] = base.map((p) => {
-      const coords = cityCoords(p.city) ?? null;
+      const rowCoords = (p.lat != null && p.lng != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)))
+        ? { lat: Number(p.lat), lng: Number(p.lng) }
+        : null;
+      const coords = rowCoords ?? cityCoords(p.city) ?? null;
       // Distância: prioriza cálculo real via geo do usuário; senão usa distance_km/distance persistido no perfil.
       const liveDist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
       const storedRaw = p.distance_km ?? p.distance;
