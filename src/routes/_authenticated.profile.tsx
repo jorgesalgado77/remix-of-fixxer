@@ -699,7 +699,30 @@ function ProfilePage() {
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-end gap-1 mb-4">
+            <div className="flex flex-col items-end gap-2 mb-4">
+              {(() => {
+                const planQuota = quotaForPlan(profile?.plan_id);
+                const offeringsList = Array.isArray(profile?.offerings)
+                  ? profile.offerings
+                  : parseCsvList(profile?.offerings);
+                const rolesList = parseCsvList(profile?.job_roles);
+                const offExtra = Math.max(0, offeringsList.length - planQuota);
+                const rolExtra = Math.max(0, rolesList.length - planQuota);
+                const totalExtra = offExtra + rolExtra;
+                if (totalExtra === 0) return null;
+                return (
+                  <div className="text-right text-[10px] font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl px-3 py-2 max-w-[280px]">
+                    Resumo de itens extras (além da cota do plano {String(profile?.plan_id || 'free').toUpperCase()} = {planQuota}):
+                    <ul className="mt-1 space-y-0.5 text-amber-200/90">
+                      {offExtra > 0 && <li>• {offExtra} oferta(s) extra · {offExtra * EXTRA_ITEM_COST} 🪙</li>}
+                      {rolExtra > 0 && <li>• {rolExtra} cargo(s) extra · {rolExtra * EXTRA_ITEM_COST} 🪙</li>}
+                    </ul>
+                    <div className="mt-1 pt-1 border-t border-amber-500/30 font-black">
+                      Total já debitado: {totalExtra * EXTRA_ITEM_COST} 🪙
+                    </div>
+                  </div>
+                );
+              })()}
               <button
                 onClick={() => handleSave()}
                 disabled={!canSave}
