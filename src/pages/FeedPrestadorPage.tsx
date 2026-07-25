@@ -806,7 +806,7 @@ function JobCardImpl({
                 >
                   {job.contractor.name}
                 </Link>
-                {job.contractor.isVerified && <CheckCircle2 className="w-3 h-3 text-[#FF9F0A]" />}
+                {job.contractor.isVerified && <CheckCircle2 className="w-3 h-3" style={{ color: cardTheme.hex }} />}
                 <span
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border"
                   style={{
@@ -821,7 +821,7 @@ function JobCardImpl({
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                  <MapPin className="w-2.5 h-2.5 text-[#FF9F0A]" /> {job.city}/{job.state}
+                  <MapPin className="w-2.5 h-2.5" style={{ color: cardTheme.hex }} /> {job.city}/{job.state}
                   {distanceLabel && <span className="text-white/40 normal-case ml-1">• {distanceLabel}</span>}
                 </span>
                 <RatingStars value={job.rating} />
@@ -839,7 +839,10 @@ function JobCardImpl({
 
         {/* ESPECIFICAÇÕES */}
         <div className="space-y-2">
-          <h4 className="text-[13px] font-black text-white uppercase italic leading-tight group-hover:text-[#FF9F0A] transition-colors">
+          <h4
+            className="text-[13px] font-black text-white uppercase italic leading-tight transition-colors group-hover:[color:var(--card-accent)]"
+            style={{ ["--card-accent" as any]: cardTheme.hex }}
+          >
             {job.title}
           </h4>
           <p
@@ -853,7 +856,10 @@ function JobCardImpl({
 
           <div className="flex flex-wrap gap-1.5 pt-1">
             {job.subcategory && (
-              <span className="px-2 py-0.5 rounded-md bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 text-[#FF9F0A] text-[8px] font-black uppercase tracking-widest">
+              <span
+                className="px-2 py-0.5 rounded-md border text-[8px] font-black uppercase tracking-widest"
+                style={{ ...cardTheme.bgSoft, ...cardTheme.borderSoft, color: cardTheme.hex }}
+              >
                 {job.subcategory}
               </span>
             )}
@@ -882,9 +888,10 @@ function JobCardImpl({
               <button
                 key={i}
                 onClick={() => (locked ? onUnlock?.() : onLightbox(job, i))}
-                className={`relative shrink-0 w-28 h-20 rounded-xl overflow-hidden border border-white/10 bg-black/40 group/media focus:outline-none focus:ring-2 focus:ring-[#FF9F0A]/50 ${
+                className={`relative shrink-0 w-28 h-20 rounded-xl overflow-hidden border border-white/10 bg-black/40 group/media focus:outline-none focus:ring-2 ${
                   locked ? "pointer-events-none" : ""
                 }`}
+                style={{ outlineColor: `${cardTheme.hex}80` } as any}
                 aria-label={locked ? "Mídia bloqueada" : undefined}
               >
                 {item.type === "video" ? (
@@ -931,7 +938,7 @@ function JobCardImpl({
             <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">
               Remuneração
             </span>
-            <span className="text-xs font-black text-[#FF9F0A]">{job.value}</span>
+            <span className="text-xs font-black" style={{ color: cardTheme.hex }}>{job.value}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -939,9 +946,14 @@ function JobCardImpl({
               onClick={() => onToggleSave(job.id)}
               className={`p-2.5 rounded-xl border transition-all ${
                 saved
-                  ? "bg-[#FF9F0A]/10 border-[#FF9F0A]/30 text-[#FF9F0A]"
+                  ? ""
                   : "bg-white/5 border-white/10 text-white hover:bg-white/10"
               }`}
+              style={
+                saved
+                  ? { ...cardTheme.bgSoft, ...cardTheme.borderSoft, color: cardTheme.hex }
+                  : undefined
+              }
               aria-label={saved ? "Remover dos salvos" : "Salvar vaga"}
             >
               <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
@@ -967,7 +979,8 @@ function JobCardImpl({
               <>
                 <button
                   onClick={() => onChat(job)}
-                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-[#FF9F0A]/10 hover:border-[#FF9F0A]/30 transition-all"
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white transition-all hover:[background-color:color-mix(in_oklab,var(--card-accent)_12%,transparent)] hover:[border-color:color-mix(in_oklab,var(--card-accent)_35%,transparent)]"
+                  style={{ ["--card-accent" as any]: cardTheme.hex }}
                   aria-label="Chat direto"
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -983,7 +996,8 @@ function JobCardImpl({
                 <button
                   onClick={() => onApply(job)}
                   disabled={applied}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF9F0A] text-black font-black uppercase italic text-[9px] tracking-widest hover:shadow-[0_0_20px_rgba(255,159,10,0.4)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-black uppercase italic text-[9px] tracking-widest active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: cardTheme.hex, color: "#0A0A0B", boxShadow: `0 0 20px rgba(${cardTheme.rgb}, 0.4)` }}
                 >
                   {applied ? (
                     <>
@@ -1002,7 +1016,7 @@ function JobCardImpl({
       </div>
 
       {/* GLOW DECORATIVO */}
-      <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#FF9F0A]/5 blur-3xl rounded-full pointer-events-none" />
+      <div className="absolute -right-4 -bottom-4 w-24 h-24 blur-3xl rounded-full pointer-events-none" style={{ backgroundColor: `rgba(${cardTheme.rgb}, 0.08)` }} />
     </article>
   );
 }
