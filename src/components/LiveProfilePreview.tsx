@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Eye, FileText, Camera } from "lucide-react";
+import { Eye, FileText, Camera, Gift, Truck, Briefcase } from "lucide-react";
 import type { PhotoSectionsValue, PhotoItem } from "@/components/PhotoSectionsManager";
 
 const getUrl = (p: PhotoItem): string => (typeof p === "string" ? p : p.url);
@@ -14,6 +14,16 @@ interface Props {
   fullName?: string | null;
   displayName?: string | null;
   accentHex?: string;
+  /** 💼 Formatos de contratação aceitos (work_modes) */
+  workModes?: string[] | null;
+  /** 🎁 Itens listados em "Oferece" */
+  offerings?: string[] | null;
+  /** Observações livres da seção Oferece */
+  offeringsNotes?: string | null;
+  /** Tipo do veículo próprio (ex.: Moto, Carro, Van) */
+  vehicleType?: string | null;
+  /** Descrição/caracteristicas do veículo */
+  vehicleDescription?: string | null;
 }
 
 /**
