@@ -1094,20 +1094,34 @@ function ConversationPage() {
                 {pendingFiles.map((f, idx) => {
                   const isImg = f.type.startsWith("image/");
                   const isVid = f.type.startsWith("video/");
+                  const preview = pendingPreviews.get(f);
                   return (
-                    <div key={`${f.name}-${idx}`} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs max-w-[240px]">
-                      {isImg ? <ImageIcon className="w-3.5 h-3.5 text-primary shrink-0" />
-                        : isVid ? <VideoIcon className="w-3.5 h-3.5 text-primary shrink-0" />
-                        : <FileText className="w-3.5 h-3.5 text-primary shrink-0" />}
-                      <span className="truncate max-w-[110px]">{f.name}</span>
-                      <span className="text-muted-foreground text-[10px]">{Math.round(f.size / 1024)}KB</span>
+                    <div key={`${f.name}-${idx}`} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-2 py-1.5 text-xs max-w-[260px]">
+                      {isImg && preview ? (
+                        <img src={preview} alt={f.name} className="w-10 h-10 rounded-md object-cover shrink-0 border border-white/10" />
+                      ) : isVid && preview ? (
+                        <div className="relative w-10 h-10 rounded-md overflow-hidden shrink-0 border border-white/10 bg-black">
+                          <video src={preview} className="w-full h-full object-cover" muted />
+                          <VideoIcon className="w-3 h-3 text-white absolute bottom-0.5 right-0.5 drop-shadow" />
+                        </div>
+                      ) : isImg ? (
+                        <ImageIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                      ) : isVid ? (
+                        <VideoIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                      ) : (
+                        <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                      )}
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate max-w-[130px]">{f.name}</span>
+                        <span className="text-muted-foreground text-[10px]">{Math.round(f.size / 1024)}KB</span>
+                      </div>
                       <button
                         onClick={() => {
                           const next = pendingFiles.filter((_, i) => i !== idx);
                           setPendingFiles(next);
                           setDraftFiles(peerId, next);
                         }}
-                        className="w-5 h-5 rounded-md hover:bg-white/10 flex items-center justify-center"
+                        className="w-5 h-5 rounded-md hover:bg-white/10 flex items-center justify-center ml-auto"
                         aria-label={`Remover ${f.name}`}
                         disabled={uploading || sending}
                       >
