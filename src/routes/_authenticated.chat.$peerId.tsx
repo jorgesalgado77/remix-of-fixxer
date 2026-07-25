@@ -488,6 +488,7 @@ function ConversationPage() {
       window.removeEventListener("pagehide", onHide);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
+      if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
       if (expireTimer) clearInterval(expireTimer);
       try { sendTypingStop(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
