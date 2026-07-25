@@ -732,8 +732,19 @@ function ChatInboxPage() {
                       )}
                       <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                         {c.lastAttachmentType && <Paperclip className="w-3 h-3 shrink-0" />}
-                        {c.lastMessage || (c.lastAttachmentType ? "Anexo" : "—")}
+                        {c.lastMessage ? (
+                          <Highlight text={c.lastMessage} terms={activeTerms} />
+                        ) : (
+                          <span>{c.lastAttachmentType ? "Anexo" : "—"}</span>
+                        )}
                       </p>
+                      {historySnippet && (
+                        <p className="text-[10px] italic text-muted-foreground/80 truncate mt-0.5">
+                          <span className="uppercase font-bold tracking-widest mr-1 text-primary/70">Histórico:</span>
+                          <Highlight text={historySnippet} terms={activeTerms} />
+                        </p>
+                      )}
+
                     </div>
                     {c.unread > 0 && !c.muted && (
                       <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">
