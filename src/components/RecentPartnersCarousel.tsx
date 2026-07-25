@@ -669,7 +669,11 @@ export function RecentPartnersCarousel() {
                   >
                     {meta.emoji} {branchText}
                   </p>
-                  {location ? (
+                  {distanceLabel && location ? (
+                    <p className="text-[10px] text-emerald-400 font-semibold mt-1 truncate" title={`a ${distanceLabel} km de você • ${location}`}>
+                      📍 a {distanceLabel} km • {location}
+                    </p>
+                  ) : location ? (
                     <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
                       <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
                       <span className="truncate">📍 {location}</span>
