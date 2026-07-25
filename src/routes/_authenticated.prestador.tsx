@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import {
   Briefcase,
@@ -8,24 +8,18 @@ import {
   Clock,
   DollarSign,
   MessageSquare,
-  Settings,
   ChevronRight,
   TrendingUp,
   ShieldCheck,
   PlusCircle,
   Camera,
   Hammer,
-  PowerOff,
-  Zap,
-  Calendar,
-  Megaphone,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
-import { ReviewModal } from "@/components/ReviewModal";
 import { EscrowBadge } from "@/components/EscrowBadge";
 import { PanelActions } from "@/components/PanelActions";
+
+
 
 
 export const Route = createFileRoute("/_authenticated/prestador")({
