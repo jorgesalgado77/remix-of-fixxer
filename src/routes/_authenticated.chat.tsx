@@ -376,7 +376,9 @@ function ChatInboxPage() {
     // Ao voltar o foco para esta aba, recarrega a primeira página (mensagens
     // podem ter sido lidas/enviadas em outra aba enquanto esta estava oculta).
     const onFocus = () => {
-      const uid = userId ?? (typeof window !== "undefined" ? localStorage.getItem("fixxer_local_uid") : null);
+      const stored = typeof window !== "undefined" ? localStorage.getItem("fixxer_user_id") : null;
+      const uuidRe2 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uid = userId ?? (stored && uuidRe2.test(stored) ? stored : null);
       if (uid) void loadFirstPage(uid);
       setPrefsVersion((v) => v + 1);
     };
