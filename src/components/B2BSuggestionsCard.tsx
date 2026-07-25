@@ -49,7 +49,7 @@ function readRadius(): number {
  */
 function B2BSuggestionsCardInner() {
   const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState<boolean>(() => readDismissed());
   const category = useCurrentCategory();
   const theme = getCategoryTheme(category);
   const branchesRef = useRef<string[]>([]);
