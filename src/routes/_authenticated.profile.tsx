@@ -472,6 +472,7 @@ function ProfilePage() {
         mergedFresh = normalizeMasks(mergedFresh);
         setProfile(mergedFresh);
         lastSavedSnapshotRef.current = JSON.stringify(mergedFresh);
+        setLastSavedAt(Date.now());
         try {
           window.dispatchEvent(
             new CustomEvent('fixxer:profile-updated', { detail: { id: fresh.id } }),
