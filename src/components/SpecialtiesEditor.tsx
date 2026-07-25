@@ -1,6 +1,16 @@
 import { useMemo, useState } from "react";
 import { Sparkles, Plus, Trash2, Star, StarOff, Coins } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export type Specialty = {
   id: string;
