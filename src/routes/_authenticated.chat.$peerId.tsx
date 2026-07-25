@@ -1167,16 +1167,16 @@ function ConversationPage() {
           </button>
           <div className="flex-1 min-w-0">
             <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
-            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
               <span
-                className="text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest"
+                className="shrink-0 text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest"
                 style={{ backgroundColor: `rgba(${peerTheme.rgb}, 0.15)`, color: peerTheme.hex }}
               >
                 {peerTheme.label}
               </span>
               {peerAvailable !== null && (
                 <span
-                  className="text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border"
+                  className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border"
                   style={{
                     color: peerAvailable ? "#10B981" : "#F59E0B",
                     borderColor: peerAvailable ? "#10B98155" : "#F59E0B55",
@@ -1187,11 +1187,12 @@ function ConversationPage() {
                   {peerAvailable ? "Disponível" : "Indisponível"}
                 </span>
               )}
-              <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground truncate flex items-center gap-1">
-                {markingRead && <Loader2 className="w-3 h-3 animate-spin" />}
-                {statusLine}
+              <span className="min-w-0 text-[10px] uppercase tracking-widest font-bold text-muted-foreground truncate flex items-center gap-1">
+                {markingRead && <Loader2 className="w-3 h-3 animate-spin shrink-0" />}
+                <span className="truncate">{statusLine}</span>
               </span>
             </div>
+
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <button
