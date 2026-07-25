@@ -130,12 +130,50 @@ export async function getMyAudit(limit = 20): Promise<AvailabilityAudit[]> {
 }
 
 /**
+ * Deduplicação/rate-limit em memória: evita reenvio de contact_attempt
+ * ou notificação para o mesmo par (attempter → target) dentro da janela.
+ * Persiste também em localStorage para sobreviver a recarregamentos rápidos.
+ */
+const RATE_WINDOW_MS = 10 * 60 * 1000; // 10 min
+const LS_RATE = "fixxer_contact_rate_v1";
+
+type RateMap = Record<string, number>;
+
+function readRate(): RateMap {
+  try {
+    if (typeof window === "undefined") return {};
+    return JSON.parse(window.localStorage.getItem(LS_RATE) || "{}");
+  } catch { return {}; }
+}
+function writeRate(m: RateMap) {
+  try { window.localStorage.setItem(LS_RATE, JSON.stringify(m)); } catch { /* ignore */ }
+}
+function shouldThrottle(key: string): boolean {
+  const now = Date.now();
+  const map = readRate();
+  const last = map[key] || 0;
+  if (now - last < RATE_WINDOW_MS) return true;
+  // limpa entradas antigas para não crescer indefinidamente
+  const cleaned: RateMap = { [key]: now };
+  for (const [k, v] of Object.entries(map)) {
+    if (now - v < RATE_WINDOW_MS) cleaned[k] = v;
+  }
+  cleaned[key] = now;
+  writeRate(cleaned);
+  return false;
+}
+
+/**
  * Registra tentativa de contato quando o alvo está indisponível.
  * Também cria uma notificação para o alvo saber que alguém tentou.
+ * Deduplicado por janela de 10 min (attempter → target).
  */
 export async function logContactAttempt(targetUserId: string): Promise<void> {
   const uid = await getCurrentUserId();
   if (!uid || !targetUserId || uid === targetUserId) return;
+  const key = `attempt:${uid}->${targetUserId}`;
+  if (shouldThrottle(key)) return; // spam guard
+
   try {
     await supabaseExternal.from("contact_attempts").insert({
       target_user_id: targetUserId,
