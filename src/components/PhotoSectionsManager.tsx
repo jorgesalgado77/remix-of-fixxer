@@ -670,8 +670,30 @@ function PhotoGrid({
     onReorder(arrayMove(photos, oldIndex, newIndex));
   };
 
+  const count = photos.length;
+  const pct = Math.min(100, Math.round((count / max) * 100));
+  const nearLimit = count >= max;
+  const isEmpty = count === 0;
+
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div
+            role="progressbar"
+            aria-valuenow={count}
+            aria-valuemin={0}
+            aria-valuemax={max}
+            aria-label={`Progresso: ${count} de ${max} fotos`}
+            className={`h-full transition-all ${nearLimit ? 'bg-red-400' : 'bg-primary'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className={`text-[10px] font-black uppercase italic ${nearLimit ? 'text-red-300' : 'text-muted-foreground'}`}>
+          {count}/{max}
+        </span>
+      </div>
+
       <div
         onDragEnter={(e) => {
           e.preventDefault();
@@ -694,6 +716,19 @@ function PhotoGrid({
             : 'border-white/10 bg-black/20'
         }`}
       >
+        {isEmpty && canAdd && !busy && (
+          <div className="text-center py-6 space-y-2">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <ImageIcon className="w-6 h-6 text-primary" aria-hidden="true" />
+            </div>
+            <p className="text-xs font-black uppercase italic text-white">Nenhuma foto ainda</p>
+            <p className="text-[10px] text-muted-foreground max-w-xs mx-auto">
+              Arraste imagens aqui ou toque em <strong>Adicionar</strong> abaixo. Você tem{' '}
+              <strong>{max}</strong> vagas disponíveis nesta seção.
+            </p>
+          </div>
+        )}
+
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={ids} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
