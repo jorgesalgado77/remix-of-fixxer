@@ -268,23 +268,23 @@ export function RecentStoresCarousel() {
     >
       <header className="mb-3 md:mb-4 w-full block">
         <h3 className="w-full block font-black italic uppercase text-white text-sm md:text-base tracking-wide leading-tight">
-          🏬 Lojistas e Parceiros Fornecedores Recentes
+          🏬 Lojistas e Clientes Finais Recentes
         </h3>
         <p className="w-full block text-[11px] md:text-xs text-muted-foreground mt-1 leading-snug">
-          Conecte-se com lojistas e fornecedores recomendados na sua região
-          {myBranch ? <> — priorizando <b className="text-white/80">{myBranch}</b>.</> : "."}
+          Conecte-se com lojistas e clientes finais na sua região
+          {myBranch ? <> — priorizando lojistas de <b className="text-white/80">{myBranch}</b>.</> : "."}
         </p>
 
         <div
           role="toolbar"
-          aria-label="Filtros de lojistas e fornecedores"
+          aria-label="Filtros de lojistas e clientes finais"
           className="mt-2 flex items-center gap-2 overflow-x-auto scrollbar-none w-full pt-2 pb-1"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
           {([
             { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
             { v: "lojista" as const, label: "🏬 Lojistas", color: "#00FF87" },
-            { v: "fornecedor" as const, label: "🚚 Fornecedores", color: "#A855F7" },
+            { v: "cliente" as const, label: "🙋 Clientes Finais", color: "#22C55E" },
           ]).map((opt) => {
             const active = kindFilter === opt.v;
             return (
