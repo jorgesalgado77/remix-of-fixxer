@@ -136,7 +136,7 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
               key={m.id}
               type="button"
               onClick={() => pickMacro(m.label)}
-              className="w-full flex items-center gap-3 rounded-2xl border p-3 text-left transition-all min-w-0 overflow-hidden active:scale-[0.98]"
+              className="w-full flex items-center gap-3 rounded-2xl border p-3 text-left transition-all min-w-0 overflow-hidden active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]"
               style={{
                 borderColor: active ? accent : "rgba(255,255,255,0.1)",
                 background: active ? `${accent}18` : "rgba(255,255,255,0.03)",
