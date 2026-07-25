@@ -43,10 +43,36 @@ type PartnerRow = {
 type PartnerKind = "prestador" | "fornecedor";
 type PartnerCard = PartnerRow & { _kind: PartnerKind };
 type SortMode = "recent" | "rating" | "nearby";
+type KindFilter = "all" | PartnerKind;
 
 const CACHE_KEY = "fixxer_recent_partners_v1";
 const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
 const SORT_KEY = "fixxer_recent_partners_sort_v1";
+const FILTER_KEY = "fixxer_recent_partners_filter_v1";
+
+// ---- URL query-string sync (compartilhável / restaurável em reload) ----
+const URL_SORT_PARAM = "partnersSort";
+const URL_FILTER_PARAM = "partnersKind";
+const VALID_SORTS: SortMode[] = ["recent", "rating", "nearby"];
+const VALID_FILTERS: KindFilter[] = ["all", "prestador", "fornecedor"];
+function readUrlParam<T extends string>(name: string, valid: T[]): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = new URLSearchParams(window.location.search).get(name);
+    return v && (valid as string[]).includes(v) ? (v as T) : null;
+  } catch { return null; }
+}
+function writeUrlParams(next: Partial<Record<string, string | null>>) {
+  if (typeof window === "undefined") return;
+  try {
+    const url = new URL(window.location.href);
+    for (const [k, v] of Object.entries(next)) {
+      if (v == null) url.searchParams.delete(k); else url.searchParams.set(k, v);
+    }
+    window.history.replaceState(window.history.state, "", url.toString());
+  } catch { /* ignore */ }
+}
+
 
 function classifyRole(role: string | null | undefined): PartnerKind | null {
   const r = (role || "").toLowerCase();
