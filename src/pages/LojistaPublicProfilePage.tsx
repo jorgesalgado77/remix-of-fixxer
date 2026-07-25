@@ -366,6 +366,7 @@ export function LojistaPublicProfilePage() {
             profile: profileCandidate,
             routeHint: routeCategory,
           });
+          if (cancelled) return;
           setResolvedCategory(detectedCategory);
           const expectedPath = publicProfilePathFor(detectedCategory, storeId);
           if (location.pathname !== expectedPath) {
