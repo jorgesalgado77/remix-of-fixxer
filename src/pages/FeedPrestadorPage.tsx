@@ -1141,7 +1141,7 @@ export default function FeedPrestadorPage() {
     filtered,
     paged.length,
     PAGE_SIZE,
-    (job) => job.attachments?.[0] ?? null,
+    (job) => job.media?.[0]?.poster ?? job.media?.[0]?.url ?? null,
   );
   const hasMore = paged.length < filtered.length;
 
