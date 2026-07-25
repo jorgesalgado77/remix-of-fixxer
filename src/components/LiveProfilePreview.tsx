@@ -76,10 +76,22 @@ export function LiveProfilePreview({
         <div className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">
           Perfil público
         </div>
-        <div className="text-base font-black text-white truncate" title={displayName}>
-          {displayName}
+        {shownDisplayName && (
+          <div
+            className="text-lg font-black text-white truncate leading-tight"
+            title={shownDisplayName}
+          >
+            {shownDisplayName}
+          </div>
+        )}
+        <div
+          className={`${shownDisplayName ? 'text-[11px] text-white/60 font-bold' : 'text-base font-black text-white'} truncate`}
+          title={shownCompany}
+        >
+          {shownCompany}
         </div>
       </div>
+
 
       {/* Aba Sobre */}
       <div className="space-y-2">
