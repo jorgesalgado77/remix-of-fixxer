@@ -26,6 +26,7 @@ import {
   Heart,
   Copy,
   Check,
+  Loader2,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useUserCoords, cityCoords } from "@/lib/geo-distance";
