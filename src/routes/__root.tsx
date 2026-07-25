@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { GlobalActionBar } from "@/components/GlobalActionBar";
+import { NotificationsCenter } from "@/components/NotificationsCenter";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { CoinFeedbackBridge } from "@/components/CoinFeedbackBridge";
 import { CoinConfirmProvider } from "@/components/ConfirmCoinsDialog";
