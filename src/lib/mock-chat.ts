@@ -14,6 +14,15 @@ export type MockMessage = {
   };
 };
 
+export type MockLinkedAd = {
+  title: string;
+  category: string; // ex.: "Solicitação de Serviço", "Anúncio Comercial"
+  distanceKm?: number;
+  price?: number;      // valor único (ex.: produto de loja)
+  priceMin?: number;   // faixa mínima
+  priceMax?: number;   // faixa máxima
+};
+
 export type MockConversation = {
   peerId: string; // sempre começa com "mock-"
   peerName: string;
@@ -22,6 +31,7 @@ export type MockConversation = {
   online?: boolean;
   messages: MockMessage[];
   profile?: MockProfile;
+  linkedAd?: MockLinkedAd;
 };
 
 export type MockProfile = {
