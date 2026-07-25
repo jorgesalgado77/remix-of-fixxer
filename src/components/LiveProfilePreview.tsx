@@ -38,6 +38,11 @@ export function LiveProfilePreview({
   fullName,
   displayName,
   accentHex,
+  workModes,
+  offerings,
+  offeringsNotes,
+  vehicleType,
+  vehicleDescription,
 }: Props) {
   const custom = sections?.custom ?? [];
   const showroom = sections?.showroom ?? [];
@@ -51,6 +56,14 @@ export function LiveProfilePreview({
   const shownDisplayName = (displayName || "").trim();
   const shownCompany = (companyName || fullName || "Seu Perfil").trim();
   const accent = accentHex || "#00FF87";
+
+  const workModesList = Array.isArray(workModes) ? workModes.filter(Boolean) : [];
+  const offeringsList = Array.isArray(offerings) ? offerings.filter(Boolean) : [];
+  const notes = (offeringsNotes || "").trim();
+  const vType = (vehicleType || "").trim();
+  const vDesc = (vehicleDescription || "").trim();
+  const hasVehicle = !!(vType || vDesc);
+  const hasOferece = workModesList.length > 0 || offeringsList.length > 0 || notes.length > 0 || hasVehicle;
 
 
   return (
