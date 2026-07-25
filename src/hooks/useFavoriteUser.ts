@@ -192,7 +192,10 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
             .eq("favorited_user_id", favoritedUserId)
             .maybeSingle();
           if (cancelled) return;
-          if (error) throw error;
+          if (error) {
+            if (isAuthError(error)) clearFavoriteScope(currentUserId);
+            throw error;
+          }
           const fav = !!data;
           setIsFavorited(fav);
           try {
@@ -205,6 +208,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
       }
       if (!cancelled) setReady(true);
     })();
+
 
     // Realtime silencioso — se falhar (RLS/permissão/tabela ausente), ignora.
     let channel: ReturnType<typeof supabaseExternal.channel> | null = null;
