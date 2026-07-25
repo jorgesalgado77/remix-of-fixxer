@@ -18,6 +18,7 @@ import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { FeedErrorState } from "@/components/FeedErrorState";
 import { useFeedPreload } from "@/hooks/use-feed-preload";
+import { usePersistedState } from "@/lib/feed-persist";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -538,8 +539,8 @@ const PAGE_SIZE = 10;
 export default function FeedParceiroPage() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
-  const [search, setSearch] = useState("");
-  const [activeSector, setActiveSector] = useState<(typeof SECTORS)[number]>("Todas as Demandas");
+  const [search, setSearch] = usePersistedState<string>("fixxer_feed_parceiro_search", "");
+  const [activeSector, setActiveSector] = usePersistedState<(typeof SECTORS)[number]>("fixxer_feed_parceiro_sector", "Todas as Demandas");
   const [saved, setSaved] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
     try {
@@ -555,9 +556,9 @@ export default function FeedParceiroPage() {
   const [quotesRemote, setQuotesRemote] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [quoteOpen, setQuoteOpen] = useState<B2BRequest | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
+  const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_parceiro_status", "todos");
   const [detailsFor, setDetailsFor] = useState<B2BRequest | null>(null);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedState<number>("fixxer_feed_parceiro_page", 1);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -846,7 +847,7 @@ export default function FeedParceiroPage() {
             <FeedErrorState
               accent="#A855F7"
               busy={refreshing}
-              message={loadError}
+              error={loadError}
               onRetry={handleRefresh}
             />
           </div>

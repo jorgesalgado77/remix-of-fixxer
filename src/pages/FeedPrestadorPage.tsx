@@ -24,6 +24,7 @@ import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { FeedErrorState } from "@/components/FeedErrorState";
 import { useFeedPreload } from "@/hooks/use-feed-preload";
+import { usePersistedState } from "@/lib/feed-persist";
 
 import {
   ArrowLeft,
@@ -1017,16 +1018,16 @@ export default function FeedPrestadorPage() {
   const { glassClass } = usePerformanceMode();
   const postUnlock = usePostUnlock();
 
-  const [filter, setFilter] = useState<"todas" | Subcategory>("todas");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
+  const [filter, setFilter] = usePersistedState<"todas" | Subcategory>("fixxer_feed_prestador_filter", "todas");
+  const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_prestador_status", "todos");
   const [detailsFor, setDetailsFor] = useState<JobPost | null>(null);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [search, setSearch] = usePersistedState<string>("fixxer_feed_prestador_search", "");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [applied, setApplied] = useState<Set<string>>(new Set());
   const [applyFor, setApplyFor] = useState<JobPost | null>(null);
   const [lightbox, setLightbox] = useState<{ job: JobPost; index: number } | null>(null);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedState<number>("fixxer_feed_prestador_page", 1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [savesRemote, setSavesRemote] = useState(false);
@@ -1301,7 +1302,7 @@ export default function FeedPrestadorPage() {
           <FeedErrorState
             accent="#FF9F0A"
             busy={refreshing}
-            message={loadError}
+            error={loadError}
             onRetry={handleRefresh}
           />
         )}
