@@ -845,10 +845,13 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         {(() => {
-                          const key: CategoryKey = "lojista";
+                          const key: CategoryKey = "lojista" as CategoryKey;
+                          const icon: string = key === ('prestador' as CategoryKey) ? '🛠️'
+                            : key === ('fornecedor' as CategoryKey) ? '🚚'
+                            : key === ('cliente' as CategoryKey) ? '👤'
+                            : key === ('admin' as CategoryKey) ? '👑'
+                            : '🏪';
 
-
-                          const icon = key === 'prestador' ? '🛠️' : key === 'fornecedor' ? '🚚' : key === 'cliente' ? '👤' : key === 'admin' ? '👑' : '🏪';
                           return (
                             <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black uppercase">{icon} {CATEGORY_LABEL[key]}</span>
                           );
