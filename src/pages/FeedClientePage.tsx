@@ -1000,6 +1000,11 @@ function VendorCardImpl({
           <div className="flex items-center gap-1 mt-0.5 text-[9px] text-muted-foreground font-bold uppercase tracking-widest">
             <MapPin className="w-2.5 h-2.5" />
             {vendor.city}/{vendor.state}
+            {formatDistanceFromCity(vendor.city, userCoords) && (
+              <span className="normal-case text-white/40 ml-1">
+                • {formatDistanceFromCity(vendor.city, userCoords)}
+              </span>
+            )}
           </div>
         </div>
       </div>
