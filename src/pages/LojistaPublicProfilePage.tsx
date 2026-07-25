@@ -227,23 +227,17 @@ export function LojistaPublicProfilePage() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [lightboxVideo, setLightboxVideo] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
-    // Hidrata sincronamente do localStorage para evitar flash de "não-self"
-    // quando o próprio usuário abre seu perfil (bug do "5753 km de você").
-    try { return typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null; } catch { return null; }
-  });
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [contactLoading, setContactLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     supabaseExternal.auth.getUser().then(({ data }) => {
-      if (mounted && data.user?.id) {
-        setCurrentUserId(data.user.id);
-        try { window.localStorage.setItem("fixxer_user_id", data.user.id); } catch {}
-      }
+      if (mounted) setCurrentUserId(data.user?.id ?? null);
     }).catch(() => {});
     return () => { mounted = false; };
   }, []);
+
 
 
 

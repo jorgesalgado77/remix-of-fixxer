@@ -28,12 +28,10 @@ function NotFoundComponent() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const userEmail = localStorage.getItem('fixxer_user_email') || 'anonymous';
-      console.error(`[FIXXER 404]: Rota não encontrada acessada por ${userEmail}: ${window.location.pathname}`);
-    } catch (e) {
       console.error(`[FIXXER 404]: Rota não encontrada: ${window.location.pathname}`);
-    }
+    } catch {}
   }, []);
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">

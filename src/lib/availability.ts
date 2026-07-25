@@ -30,16 +30,12 @@ export interface AvailabilityAudit {
 async function getCurrentUserId(): Promise<string | null> {
   try {
     const { data } = await supabaseExternal.auth.getUser();
-    if (data?.user?.id) return data.user.id;
-  } catch { /* ignore */ }
-  try {
-    return typeof window !== "undefined"
-      ? window.localStorage.getItem("fixxer_user_id")
-      : null;
+    return data?.user?.id ?? null;
   } catch {
     return null;
   }
 }
+
 
 function readLocal(): boolean {
   try {

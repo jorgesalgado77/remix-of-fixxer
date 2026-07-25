@@ -29,13 +29,6 @@ export const Route = createFileRoute("/_authenticated/admin/monetizacao")({
 
 type TabId = "planos" | "acoes" | "pacotes" | "historico" | "backup";
 
-function isAdmin(): boolean {
-  if (typeof window === "undefined") return false;
-  const email = localStorage.getItem("fixxer_user_email") || "";
-  const role = (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
-  return email.trim() === "jorgericardosalgado@gmail.com" || role === "admin";
-}
-
 function AdminMonetizacaoPage() {
   const navigate = useNavigate();
   const [cfg, setCfg] = useState<MonetizationConfig | null>(null);
@@ -45,12 +38,16 @@ function AdminMonetizacaoPage() {
   const [tab, setTab] = useState<TabId>("planos");
 
   useEffect(() => {
-    if (!isAdmin()) {
-      toast.error("Acesso restrito ao Admin Master");
-      navigate({ to: "/dashboard" as any });
-      return;
-    }
-    fetchMonetizationConfig().then((c) => setCfg(c));
+    (async () => {
+      const { isCurrentUserAdmin } = await import("@/lib/current-user");
+      const ok = await isCurrentUserAdmin(true);
+      if (!ok) {
+        toast.error("Acesso restrito ao Admin Master");
+        navigate({ to: "/dashboard" as any });
+        return;
+      }
+      fetchMonetizationConfig().then((c) => setCfg(c));
+    })();
     // atualização em tempo real caso outro admin salve
     const unsub = subscribeMonetization((c) => {
       setCfg((cur) => (cur && dirty ? cur : c));
@@ -58,6 +55,7 @@ function AdminMonetizacaoPage() {
     return () => unsub();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
+
 
   const update = (patch: Partial<MonetizationConfig>) => {
     setCfg((prev) => (prev ? { ...prev, ...patch } : prev));

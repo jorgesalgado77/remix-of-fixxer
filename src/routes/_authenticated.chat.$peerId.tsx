@@ -83,19 +83,21 @@ function isUuid(v: string | null | undefined): v is string {
   return !!v && UUID_RE.test(v);
 }
 /**
- * Retorna o UUID real do usuário logado — nunca uma string sintética.
- * Sem UUID válido, o chat não pode operar (RLS + tipo `uuid` em
- * `messages.sender_id`). O caller deve tratar `null` redirecionando para /auth.
+ * Retorna o UUID real do usuário logado — nunca uma string sintética
+ * nem valor de localStorage. Fonte única: supabaseExternal.auth.getUser().
+ * O caller deve tratar `null` redirecionando para /auth.
  */
-function getAuthUid(): string | null {
-  if (typeof window === "undefined") return null;
+async function getAuthUid(): Promise<string | null> {
   try {
-    const stored = localStorage.getItem("fixxer_user_id");
-    return isUuid(stored) ? stored : null;
+    const { supabaseExternal } = await import("@/lib/supabaseExternal");
+    const { data } = await supabaseExternal.auth.getUser();
+    const uid = data?.user?.id;
+    return isUuid(uid) ? uid! : null;
   } catch {
     return null;
   }
 }
+
 
 /**
  * Redireciona para /auth quando a sessão sumiu no meio da conversa.
@@ -373,7 +375,7 @@ function ConversationPage() {
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
-      const uid = data?.user?.id ?? getAuthUid();
+      const uid = data?.user?.id ?? null;
       if (cancelled) return;
       if (!isUuid(uid)) {
         // Sem sessão válida — não há como escrever em messages (RLS + uuid).
@@ -556,12 +558,13 @@ function ConversationPage() {
     // Ao trocar de rota / recarregar / esconder aba: envia typing-stop.
     // Ao VOLTAR o foco: re-marca a conversa como lida (sincroniza com o peer).
     const onHide = () => { sendTypingStop(); };
-    const onVisible = () => {
+    const onVisible = async () => {
       if (document.visibilityState === "visible") {
-        const uid = userId || getAuthUid();
+        const uid = userId || (await getAuthUid());
         if (uid && !isMockPeerId(peerId)) markIncomingRead(uid);
       }
     };
+
     document.addEventListener("visibilitychange", onHide);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);

@@ -17,10 +17,11 @@ const LS_COUNT_PREFIX = "fixxer_favorite_user_count_v1:"; // agregado público p
 const LS_CURRENT_USER = "fixxer_favorite_current_user_v1";
 
 function readCachedCurrentUser(): string | null {
-  try {
-    return window.localStorage.getItem("fixxer_user_id") || window.localStorage.getItem(LS_CURRENT_USER);
-  } catch { return null; }
+  // Só reaproveita o UID gravado por este próprio hook (LS_CURRENT_USER).
+  // Nenhuma leitura direta de `fixxer_user_id` — identidade vem da sessão.
+  try { return window.localStorage.getItem(LS_CURRENT_USER); } catch { return null; }
 }
+
 function readCachedCount(id: string | null | undefined): number {
   if (!id) return 0;
   try {
@@ -111,25 +112,21 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
     (async () => {
       try {
         const { data } = await supabaseExternal.auth.getUser();
-        const cachedUid = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null;
-        const uid = data?.user?.id ?? cachedUid ?? null;
+        const uid = data?.user?.id ?? null;
         if (cancelled) return;
         setCurrentUserId(uid);
-        // Sempre que confirmamos o dono da sessão, limpamos favoritos escritos
-        // por qualquer outra conta neste navegador (chave composta protege leitura,
-        // mas removemos o lixo para não ocupar storage indefinidamente).
         purgeForeignFavoriteKeys(uid);
         try {
           if (uid) window.localStorage.setItem(LS_CURRENT_USER, uid);
           else window.localStorage.removeItem(LS_CURRENT_USER);
         } catch { /* ignore */ }
       } catch {
-        const cachedUid = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null;
-        if (!cancelled) setCurrentUserId(cachedUid ?? null);
+        if (!cancelled) setCurrentUserId(null);
       }
     })();
     return () => { cancelled = true; };
   }, []);
+
 
   // Re-hidrata cache quando muda o alvo (usuário navegou entre perfis).
   useEffect(() => {

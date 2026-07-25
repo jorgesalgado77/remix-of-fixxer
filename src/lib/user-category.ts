@@ -1,43 +1,42 @@
 import { useEffect, useState } from "react";
 import { CATEGORY_COLORS, type CategoryKey } from "@/lib/category-colors";
+import { getCurrentCategory } from "@/lib/current-user";
 
 /**
- * Lê a categoria armazenada localmente e normaliza para as chaves oficiais
- * do design system (lojista | prestador | fornecedor | cliente | admin).
+ * Categoria do usuário logado — resolvida via sessão Supabase +
+ * public.user_roles/profiles. NÃO usa mais localStorage nem email
+ * hardcoded como fonte. A promise é cacheada no módulo current-user.
+ *
+ * Retorno síncrono default para SSR/primeiro render: "lojista".
  */
 export function resolveCurrentCategory(): CategoryKey {
-  if (typeof window === "undefined") return "lojista";
-  const raw = (
-    localStorage.getItem("fixxer_user_category") ||
-    localStorage.getItem("fixxer_user_role") ||
-    ""
-  ).toLowerCase();
-  const email = (localStorage.getItem("fixxer_user_email") || "").toLowerCase();
-  if (email === "jorgericardosalgado@gmail.com" || raw.includes("admin")) return "admin";
-  if (raw.includes("lojista")) return "lojista";
-  if (raw.includes("prestador")) return "prestador";
-  if (raw.includes("parceiro") || raw.includes("fornecedor") || raw.includes("b2b")) return "fornecedor";
-  if (raw.includes("cliente") || raw.includes("casual") || raw.includes("final")) return "cliente";
   return "lojista";
 }
 
 /**
- * Hook reativo: retorna a categoria atual e reage a mudanças em outras abas
- * ou dentro da própria aba (via evento customizado `fixxer:category-change`).
+ * Hook reativo: retorna a categoria resolvida pelo backend. Atualiza
+ * automaticamente quando `fixxer:identity-change` é disparado (login,
+ * logout, troca de sessão).
  */
 export function useCurrentCategory(): CategoryKey {
-  const [cat, setCat] = useState<CategoryKey>(() => resolveCurrentCategory());
+  const [cat, setCat] = useState<CategoryKey>("lojista");
   useEffect(() => {
-    const handler = () => setCat(resolveCurrentCategory());
-    window.addEventListener("storage", handler);
+    let alive = true;
+    getCurrentCategory().then((c) => { if (alive) setCat(c as CategoryKey); });
+    const handler = () => {
+      getCurrentCategory(true).then((c) => { if (alive) setCat(c as CategoryKey); });
+    };
+    window.addEventListener("fixxer:identity-change", handler);
     window.addEventListener("fixxer:category-change", handler);
     return () => {
-      window.removeEventListener("storage", handler);
+      alive = false;
+      window.removeEventListener("fixxer:identity-change", handler);
       window.removeEventListener("fixxer:category-change", handler);
     };
   }, []);
   return cat;
 }
+
 
 /**
  * Deriva a categoria de um perfil visitado a partir do pathname.

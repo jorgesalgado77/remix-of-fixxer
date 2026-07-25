@@ -65,18 +65,15 @@ export function QuickMenuSheet({ open, onOpenChange }: Props) {
       hint: "Encerrar sessão com segurança",
       danger: true,
       action: async () => {
-        try {
-          await supabaseExternal.auth.signOut();
-        } catch {}
-        try {
-          localStorage.removeItem("fixxer_user_role");
-          localStorage.removeItem("fixxer_user_category");
-        } catch {}
+        try { await supabaseExternal.auth.signOut(); } catch {}
+        // A limpeza de chaves legadas de identidade é feita pelo listener em
+        // current-user.ts (onAuthStateChange → SIGNED_OUT).
         onOpenChange(false);
         window.location.href = "/auth";
       },
     },
   ];
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

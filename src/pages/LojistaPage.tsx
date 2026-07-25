@@ -109,13 +109,8 @@ export function LojistaDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
 
-  const [userRole, setUserRole] = useState<CategoryKey>(() => {
-    if (typeof window === "undefined") return "lojista";
-    const r = (localStorage.getItem("fixxer_user_role") || "lojista").toLowerCase();
-    return (["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(r)
-      ? r
-      : "lojista") as CategoryKey;
-  });
+  const [userRole, setUserRole] = useState<CategoryKey>("lojista");
+
   const [rating, setRating] = useState(4.9);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -216,20 +211,24 @@ export function LojistaDashboard() {
     };
   }, [userRole]);
 
-  // Sincroniza o papel do usuário se ele mudar em outro lugar (auth, admin, etc.)
+  // Sincroniza o papel do usuário a partir da sessão real (Supabase).
   useEffect(() => {
-    const syncRole = () => {
-      if (typeof window === "undefined") return;
-      const r = (localStorage.getItem("fixxer_user_role") || "lojista").toLowerCase();
-      if (["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(r)) {
-        setUserRole(r as CategoryKey);
-      }
+    let alive = true;
+    const syncRole = async () => {
+      try {
+        const { getCurrentCategory } = await import("@/lib/current-user");
+        const c = await getCurrentCategory(true);
+        if (alive && ["lojista", "prestador", "fornecedor", "cliente", "admin"].includes(c)) {
+          setUserRole(c as CategoryKey);
+        }
+      } catch { /* ignore */ }
     };
-    window.addEventListener("storage", syncRole);
-    window.addEventListener("fixxer:role-changed", syncRole as any);
+    syncRole();
+    window.addEventListener("fixxer:identity-change", syncRole as any);
     return () => {
-      window.removeEventListener("storage", syncRole);
-      window.removeEventListener("fixxer:role-changed", syncRole as any);
+      alive = false;
+      window.removeEventListener("fixxer:identity-change", syncRole as any);
+
     };
   }, []);
 
@@ -846,9 +845,13 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         {(() => {
-                          const r = (typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_role') || 'lojista') : 'lojista').toLowerCase() as CategoryKey;
-                          const key: CategoryKey = (['lojista','prestador','fornecedor','cliente','admin'] as CategoryKey[]).includes(r as CategoryKey) ? (r as CategoryKey) : 'lojista';
-                          const icon = key === 'prestador' ? '🛠️' : key === 'fornecedor' ? '🚚' : key === 'cliente' ? '👤' : key === 'admin' ? '👑' : '🏪';
+                          const key: CategoryKey = "lojista" as CategoryKey;
+                          const icon: string = key === ('prestador' as CategoryKey) ? '🛠️'
+                            : key === ('fornecedor' as CategoryKey) ? '🚚'
+                            : key === ('cliente' as CategoryKey) ? '👤'
+                            : key === ('admin' as CategoryKey) ? '👑'
+                            : '🏪';
+
                           return (
                             <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black uppercase">{icon} {CATEGORY_LABEL[key]}</span>
                           );
@@ -2708,7 +2711,7 @@ function ProfileView({
                     <PhotoSectionsManager
                         value={photoSections}
                         onChange={setPhotoSections}
-                        chargeUserId={typeof window !== 'undefined' ? (localStorage.getItem('fixxer_user_id') || undefined) : undefined}
+                        chargeUserId={undefined}
                     />
 
                     <div className="space-y-4 pt-6 border-t border-white/5">
@@ -2817,11 +2820,9 @@ function ProfileView({
                                 // 1ª especialidade grátis; a partir da 2ª cobra 10 moedas.
                                 if (specialties.length >= 1) {
                                     try {
-                                        const uidRaw = (typeof window !== 'undefined')
-                                          ? (localStorage.getItem('fixxer_user_id') || '')
-                                          : '';
                                         const { data: { user } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getUser());
-                                        const uid = user?.id || uidRaw;
+                                        const uid = user?.id;
+
                                         if (uid) {
                                             const { spendCoinsForAction, getActionCost } = await import('@/lib/monetization');
                                             const cost = getActionCost('extra_specialty')?.coins ?? 10;
@@ -2950,28 +2951,14 @@ function ProfileView({
                             setIsSaving(true);
                             const toastId = toast.loading("Salvando perfil...");
                             try {
-                                // 2) Identidade: sessão real ou fallback via email do localStorage
+                                // Identidade 100% via sessão real do Supabase (sem localStorage).
                                 const { data: authData } = await supabaseExternal.auth.getUser();
-                                let userId = authData?.user?.id as string | undefined;
-                                let userEmailLocal = authData?.user?.email as string | undefined;
-                                if (!userEmailLocal && typeof window !== 'undefined') {
-                                    userEmailLocal = localStorage.getItem('fixxer_user_email') || undefined;
-                                }
-                                if (!userEmailLocal) {
+                                const userId = authData?.user?.id;
+                                const userEmailLocal = authData?.user?.email;
+                                if (!userId || !userEmailLocal) {
                                     throw new Error("Sessão expirada. Faça login novamente para salvar o perfil.");
                                 }
-                                if (!userId) {
-                                    const enc = new TextEncoder().encode(`fixxer:${userEmailLocal.toLowerCase()}`);
-                                    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', enc));
-                                    hash[6] = (hash[6] & 0x0f) | 0x50;
-                                    hash[8] = (hash[8] & 0x3f) | 0x80;
-                                    const hex = Array.from(hash.slice(0, 16))
-                                        .map((b) => b.toString(16).padStart(2, '0')).join('');
-                                    userId = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
-                                    if (typeof window !== 'undefined') {
-                                        localStorage.setItem('fixxer_derived_user_id', userId);
-                                    }
-                                }
+
 
                                 const formData = {
                                     user_id: userId,

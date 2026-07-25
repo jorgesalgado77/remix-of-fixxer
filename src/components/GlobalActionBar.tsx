@@ -5,6 +5,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { resolveFeedRoute } from "@/lib/chat-preferences";
 import { PublishPickerModal } from "@/components/PublishPickerModal";
 import { QuickMenuSheet } from "@/components/QuickMenuSheet";
+import { useUserCategory } from "@/lib/current-user";
 import type { CategoryKey } from "@/lib/category-colors";
 
 /**
@@ -23,35 +24,15 @@ export function GlobalActionBar() {
   const isActive = (target: string) => path.startsWith(target);
   const isHash = (h: string) => path.startsWith("/dashboard/lojista") && hash === h;
 
-  const [role, setRole] = useState<string>(() => {
-    if (typeof window === "undefined") return "";
-    return (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
-  });
+  // Categoria vem da sessão real (nunca de localStorage).
+  const category = useUserCategory();
+  const role = category;
 
-  // Perfil → Feed relacionado ao papel do usuário logado (com fallback consistente)
   const goToRoleFeed = () => {
-    let current = role;
-    if (!current && typeof window !== "undefined") {
-      current = (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
-      if (current) setRole(current);
-    }
-    const target = resolveFeedRoute(current);
+    const target = resolveFeedRoute(role);
     navigate({ to: target.to as any, search: (target.search ?? {}) as any });
   };
 
-  // Reage a mudanças de papel: outro tab (storage) e atualizações internas
-  useEffect(() => {
-    const syncRole = () => {
-      if (typeof window === "undefined") return;
-      setRole((localStorage.getItem("fixxer_user_role") || "").toLowerCase());
-    };
-    window.addEventListener("storage", syncRole);
-    window.addEventListener("fixxer:role-changed", syncRole as any);
-    return () => {
-      window.removeEventListener("storage", syncRole);
-      window.removeEventListener("fixxer:role-changed", syncRole as any);
-    };
-  }, []);
 
   // Notificações de novas mensagens — reativas ao usuário logado
   useEffect(() => {

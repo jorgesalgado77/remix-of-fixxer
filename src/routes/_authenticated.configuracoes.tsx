@@ -62,24 +62,15 @@ function ConfiguracoesPage() {
         setThemeMode(getTheme());
         unsubTheme = subscribeTheme((m) => setThemeMode(m));
 
-        // Sessão + e-mail
-        const { data } = await supabase.auth.getUser();
-        const em =
-          data.user?.email ??
-          (typeof window !== "undefined"
-            ? localStorage.getItem("fixxer_user_email") ?? ""
-            : "");
-        setEmail(em);
-
-        // Descobre uid no Supabase EXTERNO (fonte da verdade dos perfis)
+        // Sessão + e-mail (fonte única: supabaseExternal)
         let externalUid: string | null = null;
+        let em = "";
         try {
           const { data: extSess } = await supabaseExternal.auth.getUser();
           externalUid = extSess.user?.id ?? null;
+          em = extSess.user?.email ?? "";
         } catch { /* ignore */ }
-        if (!externalUid && typeof window !== "undefined") {
-          externalUid = localStorage.getItem("fixxer_user_id");
-        }
+        setEmail(em);
         setUid(externalUid);
 
         // Carrega display_name direto de profiles (fonte da verdade)
@@ -94,14 +85,8 @@ function ConfiguracoesPage() {
             String((prof as any)?.display_name ?? "") ||
             String((prof as any)?.full_name ?? "");
         }
-        if (!dbName) {
-          dbName =
-            (data.user?.user_metadata as any)?.name ??
-            (typeof window !== "undefined"
-              ? localStorage.getItem("fixxer_user_name") ?? ""
-              : "");
-        }
         setName(dbName);
+
 
         // Preferências de notificação (locais)
         if (typeof window !== "undefined") {
@@ -139,12 +124,11 @@ function ConfiguracoesPage() {
   }, []);
 
   const persist = (key: string, value: string) => {
-    try {
-      window.localStorage.setItem(key, value);
-    } catch {
-      /* ignore */
-    }
+    // Uso restrito: preferências de UI (não identidade). Mantido para chaves
+    // como fixxer_push_enabled / fixxer_email_alerts.
+    try { window.localStorage.setItem(key, value); } catch { /* ignore */ }
   };
+
 
   const handleSaveProfile = async () => {
     const trimmed = name.trim();
@@ -154,7 +138,7 @@ function ConfiguracoesPage() {
     }
     try {
       setSaving(true);
-      persist("fixxer_user_name", trimmed);
+      // Identidade é servidor-side (profiles.display_name). Nada em localStorage.
 
       // Fonte da verdade: profiles.display_name (Supabase externo)
       if (uid) {
