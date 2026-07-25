@@ -11,11 +11,14 @@ import { toast } from "sonner";
  */
 const LS_PREFIX = "fixxer_favorite_user_v1:";
 
+const LS_COUNT_PREFIX = "fixxer_favorite_user_count_v1:";
+
 export function useFavoriteUser(favoritedUserId: string | null | undefined) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [count, setCount] = useState<number>(0);
 
   // Descobre usuário logado.
   useEffect(() => {
