@@ -418,7 +418,7 @@ export function RecentPartnersCarousel() {
 
               ? (() => { const c = cityCoords(p.city); if (!c) return null; const km = haversineKm(userCoords, c); return Number.isFinite(km) ? (km < 10 ? km.toFixed(1) : Math.round(km).toString()) : null; })()
               : null;
-            const label = `Abrir perfil de ${p.full_name || "profissional"}, ${meta.label}${p.activity_branch ? `, ${p.activity_branch}` : ""}${location ? `, ${location}` : ""}, avaliação ${rating.toFixed(1)} de 5`;
+            const label = `Abrir perfil de ${displayName}, ${meta.label}${branchText ? `, ${branchText}` : ""}${location ? `, ${location}` : ""}, avaliação ${rating.toFixed(1)} de 5`;
             return (
               <button
                 key={p.id}
