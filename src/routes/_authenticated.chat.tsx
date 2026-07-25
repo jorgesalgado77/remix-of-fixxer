@@ -203,6 +203,9 @@ function ChatInboxPage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [prefsVersion, setPrefsVersion] = useState(0);
   const [typingByPeer, setTypingByPeer] = useState<Record<string, number>>({});
+  const [onlineSet, setOnlineSet] = useState<Set<string>>(() => new Set());
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
 
   const idSetRef = useRef<Set<string>>(new Set());
   const sentinelRef = useRef<HTMLDivElement | null>(null);
