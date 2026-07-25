@@ -477,7 +477,7 @@ export function PhotoSectionsManager({ value, onChange, limits, chargeUserId, fr
           </Button>
         </div>
 
-        {safe.custom.map((section) => (
+        {safe.custom.map((section, sectionIdx) => (
           <div key={section.id} className="rounded-2xl border border-white/10 bg-black/20 p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               {editingId === section.id ? (
