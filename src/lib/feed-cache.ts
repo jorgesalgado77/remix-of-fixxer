@@ -43,6 +43,42 @@ export function clearFeedCache(key: string): void {
   }
 }
 
+/** Retorna o timestamp (ms) do snapshot mais recente entre todas as chaves de cache do feed. */
+export function getLatestFeedCacheAt(): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    let latest = 0;
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (!k || !k.startsWith(PREFIX)) continue;
+      const raw = window.localStorage.getItem(k);
+      if (!raw) continue;
+      try {
+        const parsed = JSON.parse(raw) as { at?: number };
+        if (parsed?.at && parsed.at > latest) latest = parsed.at;
+      } catch { /* skip */ }
+    }
+    return latest || null;
+  } catch {
+    return null;
+  }
+}
+
+/** "há 3 min", "há 2 h", "agora mesmo" — pt-BR. */
+export function formatRelativeTime(fromMs: number, nowMs: number = Date.now()): string {
+  const diff = Math.max(0, nowMs - fromMs);
+  const sec = Math.floor(diff / 1000);
+  if (sec < 30) return "agora mesmo";
+  if (sec < 60) return `há ${sec}s`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `há ${min} min`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `há ${hr} h`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `há ${day} d`;
+  return new Date(fromMs).toLocaleDateString("pt-BR");
+}
+
 /** Classifica um erro de fetch para exibição amigável. */
 export type FeedErrorKind = "offline" | "timeout" | "network" | "unknown";
 
