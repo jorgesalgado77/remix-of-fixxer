@@ -1620,24 +1620,24 @@ function ConversationPage() {
               )}
             </div>
           )}
-          <div className="flex items-end gap-2">
-            <input
-              ref={fileRef}
-              type="file"
-              multiple
-              accept={ACCEPTED_HINT}
-              className="hidden"
-              onChange={(e) => {
-                const picked = Array.from(e.target.files ?? []);
-                acceptIncomingFiles(picked);
-                if (fileRef.current) fileRef.current.value = "";
-              }}
-            />
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            accept={ACCEPTED_HINT}
+            className="hidden"
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? []);
+              acceptIncomingFiles(picked);
+              if (fileRef.current) fileRef.current.value = "";
+            }}
+          />
+          <div className="mb-2 flex items-center gap-1.5">
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
               title={pendingFiles.length >= MAX_FILES ? `Máximo ${MAX_FILES} anexos` : "Anexar arquivos"}
-              className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
+              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
               aria-label="Anexar arquivos"
             >
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
@@ -1645,7 +1645,7 @@ function ConversationPage() {
             <button
               onClick={() => setScheduleOpen(true)}
               title="Propor agendamento"
-              className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center"
+              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center"
               aria-label="Propor agendamento"
             >
               <CalendarPlus className="w-4 h-4" />
@@ -1662,6 +1662,8 @@ function ConversationPage() {
               disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
               onRecorded={(file) => acceptIncomingFiles([file])}
             />
+          </div>
+          <div className="flex items-end gap-2">
             <textarea
               value={content}
               onChange={(e) => { setContent(e.target.value); setDraftText(peerId, e.target.value); sendTyping(); }}
@@ -1669,19 +1671,20 @@ function ConversationPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
               }}
-              rows={1}
+              rows={2}
               placeholder="Escreva uma mensagem..."
-              className="flex-1 bg-[#1A1A1B] border border-white/10 rounded-2xl px-4 py-3 text-sm outline-none focus:border-primary/50 resize-none max-h-32"
+              className="flex-1 min-w-0 bg-[#1A1A1B] border border-white/10 rounded-2xl px-4 py-3 text-base leading-relaxed outline-none focus:border-primary/50 resize-none min-h-[52px] max-h-40"
             />
             <button
               onClick={send}
               disabled={sending || uploading || (!content.trim() && pendingFiles.length === 0)}
-              className="w-11 h-11 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_15px_rgba(0,255,135,0.3)] disabled:opacity-40 disabled:shadow-none"
+              className="w-12 h-12 shrink-0 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_15px_rgba(0,255,135,0.3)] disabled:opacity-40 disabled:shadow-none"
               aria-label="Enviar"
             >
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </button>
           </div>
+
         </div>
       </div>
       {scheduleOpen && (
