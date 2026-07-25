@@ -935,6 +935,7 @@ export default function FeedClientePage() {
         />
       )}
     </div>
+    </PullToRefresh>
   );
 }
 
