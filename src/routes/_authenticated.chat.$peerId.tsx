@@ -926,7 +926,7 @@ function ConversationPage() {
   }, [peerCategory, peerRole]);
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col pb-32">
+    <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-32 overscroll-contain">
       <header
         className="sticky top-0 z-10 bg-black/85 backdrop-blur-xl border-b-2 px-4 py-3 flex items-center gap-3"
         style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)` }}
