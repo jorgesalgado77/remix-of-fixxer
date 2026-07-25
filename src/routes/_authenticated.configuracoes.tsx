@@ -138,7 +138,7 @@ function ConfiguracoesPage() {
     }
     try {
       setSaving(true);
-      persist("fixxer_user_name", trimmed);
+      // Identidade é servidor-side (profiles.display_name). Nada em localStorage.
 
       // Fonte da verdade: profiles.display_name (Supabase externo)
       if (uid) {
