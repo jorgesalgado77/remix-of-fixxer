@@ -11,6 +11,7 @@ import { AffiliateBanner } from "@/components/AffiliateBanner";
 import { ActivityBranchSelector } from "@/components/ActivityBranchSelector";
 import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { PreferredServicePicker } from "@/components/PreferredServicePicker";
+import { OfferingsPicker } from "@/components/OfferingsPicker";
 import { ALLOWED_RADII_KM, isAllowedRadius, BIO_MAX_LENGTH } from "@/lib/branch-search";
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
