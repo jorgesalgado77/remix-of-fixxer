@@ -809,6 +809,15 @@ function ChatInboxPage() {
             <Archive className="w-3.5 h-3.5" />
             {showArchived ? "Ativas" : `Arquivadas${archivedCount ? ` · ${archivedCount}` : ""}`}
           </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setSettingsOpen(true); }}
+            className="w-9 h-9 rounded-xl border bg-white/5 border-white/10 text-muted-foreground hover:text-white flex items-center justify-center"
+            aria-label="Configurações do chat"
+            title="Configurações do chat"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
         </div>
 
         <div className="relative mb-2">
