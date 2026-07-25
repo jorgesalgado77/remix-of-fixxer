@@ -918,49 +918,6 @@ function ProfilePage() {
               {/* CAMPOS ESPECÍFICOS: PRESTADOR */}
               {profile?.role === 'prestador' && (
                 <div className="pt-8 space-y-6">
-                  <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                    <Briefcase className="w-6 h-6 text-primary" />
-                    <h3 className="text-xl font-black uppercase tracking-tighter">Serviços & Especialidades</h3>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {['Projetista', 'Medidor', 'Conferente Técnico', 'Fretista', 'Montador', 'Supervisor'].map(svc => (
-                      <label key={svc} className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer hover:border-primary/30 transition-all">
-                        <input
-                          type="checkbox"
-                          checked={profile?.service_types?.includes(svc) || false}
-                          onChange={(e) => {
-                            const current = profile?.service_types || [];
-                            const next = e.target.checked
-                              ? [...current, svc]
-                              : current.filter((s: string) => s !== svc);
-                            setProfile({ ...profile, service_types: next });
-                          }}
-                          className="w-5 h-5 accent-primary bg-black border-white/20 rounded-md"
-                        />
-                        <span className="text-xs font-bold">{svc}</span>
-                      </label>
-                    ))}
-                  </div>
-
-                  {/* CAIXA DE ACÚMULO DE FUNÇÕES - MOSTRA TODAS AS SELECIONADAS */}
-                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
-                    <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1 mb-3 block">
-                      Acúmulo de Funções ({profile?.service_types?.length || 0})
-                    </label>
-                    <div className="flex flex-wrap gap-2 min-h-[40px]">
-                      {(profile?.service_types || []).length === 0 ? (
-                        <span className="text-xs text-muted-foreground italic">Selecione as funções acima para acumular.</span>
-                      ) : (
-                        (profile?.service_types || []).map((svc: string) => (
-                          <span key={svc} className="bg-primary text-black text-[11px] font-black uppercase tracking-tight px-3 py-1.5 rounded-lg flex items-center gap-2">
-                            <BadgeCheck className="w-3 h-3" />
-                            {svc}
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </div>
 
                   {/* OFERECE */}
                   <div className="pt-6 space-y-4 border-t border-white/5">
