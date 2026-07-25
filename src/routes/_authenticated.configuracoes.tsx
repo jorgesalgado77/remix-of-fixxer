@@ -291,7 +291,12 @@ function ConfiguracoesPage() {
               Alterações de e-mail só podem ser feitas via suporte.
             </p>
           </Field>
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-3">
+            {autoSavedAt && (
+              <span className="text-[10px] text-white/50" aria-live="polite">
+                ✓ Salvo às {new Date(autoSavedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
             <button
               disabled={saving}
               onClick={handleSaveProfile}
@@ -301,6 +306,7 @@ function ConfiguracoesPage() {
             </button>
           </div>
         </Section>
+
 
         {/* Notificações */}
         <Section title="Notificações" icon={<Bell className="w-4 h-4" />} accent={theme.hex}>
