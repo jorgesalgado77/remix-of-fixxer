@@ -1045,6 +1045,8 @@ function ChatInboxPage() {
           </>
         )}
       </div>
+      <ChatSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
+
 }
