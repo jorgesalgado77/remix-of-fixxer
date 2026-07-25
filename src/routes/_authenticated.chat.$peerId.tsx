@@ -864,6 +864,27 @@ function ConversationPage() {
       ),
     );
     try {
+      window.dispatchEvent(
+        new CustomEvent("fixxer:message-sending", {
+          detail: {
+            row: {
+              id: clientId,
+              _clientId: clientId,
+              sender_id: userId,
+              recipient_id: peerId,
+              content: m._draftText || m.content || null,
+              created_at: new Date().toISOString(),
+              read: false,
+              _pending: true,
+              attachment_url: m.attachment_url ?? null,
+              attachment_type: m.attachment_type ?? null,
+              attachment_name: m.attachment_name ?? null,
+            },
+          },
+        }),
+      );
+    } catch {}
+    try {
       let attachment: { url: string; type: string; name: string } | null = null;
       if (m._draftFile) {
         attachment = await doUpload(m._draftFile, (pct) =>
