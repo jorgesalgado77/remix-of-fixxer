@@ -168,6 +168,22 @@ function ConversationPage() {
   const [guardBlocked, setGuardBlocked] = useState(false);
   const [peerAvailable, setPeerAvailable] = useState<boolean | null>(null);
 
+  // Guard: peerId precisa ser UUID (ou mock-*). Rotas quebradas silenciosas
+  // (ex: link antigo com id numérico) redirecionam para a inbox com aviso.
+  useEffect(() => {
+    if (!peerId) return;
+    const isMock = typeof peerId === "string" && peerId.startsWith("mock-");
+    if (isMock) return;
+    if (!isValidUuid(peerId)) {
+      toast.error("Conversa inválida", {
+        description: "O identificador do contato não é válido. Voltando para a lista.",
+      });
+      try { navigate({ to: "/chat" as any }); }
+      catch { window.location.href = "/chat"; }
+    }
+  }, [peerId, navigate]);
+
+
   useEffect(() => {
     let cancelled = false;
     if (!peerId || (typeof peerId === "string" && peerId.startsWith("mock-"))) return;
