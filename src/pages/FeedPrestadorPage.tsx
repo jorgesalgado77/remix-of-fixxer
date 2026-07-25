@@ -830,7 +830,12 @@ function JobCard({
           <h4 className="text-[13px] font-black text-white uppercase italic leading-tight group-hover:text-[#FF9F0A] transition-colors">
             {job.title}
           </h4>
-          <p className="text-[10px] text-muted-foreground font-medium leading-relaxed line-clamp-3">
+          <p
+            className={`text-[10px] text-muted-foreground font-medium leading-relaxed line-clamp-3 ${
+              locked ? "blur-sm select-none pointer-events-none" : ""
+            }`}
+            aria-hidden={locked || undefined}
+          >
             {job.description}
           </p>
 
