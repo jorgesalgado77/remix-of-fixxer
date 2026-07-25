@@ -149,18 +149,28 @@ export function RecentStoresCarousel() {
         }
       } catch { /* tabela pode não existir — segue */ }
 
-      // 2) IDs autoritativos de fornecedores/parceiros.
-      const supplierIds = new Set<string>();
+      // 2) IDs conhecidos que NÃO devem aparecer (prestadores e fornecedores).
+      const excludeIds = new Set<string>();
+      try {
+        const { data: prov } = await supabaseExternal
+          .from("provider_profiles")
+          .select("user_id, id")
+          .limit(500);
+        for (const s of (prov as any[]) ?? []) {
+          const uid = s?.user_id || s?.id;
+          if (uid) excludeIds.add(String(uid));
+        }
+      } catch { /* opcional */ }
       try {
         const { data: sup } = await supabaseExternal
           .from("supplier_profiles")
           .select("user_id, id")
-          .limit(200);
+          .limit(500);
         for (const s of (sup as any[]) ?? []) {
           const uid = s?.user_id || s?.id;
-          if (uid) supplierIds.add(String(uid));
+          if (uid) excludeIds.add(String(uid));
         }
-      } catch { /* tabela opcional */ }
+      } catch { /* opcional */ }
 
       // 3) Perfis reais — sem exigir role preenchida (real users podem ter role="user").
       const { data, error } = await supabaseExternal
@@ -172,10 +182,15 @@ export function RecentStoresCarousel() {
 
       const rows: Card[] = ((data as unknown as Row[]) ?? [])
         .map((r) => {
+          const rid = String(r.id);
           let kind: Kind | null = null;
-          if (storeIds.has(String(r.id))) kind = "lojista";
-          else if (supplierIds.has(String(r.id))) kind = "fornecedor";
-          else kind = classify(r.role);
+          if (storeIds.has(rid)) kind = "lojista";
+          else if (excludeIds.has(rid)) kind = null; // prestador/fornecedor: ignora
+          else {
+            const c = classify(r.role);
+            // Se não é lojista/prestador/fornecedor conhecido, trata como cliente final.
+            kind = c ?? "cliente";
+          }
           if (!kind) return null;
           return { ...r, _kind: kind, _branch: mainBranchOf(r.business_category, r.custom_branch) } as Card;
         })
