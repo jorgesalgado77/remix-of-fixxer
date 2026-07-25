@@ -401,9 +401,18 @@ function ConversationPage() {
       } catch {}
     })();
 
-    // Ao trocar de rota / recarregar / esconder aba: envia typing-stop e derruba presença
+    // Ao trocar de rota / recarregar / esconder aba: envia typing-stop.
+    // Ao VOLTAR o foco: re-marca a conversa como lida (sincroniza com o peer).
     const onHide = () => { sendTypingStop(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        const uid = userId || getFallbackUid();
+        if (uid && !isMockPeerId(peerId)) markIncomingRead(uid);
+      }
+    };
     document.addEventListener("visibilitychange", onHide);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     window.addEventListener("pagehide", onHide);
 
     return () => {
