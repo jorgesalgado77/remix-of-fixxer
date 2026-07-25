@@ -18,6 +18,7 @@ import {
 
 import { EscrowBadge } from "@/components/EscrowBadge";
 import { PanelActions } from "@/components/PanelActions";
+import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 
 
 
