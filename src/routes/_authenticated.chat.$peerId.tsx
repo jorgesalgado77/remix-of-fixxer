@@ -44,6 +44,8 @@ import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory, setContextCategoryOverride } from "@/lib/user-category";
 import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
 import { ChatAppointmentsBanner } from "@/components/ChatAppointmentsBanner";
+import { ChatEmojiPicker } from "@/components/Chat/EmojiPicker";
+import { ChatVoiceRecorder } from "@/components/Chat/VoiceRecorder";
 
 function roleToCategory(role: string | null | undefined): CategoryKey {
   const r = (role || "").toLowerCase();
