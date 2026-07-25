@@ -40,7 +40,8 @@ export function FeedErrorState({
   busy = false,
   autoRetry = true,
 }: Props) {
-  const described = error !== undefined ? describeFeedError(error) : null;
+  const src = error !== undefined ? error : message;
+  const described = src !== undefined ? describeFeedError(src) : null;
   const kind: FeedErrorKind = described?.kind ?? "unknown";
   const finalMessage = message ?? described?.message ?? "Verifique sua conexão e tente novamente.";
   const { title, Icon } = LABELS[kind];
