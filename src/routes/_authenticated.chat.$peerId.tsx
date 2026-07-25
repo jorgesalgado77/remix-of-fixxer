@@ -534,6 +534,8 @@ function ConversationPage() {
     const text = guard.clean;
     if (guard.violated) {
       toast.warning(CONTACT_GUARD_WARNING);
+      setGuardBlocked(true);
+      setTimeout(() => setGuardBlocked(false), 8000);
     }
     const filesToSend = pendingFiles.slice();
     if ((!text && filesToSend.length === 0) || !userId || sending) return;
