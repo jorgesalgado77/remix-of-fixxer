@@ -419,18 +419,29 @@ function ConversationPage() {
       await hydrateChatPreferences(uid);
 
       try {
-        const { data: p } = await supabaseExternal
+        // Tenta pelo id primário e, se não achar, pelo user_id (schemas variam).
+        let anyP: any = null;
+        const { data: p1 } = await supabaseExternal
           .from("profiles")
-          .select("id, full_name, display_name, avatar_url, role")
+          .select("id, user_id, full_name, display_name, avatar_url, role")
           .eq("id", peerId)
           .maybeSingle();
-        if (p && !cancelled) {
-          const anyP = p as any;
+        anyP = p1;
+        if (!anyP) {
+          const { data: p2 } = await supabaseExternal
+            .from("profiles")
+            .select("id, user_id, full_name, display_name, avatar_url, role")
+            .eq("user_id", peerId)
+            .maybeSingle();
+          anyP = p2;
+        }
+        if (anyP && !cancelled) {
           setPeerName(anyP.display_name || anyP.full_name || "Conversa");
           setPeerAvatar(anyP.avatar_url ?? null);
           setPeerRole(anyP.role ?? null);
         }
       } catch {}
+
 
       setMuted(isConversationMuted(uid, peerId));
       setArchived(isConversationArchived(uid, peerId));
