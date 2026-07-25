@@ -496,7 +496,18 @@ function ConversationPage() {
           if (Date.now() - lastPeerHeartbeat > 5000) setPeerTyping(false);
         }, 1500);
       } catch {}
+
+      // Canal secundário para notificar a INBOX do peer sobre typing.
+      // Assim, mesmo com a conversa fechada, ele vê "digitando…" na lista.
+      try {
+        const inboxCh = supabaseExternal.channel(`chat-inbox-${peerId}`, {
+          config: { broadcast: { self: false } },
+        });
+        inboxCh.subscribe();
+        inboxTypingChannelRef.current = inboxCh;
+      } catch {}
     })();
+
 
     // Ao trocar de rota / recarregar / esconder aba: envia typing-stop.
     // Ao VOLTAR o foco: re-marca a conversa como lida (sincroniza com o peer).
