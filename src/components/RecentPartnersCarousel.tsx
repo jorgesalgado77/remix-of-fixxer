@@ -175,6 +175,23 @@ async function preloadProfile(id: string) {
   } catch { roleCache.delete(id); }
 }
 
+// ---- Cache de pré-carregamento de imagens (reduz flicker ao rolar horizontal) ----
+// Guarda URLs já pré-carregadas (ou em progresso) durante toda a sessão do app.
+const imagePreloadCache = new Set<string>();
+function preloadImage(url: string | null | undefined) {
+  if (!url || typeof window === "undefined") return;
+  if (imagePreloadCache.has(url)) return;
+  imagePreloadCache.add(url);
+  try {
+    const img = new window.Image();
+    // Prioridade baixa: não competir com hero/feed principal.
+    (img as any).fetchPriority = "low";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    img.src = url;
+  } catch { imagePreloadCache.delete(url); }
+}
+
 export function RecentPartnersCarousel() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
@@ -243,14 +260,20 @@ export function RecentPartnersCarousel() {
 
   useEffect(() => {
     let cancelled = false;
-    // Se não havia cache, mostramos o fallback para não deixar vazio durante a 1ª busca.
-    if (!cached && items.length === 0) setItems(FALLBACK_PARTNERS);
+    // Não pré-populamos com FALLBACK aqui: deixamos o skeleton aparecer durante a 1ª busca
+    // quando não há cache. Se o fetch falhar/vazio, o próprio fetchPartners cai no fallback.
     (async () => {
       await fetchPartners();
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [fetchPartners, cached, items.length]);
+  }, [fetchPartners, cached]);
+
+  // Quando a geolocalização do usuário fica disponível, limpamos descartes manuais
+  // para que os badges "Sem localização" sejam recriados/reavaliados com o novo contexto.
+  useEffect(() => {
+    if (userCoords) setDismissedNoGeo(new Set());
+  }, [userCoords]);
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;
@@ -294,7 +317,7 @@ export function RecentPartnersCarousel() {
     return enriched;
   }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo]);
 
-  // ---- IntersectionObserver: pré-carrega /perfil/:id quando o card se aproxima da viewport ----
+  // ---- IntersectionObserver: pré-carrega /perfil/:id + foto quando o card se aproxima ----
   useEffect(() => {
     if (typeof window === "undefined" || typeof IntersectionObserver === "undefined") return;
     const root = scrollerRef.current;
@@ -303,14 +326,25 @@ export function RecentPartnersCarousel() {
       (entries) => {
         for (const e of entries) {
           if (!e.isIntersecting) continue;
-          const id = (e.target as HTMLElement).dataset.partnerId;
+          const el = e.target as HTMLElement;
+          const id = el.dataset.partnerId;
           if (id) preloadProfile(id);
+          const avatar = el.dataset.partnerAvatar;
+          if (avatar) preloadImage(avatar);
         }
       },
-      { root, rootMargin: "0px 300px 0px 300px", threshold: 0.01 },
+      { root, rootMargin: "0px 400px 0px 400px", threshold: 0.01 },
     );
     for (const el of cardRefs.current) if (el) io.observe(el);
     return () => io.disconnect();
+  }, [sortedItems]);
+
+  // Pré-carrega ansiosamente as fotos válidas dos primeiros cards visíveis (reduz flicker inicial).
+  useEffect(() => {
+    for (const p of sortedItems.slice(0, 8)) {
+      const raw = safeStr(p.avatar_url) || safeStr(p.avatar) || safeStr(p.photo_url);
+      if (isValidImageUrl(raw)) preloadImage(raw);
+    }
   }, [sortedItems]);
 
 
@@ -399,31 +433,56 @@ export function RecentPartnersCarousel() {
         <div
           role="toolbar"
           aria-label="Filtros e ordenação de parceiros"
+          aria-orientation="horizontal"
           className="mt-2 flex items-center gap-2 overflow-x-auto scrollbar-none w-full pt-2 pb-1"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
-          {/* Filtro por categoria: Todos / 🛠️ Prestadores / 🚚 Parceiros B2B */}
-          {([
-            { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
-            { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
-            { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
-          ]).map((opt) => {
-            const active = kindFilter === opt.v;
-            return (
-              <button
-                key={opt.v}
-                type="button"
-                onClick={() => setKindFilter(opt.v)}
-                aria-pressed={active}
-                className="shrink-0 whitespace-nowrap text-[11px] md:text-xs font-bold px-3 py-1.5 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-                style={active
-                  ? { background: opt.color, color: "#000", borderColor: opt.color, ["--tw-ring-color" as any]: opt.color }
-                  : { color: "rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.12)", ["--tw-ring-color" as any]: opt.color }}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
+          {/* Grupo radio: filtro por categoria. Roving tabindex + setas para teclado. */}
+          <div role="radiogroup" aria-label="Filtrar parceiros por categoria" className="contents">
+            {(() => {
+              const opts = [
+                { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
+                { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
+                { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
+              ];
+              return opts.map((opt, i) => {
+                const active = kindFilter === opt.v;
+                return (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={`Filtrar por ${opt.label.replace(/^\S+\s/, "")}`}
+                    tabIndex={active ? 0 : -1}
+                    onClick={() => setKindFilter(opt.v)}
+                    onKeyDown={(e) => {
+                      if (["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) {
+                        e.preventDefault();
+                        let ni = i;
+                        if (e.key === "ArrowRight") ni = (i + 1) % opts.length;
+                        if (e.key === "ArrowLeft") ni = (i - 1 + opts.length) % opts.length;
+                        if (e.key === "Home") ni = 0;
+                        if (e.key === "End") ni = opts.length - 1;
+                        const next = opts[ni];
+                        if (next) {
+                          setKindFilter(next.v);
+                          const el = e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('button[role="radio"]')[ni];
+                          el?.focus();
+                        }
+                      }
+                    }}
+                    className="shrink-0 whitespace-nowrap text-[11px] md:text-xs font-bold px-3 py-1.5 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    style={active
+                      ? { background: opt.color, color: "#000", borderColor: opt.color, ["--tw-ring-color" as any]: opt.color }
+                      : { color: "rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.12)", ["--tw-ring-color" as any]: opt.color }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              });
+            })()}
+          </div>
 
           {/* Ordenação como pílula (cicla entre modos) */}
           <button
@@ -543,6 +602,7 @@ export function RecentPartnersCarousel() {
                 key={p.id}
                 ref={(el) => { cardRefs.current[idx] = el; }}
                 data-partner-id={p.id}
+                data-partner-avatar={avatarUrl ?? ""}
                 type="button"
                 role="listitem"
                 onClick={() => openProfile(p)}
