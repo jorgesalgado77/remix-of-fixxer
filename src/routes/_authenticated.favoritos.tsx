@@ -573,24 +573,38 @@ function ProfileCard({
       className="rounded-2xl bg-black/40 border border-white/10 overflow-hidden flex flex-col hover:border-white/20 transition-all"
       style={{ boxShadow: `0 0 0 1px rgba(${meta.rgb},0.15) inset` }}
     >
-      {/* Topo com avatar */}
-      <div className="relative h-32 bg-gradient-to-b from-white/[0.04] to-transparent flex items-center justify-center">
+      {/* Topo com foto full-width */}
+      <div
+        className="relative h-36 w-full overflow-hidden bg-zinc-900"
+        style={{ borderBottom: `1px solid rgba(${meta.rgb},0.4)` }}
+      >
         {fav.avatarUrl ? (
           <img
             src={fav.avatarUrl}
             alt={fav.name}
             loading="lazy"
-            className="w-24 h-24 rounded-full object-cover border-2"
-            style={{ borderColor: meta.color, boxShadow: `0 0 18px rgba(${meta.rgb},0.35)` }}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              const el = e.currentTarget as HTMLImageElement;
+              el.onerror = null;
+              el.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fav.name)}&background=${meta.color.replace("#","")}&color=fff&size=256&bold=true&format=png`;
+            }}
           />
         ) : (
           <div
-            className="w-24 h-24 rounded-full border-2 flex items-center justify-center bg-black/60"
-            style={{ borderColor: meta.color, color: meta.color }}
+            className="h-full w-full flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, rgba(${meta.rgb},0.18), rgba(0,0,0,0.6))`, color: meta.color }}
             aria-hidden="true"
           >
-            <Icon className="w-10 h-10" />
+            <Icon className="w-14 h-14" />
+          </div>
+        )}
+
+        {/* Nota */}
+        {fav.rating != null && (
+          <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm border border-amber-400/50 text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Star className="w-3 h-3 fill-amber-400" aria-hidden="true" />
+            {fav.rating.toFixed(1)}
           </div>
         )}
 
