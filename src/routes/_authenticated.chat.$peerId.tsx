@@ -757,19 +757,30 @@ function ConversationPage() {
     if (!userId) return;
     const clientId = m._clientId || m.id;
     setMessages((prev) =>
-      prev.map((x) => (x._clientId === clientId || x.id === clientId ? { ...x, _pending: true, _failed: false } : x)),
+      prev.map((x) =>
+        x._clientId === clientId || x.id === clientId
+          ? { ...x, _pending: true, _failed: false, _uploading: !!m._draftFile, _uploadPct: 0 }
+          : x,
+      ),
     );
     try {
       let attachment: { url: string; type: string; name: string } | null = null;
       if (m._draftFile) {
-        attachment = await doUpload(m._draftFile);
+        attachment = await doUpload(m._draftFile, (pct) =>
+          setMessages((prev) =>
+            prev.map((x) => (x._clientId === clientId ? { ...x, _uploadPct: pct } : x)),
+          ),
+        );
         if (!attachment) throw new Error("Upload cancelado");
       }
       await persistMessage(clientId, m._draftText || "", attachment);
+      setMessages((prev) =>
+        prev.map((x) => (x._clientId === clientId ? { ...x, _uploading: false, _uploadPct: 100 } : x)),
+      );
     } catch (e: any) {
       toast.error("Retentativa falhou", { description: e?.message });
       setMessages((prev) =>
-        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true } : x)),
+        prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true, _uploading: false } : x)),
       );
     }
   };
