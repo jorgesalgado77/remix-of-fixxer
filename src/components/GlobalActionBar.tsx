@@ -179,13 +179,16 @@ export function GlobalActionBar() {
       </button>
 
       <button
-        onClick={() => navigate({ to: "/dashboard/lojista" as any, hash: "menu" })}
-        className={`flex flex-col items-center gap-1 ${isHash("menu") ? "text-primary" : "text-muted-foreground"}`}
+        onClick={() => setMenuOpen(true)}
+        className={`flex flex-col items-center gap-1 ${menuOpen ? "text-primary" : "text-muted-foreground"}`}
+        aria-label="Abrir menu rápido"
+        title="Menu rápido — perfil, favoritos, agenda e mais"
       >
         <Menu className="w-5 h-5" />
         <span className="text-[8px] font-black uppercase italic">Menu</span>
       </button>
     </div>
+    <QuickMenuSheet open={menuOpen} onOpenChange={setMenuOpen} />
     <PublishPickerModal
       open={createOpen}
       onClose={() => setCreateOpen(false)}
