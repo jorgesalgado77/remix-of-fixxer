@@ -26,6 +26,7 @@ import {
   Heart,
   Copy,
   Check,
+  Loader2,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useUserCoords, cityCoords } from "@/lib/geo-distance";
@@ -226,12 +227,20 @@ export function LojistaPublicProfilePage() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [lightboxVideo, setLightboxVideo] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    // Hidrata sincronamente do localStorage para evitar flash de "não-self"
+    // quando o próprio usuário abre seu perfil (bug do "5753 km de você").
+    try { return typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null; } catch { return null; }
+  });
+  const [contactLoading, setContactLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     supabaseExternal.auth.getUser().then(({ data }) => {
-      if (mounted) setCurrentUserId(data.user?.id ?? null);
+      if (mounted && data.user?.id) {
+        setCurrentUserId(data.user.id);
+        try { window.localStorage.setItem("fixxer_user_id", data.user.id); } catch {}
+      }
     }).catch(() => {});
     return () => { mounted = false; };
   }, []);
@@ -610,11 +619,8 @@ export function LojistaPublicProfilePage() {
     return list;
   }, [reviews, reviewCategoryFilter, reviewRatingFilter, reviewDateOrder]);
 
-  const handleContactWhatsApp = () => {
-    // ✉️ "Entrar em contato" agora abre a conversa interna no chat.
-    // O chat é peer-to-peer (mensagens filtradas por sender_id/receiver_id),
-    // portanto navegar para /chat/:peerId já "cria" a conversa se ainda não existir
-    // e "abre" a existente quando já houver mensagens trocadas.
+  const handleContactWhatsApp = async () => {
+    if (contactLoading) return; // anti-duplo-clique
     const peerId = profile?.user_id;
     if (!peerId) {
       toast.error("Perfil sem identificador para iniciar conversa.");
@@ -624,8 +630,16 @@ export function LojistaPublicProfilePage() {
       toast.info("Você não pode iniciar uma conversa consigo mesmo.");
       return;
     }
-    const path = `/chat/${encodeURIComponent(peerId)}`;
-    try { navigate({ to: path as any }); } catch { window.location.href = path; }
+    setContactLoading(true);
+    try {
+      const path = `/chat/${encodeURIComponent(peerId)}`;
+      try { navigate({ to: path as any }); } catch { window.location.href = path; }
+    } catch (e: any) {
+      toast.error("Não foi possível abrir a conversa.", { description: e?.message });
+    } finally {
+      // Pequeno delay para evitar reclique enquanto a navegação transita.
+      setTimeout(() => setContactLoading(false), 800);
+    }
   };
 
   // Botão Favoritar: persiste em favorite_users (Supabase) com fallback local.
@@ -634,24 +648,29 @@ export function LojistaPublicProfilePage() {
   // Coordenadas do usuário logado para cálculo de distância até o perfil visitado.
   const userCoords = useUserCoords();
   // Se o usuário logado está visualizando o próprio perfil, distância = 0 km.
-  const isSelf = !!currentUserId && !!profile?.user_id && currentUserId === profile.user_id;
+  const isSelf = !!profile?.user_id && !!currentUserId && currentUserId === profile.user_id;
   const distanceKm = useMemo(() => {
     if (isSelf) return 0;
     if (!userCoords) return null;
     const pLat = Number((profile as any)?.lat);
     const pLng = Number((profile as any)?.lng);
-    const target = Number.isFinite(pLat) && Number.isFinite(pLng)
-      ? { lat: pLat, lng: pLng }
-      : cityCoords(profile?.city);
-    if (!target) return null;
+    // Sanity range BR (evita coords lixo tipo 0,0 gerando ~6000 km).
+    const inBR = (lat: number, lng: number) =>
+      Number.isFinite(lat) && Number.isFinite(lng) &&
+      lat >= -35 && lat <= 6 && lng >= -75 && lng <= -30;
+    const target = inBR(pLat, pLng) ? { lat: pLat, lng: pLng } : cityCoords(profile?.city);
+    if (!target || !inBR(target.lat, target.lng)) return null;
     const km = haversineKm(userCoords, target);
-    return Number.isFinite(km) ? km : null;
+    if (!Number.isFinite(km) || km > 8000) return null;
+    return km;
   }, [isSelf, userCoords, profile?.city, (profile as any)?.lat, (profile as any)?.lng]);
+  const formatKm = (km: number) =>
+    km < 10 ? `${km.toFixed(1).replace(".", ",")} km` : `${Math.round(km)} km`;
   const distanceLabel = distanceKm == null
     ? null
     : distanceKm === 0
       ? "0 km (você)"
-      : distanceKm < 10 ? `${distanceKm.toFixed(1)} km` : `${Math.round(distanceKm)} km`;
+      : formatKm(distanceKm);
 
   // Lista unificada de cargos: aceita `positions` (novo formato) ou `job_roles` (CSV "||").
   const positionsList = useMemo<string[]>(() => {
@@ -881,10 +900,16 @@ export function LojistaPublicProfilePage() {
                 <div className="pt-4 flex flex-col md:flex-row gap-2 md:gap-3 md:items-center">
                   <Button
                     onClick={handleContactWhatsApp}
-                    className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest px-8 h-12 rounded-xl hover:bg-primary/90"
+                    disabled={contactLoading}
+                    aria-busy={contactLoading}
+                    className="w-full md:w-auto bg-primary text-black font-black uppercase italic tracking-widest px-8 h-12 rounded-xl hover:bg-primary/90 disabled:opacity-70 disabled:cursor-wait"
                     style={{ boxShadow: `0 0 20px rgba(${theme.rgb}, 0.30)` }}
                   >
-                    <MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato
+                    {contactLoading ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Abrindo conversa…</>
+                    ) : (
+                      <><MessageCircle className="w-4 h-4 mr-2" /> Entrar em Contato</>
+                    )}
                   </Button>
 
                   {/* Favoritar — persiste em favorite_users (Supabase) */}

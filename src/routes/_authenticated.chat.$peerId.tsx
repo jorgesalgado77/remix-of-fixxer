@@ -44,6 +44,8 @@ import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory, setContextCategoryOverride } from "@/lib/user-category";
 import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
 import { ChatAppointmentsBanner } from "@/components/ChatAppointmentsBanner";
+import { ChatEmojiPicker } from "@/components/Chat/EmojiPicker";
+import { ChatVoiceRecorder } from "@/components/Chat/VoiceRecorder";
 
 function roleToCategory(role: string | null | undefined): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -924,7 +926,7 @@ function ConversationPage() {
   }, [peerCategory, peerRole]);
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col pb-32">
+    <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-32 overscroll-contain">
       <header
         className="sticky top-0 z-10 bg-black/85 backdrop-blur-xl border-b-2 px-4 py-3 flex items-center gap-3"
         style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)` }}
@@ -1275,7 +1277,11 @@ function ConversationPage() {
         )}
       </div>
 
-      <div className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3">
+      <div
+        className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+      >
+
         <div className="max-w-3xl mx-auto">
           {pendingFiles.length > 0 && (
             <div className="mb-2 space-y-1.5">
@@ -1428,6 +1434,18 @@ function ConversationPage() {
             >
               <CalendarPlus className="w-4 h-4" />
             </button>
+            <ChatEmojiPicker
+              disabled={uploading || sending}
+              onPick={(emo) => {
+                const next = (content ?? "") + emo;
+                setContent(next);
+                setDraftText(peerId, next);
+              }}
+            />
+            <ChatVoiceRecorder
+              disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
+              onRecorded={(file) => acceptIncomingFiles([file])}
+            />
             <textarea
               value={content}
               onChange={(e) => { setContent(e.target.value); setDraftText(peerId, e.target.value); sendTyping(); }}
