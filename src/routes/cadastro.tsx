@@ -269,11 +269,12 @@ function RegisterComponent() {
               />
               <MaskedInputField 
                 mask="(99) 99999-9999"
-                label="Celular" 
+                label="WhatsApp" 
                 placeholder="(00) 00000-0000" 
                 value={cellphone}
                 onChange={(e) => setCellphone(e.target.value)}
               />
+
             </div>
             
             <InputField 
