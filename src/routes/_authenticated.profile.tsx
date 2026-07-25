@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
@@ -68,13 +68,22 @@ function ProfilePage() {
       
       if (profileRes.data) {
         let merged: any = profileRes.data;
+        // Reidrata campos "extras" persistidos em custom_sections.__extras
+        // (campos que ainda não existem como coluna própria na tabela `profiles`).
+        try {
+          const extras = (merged?.custom_sections as any)?.__extras;
+          if (extras && typeof extras === 'object') {
+            // extras não sobrescreve valores já vindos como colunas do banco
+            merged = { ...extras, ...merged };
+          }
+        } catch { /* noop */ }
         // Recupera rascunho offline (não aplica em perfis públicos de terceiros)
         if (!profileId) {
           try {
             const draft = loadDraft(idToLoad);
             const patch = pickDraftPatch(profileRes.data, draft);
             if (patch) {
-              merged = { ...profileRes.data, ...patch };
+              merged = { ...merged, ...patch };
               toast.info("Rascunho recuperado do dispositivo.", {
                 description: draft?.pending
                   ? "Você tinha alterações pendentes — clique em Salvar para reenviar."
@@ -84,6 +93,7 @@ function ProfilePage() {
           } catch { /* noop */ }
         }
         setProfile(merged);
+        lastSavedSnapshotRef.current = JSON.stringify(merged);
         // Sincroniza raio de atuação salvo para uso como padrão nos feeds
         if (!profileId && merged.service_radius_km != null) {
           try {
