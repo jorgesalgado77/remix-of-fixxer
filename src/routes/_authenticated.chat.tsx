@@ -311,12 +311,14 @@ function ChatInboxPage() {
       await hydrateChatPreferences(uid);
       await loadFirstPage(uid);
       await markAllAsRead(uid);
+      startGlobalPresence(uid);
 
       try {
         const channelName = `chat-inbox-${Math.random().toString(36).slice(2)}`;
         channel = supabaseExternal
           .channel(channelName)
           .on(
+
             "postgres_changes" as any,
             { event: "*", schema: "public", table: "messages" },
             async (payload: any) => {
