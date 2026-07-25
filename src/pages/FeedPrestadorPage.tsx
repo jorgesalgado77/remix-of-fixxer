@@ -20,6 +20,7 @@ import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetails
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { usePostUnlock } from "@/hooks/use-post-unlock";
+import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
 
 import {
   ArrowLeft,
