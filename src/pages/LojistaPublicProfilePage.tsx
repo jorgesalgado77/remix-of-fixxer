@@ -26,6 +26,8 @@ import {
   Heart,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { useUserCoords, cityCoords } from "@/lib/geo-distance";
+import { haversineKm } from "@/lib/activity-branches";
 import { useFavoriteUser } from "@/hooks/useFavoriteUser";
 import { createProfileRefetchHandler, type ProfileLike } from "@/lib/profile-refetch";
 import { isMockPeerId, getMockProfile, getMockPeerName } from "@/lib/mock-chat";
@@ -589,6 +591,32 @@ export function LojistaPublicProfilePage() {
   // Botão Favoritar: persiste em favorite_users (Supabase) com fallback local.
   const favorite = useFavoriteUser(profile?.user_id ?? null);
 
+  // Coordenadas do usuário logado para cálculo de distância até o perfil visitado.
+  const userCoords = useUserCoords();
+  const distanceKm = useMemo(() => {
+    if (!userCoords) return null;
+    const pLat = Number((profile as any)?.lat);
+    const pLng = Number((profile as any)?.lng);
+    const target = Number.isFinite(pLat) && Number.isFinite(pLng)
+      ? { lat: pLat, lng: pLng }
+      : cityCoords(profile?.city);
+    if (!target) return null;
+    const km = haversineKm(userCoords, target);
+    return Number.isFinite(km) ? km : null;
+  }, [userCoords, profile?.city, (profile as any)?.lat, (profile as any)?.lng]);
+  const distanceLabel = distanceKm == null
+    ? null
+    : distanceKm < 10 ? `${distanceKm.toFixed(1)} km` : `${Math.round(distanceKm)} km`;
+
+  // Cargo preferencial (posição marcada como primária, ou primeira da lista).
+  const primaryPosition = useMemo(() => {
+    const arr: any[] = Array.isArray(profile?.positions) ? profile!.positions! : [];
+    const pick = arr.find((p) => typeof p === 'object' && p?.primary) || arr[0];
+    if (!pick) return null;
+    const label = typeof pick === 'string' ? pick : (pick?.title || pick?.name || pick?.role);
+    return label ? String(label) : null;
+  }, [profile?.positions]);
+
   const submitReview = async () => {
     if (!newComment.trim()) {
       toast.error("Escreva um comentário antes de enviar.");
@@ -686,8 +714,18 @@ export function LojistaPublicProfilePage() {
                   <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase italic mt-1 flex-wrap">
                     <MapPin className="w-3 h-3 text-primary" />
                     {profile?.city || "Cidade"} / {profile?.state || "UF"}
+                    {distanceLabel && (
+                      <span className="text-primary/90">• {distanceLabel} de você</span>
+                    )}
                     <AvailabilityBadge userId={profile?.user_id ?? null} />
                   </div>
+                  {primaryPosition && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-400/50 text-[11px] font-black uppercase italic text-amber-300">
+                        ★ {primaryPosition}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Reputação */}
@@ -869,16 +907,16 @@ export function LojistaPublicProfilePage() {
                   : [];
               const positions: any[] = Array.isArray(profile?.positions) ? profile!.positions! : [];
               const vehicle = profile?.vehicle_details && typeof profile.vehicle_details === 'object' ? profile.vehicle_details : null;
-              const contactItems: { label: string; value: string }[] = [];
-              if (profile?.whatsapp) contactItems.push({ label: 'WhatsApp', value: profile.whatsapp });
-              if (profile?.phone) contactItems.push({ label: 'Telefone', value: profile.phone });
-              if (profile?.cep) contactItems.push({ label: 'CEP', value: profile.cep });
-              if (profile?.address) contactItems.push({ label: 'Endereço', value: profile.address });
-              if (profile?.neighborhood) contactItems.push({ label: 'Bairro', value: profile.neighborhood });
-              if (profile?.cnpj) contactItems.push({ label: 'CNPJ', value: profile.cnpj });
+              const radiusKm = Number((profile as any)?.service_radius_km);
+              const hasRadius = Number.isFinite(radiusKm) && radiusKm > 0;
+              const locationItems: { label: string; value: string }[] = [];
+              if (profile?.neighborhood) locationItems.push({ label: 'Bairro', value: profile.neighborhood });
+              if (profile?.city) locationItems.push({ label: 'Cidade', value: profile.city });
+              if (profile?.state) locationItems.push({ label: 'Estado', value: profile.state });
+              if (distanceLabel) locationItems.push({ label: 'Distância', value: `${distanceLabel} de você` });
 
               const hasAny =
-                branch || preferred.length || offerings.length || positions.length || profile?.offerings_notes || vehicle || contactItems.length;
+                branch || preferred.length || offerings.length || positions.length || profile?.offerings_notes || vehicle || locationItems.length || hasRadius;
               if (!hasAny) return null;
 
               return (
@@ -892,6 +930,36 @@ export function LojistaPublicProfilePage() {
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Ramo Principal</p>
                       <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/15 border border-primary/40 text-xs font-black uppercase italic text-primary">
                         {String(branch)}
+                      </span>
+                    </div>
+                  )}
+
+                  {positions.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Cargos</p>
+                      <div className="flex flex-wrap gap-2">
+                        {positions.map((p: any, i: number) => {
+                          const label = typeof p === 'string' ? p : (p?.title || p?.name || p?.role);
+                          const primary = typeof p === 'object' && p?.primary;
+                          if (!label) return null;
+                          return (
+                            <span
+                              key={`${label}-${i}`}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase italic border ${primary ? 'bg-amber-500/15 border-amber-400/50 text-amber-300' : 'bg-white/5 border-white/10 text-white/90'}`}
+                            >
+                              {primary && '★ '}{label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {hasRadius && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Raio de Atuação</p>
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-xs font-black uppercase italic text-primary">
+                        <MapPin className="w-3.5 h-3.5" /> Até {radiusKm} km
                       </span>
                     </div>
                   )}
@@ -941,39 +1009,23 @@ export function LojistaPublicProfilePage() {
                         </div>
                       )}
                       {profile?.offerings_notes && (
-                        <p className="text-xs italic text-white/70 whitespace-pre-wrap break-words border-l-2 border-primary/40 pl-3">
-                          {profile.offerings_notes}
-                        </p>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Observações</p>
+                          <p className="text-xs italic text-white/80 whitespace-pre-wrap break-words border-l-2 border-primary/40 pl-3 py-1">
+                            {profile.offerings_notes}
+                          </p>
+                        </div>
                       )}
                     </div>
                   )}
 
-                  {positions.length > 0 && (
+                  {locationItems.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Cargos</p>
-                      <div className="flex flex-wrap gap-2">
-                        {positions.map((p: any, i: number) => {
-                          const label = typeof p === 'string' ? p : (p?.title || p?.name || p?.role);
-                          const primary = typeof p === 'object' && p?.primary;
-                          if (!label) return null;
-                          return (
-                            <span
-                              key={`${label}-${i}`}
-                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase italic border ${primary ? 'bg-amber-500/15 border-amber-400/50 text-amber-300' : 'bg-white/5 border-white/10 text-white/90'}`}
-                            >
-                              {primary && '★ '}{label}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {contactItems.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Contato & Localização</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                        <MapPin className="w-3 h-3" /> Localização
+                      </p>
                       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {contactItems.map((c) => (
+                        {locationItems.map((c) => (
                           <li key={c.label} className="flex justify-between gap-3 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-[11px]">
                             <span className="text-muted-foreground uppercase font-black tracking-widest text-[9px]">{c.label}</span>
                             <span className="font-bold text-white/90 truncate">{c.value}</span>
