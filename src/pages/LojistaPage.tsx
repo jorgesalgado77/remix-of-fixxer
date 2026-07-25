@@ -598,7 +598,7 @@ export function LojistaDashboard() {
                 icon={<Heart className="w-4 h-4 text-red-500 fill-red-500/20"/>} 
                 label="Favoritos" 
                 active={false} 
-                onClick={() => setShowFavoritesModal(true)} 
+                onClick={() => navigate({ to: '/favoritos' as any }).catch(() => { window.location.href = '/favoritos'; })} 
               />
               
               <NavButtonWithTooltip 
