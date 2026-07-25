@@ -654,6 +654,12 @@ export default function FeedParceiroPage() {
   }, [search, activeSector, statusFilter]);
 
   const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  useFeedPreload(
+    filtered,
+    paged.length,
+    PAGE_SIZE,
+    (r) => r.attachment ?? null,
+  );
   const hasMore = paged.length < filtered.length;
 
   useEffect(() => {
@@ -672,7 +678,7 @@ export default function FeedParceiroPage() {
           }, 350);
         }
       },
-      { rootMargin: "120px" },
+      { rootMargin: "800px" },
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
