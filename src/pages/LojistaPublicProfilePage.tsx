@@ -774,7 +774,7 @@ export function LojistaPublicProfilePage() {
                     <MapPin className="w-3 h-3 text-primary" />
                     {profile?.city || "Cidade"} / {profile?.state || "UF"}
                     {distanceLabel && (
-                      <span className="text-primary/90">• {distanceLabel} de você</span>
+                      <span className="text-primary/90">• {isSelf ? distanceLabel : `${distanceLabel} de você`}</span>
                     )}
                     <AvailabilityBadge userId={profile?.user_id ?? null} />
                   </div>
