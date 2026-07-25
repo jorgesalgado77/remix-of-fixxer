@@ -424,6 +424,23 @@ function FavoritosPage() {
       <main className="max-w-5xl mx-auto px-4 pt-6">
         {tab === "perfis" && (
           <section id="panel-perfis" role="tabpanel" aria-labelledby="tab-perfis" aria-live="polite">
+            {/* Sub-filtros por tipo de perfil */}
+            <div
+              className="flex gap-2 overflow-x-auto pb-3 -mx-1 px-1 scrollbar-thin"
+              role="radiogroup"
+              aria-label="Filtrar perfis por tipo"
+            >
+              <FilterPill active={kindFilter === "todos"} onClick={() => setKindFilter("todos")} color="#00FF87" rgb="0,255,135">
+                🟢 Todos
+              </FilterPill>
+              <FilterPill active={kindFilter === "prestador"} onClick={() => setKindFilter("prestador")} color="#FF9F0A" rgb="255,159,10">
+                🛠️ Prestadores
+              </FilterPill>
+              <FilterPill active={kindFilter === "parceiro"} onClick={() => setKindFilter("parceiro")} color="#A855F7" rgb="168,85,247">
+                🚚 Parceiros B2B
+              </FilterPill>
+            </div>
+
             {loadingProfiles ? (
               <SkeletonGrid />
             ) : filteredProfiles.length === 0 ? (
