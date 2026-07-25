@@ -1471,6 +1471,11 @@ function ProfilePage() {
                 fullName={profile?.full_name}
                 displayName={profile?.display_name}
                 accentHex={theme.hex}
+                workModes={Array.isArray(profile?.work_modes) ? profile.work_modes : []}
+                offerings={Array.isArray(profile?.offerings) ? profile.offerings : []}
+                offeringsNotes={profile?.offerings_notes}
+                vehicleType={profile?.vehicle_type}
+                vehicleDescription={profile?.vehicle_description}
               />
             )}
             {/* CENTRAL DE MÍDIA COMPACTA - REFORMULADA */}
