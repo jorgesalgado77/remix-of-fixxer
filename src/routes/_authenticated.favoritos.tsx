@@ -629,12 +629,6 @@ function ProfileCard({
           >
             {meta.emoji} {meta.label}
           </span>
-          {fav.rating != null && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-400">
-              <Star className="w-3 h-3 fill-amber-400" aria-hidden="true" />
-              {fav.rating.toFixed(1)}
-            </span>
-          )}
         </div>
 
         <h3 className="text-sm font-black uppercase italic truncate" title={fav.name}>{fav.name}</h3>
