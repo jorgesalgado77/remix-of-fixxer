@@ -1249,6 +1249,8 @@ function PostCardImpl({
   const status = getFeedStatus(post.id);
   const statusColor = FEED_STATUS_COLOR[status];
   const profileHref = authorHref(post);
+  const userCoords = useUserCoords();
+  const distanceLabel = formatDistanceFromCity(post.city, userCoords);
 
   return (
     <article
