@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Search } from "lucide-react";
+import { Check, Search, Pencil } from "lucide-react";
 import { ACTIVITY_MATRIX, flattenBranches } from "@/lib/activity-branches";
 import { findSimilar } from "@/lib/branch-search";
 
@@ -8,9 +8,8 @@ import { findSimilar } from "@/lib/branch-search";
  * customizado com auto-sugestão inteligente.
  *
  * — Salva em `activity_branch` (string).
- * — Quando o usuário escolhe "Outro" e digita, faz busca em tempo real
- *   contra a matriz oficial (inclui subcategorias). Se houver similaridade,
- *   oferece substituição por botão de 1 clique.
+ * — Quando um ramo já está escolhido, mostra somente ele + botão "Alterar",
+ *   mantendo o card "Outro" sempre visível para digitar customizado.
  */
 
 type Props = {
@@ -47,9 +46,9 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
     : "";
   const [showCustom, setShowCustom] = useState<boolean>(!!initialCustom);
   const [customText, setCustomText] = useState<string>(initialCustom);
+  const [editing, setEditing] = useState<boolean>(false);
 
   useEffect(() => {
-    // se o value externo mudar, sincroniza estado local
     const isCustom = value?.toLowerCase().startsWith(CUSTOM_PREFIX.toLowerCase());
     if (isCustom) {
       setShowCustom(true);
@@ -60,14 +59,23 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
   const all = useMemo(() => flattenBranches(), []);
   const suggestion = useMemo(() => findSimilar(customText, all), [customText, all]);
 
+  const selectedMacro = useMemo(
+    () => MACRO_OPTIONS.find((m) => m.label === value) || null,
+    [value],
+  );
+  const hasSelection = !!selectedMacro || !!(value && value.trim());
+  const collapsed = hasSelection && !editing;
+
   const pickMacro = (label: string) => {
     setShowCustom(false);
     setCustomText("");
+    setEditing(false);
     onChange(label);
   };
 
   const enableCustom = () => {
     setShowCustom(true);
+    setEditing(true);
     if (customText.trim()) onChange(`${CUSTOM_PREFIX} ${customText.trim()}`);
     else onChange("");
   };
@@ -75,8 +83,48 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
   const applyOfficial = (label: string) => {
     setShowCustom(false);
     setCustomText("");
+    setEditing(false);
     onChange(label);
   };
+
+  // Modo COMPACTO: chip do ramo escolhido + "Alterar"
+  if (collapsed && !showCustom) {
+    return (
+      <div className="space-y-3 w-full">
+        <div
+          className="w-full flex items-center gap-3 rounded-2xl border p-3"
+          style={{ borderColor: accent, background: `${accent}18` }}
+        >
+          <span className="text-xl shrink-0" aria-hidden>{selectedMacro?.icon ?? "🎯"}</span>
+          <span className="text-[12px] font-black uppercase tracking-tight text-white leading-tight flex-1 min-w-0 break-words">
+            {value}
+          </span>
+          <Check className="w-4 h-4 shrink-0" style={{ color: accent }} aria-hidden />
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="shrink-0 inline-flex items-center gap-1 rounded-xl bg-white/10 hover:bg-white/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white"
+            aria-label="Alterar ramo principal"
+          >
+            <Pencil className="w-3 h-3" /> Alterar
+          </button>
+        </div>
+
+        {/* Opção "Outro" sempre visível */}
+        <button
+          type="button"
+          onClick={enableCustom}
+          className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed p-3 text-left transition-all min-w-0 overflow-hidden active:scale-[0.98]"
+          style={{ borderColor: "rgba(255,255,255,0.18)", background: "transparent" }}
+        >
+          <span className="text-xl shrink-0" aria-hidden>📝</span>
+          <span className="text-[11px] font-black uppercase tracking-tight text-white leading-tight flex-1 min-w-0">
+            Outro (Digitar Ramo Customizado)
+          </span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 w-full">
