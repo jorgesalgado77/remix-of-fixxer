@@ -23,6 +23,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { EscrowBadge } from "@/components/EscrowBadge";
 import { ReviewModal } from "@/components/ReviewModal";
+import { PanelActions } from "@/components/PanelActions";
 
 
 export const Route = createFileRoute("/_authenticated/cliente")({
