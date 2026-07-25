@@ -139,11 +139,16 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
       next = roles.filter((r) => r !== name);
     } else {
       if (roles.length >= MAX_ROLES) {
+        setInlineWarn(`Limite máximo de ${MAX_ROLES} cargos atingido — remova algum para adicionar outro.`);
         toast.warning(`Limite máximo de ${MAX_ROLES} cargos.`);
         return;
       }
+      if (roles.length + 1 > quota && balance < EXTRA_COST) {
+        setInlineWarn(`Seu plano ${planId.toUpperCase()} inclui apenas ${quota} cargo(s). Cada extra custa ${EXTRA_COST} 🪙 e você tem ${balance} 🪙.`);
+      }
       const paid = await chargeExtraIfNeeded(roles.length + 1);
       if (!paid) return;
+      setInlineWarn(null);
       next = [...roles, name];
     }
     setProfile({ ...profile, job_roles: toCsv(next) });
