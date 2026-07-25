@@ -1,5 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, Megaphone, Settings, Zap, PowerOff, Loader2, AlertTriangle, UserCircle2 } from "lucide-react";
+import {
+  Calendar,
+  Megaphone,
+  Settings,
+  Zap,
+  PowerOff,
+  Loader2,
+  AlertTriangle,
+  UserCircle2,
+  Heart,
+  PlusCircle,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -13,15 +24,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+export type PanelRole = "lojista" | "prestador" | "parceiro" | "cliente";
+
 /**
- * Barra de ações padrão dos painéis (Lojista, Prestador, Parceiro, Cliente).
- * - Agenda / Meus Anúncios / Configurações: apenas ícone + tooltip acessível.
- * - Disponibilidade: com texto, confirmação obrigatória, estado de carregamento
- *   e mensagens de erro claras.
- * Todos os controles são navegáveis por teclado (Tab/Enter/Espaço).
+ * Barra de ações padrão dos painéis, adaptada por categoria do perfil logado.
+ *
+ * - Lojista: Agenda • Meus Anúncios • Meu Perfil Público • Configurações • Disponibilidade
+ * - Prestador: Agenda • Meus Anúncios • Meu Perfil Público • Configurações • Disponibilidade
+ * - Parceiro Fornecedor: Agenda • Meus Anúncios • Meu Perfil Público • Configurações • Disponibilidade
+ * - Cliente Final: Agenda • Publicar Necessidade • Favoritos • Configurações
+ *
+ * Todos os controles são navegáveis por teclado (Tab/Enter/Espaço) e têm rótulos ARIA.
  */
-export function PanelActions() {
-  const [myProfileHref, setMyProfileHref] = useState<string>("/perfil/lojista");
+export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
+  const [myProfileHref, setMyProfileHref] = useState<string>(profileHrefFor(role));
 
   useEffect(() => {
     let cancelled = false;
@@ -40,35 +56,96 @@ export function PanelActions() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [role]);
+
+  const showAnuncios = role !== "cliente";
+  const showPerfilPublico = role !== "cliente";
+  const showAvailability = role !== "cliente";
+  const showPublicar = role === "cliente";
+  const showFavoritos = role === "cliente";
 
   return (
     <div
       className="flex flex-wrap items-center gap-3 md:gap-4 p-1.5 md:p-2 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm"
       role="toolbar"
-      aria-label="Ações rápidas do painel"
+      aria-label={`Ações rápidas do painel ${labelFor(role)}`}
     >
-      <IconLink to="/agenda" label="Agenda" tip="Abrir minha agenda de compromissos">
+      <IconLink to="/agenda" label="Agenda" tip={agendaTip(role)}>
         <Calendar className="w-5 h-5" aria-hidden="true" />
       </IconLink>
-      <IconLink to="/meus-anuncios" label="Meus Anúncios" tip="Gerenciar meus anúncios publicados">
-        <Megaphone className="w-5 h-5" aria-hidden="true" />
-      </IconLink>
+
+      {showAnuncios && (
+        <IconLink to="/meus-anuncios" label="Meus Anúncios" tip={anunciosTip(role)}>
+          <Megaphone className="w-5 h-5" aria-hidden="true" />
+        </IconLink>
+      )}
+
+      {showPublicar && (
+        <IconLink
+          to="/cliente"
+          label="Publicar Necessidade"
+          tip="Publicar uma nova necessidade e receber propostas"
+        >
+          <PlusCircle className="w-5 h-5" aria-hidden="true" />
+        </IconLink>
+      )}
+
+      {showFavoritos && (
+        <IconLink to="/favoritos" label="Favoritos" tip="Ver meus profissionais e fornecedores favoritos">
+          <Heart className="w-5 h-5" aria-hidden="true" />
+        </IconLink>
+      )}
+
+      {showPerfilPublico && (
+        <IconLink
+          to={myProfileHref}
+          label="Meu Perfil Público"
+          tip="Ver como meu perfil público aparece para outros usuários"
+        >
+          <UserCircle2 className="w-5 h-5" aria-hidden="true" />
+        </IconLink>
+      )}
+
       <IconLink
-        to={myProfileHref}
-        label="Meu Perfil Público"
-        tip="Ver como meu perfil público aparece para outros usuários"
+        to="/configuracoes"
+        label="Configurações"
+        tip="Configurações do sistema — preferências, notificações e segurança"
       >
-        <UserCircle2 className="w-5 h-5" aria-hidden="true" />
-      </IconLink>
-      <IconLink to="/configuracoes" label="Configurações" tip="Configurações do sistema — preferências, notificações e segurança">
         <Settings className="w-5 h-5" aria-hidden="true" />
       </IconLink>
-      <AvailabilityToggle />
+
+      {showAvailability && <AvailabilityToggle role={role} />}
     </div>
   );
 }
 
+function profileHrefFor(role: PanelRole): string {
+  if (role === "cliente") return "/configuracoes";
+  return `/perfil/${role}`;
+}
+
+function labelFor(role: PanelRole): string {
+  return role === "lojista"
+    ? "Lojista"
+    : role === "parceiro"
+      ? "Parceiro Fornecedor"
+      : role === "cliente"
+        ? "Cliente Final"
+        : "Prestador";
+}
+
+function agendaTip(role: PanelRole): string {
+  if (role === "cliente") return "Minha agenda de contratações e visitas";
+  if (role === "lojista") return "Agenda da loja — pedidos e retiradas";
+  if (role === "parceiro") return "Agenda de entregas e fornecimentos";
+  return "Abrir minha agenda de compromissos";
+}
+
+function anunciosTip(role: PanelRole): string {
+  if (role === "lojista") return "Gerenciar anúncios e vitrine da loja";
+  if (role === "parceiro") return "Gerenciar catálogos e ofertas B2B";
+  return "Gerenciar meus anúncios publicados";
+}
 
 function IconLink({
   to,
@@ -93,7 +170,7 @@ function IconLink({
   );
 }
 
-function AvailabilityToggle() {
+function AvailabilityToggle({ role }: { role: PanelRole }) {
   const [available, setAvailable] = useState<boolean>(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,11 +215,11 @@ function AvailabilityToggle() {
       }
       if (next) {
         toast.success("Você está DISPONÍVEL na plataforma.", {
-          description: "Clientes podem localizar seu perfil e enviar mensagens agora.",
+          description: availableOnDescription(role),
         });
       } else {
         toast("Você está INDISPONÍVEL.", {
-          description: "Perfil pausado — nenhuma nova solicitação chegará até você reativar.",
+          description: availableOffDescription(role),
         });
       }
       setConfirmOpen(false);
@@ -163,11 +240,7 @@ function AvailabilityToggle() {
     "bg-red-600 border-red-500 text-white hover:bg-red-700 shadow-[0_0_18px_rgba(239,68,68,0.45)]";
 
   const nextLabel = available ? "Indisponível" : "Disponível";
-  const statusLabel = loadingInitial
-    ? "Carregando…"
-    : available
-      ? "Disponível"
-      : "Indisponível";
+  const statusLabel = loadingInitial ? "Carregando…" : available ? "Disponível" : "Indisponível";
 
   return (
     <>
@@ -200,7 +273,6 @@ function AvailabilityToggle() {
         ) : (
           <PowerOff className="w-5 h-5" aria-hidden="true" />
         )}
-        {/* Região viva para leitores de tela */}
         <span role="status" aria-live="polite" className="sr-only">
           {busy
             ? "Salvando alteração de disponibilidade…"
@@ -218,13 +290,11 @@ function AvailabilityToggle() {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {available
-                ? "Pausar minha disponibilidade?"
-                : "Reativar minha disponibilidade?"}
+                ? confirmPauseTitle(role)
+                : confirmResumeTitle(role)}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {available
-                ? "Ao confirmar, seu perfil ficará OCULTO nas buscas e você deixará de receber novas mensagens e solicitações até reativar."
-                : "Ao confirmar, seu perfil voltará a aparecer nas buscas e clientes poderão enviar mensagens e solicitações imediatamente."}
+              {available ? confirmPauseDesc(role) : confirmResumeDesc(role)}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -268,4 +338,39 @@ function AvailabilityToggle() {
       </AlertDialog>
     </>
   );
+}
+
+function availableOnDescription(role: PanelRole): string {
+  if (role === "lojista") return "Sua loja aparece nas buscas e recebe pedidos agora.";
+  if (role === "parceiro") return "Seu catálogo B2B fica visível para lojistas e prestadores.";
+  return "Clientes podem localizar seu perfil e enviar mensagens agora.";
+}
+function availableOffDescription(role: PanelRole): string {
+  if (role === "lojista") return "Loja pausada — nenhum novo pedido chegará até você reativar.";
+  if (role === "parceiro") return "Catálogo pausado — nenhuma nova solicitação B2B chegará.";
+  return "Perfil pausado — nenhuma nova solicitação chegará até você reativar.";
+}
+function confirmPauseTitle(role: PanelRole): string {
+  if (role === "lojista") return "Pausar minha loja?";
+  if (role === "parceiro") return "Pausar meu catálogo B2B?";
+  return "Pausar minha disponibilidade?";
+}
+function confirmResumeTitle(role: PanelRole): string {
+  if (role === "lojista") return "Reativar minha loja?";
+  if (role === "parceiro") return "Reativar meu catálogo B2B?";
+  return "Reativar minha disponibilidade?";
+}
+function confirmPauseDesc(role: PanelRole): string {
+  if (role === "lojista")
+    return "Ao confirmar, sua loja ficará OCULTA nas buscas e deixará de receber novos pedidos até reativar.";
+  if (role === "parceiro")
+    return "Ao confirmar, seu catálogo ficará OCULTO nas buscas B2B e deixará de receber novas solicitações até reativar.";
+  return "Ao confirmar, seu perfil ficará OCULTO nas buscas e você deixará de receber novas mensagens e solicitações até reativar.";
+}
+function confirmResumeDesc(role: PanelRole): string {
+  if (role === "lojista")
+    return "Ao confirmar, sua loja voltará a aparecer nas buscas e receberá novos pedidos imediatamente.";
+  if (role === "parceiro")
+    return "Ao confirmar, seu catálogo voltará a aparecer nas buscas B2B e receberá novas solicitações imediatamente.";
+  return "Ao confirmar, seu perfil voltará a aparecer nas buscas e clientes poderão enviar mensagens e solicitações imediatamente.";
 }

@@ -46,7 +46,7 @@ function ParceiroDashboard() {
           <Link to="/feed/parceiro" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
             <TrendingUp className="w-4 h-4" /> Acessar Feed da Categoria
           </Link>
-          <PanelActions />
+          <PanelActions role="parceiro" />
         </div>
       </header>
 

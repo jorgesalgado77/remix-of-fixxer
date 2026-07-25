@@ -59,7 +59,7 @@ function ClientePortal() {
             </Link>
             <TabButton active={activeTab === 'contratacoes'} onClick={() => setActiveTab('contratacoes')} label="Contratações" icon={<ShieldCheck className="w-3 h-3" />} />
           </div>
-          <PanelActions />
+          <PanelActions role="cliente" />
         </div>
       </header>
 
