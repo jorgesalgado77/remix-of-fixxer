@@ -51,6 +51,9 @@ type PartnerRow = {
   vehicle_description?: string | null;
   vehicle_details?: Record<string, any> | null;
   offerings_notes?: string | null;
+  preferred_service?: string | null;
+  preferred_services?: string[] | string | null;
+  job_roles?: string | null;
 };
 
 
@@ -221,6 +224,17 @@ export function RecentPartnersCarousel() {
   const [pull, setPull] = useState(0);
   // Cards descartados manualmente pelo usuário quando não têm coordenadas válidas (badge "Sem localização").
   const [dismissedNoGeo, setDismissedNoGeo] = useState<Set<string>>(() => new Set());
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabaseExternal.auth.getUser();
+        if (!cancelled) setCurrentUserId(data?.user?.id ?? null);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const startY = useRef<number | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -243,7 +257,7 @@ export function RecentPartnersCarousel() {
     // Supabase externo. Qualquer coluna extra faz o PostgREST responder 400 e cai
     // no fallback silencioso (mock), o que explicava o card mostrando somente
     // "Jorge Salgado / Carlos Silva" mesmo com prestadores reais cadastrados.
-    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, banner_url, role, business_category, custom_branch, city, state, rating, created_at, lat, lng";
+    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, banner_url, role, business_category, custom_branch, preferred_service, job_roles, city, state, rating, created_at, lat, lng";
     try {
       const { data, error } = await supabaseExternal
         .from("profiles")
@@ -325,9 +339,13 @@ export function RecentPartnersCarousel() {
       const liveDist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
       const storedRaw = p.distance_km ?? p.distance;
       const storedDist = storedRaw != null ? Number(storedRaw) : null;
-      const dist = Number.isFinite(liveDist as number)
-        ? (liveDist as number)
-        : (storedDist != null && Number.isFinite(storedDist) ? storedDist : null);
+      // Se o card representa o próprio usuário logado, a distância é sempre 0 km.
+      const isSelf = !!currentUserId && p.id === currentUserId;
+      const dist = isSelf
+        ? 0
+        : Number.isFinite(liveDist as number)
+          ? (liveDist as number)
+          : (storedDist != null && Number.isFinite(storedDist) ? storedDist : null);
       return { ...p, _coords: coords, _distanceKm: dist };
     });
 
@@ -351,7 +369,7 @@ export function RecentPartnersCarousel() {
       });
     }
     return enriched;
-  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo]);
+  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo, currentUserId]);
 
   // ---- IntersectionObserver: pré-carrega /perfil/:id + foto quando o card se aproxima ----
   useEffect(() => {
@@ -725,6 +743,22 @@ export function RecentPartnersCarousel() {
                   >
                     {meta.emoji} {branchText}
                   </p>
+                  {(() => {
+                    // 🎯 Cargo Preferencial (preferred_service) — separado por vírgula/;
+                    const raw = safeStr(p.preferred_service)
+                      || (Array.isArray(p.preferred_services) ? p.preferred_services.filter(Boolean).join(", ") : safeStr(p.preferred_services as any));
+                    if (!raw) return null;
+                    const first = raw.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean).slice(0, 2).join(" • ");
+                    if (!first) return null;
+                    return (
+                      <p
+                        className="text-[10px] font-bold mt-0.5 truncate text-primary/90"
+                        title={`Cargo preferencial: ${raw}`}
+                      >
+                        🎯 {first}
+                      </p>
+                    );
+                  })()}
                   {distanceLabel && location ? (
                     <p className="text-[10px] text-emerald-400 font-semibold mt-1 truncate" title={`a ${distanceLabel} km de você • ${location}`}>
                       📍 a {distanceLabel} km • {location}

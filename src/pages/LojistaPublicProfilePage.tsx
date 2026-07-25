@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useLocation } from "@tanstack/react-router";
+import { useParams, useLocation, useNavigate } from "@tanstack/react-router";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 
 import {
@@ -186,6 +186,7 @@ const basename = (url: string): string => {
 export function LojistaPublicProfilePage() {
   const params = useParams({ strict: false }) as { id?: string };
   const location = useLocation();
+  const navigate = useNavigate();
   const category: CategoryKey = useMemo(() => {
     const p = location.pathname || "";
     if (p.startsWith("/prestador")) return "prestador";
@@ -610,14 +611,21 @@ export function LojistaPublicProfilePage() {
   }, [reviews, reviewCategoryFilter, reviewRatingFilter, reviewDateOrder]);
 
   const handleContactWhatsApp = () => {
-    const num = profile?.whatsapp?.replace(/\D/g, "");
-    if (!num) {
-      toast.error("WhatsApp da loja indisponível.");
+    // ✉️ "Entrar em contato" agora abre a conversa interna no chat.
+    // O chat é peer-to-peer (mensagens filtradas por sender_id/receiver_id),
+    // portanto navegar para /chat/:peerId já "cria" a conversa se ainda não existir
+    // e "abre" a existente quando já houver mensagens trocadas.
+    const peerId = profile?.user_id;
+    if (!peerId) {
+      toast.error("Perfil sem identificador para iniciar conversa.");
       return;
     }
-    // Adiciona o prefixo 55 se não houver, ou garante que tenha 11-13 dígitos
-    const formattedNum = num.length <= 11 ? `55${num}` : num;
-    window.open(`https://wa.me/${formattedNum}`, "_blank");
+    if (currentUserId && peerId === currentUserId) {
+      toast.info("Você não pode iniciar uma conversa consigo mesmo.");
+      return;
+    }
+    const path = `/chat/${encodeURIComponent(peerId)}`;
+    try { navigate({ to: path as any }); } catch { window.location.href = path; }
   };
 
   // Botão Favoritar: persiste em favorite_users (Supabase) com fallback local.
