@@ -4,15 +4,18 @@ const chain = (rows: any) => ({
   select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: rows, error: null }) }) }),
 });
 
-const state: { profiles: any; store: any; profilesByUser: any } = {
+const state: { publicProfile: any; profiles: any; store: any; profilesByUser: any; provider: any } = {
+  publicProfile: null,
   profiles: null,
   profilesByUser: null,
+  provider: null,
   store: null,
 };
 
 vi.mock("@/lib/supabaseExternal", () => ({
   supabaseExternal: {
     from(table: string) {
+      if (table === "profiles_public") return chain(state.publicProfile);
       if (table === "profiles") {
         // Retorna primeiro por id, depois por user_id conforme chamadas subsequentes
         return {
@@ -26,6 +29,7 @@ vi.mock("@/lib/supabaseExternal", () => ({
           }),
         };
       }
+      if (table === "provider_profiles") return chain(state.provider);
       if (table === "store_profiles") return chain(state.store);
       return chain(null);
     },
@@ -36,12 +40,23 @@ import { resolvePeerProfile, clearPeerCache, initialsOf } from "@/lib/chat-peer-
 
 beforeEach(() => {
   state.profiles = null;
+  state.publicProfile = null;
   state.profilesByUser = null;
+  state.provider = null;
   state.store = null;
   clearPeerCache();
 });
 
 describe("chat-peer-profile", () => {
+  it("prefers safe public profile data when direct profiles may be blocked by RLS", async () => {
+    state.publicProfile = { id: "u0", user_id: "u0", display_name: "Nome Público", avatar_url: "http://public.png", role: "prestador" };
+    state.profiles = null;
+    const p = await resolvePeerProfile("u0");
+    expect(p.name).toBe("Nome Público");
+    expect(p.avatarUrl).toBe("http://public.png");
+    expect(p.source).toContain("profiles_public.id");
+  });
+
   it("returns fallback when nothing is found", async () => {
     const p = await resolvePeerProfile("00000000-0000-0000-0000-000000000001");
     expect(p.name).toBe("Conversa");
@@ -81,7 +96,16 @@ describe("chat-peer-profile", () => {
     const p = await resolvePeerProfile("u4");
     expect(p.name).toBe("Loja Alpha");
     expect(p.avatarUrl).toBe("http://logo.png");
-    expect(p.source).toEqual(expect.arrayContaining(["store_profiles.name", "store_profiles.logo"]));
+    expect(p.source).toEqual(expect.arrayContaining(["store_profiles.user_id.name", "store_profiles.user_id.avatar"]));
+  });
+
+  it("falls back to provider_profiles for service provider avatar and name", async () => {
+    state.profiles = { id: "u6", user_id: "u6", display_name: null, full_name: null, avatar_url: null };
+    state.provider = { user_id: "u6", display_name: "Prestador Real", photo_url: "http://provider.png", role: "prestador" };
+    const p = await resolvePeerProfile("u6");
+    expect(p.name).toBe("Prestador Real");
+    expect(p.avatarUrl).toBe("http://provider.png");
+    expect(p.source).toEqual(expect.arrayContaining(["provider_profiles.user_id.name", "provider_profiles.user_id.avatar"]));
   });
 
   it("caches resolved profile for subsequent calls", async () => {

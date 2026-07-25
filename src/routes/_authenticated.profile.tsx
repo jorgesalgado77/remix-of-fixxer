@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
 import { compressImage } from "@/utils/image-compression";
@@ -139,17 +139,17 @@ function ProfilePage() {
 
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseExternal.auth.getUser();
       
       // Se tiver ID na URL, carrega esse perfil. Se não, carrega o do usuário logado.
       const idToLoad = profileId || user?.id;
       if (!idToLoad) return;
 
       const [profileRes, brandsRes, productTypesRes, postRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', idToLoad).single(),
-        supabase.from('brand_flags').select('name').order('name', { ascending: true }),
-        supabase.from('product_types').select('name').order('name', { ascending: true }),
-        postId ? supabase.from('feed_posts').select('*').eq('id', postId).single() : Promise.resolve({ data: null })
+        supabaseExternal.from('profiles').select('*').eq('id', idToLoad).single(),
+        supabaseExternal.from('brand_flags').select('name').order('name', { ascending: true }),
+        supabaseExternal.from('product_types').select('name').order('name', { ascending: true }),
+        postId ? supabaseExternal.from('feed_posts').select('*').eq('id', postId).single() : Promise.resolve({ data: null })
       ]);
       
       if (profileRes.data) {
@@ -220,37 +220,20 @@ function ProfilePage() {
         console.warn("Compressão falhou, usando original:", err);
       }
 
-      const { supabaseExternal } = await import("@/lib/supabaseExternal");
       const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const filePath = `profiles/${profile.id}/${type}-${Date.now()}.${fileExt}`;
 
-      // Tenta primeiro no cliente externo (fonte de verdade). Faz fallback para o interno se necessário.
       let publicUrl: string | null = null;
-      try {
-        const { error: upErr } = await supabaseExternal.storage
-          .from('media')
-          .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
-        if (upErr) throw upErr;
-        publicUrl = supabaseExternal.storage.from('media').getPublicUrl(filePath).data.publicUrl;
-      } catch (extErr) {
-        console.warn("[upload] externo falhou, tentando interno:", extErr);
-        const { error: upErr2 } = await supabase.storage
-          .from('media')
-          .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
-        if (upErr2) throw upErr2;
-        publicUrl = supabase.storage.from('media').getPublicUrl(filePath).data.publicUrl;
-      }
+      const { error: upErr } = await supabaseExternal.storage
+        .from('media')
+        .upload(filePath, processed, { upsert: true, cacheControl: '3600', contentType: processed.type || 'image/jpeg' });
+      if (upErr) throw upErr;
+      publicUrl = supabaseExternal.storage.from('media').getPublicUrl(filePath).data.publicUrl;
 
       const field = type === 'avatar' ? 'avatar_url' : 'banner_url';
 
-      // Atualiza no externo (fonte de verdade) e replica no interno best-effort.
-      try {
-        const { error } = await supabaseExternal.from('profiles').update({ [field]: publicUrl }).eq('id', profile.id);
-        if (error) throw error;
-      } catch (extUpdErr) {
-        console.warn("[profile update] externo falhou, tentando interno:", extUpdErr);
-        await supabase.from('profiles').update({ [field]: publicUrl }).eq('id', profile.id);
-      }
+      const { error } = await supabaseExternal.from('profiles').update({ [field]: publicUrl }).eq('id', profile.id);
+      if (error) throw error;
 
       setProfile({ ...profile, [field]: publicUrl });
       toast.success(type === 'banner' ? "Banner atualizado!" : "Foto atualizada!", { id: toastId });
@@ -361,7 +344,7 @@ function ProfilePage() {
 
           const uploadWithRetry = async (retries = 2): Promise<any> => {
             try {
-              const { error: uploadError } = await supabase.storage
+              const { error: uploadError } = await supabaseExternal.storage
                 .from('media')
                 .upload(filePath, processedFile);
               if (uploadError) throw uploadError;
@@ -374,7 +357,7 @@ function ProfilePage() {
 
           await uploadWithRetry();
 
-          const { data: { publicUrl } } = supabase.storage
+          const { data: { publicUrl } } = supabaseExternal.storage
             .from('media')
             .getPublicUrl(filePath);
 
@@ -484,7 +467,7 @@ function ProfilePage() {
     let attempts = 0;
     while (attempts < 6) {
       attempts++;
-      const { error } = await supabase.from('profiles').update(basePayload).eq('id', profile.id);
+      const { error } = await supabaseExternal.from('profiles').update(basePayload).eq('id', profile.id);
       if (!error) { lastError = null; break; }
       lastError = error;
       const msg = error.message || '';
@@ -567,7 +550,7 @@ function ProfilePage() {
 
   const handleAddNewBrand = async () => {
     if (!newBrand.trim()) return;
-    const { error } = await supabase.from('brand_flags').insert({ name: newBrand.trim() });
+    const { error } = await supabaseExternal.from('brand_flags').insert({ name: newBrand.trim() });
     if (error) {
       toast.error("Erro ao adicionar bandeira");
     } else {
@@ -626,7 +609,7 @@ function ProfilePage() {
       let attempts = 0;
       while (attempts < 30) {
         attempts++;
-        const { error } = await supabase
+        const { error } = await supabaseExternal
           .from('profiles')
           .update(payload)
           .eq('id', profile.id);
@@ -665,7 +648,7 @@ function ProfilePage() {
       }
 
       // Refetch para refletir estado real (colunas + __extras reidratado)
-      const { data: fresh, error: refetchErr } = await supabase
+      const { data: fresh, error: refetchErr } = await supabaseExternal
         .from('profiles')
         .select('*')
         .eq('id', profile.id)
@@ -1364,7 +1347,7 @@ function ProfilePage() {
                               return;
                             }
                             // Persiste no catálogo compartilhado (ficará disponível para outros lojistas)
-                            const { error } = await supabase.from('product_types').insert({ name });
+                            const { error } = await supabaseExternal.from('product_types').insert({ name });
                             if (error && !String(error.message || '').toLowerCase().includes('duplicate')) {
                               toast.error("Não foi possível salvar o novo tipo.", { description: error.message });
                               return;
