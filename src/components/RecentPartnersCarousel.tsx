@@ -437,13 +437,13 @@ export function RecentPartnersCarousel() {
                 aria-setsize={sortedItems.length}
               >
                 <div className="relative w-full h-40 bg-black/40">
-                  {p.avatar_url ? (
+                  {avatarUrl ? (
                     <img
-                      src={p.avatar_url}
-                      alt=""
+                      src={avatarUrl}
+                      alt={`Foto de ${displayName}`}
                       loading="lazy"
                       decoding="async"
-                      className="h-40 w-full object-cover"
+                      className="h-40 w-full object-cover rounded-t-xl"
                       onError={(e) => {
                         const el = e.currentTarget;
                         el.style.display = "none";
@@ -454,11 +454,12 @@ export function RecentPartnersCarousel() {
                   ) : null}
                   <div
                     className="absolute inset-0 items-center justify-center bg-gradient-to-br from-black/60 to-black/30"
-                    style={{ display: p.avatar_url ? "none" : "flex" }}
+                    style={{ display: avatarUrl ? "none" : "flex" }}
                     aria-hidden="true"
                   >
                     <UserCircle2 className="w-14 h-14" style={{ color: meta.color, opacity: 0.7 }} />
                   </div>
+
                   <span className="absolute top-2 right-2 text-xs font-bold text-yellow-400 bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1" aria-hidden="true">
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     {rating.toFixed(1)}
