@@ -14,6 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { GlobalActionBar } from "@/components/GlobalActionBar";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { CoinFeedbackBridge } from "@/components/CoinFeedbackBridge";
+import { CoinConfirmProvider } from "@/components/ConfirmCoinsDialog";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
