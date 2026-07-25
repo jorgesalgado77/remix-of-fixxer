@@ -1432,5 +1432,6 @@ export default function FeedPrestadorPage() {
         }}
       />
     </div>
+    </PullToRefresh>
   );
 }
