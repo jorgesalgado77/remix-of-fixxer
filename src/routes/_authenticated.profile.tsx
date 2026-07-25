@@ -1282,37 +1282,76 @@ function ProfilePage() {
                     <p className="text-xs text-muted-foreground">
                       Selecione todos os formatos de contratação que você aceita. Aparecerá no seu perfil público.
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {['Contratos FreeLancer MEI', 'Contratos Fixos MEI', 'Contratação CLT', 'Serviços Individuais'].map((mode) => {
-                        const list: string[] = Array.isArray(profile?.work_modes) ? profile.work_modes : [];
-                        const active = list.some((m) => m.toLowerCase() === mode.toLowerCase());
-                        return (
+                    {(() => {
+                      const ALL_WORK_MODES = ['Contratos FreeLancer MEI', 'Contratos Fixos MEI', 'Contratação CLT', 'Serviços Individuais'] as const;
+                      const list: string[] = Array.isArray(profile?.work_modes) ? profile.work_modes.filter(Boolean) : [];
+                      const normalizedSet = new Set(list.map((m) => m.toLowerCase()));
+                      const allSelected = ALL_WORK_MODES.every((m) => normalizedSet.has(m.toLowerCase()));
+                      const toggleAll = () => {
+                        // "Todos" alterna entre selecionar/limpar todos os formatos.
+                        const next = allSelected ? [] : [...ALL_WORK_MODES];
+                        setProfile({ ...profile, work_modes: next });
+                      };
+                      return (
+                        <div className="space-y-2">
                           <label
-                            key={mode}
                             className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${
-                              active
-                                ? 'bg-primary/15 border-primary/60'
-                                : 'bg-white/5 border-white/10 hover:border-primary/40'
+                              allSelected
+                                ? 'bg-emerald-500/20 border-emerald-400/70'
+                                : 'bg-white/5 border-white/10 hover:border-emerald-400/40'
                             }`}
                           >
                             <input
                               type="checkbox"
-                              checked={active}
-                              onChange={() => {
-                                const next = active
-                                  ? list.filter((m) => m.toLowerCase() !== mode.toLowerCase())
-                                  : [...list, mode];
-                                setProfile({ ...profile, work_modes: next });
-                              }}
-                              className="w-5 h-5 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214] rounded"
-                              aria-label={`Aceita ${mode}`}
+                              checked={allSelected}
+                              onChange={toggleAll}
+                              className="w-5 h-5 accent-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                              aria-label="Selecionar todos os formatos de contratação"
                             />
-                            <span className="text-xs font-bold flex-1">{mode}</span>
+                            <span className="text-xs font-black uppercase tracking-widest flex-1">
+                              ✅ Todos os formatos
+                            </span>
+                            <span className="text-[10px] text-white/60 font-bold">
+                              {list.length}/{ALL_WORK_MODES.length}
+                            </span>
                           </label>
-                        );
-                      })}
-                    </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {ALL_WORK_MODES.map((mode) => {
+                              const active = normalizedSet.has(mode.toLowerCase());
+                              return (
+                                <label
+                                  key={mode}
+                                  className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${
+                                    active
+                                      ? 'bg-primary/15 border-primary/60'
+                                      : 'bg-white/5 border-white/10 hover:border-primary/40'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={active}
+                                    onChange={() => {
+                                      // Persistimos array deduplicado preservando a ordem canônica dos ALL_WORK_MODES.
+                                      const nextSet = new Set(normalizedSet);
+                                      if (active) nextSet.delete(mode.toLowerCase());
+                                      else nextSet.add(mode.toLowerCase());
+                                      const next = ALL_WORK_MODES.filter((m) => nextSet.has(m.toLowerCase()));
+                                      setProfile({ ...profile, work_modes: next });
+                                    }}
+                                    className="w-5 h-5 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214] rounded"
+                                    aria-label={`Aceita ${mode}`}
+                                  />
+                                  <span className="text-xs font-bold flex-1">{mode}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
+
 
                   {/* OFERECE */}
                   <div className="pt-6 space-y-4 border-t border-white/5">
