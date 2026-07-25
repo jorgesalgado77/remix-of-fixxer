@@ -950,7 +950,22 @@ function ConversationPage() {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
+          <p className="font-black uppercase italic text-sm truncate flex items-center gap-2">
+            <span className="truncate">{peerName}</span>
+            {peerAvailable !== null && (
+              <span
+                className="text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border"
+                style={{
+                  color: peerAvailable ? "#10B981" : "#F59E0B",
+                  borderColor: peerAvailable ? "#10B98155" : "#F59E0B55",
+                  background: peerAvailable ? "#10B98118" : "#F59E0B18",
+                }}
+                aria-live="polite"
+              >
+                {peerAvailable ? "Disponível" : "Indisponível"}
+              </span>
+            )}
+          </p>
           <p className="text-[10px] uppercase tracking-widest font-bold flex items-center gap-2">
             <span
               className="px-1.5 py-0.5 rounded font-black"

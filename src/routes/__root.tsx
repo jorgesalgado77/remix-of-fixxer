@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { GlobalActionBar } from "@/components/GlobalActionBar";
+import { NotificationsCenter } from "@/components/NotificationsCenter";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { CoinFeedbackBridge } from "@/components/CoinFeedbackBridge";
 import { CoinConfirmProvider } from "@/components/ConfirmCoinsDialog";
@@ -213,7 +214,14 @@ function RootComponent() {
         <GlobalErrorBoundary>
           <Outlet />
         </GlobalErrorBoundary>
-        {!hideBar && <GlobalActionBar />}
+        {!hideBar && (
+          <>
+            <div className="fixed top-3 right-3 z-[110]">
+              <NotificationsCenter />
+            </div>
+            <GlobalActionBar />
+          </>
+        )}
         <CoinFeedbackBridge />
         <CoinConfirmProvider />
         <OfflineBanner />
