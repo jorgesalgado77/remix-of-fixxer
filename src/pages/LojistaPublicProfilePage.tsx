@@ -273,6 +273,13 @@ export function LojistaPublicProfilePage() {
   useEffect(() => {
     let cancelled = false;
 
+    const panelNavigationInProgress = () => {
+      if (typeof window === "undefined") return false;
+      const fromGlobal = Number((window as any).__FIXXER_PANEL_NAVIGATION_UNTIL__ || 0);
+      const fromStorage = Number(sessionStorage.getItem("fixxer:panel-navigation-intent-until") || 0);
+      return Math.max(fromGlobal, fromStorage) > Date.now();
+    };
+
     const load = async () => {
       if (!cancelled) setLoading(true);
       try {
@@ -362,6 +369,8 @@ export function LojistaPublicProfilePage() {
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
 
         if (storeId && !isMockPeerId(storeId)) {
+          if (panelNavigationInProgress()) return;
+
           const detectedCategory = await resolvePublicProfileCategory(storeId, {
             profile: profileCandidate,
             routeHint: routeCategory,
@@ -369,7 +378,7 @@ export function LojistaPublicProfilePage() {
           if (cancelled) return;
           setResolvedCategory(detectedCategory);
           const expectedPath = publicProfilePathFor(detectedCategory, storeId);
-          if (location.pathname !== expectedPath) {
+          if (location.pathname !== expectedPath && !panelNavigationInProgress()) {
             navigate({ to: expectedPath as any, replace: true });
           }
         }
