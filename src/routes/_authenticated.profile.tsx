@@ -1129,7 +1129,9 @@ function ProfilePage() {
                     profile={profile}
                     setProfile={setProfile}
                     accent={theme.hex}
+                    planId={(String(profile?.plan_id || 'free').toLowerCase() as any)}
                   />
+
                 </div>
               )}
 
