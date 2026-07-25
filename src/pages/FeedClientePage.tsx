@@ -872,6 +872,7 @@ export default function FeedClientePage() {
               onChat={() => openChat(vendor)}
               onProfile={() => openProfile(vendor)}
               onOpenLightbox={(index) => setLightbox({ vendor, index })}
+              userCoords={userCoords}
             />
           ))}
 
