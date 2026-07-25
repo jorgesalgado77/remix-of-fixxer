@@ -232,6 +232,18 @@ export function LojistaDashboard() {
     };
   }, []);
 
+  // Se o usuário logado não for lojista/admin, envia para o painel correto da sua categoria.
+  useEffect(() => {
+    if (userRole === 'lojista' || userRole === 'admin') return;
+    const target = userRole === 'prestador' ? '/prestador'
+      : userRole === 'fornecedor' ? '/parceiro'
+      : userRole === 'cliente' ? '/cliente'
+      : null;
+    if (target && typeof window !== 'undefined' && window.location.pathname !== target) {
+      navigate({ to: target as any, replace: true });
+    }
+  }, [userRole, navigate]);
+
   const openPublicProfile = () => {
     const id = profileSummary.id || (typeof window !== "undefined" ? localStorage.getItem("fixxer_lojista_id") : null);
     if (!id) {
