@@ -15,7 +15,6 @@ import {
   User
 } from "lucide-react";
 import { PanelActions } from "@/components/PanelActions";
-} from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/parceiro")({
