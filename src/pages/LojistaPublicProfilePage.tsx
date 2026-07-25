@@ -315,7 +315,7 @@ export function LojistaPublicProfilePage() {
 
 
         // O.S. pendentes deste lojista — usa o user_id resolvido do perfil (ou storeId como fallback)
-        const lojistaKey = (found as any)?.user_id || storeId;
+        const lojistaKey = (found as any)?.user_id || (storeFallback as any)?.user_id || storeId;
         if (lojistaKey) {
           const { data: osData } = await supabaseExternal
             .from("service_orders")
