@@ -595,12 +595,12 @@ export function RecentPartnersCarousel() {
               : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=70";
             const city = safeStr(p.city);
             const stateVal = normalizeUf(p.uf) || normalizeUf(p.state);
-            // Formato canônico "Cidade/UF" com barra. Fallbacks:
+            // Formato canônico "Cidade, UF" com vírgula. Fallbacks:
             // - só cidade → "Cidade"
             // - só UF     → "UF"
-            // - nenhum    → tenta location/address como último recurso; senão "".
+            // - nenhum    → tenta location/address; senão string vazia (sem placeholder).
             const location = (city && stateVal)
-              ? `${city}/${stateVal}`
+              ? `${city}, ${stateVal}`
               : (city || stateVal || safeStr(p.location) || safeStr(p.address) || "");
             const branchText = safeStr(p.activity_branch) || safeStr(p.category) || meta.label;
             // Distância só é mostrada quando temos coords válidas DOS DOIS lados.
