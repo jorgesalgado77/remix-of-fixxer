@@ -1498,9 +1498,13 @@ function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <FileText className="w-3 h-3" /> Documentos (PDF, DOC, XLS)
-                    <span className="ml-auto text-[9px] text-white/50 normal-case italic">Arraste para reordenar</span>
+                    <span className="ml-auto text-[9px] text-white/50 normal-case italic">Arraste ou use ← → para reordenar</span>
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <p className="text-[9px] text-white/60 -mt-2">
+                    Formatos aceitos: <b>{UPLOAD_LIMITS.document.hint}</b> · Tamanho máx.: <b>{UPLOAD_LIMITS.document.maxLabel}</b>. Foque um item (Tab) e use setas/Home/End para mover; Enter abre a prévia.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="list" aria-label="Documentos enviados, reordenáveis por arrastar ou setas do teclado">
+
                     {profile?.documents?.filter((f: any) => f.type === 'document').map((doc: any, i: number) => {
                       const ext = (doc.name?.split('.').pop() || '').toLowerCase();
                       const isPdf = ext === 'pdf';
