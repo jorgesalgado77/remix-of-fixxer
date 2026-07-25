@@ -160,7 +160,8 @@ export function RecentPartnersCarousel() {
   const [loading, setLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [sortMode, setSortMode] = useState<SortMode>(() => readSort());
+  const [sortMode, setSortMode] = useState<SortMode>(() => readUrlParam<SortMode>(URL_SORT_PARAM, VALID_SORTS) ?? readSort());
+  const [kindFilter, setKindFilter] = useState<KindFilter>(() => readUrlParam<KindFilter>(URL_FILTER_PARAM, VALID_FILTERS) ?? readFilter());
   const [pull, setPull] = useState(0);
   const startY = useRef<number | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -168,9 +169,16 @@ export function RecentPartnersCarousel() {
   const THRESHOLD = 60;
   const MAX_PULL = 90;
 
+  // Persiste sort/filter em localStorage E na URL (?partnersSort=&partnersKind=)
   useEffect(() => {
     try { window.localStorage.setItem(SORT_KEY, sortMode); } catch { /* ignore */ }
+    writeUrlParams({ [URL_SORT_PARAM]: sortMode === "recent" ? null : sortMode });
   }, [sortMode]);
+  useEffect(() => {
+    try { window.localStorage.setItem(FILTER_KEY, kindFilter); } catch { /* ignore */ }
+    writeUrlParams({ [URL_FILTER_PARAM]: kindFilter === "all" ? null : kindFilter });
+  }, [kindFilter]);
+
 
   const fetchPartners = useCallback(async (): Promise<{ ok: boolean }> => {
     try {
