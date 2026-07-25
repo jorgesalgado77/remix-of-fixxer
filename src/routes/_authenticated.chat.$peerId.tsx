@@ -35,7 +35,7 @@ import {
   fetchPeerLastReadAt,
   subscribePeerReadReceipts,
 } from "@/lib/chat-preferences";
-import { enqueueMarkConversationRead } from "@/lib/chat-read-queue";
+import { enqueueMarkConversationRead, flushChatReadQueue } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { sanitizeContactText, CONTACT_GUARD_WARNING } from "@/lib/contact-guard";
