@@ -433,31 +433,56 @@ export function RecentPartnersCarousel() {
         <div
           role="toolbar"
           aria-label="Filtros e ordenação de parceiros"
+          aria-orientation="horizontal"
           className="mt-2 flex items-center gap-2 overflow-x-auto scrollbar-none w-full pt-2 pb-1"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
-          {/* Filtro por categoria: Todos / 🛠️ Prestadores / 🚚 Parceiros B2B */}
-          {([
-            { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
-            { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
-            { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
-          ]).map((opt) => {
-            const active = kindFilter === opt.v;
-            return (
-              <button
-                key={opt.v}
-                type="button"
-                onClick={() => setKindFilter(opt.v)}
-                aria-pressed={active}
-                className="shrink-0 whitespace-nowrap text-[11px] md:text-xs font-bold px-3 py-1.5 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-                style={active
-                  ? { background: opt.color, color: "#000", borderColor: opt.color, ["--tw-ring-color" as any]: opt.color }
-                  : { color: "rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.12)", ["--tw-ring-color" as any]: opt.color }}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
+          {/* Grupo radio: filtro por categoria. Roving tabindex + setas para teclado. */}
+          <div role="radiogroup" aria-label="Filtrar parceiros por categoria" className="contents">
+            {(() => {
+              const opts = [
+                { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
+                { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
+                { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
+              ];
+              return opts.map((opt, i) => {
+                const active = kindFilter === opt.v;
+                return (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={`Filtrar por ${opt.label.replace(/^\S+\s/, "")}`}
+                    tabIndex={active ? 0 : -1}
+                    onClick={() => setKindFilter(opt.v)}
+                    onKeyDown={(e) => {
+                      if (["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) {
+                        e.preventDefault();
+                        let ni = i;
+                        if (e.key === "ArrowRight") ni = (i + 1) % opts.length;
+                        if (e.key === "ArrowLeft") ni = (i - 1 + opts.length) % opts.length;
+                        if (e.key === "Home") ni = 0;
+                        if (e.key === "End") ni = opts.length - 1;
+                        const next = opts[ni];
+                        if (next) {
+                          setKindFilter(next.v);
+                          const el = e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('button[role="radio"]')[ni];
+                          el?.focus();
+                        }
+                      }
+                    }}
+                    className="shrink-0 whitespace-nowrap text-[11px] md:text-xs font-bold px-3 py-1.5 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    style={active
+                      ? { background: opt.color, color: "#000", borderColor: opt.color, ["--tw-ring-color" as any]: opt.color }
+                      : { color: "rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.12)", ["--tw-ring-color" as any]: opt.color }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              });
+            })()}
+          </div>
 
           {/* Ordenação como pílula (cicla entre modos) */}
           <button
