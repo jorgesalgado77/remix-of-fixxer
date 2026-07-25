@@ -7,15 +7,10 @@ import { haversineKm } from "@/lib/activity-branches";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 
 /**
- * Seção "Lojistas e Parceiros Fornecedores Recentes" — carrossel horizontal
- * dedicado ao painel do Prestador. Diferente de `RecentPartnersCarousel`,
- * este componente:
- *  - Mostra APENAS Lojistas e Parceiros Fornecedores (nunca prestadores).
- *  - Prioriza Lojistas do MESMO RAMO PRINCIPAL do prestador logado
- *    (comparando `business_category` / `custom_branch`), depois completa
- *    com fornecedores e outros lojistas.
- *  - Reaproveita as mesmas colunas seguras do Supabase externo para
- *    evitar erros 400 do PostgREST em colunas inexistentes.
+ * Seção "Lojistas e Clientes Finais Recentes" — carrossel horizontal
+ * dedicado ao painel do Prestador. Mostra APENAS Lojistas e Clientes Finais
+ * (nunca prestadores nem fornecedores B2B). Prioriza Lojistas do MESMO RAMO
+ * PRINCIPAL do prestador logado, depois completa com demais lojistas e clientes.
  */
 
 type Row = {
@@ -35,15 +30,15 @@ type Row = {
   lng: number | null;
 };
 
-type Kind = "lojista" | "fornecedor";
+type Kind = "lojista" | "cliente";
 type Card = Row & { _kind: Kind; _branch: string | null };
 
-const CACHE_KEY = "fixxer_recent_stores_v1";
+const CACHE_KEY = "fixxer_recent_stores_v2";
 
 function classify(role: string | null | undefined): Kind | null {
   const r = (role || "").toLowerCase();
   if (r.includes("lojista")) return "lojista";
-  if (r.includes("fornec") || r.includes("parceiro") || r.includes("b2b")) return "fornecedor";
+  if (r.includes("cliente") || r === "user" || r === "usuario" || r === "usuário" || r.includes("final")) return "cliente";
   return null;
 }
 
