@@ -15,6 +15,8 @@ import {
   Smartphone,
   HelpCircle,
   Activity,
+  Briefcase,
+  Truck,
 } from "lucide-react";
 import { getMyAudit, type AvailabilityAudit } from "@/lib/availability";
 import { supabase } from "@/integrations/supabase/client";
