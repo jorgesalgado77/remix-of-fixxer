@@ -75,6 +75,7 @@ import { Progress } from "@/components/ui/progress";
 import { ActivitySelect } from "@/components/ActivitySelect";
 import { useActivityBranches } from "@/hooks/use-activity-branches";
 import { PhotoSectionsManager, EMPTY_PHOTO_SECTIONS, type PhotoSectionsValue } from "@/components/PhotoSectionsManager";
+import { RecentPartnersCarousel } from "@/components/RecentPartnersCarousel";
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
