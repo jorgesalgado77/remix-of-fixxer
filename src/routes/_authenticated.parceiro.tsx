@@ -50,7 +50,10 @@ function ParceiroDashboard() {
         </div>
       </header>
 
+      <CoinBalancePlanCard />
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
         <StatCard icon={<Users className="w-5 h-5" />} label="Leads" value="24" color="text-blue-400" />
         <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Vistas" value="1.2k" color="text-[#00FF87]" />
         <StatCard icon={<Package className="w-5 h-5" />} label="Produtos" value="12" color="text-emerald-400" />
