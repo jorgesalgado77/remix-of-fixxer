@@ -1360,42 +1360,7 @@ function ConversationPage() {
               className="hidden"
               onChange={(e) => {
                 const picked = Array.from(e.target.files ?? []);
-                if (picked.length === 0) return;
-                const remaining = MAX_FILES - pendingFiles.length;
-                if (remaining <= 0) {
-                  toast.error("Limite de anexos atingido", { description: `Máximo ${MAX_FILES} arquivos por mensagem.` });
-                  if (fileRef.current) fileRef.current.value = "";
-                  return;
-                }
-                const overflow = picked.length - remaining;
-                const accepted: File[] = [];
-                const rejected: string[] = [];
-                for (const f of picked.slice(0, remaining)) {
-                  if (f.size > MAX_FILE_MB * 1024 * 1024) {
-                    rejected.push(`${f.name} (>${MAX_FILE_MB}MB)`);
-                    continue;
-                  }
-                  if (f.size === 0) {
-                    rejected.push(`${f.name} (vazio)`);
-                    continue;
-                  }
-                  accepted.push(f);
-                }
-                if (rejected.length) {
-                  toast.error(`${rejected.length} arquivo(s) rejeitado(s)`, {
-                    description: rejected.join(" • "),
-                  });
-                }
-                if (overflow > 0) {
-                  toast.warning(`${overflow} arquivo(s) ignorado(s)`, {
-                    description: `Limite de ${MAX_FILES} anexos por mensagem.`,
-                  });
-                }
-                if (accepted.length) {
-                  const merged = [...pendingFiles, ...accepted];
-                  setPendingFiles(merged);
-                  setDraftFiles(peerId, merged);
-                }
+                acceptIncomingFiles(picked);
                 if (fileRef.current) fileRef.current.value = "";
               }}
             />
