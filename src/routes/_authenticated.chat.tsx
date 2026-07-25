@@ -84,6 +84,8 @@ type Conversation = {
   peerName: string;
   peerAvatar: string | null;
   peerRole: string | null;
+  peerIsFallback: boolean;
+  peerInitials: string;
   lastMessage: string;
   lastAttachmentType: string | null;
   lastMessageId: string | null;
