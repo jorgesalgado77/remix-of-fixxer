@@ -1011,7 +1011,8 @@ function ProfilePage() {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">WhatsApp</label>
                   <MaskedInput 
-                    mask="phone"
+                    mask="whatsapp"
+
                     value={profile?.whatsapp || ''} 
                     onChange={(val: string) => setProfile({...profile, whatsapp: val})}
                     className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
