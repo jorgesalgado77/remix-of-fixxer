@@ -85,7 +85,7 @@ const KIND_META: Record<Kind, { emoji: string; label: string; color: string; bor
 const FALLBACK: Card[] = [
   { id: "mock-loja-alpha", full_name: "Móveis Alpha", display_name: "Móveis Alpha", company_name: "Móveis Alpha Ltda", avatar_url: null, role: "lojista", business_category: "Móveis Planejados", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Móveis Planejados" },
   { id: "mock-loja-beta", full_name: "Casa Design", display_name: "Casa Design", company_name: null, avatar_url: null, role: "lojista", business_category: "Decoração", custom_branch: null, city: "Votorantim", state: "SP", rating: 4.8, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Decoração" },
-  { id: "mock-fornec-real", full_name: "Ferragens Real", display_name: "Ferragens Real", company_name: null, avatar_url: null, role: "fornecedor", business_category: "Ferragens B2B", custom_branch: null, city: "Osasco", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Ferragens B2B" },
+  { id: "mock-cliente-final", full_name: "Ana Souza", display_name: "Ana Souza", company_name: null, avatar_url: null, role: "cliente", business_category: null, custom_branch: null, city: "Sorocaba", state: "SP", rating: 5.0, created_at: null, lat: null, lng: null, _kind: "cliente", _branch: null },
 ];
 
 function readCache(): Card[] | null {
