@@ -219,25 +219,22 @@ function FavoritosPage() {
       try {
         const { data } = await supabaseExternal.auth.getUser();
         const authUser = data?.user;
-        const cachedId = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null;
-        const cachedEmail = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_email") : null;
         if (!cancelled) {
-          setCurrentUserId(authUser?.id ?? cachedId ?? null);
-          setCurrentUserEmail(authUser?.email ?? cachedEmail ?? null);
+          setCurrentUserId(authUser?.id ?? null);
+          setCurrentUserEmail(authUser?.email ?? null);
           setUserResolved(true);
         }
       } catch {
-        const cachedId = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null;
-        const cachedEmail = typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_email") : null;
         if (!cancelled) {
-          setCurrentUserId(cachedId ?? null);
-          setCurrentUserEmail(cachedEmail ?? null);
+          setCurrentUserId(null);
+          setCurrentUserEmail(null);
           setUserResolved(true);
         }
       }
     })();
     return () => { cancelled = true; };
   }, []);
+
 
   /* ================ FETCH PERFIS FAVORITADOS ================ */
   const fetchProfiles = useCallback(async () => {

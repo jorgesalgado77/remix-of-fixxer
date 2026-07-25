@@ -90,9 +90,11 @@ type Conversation = {
 const PAGE_SIZE = 100;
 
 function getStoredRole(): string {
-  if (typeof window === "undefined") return "";
-  return (localStorage.getItem("fixxer_user_role") || "").toLowerCase();
+  // O papel real é derivado da sessão (useUserCategory). Mantido para
+  // compatibilidade; não lê mais localStorage de identidade.
+  return "";
 }
+
 
 function normStr(s: string) {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -254,12 +256,11 @@ function ChatInboxPage() {
 
     (async () => {
       const { data } = await supabaseExternal.auth.getUser();
-      const storedUid = typeof window !== "undefined" ? localStorage.getItem("fixxer_user_id") : null;
-      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const uid = data?.user?.id ?? (storedUid && uuidRe.test(storedUid) ? storedUid : null);
+      const uid = data?.user?.id ?? null;
       if (cancelled) return;
       setUserId(uid);
       if (!uid) { setLoading(false); return; }
+
       await hydrateChatPreferences(uid);
       await loadFirstPage(uid);
       await markAllAsRead(uid);
@@ -375,13 +376,18 @@ function ChatInboxPage() {
 
     // Ao voltar o foco para esta aba, recarrega a primeira página (mensagens
     // podem ter sido lidas/enviadas em outra aba enquanto esta estava oculta).
-    const onFocus = () => {
-      const stored = typeof window !== "undefined" ? localStorage.getItem("fixxer_user_id") : null;
-      const uuidRe2 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const uid = userId ?? (stored && uuidRe2.test(stored) ? stored : null);
+    const onFocus = async () => {
+      let uid = userId;
+      if (!uid) {
+        try {
+          const { data } = await supabaseExternal.auth.getUser();
+          uid = data?.user?.id ?? null;
+        } catch {}
+      }
       if (uid) void loadFirstPage(uid);
       setPrefsVersion((v) => v + 1);
     };
+
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onFocus);
 
