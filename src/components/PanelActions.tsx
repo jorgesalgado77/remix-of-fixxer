@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, Megaphone, Settings, Zap, PowerOff, Loader2, AlertTriangle } from "lucide-react";
+import { Calendar, Megaphone, Settings, Zap, PowerOff, Loader2, AlertTriangle, UserCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
