@@ -55,6 +55,9 @@ function PrestadorDashboard() {
 
       <CoinBalancePlanCard />
 
+      <RecentStoresCarousel />
+
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
         <StatCard icon={<Briefcase className="w-5 h-5" />} label="Ativos" value="3" color="text-blue-400" />
