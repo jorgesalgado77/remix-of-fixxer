@@ -1207,6 +1207,10 @@ function PostCard({
   onEdit,
   onOpenMedia,
   onOpenDetails,
+  locked = false,
+  unlockCost = 5,
+  unlockBusy = false,
+  onUnlock,
 }: {
   post: FeedPost;
   isSaved: boolean;
@@ -1221,6 +1225,10 @@ function PostCard({
   onEdit: () => void;
   onOpenMedia: (index: number) => void;
   onOpenDetails: () => void;
+  locked?: boolean;
+  unlockCost?: number;
+  unlockBusy?: boolean;
+  onUnlock?: () => void | Promise<void>;
 }) {
   const badge = categoryBadge(post.category);
   const theme = getCategoryTheme(post.category);
