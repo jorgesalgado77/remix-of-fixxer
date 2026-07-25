@@ -632,15 +632,22 @@ export function LojistaPublicProfilePage() {
     }
     setContactLoading(true);
     try {
-      const path = `/chat/${encodeURIComponent(peerId)}`;
-      try { navigate({ to: path as any }); } catch { window.location.href = path; }
+      // TanStack Router: precisa de `to` estático + `params`. Interpolar no `to`
+      // não bate com nenhuma rota registrada e a navegação era silenciosamente ignorada.
+      try {
+        await navigate({ to: "/chat/$peerId", params: { peerId } });
+      } catch {
+        window.location.href = `/chat/${encodeURIComponent(peerId)}`;
+      }
     } catch (e: any) {
       toast.error("Não foi possível abrir a conversa.", { description: e?.message });
+      // Último recurso: força navegação por URL para não deixar o usuário travado.
+      window.location.href = `/chat/${encodeURIComponent(peerId)}`;
     } finally {
-      // Pequeno delay para evitar reclique enquanto a navegação transita.
       setTimeout(() => setContactLoading(false), 800);
     }
   };
+
 
   // Botão Favoritar: persiste em favorite_users (Supabase) com fallback local.
   const favorite = useFavoriteUser(profile?.user_id ?? null);
