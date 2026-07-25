@@ -908,6 +908,9 @@ export default function FeedParceiroPage() {
                         <span className="inline-flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {r.city}/{r.state}
+                          {formatDistanceFromCity(r.city, userCoords) && (
+                            <span className="text-white/40">• {formatDistanceFromCity(r.city, userCoords)}</span>
+                          )}
                         </span>
                         <span className="inline-flex items-center gap-1">
                           <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
