@@ -358,13 +358,15 @@ function FavoritosPage() {
   /* ============ FILTRO DE BUSCA ============ */
   const filteredProfiles = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return profiles;
-    return profiles.filter((p) =>
+    let list = profiles;
+    if (kindFilter !== "todos") list = list.filter((p) => p.kind === kindFilter);
+    if (!q) return list;
+    return list.filter((p) =>
       [p.name, p.branch, p.city, p.state, KIND_META[p.kind].label]
         .filter(Boolean)
         .some((s) => String(s).toLowerCase().includes(q)),
     );
-  }, [profiles, query]);
+  }, [profiles, query, kindFilter]);
 
   const filteredAds = useMemo(() => {
     const q = query.trim().toLowerCase();
