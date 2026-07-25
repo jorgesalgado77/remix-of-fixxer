@@ -1,5 +1,29 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, ChevronRight, Handshake } from "lucide-react";
+import { Sparkles, ChevronRight, Handshake, EyeOff, Eye } from "lucide-react";
+
+const DISMISS_KEY = "fixxer_b2b_suggestions_dismissed_v1";
+
+function readDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(DISMISS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeDismissed(v: boolean) {
+  try {
+    if (v) window.localStorage.setItem(DISMISS_KEY, "1");
+    else window.localStorage.removeItem(DISMISS_KEY);
+    window.dispatchEvent(
+      new CustomEvent("fixxer:b2b-suggestions-visibility", { detail: { dismissed: v } }),
+    );
+  } catch {
+    /* noop */
+  }
+}
+
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
   getB2BSuggestions,
