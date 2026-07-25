@@ -245,6 +245,54 @@ function ConversationPage() {
       presenceRef.current.send({ type: "broadcast", event: "typing-stop", payload: { from: userId } });
     } catch {}
   };
+  const acceptIncomingFiles = useCallback((picked: File[]) => {
+    if (picked.length === 0) return;
+    const remaining = MAX_FILES - pendingFiles.length;
+    if (remaining <= 0) {
+      toast.error("Limite de anexos atingido", { description: `Máximo ${MAX_FILES} arquivos por mensagem.` });
+      return;
+    }
+    const overflow = picked.length - remaining;
+    const accepted: File[] = [];
+    const rejected: string[] = [];
+    for (const f of picked.slice(0, remaining)) {
+      if (f.size > MAX_FILE_MB * 1024 * 1024) { rejected.push(`${f.name} (>${MAX_FILE_MB}MB)`); continue; }
+      if (f.size === 0) { rejected.push(`${f.name} (vazio)`); continue; }
+      accepted.push(f);
+    }
+    if (rejected.length) toast.error(`${rejected.length} arquivo(s) rejeitado(s)`, { description: rejected.join(" • ") });
+    if (overflow > 0) toast.warning(`${overflow} arquivo(s) ignorado(s)`, { description: `Limite de ${MAX_FILES} anexos por mensagem.` });
+    if (accepted.length) {
+      const merged = [...pendingFiles, ...accepted];
+      setPendingFiles(merged);
+      setDraftFiles(peerId, merged);
+    }
+  }, [pendingFiles, peerId]);
+
+  const onDragEnter = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setDragActive(true);
+  };
+  const onDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+    if (dragCounterRef.current === 0) setDragActive(false);
+  };
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setDragActive(false);
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    if (files.length > 0) acceptIncomingFiles(files);
+  };
+
 
   useEffect(() => {
     let cancelled = false;
