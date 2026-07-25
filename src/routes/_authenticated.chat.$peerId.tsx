@@ -1131,102 +1131,101 @@ function ConversationPage() {
   return (
     <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-32 overscroll-contain">
       <header
-        className="sticky top-0 z-10 bg-black/85 backdrop-blur-xl border-b-2 px-4 py-3 flex items-center gap-3"
+        className="sticky top-0 z-10 bg-black/85 backdrop-blur-xl border-b-2 px-3 py-2.5"
         style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)` }}
       >
-        <button
-          onClick={() => navigate({ to: "/chat" as any })}
-          className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
-          aria-label="Voltar"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div
-          className="w-10 h-10 rounded-full bg-white/5 border-2 overflow-hidden flex items-center justify-center shrink-0 relative"
-          style={{ borderColor: peerTheme.hex, boxShadow: `0 0 12px rgba(${peerTheme.rgb}, 0.45)` }}
-        >
-          {peerAvatar ? (
-            <img src={peerAvatar} alt={peerName} className="w-full h-full object-cover" />
-          ) : (
-            <span className="font-black italic" style={{ color: peerTheme.hex }}>{peerName.slice(0, 1).toUpperCase()}</span>
-          )}
-          {peerOnline && (
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-black" />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-black uppercase italic text-sm truncate flex items-center gap-2">
-            <span className="truncate">{peerName}</span>
-            {peerAvailable !== null && (
-              <span
-                className="text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border"
-                style={{
-                  color: peerAvailable ? "#10B981" : "#F59E0B",
-                  borderColor: peerAvailable ? "#10B98155" : "#F59E0B55",
-                  background: peerAvailable ? "#10B98118" : "#F59E0B18",
-                }}
-                aria-live="polite"
-              >
-                {peerAvailable ? "Disponível" : "Indisponível"}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate({ to: "/chat" as any })}
+            className="w-9 h-9 shrink-0 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
+            aria-label="Voltar"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              setDraftText(peerId, content);
+              setDraftFiles(peerId, pendingFiles);
+              const path = `/lojista/${encodeURIComponent(peerId)}`;
+              try { navigate({ to: path as any }); } catch { window.location.href = path; }
+            }}
+            title="Ver perfil do usuário"
+            aria-label="Ver perfil do usuário"
+            className="w-11 h-11 shrink-0 rounded-full bg-white/5 border-2 overflow-hidden flex items-center justify-center relative"
+            style={{ borderColor: peerTheme.hex, boxShadow: `0 0 12px rgba(${peerTheme.rgb}, 0.45)` }}
+          >
+            {peerAvatar ? (
+              <img src={peerAvatar} alt={peerName} className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-black italic text-base" style={{ color: peerTheme.hex }}>
+                {peerName.slice(0, 1).toUpperCase()}
               </span>
             )}
-          </p>
-          <p className="text-[10px] uppercase tracking-widest font-bold flex items-center gap-2">
-            <span
-              className="px-1.5 py-0.5 rounded font-black"
-              style={{ backgroundColor: `rgba(${peerTheme.rgb}, 0.15)`, color: peerTheme.hex }}
+            {peerOnline && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-black" />
+            )}
+          </button>
+          <div className="flex-1 min-w-0">
+            <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <span
+                className="text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest"
+                style={{ backgroundColor: `rgba(${peerTheme.rgb}, 0.15)`, color: peerTheme.hex }}
+              >
+                {peerTheme.label}
+              </span>
+              {peerAvailable !== null && (
+                <span
+                  className="text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border"
+                  style={{
+                    color: peerAvailable ? "#10B981" : "#F59E0B",
+                    borderColor: peerAvailable ? "#10B98155" : "#F59E0B55",
+                    background: peerAvailable ? "#10B98118" : "#F59E0B18",
+                  }}
+                  aria-live="polite"
+                >
+                  {peerAvailable ? "Disponível" : "Indisponível"}
+                </span>
+              )}
+              <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground truncate flex items-center gap-1">
+                {markingRead && <Loader2 className="w-3 h-3 animate-spin" />}
+                {statusLine}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={markAsUnread}
+              title="Marcar como não lida"
+              aria-label="Marcar como não lida"
+              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
             >
-              {peerTheme.label}
-            </span>
-            <span className="text-muted-foreground flex items-center gap-1">
-              {markingRead && <Loader2 className="w-3 h-3 animate-spin" />}
-              {statusLine}
-            </span>
-          </p>
+              <MailOpen className="w-4 h-4" />
+            </button>
+            <button
+              onClick={toggleMute}
+              title={muted ? "Reativar notificações" : "Silenciar notificações"}
+              aria-label={muted ? "Reativar notificações" : "Silenciar notificações"}
+              className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
+                muted ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/5 border-white/10 hover:bg-white/10"
+              }`}
+            >
+              {muted ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={toggleArchive}
+              title={archived ? "Desarquivar" : "Arquivar conversa"}
+              aria-label={archived ? "Desarquivar" : "Arquivar conversa"}
+              className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
+                archived ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/5 border-white/10 hover:bg-white/10"
+              }`}
+            >
+              {archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => {
-            // Preserva o rascunho (texto + anexo) antes de sair para o perfil.
-            setDraftText(peerId, content);
-            setDraftFiles(peerId, pendingFiles);
-            const path = `/lojista/${encodeURIComponent(peerId)}`;
-            try {
-              navigate({ to: path as any });
-            } catch {
-              window.location.href = path;
-            }
-          }}
-          title="Ver perfil do usuário"
-          className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
-        >
-          <UserCircle2 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={markAsUnread}
-          title="Marcar como não lida"
-          className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
-        >
-          <MailOpen className="w-4 h-4" />
-        </button>
-        <button
-          onClick={toggleMute}
-          title={muted ? "Reativar notificações" : "Silenciar notificações"}
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
-            muted ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/5 border-white/10 hover:bg-white/10"
-          }`}
-        >
-          {muted ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-        </button>
-        <button
-          onClick={toggleArchive}
-          title={archived ? "Desarquivar" : "Arquivar conversa"}
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
-            archived ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/5 border-white/10 hover:bg-white/10"
-          }`}
-        >
-          {archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
-        </button>
       </header>
+
 
       {linkedAd && (
         <div
