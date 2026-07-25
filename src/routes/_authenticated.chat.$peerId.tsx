@@ -47,30 +47,8 @@ import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { sanitizeContactText, CONTACT_GUARD_WARNING } from "@/lib/contact-guard";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
-import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+import { getCategoryTheme, getPeerTheme, resolvePeerCategory, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory, setContextCategoryOverride } from "@/lib/user-category";
-import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
-import { ChatAppointmentsBanner } from "@/components/ChatAppointmentsBanner";
-import { ChatEmojiPicker } from "@/components/Chat/EmojiPicker";
-import { ChatVoiceRecorder } from "@/components/Chat/VoiceRecorder";
-import {
-  isUuid as isValidUuid,
-  classifyChatError,
-  sendWithRetry,
-  validateChatIdentities,
-} from "@/lib/chat-send";
-import { startGlobalPresence, subscribeGlobalPresence, isPeerOnline } from "@/lib/chat-presence";
-import { playIncomingMessageSound } from "@/lib/chat-sound";
-
-
-function roleToCategory(role: string | null | undefined): CategoryKey {
-  const r = (role || "").toLowerCase();
-  if (r.includes("lojista")) return "lojista";
-  if (r.includes("fornec") || r.includes("parceiro")) return "fornecedor";
-  if (r.includes("cliente") || r.includes("casual")) return "cliente";
-  if (r.includes("admin")) return "admin";
-  return "prestador";
-}
 import {
   clearDraft,
   getDraftFiles,
