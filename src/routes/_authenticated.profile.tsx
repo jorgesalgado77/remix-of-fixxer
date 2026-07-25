@@ -115,6 +115,7 @@ function ProfilePage() {
             }
           } catch { /* noop */ }
         }
+        merged = normalizeMasks(merged);
         setProfile(merged);
         lastSavedSnapshotRef.current = JSON.stringify(merged);
         // Sincroniza raio de atuação salvo para uso como padrão nos feeds
