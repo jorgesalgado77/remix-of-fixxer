@@ -226,23 +226,20 @@ export function RecentPartnersCarousel() {
       if (rows.length > 0) {
         setItems(rows);
         writeCache(rows);
-      } else if (!cached?.items?.length) {
-        setItems(FALLBACK_PARTNERS);
+      } else {
+        // Banco vazio ou sem parceiros elegíveis → mock silencioso (sem banner).
+        setItems((prev) => (prev.length > 0 ? prev : FALLBACK_PARTNERS));
       }
       setErrorMsg(null);
       return { ok: true };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Falha ao carregar parceiros.";
-      // Só bloqueia com estado de erro quando não temos NADA em memória para exibir.
-      if (items.length === 0 && !cached?.items?.length) {
-        setErrorMsg(msg);
-      } else {
-        // Banner leve, mantém o que já está em tela (cache/fallback).
-        setErrorMsg(`Não foi possível atualizar agora (${msg}).`);
-      }
+      // Falha na consulta → sempre garante mock silencioso. Nunca exibe banner amarelo.
+      if (typeof console !== "undefined") console.debug("[RecentPartnersCarousel] fallback silencioso:", err);
+      setItems((prev) => (prev.length > 0 ? prev : FALLBACK_PARTNERS));
+      setErrorMsg(null);
       return { ok: false };
     }
-  }, [cached?.items?.length, items.length]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
