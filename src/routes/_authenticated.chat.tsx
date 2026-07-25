@@ -395,10 +395,21 @@ function ChatInboxPage() {
   const norm = (s: string) =>
     s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+  // Debounce da busca (200ms) para evitar recomputar a lista a cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 200);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const isSearching = query.trim() !== debouncedQuery.trim();
+
+  const activeTerms = useMemo(() => {
+    const q = norm(debouncedQuery.trim());
+    return q.split(/\s+/).filter(Boolean);
+  }, [debouncedQuery]);
+
   const visible = useMemo(() => {
-    const raw = query.trim();
-    const q = norm(raw);
-    const terms = q.split(/\s+/).filter(Boolean);
+    const q = activeTerms.join(" ");
     const base = conversationsWithMock
       .filter((c) => (showArchived ? c.archived : !c.archived))
       .filter((c) => canSeeConversationWith(role, c.peerRole));
@@ -415,7 +426,7 @@ function ChatInboxPage() {
       const adCategory = norm(c.linkedAd?.category || "");
       let score = 0;
       let matchedAll = true;
-      for (const t of terms) {
+      for (const t of activeTerms) {
         let termScore = 0;
         if (name.includes(t)) termScore += name.startsWith(t) ? 8 : 5;
         if (roleTxt.includes(t)) termScore += 3;
@@ -437,7 +448,8 @@ function ChatInboxPage() {
       if (diff !== 0) return diff;
       return a.peerId.localeCompare(b.peerId);
     });
-  }, [conversationsWithMock, query, showArchived, role, messagesByPeer]);
+  }, [conversationsWithMock, activeTerms, showArchived, role, messagesByPeer]);
+
 
 
   const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
