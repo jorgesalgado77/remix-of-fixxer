@@ -659,7 +659,9 @@ function ConversationPage() {
       // mesmo se o Realtime ainda não estiver ativo na tabela messages.
       try {
         window.dispatchEvent(
-          new CustomEvent("fixxer:message-sent", { detail: { row } }),
+          new CustomEvent("fixxer:message-sent", {
+            detail: { row: { ...row, _clientId: clientId } },
+          }),
         );
       } catch {}
     }
@@ -731,6 +733,15 @@ function ConversationPage() {
       };
     });
     setMessages((prev) => [...prev, ...optimisticRows]);
+    // Notifica a inbox imediatamente com status "enviando" para que a conversa
+    // apareça na lista antes mesmo do INSERT concluir.
+    try {
+      for (const row of optimisticRows) {
+        window.dispatchEvent(
+          new CustomEvent("fixxer:message-sending", { detail: { row } }),
+        );
+      }
+    } catch {}
     setContent("");
     setPendingFiles([]);
     clearDraft(peerId);
@@ -832,6 +843,11 @@ function ConversationPage() {
           { description: e?.message },
         );
         patchRow(o.clientId, { _pending: false, _failed: true, _uploading: false });
+        try {
+          window.dispatchEvent(
+            new CustomEvent("fixxer:message-failed", { detail: { clientId: o.clientId } }),
+          );
+        } catch {}
       }
     }
     setSending(false);
@@ -847,6 +863,27 @@ function ConversationPage() {
           : x,
       ),
     );
+    try {
+      window.dispatchEvent(
+        new CustomEvent("fixxer:message-sending", {
+          detail: {
+            row: {
+              id: clientId,
+              _clientId: clientId,
+              sender_id: userId,
+              recipient_id: peerId,
+              content: m._draftText || m.content || null,
+              created_at: new Date().toISOString(),
+              read: false,
+              _pending: true,
+              attachment_url: m.attachment_url ?? null,
+              attachment_type: m.attachment_type ?? null,
+              attachment_name: m.attachment_name ?? null,
+            },
+          },
+        }),
+      );
+    } catch {}
     try {
       let attachment: { url: string; type: string; name: string } | null = null;
       if (m._draftFile) {
@@ -866,6 +903,11 @@ function ConversationPage() {
       setMessages((prev) =>
         prev.map((x) => (x._clientId === clientId ? { ...x, _pending: false, _failed: true, _uploading: false } : x)),
       );
+      try {
+        window.dispatchEvent(
+          new CustomEvent("fixxer:message-failed", { detail: { clientId } }),
+        );
+      } catch {}
     }
   };
 

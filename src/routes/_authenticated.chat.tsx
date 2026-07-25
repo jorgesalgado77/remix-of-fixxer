@@ -13,6 +13,8 @@ import {
   Paperclip,
   UserCircle2,
   X,
+  CheckCheck,
+  AlertCircle,
 } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,9 +59,16 @@ type MessageRow = {
   attachment_url?: string | null;
   attachment_type?: string | null;
   attachment_name?: string | null;
+  client_message_id?: string | null;
+  // Estado do envio propagado do conversation page:
+  _pending?: boolean;
+  _failed?: boolean;
+  _clientId?: string;
 };
 
 type PeerInfo = { name: string; avatar: string | null; role: string | null };
+
+type LastStatus = "pending" | "failed" | "sent" | null;
 
 type Conversation = {
   peerId: string;
@@ -70,6 +79,8 @@ type Conversation = {
   lastAttachmentType: string | null;
   lastMessageId: string | null;
   lastAt: string;
+  lastMine: boolean;
+  lastStatus: LastStatus;
   unread: number;
   archived: boolean;
   muted: boolean;
@@ -285,11 +296,61 @@ function ChatInboxPage() {
     // não estiver ativo no projeto.
     const onMessageSent = (e: Event) => {
       const row = (e as CustomEvent).detail?.row as MessageRow | undefined;
-      if (!row || idSetRef.current.has(row.id)) return;
-      idSetRef.current.add(row.id);
-      setMessages((prev) => [row, ...prev]);
+      if (!row) return;
+      const clientId = row._clientId ?? row.client_message_id ?? undefined;
+      setMessages((prev) => {
+        const idx = prev.findIndex(
+          (x) => x.id === row.id || (clientId && (x._clientId === clientId || x.id === clientId)),
+        );
+        if (idx >= 0) {
+          const next = prev.slice();
+          const old = next[idx];
+          if (old.attachment_url && old.attachment_url.startsWith("blob:")) {
+            try { URL.revokeObjectURL(old.attachment_url); } catch {}
+          }
+          next[idx] = { ...row, _pending: false, _failed: false, _clientId: clientId };
+          idSetRef.current.add(row.id);
+          return next;
+        }
+        idSetRef.current.add(row.id);
+        return [{ ...row, _pending: false, _failed: false }, ...prev];
+      });
     };
     window.addEventListener("fixxer:message-sent", onMessageSent as any);
+
+    // Envio otimista: a conversa aparece imediatamente na inbox com status
+    // "enviando" antes mesmo do INSERT concluir na tabela messages.
+    const onMessageSending = (e: Event) => {
+      const row = (e as CustomEvent).detail?.row as MessageRow | undefined;
+      if (!row) return;
+      const clientId = row._clientId;
+      setMessages((prev) => {
+        const idx = prev.findIndex(
+          (x) => x.id === row.id || (clientId && x._clientId === clientId),
+        );
+        if (idx >= 0) {
+          const next = prev.slice();
+          next[idx] = { ...next[idx], ...row, _pending: true, _failed: false };
+          return next;
+        }
+        return [{ ...row, _pending: true, _failed: false }, ...prev];
+      });
+    };
+    window.addEventListener("fixxer:message-sending", onMessageSending as any);
+
+    // Falha de envio: marca o card com estado de erro sem removê-lo.
+    const onMessageFailed = (e: Event) => {
+      const clientId = (e as CustomEvent).detail?.clientId as string | undefined;
+      if (!clientId) return;
+      setMessages((prev) =>
+        prev.map((x) =>
+          x._clientId === clientId || x.id === clientId
+            ? { ...x, _pending: false, _failed: true }
+            : x,
+        ),
+      );
+    };
+    window.addEventListener("fixxer:message-failed", onMessageFailed as any);
 
 
     // Cross-tab sync: qualquer mudança em chaves de leitura/prefs em outra aba
@@ -340,6 +401,8 @@ function ChatInboxPage() {
       window.removeEventListener("fixxer:chat-prefs-changed", onPrefs as any);
       window.removeEventListener("fixxer:messages-read", onPrefs as any);
       window.removeEventListener("fixxer:message-sent", onMessageSent as any);
+      window.removeEventListener("fixxer:message-sending", onMessageSending as any);
+      window.removeEventListener("fixxer:message-failed", onMessageFailed as any);
 
       try { authSub?.subscription?.unsubscribe(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
@@ -402,6 +465,8 @@ function ChatInboxPage() {
       // Não-lida: incoming, não lida no DB E posterior ao last_read_at local
       const afterLastRead = !lastReadAt || new Date(m.created_at) > new Date(lastReadAt);
       const isUnreadIncoming = m.recipient_id === userId && !m.read && afterLastRead;
+      const mine = m.sender_id === userId;
+      const rowStatus: LastStatus = m._pending ? "pending" : m._failed ? "failed" : "sent";
       if (!existing) {
         byPeer.set(peerId, {
           peerId,
@@ -412,17 +477,21 @@ function ChatInboxPage() {
           lastAttachmentType: m.attachment_type ?? null,
           lastMessageId: m.id,
           lastAt: m.created_at,
+          lastMine: mine,
+          lastStatus: mine ? rowStatus : null,
           unread: isUnreadIncoming ? 1 : 0,
           archived: archivedSet.has(peerId),
           muted: mutedSet.has(peerId),
         });
       } else {
         if (isUnreadIncoming) existing.unread += 1;
-        if (new Date(m.created_at) > new Date(existing.lastAt)) {
+        if (new Date(m.created_at) >= new Date(existing.lastAt)) {
           existing.lastMessage = m.content || "";
           existing.lastAttachmentType = m.attachment_type ?? null;
           existing.lastMessageId = m.id;
           existing.lastAt = m.created_at;
+          existing.lastMine = mine;
+          existing.lastStatus = mine ? rowStatus : null;
         }
       }
     }
@@ -731,6 +800,15 @@ function ChatInboxPage() {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                        {c.lastMine && c.lastStatus === "pending" && (
+                          <Loader2 className="w-3 h-3 shrink-0 animate-spin text-muted-foreground/80" aria-label="Enviando" />
+                        )}
+                        {c.lastMine && c.lastStatus === "failed" && (
+                          <AlertCircle className="w-3 h-3 shrink-0 text-red-400" aria-label="Falha no envio" />
+                        )}
+                        {c.lastMine && c.lastStatus === "sent" && (
+                          <CheckCheck className="w-3 h-3 shrink-0 text-muted-foreground/80" aria-label="Enviada" />
+                        )}
                         {c.lastAttachmentType && <Paperclip className="w-3 h-3 shrink-0" />}
                         {c.lastMessage ? (
                           <Highlight text={c.lastMessage} terms={activeTerms} />
