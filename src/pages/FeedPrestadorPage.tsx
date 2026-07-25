@@ -740,6 +740,10 @@ function JobCard({
   onChat,
   onLightbox,
   onOpenDetails,
+  locked = false,
+  unlockCost = 5,
+  unlockBusy = false,
+  onUnlock,
 }: {
   job: JobPost;
   saved: boolean;
@@ -749,6 +753,10 @@ function JobCard({
   onChat: (job: JobPost) => void;
   onLightbox: (job: JobPost, index: number) => void;
   onOpenDetails: (job: JobPost) => void;
+  locked?: boolean;
+  unlockCost?: number;
+  unlockBusy?: boolean;
+  onUnlock?: () => void | Promise<void>;
 }) {
   const navigate = useNavigate();
   const isClientFinal = job.type === "cliente_final";
