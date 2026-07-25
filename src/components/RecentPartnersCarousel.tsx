@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Star, MapPin, UserCircle2, RefreshCw, UsersRound, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { Star, MapPin, UserCircle2, RefreshCw, UsersRound, AlertTriangle, ArrowUpDown, X } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
@@ -73,6 +73,30 @@ function writeUrlParams(next: Partial<Record<string, string | null>>) {
   } catch { /* ignore */ }
 }
 
+
+
+
+// ---- Validações defensivas de dados de perfil ----
+/** URL de imagem aceitável: http(s), data:image ou blob. Descarta strings vazias/inválidas. */
+function isValidImageUrl(u: string | null | undefined): u is string {
+  if (!u || typeof u !== "string") return false;
+  const s = u.trim();
+  if (!s || s === "null" || s === "undefined") return false;
+  return /^(https?:\/\/|data:image\/|blob:)/i.test(s);
+}
+/** UF válida: 2 letras. Aceita qualquer caso, normaliza para maiúsculo na saída. */
+function normalizeUf(uf: string | null | undefined): string | null {
+  if (!uf) return null;
+  const s = String(uf).trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(s) ? s : null;
+}
+/** Retorna string não-vazia ou null (evita renderizar "null"/"undefined"). */
+function safeStr(v: unknown): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!s || s === "null" || s === "undefined") return null;
+  return s;
+}
 
 function classifyRole(role: string | null | undefined): PartnerKind | null {
   const r = (role || "").toLowerCase();
@@ -163,6 +187,8 @@ export function RecentPartnersCarousel() {
   const [sortMode, setSortMode] = useState<SortMode>(() => readUrlParam<SortMode>(URL_SORT_PARAM, VALID_SORTS) ?? readSort());
   const [kindFilter, setKindFilter] = useState<KindFilter>(() => readUrlParam<KindFilter>(URL_FILTER_PARAM, VALID_FILTERS) ?? readFilter());
   const [pull, setPull] = useState(0);
+  // Cards descartados manualmente pelo usuário quando não têm coordenadas válidas (badge "Sem localização").
+  const [dismissedNoGeo, setDismissedNoGeo] = useState<Set<string>>(() => new Set());
   const startY = useRef<number | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -237,28 +263,39 @@ export function RecentPartnersCarousel() {
     setTimeout(() => setRefreshing(false), 300);
   }, [fetchPartners, refreshing]);
 
-  // ---- Ordenação em memória ----
-  const sortedItems = useMemo(() => {
-    const arr = kindFilter === "all" ? [...items] : items.filter((p) => p._kind === kindFilter);
+  // ---- Ordenação em memória (com coords pré-calculadas para "Mais próximos") ----
+  type Enriched = PartnerCard & { _coords: { lat: number; lng: number } | null; _distanceKm: number | null };
+  const sortedItems = useMemo<Enriched[]>(() => {
+    const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
+    const enriched: Enriched[] = base.map((p) => {
+      const coords = cityCoords(p.city) ?? null;
+      const dist = (sortMode === "nearby" && userCoords && coords)
+        ? haversineKm(userCoords, coords)
+        : null;
+      return { ...p, _coords: coords, _distanceKm: Number.isFinite(dist as number) ? (dist as number) : null };
+    });
 
     if (sortMode === "rating") {
-      arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      enriched.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     } else if (sortMode === "nearby" && userCoords) {
-      arr.sort((a, b) => {
-        const ca = cityCoords(a.city); const cb = cityCoords(b.city);
-        const da = ca ? haversineKm(userCoords, ca) : Number.POSITIVE_INFINITY;
-        const db = cb ? haversineKm(userCoords, cb) : Number.POSITIVE_INFINITY;
+      // Remove cards descartados manualmente (badge "Sem localização" fechado pelo usuário).
+      const filtered = enriched.filter((p) => !dismissedNoGeo.has(p.id));
+      // Cards COM coords sobem; os SEM coords vão para o final (mas ainda visíveis com badge removível).
+      filtered.sort((a, b) => {
+        const da = a._distanceKm ?? Number.POSITIVE_INFINITY;
+        const db = b._distanceKm ?? Number.POSITIVE_INFINITY;
         return da - db;
       });
+      return filtered;
     } else {
-      arr.sort((a, b) => {
+      enriched.sort((a, b) => {
         const ta = a.created_at ? Date.parse(a.created_at) : 0;
         const tb = b.created_at ? Date.parse(b.created_at) : 0;
         return tb - ta;
       });
     }
-    return arr;
-  }, [items, sortMode, userCoords, kindFilter]);
+    return enriched;
+  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo]);
 
   // ---- IntersectionObserver: pré-carrega /perfil/:id quando o card se aproxima da viewport ----
   useEffect(() => {
@@ -494,18 +531,23 @@ export function RecentPartnersCarousel() {
           {sortedItems.map((p, idx) => {
             const meta = KIND_META[p._kind];
             const rating = typeof p.rating === "number" && p.rating > 0 ? p.rating : 5.0;
-            // ---- Normalização de campos do perfil (fallback entre chaves do Supabase) ----
-            const displayName = p.full_name || p.name || "Profissional";
-            const avatarUrl = p.avatar_url || p.avatar || p.photo_url || null;
-            const stateVal = p.uf || p.state || null;
-            const location = (p.city && stateVal)
-              ? `${p.city}, ${stateVal}`
-              : (p.location || p.city || p.address || "");
-            const branchText = p.activity_branch || p.category || meta.label;
-            const distance = sortMode === "nearby" && userCoords
-
-              ? (() => { const c = cityCoords(p.city); if (!c) return null; const km = haversineKm(userCoords, c); return Number.isFinite(km) ? (km < 10 ? km.toFixed(1) : Math.round(km).toString()) : null; })()
+            // ---- Normalização defensiva de campos do perfil ----
+            const displayName = safeStr(p.full_name) || safeStr(p.name) || "Profissional";
+            const rawAvatar = safeStr(p.avatar_url) || safeStr(p.avatar) || safeStr(p.photo_url);
+            const avatarUrl = isValidImageUrl(rawAvatar) ? rawAvatar : null;
+            const city = safeStr(p.city);
+            const stateVal = normalizeUf(p.uf) || normalizeUf(p.state);
+            const location = (city && stateVal)
+              ? `${city}, ${stateVal}`
+              : (city || safeStr(p.location) || safeStr(p.address) || "");
+            const branchText = safeStr(p.activity_branch) || safeStr(p.category) || meta.label;
+            // Distância: só quando temos coords válidas do perfil E do usuário, e modo "nearby".
+            const hasGeo = sortMode === "nearby" && !!userCoords && p._coords != null && p._distanceKm != null;
+            const distance = hasGeo
+              ? (p._distanceKm! < 10 ? p._distanceKm!.toFixed(1) : Math.round(p._distanceKm!).toString())
               : null;
+            // Badge removível: modo "nearby" ativo mas perfil sem coordenadas mapeáveis.
+            const showNoGeoBadge = sortMode === "nearby" && !!userCoords && p._coords == null;
             const label = `Abrir perfil de ${displayName}, ${meta.label}${branchText ? `, ${branchText}` : ""}${location ? `, ${location}` : ""}, avaliação ${rating.toFixed(1)} de 5`;
             return (
               <button
@@ -522,38 +564,47 @@ export function RecentPartnersCarousel() {
                 aria-posinset={idx + 1}
                 aria-setsize={sortedItems.length}
               >
-
                 <div className="relative w-full h-40 bg-black/40">
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={`Foto de ${displayName}`}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-40 w-full object-cover rounded-t-xl"
-                      onError={(e) => {
-                        const el = e.currentTarget;
-                        el.style.display = "none";
-                        const fb = el.nextElementSibling as HTMLElement | null;
-                        if (fb) fb.style.display = "flex";
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className="absolute inset-0 items-center justify-center bg-gradient-to-br from-black/60 to-black/30"
-                    style={{ display: avatarUrl ? "none" : "flex" }}
-                    aria-hidden="true"
-                  >
-                    <UserCircle2 className="w-14 h-14" style={{ color: meta.color, opacity: 0.7 }} />
-                  </div>
-
-                  <span className="absolute top-2 right-2 text-xs font-bold text-yellow-400 bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1" aria-hidden="true">
+                  <PartnerAvatar
+                    src={avatarUrl}
+                    alt={`Foto de ${displayName}`}
+                    color={meta.color}
+                  />
+                  <span className="absolute top-2 right-2 z-10 text-xs font-bold text-yellow-400 bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1" aria-hidden="true">
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     {rating.toFixed(1)}
                   </span>
                   {distance && (
-                    <span className="absolute top-2 left-2 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm" aria-hidden="true">
+                    <span className="absolute top-2 left-2 z-10 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm" aria-hidden="true">
                       📍 {distance} km
+                    </span>
+                  )}
+                  {showNoGeoBadge && (
+                    <span
+                      className="absolute top-2 left-2 z-10 text-[10px] font-bold text-white/90 bg-black/70 border border-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1"
+                      role="note"
+                      aria-label="Perfil sem localização mapeável"
+                    >
+                      📍 Sem localização
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Remover ${displayName} da lista Mais próximos`}
+                        className="ml-0.5 -mr-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDismissedNoGeo((prev) => { const n = new Set(prev); n.add(p.id); return n; });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDismissedNoGeo((prev) => { const n = new Set(prev); n.add(p.id); return n; });
+                          }
+                        }}
+                      >
+                        <X className="w-2.5 h-2.5" aria-hidden="true" />
+                      </span>
                     </span>
                   )}
                 </div>
@@ -569,10 +620,14 @@ export function RecentPartnersCarousel() {
                   >
                     {meta.emoji} {branchText}
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
-                    <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
-                    <span className="truncate">📍 {location || "Votorantim, SP"}</span>
-                  </p>
+                  {location ? (
+                    <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
+                      <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
+                      <span className="truncate">📍 {location}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-white/40 italic mt-1 truncate">Localização não informada</p>
+                  )}
 
                 </div>
               </button>
@@ -597,5 +652,50 @@ export function RecentPartnersCarousel() {
 
       )}
     </section>
+  );
+}
+
+/**
+ * Avatar do card com:
+ * - Placeholder blur (gradiente colorido) enquanto a imagem carrega → reduz flicker no mobile.
+ * - Fallback silencioso para ícone se `src` falhar (onError) ou for inválido.
+ * - `loading="lazy"` + `decoding="async"` + `fetchPriority="low"` para não competir com o feed principal.
+ */
+function PartnerAvatar({ src, alt, color }: { src: string | null; alt: string; color: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const showImg = !!src && !failed;
+  // Gradiente radial suave na cor do papel (âmbar/violeta) — funciona como "blur hash" barato.
+  const blurStyle: React.CSSProperties = {
+    background: `radial-gradient(120% 90% at 30% 20%, ${color}33 0%, ${color}11 45%, #000000 100%)`,
+  };
+  return (
+    <>
+      <div
+        className="absolute inset-0 transition-opacity duration-300"
+        style={{ ...blurStyle, opacity: showImg && loaded ? 0 : 1 }}
+        aria-hidden="true"
+      >
+        {!showImg && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <UserCircle2 className="w-14 h-14" style={{ color, opacity: 0.7 }} />
+          </div>
+        )}
+      </div>
+      {showImg && (
+        <img
+          src={src!}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          // @ts-expect-error — atributo válido no HTML mas ainda não tipado por padrão.
+          fetchpriority="low"
+          onLoad={() => setLoaded(true)}
+          onError={() => { setFailed(true); setLoaded(false); }}
+          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
+          style={{ opacity: loaded ? 1 : 0 }}
+        />
+      )}
+    </>
   );
 }
