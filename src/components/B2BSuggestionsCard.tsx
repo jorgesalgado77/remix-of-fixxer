@@ -44,6 +44,36 @@ const PRESETS: Record<CategoryKey, Preset> = {
   },
 };
 
+const FALLBACK_SUGGESTIONS: Record<CategoryKey, B2BSuggestion[]> = {
+  lojista: [
+    { title: "Fornecedores de Peças & Acessórios", hint: "Amplie seu catálogo com parceiros B2B", icon: "🔧" },
+    { title: "Prestadores de Instalação", hint: "Ofereça serviço completo aos clientes", icon: "🛠️" },
+    { title: "Logística & Entrega", hint: "Parceiros para agilizar suas entregas", icon: "🚚" },
+    { title: "Marketing & Divulgação", hint: "Aumente a visibilidade da sua loja", icon: "📣" },
+  ],
+  prestador: [
+    { title: "Lojistas do seu Ramo", hint: "Encontre lojas que precisam do seu serviço", icon: "🏬" },
+    { title: "Fornecedores de Insumos", hint: "Materiais e ferramentas com desconto B2B", icon: "📦" },
+    { title: "Parcerias entre Prestadores", hint: "Complete serviços com outros profissionais", icon: "🤝" },
+    { title: "Clientes Corporativos", hint: "Contratos recorrentes na sua região", icon: "🏢" },
+  ],
+  fornecedor: [
+    { title: "Lojistas Revendedores", hint: "Amplie sua rede de distribuição", icon: "🏬" },
+    { title: "Prestadores Parceiros", hint: "Ofereça produtos + serviço", icon: "🛠️" },
+    { title: "Distribuidores Regionais", hint: "Cobertura ampliada na sua área", icon: "🚚" },
+    { title: "Clientes Corporativos", hint: "Vendas em escala B2B", icon: "🏢" },
+  ],
+  cliente: [
+    { title: "Prestadores Próximos", hint: "Profissionais avaliados na sua região", icon: "🛠️" },
+    { title: "Lojas Recomendadas", hint: "Produtos e serviços da sua área", icon: "🏬" },
+    { title: "Serviços Emergenciais", hint: "Atendimento rápido quando precisar", icon: "⚡" },
+    { title: "Ofertas & Promoções", hint: "Descontos exclusivos para você", icon: "🎁" },
+  ],
+  admin: [
+    { title: "Sugestões da Plataforma", hint: "Parceiros em destaque no FIXXER", icon: "✨" },
+  ],
+};
+
 function keyFor(cat: CategoryKey) {
   return `${DISMISS_KEY_BASE}_${cat}`;
 }
