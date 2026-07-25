@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Outlet, useChildMatches } from "@tanstack/react-router";
 import {
   MessageCircle,
   Search,
@@ -46,8 +46,17 @@ function roleToCategory(role: string | null | undefined): CategoryKey {
 }
 
 export const Route = createFileRoute("/_authenticated/chat")({
-  component: ChatInboxPage,
+  component: ChatRouteShell,
 });
+
+// Como `_authenticated.chat.$peerId.tsx` é filho aninhado desta rota,
+// precisamos renderizar `<Outlet />` quando houver match filho. Caso
+// contrário, mostramos a Inbox padrão.
+function ChatRouteShell() {
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) return <Outlet />;
+  return <ChatInboxPage />;
+}
 
 type MessageRow = {
   id: string;
