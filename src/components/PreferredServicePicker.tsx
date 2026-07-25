@@ -197,11 +197,18 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
                 Cargos em <span style={{ color: accent }}>{preferredService}</span>
               </h4>
               <p className="text-[11px] text-white/50 mt-1 break-words">
-                Selecione até {MAX_ROLES} cargos. O <b>1º da lista</b> é o cargo preferencial (destacado).
-                Digite um novo cargo e ele será salvo para toda a plataforma.
+                Plano <b>{planId.toUpperCase()}</b> inclui <b>{quota}</b> cargo(s). Extras custam{" "}
+                <b className="text-amber-300">{EXTRA_COST} 🪙</b> cada (até {MAX_ROLES} no total).
+                O <b>1º da lista</b> é o preferencial (destacado).
               </p>
             </div>
           </div>
+
+          {overQuota > 0 && (
+            <div className="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 inline-flex items-center gap-2">
+              <Coins className="w-3 h-3" /> {overQuota} cargo(s) extra • {overQuota * EXTRA_COST} 🪙 debitadas
+            </div>
+          )}
 
           {/* Cargos já selecionados (ordem = preferencial primeiro) */}
           {roles.length > 0 && (
