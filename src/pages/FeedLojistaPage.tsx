@@ -552,6 +552,9 @@ export default function FeedLojistaPage() {
   const [proposalMsg, setProposalMsg] = useState("");
   const [proposalError, setProposalError] = useState<string | null>(null);
 
+  // Desbloqueio pago (5 moedas) para ver detalhes completos
+  const postUnlock = usePostUnlock();
+
   // Paginação por scroll infinito
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
