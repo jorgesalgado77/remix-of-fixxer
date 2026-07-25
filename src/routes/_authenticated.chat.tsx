@@ -400,9 +400,13 @@ function ChatInboxPage() {
     for (const c of base) {
       const name = c.peerName.toLowerCase();
       const msg = (c.lastMessage || "").toLowerCase();
+      const adTitle = (c.linkedAd?.title || "").toLowerCase();
+      const adCategory = (c.linkedAd?.category || "").toLowerCase();
       let score = 0;
       for (const t of terms) {
         if (name.includes(t)) score += name.startsWith(t) ? 6 : 4;
+        if (adTitle.includes(t)) score += adTitle.startsWith(t) ? 5 : 3;
+        if (adCategory.includes(t)) score += 1;
         if (msg.includes(t)) score += 2;
       }
       if (score === 0) continue;
@@ -410,9 +414,12 @@ function ChatInboxPage() {
       if (ageH < 24) score += 1;
       scored.push({ ...c, _score: score });
     }
-    return scored.sort((a, b) =>
-      b._score - a._score || new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime(),
-    );
+    return scored.sort((a, b) => {
+      if (b._score !== a._score) return b._score - a._score;
+      const diff = new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+      if (diff !== 0) return diff;
+      return a.peerId.localeCompare(b.peerId);
+    });
   }, [conversationsWithMock, query, showArchived, role]);
 
   const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
