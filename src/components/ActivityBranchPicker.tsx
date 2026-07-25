@@ -114,7 +114,7 @@ export function ActivityBranchPicker({ value, onChange, accent = "hsl(var(--prim
         <button
           type="button"
           onClick={enableCustom}
-          className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed p-3 text-left transition-all min-w-0 overflow-hidden active:scale-[0.98]"
+          className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed p-3 text-left transition-all min-w-0 overflow-hidden active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]"
           style={{ borderColor: "rgba(255,255,255,0.18)", background: "transparent" }}
         >
           <span className="text-xl shrink-0" aria-hidden>📝</span>
