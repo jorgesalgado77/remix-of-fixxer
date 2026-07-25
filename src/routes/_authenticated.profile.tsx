@@ -645,6 +645,31 @@ function ProfilePage() {
                 </div>
               </div>
 
+              {/* SOBRE / APRESENTAÇÃO DA EMPRESA */}
+              <div className="pt-8 space-y-4">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                  <FileText className="w-6 h-6 text-primary" />
+                  <div className="min-w-0">
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Sobre / Apresentação da Empresa</h3>
+                    <p className="text-[11px] text-white/50 mt-1 break-words">
+                      Este texto aparece na aba <b>Sobre</b> do seu perfil público.
+                    </p>
+                  </div>
+                </div>
+                <textarea
+                  rows={4}
+                  maxLength={1200}
+                  value={profile?.about_bio || ''}
+                  onChange={(e) => setProfile({ ...profile, about_bio: e.target.value })}
+                  readOnly={!!profileId}
+                  placeholder="Conte em poucas palavras sobre sua experiência, especialidades, história e diferenciais de atendimento..."
+                  className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none text-sm leading-relaxed resize-none"
+                />
+                <div className="flex justify-end text-[10px] font-black uppercase tracking-widest text-white/40">
+                  {(profile?.about_bio || '').length}/1200
+                </div>
+              </div>
+
               {/* NOTIFICAÇÕES PUSH */}
               <div className="pt-8 space-y-4">
                 <div className="flex items-center gap-3 border-b border-white/5 pb-4">
