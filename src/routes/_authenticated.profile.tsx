@@ -605,6 +605,19 @@ function ProfilePage() {
         ["--ring" as any]: theme.hex,
       }}
     >
+      {/* Pílula flutuante de autosave — reflete estado de qualquer campo do perfil */}
+      {!profileId && (
+        <AutosaveStatusPill
+          saving={saving}
+          autoSaving={autoSaving}
+          lastSavedAt={lastSavedAt}
+          isDirty={
+            !!profile?.id &&
+            JSON.stringify(profile) !== lastSavedSnapshotRef.current
+          }
+        />
+      )}
+
       {/* 1. CABEÇALHO DO PERFIL */}
       <div className="relative h-64 w-full group">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#121214]/80 z-10 pointer-events-none" />
