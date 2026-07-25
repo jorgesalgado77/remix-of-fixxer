@@ -642,6 +642,15 @@ function ConversationPage() {
     if (nearBottom) el.scrollTop = el.scrollHeight;
   }, [messages, peerTyping]);
 
+  // Presença global — reflete o status online do peer mesmo antes do canal por-par sincronizar
+  useEffect(() => {
+    const unsub = subscribeGlobalPresence((set) => {
+      if (peerId && set.has(peerId)) setPeerOnline(true);
+    });
+    return () => { unsub(); };
+  }, [peerId]);
+
+
   const loadingOlderRef = useRef(false);
   const loadOlder = async () => {
     if (!userId || messages.length === 0 || !hasMore || loadingOlderRef.current) return;
