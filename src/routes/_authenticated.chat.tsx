@@ -695,7 +695,9 @@ function ChatInboxPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-bold uppercase italic text-sm truncate">{c.peerName}</p>
+                        <p className="font-bold uppercase italic text-sm truncate">
+                          <Highlight text={c.peerName} terms={activeTerms} />
+                        </p>
                         <span className="text-[10px] text-muted-foreground shrink-0">
                           {new Date(c.lastAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                         </span>
@@ -705,8 +707,14 @@ function ChatInboxPage() {
                           className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
                           style={{ backgroundColor: `rgba(${theme.rgb}, 0.15)`, color: theme.hex }}
                         >
-                          {theme.label}
+                          <Highlight text={theme.label} terms={activeTerms} />
                         </span>
+                        {c.peerRole && (
+                          <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                            <Highlight text={c.peerRole} terms={activeTerms} />
+                          </span>
+                        )}
+
                         {c.linkedAd?.distanceKm != null && (
                           <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
                             📍 {c.linkedAd.distanceKm.toFixed(1).replace(".", ",")} km
