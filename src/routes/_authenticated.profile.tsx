@@ -9,6 +9,7 @@ import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import { PushToggle } from "@/components/PushToggle";
 import { AffiliateBanner } from "@/components/AffiliateBanner";
 import { ActivityBranchSelector } from "@/components/ActivityBranchSelector";
+import { ActivityBranchPicker } from "@/components/ActivityBranchPicker";
 import { CoinBalanceBadge } from "@/components/CoinBalanceBadge";
 import { PlanBadge } from "@/components/PlanBadge";
 
@@ -601,7 +602,11 @@ function ProfilePage() {
                         key={opt.value}
                         type="button"
                         onClick={() => {
-                          setProfile({ ...profile, service_radius_km: opt.value });
+                          setProfile({
+                            ...profile,
+                            service_radius_km: opt.value,
+                            default_radius: opt.value,
+                          });
                           try {
                             const cat = roleToCategory(profile?.role);
                             localStorage.setItem(`fixxer_radius_${cat}`, String(opt.value));
@@ -637,6 +642,31 @@ function ProfilePage() {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* SOBRE / APRESENTAÇÃO DA EMPRESA */}
+              <div className="pt-8 space-y-4">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                  <FileText className="w-6 h-6 text-primary" />
+                  <div className="min-w-0">
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Sobre / Apresentação da Empresa</h3>
+                    <p className="text-[11px] text-white/50 mt-1 break-words">
+                      Este texto aparece na aba <b>Sobre</b> do seu perfil público.
+                    </p>
+                  </div>
+                </div>
+                <textarea
+                  rows={4}
+                  maxLength={1200}
+                  value={profile?.about_bio || ''}
+                  onChange={(e) => setProfile({ ...profile, about_bio: e.target.value })}
+                  readOnly={!!profileId}
+                  placeholder="Conte em poucas palavras sobre sua experiência, especialidades, história e diferenciais de atendimento..."
+                  className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none text-sm leading-relaxed resize-none"
+                />
+                <div className="flex justify-end text-[10px] font-black uppercase tracking-widest text-white/40">
+                  {(profile?.about_bio || '').length}/1200
                 </div>
               </div>
 
@@ -921,21 +951,36 @@ function ProfilePage() {
                 <div className="pt-8 space-y-6">
                   <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                     <Briefcase className="w-6 h-6 text-primary" />
-                    <div>
-                      <h3 className="text-xl font-black uppercase tracking-tighter">Ramos de Atividade</h3>
-                      <p className="text-[11px] text-white/50 mt-1">Selecione todos os ramos e subcategorias em que atua. Use "Outro" para ramos específicos.</p>
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-black uppercase tracking-tighter">Ramo Principal de Atividade</h3>
+                      <p className="text-[11px] text-white/50 mt-1 break-words">
+                        Selecione uma das 9 categorias oficiais ou digite um ramo customizado — sugerimos automaticamente uma correspondência oficial quando existir.
+                      </p>
                     </div>
                   </div>
-                  <ActivityBranchSelector
-                    value={(profile?.business_category || '').split(',').map((s: string) => s.trim()).filter(Boolean)}
-                    onChange={(next: string[]) => setProfile({ ...profile, business_category: next.join(',') })}
-                    customValue={(profile?.custom_branch || '').split('||').map((s: string) => s.trim()).filter(Boolean)}
-                    onCustomChange={(next: string[]) => setProfile({ ...profile, custom_branch: next.join('||') })}
-                    chargeUserId={profile?.id}
+
+                  <ActivityBranchPicker
+                    value={profile?.activity_branch}
+                    onChange={(next) => setProfile({ ...profile, activity_branch: next })}
+                    accent={theme.hex}
                   />
-                  <p className="text-[10px] text-amber-400/90 mt-2 font-bold">
-                    💰 1º ramo customizado grátis. A partir do 2º: 10 moedas cada.
-                  </p>
+
+                  <div className="pt-6 border-t border-white/5 space-y-3">
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-black uppercase tracking-tight text-white">Subcategorias & Especialidades Adicionais</h4>
+                      <p className="text-[11px] text-white/50 mt-1 break-words">Opcional — refine sua atuação selecionando ramos e subcategorias detalhadas.</p>
+                    </div>
+                    <ActivityBranchSelector
+                      value={(profile?.business_category || '').split(',').map((s: string) => s.trim()).filter(Boolean)}
+                      onChange={(next: string[]) => setProfile({ ...profile, business_category: next.join(',') })}
+                      customValue={(profile?.custom_branch || '').split('||').map((s: string) => s.trim()).filter(Boolean)}
+                      onCustomChange={(next: string[]) => setProfile({ ...profile, custom_branch: next.join('||') })}
+                      chargeUserId={profile?.id}
+                    />
+                    <p className="text-[10px] text-amber-400/90 mt-2 font-bold">
+                      💰 1º ramo customizado grátis. A partir do 2º: 10 moedas cada.
+                    </p>
+                  </div>
                 </div>
               )}
 
