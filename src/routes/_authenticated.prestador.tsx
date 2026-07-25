@@ -87,11 +87,11 @@ function PrestadorDashboard() {
              <h2 className="text-sm font-black text-white uppercase italic mb-6">Minha Vitrine (Público)</h2>
              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                   <div className="w-12 h-12 rounded-xl bg-[#00FF87]/20 flex items-center justify-center text-[#00FF87] font-black italic">M</div>
+                   <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-black italic">M</div>
                    <div>
                       <span className="text-xs font-black text-white uppercase italic">Montador Especialista em Planejados</span>
                       <div className="flex items-center gap-2 mt-1">
-                         <span className="text-[8px] font-bold text-[#00FF87] uppercase">Ativo no Feed</span>
+                         <span className="text-[8px] font-bold text-primary uppercase">Ativo no Feed</span>
                          <span className="text-[8px] text-muted-foreground uppercase">• 1.2k visualizações</span>
                       </div>
                    </div>
