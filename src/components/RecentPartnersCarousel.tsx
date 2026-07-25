@@ -654,3 +654,48 @@ export function RecentPartnersCarousel() {
     </section>
   );
 }
+
+/**
+ * Avatar do card com:
+ * - Placeholder blur (gradiente colorido) enquanto a imagem carrega → reduz flicker no mobile.
+ * - Fallback silencioso para ícone se `src` falhar (onError) ou for inválido.
+ * - `loading="lazy"` + `decoding="async"` + `fetchPriority="low"` para não competir com o feed principal.
+ */
+function PartnerAvatar({ src, alt, color }: { src: string | null; alt: string; color: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const showImg = !!src && !failed;
+  // Gradiente radial suave na cor do papel (âmbar/violeta) — funciona como "blur hash" barato.
+  const blurStyle: React.CSSProperties = {
+    background: `radial-gradient(120% 90% at 30% 20%, ${color}33 0%, ${color}11 45%, #000000 100%)`,
+  };
+  return (
+    <>
+      <div
+        className="absolute inset-0 transition-opacity duration-300"
+        style={{ ...blurStyle, opacity: showImg && loaded ? 0 : 1 }}
+        aria-hidden="true"
+      >
+        {!showImg && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <UserCircle2 className="w-14 h-14" style={{ color, opacity: 0.7 }} />
+          </div>
+        )}
+      </div>
+      {showImg && (
+        <img
+          src={src!}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          // @ts-expect-error — atributo válido no HTML mas ainda não tipado por padrão.
+          fetchpriority="low"
+          onLoad={() => setLoaded(true)}
+          onError={() => { setFailed(true); setLoaded(false); }}
+          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
+          style={{ opacity: loaded ? 1 : 0 }}
+        />
+      )}
+    </>
+  );
+}
