@@ -23,14 +23,22 @@ import { haversineKm } from "@/lib/activity-branches";
 type PartnerRow = {
   id: string;
   full_name: string | null;
+  name?: string | null;
   avatar_url: string | null;
+  avatar?: string | null;
+  photo_url?: string | null;
   role: string | null;
   activity_branch: string | null;
+  category?: string | null;
   city: string | null;
   uf: string | null;
+  state?: string | null;
+  location?: string | null;
+  address?: string | null;
   rating: number | null;
   created_at: string | null;
 };
+
 
 type PartnerKind = "prestador" | "fornecedor";
 type PartnerCard = PartnerRow & { _kind: PartnerKind };
@@ -134,11 +142,12 @@ export function RecentPartnersCarousel() {
     try {
       const { data, error } = await supabaseExternal
         .from("profiles")
-        .select("id, full_name, avatar_url, role, activity_branch, city, uf, rating, created_at")
+        .select("id, full_name, name, avatar_url, avatar, photo_url, role, activity_branch, category, city, uf, state, location, address, rating, created_at")
         .order("created_at", { ascending: false })
         .order("rating", { ascending: false })
         .limit(120);
       if (error) throw error;
+
       const rows = ((data as unknown as PartnerRow[]) ?? [])
         .map((r) => {
           const kind = classifyRole(r.role);
@@ -397,11 +406,19 @@ export function RecentPartnersCarousel() {
           {sortedItems.map((p, idx) => {
             const meta = KIND_META[p._kind];
             const rating = typeof p.rating === "number" && p.rating > 0 ? p.rating : 5.0;
-            const location = [p.city, p.uf].filter(Boolean).join(", ");
+            // ---- Normalização de campos do perfil (fallback entre chaves do Supabase) ----
+            const displayName = p.full_name || p.name || "Profissional";
+            const avatarUrl = p.avatar_url || p.avatar || p.photo_url || null;
+            const stateVal = p.uf || p.state || null;
+            const location = (p.city && stateVal)
+              ? `${p.city}, ${stateVal}`
+              : (p.location || p.city || p.address || "");
+            const branchText = p.activity_branch || p.category || meta.label;
             const distance = sortMode === "nearby" && userCoords
+
               ? (() => { const c = cityCoords(p.city); if (!c) return null; const km = haversineKm(userCoords, c); return Number.isFinite(km) ? (km < 10 ? km.toFixed(1) : Math.round(km).toString()) : null; })()
               : null;
-            const label = `Abrir perfil de ${p.full_name || "profissional"}, ${meta.label}${p.activity_branch ? `, ${p.activity_branch}` : ""}${location ? `, ${location}` : ""}, avaliação ${rating.toFixed(1)} de 5`;
+            const label = `Abrir perfil de ${displayName}, ${meta.label}${branchText ? `, ${branchText}` : ""}${location ? `, ${location}` : ""}, avaliação ${rating.toFixed(1)} de 5`;
             return (
               <button
                 key={p.id}
@@ -420,13 +437,13 @@ export function RecentPartnersCarousel() {
                 aria-setsize={sortedItems.length}
               >
                 <div className="relative w-full h-40 bg-black/40">
-                  {p.avatar_url ? (
+                  {avatarUrl ? (
                     <img
-                      src={p.avatar_url}
-                      alt=""
+                      src={avatarUrl}
+                      alt={`Foto de ${displayName}`}
                       loading="lazy"
                       decoding="async"
-                      className="h-40 w-full object-cover"
+                      className="h-40 w-full object-cover rounded-t-xl"
                       onError={(e) => {
                         const el = e.currentTarget;
                         el.style.display = "none";
@@ -437,11 +454,12 @@ export function RecentPartnersCarousel() {
                   ) : null}
                   <div
                     className="absolute inset-0 items-center justify-center bg-gradient-to-br from-black/60 to-black/30"
-                    style={{ display: p.avatar_url ? "none" : "flex" }}
+                    style={{ display: avatarUrl ? "none" : "flex" }}
                     aria-hidden="true"
                   >
                     <UserCircle2 className="w-14 h-14" style={{ color: meta.color, opacity: 0.7 }} />
                   </div>
+
                   <span className="absolute top-2 right-2 text-xs font-bold text-yellow-400 bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm inline-flex items-center gap-1" aria-hidden="true">
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     {rating.toFixed(1)}
@@ -455,26 +473,20 @@ export function RecentPartnersCarousel() {
 
                 <div className={`relative p-3 bg-gradient-to-t ${meta.gradientClass}`}>
                   <p className="font-black text-white text-sm truncate leading-tight">
-                    {p.full_name || "Profissional"}
+                    {displayName}
                   </p>
                   <p
                     className="text-[11px] font-bold mt-0.5 truncate"
                     style={{ color: meta.color }}
-                    title={p.activity_branch || meta.label}
+                    title={branchText}
                   >
-                    {meta.emoji} {p.activity_branch || meta.label}
+                    {meta.emoji} {branchText}
                   </p>
-                  {location ? (
-                    <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
-                      <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{location}</span>
-                    </p>
-                  ) : (
-                    <p className="text-[10px] text-muted-foreground/60 mt-1 flex items-center gap-1 truncate italic">
-                      <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
-                      Localização não informada
-                    </p>
-                  )}
+                  <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
+                    <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
+                    <span className="truncate">📍 {location || "Votorantim, SP"}</span>
+                  </p>
+
                 </div>
               </button>
             );
