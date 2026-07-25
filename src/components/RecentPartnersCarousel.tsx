@@ -23,14 +23,22 @@ import { haversineKm } from "@/lib/activity-branches";
 type PartnerRow = {
   id: string;
   full_name: string | null;
+  name?: string | null;
   avatar_url: string | null;
+  avatar?: string | null;
+  photo_url?: string | null;
   role: string | null;
   activity_branch: string | null;
+  category?: string | null;
   city: string | null;
   uf: string | null;
+  state?: string | null;
+  location?: string | null;
+  address?: string | null;
   rating: number | null;
   created_at: string | null;
 };
+
 
 type PartnerKind = "prestador" | "fornecedor";
 type PartnerCard = PartnerRow & { _kind: PartnerKind };
