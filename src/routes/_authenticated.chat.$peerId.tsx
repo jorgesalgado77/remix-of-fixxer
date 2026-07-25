@@ -162,6 +162,7 @@ function ConversationPage() {
   const [peerAvatar, setPeerAvatar] = useState<string | null>(null);
   const [peerRole, setPeerRole] = useState<string | null>(null);
   const [peerInitials, setPeerInitials] = useState<string>("?");
+  const [peerIsFallback, setPeerIsFallback] = useState<boolean>(true);
   const [peerLoading, setPeerLoading] = useState<boolean>(true);
   const [content, setContent] = useState<string>(() => getDraftText(peerId));
   const [sending, setSending] = useState(false);
@@ -426,16 +427,29 @@ function ConversationPage() {
 
       try {
         setPeerLoading(true);
-        const { resolvePeerProfile } = await import("@/lib/chat-peer-profile");
-        const resolved = await resolvePeerProfile(peerId);
+        const { clearPeerCache, fallbackPeer, resolvePeerProfile } = await import("@/lib/chat-peer-profile");
+        // Sempre invalida ao abrir a conversa: evita foto/nome antigos vindos
+        // do cache quando o usuário acabou de editar o perfil público.
+        clearPeerCache(peerId);
+        const resolved = await resolvePeerProfile(peerId, { refresh: true });
         if (!cancelled) {
-          setPeerName(resolved.name);
+          setPeerName(resolved.name || "Conversa");
           setPeerAvatar(resolved.avatarUrl);
           setPeerRole(resolved.role);
           setPeerInitials(resolved.initials);
+          setPeerIsFallback(resolved.isFallback);
+          window.dispatchEvent(new CustomEvent("fixxer:chat-peer-refresh", { detail: { peerId } }));
         }
       } catch (e) {
         console.warn("[chat] falha ao resolver perfil do destinatário", e);
+        const fallback = (await import("@/lib/chat-peer-profile")).fallbackPeer(peerId);
+        if (!cancelled) {
+          setPeerName(fallback.name);
+          setPeerAvatar(null);
+          setPeerRole(null);
+          setPeerInitials(fallback.initials);
+          setPeerIsFallback(true);
+        }
       } finally {
         if (!cancelled) setPeerLoading(false);
       }
@@ -1209,13 +1223,16 @@ function ConversationPage() {
             className="w-11 h-11 shrink-0 rounded-full bg-white/5 border-2 overflow-hidden flex items-center justify-center relative"
             style={{ borderColor: peerTheme.hex, boxShadow: `0 0 12px rgba(${peerTheme.rgb}, 0.45)` }}
           >
-            {peerAvatar ? (
+            {peerAvatar && !peerIsFallback ? (
               <img src={peerAvatar} alt={peerName} className="w-full h-full object-cover" />
             ) : peerLoading ? (
               <span className="w-full h-full animate-pulse bg-white/10" aria-label="Carregando avatar" />
             ) : (
-              <span className="font-black italic text-base" style={{ color: peerTheme.hex }}>
-                {peerInitials}
+              <span className="relative flex h-full w-full items-center justify-center bg-white/5" aria-label="Avatar padrão">
+                <UserCircle2 className="h-7 w-7 text-muted-foreground/70" />
+                <span className="absolute bottom-1 right-1 min-w-4 h-4 px-0.5 rounded-full bg-black/80 border border-white/15 flex items-center justify-center text-[8px] font-black italic" style={{ color: peerTheme.hex }}>
+                  {peerInitials}
+                </span>
               </span>
             )}
             {peerOnline && (
@@ -1226,7 +1243,7 @@ function ConversationPage() {
             {peerLoading ? (
               <span className="block h-3.5 w-32 rounded bg-white/10 animate-pulse" aria-label="Carregando nome" />
             ) : (
-              <p className="font-black uppercase italic text-sm truncate">{peerName}</p>
+                <p className="font-black uppercase italic text-sm truncate">{peerName || "Conversa"}</p>
             )}
             <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
               <span
