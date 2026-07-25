@@ -214,15 +214,27 @@ function ConversationPage() {
     [peerId],
   );
 
-  const markIncomingRead = async (uid: string) => {
-    setMarkingRead(true);
-    try {
-      enqueueMarkConversationRead(uid, peerId);
-      markConversationReadLocal(uid, peerId);
-      window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
-    } finally {
-      setMarkingRead(false);
-    }
+  // Debounce das marcações de lida + confirmação do servidor via flush da fila.
+  // Evita flutuação de status quando o usuário alterna conversas rapidamente.
+  const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const markReadInflightRef = useRef<Promise<void> | null>(null);
+  const markIncomingRead = (uid: string) => {
+    if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
+    markReadTimerRef.current = setTimeout(async () => {
+      setMarkingRead(true);
+      try {
+        enqueueMarkConversationRead(uid, peerId);
+        markConversationReadLocal(uid, peerId);
+        // Aguarda a confirmação do servidor antes de propagar o evento global.
+        const inflight = flushChatReadQueue().catch(() => {});
+        markReadInflightRef.current = inflight;
+        await inflight;
+        window.dispatchEvent(new CustomEvent("fixxer:messages-read"));
+      } finally {
+        setMarkingRead(false);
+        markReadInflightRef.current = null;
+      }
+    }, 350);
   };
 
   const sendTypingStop = () => {
