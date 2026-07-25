@@ -13,6 +13,7 @@ import { formatDistanceFromCity } from "@/lib/geo-distance";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { FeedErrorState } from "@/components/FeedErrorState";
 import { useFeedPreload } from "@/hooks/use-feed-preload";
+import { usePersistedState } from "@/lib/feed-persist";
 import {
   ArrowLeft,
   Search,
@@ -226,9 +227,9 @@ export default function FeedClientePage() {
   const { glassClass } = usePerformanceMode();
   const navigate = useNavigate();
 
-  const [query, setQuery] = useState("");
-  const [solution, setSolution] = useState<Solution>("Todas as Opções");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [query, setQuery] = usePersistedState<string>("fixxer_feed_cliente_query", "");
+  const [solution, setSolution] = usePersistedState<Solution>("fixxer_feed_cliente_solution", "Todas as Opções");
+  const [visibleCount, setVisibleCount] = usePersistedState<number>("fixxer_feed_cliente_visible", PAGE_SIZE);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [lightbox, setLightbox] = useState<{ vendor: Vendor; index: number } | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -237,9 +238,9 @@ export default function FeedClientePage() {
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "granted" | "denied">("idle");
 
-  const [sortBy, setSortBy] = useState<SortKey>("relevance");
+  const [sortBy, setSortBy] = usePersistedState<SortKey>("fixxer_feed_cliente_sort", "relevance");
   const [sortOpen, setSortOpen] = useState(false);
-  const [savedOnly, setSavedOnly] = useState(false);
+  const [savedOnly, setSavedOnly] = usePersistedState<boolean>("fixxer_feed_cliente_savedonly", false);
 
   const [myNeeds, setMyNeeds] = useState<MyNeed[]>([]);
   const [needsOpen, setNeedsOpen] = useState(false);
@@ -884,7 +885,7 @@ export default function FeedClientePage() {
             <FeedErrorState
               accent="#00E5FF"
               busy={refreshing}
-              message={loadError}
+              error={loadError}
               onRetry={handleRefresh}
             />
           )}

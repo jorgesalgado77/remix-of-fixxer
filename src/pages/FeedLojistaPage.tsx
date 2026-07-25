@@ -25,6 +25,7 @@ import { useUserCoords, formatDistanceFromCity } from "@/lib/geo-distance";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { FeedErrorState } from "@/components/FeedErrorState";
 import { useFeedPreload } from "@/hooks/use-feed-preload";
+import { usePersistedState } from "@/lib/feed-persist";
 import { Lock, Coins, Loader2 } from "lucide-react";
 
 import {
@@ -539,11 +540,11 @@ function authorHref(post: FeedPost) {
 
 export default function FeedLojistaPage() {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<"todos" | FeedCategory>("todos");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("todos");
+  const [filter, setFilter] = usePersistedState<"todos" | FeedCategory>("fixxer_feed_lojista_filter", "todos");
+  const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_lojista_status", "todos");
   const [detailsFor, setDetailsFor] = useState<FeedPost | null>(null);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [search, setSearch] = usePersistedState<string>("fixxer_feed_lojista_search", "");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [searching, setSearching] = useState(false);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [savesLoaded, setSavesLoaded] = useState(false);
@@ -951,7 +952,7 @@ export default function FeedLojistaPage() {
                 <FeedErrorState
                   accent="#00E5FF"
                   busy={refreshing}
-                  message={loadError}
+                  error={loadError}
                   onRetry={handleRefresh}
                 />
               )}
