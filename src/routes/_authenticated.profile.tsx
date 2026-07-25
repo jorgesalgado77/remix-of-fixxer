@@ -42,11 +42,14 @@ export const Route = createFileRoute("/_authenticated/profile")({
 function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [brands, setBrands] = useState<string[]>([]);
   const [newBrand, setNewBrand] = useState("");
   const [isAddingBrand, setIsAddingBrand] = useState(false);
   const [lightbox, setLightbox] = useState<{ isOpen: boolean; type: string; url: string; index: number }>({ isOpen: false, type: '', url: '', index: 0 });
+  const lastSavedSnapshotRef = useRef<string>('');
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   const { id: profileId, context: postId } = Route.useSearch() as { id?: string; context?: string };
