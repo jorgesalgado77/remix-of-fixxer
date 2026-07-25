@@ -38,6 +38,7 @@ import { PlanBadge } from "@/components/PlanBadge";
 import { LiveProfilePreview } from "@/components/LiveProfilePreview";
 import { AutosaveStatusPill } from "@/components/AutosaveStatusPill";
 import { saveDraft, loadDraft, clearDraft, markPending, pickDraftPatch } from "@/lib/profile-draft";
+import { detectPixKeyType, validatePixKey, PIX_KEY_TYPE_LABELS, type PixKeyType } from "@/lib/pix-key";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -1032,42 +1033,77 @@ function ProfilePage() {
                 </div>
 
                 {/* 💸 CHAVE PIX — recebimento de pagamentos.
+                    Tipos oficiais do BCB: CPF, CNPJ, E-mail, Telefone e Aleatória (EVP).
+                    Não existe tipo "Automático" no PIX — o antigo rótulo foi removido.
                     Persistida em coluna própria (se existir) ou em custom_sections.__extras
                     via o mecanismo de fallback do autosave. */}
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
-                    💸 Chave PIX <span className="text-[9px] font-bold text-primary/80 normal-case tracking-normal">— para receber pagamentos</span>
-                  </label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <select
-                      value={profile?.pix_key_type || 'auto'}
-                      onChange={e => setProfile({ ...profile, pix_key_type: e.target.value })}
-                      className="sm:w-44 bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl outline-none text-xs font-bold uppercase"
-                      aria-label="Tipo da chave PIX"
-                    >
-                      <option value="auto">Automático</option>
-                      <option value="cpf">CPF</option>
-                      <option value="cnpj">CNPJ</option>
-                      <option value="email">E-mail</option>
-                      <option value="phone">Telefone</option>
-                      <option value="random">Aleatória</option>
-                    </select>
-                    <input
-                      type="text"
-                      value={profile?.pix_key || ''}
-                      onChange={e => setProfile({ ...profile, pix_key: e.target.value })}
-                      placeholder="Cole aqui sua chave PIX"
-                      className="flex-1 bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
-                      autoComplete="off"
-                      spellCheck={false}
-                      inputMode="text"
-                    />
-                  </div>
-                  <p className="text-[10px] text-muted-foreground ml-1">
-                    Sua chave PIX aparece apenas para clientes que iniciarem um pagamento com você.
-                    Nunca é exibida publicamente no perfil.
-                  </p>
-                </div>
+                {(() => {
+                  const pixKey = (profile?.pix_key || '').trim();
+                  const rawType = profile?.pix_key_type;
+                  const detected = pixKey ? detectPixKeyType(pixKey) : null;
+                  // Migra silenciosamente o antigo valor "auto" para o tipo detectado.
+                  const effectiveType: PixKeyType | '' =
+                    (rawType && rawType !== 'auto' ? rawType : detected) || '';
+                  const validationError = pixKey && effectiveType
+                    ? validatePixKey(effectiveType as PixKeyType, pixKey)
+                    : null;
+                  return (
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2 flex-wrap">
+                        💸 Chave PIX <span className="text-[9px] font-bold text-primary/80 normal-case tracking-normal">— para receber pagamentos</span>
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select
+                          value={effectiveType || ''}
+                          onChange={e => setProfile({ ...profile, pix_key_type: e.target.value })}
+                          className="sm:w-52 bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl outline-none text-xs font-bold uppercase"
+                          aria-label="Tipo da chave PIX"
+                        >
+                          <option value="">Selecione o tipo…</option>
+                          <option value="cpf">CPF</option>
+                          <option value="cnpj">CNPJ</option>
+                          <option value="email">E-mail</option>
+                          <option value="phone">Telefone</option>
+                          <option value="random">Aleatória (EVP)</option>
+                        </select>
+                        <input
+                          type="text"
+                          value={profile?.pix_key || ''}
+                          onChange={e => {
+                            const value = e.target.value;
+                            const next: any = { ...profile, pix_key: value };
+                            // Autodetecta o tipo enquanto o usuário digita, se ainda não tiver sido escolhido.
+                            if (!rawType || rawType === 'auto') {
+                              const t = detectPixKeyType(value);
+                              if (t) next.pix_key_type = t;
+                            }
+                            setProfile(next);
+                          }}
+                          placeholder="Cole aqui sua chave PIX (CPF, CNPJ, e-mail, telefone ou aleatória)"
+                          className="flex-1 min-w-0 bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
+                          autoComplete="off"
+                          spellCheck={false}
+                          inputMode="text"
+                          aria-invalid={!!validationError}
+                          aria-describedby="pix-help"
+                        />
+                      </div>
+                      {validationError ? (
+                        <p role="alert" className="text-[10px] font-bold text-rose-400 ml-1">
+                          ⚠ {validationError}
+                        </p>
+                      ) : effectiveType && pixKey ? (
+                        <p className="text-[10px] font-bold text-emerald-400 ml-1">
+                          ✓ Chave {PIX_KEY_TYPE_LABELS[effectiveType as PixKeyType]} válida — será salva automaticamente.
+                        </p>
+                      ) : null}
+                      <p id="pix-help" className="text-[10px] text-muted-foreground ml-1">
+                        Tipos oficiais: CPF, CNPJ, E-mail, Telefone ou Aleatória (EVP).
+                        Sua chave aparece <b>parcialmente mascarada</b> no perfil público, com botão de copiar seguro.
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
 
 
