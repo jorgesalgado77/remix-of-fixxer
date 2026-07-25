@@ -695,9 +695,7 @@ export function RecentPartnersCarousel() {
                       <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
                       <span className="truncate">📍 {location}</span>
                     </p>
-                  ) : (
-                    <p className="text-[10px] text-white/40 italic mt-1 truncate">Localização não informada</p>
-                  )}
+                  ) : null}
 
                 </div>
               </button>
