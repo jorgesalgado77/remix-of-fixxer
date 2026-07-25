@@ -75,6 +75,7 @@ import { Progress } from "@/components/ui/progress";
 import { ActivitySelect } from "@/components/ActivitySelect";
 import { useActivityBranches } from "@/hooks/use-activity-branches";
 import { PhotoSectionsManager, EMPTY_PHOTO_SECTIONS, type PhotoSectionsValue } from "@/components/PhotoSectionsManager";
+import { RecentPartnersCarousel } from "@/components/RecentPartnersCarousel";
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -1258,6 +1259,8 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 Implementar uma confirmação e salvamento automático da nova ordem ao reordenar fotos e vídeos, garantindo que eu saiba quando a mudança foi concluída no banco.Adicionar retentativa automática do upload por arrastar e soltar quando falhar, com mensagens de erro padronizadas indicando o motivo e o tempo estimado.Adicionar a opção de exportar o histórico/linha do tempo de uma solicitação em PDF, para eu compartilhar ou arquivar.Implementar notificações em tempo real quando houver mudança de status nas minhas solicitações, para eu ser avisado imediatamente.Adicionar filtros na sessão de solicitações para eu refinar por status e por intervalo de datas sem precisar rolar.
             </div>
             
+            <RecentPartnersCarousel />
+
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
                 <div className="flex flex-col space-y-4 mb-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
