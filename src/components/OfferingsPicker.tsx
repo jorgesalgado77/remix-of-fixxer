@@ -43,6 +43,19 @@ export function OfferingsPicker({
   const [newItem, setNewItem] = useState('');
   const [charging, setCharging] = useState(false);
   const [vehicleExpanded, setVehicleExpanded] = useState(false);
+  const [balance, setBalance] = useState<number>(getCachedBalance());
+  const [inlineWarn, setInlineWarn] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeBalance(setBalance);
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!inlineWarn) return;
+    const t = setTimeout(() => setInlineWarn(null), 6000);
+    return () => clearTimeout(t);
+  }, [inlineWarn]);
 
   const quota = quotaFor(planId);
 
