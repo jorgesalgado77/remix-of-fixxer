@@ -880,18 +880,27 @@ export default function FeedClientePage() {
               onSuggestion={(term) => setQuery(term)}
             />
           )}
-          {visible.map((vendor) => (
-            <VendorCard
-              key={vendor.id}
-              vendor={vendor}
-              glassClass={glassClass}
-              saved={saved.has(vendor.id)}
-              onToggleSaved={() => toggleSaved(vendor.id)}
-              onChat={() => openChat(vendor)}
-              onProfile={() => openProfile(vendor)}
-              onOpenLightbox={(index) => setLightbox({ vendor, index })}
-              userCoords={userCoords}
+          {loadError && (
+            <FeedErrorState
+              accent="#00E5FF"
+              busy={refreshing}
+              message={loadError}
+              onRetry={handleRefresh}
             />
+          )}
+          {visible.map((vendor) => (
+            <div key={vendor.id} className="feed-item-cv">
+              <VendorCard
+                vendor={vendor}
+                glassClass={glassClass}
+                saved={saved.has(vendor.id)}
+                onToggleSaved={() => toggleSaved(vendor.id)}
+                onChat={() => openChat(vendor)}
+                onProfile={() => openProfile(vendor)}
+                onOpenLightbox={(index) => setLightbox({ vendor, index })}
+                userCoords={userCoords}
+              />
+            </div>
           ))}
 
           {hasMore && (
