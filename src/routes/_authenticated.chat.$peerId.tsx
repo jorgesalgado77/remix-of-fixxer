@@ -279,7 +279,20 @@ function ConversationPage() {
         const { data, error } = await runQuery(selectCols);
         if (error) throw error;
         return ((data as unknown as MessageRow[]) ?? []).reverse();
-      } catch {
+      } catch (err: any) {
+        // Só cai no fallback (sem colunas de anexo) se o erro for de coluna inexistente.
+        // Qualquer outro erro (rede/RLS) NÃO deve silenciosamente ocultar anexos.
+        const msg = String(err?.message || "");
+        const isMissingColumn =
+          err?.code === "42703" ||
+          /column .* does not exist/i.test(msg) ||
+          /attachment_/i.test(msg);
+        if (!isMissingColumn) {
+          console.error("[chat] loadPage falhou", err);
+          toast.error("Falha ao carregar histórico", { description: msg || "Tente novamente." });
+          return [];
+        }
+        console.warn("[chat] Colunas de anexo ausentes na tabela messages — histórico será exibido sem anexos.");
         const { data } = await runQuery("id, sender_id, recipient_id, content, created_at, read");
         return ((data as unknown as MessageRow[]) ?? []).reverse();
       }
