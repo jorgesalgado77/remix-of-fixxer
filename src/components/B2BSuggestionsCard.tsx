@@ -194,22 +194,25 @@ function B2BSuggestionsCardInner() {
 
   // Estado OCULTO: mostra chip discreto para reexibir.
   if (dismissed) {
+    const PresetIcon = preset.Icon;
     return (
       <button
         type="button"
         onClick={() => {
           setDismissed(false);
-          writeDismissed(false);
+          writeDismissed(category, false);
         }}
         className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors"
-        aria-label="Reexibir sugestões de afiliados B2B"
-        title="Reexibir sugestões de afiliados B2B"
+        aria-label={preset.reshowLabel}
+        title={preset.reshowLabel}
       >
         <Eye className="w-3.5 h-3.5" style={{ color: theme.hex }} />
-        Mostrar Sugestões de Afiliados
+        {preset.reshowLabel}
       </button>
     );
   }
+
+  const PresetIcon = preset.Icon;
 
   return (
     <div
@@ -225,21 +228,21 @@ function B2BSuggestionsCardInner() {
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
             style={{ backgroundColor: `${theme.hex}22`, color: theme.hex }}
           >
-            <Handshake className="w-4 h-4" />
+            <PresetIcon className="w-4 h-4" />
           </div>
           <div className="min-w-0">
             <p className="text-[11px] font-black uppercase tracking-tight truncate">
-              Rede de Afiliados B2B
+              {preset.title}
             </p>
             <p className="text-[9px] text-white/50 truncate">
-              Parcerias sugeridas para o seu ramo
+              {preset.subtitle}
             </p>
           </div>
         </div>
         <button
           onClick={() => {
             setDismissed(true);
-            writeDismissed(true);
+            writeDismissed(category, true);
           }}
           className="flex items-center gap-1 text-[9px] font-black uppercase text-white/40 hover:text-white/70 shrink-0"
           aria-label="Ocultar sugestões (pode reexibir depois)"
@@ -248,6 +251,7 @@ function B2BSuggestionsCardInner() {
           <EyeOff className="w-3 h-3" />
           Ocultar
         </button>
+
       </div>
 
       <div className="grid gap-1.5">
