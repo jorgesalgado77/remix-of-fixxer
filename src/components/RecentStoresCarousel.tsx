@@ -263,7 +263,7 @@ export function RecentStoresCarousel() {
 
   return (
     <section
-      aria-label="Lojistas e parceiros fornecedores recentes"
+      aria-label="Lojistas e clientes finais recentes"
       className="bg-[#1A1A1B] border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden"
     >
       <header className="mb-3 md:mb-4 w-full block">
