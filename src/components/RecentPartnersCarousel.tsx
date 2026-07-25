@@ -24,12 +24,17 @@ import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 type PartnerRow = {
   id: string;
   full_name: string | null;
+  display_name?: string | null;
+  company_name?: string | null;
   name?: string | null;
   avatar_url: string | null;
   avatar?: string | null;
   photo_url?: string | null;
+  banner_url?: string | null;
   role: string | null;
   activity_branch: string | null;
+  business_category?: string | null;
+  custom_branch?: string | null;
   category?: string | null;
   city: string | null;
   uf: string | null;
@@ -38,9 +43,10 @@ type PartnerRow = {
   address?: string | null;
   rating: number | null;
   created_at: string | null;
+  lat?: number | null;
+  lng?: number | null;
   distance_km?: number | string | null;
   distance?: number | string | null;
-  // 🚚 Sincronização de veículo e observações no card (compatibilidade rápida).
   vehicle_type?: string | null;
   vehicle_description?: string | null;
   vehicle_details?: Record<string, any> | null;
