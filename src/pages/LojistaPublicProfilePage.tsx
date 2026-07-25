@@ -619,11 +619,8 @@ export function LojistaPublicProfilePage() {
     return list;
   }, [reviews, reviewCategoryFilter, reviewRatingFilter, reviewDateOrder]);
 
-  const handleContactWhatsApp = () => {
-    // ✉️ "Entrar em contato" agora abre a conversa interna no chat.
-    // O chat é peer-to-peer (mensagens filtradas por sender_id/receiver_id),
-    // portanto navegar para /chat/:peerId já "cria" a conversa se ainda não existir
-    // e "abre" a existente quando já houver mensagens trocadas.
+  const handleContactWhatsApp = async () => {
+    if (contactLoading) return; // anti-duplo-clique
     const peerId = profile?.user_id;
     if (!peerId) {
       toast.error("Perfil sem identificador para iniciar conversa.");
@@ -633,8 +630,16 @@ export function LojistaPublicProfilePage() {
       toast.info("Você não pode iniciar uma conversa consigo mesmo.");
       return;
     }
-    const path = `/chat/${encodeURIComponent(peerId)}`;
-    try { navigate({ to: path as any }); } catch { window.location.href = path; }
+    setContactLoading(true);
+    try {
+      const path = `/chat/${encodeURIComponent(peerId)}`;
+      try { navigate({ to: path as any }); } catch { window.location.href = path; }
+    } catch (e: any) {
+      toast.error("Não foi possível abrir a conversa.", { description: e?.message });
+    } finally {
+      // Pequeno delay para evitar reclique enquanto a navegação transita.
+      setTimeout(() => setContactLoading(false), 800);
+    }
   };
 
   // Botão Favoritar: persiste em favorite_users (Supabase) com fallback local.
