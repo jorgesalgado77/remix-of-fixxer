@@ -287,7 +287,7 @@ function B2BSuggestionsCardInner() {
       </div>
 
       <div className="grid gap-1.5">
-        {suggestions.map((s) => (
+        {displaySuggestions.map((s) => (
           <button
             key={s.title}
             className="w-full text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors"
