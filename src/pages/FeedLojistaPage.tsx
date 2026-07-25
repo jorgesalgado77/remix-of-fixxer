@@ -947,35 +947,44 @@ export default function FeedLojistaPage() {
             />
           ) : (
             <>
+              {loadError && (
+                <FeedErrorState
+                  accent="#00E5FF"
+                  busy={refreshing}
+                  message={loadError}
+                  onRetry={handleRefresh}
+                />
+              )}
               {paged.map((post) => {
                 const locked = !post.author.isMine && !postUnlock.isUnlocked(post.id);
                 return (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    isSaved={saved.has(post.id)}
-                    menuOpen={openMenu === post.id}
-                    onToggleMenu={(e) => {
-                      e.stopPropagation();
-                      setOpenMenu((v) => (v === post.id ? null : post.id));
-                    }}
-                    onCloseMenu={() => setOpenMenu(null)}
-                    onSave={() => toggleSaved(post.id)}
-                    onChat={() => openChat(post)}
-                    onPropose={() => setProposalFor(post)}
-                    onReport={() => setReportFor(post)}
-                    onDelete={() => setDeleteFor(post)}
-                    onEdit={() => toast("Abrindo editor da publicação...")}
-                    onOpenMedia={(index) => setLightbox({ post, index })}
-                    onOpenDetails={() => setDetailsFor(post)}
-                    locked={locked}
-                    unlockCost={postUnlock.cost}
-                    unlockBusy={postUnlock.busy === post.id}
-                    onUnlock={async () => {
-                      const ok = await postUnlock.unlock(post.id);
-                      if (ok) setDetailsFor(post);
-                    }}
-                  />
+                  <div key={post.id} className="feed-item-cv">
+                    <PostCard
+                      post={post}
+                      isSaved={saved.has(post.id)}
+                      menuOpen={openMenu === post.id}
+                      onToggleMenu={(e) => {
+                        e.stopPropagation();
+                        setOpenMenu((v) => (v === post.id ? null : post.id));
+                      }}
+                      onCloseMenu={() => setOpenMenu(null)}
+                      onSave={() => toggleSaved(post.id)}
+                      onChat={() => openChat(post)}
+                      onPropose={() => setProposalFor(post)}
+                      onReport={() => setReportFor(post)}
+                      onDelete={() => setDeleteFor(post)}
+                      onEdit={() => toast("Abrindo editor da publicação...")}
+                      onOpenMedia={(index) => setLightbox({ post, index })}
+                      onOpenDetails={() => setDetailsFor(post)}
+                      locked={locked}
+                      unlockCost={postUnlock.cost}
+                      unlockBusy={postUnlock.busy === post.id}
+                      onUnlock={async () => {
+                        const ok = await postUnlock.unlock(post.id);
+                        if (ok) setDetailsFor(post);
+                      }}
+                    />
+                  </div>
                 );
               })}
 
