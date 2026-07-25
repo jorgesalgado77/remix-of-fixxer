@@ -17,6 +17,7 @@ import {
 import { FeedDetailsModal, type FeedDetailsData } from "@/components/FeedDetailsModal";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { FeedEmptyState } from "@/components/FeedEmptyState";
+import { usePostUnlock } from "@/hooks/use-post-unlock";
 
 import {
   ArrowLeft,
