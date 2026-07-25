@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
-import { Plus, Check, X, Car, Coins, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Plus, Check, X, Car, Coins, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { useOfferings, DEFAULT_OFFERINGS } from '@/hooks/use-offerings';
-import { consumeCoins, getCachedBalance, getCurrentUserId } from '@/lib/coins';
+import { consumeCoins, getCachedBalance, getCurrentUserId, subscribeBalance } from '@/lib/coins';
 import { confirmCoins } from '@/components/ConfirmCoinsDialog';
 import { toast } from 'sonner';
 import type { PlanId } from '@/lib/monetization';
