@@ -864,6 +864,10 @@ export function LojistaPublicProfilePage() {
                   <MetricCard label="Satisfação" value="99%" suffix="Positivo" />
                   <MetricCard label="Tempo Resposta" value="<15" suffix="min" />
                 </div>
+
+                {/* 💸 CHAVE PIX — exibida parcialmente mascarada + botão de copiar */}
+                <PixPublicBlock profile={profile} themeRgb={theme.rgb} />
+
                 
                 {/* CTA Superior — visível em mobile e desktop */}
                 <div className="pt-4 flex flex-col md:flex-row gap-2 md:gap-3 md:items-center">
