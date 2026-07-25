@@ -1530,3 +1530,6 @@ function PostCardImpl({
     </article>
   );
 }
+
+const PostCard = memo(PostCardImpl);
+
