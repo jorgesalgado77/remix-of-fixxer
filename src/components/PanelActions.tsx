@@ -37,7 +37,22 @@ export type PanelRole = "lojista" | "prestador" | "parceiro" | "cliente";
  * Todos os controles são navegáveis por teclado (Tab/Enter/Espaço) e têm rótulos ARIA.
  */
 export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
-  const [myProfileHref, setMyProfileHref] = useState<string>(profileHrefFor(role));
+  // Resolve o UID de forma SÍNCRONA no primeiro render a partir do localStorage,
+  // evitando que um clique rápido leve para uma rota genérica (`/perfil/<role>`)
+  // antes do efeito assíncrono resolver o usuário autenticado.
+  const [myProfileHref, setMyProfileHref] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const uid = window.localStorage.getItem("fixxer_user_id");
+      if (uid) return `/perfil/${uid}`;
+    }
+    return profileHrefFor(role);
+  });
+  const [uidResolved, setUidResolved] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return !!window.localStorage.getItem("fixxer_user_id");
+    }
+    return false;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +63,16 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
         const uid =
           data?.user?.id ||
           (typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null);
-        if (!cancelled && uid) setMyProfileHref(`/perfil/${uid}`);
+        if (!cancelled && uid) {
+          setMyProfileHref(`/perfil/${uid}`);
+          setUidResolved(true);
+          try {
+            if (typeof window !== "undefined")
+              window.localStorage.setItem("fixxer_user_id", uid);
+          } catch {
+            /* noop */
+          }
+        }
       } catch {
         /* mantém fallback */
       }
@@ -57,6 +81,32 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
       cancelled = true;
     };
   }, [role]);
+
+  // Handler defensivo: se o UID ainda não foi resolvido, intercepta o clique,
+  // resolve na hora e navega diretamente para o perfil correto.
+  const handleProfileClick = async (e: React.MouseEvent) => {
+    if (uidResolved) return; // Link funciona normalmente
+    e.preventDefault();
+    try {
+      const { supabaseExternal } = await import("@/lib/supabaseExternal");
+      const { data } = await supabaseExternal.auth.getUser();
+      const uid =
+        data?.user?.id ||
+        (typeof window !== "undefined" ? window.localStorage.getItem("fixxer_user_id") : null);
+      if (uid) {
+        try {
+          window.localStorage.setItem("fixxer_user_id", uid);
+        } catch {
+          /* noop */
+        }
+        window.location.assign(`/perfil/${uid}`);
+      } else {
+        toast.error("Não foi possível identificar seu usuário. Faça login novamente.");
+      }
+    } catch {
+      toast.error("Falha ao abrir seu perfil público. Tente novamente.");
+    }
+  };
 
   const showAnuncios = role !== "cliente";
   const showPerfilPublico = role !== "cliente";
@@ -101,6 +151,7 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
           to={myProfileHref}
           label="Meu Perfil Público"
           tip="Ver como meu perfil público aparece para outros usuários"
+          onClick={handleProfileClick}
         >
           <UserCircle2 className="w-5 h-5" aria-hidden="true" />
         </IconLink>
@@ -152,17 +203,20 @@ function IconLink({
   label,
   tip,
   children,
+  onClick,
 }: {
   to: string;
   label: string;
   tip: string;
   children: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
 }) {
   return (
     <Link
       to={to}
       title={tip}
       aria-label={label}
+      onClick={onClick}
       className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all"
     >
       {children}
