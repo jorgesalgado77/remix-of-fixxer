@@ -24,6 +24,8 @@ import {
   Search,
   ArrowUpDown,
   Heart,
+  Copy,
+  Check,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useUserCoords, cityCoords } from "@/lib/geo-distance";
