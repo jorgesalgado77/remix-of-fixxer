@@ -248,12 +248,9 @@ function RegisterComponent() {
                 <InputField label="Nome Comercial" placeholder="Minha Marcenaria" />
               </>
             ) : (
-              <MaskedInputField 
-                mask="999.999.999-99"
-                label="CPF" 
-                placeholder="000.000.000-00" 
+              <CpfCnpjField
                 value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
+                onChange={setCpf}
               />
             )}
 
@@ -493,6 +490,49 @@ function MaskedInputField({
         maxLength={mask.length}
         className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
       />
+    </div>
+  );
+}
+
+function CpfCnpjField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const applyMask = (raw: string) => {
+    let v = raw.replace(/\D/g, "");
+    if (v.length > 14) v = v.slice(0, 14);
+    if (v.length > 11) {
+      // CNPJ 00.000.000/0000-00
+      return `${v.slice(0, 2)}.${v.slice(2, 5)}.${v.slice(5, 8)}/${v.slice(8, 12)}${v.length > 12 ? "-" + v.slice(12) : ""}`;
+    }
+    // CPF 000.000.000-00
+    if (v.length > 9) return `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6, 9)}-${v.slice(9)}`;
+    if (v.length > 6) return `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6)}`;
+    if (v.length > 3) return `${v.slice(0, 3)}.${v.slice(3)}`;
+    return v;
+  };
+  const digits = value.replace(/\D/g, "").length;
+  const hint = digits === 0 ? "Digite CPF ou CNPJ" : digits <= 11 ? "CPF" : "CNPJ";
+  return (
+    <div>
+      <label className="block text-sm font-bold text-muted-foreground mb-2">
+        CPF / CNPJ
+      </label>
+      <input
+        type="text"
+        inputMode="numeric"
+        placeholder="000.000.000-00 ou 00.000.000/0000-00"
+        value={value}
+        onChange={(e) => onChange(applyMask(e.target.value))}
+        maxLength={18}
+        className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/30 text-white"
+      />
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+        {hint}
+      </p>
     </div>
   );
 }
