@@ -384,22 +384,25 @@ export function LojistaPublicProfilePage() {
             .eq("lojista_id", lojistaKey)
             .eq("status", "PENDENTE")
             .order("created_at", { ascending: false });
-          if (osData) setOrders(osData as ServiceOrder[]);
+          if (!cancelled && osData) setOrders(osData as ServiceOrder[]);
 
           const { data: revData } = await supabaseExternal
             .from("store_reviews")
             .select("*")
             .eq("lojista_id", lojistaKey)
             .order("created_at", { ascending: false });
-          if (revData) setReviews(revData as Review[]);
+          if (!cancelled && revData) setReviews(revData as Review[]);
         }
       } catch (err) {
-        console.error("Erro ao carregar perfil público:", err);
+        if (!cancelled) console.error("Erro ao carregar perfil público:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
+    return () => {
+      cancelled = true;
+    };
   }, [storeId, routeCategory, location.pathname, navigate]);
 
   // Realtime: reflete alterações do perfil (fotos/vídeos/seções) em tempo real
