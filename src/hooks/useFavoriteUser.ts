@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 
@@ -8,24 +8,56 @@ import { toast } from "sonner";
  * - Silencioso quando o usuário não está logado (retorna estado neutro).
  * - Se a tabela ainda não existir no Supabase, cai em modo local (localStorage)
  *   para não travar a UI. O usuário deve rodar o SQL fornecido no chat.
+ * - Hidrata estado inicial de cache local (síncrono) para evitar flicker ao
+ *   voltar para a página pública.
+ * - Assina Realtime em `favorite_users` para manter o contador ao vivo.
  */
 const LS_PREFIX = "fixxer_favorite_user_v1:";
 const LS_COUNT_PREFIX = "fixxer_favorite_user_count_v1:";
+const LS_CURRENT_USER = "fixxer_favorite_current_user_v1";
+
+function readCachedCurrentUser(): string | null {
+  try { return window.localStorage.getItem(LS_CURRENT_USER); } catch { return null; }
+}
+function readCachedCount(id: string | null | undefined): number {
+  if (!id) return 0;
+  try {
+    const raw = window.localStorage.getItem(`${LS_COUNT_PREFIX}${id}`);
+    return raw ? Math.max(0, parseInt(raw, 10) || 0) : 0;
+  } catch { return 0; }
+}
+function readCachedFavorited(currentId: string | null, favId: string | null | undefined): boolean {
+  if (!currentId || !favId) return false;
+  try { return window.localStorage.getItem(`${LS_PREFIX}${currentId}:${favId}`) === "1"; } catch { return false; }
+}
 
 export function useFavoriteUser(favoritedUserId: string | null | undefined) {
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isFavorited, setIsFavorited] = useState(false);
+  // Hidratação síncrona a partir do cache local — evita flicker.
+  const initialUserId = typeof window !== "undefined" ? readCachedCurrentUser() : null;
+  const [currentUserId, setCurrentUserId] = useState<string | null>(initialUserId);
+  const [isFavorited, setIsFavorited] = useState<boolean>(() =>
+    typeof window !== "undefined" ? readCachedFavorited(initialUserId, favoritedUserId) : false,
+  );
+  const [count, setCount] = useState<number>(() =>
+    typeof window !== "undefined" ? readCachedCount(favoritedUserId) : 0,
+  );
   const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [count, setCount] = useState<number>(0);
+  const [ready, setReady] = useState<boolean>(false);
+  const inFlightToggle = useRef(false);
 
-  // Descobre usuário logado.
+  // Descobre usuário logado (silencioso).
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const { data } = await supabaseExternal.auth.getUser();
-        if (!cancelled) setCurrentUserId(data?.user?.id ?? null);
+        const uid = data?.user?.id ?? null;
+        if (cancelled) return;
+        setCurrentUserId(uid);
+        try {
+          if (uid) window.localStorage.setItem(LS_CURRENT_USER, uid);
+          else window.localStorage.removeItem(LS_CURRENT_USER);
+        } catch { /* ignore */ }
       } catch {
         if (!cancelled) setCurrentUserId(null);
       }
@@ -33,59 +65,83 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
     return () => { cancelled = true; };
   }, []);
 
-  // Lê estado inicial (favorito do usuário logado + contador público).
+  // Re-hidrata cache quando muda o alvo (usuário navegou entre perfis).
+  useEffect(() => {
+    if (!favoritedUserId) return;
+    setCount(readCachedCount(favoritedUserId));
+    setIsFavorited(readCachedFavorited(currentUserId, favoritedUserId));
+  }, [favoritedUserId, currentUserId]);
+
+  // Sincroniza com servidor + assina Realtime para contador ao vivo.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      if (!favoritedUserId) { setReady(true); return; }
-      const countLsKey = `${LS_COUNT_PREFIX}${favoritedUserId}`;
+    if (!favoritedUserId) { setReady(true); return; }
+    const countLsKey = `${LS_COUNT_PREFIX}${favoritedUserId}`;
 
-      // Contador público — não depende de login.
+    const syncCount = async () => {
       try {
-        const { count: total, error: countErr } = await supabaseExternal
+        const { count: total, error } = await supabaseExternal
           .from("favorite_users")
           .select("id", { count: "exact", head: true })
           .eq("favorited_user_id", favoritedUserId);
-        if (!cancelled) {
-          if (countErr) throw countErr;
-          const n = typeof total === "number" ? total : 0;
-          setCount(n);
-          try { window.localStorage.setItem(countLsKey, String(n)); } catch { /* ignore */ }
-        }
-      } catch {
-        // Fallback silencioso: usa último valor conhecido do localStorage.
-        try {
-          const raw = window.localStorage.getItem(countLsKey);
-          const n = raw ? Math.max(0, parseInt(raw, 10) || 0) : 0;
-          if (!cancelled) setCount(n);
-        } catch { /* ignore */ }
-      }
-
-      // Estado do favorito do usuário logado.
-      if (!currentUserId) { if (!cancelled) setReady(true); return; }
-      const lsKey = `${LS_PREFIX}${currentUserId}:${favoritedUserId}`;
-      try {
-        const { data, error } = await supabaseExternal
-          .from("favorite_users")
-          .select("id")
-          .eq("user_id", currentUserId)
-          .eq("favorited_user_id", favoritedUserId)
-          .maybeSingle();
         if (cancelled) return;
         if (error) throw error;
-        setIsFavorited(!!data);
+        const n = typeof total === "number" ? total : 0;
+        setCount(n);
+        try { window.localStorage.setItem(countLsKey, String(n)); } catch { /* ignore */ }
       } catch {
-        try { setIsFavorited(window.localStorage.getItem(lsKey) === "1"); } catch { /* ignore */ }
-      } finally {
-        if (!cancelled) setReady(true);
+        // silencioso — mantém cache local
       }
+    };
+
+    (async () => {
+      await syncCount();
+      if (currentUserId) {
+        const lsKey = `${LS_PREFIX}${currentUserId}:${favoritedUserId}`;
+        try {
+          const { data, error } = await supabaseExternal
+            .from("favorite_users")
+            .select("id")
+            .eq("user_id", currentUserId)
+            .eq("favorited_user_id", favoritedUserId)
+            .maybeSingle();
+          if (cancelled) return;
+          if (error) throw error;
+          const fav = !!data;
+          setIsFavorited(fav);
+          try {
+            if (fav) window.localStorage.setItem(lsKey, "1");
+            else window.localStorage.removeItem(lsKey);
+          } catch { /* ignore */ }
+        } catch {
+          // mantém cache local
+        }
+      }
+      if (!cancelled) setReady(true);
     })();
-    return () => { cancelled = true; };
+
+    // Realtime silencioso — se falhar (RLS/permissão/tabela ausente), ignora.
+    let channel: ReturnType<typeof supabaseExternal.channel> | null = null;
+    try {
+      channel = supabaseExternal
+        .channel(`fav-users-${favoritedUserId}`)
+        .on(
+          "postgres_changes" as any,
+          { event: "*", schema: "public", table: "favorite_users", filter: `favorited_user_id=eq.${favoritedUserId}` },
+          () => { syncCount(); },
+        )
+        .subscribe();
+    } catch { /* ignore */ }
+
+    return () => {
+      cancelled = true;
+      try { if (channel) supabaseExternal.removeChannel(channel); } catch { /* ignore */ }
+    };
   }, [favoritedUserId, currentUserId]);
 
   const toggle = useCallback(async () => {
     if (!favoritedUserId) return;
-    if (loading) return; // evita cliques duplicados
+    if (loading || inFlightToggle.current) return;
     if (!currentUserId) {
       toast.error("Faça login para favoritar profissionais.");
       return;
@@ -94,9 +150,10 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
       toast.info("Você não pode favoritar o próprio perfil.");
       return;
     }
+    inFlightToggle.current = true;
     const next = !isFavorited;
     setIsFavorited(next); // otimista
-    setCount((c) => Math.max(0, c + (next ? 1 : -1))); // otimista
+    setCount((c) => Math.max(0, c + (next ? 1 : -1))); // otimista imediato
     setLoading(true);
     const lsKey = `${LS_PREFIX}${currentUserId}:${favoritedUserId}`;
     const countLsKey = `${LS_COUNT_PREFIX}${favoritedUserId}`;
@@ -118,7 +175,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
         try { window.localStorage.removeItem(lsKey); } catch { /* ignore */ }
         toast("Removido dos Favoritos.");
       }
-      // Re-sincroniza contador com o servidor (silencioso).
+      // Re-sincroniza contador (silencioso). Realtime cobre demais clientes.
       try {
         const { count: total } = await supabaseExternal
           .from("favorite_users")
@@ -128,7 +185,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
           setCount(total);
           try { window.localStorage.setItem(countLsKey, String(total)); } catch { /* ignore */ }
         }
-      } catch { /* ignore — mantém valor otimista */ }
+      } catch { /* ignore */ }
     } catch (err: any) {
       // Persistência local silenciosa (tabela ausente / RLS / rede).
       try {
@@ -138,8 +195,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
       try {
         const raw = window.localStorage.getItem(countLsKey);
         const n = raw ? Math.max(0, parseInt(raw, 10) || 0) : 0;
-        const updated = Math.max(0, n + (next ? 1 : -1));
-        window.localStorage.setItem(countLsKey, String(updated));
+        window.localStorage.setItem(countLsKey, String(Math.max(0, n)));
       } catch { /* ignore */ }
       toast(next ? "Favorito salvo localmente." : "Removido localmente.", {
         description: "Sincronizaremos automaticamente quando a conexão estiver disponível.",
@@ -147,6 +203,7 @@ export function useFavoriteUser(favoritedUserId: string | null | undefined) {
       if (typeof console !== "undefined") console.debug("[useFavoriteUser] fallback local:", err);
     } finally {
       setLoading(false);
+      inFlightToggle.current = false;
     }
   }, [currentUserId, favoritedUserId, isFavorited, loading]);
 
