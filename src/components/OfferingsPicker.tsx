@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
-import { Plus, Check, X, Car, Coins } from 'lucide-react';
+import { Plus, Check, X, Car, Coins, ChevronDown, ChevronUp } from 'lucide-react';
 import { useOfferings, DEFAULT_OFFERINGS } from '@/hooks/use-offerings';
 import { consumeCoins, getCachedBalance, getCurrentUserId } from '@/lib/coins';
+import { confirmCoins } from '@/components/ConfirmCoinsDialog';
 import { toast } from 'sonner';
 import type { PlanId } from '@/lib/monetization';
 
 const MAX_SELECTED = 10;
 const EXTRA_COST = 15;
+const OBS_MAX = 500;
 
 function quotaFor(plan: PlanId): number {
   if (plan === 'premium') return 5;
@@ -22,6 +24,8 @@ interface OfferingsPickerProps {
   vehicleDescription?: string | null;
   onVehicleTypeChange?: (v: string) => void;
   onVehicleDescriptionChange?: (v: string) => void;
+  observations?: string | null;
+  onObservationsChange?: (v: string) => void;
 }
 
 export function OfferingsPicker({
@@ -32,10 +36,13 @@ export function OfferingsPicker({
   vehicleDescription,
   onVehicleTypeChange,
   onVehicleDescriptionChange,
+  observations,
+  onObservationsChange,
 }: OfferingsPickerProps) {
   const { offerings, addOffering } = useOfferings();
   const [newItem, setNewItem] = useState('');
   const [charging, setCharging] = useState(false);
+  const [vehicleExpanded, setVehicleExpanded] = useState(false);
 
   const quota = quotaFor(planId);
 
@@ -59,9 +66,17 @@ export function OfferingsPicker({
       toast.error(`Saldo insuficiente. Cada oferta extra custa ${EXTRA_COST} moedas.`);
       return false;
     }
-    const ok = window.confirm(
-      `Seu plano permite ${quota} oferta(s). Deseja gastar ${EXTRA_COST} moedas por esta oferta extra?`
-    );
+    const ok = await confirmCoins({
+      title: 'Oferta extra',
+      description: (
+        <>
+          Seu plano permite <b>{quota}</b> oferta(s) gratuita(s). Deseja gastar{' '}
+          <b className="text-amber-300">{EXTRA_COST} moedas</b> por esta oferta extra?
+        </>
+      ),
+      cost: EXTRA_COST,
+      confirmLabel: 'Gastar moedas',
+    });
     if (!ok) return false;
     setCharging(true);
     try {
@@ -92,6 +107,7 @@ export function OfferingsPicker({
     const paid = await chargeExtraIfNeeded(nextLen);
     if (!paid) return;
     onChange([...selected, name]);
+    if (name.toLowerCase() === 'veículo próprio') setVehicleExpanded(true);
   };
 
   const handleAdd = async () => {
@@ -112,6 +128,7 @@ export function OfferingsPicker({
 
   const vehicleSelected = isSelected('Veículo Próprio');
   const overQuota = Math.max(0, selected.length - quota);
+  const obsLen = (observations || '').length;
 
   return (
     <div className="space-y-4">
@@ -167,41 +184,60 @@ export function OfferingsPicker({
               </label>
 
               {item === 'Veículo Próprio' && active && vehicleSelected && (
-                <div className="ml-4 pl-4 border-l-2 border-primary/30 space-y-3 py-2">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-                    <Car className="w-3 h-3" /> Características do Veículo
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Tipo</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['Carro', 'Moto', 'Van', 'Caminhonete', 'Caminhão'].map((v) => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => onVehicleTypeChange?.(v)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                            vehicleType === v
-                              ? 'bg-primary text-black border-primary'
-                              : 'bg-white/5 border-white/10 hover:border-primary/50'
-                          }`}
-                        >
-                          {v}
-                        </button>
-                      ))}
+                <div className="ml-4 pl-4 border-l-2 border-primary/30 space-y-2 py-2">
+                  <button
+                    type="button"
+                    onClick={() => setVehicleExpanded((v) => !v)}
+                    aria-expanded={vehicleExpanded}
+                    aria-controls="vehicle-details"
+                    className="w-full flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 hover:bg-primary/10 rounded-xl px-3 py-2 border border-primary/20"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Car className="w-3 h-3" /> Características do Veículo
+                      {(vehicleType || vehicleDescription) && (
+                        <span className="text-[9px] text-white/50 normal-case tracking-normal font-bold">
+                          • preenchido
+                        </span>
+                      )}
+                    </span>
+                    {vehicleExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+
+                  {vehicleExpanded && (
+                    <div id="vehicle-details" className="space-y-3 pt-2">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Tipo</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Carro', 'Moto', 'Van', 'Caminhonete', 'Caminhão'].map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              onClick={() => onVehicleTypeChange?.(vehicleType === v ? '' : v)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                vehicleType === v
+                                  ? 'bg-primary text-black border-primary'
+                                  : 'bg-white/5 border-white/10 hover:border-primary/50'
+                              }`}
+                            >
+                              {v}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                          Descrição (marca, modelo, ano, capacidade)
+                        </label>
+                        <textarea
+                          value={vehicleDescription || ''}
+                          onChange={(e) => onVehicleDescriptionChange?.(e.target.value)}
+                          rows={2}
+                          className="w-full bg-white/5 border border-white/10 focus:border-primary/50 p-3 rounded-2xl outline-none text-sm"
+                          placeholder="Ex: Fiat Fiorino 2020, 650kg de capacidade"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-                      Descrição (marca, modelo, ano, capacidade)
-                    </label>
-                    <textarea
-                      value={vehicleDescription || ''}
-                      onChange={(e) => onVehicleDescriptionChange?.(e.target.value)}
-                      rows={2}
-                      className="w-full bg-white/5 border border-white/10 focus:border-primary/50 p-3 rounded-2xl outline-none text-sm"
-                      placeholder="Ex: Fiat Fiorino 2020, 650kg de capacidade"
-                    />
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -209,7 +245,7 @@ export function OfferingsPicker({
         })}
       </div>
 
-      {/* Adicionar novo — botão compacto e não estoura mais */}
+      {/* Adicionar novo */}
       <div className="pt-2 border-t border-white/5 space-y-2">
         <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 block">
           Outro (adicionar novo) — {customCount} personalizado(s)
@@ -266,6 +302,29 @@ export function OfferingsPicker({
           ))}
         </div>
       )}
+
+      {/* Observações da seção Oferece */}
+      <div className="pt-4 border-t border-white/5 space-y-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+            Observações sobre o que você oferece
+          </label>
+          <span className={`text-[10px] font-black uppercase tracking-widest ${obsLen > OBS_MAX ? 'text-red-400' : obsLen > OBS_MAX * 0.9 ? 'text-amber-300' : 'text-white/40'}`}>
+            {obsLen}/{OBS_MAX}
+          </span>
+        </div>
+        <textarea
+          value={observations || ''}
+          onChange={(e) => {
+            const v = e.target.value.slice(0, OBS_MAX);
+            onObservationsChange?.(v);
+          }}
+          rows={3}
+          maxLength={OBS_MAX}
+          placeholder="Detalhes, condições, restrições ou combos que você oferece..."
+          className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-3 rounded-2xl outline-none text-sm leading-relaxed resize-none"
+        />
+      </div>
     </div>
   );
 }
