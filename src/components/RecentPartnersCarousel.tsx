@@ -473,26 +473,20 @@ export function RecentPartnersCarousel() {
 
                 <div className={`relative p-3 bg-gradient-to-t ${meta.gradientClass}`}>
                   <p className="font-black text-white text-sm truncate leading-tight">
-                    {p.full_name || "Profissional"}
+                    {displayName}
                   </p>
                   <p
                     className="text-[11px] font-bold mt-0.5 truncate"
                     style={{ color: meta.color }}
-                    title={p.activity_branch || meta.label}
+                    title={branchText}
                   >
-                    {meta.emoji} {p.activity_branch || meta.label}
+                    {meta.emoji} {branchText}
                   </p>
-                  {location ? (
-                    <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
-                      <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{location}</span>
-                    </p>
-                  ) : (
-                    <p className="text-[10px] text-muted-foreground/60 mt-1 flex items-center gap-1 truncate italic">
-                      <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
-                      Localização não informada
-                    </p>
-                  )}
+                  <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
+                    <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
+                    <span className="truncate">📍 {location || "Votorantim, SP"}</span>
+                  </p>
+
                 </div>
               </button>
             );
