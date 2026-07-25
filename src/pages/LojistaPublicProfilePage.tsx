@@ -204,6 +204,17 @@ export function LojistaPublicProfilePage() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [lightboxVideo, setLightboxVideo] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    supabaseExternal.auth.getUser().then(({ data }) => {
+      if (mounted) setCurrentUserId(data.user?.id ?? null);
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+
 
 
   // O.S.
@@ -593,7 +604,10 @@ export function LojistaPublicProfilePage() {
 
   // Coordenadas do usuário logado para cálculo de distância até o perfil visitado.
   const userCoords = useUserCoords();
+  // Se o usuário logado está visualizando o próprio perfil, distância = 0 km.
+  const isSelf = !!currentUserId && !!profile?.user_id && currentUserId === profile.user_id;
   const distanceKm = useMemo(() => {
+    if (isSelf) return 0;
     if (!userCoords) return null;
     const pLat = Number((profile as any)?.lat);
     const pLng = Number((profile as any)?.lng);
@@ -603,19 +617,64 @@ export function LojistaPublicProfilePage() {
     if (!target) return null;
     const km = haversineKm(userCoords, target);
     return Number.isFinite(km) ? km : null;
-  }, [userCoords, profile?.city, (profile as any)?.lat, (profile as any)?.lng]);
+  }, [isSelf, userCoords, profile?.city, (profile as any)?.lat, (profile as any)?.lng]);
   const distanceLabel = distanceKm == null
     ? null
-    : distanceKm < 10 ? `${distanceKm.toFixed(1)} km` : `${Math.round(distanceKm)} km`;
+    : distanceKm === 0
+      ? "0 km (você)"
+      : distanceKm < 10 ? `${distanceKm.toFixed(1)} km` : `${Math.round(distanceKm)} km`;
 
-  // Cargo preferencial (posição marcada como primária, ou primeira da lista).
+  // Lista unificada de cargos: aceita `positions` (novo formato) ou `job_roles` (CSV "||").
+  const positionsList = useMemo<string[]>(() => {
+    const arr: any[] = Array.isArray(profile?.positions) ? profile!.positions! : [];
+    const fromArr = arr
+      .map((p) => (typeof p === 'string' ? p : (p?.title || p?.name || p?.role)))
+      .filter(Boolean)
+      .map(String);
+    if (fromArr.length) return fromArr;
+    const csv = String((profile as any)?.job_roles ?? "");
+    return csv.split("||").map((s) => s.trim()).filter(Boolean);
+  }, [profile?.positions, (profile as any)?.job_roles]);
+
+  // Cargo preferencial (posição marcada como primária, ou primeiro cargo).
   const primaryPosition = useMemo(() => {
     const arr: any[] = Array.isArray(profile?.positions) ? profile!.positions! : [];
-    const pick = arr.find((p) => typeof p === 'object' && p?.primary) || arr[0];
-    if (!pick) return null;
-    const label = typeof pick === 'string' ? pick : (pick?.title || pick?.name || pick?.role);
-    return label ? String(label) : null;
-  }, [profile?.positions]);
+    const marked = arr.find((p) => typeof p === 'object' && p?.primary);
+    if (marked) {
+      const label = marked?.title || marked?.name || marked?.role;
+      if (label) return String(label);
+    }
+    return positionsList[0] ?? null;
+  }, [profile?.positions, positionsList]);
+
+  // Horários e dias de atendimento (aceita string, array de dias, ou objeto por dia).
+  const businessHours = useMemo(() => {
+    const raw = (profile as any)?.business_hours
+      ?? (profile as any)?.attendance_hours
+      ?? (profile as any)?.working_hours
+      ?? null;
+    const days = (profile as any)?.attendance_days ?? (profile as any)?.weekdays ?? null;
+    const dayLabels: Record<string, string> = {
+      monday: 'Segunda', tuesday: 'Terça', wednesday: 'Quarta', thursday: 'Quinta',
+      friday: 'Sexta', saturday: 'Sábado', sunday: 'Domingo',
+      seg: 'Segunda', ter: 'Terça', qua: 'Quarta', qui: 'Quinta', sex: 'Sexta', sab: 'Sábado', dom: 'Domingo',
+    };
+    const rows: { day: string; hours: string }[] = [];
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      for (const [k, v] of Object.entries(raw)) {
+        if (!v) continue;
+        const label = dayLabels[k.toLowerCase()] ?? k;
+        const hours = typeof v === 'string' ? v : (v as any)?.open && (v as any)?.close ? `${(v as any).open} - ${(v as any).close}` : String(v);
+        rows.push({ day: label, hours });
+      }
+    } else if (Array.isArray(days) && days.length) {
+      const hoursStr = typeof raw === 'string' && raw ? raw : 'Sob consulta';
+      rows.push({ day: days.map((d: string) => dayLabels[String(d).toLowerCase()] ?? d).join(', '), hours: hoursStr });
+    } else if (typeof raw === 'string' && raw.trim()) {
+      rows.push({ day: 'Atendimento', hours: raw.trim() });
+    }
+    return rows;
+  }, [profile]);
 
   const submitReview = async () => {
     if (!newComment.trim()) {
@@ -715,7 +774,7 @@ export function LojistaPublicProfilePage() {
                     <MapPin className="w-3 h-3 text-primary" />
                     {profile?.city || "Cidade"} / {profile?.state || "UF"}
                     {distanceLabel && (
-                      <span className="text-primary/90">• {distanceLabel} de você</span>
+                      <span className="text-primary/90">• {isSelf ? distanceLabel : `${distanceLabel} de você`}</span>
                     )}
                     <AvailabilityBadge userId={profile?.user_id ?? null} />
                   </div>
@@ -905,7 +964,7 @@ export function LojistaPublicProfilePage() {
                 : typeof profile?.offerings === 'string' && profile.offerings
                   ? String(profile.offerings).split(/[,;\n]/).map((s) => s.trim()).filter(Boolean)
                   : [];
-              const positions: any[] = Array.isArray(profile?.positions) ? profile!.positions! : [];
+              const positions: string[] = positionsList;
               const vehicle = profile?.vehicle_details && typeof profile.vehicle_details === 'object' ? profile.vehicle_details : null;
               const radiusKm = Number((profile as any)?.service_radius_km);
               const hasRadius = Number.isFinite(radiusKm) && radiusKm > 0;
@@ -913,10 +972,10 @@ export function LojistaPublicProfilePage() {
               if (profile?.neighborhood) locationItems.push({ label: 'Bairro', value: profile.neighborhood });
               if (profile?.city) locationItems.push({ label: 'Cidade', value: profile.city });
               if (profile?.state) locationItems.push({ label: 'Estado', value: profile.state });
-              if (distanceLabel) locationItems.push({ label: 'Distância', value: `${distanceLabel} de você` });
+              if (distanceLabel) locationItems.push({ label: 'Distância', value: isSelf ? distanceLabel : `${distanceLabel} de você` });
 
               const hasAny =
-                branch || preferred.length || offerings.length || positions.length || profile?.offerings_notes || vehicle || locationItems.length || hasRadius;
+                branch || preferred.length || offerings.length || positions.length || profile?.offerings_notes || vehicle || locationItems.length || hasRadius || businessHours.length;
               if (!hasAny) return null;
 
               return (
@@ -936,12 +995,12 @@ export function LojistaPublicProfilePage() {
 
                   {positions.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Cargos</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
+                        Cargos ({positions.length})
+                      </p>
                       <div className="flex flex-wrap gap-2">
-                        {positions.map((p: any, i: number) => {
-                          const label = typeof p === 'string' ? p : (p?.title || p?.name || p?.role);
-                          const primary = typeof p === 'object' && p?.primary;
-                          if (!label) return null;
+                        {positions.map((label, i) => {
+                          const primary = primaryPosition && label === primaryPosition && i === 0;
                           return (
                             <span
                               key={`${label}-${i}`}
@@ -954,6 +1013,24 @@ export function LojistaPublicProfilePage() {
                       </div>
                     </div>
                   )}
+
+                  {businessHours.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                        <Clock className="w-3 h-3" /> Dias e Horários de Atendimento
+                      </p>
+                      <ul className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1">
+                        {businessHours.map((r, i) => (
+                          <li key={`${r.day}-${i}`} className="flex justify-between items-center gap-3 text-[11px] py-1 border-b border-white/5 last:border-b-0">
+                            <span className="text-muted-foreground uppercase font-black tracking-widest text-[9px]">{r.day}</span>
+                            <span className="text-white/90 font-bold">{r.hours}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+
 
                   {hasRadius && (
                     <div>
