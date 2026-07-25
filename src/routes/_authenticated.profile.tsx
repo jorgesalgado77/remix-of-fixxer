@@ -520,19 +520,21 @@ function ProfilePage() {
   const handleCepLookup = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
+    // Mantém o CEP mascarado no formato 00000-000 (não sobrescreve com dígitos puros)
+    const maskedCep = `${cleanCep.slice(0, 5)}-${cleanCep.slice(5)}`;
 
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       const data = await response.json();
       if (!data.erro) {
-        setProfile({
-          ...profile,
-          cep: cleanCep,
-          street: data.logradouro,
-          neighborhood: data.bairro,
-          city: data.localidade,
-          state: data.uf
-        });
+        setProfile((prev: any) => ({
+          ...prev,
+          cep: maskedCep,
+          street: data.logradouro || prev?.street || '',
+          neighborhood: data.bairro || prev?.neighborhood || '',
+          city: data.localidade || prev?.city || '',
+          state: data.uf || prev?.state || '',
+        }));
         toast.success("Endereço preenchido via CEP!");
       }
     } catch (e) {
