@@ -25,6 +25,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { createProfileRefetchHandler, type ProfileLike } from "@/lib/profile-refetch";
 import { isMockPeerId, getMockProfile, getMockPeerName } from "@/lib/mock-chat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
