@@ -635,7 +635,7 @@ interface FormStepProps {
   title: string; setTitle: (v: string) => void;
   kind: AdKind; setKind: (k: AdKind) => void;
   photos: AdPhoto[]; addFiles: (l: FileList | File[]) => void;
-  removePhoto: (id: string) => void; fileRef: React.RefObject<HTMLInputElement>;
+  removePhoto: (id: string) => void; fileRef: React.RefObject<HTMLInputElement | null>;
   priceFrom: string; setPriceFrom: (v: string) => void;
   priceTo: string; setPriceTo: (v: string) => void;
   payments: PaymentMethod[]; togglePayment: (p: PaymentMethod) => void;
