@@ -14,7 +14,9 @@ import {
   KeyRound,
   Smartphone,
   HelpCircle,
+  Activity,
 } from "lucide-react";
+import { getMyAudit, type AvailabilityAudit } from "@/lib/availability";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useCurrentCategory } from "@/lib/user-category";
