@@ -399,6 +399,8 @@ function ChatInboxPage() {
       window.removeEventListener("fixxer:chat-prefs-changed", onPrefs as any);
       window.removeEventListener("fixxer:messages-read", onPrefs as any);
       window.removeEventListener("fixxer:message-sent", onMessageSent as any);
+      window.removeEventListener("fixxer:message-sending", onMessageSending as any);
+      window.removeEventListener("fixxer:message-failed", onMessageFailed as any);
 
       try { authSub?.subscription?.unsubscribe(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
