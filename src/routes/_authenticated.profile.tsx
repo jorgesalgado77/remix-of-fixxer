@@ -641,7 +641,7 @@ function ProfilePage() {
             </div>
           ) : (
             <button
-              onClick={handleSave}
+              onClick={() => handleSave()}
               disabled={!canSave}
               title={
                 bioOverLimit
