@@ -658,6 +658,20 @@ function ProfilePage() {
                 <BadgeCheck className="w-3 h-3" />
                 {theme.label}
               </span>
+              {(() => {
+                const primaryRole = parseCsvList(profile?.job_roles)[0];
+                if (!primaryRole) return null;
+                return (
+                  <span
+                    className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md flex items-center gap-1 border bg-white/[0.04]"
+                    style={{ borderColor: `${theme.hex}55`, color: theme.hex }}
+                    title="Cargo principal"
+                  >
+                    <Star className="w-3 h-3 fill-current" />
+                    {primaryRole}
+                  </span>
+                );
+              })()}
               {!profileId && (
                 <>
                   <CoinBalanceBadge />
