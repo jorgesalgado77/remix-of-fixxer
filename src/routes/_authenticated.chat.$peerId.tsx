@@ -109,6 +109,8 @@ type MessageRow = {
   _uploadPct?: number;
   _uploading?: boolean;
   _batchIndex?: number;
+  _error?: string;
+
 };
 
 const PAGE_SIZE = 30;
