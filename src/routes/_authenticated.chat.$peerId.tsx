@@ -46,6 +46,12 @@ import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal"
 import { ChatAppointmentsBanner } from "@/components/ChatAppointmentsBanner";
 import { ChatEmojiPicker } from "@/components/Chat/EmojiPicker";
 import { ChatVoiceRecorder } from "@/components/Chat/VoiceRecorder";
+import {
+  isUuid as isValidUuid,
+  classifyChatError,
+  sendWithRetry,
+  validateChatIdentities,
+} from "@/lib/chat-send";
 
 function roleToCategory(role: string | null | undefined): CategoryKey {
   const r = (role || "").toLowerCase();
