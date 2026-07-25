@@ -534,6 +534,7 @@ const PAGE_SIZE = 10;
 
 export default function FeedParceiroPage() {
   const navigate = useNavigate();
+  const userCoords = useUserCoords();
   const [search, setSearch] = useState("");
   const [activeSector, setActiveSector] = useState<(typeof SECTORS)[number]>("Todas as Demandas");
   const [saved, setSaved] = useState<Set<string>>(() => {
