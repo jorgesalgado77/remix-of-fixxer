@@ -40,6 +40,11 @@ type PartnerRow = {
   created_at: string | null;
   distance_km?: number | string | null;
   distance?: number | string | null;
+  // 🚚 Sincronização de veículo e observações no card (compatibilidade rápida).
+  vehicle_type?: string | null;
+  vehicle_description?: string | null;
+  vehicle_details?: Record<string, any> | null;
+  offerings_notes?: string | null;
 };
 
 
