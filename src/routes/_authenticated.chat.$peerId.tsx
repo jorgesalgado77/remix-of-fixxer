@@ -655,7 +655,15 @@ function ConversationPage() {
           return m;
         }),
       );
+      // Notifica a inbox (mesma aba) para exibir a conversa imediatamente,
+      // mesmo se o Realtime ainda não estiver ativo na tabela messages.
+      try {
+        window.dispatchEvent(
+          new CustomEvent("fixxer:message-sent", { detail: { row } }),
+        );
+      } catch {}
     }
+
   };
 
   /**

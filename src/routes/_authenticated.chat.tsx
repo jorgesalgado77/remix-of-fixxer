@@ -210,6 +210,19 @@ function ChatInboxPage() {
     window.addEventListener("fixxer:chat-prefs-changed", onPrefs as any);
     window.addEventListener("fixxer:messages-read", onPrefs as any);
 
+    // Fallback local: quando esta aba envia uma mensagem, o conversation page
+    // dispara este evento com a row já persistida. Assim a conversa aparece
+    // na inbox imediatamente, mesmo se o Realtime da tabela messages ainda
+    // não estiver ativo no projeto.
+    const onMessageSent = (e: Event) => {
+      const row = (e as CustomEvent).detail?.row as MessageRow | undefined;
+      if (!row || idSetRef.current.has(row.id)) return;
+      idSetRef.current.add(row.id);
+      setMessages((prev) => [row, ...prev]);
+    };
+    window.addEventListener("fixxer:message-sent", onMessageSent as any);
+
+
     // Cross-tab sync: qualquer mudança em chaves de leitura/prefs em outra aba
     // recomputa os contadores de não-lidas imediatamente. Se a conversa foi
     // aberta em outra aba, o storage event chega aqui e zera o badge.
@@ -257,6 +270,8 @@ function ChatInboxPage() {
       window.removeEventListener("fixxer:role-changed", syncRole as any);
       window.removeEventListener("fixxer:chat-prefs-changed", onPrefs as any);
       window.removeEventListener("fixxer:messages-read", onPrefs as any);
+      window.removeEventListener("fixxer:message-sent", onMessageSent as any);
+
       try { authSub?.subscription?.unsubscribe(); } catch {}
       if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} }
     };
