@@ -142,11 +142,12 @@ export function RecentPartnersCarousel() {
     try {
       const { data, error } = await supabaseExternal
         .from("profiles")
-        .select("id, full_name, avatar_url, role, activity_branch, city, uf, rating, created_at")
+        .select("id, full_name, name, avatar_url, avatar, photo_url, role, activity_branch, category, city, uf, state, location, address, rating, created_at")
         .order("created_at", { ascending: false })
         .order("rating", { ascending: false })
         .limit(120);
       if (error) throw error;
+
       const rows = ((data as unknown as PartnerRow[]) ?? [])
         .map((r) => {
           const kind = classifyRole(r.role);
