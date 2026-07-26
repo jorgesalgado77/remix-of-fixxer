@@ -530,8 +530,10 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
         {hasQuery && !loading && filtered.length === 0 && (
           <EmptyState
             radius={radius}
+            term={debouncedQuery}
             onExpand={() => setRadius(30)}
             onPublish={() => navigate({ to: "/feed/cliente" as any }).catch(() => undefined)}
+            onSuggestion={(term) => setQuery(term)}
           />
         )}
 
@@ -543,6 +545,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
                 <ResultCard
                   key={it.id}
                   item={it}
+                  term={debouncedQuery}
                   favorited={isFav}
                   onChat={() => openChat(it.id)}
                   onFav={() => {
