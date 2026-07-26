@@ -35,7 +35,7 @@ type Row = {
 type Kind = "lojista" | "fornecedor";
 type Card = Row & { _kind: Kind; _branch: string | null };
 
-const CACHE_KEY = "fixxer_recent_stores_v3";
+const CACHE_KEY = "fixxer_recent_stores_v4";
 
 function safeStr(v: unknown): string | null {
   if (v == null) return null;
@@ -134,6 +134,27 @@ function RecentStoresCarouselInner() {
 
   const fetchList = useCallback(async () => {
     try {
+      // 0) Descobre usuário logado (para excluir do próprio carrossel) e
+      //    ids de administradores (jamais devem aparecer como Lojista/Fornecedor).
+      let selfId: string | null = null;
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        selfId = auth?.user?.id ?? null;
+      } catch { /* silencioso */ }
+
+      const adminIds = new Set<string>();
+      try {
+        const { data: roles } = await supabaseExternal
+          .from("user_roles")
+          .select("user_id, role")
+          .eq("role", "admin")
+          .limit(500);
+        for (const r of (roles as any[]) ?? []) {
+          const uid = r?.user_id;
+          if (uid) adminIds.add(String(uid));
+        }
+      } catch { /* opcional */ }
+
       // 1) IDs autoritativos por tabela de perfil especializado.
       const storeIds = new Set<string>();
       const supplierIds = new Set<string>();
@@ -175,23 +196,28 @@ function RecentStoresCarouselInner() {
       // 2) Perfis reais — só interessam Lojistas e Fornecedores.
       const { data, error } = await supabaseExternal
         .from("profiles")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, rating, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, user_type, business_category, custom_branch, city, state, rating, created_at, lat, lng")
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
 
-      const rows: Card[] = ((data as unknown as Row[]) ?? [])
+      const rows: Card[] = ((data as unknown as (Row & { user_type?: string | null })[]) ?? [])
         .map((r) => {
           const rid = String(r.id);
+          // Bloqueia administradores e o próprio usuário logado.
+          if (adminIds.has(rid)) return null;
+          if (selfId && rid === selfId) return null;
+
           const roleStr = (r.role || "").toLowerCase();
+          const typeStr = ((r as any).user_type || "").toLowerCase();
           let kind: Kind | null = null;
 
-          // Prioridade: tabelas especializadas > role textual.
+          // Prioridade: tabelas especializadas > role/user_type textual.
           if (storeIds.has(rid)) kind = "lojista";
           else if (supplierIds.has(rid)) kind = "fornecedor";
           else if (providerIds.has(rid)) kind = null; // prestador: fora do escopo
-          else if (roleStr.includes("lojista") || roleStr.includes("store")) kind = "lojista";
-          else if (roleStr.includes("fornec") || roleStr.includes("supplier") || roleStr.includes("b2b") || roleStr.includes("parceiro")) kind = "fornecedor";
+          else if (roleStr.includes("lojista") || roleStr.includes("store") || typeStr.includes("lojista") || typeStr.includes("store")) kind = "lojista";
+          else if (roleStr.includes("fornec") || roleStr.includes("supplier") || roleStr.includes("b2b") || roleStr.includes("parceiro") || typeStr.includes("fornec") || typeStr.includes("supplier")) kind = "fornecedor";
           else kind = null;
 
           if (!kind) return null;
@@ -216,6 +242,7 @@ function RecentStoresCarouselInner() {
       setErrorMsg(null);
     }
   }, []);
+
 
   useEffect(() => {
     let cancelled = false;
