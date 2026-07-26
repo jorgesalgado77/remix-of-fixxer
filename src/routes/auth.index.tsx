@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, LogIn, Loader2, KeyRound, ArrowLeft, Terminal, Eye, EyeOff, AlertTriangle, CheckCircle2, Search } from "lucide-react";
+import { LogIn, Loader2, KeyRound, ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 import { useState, useEffect } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -103,17 +103,12 @@ function LoginComponent() {
           return;
         }
 
-        // Papel de admin — checagem resiliente:
-        //  1) e-mail mestre (bypass garantido)
-        //  2) flags opcionais em profiles (is_admin / role)
-        //  3) tabela canônica user_roles
-        const MASTER_ADMIN = 'jorgericardosalgado@gmail.com';
-        const userEmail = (data.session.user.email || normalizedEmail || '').toLowerCase();
-        const isEmailAdmin = userEmail === MASTER_ADMIN;
-        const isAdminRole =
+        // Papel de admin — única fonte de verdade: tabela user_roles no banco.
+        // Flags no client (localStorage / e-mail hardcoded) foram removidas para
+        // eliminar risco de escalação de privilégio via manipulação do frontend.
+        let isAdmin =
           safeGet('is_admin') === true ||
           String(safeGet('role') || '').toLowerCase() === 'admin';
-        let isAdmin = isEmailAdmin || isAdminRole;
 
         if (!isAdmin) {
           try {
@@ -317,27 +312,6 @@ function LoginComponent() {
           </div>
         </div>
 
-        {/* Ajuda: script SQL para liberar o admin no banco, caso o login falhe por permissão. */}
-        <details className="mt-6 rounded-2xl border border-white/10 bg-[#0F0F11]/70 px-4 py-3 text-left">
-          <summary className="cursor-pointer text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-            <Terminal className="w-3.5 h-3.5" />
-            Admin não consegue logar?
-          </summary>
-          <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
-            Se o e-mail administrador não estiver com privilégio na tabela <code>profiles</code>,
-            rode o script abaixo no <strong>Editor SQL do Supabase</strong>:
-          </p>
-          <pre className="mt-2 overflow-x-auto rounded-lg bg-black/60 p-3 text-[10px] leading-relaxed text-[#00FF87] whitespace-pre-wrap">{`-- Liberar o Admin master no banco:
-UPDATE public.profiles
-SET is_admin = true, role = 'admin'
-WHERE email = 'jorgericardosalgado@gmail.com';
-
--- (Opcional) garantir a role em user_roles:
-INSERT INTO public.user_roles (user_id, role)
-SELECT id, 'admin' FROM auth.users
-WHERE email = 'jorgericardosalgado@gmail.com'
-ON CONFLICT (user_id, role) DO NOTHING;`}</pre>
-        </details>
       </div>
     </div>
   );
