@@ -164,6 +164,8 @@ const TERM_SUGGESTIONS = [
   "Conferente",
 ];
 
+const FALLBACK_SEARCH_LIMIT = 1000;
+
 type Radius = 5 | 15 | 30 | 0; // 0 = Toda região
 const RADII: { v: Radius; label: string }[] = [
   { v: 5, label: "5 km" },
@@ -302,7 +304,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
           supabaseExternal
             .from("profiles_public")
             .select("*")
-            .limit(250)
+            .limit(FALLBACK_SEARCH_LIMIT)
             .abortSignal(ac.signal),
         ]);
 
@@ -316,7 +318,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
           const { data: broadData, error: broadError } = await supabaseExternal
             .from("profiles_public")
             .select("*")
-            .limit(250)
+            .limit(FALLBACK_SEARCH_LIMIT)
             .abortSignal(ac.signal);
           if (broadError) throw broadError;
           data = mergeRows(rpcRows, broadData ?? []).filter((row) => rowMatchesTerm(row, rawTerm));
