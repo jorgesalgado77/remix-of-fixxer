@@ -308,6 +308,6 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
   };
   if (isDebugEnabled()) console.info("[chat-peer] resolved", peerId, result);
   // Não cacheia fallback puro para permitir recuperação imediata após ajuste de RLS/dados.
-  if (source.length) CACHE.set(peerId, { at: Date.now(), value: result });
+  if (source.length) { CACHE.set(peerId, { at: Date.now(), value: result }); persistLsCache(); }
   return result;
 }
