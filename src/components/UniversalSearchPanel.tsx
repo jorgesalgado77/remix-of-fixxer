@@ -278,52 +278,58 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       // Preferimos a função RPC `search_profiles_public` (accent-insensitive
       // via unaccent no servidor). Caso a função ainda não exista no banco,
       // caímos para uma busca ampla e filtramos no cliente sem acentos.
-      let data: any[] = [];
-      let usedPath: "rpc" | "or" = "rpc";
-      const rpc = await supabaseExternal
-        .rpc("search_profiles_public", { q: rawTerm })
-        .abortSignal(ac.signal);
-      if (rpc.error) {
-        usedPath = "or";
-        console.warn("[UniversalSearch] RPC indisponível, usando fallback .or()", rpc.error?.message);
-        const variants = Array.from(new Set([rawTerm, q, qNoAccent].filter(Boolean)));
-        const textFields = SEARCHED_FIELDS.filter(
-          (f) => f !== "custom_sections" && f !== "categories",
-        );
-        const orParts = variants.flatMap((term) =>
-          textFields.map((field) => `${field}.ilike.%${term.replace(/[(),]/g, " ")}%`),
-        );
+      // Estratégia: dispara RPC (accent-insensitive no servidor) EM PARALELO
+      // com uma varredura ampla da view. Confiamos nas linhas do RPC como
+      // pré-filtradas pelo servidor e complementamos com o resultado do
+      // fallback filtrado no cliente. Isso garante que termos como "moveis"
+      // encontrem "Móveis Planejados" mesmo quando o RPC não expõe todas as
+      // colunas usadas na correspondência local.
+      let usedPath: "rpc" | "or" | "broad" = "broad";
+      const variants = Array.from(new Set([rawTerm, q, qNoAccent].filter(Boolean)));
+      const textFields = SEARCHED_FIELDS.filter(
+        (f) => f !== "custom_sections" && f !== "categories",
+      );
+      const orParts = variants.flatMap((term) =>
+        textFields.map((field) => `${field}.ilike.%${term.replace(/[(),%_]/g, " ")}%`),
+      );
 
-        const [{ data: directData, error: directError }, { data: broadData, error: broadError }] = await Promise.all([
-          supabaseExternal
-            .from("profiles_public")
-            .select("*")
-            .or(orParts.join(","))
-            .limit(120)
-            .abortSignal(ac.signal),
-          supabaseExternal
-            .from("profiles_public")
-            .select("*")
-            .limit(FALLBACK_SEARCH_LIMIT)
-            .abortSignal(ac.signal),
-        ]);
+      const [rpcRes, orRes, broadRes] = await Promise.all([
+        supabaseExternal
+          .rpc("search_profiles_public", { q: rawTerm })
+          .abortSignal(ac.signal)
+          .then((r) => r, (err) => ({ data: null, error: err })),
+        supabaseExternal
+          .from("profiles_public")
+          .select("*")
+          .or(orParts.join(","))
+          .limit(200)
+          .abortSignal(ac.signal)
+          .then((r) => r, (err) => ({ data: null, error: err })),
+        supabaseExternal
+          .from("profiles_public")
+          .select("*")
+          .limit(FALLBACK_SEARCH_LIMIT)
+          .abortSignal(ac.signal)
+          .then((r) => r, (err) => ({ data: null, error: err })),
+      ]);
 
-        if (directError && broadError) throw directError;
-        data = mergeRows(directData ?? [], broadData ?? []).filter((row) => rowMatchesTerm(row, rawTerm));
-      } else {
-        const rpcRows = (rpc.data as any[]) ?? [];
-        data = rpcRows.filter((row) => rowMatchesTerm(row, rawTerm));
+      const rpcRows = Array.isArray(rpcRes?.data) ? (rpcRes!.data as any[]) : [];
+      const orRows = Array.isArray(orRes?.data) ? (orRes!.data as any[]) : [];
+      const broadRows = Array.isArray(broadRes?.data) ? (broadRes!.data as any[]) : [];
 
-        if (data.length === 0) {
-          const { data: broadData, error: broadError } = await supabaseExternal
-            .from("profiles_public")
-            .select("*")
-            .limit(FALLBACK_SEARCH_LIMIT)
-            .abortSignal(ac.signal);
-          if (broadError) throw broadError;
-          data = mergeRows(rpcRows, broadData ?? []).filter((row) => rowMatchesTerm(row, rawTerm));
-        }
+      if (rpcRows.length > 0) usedPath = "rpc";
+      else if (orRows.length > 0) usedPath = "or";
+
+      // RPC vem pré-filtrado pelo servidor → confiamos. Os demais passam por
+      // rowMatchesTerm no cliente (accent/case-insensitive, multi-palavra).
+      const orFiltered = orRows.filter((row) => rowMatchesTerm(row, rawTerm));
+      const broadFiltered = broadRows.filter((row) => rowMatchesTerm(row, rawTerm));
+      let data = mergeRows(mergeRows(rpcRows, orFiltered), broadFiltered);
+
+      if (data.length === 0 && rpcRes?.error && orRes?.error && broadRes?.error) {
+        throw rpcRes?.error ?? orRes?.error ?? broadRes?.error;
       }
+
 
       const mapped: ResultItem[] = (data ?? [])
         .map((r: any) => {
