@@ -316,7 +316,3 @@ function LoginComponent() {
     </div>
   );
 }
-      </div>
-    </div>
-  );
-}
