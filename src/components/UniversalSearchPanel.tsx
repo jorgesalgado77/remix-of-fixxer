@@ -778,11 +778,8 @@ const ResultCard = memo(function ResultCard(props: {
               <MapPin className="h-3 w-3" /> a {distance} de você
             </p>
           )}
-          {item.matchedFields && item.matchedFields.length > 0 && (
-            <p className="text-[9px] uppercase tracking-widest text-white/30 mt-1 truncate">
-              Casou em: {item.matchedFields.join(", ")}
-            </p>
-          )}
+          {/* Chip "Casou em" ocultado do usuário final (era apenas debug interno). */}
+
         </div>
       </div>
       <div className="flex items-center gap-2">
