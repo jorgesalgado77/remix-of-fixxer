@@ -269,44 +269,58 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
     abortRef.current = ac;
     setLoading(true);
     try {
-      const rawTerm = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60);
+      const rawTerm = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60).trim();
       const q = rawTerm.toLowerCase();
-      const nTerm = stripAccents(rawTerm);
+      const qNoAccent = stripAccents(rawTerm);
 
       // Preferimos a função RPC `search_profiles_public` (accent-insensitive
       // via unaccent no servidor). Caso a função ainda não exista no banco,
-      // caímos para o `.or()` client-side no view `profiles_public`.
-      let data: any[] | null = null;
+      // caímos para uma busca ampla e filtramos no cliente sem acentos.
+      let data: any[] = [];
       let usedPath: "rpc" | "or" = "rpc";
       const rpc = await supabaseExternal
-        .rpc("search_profiles_public", { q })
+        .rpc("search_profiles_public", { q: rawTerm })
         .abortSignal(ac.signal);
       if (rpc.error) {
         usedPath = "or";
         console.warn("[UniversalSearch] RPC indisponível, usando fallback .or()", rpc.error?.message);
-        const orParts = [
-          `full_name.ilike.%${q}%`,
-          `display_name.ilike.%${q}%`,
-          `company_name.ilike.%${q}%`,
-          `city.ilike.%${q}%`,
-          `state.ilike.%${q}%`,
-          `business_category.ilike.%${q}%`,
-          `custom_branch.ilike.%${q}%`,
-          `specialty.ilike.%${q}%`,
-          `description.ilike.%${q}%`,
-          `role.ilike.%${q}%`,
-          `user_type.ilike.%${q}%`,
-        ];
-        const alt = await supabaseExternal
-          .from("profiles_public")
-          .select("*")
-          .or(orParts.join(","))
-          .limit(120)
-          .abortSignal(ac.signal);
-        if (alt.error) throw alt.error;
-        data = alt.data;
+        const variants = Array.from(new Set([rawTerm, q, qNoAccent].filter(Boolean)));
+        const textFields = SEARCHED_FIELDS.filter(
+          (f) => f !== "custom_sections" && f !== "categories",
+        );
+        const orParts = variants.flatMap((term) =>
+          textFields.map((field) => `${field}.ilike.%${term.replace(/[(),]/g, " ")}%`),
+        );
+
+        const [{ data: directData, error: directError }, { data: broadData, error: broadError }] = await Promise.all([
+          supabaseExternal
+            .from("profiles_public")
+            .select("*")
+            .or(orParts.join(","))
+            .limit(120)
+            .abortSignal(ac.signal),
+          supabaseExternal
+            .from("profiles_public")
+            .select("*")
+            .limit(250)
+            .abortSignal(ac.signal),
+        ]);
+
+        if (directError && broadError) throw directError;
+        data = mergeRows(directData ?? [], broadData ?? []).filter((row) => rowMatchesTerm(row, rawTerm));
       } else {
-        data = rpc.data as any[];
+        const rpcRows = (rpc.data as any[]) ?? [];
+        data = rpcRows.filter((row) => rowMatchesTerm(row, rawTerm));
+
+        if (data.length === 0) {
+          const { data: broadData, error: broadError } = await supabaseExternal
+            .from("profiles_public")
+            .select("*")
+            .limit(250)
+            .abortSignal(ac.signal);
+          if (broadError) throw broadError;
+          data = mergeRows(rpcRows, broadData ?? []).filter((row) => rowMatchesTerm(row, rawTerm));
+        }
       }
 
       const mapped: ResultItem[] = (data ?? [])
@@ -333,9 +347,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               : "Cliente Final");
 
           // Recomputa quais campos casaram — usado no destaque do card.
-          const matchedFields = SEARCHED_FIELDS.filter((f) =>
-            stripAccents(String(r?.[f] ?? "")).includes(nTerm),
-          );
+          const matchedFields = getMatchedFields(r, rawTerm);
 
           return {
             id: r.id,
