@@ -25,12 +25,13 @@ export const CATEGORY_HIGHLIGHT: Partial<Record<CategoryKey, string>> = {
   cliente: "🔥 Oportunidade - Cliente Final",
 };
 
-/** Converte hex #RRGGBB em "r, g, b" para uso em rgba(). */
-function hexToRgb(hex: string) {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
+/** Converte hex #RRGGBB em "r, g, b" para uso em rgba(). Tolera valores inválidos. */
+function hexToRgb(hex: string | null | undefined) {
+  const safe = typeof hex === "string" && hex.length > 0 ? hex : "#00E5FF";
+  const h = safe.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16) || 0;
+  const g = parseInt(h.slice(2, 4), 16) || 0;
+  const b = parseInt(h.slice(4, 6), 16) || 0;
   return `${r}, ${g}, ${b}`;
 }
 
@@ -38,9 +39,11 @@ function hexToRgb(hex: string) {
  * Retorna estilos inline prontos para aplicar cor de categoria.
  * Uso: <div style={theme.borderStyle}>…</div>
  */
-export function getCategoryTheme(cat: CategoryKey) {
-  const hex = CATEGORY_COLORS[cat];
+export function getCategoryTheme(cat: CategoryKey | string | null | undefined) {
+  const key = (cat && (cat as string) in CATEGORY_COLORS ? (cat as CategoryKey) : "lojista");
+  const hex = CATEGORY_COLORS[key] ?? "#00E5FF";
   const rgb = hexToRgb(hex);
+
   return {
     hex,
     rgb,
