@@ -1911,7 +1911,7 @@ function ConversationPage() {
             ref={cameraPhotoRef}
             type="file"
             accept="image/*"
-            capture="environment"
+            {...({ capture: "environment" } as any)}
             className="hidden"
             onChange={(e) => {
               const picked = Array.from(e.target.files ?? []);
@@ -1923,7 +1923,7 @@ function ConversationPage() {
             ref={cameraVideoRef}
             type="file"
             accept="video/*"
-            capture="environment"
+            {...({ capture: "environment" } as any)}
             className="hidden"
             onChange={(e) => {
               const picked = Array.from(e.target.files ?? []);
@@ -1931,6 +1931,7 @@ function ConversationPage() {
               if (cameraVideoRef.current) cameraVideoRef.current.value = "";
             }}
           />
+
           <div className="mb-2 flex items-center gap-1.5">
             <button
               onClick={() => fileRef.current?.click()}
