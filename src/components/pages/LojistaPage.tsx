@@ -2375,7 +2375,9 @@ function ProfileView({
                  </div>
 
                   <div className="space-y-6 pt-6 border-t border-white/5">
-                    <ActivitySelect value={activityBranch} onChange={setActivityBranch} />
+                    <div data-profile-field="activity_branch" className={hlField('activity_branch')}>
+                      <ActivitySelect value={activityBranch} onChange={setActivityBranch} />
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-2xl bg-black/20 border border-white/5">
                         <div className="space-y-3">
