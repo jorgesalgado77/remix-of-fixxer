@@ -258,6 +258,8 @@ function ConversationPage() {
   const stopTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [footerHeight, setFooterHeight] = useState(96);
   const isInitialLoadRef = useRef(true);
   const idSetRef = useRef<Set<string>>(new Set());
   const [dragActive, setDragActive] = useState(false);
@@ -1328,11 +1330,26 @@ function ConversationPage() {
     return () => setContextCategoryOverride(null);
   }, [peerCategory]);
 
+  // Mede dinamicamente a altura real do rodapé fixo (input + anexos + safe-area)
+  // e a repassa como padding-bottom do container de mensagens, evitando que a
+  // última mensagem fique escondida atrás dos botões ou input redimensionado.
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => setFooterHeight(el.getBoundingClientRect().height || 96);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, []);
+
+
   return (
-    <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-24 overscroll-contain">
+    <div className="h-[100dvh] bg-black text-white flex flex-col overscroll-contain overflow-hidden">
       <header
-        className="sticky top-0 z-30 bg-black/90 backdrop-blur-xl border-b-2 px-3 py-2.5"
-        style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)`, top: "env(safe-area-inset-top)" }}
+        className="shrink-0 z-30 bg-black/90 backdrop-blur-xl border-b-2 px-3 py-2.5"
+        style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)`, paddingTop: "calc(env(safe-area-inset-top) + 0.625rem)" }}
       >
         <div className="flex items-center gap-3">
           <button
@@ -1429,7 +1446,7 @@ function ConversationPage() {
 
       {linkedAd && (
         <div
-          className="sticky top-[64px] z-[9] px-4 py-3 border-b backdrop-blur-xl"
+          className="shrink-0 z-[9] px-4 py-3 border-b backdrop-blur-xl"
           style={{
             background: `linear-gradient(180deg, rgba(${peerTheme.rgb},0.14) 0%, rgba(0,0,0,0.85) 100%)`,
             borderColor: `rgba(${peerTheme.rgb},0.35)`,
@@ -1503,7 +1520,8 @@ function ConversationPage() {
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        className={`flex-1 overflow-y-auto px-4 py-4 space-y-4 relative ${
+        style={{ paddingBottom: `${footerHeight + 16}px` }}
+        className={`flex-1 min-h-0 overflow-y-auto px-4 pt-4 space-y-4 relative ${
           dragActive ? "outline-dashed outline-2 outline-primary/70 outline-offset-[-8px] bg-primary/5" : ""
         }`}
       >
@@ -1730,8 +1748,9 @@ function ConversationPage() {
             setPendingScrollHint(0);
             isNearBottomRef.current = true;
           }}
-          className="fixed left-1/2 -translate-x-1/2 bottom-[96px] z-[95] rounded-full px-3 h-9 font-black italic uppercase text-[10px] tracking-widest flex items-center gap-1.5 shadow-2xl border-2 animate-in fade-in slide-in-from-bottom-2"
+          className="fixed left-1/2 -translate-x-1/2 z-[95] rounded-full px-3 h-9 font-black italic uppercase text-[10px] tracking-widest flex items-center gap-1.5 shadow-2xl border-2 animate-in fade-in slide-in-from-bottom-2"
           style={{
+            bottom: `${footerHeight + 12}px`,
             backgroundColor: peerTheme.hex,
             color: "#000",
             borderColor: peerTheme.hex,
@@ -1745,6 +1764,7 @@ function ConversationPage() {
 
 
       <div
+        ref={footerRef}
         className="fixed bottom-0 left-0 right-0 z-[90] bg-black/90 backdrop-blur-xl border-t border-white/10 px-4 py-3"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
