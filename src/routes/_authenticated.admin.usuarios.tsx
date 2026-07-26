@@ -384,7 +384,7 @@ function UserCard({
       <div className="flex items-start gap-3">
         <div className={"w-12 h-12 rounded-2xl bg-white/5 border border-white/10 overflow-hidden shrink-0 ring-2 " + cat.ring}>
           {u.avatar_url
-            ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+            ? <img src={u.avatar_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
             : <div className="w-full h-full flex items-center justify-center text-white/60 text-lg font-black">{(u.full_name || u.email || "?").slice(0, 1).toUpperCase()}</div>}
         </div>
         <div className="flex-1 min-w-0">
