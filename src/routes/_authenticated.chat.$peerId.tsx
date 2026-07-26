@@ -26,7 +26,7 @@ import {
   FileDown,
   Settings,
   Camera,
-  Video as VideoCapture,
+  Film,
 } from "lucide-react";
 import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
 
