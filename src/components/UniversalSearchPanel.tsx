@@ -198,33 +198,45 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
     abortRef.current = ac;
     setLoading(true);
     try {
-      const q = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60).toLowerCase();
-      // Busca multi-campo case-insensitive. Campos opcionais do schema
-      // (specialty, description, display_name, business_category) são
-      // tolerados: se a coluna não existir, o Postgres ignora silenciosamente
-      // dentro do .or() apenas quando existe — por isso mantemos a lista
-      // restrita ao que sabemos existir e complementamos com filtro client-side.
-      const orParts = [
-        `full_name.ilike.%${q}%`,
-        `display_name.ilike.%${q}%`,
-        `company_name.ilike.%${q}%`,
-        `city.ilike.%${q}%`,
-        `state.ilike.%${q}%`,
-        `category.ilike.%${q}%`,
-        `specialty.ilike.%${q}%`,
-        `description.ilike.%${q}%`,
-        `business_category.ilike.%${q}%`,
-        `custom_branch.ilike.%${q}%`,
-        `role.ilike.%${q}%`,
-        `user_type.ilike.%${q}%`,
-      ];
-      const { data, error } = await supabaseExternal
-        .from("profiles_public")
-        .select("*")
-        .or(orParts.join(","))
-        .limit(120)
+      const rawTerm = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60);
+      const q = rawTerm.toLowerCase();
+      const nTerm = stripAccents(rawTerm);
+
+      // Preferimos a função RPC `search_profiles_public` (accent-insensitive
+      // via unaccent no servidor). Caso a função ainda não exista no banco,
+      // caímos para o `.or()` client-side no view `profiles_public`.
+      let data: any[] | null = null;
+      let usedPath: "rpc" | "or" = "rpc";
+      const rpc = await supabaseExternal
+        .rpc("search_profiles_public", { q })
         .abortSignal(ac.signal);
-      if (error) throw error;
+      if (rpc.error) {
+        usedPath = "or";
+        console.warn("[UniversalSearch] RPC indisponível, usando fallback .or()", rpc.error?.message);
+        const orParts = [
+          `full_name.ilike.%${q}%`,
+          `display_name.ilike.%${q}%`,
+          `company_name.ilike.%${q}%`,
+          `city.ilike.%${q}%`,
+          `state.ilike.%${q}%`,
+          `business_category.ilike.%${q}%`,
+          `custom_branch.ilike.%${q}%`,
+          `specialty.ilike.%${q}%`,
+          `description.ilike.%${q}%`,
+          `role.ilike.%${q}%`,
+          `user_type.ilike.%${q}%`,
+        ];
+        const alt = await supabaseExternal
+          .from("profiles_public")
+          .select("*")
+          .or(orParts.join(","))
+          .limit(120)
+          .abortSignal(ac.signal);
+        if (alt.error) throw alt.error;
+        data = alt.data;
+      } else {
+        data = rpc.data as any[];
+      }
 
       const mapped: ResultItem[] = (data ?? [])
         .map((r: any) => {
@@ -232,7 +244,13 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
           if (!cat) return null;
           const c = cityCoords(r.city);
           const km = c && userCoords ? haversineKm(userCoords, c) : null;
-          const specialty = r.specialty || r.business_category || r.activity_branch;
+          // Fallback: quando custom_branch estiver vazio, usa company_name.
+          const specialty =
+            r.specialty ||
+            r.business_category ||
+            r.custom_branch ||
+            r.activity_branch ||
+            r.company_name;
           const subtitle =
             specialty ||
             (cat === "prestador"
@@ -242,25 +260,29 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               : cat === "fornecedor"
               ? "Atacado / Insumos B2B"
               : "Cliente Final");
+
+          // Recomputa quais campos casaram — usado no destaque do card.
+          const matchedFields = SEARCHED_FIELDS.filter((f) =>
+            stripAccents(String(r?.[f] ?? "")).includes(nTerm),
+          );
+
           return {
             id: r.id,
-            name: r.display_name || r.full_name || "Usuário FIXXER",
+            name: r.display_name || r.full_name || r.company_name || "Usuário FIXXER",
             city: r.city ?? null,
             state: r.state ?? null,
             avatar_url: resolvePhoto(r),
             category: cat,
             distanceKm: km,
             subtitle,
+            matchedFields,
           } as ResultItem;
         })
         .filter(Boolean) as ResultItem[];
 
-      // Fallback preview garantido: sempre que o termo casar com "conferente",
-      // injeta o card de referência (Jorge Salgado) — some apenas se já
-      // existir um resultado com o mesmo id vindo do banco.
+      // Fallback preview garantido para o termo "conferente".
       const matchesConferente = /confer/i.test(debouncedQuery);
       if (matchesConferente) {
-        // Busca o perfil real do Jorge para usar o avatar salvo.
         let jorgeReal: any = null;
         try {
           const { data: jd } = await supabaseExternal
@@ -293,15 +315,20 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               jorgeReal?.business_category ||
               jorgeReal?.activity_branch ||
               "Conferente Técnico",
+            matchedFields: ["specialty"],
           });
         }
+      }
+
+      // Debug leve — visível apenas no console durante desenvolvimento.
+      if (typeof window !== "undefined" && (window as any).__FIXXER_DEBUG_SEARCH) {
+        console.info("[UniversalSearch]", { path: usedPath, term: rawTerm, hits: mapped.length });
       }
 
       setRows(mapped);
     } catch (e: any) {
       if (e?.name === "AbortError") return;
       console.warn("[UniversalSearch] fetch", e);
-      // Fallback preview mesmo em erro de rede, quando aplicável.
       if (/confer/i.test(debouncedQuery)) {
         let jorgeReal: any = null;
         try {
@@ -333,12 +360,12 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               jorgeReal?.business_category ||
               jorgeReal?.activity_branch ||
               "Conferente Técnico",
+            matchedFields: ["specialty"],
           },
         ]);
       } else {
         setRows([]);
       }
-
     } finally {
       setLoading(false);
     }
