@@ -257,10 +257,13 @@ export function LojistaDashboard() {
             whatsapp: src.whatsapp || unified.phone || "",
             phone: src.phone || unified.whatsapp || "",
             zipcode: src.zipcode || unified.cep || unified.postal_code || "",
+            address: src.address || unified.address || unified.street || unified.logradouro || "",
+            address_number: src.address_number || unified.address_number || unified.numero || "",
+            neighborhood: src.neighborhood || unified.neighborhood || unified.bairro || "",
             activity_branch: src.activity_branch || unified.business_category || unified.custom_branch || "",
             logo_url: src.logo_url || unified.logo_url || unified.avatar_url || null,
-            city: src.city || unified.city || "",
-            state: src.state || unified.state || "",
+            city: src.city || unified.city || unified.localidade || "",
+            state: src.state || unified.state || unified.uf || "",
           });
         } catch {}
       })();
