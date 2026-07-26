@@ -137,6 +137,7 @@ export function LojistaDashboard() {
       if (cancelled) return;
       setIsProfileComplete(result.complete);
       setProfileMissing(result.missingLabels);
+      setProfileMissingKeys(result.missing);
       setProfileSummary({
         id: data.user_id || data.id,
         companyName: data.company_name || "",
