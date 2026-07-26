@@ -35,13 +35,13 @@ export function categoryFromRoleText(...values: unknown[]): PublicProfileCategor
   if (text.includes("lojista") || text.includes("store") || text.includes("loja")) return "lojista";
   if (text.includes("cliente") || text.includes("customer") || text.includes("casual") || text.includes("final")) return "cliente";
 
-  // Em alguns cadastros antigos o cliente final ficou salvo como user/usuario.
-  // Só usamos isso como fallback textual; tabelas especializadas ainda têm prioridade.
-  if (/\b(user|usu[aá]rio|usuario)\b/.test(text)) return "cliente";
+  // Removido: mapeamento de "user/usuario" → cliente. Esse fallback textual
+  // se sobrepunha a fontes mais confiáveis (tabelas especializadas / rota
+  // visitada) e classificava lojistas/prestadores antigos como cliente.
   return null;
 }
 
-function categoryFromRow(row: any): PublicProfileCategory | null {
+export function categoryFromRow(row: any): PublicProfileCategory | null {
   if (!row || typeof row !== "object") return null;
   const extras = row?.custom_sections?.__extras || row?.__extras || row?.extras || {};
   return categoryFromRoleText(
