@@ -32,7 +32,7 @@ export type ThreadCardConversation = {
   unread: number;
   archived: boolean;
   muted: boolean;
-  linkedAd?: { title?: string; category?: string; distanceKm?: number | null } | null;
+  linkedAd?: { title?: string; category?: string; distanceKm?: number | null } | null | any;
 };
 
 export type ThreadCardTheme = { hex: string; rgb: string; label: string };
