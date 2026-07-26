@@ -24,7 +24,6 @@ const COMMON_CONTACT: RequiredField[] = [
   { key: "responsible_name", label: "Nome do responsável" },
   { key: "email_contact", label: "E-mail de contato" },
   { key: "whatsapp", label: "WhatsApp" },
-  { key: "phone", label: "Telefone" },
   { key: "zipcode", label: "CEP" },
 ];
 
@@ -34,21 +33,18 @@ const REQUIRED_BY_ROLE: Record<ProfileRole, RequiredField[]> = {
     { key: "cnpj", label: "CNPJ" },
     ...COMMON_CONTACT,
     { key: "activity_branch", label: "Ramo de atividade" },
-    { key: "logo_url", label: "Logo da empresa" },
   ],
   prestador: [
     { key: "company_name", label: "Nome / Razão social" },
     { key: "cnpj", label: "CPF ou CNPJ" },
     ...COMMON_CONTACT,
     { key: "activity_branch", label: "Especialidade" },
-    { key: "logo_url", label: "Foto de perfil" },
   ],
   fornecedor: [
     { key: "company_name", label: "Nome da empresa" },
     { key: "cnpj", label: "CNPJ" },
     ...COMMON_CONTACT,
     { key: "activity_branch", label: "Segmento de fornecimento" },
-    { key: "logo_url", label: "Logo da empresa" },
   ],
   cliente: [
     { key: "responsible_name", label: "Nome completo" },
