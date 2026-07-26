@@ -222,7 +222,9 @@ function RecentStoresCarouselInner() {
           else kind = null;
 
           if (!kind) return null;
-          return { ...r, _kind: kind, _branch: mainBranchOf(r.business_category, r.custom_branch) } as Card;
+          const avatar = safeStr((r as any).avatar_url) || safeStr((r as any).logo_url);
+          return { ...r, avatar_url: avatar, _kind: kind, _branch: mainBranchOf(r.business_category, r.custom_branch) } as Card;
+
         })
         .filter((x): x is Card => !!x)
         .slice(0, 60);
