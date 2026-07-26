@@ -135,8 +135,19 @@ async function computePublicProfileCategory(
   userId: string,
   options?: { profile?: any; routeHint?: PublicProfileCategory | null },
 ): Promise<PublicProfileCategory> {
-  // Tabelas especializadas são a fonte autoritativa visual. Elas corrigem
-  // cadastros antigos em que profiles.role ficou genérico ou incorreto.
+  // 1) profiles.role autoritativo: se o cadastro atual em `profiles` já
+  //    resolve uma categoria canônica (ex.: role="prestador"), ela vence
+  //    sobre linhas legadas em tabelas especializadas (ex.: store_profiles
+  //    remanescente de quando o usuário ainda era lojista).
+  const fromLoadedProfile = categoryFromRow(options?.profile);
+  if (fromLoadedProfile) return fromLoadedProfile;
+
+  for (const table of ["profiles_public", "profiles"] as const) {
+    const category = await queryProfileCategory(table, userId);
+    if (category) return category;
+  }
+
+  // 2) Fallback: tabelas especializadas quando profiles não resolve.
   const specialized: Array<{ table: string; category: PublicProfileCategory }> = [
     { table: "provider_profiles", category: "prestador" },
     { table: "supplier_profiles", category: "fornecedor" },
@@ -144,15 +155,6 @@ async function computePublicProfileCategory(
   ];
   for (const source of specialized) {
     if (await hasSpecializedRow(source.table, userId)) return source.category;
-  }
-
-  const fromLoadedProfile = categoryFromRow(options?.profile);
-  if (fromLoadedProfile) return fromLoadedProfile;
-
-  // Fallback quando a política/RLS não permite ler as tabelas especializadas.
-  for (const table of ["profiles_public", "profiles"] as const) {
-    const category = await queryProfileCategory(table, userId);
-    if (category) return category;
   }
 
   return options?.routeHint && CATEGORY_VALUES.includes(options.routeHint)
