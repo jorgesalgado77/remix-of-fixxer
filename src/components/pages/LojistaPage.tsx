@@ -841,6 +841,7 @@ export function LojistaDashboard() {
                     branches={branches}
                     loadingFavorites={loadingFavorites}
                     filteredFavorites={filteredFavorites}
+                    missingKeys={profileMissingKeys}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
