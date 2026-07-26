@@ -1246,6 +1246,7 @@ export default function FeedPrestadorPage() {
   return (
     <PullToRefresh onRefresh={handleRefresh} accent="#FF9F0A">
     <div className="min-h-screen bg-[#0A0A0B] text-foreground pb-24 animate-in fade-in duration-500">
+      <UniversalSearchPanel defaultPill="prestador" />
 
       {/* TOPBAR FIXO */}
       <header className="sticky top-0 z-50 bg-[#0A0A0B]/90 backdrop-blur-md border-b border-white/10">
