@@ -301,6 +301,28 @@ function LoginComponent() {
             </p>
           </div>
         </div>
+
+        {/* Ajuda: script SQL para liberar o admin no banco, caso o login falhe por permissão. */}
+        <details className="mt-6 rounded-2xl border border-white/10 bg-[#0F0F11]/70 px-4 py-3 text-left">
+          <summary className="cursor-pointer text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <Terminal className="w-3.5 h-3.5" />
+            Admin não consegue logar?
+          </summary>
+          <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
+            Se o e-mail administrador não estiver com privilégio na tabela <code>profiles</code>,
+            rode o script abaixo no <strong>Editor SQL do Supabase</strong>:
+          </p>
+          <pre className="mt-2 overflow-x-auto rounded-lg bg-black/60 p-3 text-[10px] leading-relaxed text-[#00FF87] whitespace-pre-wrap">{`-- Liberar o Admin master no banco:
+UPDATE public.profiles
+SET is_admin = true, role = 'admin'
+WHERE email = 'jorgericardosalgado@gmail.com';
+
+-- (Opcional) garantir a role em user_roles:
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'admin' FROM auth.users
+WHERE email = 'jorgericardosalgado@gmail.com'
+ON CONFLICT (user_id, role) DO NOTHING;`}</pre>
+        </details>
       </div>
     </div>
   );
