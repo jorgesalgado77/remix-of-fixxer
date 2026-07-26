@@ -1037,6 +1037,14 @@ export default function FeedPrestadorPage() {
   const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_prestador_status", "todos");
   const [detailsFor, setDetailsFor] = useState<JobPost | null>(null);
   const [search, setSearch] = usePersistedState<string>("fixxer_feed_prestador_search", "");
+  useEffect(() => {
+    const h = (e: Event) => {
+      const q = (e as CustomEvent<{ query?: string }>).detail?.query ?? "";
+      setSearch(q);
+    };
+    window.addEventListener("fixxer:universal-search", h as EventListener);
+    return () => window.removeEventListener("fixxer:universal-search", h as EventListener);
+  }, [setSearch]);
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [applied, setApplied] = useState<Set<string>>(new Set());

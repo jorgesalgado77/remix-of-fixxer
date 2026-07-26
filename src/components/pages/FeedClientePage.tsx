@@ -230,6 +230,14 @@ export default function FeedClientePage() {
   const navigate = useNavigate();
 
   const [query, setQuery] = usePersistedState<string>("fixxer_feed_cliente_query", "");
+  useEffect(() => {
+    const h = (e: Event) => {
+      const q = (e as CustomEvent<{ query?: string }>).detail?.query ?? "";
+      setQuery(q);
+    };
+    window.addEventListener("fixxer:universal-search", h as EventListener);
+    return () => window.removeEventListener("fixxer:universal-search", h as EventListener);
+  }, [setQuery]);
   const [solution, setSolution] = usePersistedState<Solution>("fixxer_feed_cliente_solution", "Todas as Opções");
   const [visibleCount, setVisibleCount] = usePersistedState<number>("fixxer_feed_cliente_visible", PAGE_SIZE);
   const [saved, setSaved] = useState<Set<string>>(new Set());

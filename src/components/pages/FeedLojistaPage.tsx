@@ -545,6 +545,15 @@ export default function FeedLojistaPage() {
   const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_lojista_status", "todos");
   const [detailsFor, setDetailsFor] = useState<FeedPost | null>(null);
   const [search, setSearch] = usePersistedState<string>("fixxer_feed_lojista_search", "");
+  // Sincroniza com a Barra Universal Superior — único input de busca.
+  useEffect(() => {
+    const h = (e: Event) => {
+      const q = (e as CustomEvent<{ query?: string }>).detail?.query ?? "";
+      setSearch(q);
+    };
+    window.addEventListener("fixxer:universal-search", h as EventListener);
+    return () => window.removeEventListener("fixxer:universal-search", h as EventListener);
+  }, [setSearch]);
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [searching, setSearching] = useState(false);
   const [saved, setSaved] = useState<Set<string>>(new Set());

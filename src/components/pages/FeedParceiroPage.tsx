@@ -541,6 +541,14 @@ export default function FeedParceiroPage() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
   const [search, setSearch] = usePersistedState<string>("fixxer_feed_parceiro_search", "");
+  useEffect(() => {
+    const h = (e: Event) => {
+      const q = (e as CustomEvent<{ query?: string }>).detail?.query ?? "";
+      setSearch(q);
+    };
+    window.addEventListener("fixxer:universal-search", h as EventListener);
+    return () => window.removeEventListener("fixxer:universal-search", h as EventListener);
+  }, [setSearch]);
   const [activeSector, setActiveSector] = usePersistedState<(typeof SECTORS)[number]>("fixxer_feed_parceiro_sector", "Todas as Demandas");
   const [saved, setSaved] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
