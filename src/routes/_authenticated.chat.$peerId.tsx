@@ -1330,6 +1330,21 @@ function ConversationPage() {
     return () => setContextCategoryOverride(null);
   }, [peerCategory]);
 
+  // Mede dinamicamente a altura real do rodapé fixo (input + anexos + safe-area)
+  // e a repassa como padding-bottom do container de mensagens, evitando que a
+  // última mensagem fique escondida atrás dos botões ou input redimensionado.
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => setFooterHeight(el.getBoundingClientRect().height || 96);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, []);
+
+
   return (
     <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-24 overscroll-contain">
       <header
