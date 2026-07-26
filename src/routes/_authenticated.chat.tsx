@@ -534,7 +534,7 @@ function ChatInboxPage() {
     const el = sentinelRef.current;
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) if (e.isIntersecting) void loadMore(userId);
-    }, { rootMargin: "200px" });
+    }, { rootMargin: "800px" });
     io.observe(el);
     return () => io.disconnect();
   }, [userId, loadMore]);
@@ -728,7 +728,7 @@ function ChatInboxPage() {
   const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
   const archivedCount = conversationsWithMock.filter((c) => c.archived).length;
 
-  const handleMarkUnread = async (c: Conversation) => {
+  const handleMarkUnread = useCallback(async (c: Conversation) => {
     if (!userId) return;
     const lastIncoming = [...messages]
       .filter((m) => m.sender_id === c.peerId && m.recipient_id === userId)
@@ -738,7 +738,6 @@ function ChatInboxPage() {
       const { error } = await supabaseExternal.from("messages").update({ read: false }).eq("id", lastIncoming.id);
       if (error) throw error;
       setMessages((prev) => prev.map((m) => (m.id === lastIncoming.id ? { ...m, read: false } : m)));
-      // "desmarca" localmente o last_read_at para essa conversa (usa ontem)
       markConversationReadLocal(userId, c.peerId, new Date(0).toISOString());
       toast.success("Marcada como não lida");
     } catch (e: any) {
@@ -746,24 +745,23 @@ function ChatInboxPage() {
     } finally {
       setOpenMenu(null);
     }
-  };
+  }, [userId, messages]);
 
-  const handleToggleArchive = (c: Conversation) => {
+  const handleToggleArchive = useCallback((c: Conversation) => {
     if (!userId) return;
     setConversationArchived(userId, c.peerId, !c.archived);
     toast.success(!c.archived ? "Conversa arquivada" : "Conversa desarquivada");
     setOpenMenu(null);
-  };
+  }, [userId]);
 
-  const handleToggleMute = (c: Conversation) => {
+  const handleToggleMute = useCallback((c: Conversation) => {
     if (!userId) return;
     setConversationMuted(userId, c.peerId, !c.muted);
     toast.success(!c.muted ? "Notificações silenciadas" : "Notificações reativadas");
     setOpenMenu(null);
-  };
+  }, [userId]);
 
-  const openConversation = (peerId: string) => {
-    // Zera badge imediatamente — para conversas reais (via fila) e para mocks.
+  const openConversation = useCallback((peerId: string) => {
     if (peerId.startsWith("mock-")) {
       markMockConversationSeen(peerId);
     }
@@ -779,9 +777,9 @@ function ChatInboxPage() {
     } catch {
       window.location.href = `/chat/${encodeURIComponent(peerId)}`;
     }
-  };
+  }, [userId, navigate]);
 
-  const handleViewProfile = (c: Conversation) => {
+  const handleViewProfile = useCallback((c: Conversation) => {
     setOpenMenu(null);
     const path = `/lojista/${encodeURIComponent(c.peerId)}`;
     try {
@@ -789,7 +787,11 @@ function ChatInboxPage() {
     } catch {
       window.location.href = path;
     }
-  };
+  }, [navigate]);
+
+  const handleToggleMenu = useCallback((peerId: string) => {
+    setOpenMenu((cur) => (cur === peerId ? null : peerId));
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-white p-6 pb-32" onClick={() => setOpenMenu(null)}>
