@@ -1235,6 +1235,35 @@ function ConversationPage() {
     measureElement: (el) => el.getBoundingClientRect().height,
   });
 
+  // Ancoragem no fim após o virtualizer medir os itens reais.
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    if (isInitialLoadRef.current && messages.length > 0) {
+      requestAnimationFrame(() => {
+        try {
+          if (feedRows.length > 0) messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
+          else if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        } catch {
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      });
+      isInitialLoadRef.current = false;
+      return;
+    }
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+    if (nearBottom) {
+      try {
+        if (feedRows.length > 0) messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
+        else el.scrollTop = el.scrollHeight;
+      } catch {
+        el.scrollTop = el.scrollHeight;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, peerTyping, feedRows.length]);
+
+
   const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
 
   const peerCategory = resolvePeerCategory(peerRole);
