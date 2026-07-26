@@ -2,6 +2,7 @@ import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { UniversalSearchPanel } from "@/components/UniversalSearchPanel";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
+import { OpportunitiesBadge } from "@/components/OpportunitiesBadge";
 import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -822,10 +823,7 @@ export default function FeedParceiroPage() {
             onPillChange={(k) => setActiveSector(k as typeof activeSector)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
-            badge={{
-              icon: "📦",
-              text: "6 Lojistas buscando orçamentos de Marmoraria e Vidro na sua cidade",
-            }}
+            badgeSlot={<OpportunitiesBadge category="fornecedor" />}
           />
         </div>
       </header>

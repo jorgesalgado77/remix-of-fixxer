@@ -79,18 +79,22 @@ function keyFor(cat: CategoryKey) {
 }
 
 function readDismissed(cat: CategoryKey): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") return true;
   try {
-    return window.localStorage.getItem(keyFor(cat)) === "1";
+    // Padrão: RECOLHIDO. Só considera expandido quando o usuário
+    // clicou explicitamente em "Mostrar Sugestões" (grava "0").
+    const raw = window.localStorage.getItem(keyFor(cat));
+    if (raw === null) return true;
+    return raw !== "0";
   } catch {
-    return false;
+    return true;
   }
 }
 
 function writeDismissed(cat: CategoryKey, v: boolean) {
   try {
-    if (v) window.localStorage.setItem(keyFor(cat), "1");
-    else window.localStorage.removeItem(keyFor(cat));
+    // "1" = oculto, "0" = usuário expandiu explicitamente (persiste entre sessões).
+    window.localStorage.setItem(keyFor(cat), v ? "1" : "0");
     window.dispatchEvent(
       new CustomEvent("fixxer:b2b-suggestions-visibility", { detail: { dismissed: v, category: cat } }),
     );

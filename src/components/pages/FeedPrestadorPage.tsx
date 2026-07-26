@@ -2,6 +2,7 @@ import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { UniversalSearchPanel } from "@/components/UniversalSearchPanel";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
+import { OpportunitiesBadge } from "@/components/OpportunitiesBadge";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FeedCardSkeletonList } from "@/components/FeedCardSkeleton";
 import { thumbSrc } from "@/lib/feed-thumb";
@@ -1290,10 +1291,7 @@ export default function FeedPrestadorPage() {
             onPillChange={(k) => setFilter(k as typeof filter)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
-            badge={{
-              icon: "⚡",
-              text: "4 O.S. de Montagem e Medição abertas no raio de 15 km",
-            }}
+            badgeSlot={<OpportunitiesBadge category="prestador" />}
           />
         </div>
       </header>
