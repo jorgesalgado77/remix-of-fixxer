@@ -50,6 +50,7 @@ import { sanitizeContactText, CONTACT_GUARD_WARNING } from "@/lib/contact-guard"
 import { getMockConversation, isMockPeerId, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
 import { getCategoryTheme, getPeerTheme, resolvePeerCategory, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory, setContextCategoryOverride } from "@/lib/user-category";
+import { peekPublicProfileCategory } from "@/lib/public-profile-category";
 import { classifyChatError, sendWithRetry, validateChatIdentities } from "@/lib/chat-send";
 import { startGlobalPresence, subscribeGlobalPresence, isPeerOnline } from "@/lib/chat-presence";
 import { playIncomingMessageSound } from "@/lib/chat-sound";
