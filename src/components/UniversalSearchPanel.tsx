@@ -198,7 +198,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               "Jorge Salgado",
             city: jorgeReal?.city ?? "Votorantim",
             state: jorgeReal?.state ?? "SP",
-            avatar_url: jorgeReal?.avatar_url ?? null,
+            avatar_url: resolvePhoto(jorgeReal),
             category: "prestador",
             distanceKm: 4.8,
             subtitle:
