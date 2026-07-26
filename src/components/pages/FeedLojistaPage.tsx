@@ -851,10 +851,7 @@ export default function FeedLojistaPage() {
             onPillChange={(k) => setFilter(k as typeof filter)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
-            badge={{
-              icon: "🔥",
-              text: "3 Novas Oportunidades de Clientes Finais a menos de 5 km de você (Sorocaba/SP)",
-            }}
+            badgeSlot={<OpportunitiesBadge category="lojista" />}
           />
         </div>
       </header>

@@ -603,10 +603,7 @@ export default function FeedClientePage() {
               </Link>
             }
             onMacroSearchTerm={(term) => setQuery(term ?? "")}
-            badge={{
-              icon: "🌟",
-              text: "5 Lojas de Planejados verificadas a menos de 8 km de você",
-            }}
+            badgeSlot={<OpportunitiesBadge category="cliente" />}
           />
         </div>
       </header>

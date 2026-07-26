@@ -1290,10 +1290,7 @@ export default function FeedPrestadorPage() {
             onPillChange={(k) => setFilter(k as typeof filter)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
-            badge={{
-              icon: "⚡",
-              text: "4 O.S. de Montagem e Medição abertas no raio de 15 km",
-            }}
+            badgeSlot={<OpportunitiesBadge category="prestador" />}
           />
         </div>
       </header>

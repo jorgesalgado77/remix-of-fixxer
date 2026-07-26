@@ -109,6 +109,7 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     onStatusChange,
     onRadiusChange,
     badge,
+    badgeSlot,
     searchInput,
     backSlot,
     resultCount,
@@ -286,26 +287,28 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
         </div>
 
         {/* Badge de oportunidades próximas (sempre abaixo da busca/filtros) */}
-        {badge && (
-          <div className="w-full px-3 sm:px-4 pb-2">
-            <div
-              className="w-full flex items-center gap-2 rounded-2xl border px-3 py-2 text-[11px] font-bold text-white"
-              style={{
-                borderColor: hexToRgba(accent, 0.35),
-                backgroundColor: hexToRgba(accent, 0.08),
-                boxShadow: `0 0 18px ${hexToRgba(accent, 0.18)}`,
-              }}
-              role="status"
-              aria-live="polite"
-            >
-              <Flame className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} aria-hidden />
-              <span className="leading-tight">
-                {badge.icon ? <span className="mr-1">{badge.icon}</span> : null}
-                {badge.text}
-              </span>
-            </div>
-          </div>
-        )}
+        {badgeSlot
+          ? badgeSlot
+          : badge && (
+              <div className="w-full px-3 sm:px-4 pb-2">
+                <div
+                  className="w-full flex items-center gap-2 rounded-2xl border px-3 py-2 text-[11px] font-bold text-white"
+                  style={{
+                    borderColor: hexToRgba(accent, 0.35),
+                    backgroundColor: hexToRgba(accent, 0.08),
+                    boxShadow: `0 0 18px ${hexToRgba(accent, 0.18)}`,
+                  }}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <Flame className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} aria-hidden />
+                  <span className="leading-tight">
+                    {badge.icon ? <span className="mr-1">{badge.icon}</span> : null}
+                    {badge.text}
+                  </span>
+                </div>
+              </div>
+            )}
       </div>
 
       {/* MODAL */}

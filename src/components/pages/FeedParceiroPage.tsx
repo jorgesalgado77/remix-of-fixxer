@@ -822,10 +822,7 @@ export default function FeedParceiroPage() {
             onPillChange={(k) => setActiveSector(k as typeof activeSector)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
-            badge={{
-              icon: "📦",
-              text: "6 Lojistas buscando orçamentos de Marmoraria e Vidro na sua cidade",
-            }}
+            badgeSlot={<OpportunitiesBadge category="fornecedor" />}
           />
         </div>
       </header>
