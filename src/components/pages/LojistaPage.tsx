@@ -577,7 +577,7 @@ export function LojistaDashboard() {
                     </button>
                 </div>
 
-                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} />
+                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} missingKeys={profileMissingKeys} onOpenProfile={handleOpenSettings} />
 
 
                 <TooltipProvider>
