@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { LojistaPublicProfilePage } from "@/pages/LojistaPublicProfilePage";
+import { LojistaPublicProfilePage } from "@/components/pages/LojistaPublicProfilePage";
 
 export const Route = createFileRoute("/lojista/$id")({
   head: () => ({

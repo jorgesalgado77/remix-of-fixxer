@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import FeedPrestadorPage from "@/pages/FeedPrestadorPage";
+import FeedPrestadorPage from "@/components/pages/FeedPrestadorPage";
 
 export const Route = createFileRoute("/_authenticated/feed/prestador")({
   head: () => ({

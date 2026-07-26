@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import FeedParceiroPage from "@/pages/FeedParceiroPage";
+import FeedParceiroPage from "@/components/pages/FeedParceiroPage";
 
 export const Route = createFileRoute("/_authenticated/feed/parceiro")({
   head: () => ({
