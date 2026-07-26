@@ -10,7 +10,10 @@ import {
 } from "@/lib/category-audit";
 import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/category-colors";
 
+import { requireAdmin } from "@/lib/admin-guard";
+
 export const Route = createFileRoute("/_authenticated/admin/auditoria-categorias")({
+  beforeLoad: requireAdmin,
   component: AuditCategoriesPage,
 });
 
