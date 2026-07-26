@@ -99,7 +99,7 @@ function writeCache(items: Card[]) {
   try { window.localStorage.setItem(CACHE_KEY, JSON.stringify({ items, ts: Date.now() })); } catch { /* ignore */ }
 }
 
-export function RecentStoresCarousel() {
+function RecentStoresCarouselInner() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
   const cached = useMemo(() => readCache(), []);
