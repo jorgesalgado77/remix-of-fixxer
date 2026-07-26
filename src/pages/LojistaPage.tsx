@@ -3300,7 +3300,7 @@ function SortableItem({ id, isVideo, onRemove, isSelected, onToggleSelect }: { i
                 {isVideo ? (
                     <video src={id} className="w-full h-full object-cover" />
                 ) : (
-                    <img src={id} alt="Gallery" className="w-full h-full object-cover" />
+                    <img src={id} alt="Gallery" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 )}
             </div>
             
