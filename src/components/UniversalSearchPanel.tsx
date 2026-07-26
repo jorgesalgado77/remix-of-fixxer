@@ -178,7 +178,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       if (e?.name === "AbortError") return;
       console.warn("[UniversalSearch] fetch", e);
       // Fallback preview mesmo em erro de rede, quando aplicável.
-      if (debouncedQuery.toLowerCase().includes("conferente")) {
+      if (/confer/i.test(debouncedQuery)) {
         setRows([
           {
             id: "user_jorge_conferente",
