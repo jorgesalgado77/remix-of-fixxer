@@ -182,7 +182,26 @@ export function LojistaDashboard() {
           .eq("user_email", user.email)
           .maybeSingle();
 
-        if (!error && data) evaluate(data);
+        if (!error && data && (data.company_name || data.logo_url)) {
+          evaluate(data);
+        } else {
+          // Fallback: usa dados do perfil unificado (public.profiles) quando store_profiles está vazio
+          const { data: prof } = await supabaseExternal
+            .from("profiles")
+            .select("id,display_name,full_name,logo_url,avatar_url,city,state,business_category,custom_branch")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (prof) {
+            evaluate({
+              id: prof.id,
+              company_name: prof.display_name || prof.full_name || "",
+              logo_url: prof.logo_url || prof.avatar_url || null,
+              city: prof.city || "",
+              state: prof.state || "",
+              activity_branch: prof.business_category || prof.custom_branch || "",
+            });
+          }
+        }
       } catch (err) {
         console.warn("[LojistaDashboard] falha ao verificar completude do perfil:", err);
       }
