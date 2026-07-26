@@ -388,10 +388,11 @@ const CategoryPill = memo(function CategoryPill(props: {
 
 const ResultCard = memo(function ResultCard(props: {
   item: ResultItem;
+  favorited?: boolean;
   onChat: () => void;
   onFav: () => void;
 }) {
-  const { item, onChat, onFav } = props;
+  const { item, favorited = false, onChat, onFav } = props;
   const c = getCategoryColor(item.category);
   const meta = CAT_META[item.category];
   const distance =
@@ -466,11 +467,19 @@ const ResultCard = memo(function ResultCard(props: {
         <button
           type="button"
           onClick={onFav}
-          aria-label="Favoritar"
-          className="h-9 px-3 rounded-xl border border-white/10 bg-[#0A0A0B] text-white/70 text-xs flex items-center gap-1 hover:border-white/20"
+          aria-pressed={favorited}
+          aria-label={favorited ? "Remover dos favoritos" : "Favoritar"}
+          className={[
+            "h-9 px-3 rounded-xl border text-xs flex items-center gap-1 transition active:scale-95",
+            favorited
+              ? "border-[#FF3B6B]/60 bg-[#FF3B6B]/10 text-[#FF3B6B]"
+              : "border-white/10 bg-[#0A0A0B] text-white/70 hover:border-white/20",
+          ].join(" ")}
         >
-          <Heart className="h-3.5 w-3.5" /> Favoritar
+          <Heart className={["h-3.5 w-3.5", favorited ? "fill-current" : ""].join(" ")} />
+          {favorited ? "Favorito" : "Favoritar"}
         </button>
+
         <button
           type="button"
           onClick={onChat}
