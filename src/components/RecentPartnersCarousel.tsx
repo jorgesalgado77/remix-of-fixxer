@@ -210,7 +210,7 @@ function preloadImage(url: string | null | undefined) {
   } catch { imagePreloadCache.delete(url); }
 }
 
-export function RecentPartnersCarousel() {
+function RecentPartnersCarouselInner() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
 
