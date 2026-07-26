@@ -1244,6 +1244,20 @@ function ConversationPage() {
     measureElement: (el) => el.getBoundingClientRect().height,
   });
 
+  // Pré-carregamento por proximidade do índice: quando os primeiros itens
+  // virtuais estão a menos de 5 do topo, dispara loadOlder — evita esperar
+  // o usuário raspar até scrollTop < 80 e mantém o histórico "sempre pronto".
+  const msgVirtualItems = messagesVirtualizer.getVirtualItems();
+  useEffect(() => {
+    if (!userId || !hasMore || loadingOlderRef.current || messages.length === 0) return;
+    const first = msgVirtualItems[0];
+    if (first && first.index <= 5) {
+      void loadOlder();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [msgVirtualItems, hasMore, userId, messages.length]);
+
+
   // Ancoragem no fim após o virtualizer medir os itens reais — só rola
   // se o usuário estiver perto do fim OU se a última mensagem for dele.
   useEffect(() => {
