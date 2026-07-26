@@ -34,8 +34,10 @@ import {
   publicProfilePathFor,
   resolvePublicProfileCategory,
   peekPublicProfileCategory,
+  primePublicProfileCategory,
   type PublicProfileCategory,
 } from "@/lib/public-profile-category";
+import { setContextCategoryOverride } from "@/lib/user-category";
 import { useUserCoords, cityCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
 import { useFavoriteUser } from "@/hooks/useFavoriteUser";
