@@ -1256,7 +1256,7 @@ function ConversationPage() {
             onClick={() => {
               setDraftText(peerId, content);
               setDraftFiles(peerId, pendingFiles);
-              const path = `/lojista/${encodeURIComponent(peerId)}`;
+              const path = `/perfil/${encodeURIComponent(peerId)}`;
               try { navigate({ to: path as any }); } catch { window.location.href = path; }
             }}
             title="Ver perfil do usuário"
