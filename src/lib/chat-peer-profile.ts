@@ -36,6 +36,44 @@ export type PeerProfile = {
 
 const CACHE = new Map<string, { at: number; value: PeerProfile }>();
 const TTL_MS = 60_000;
+const LS_KEY = "fixxer_chat_peer_cache_v1";
+const LS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias para exibição instantânea
+
+function loadLsCache() {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Record<string, { at: number; value: PeerProfile }>;
+    const now = Date.now();
+    for (const [id, entry] of Object.entries(parsed)) {
+      if (!entry?.value || entry.value.isFallback) continue;
+      if (now - entry.at > LS_TTL_MS) continue;
+      // Reinsere sem invalidar TTL de rede (para revalidar em background).
+      CACHE.set(id, { at: 0, value: entry.value });
+    }
+  } catch {}
+}
+loadLsCache();
+
+function persistLsCache() {
+  if (typeof window === "undefined") return;
+  try {
+    const out: Record<string, { at: number; value: PeerProfile }> = {};
+    for (const [id, entry] of CACHE.entries()) {
+      if (entry.value.isFallback) continue;
+      out[id] = { at: entry.at || Date.now(), value: entry.value };
+    }
+    window.localStorage.setItem(LS_KEY, JSON.stringify(out));
+  } catch {}
+}
+
+/** Leitura síncrona do cache (memória + LS) para render instantâneo. */
+export function getCachedPeer(peerId: string): PeerProfile | null {
+  const c = CACHE.get(peerId);
+  return c && !c.value.isFallback ? c.value : null;
+}
+
 function isDebugEnabled() {
   if (typeof window === "undefined") return false;
   try {
@@ -68,7 +106,9 @@ export function fallbackPeer(peerId: string): PeerProfile {
 export function clearPeerCache(peerId?: string) {
   if (peerId) CACHE.delete(peerId);
   else CACHE.clear();
+  persistLsCache();
 }
+
 
 function firstText(...values: unknown[]): string | undefined {
   for (const value of values) {
@@ -268,6 +308,6 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
   };
   if (isDebugEnabled()) console.info("[chat-peer] resolved", peerId, result);
   // Não cacheia fallback puro para permitir recuperação imediata após ajuste de RLS/dados.
-  if (source.length) CACHE.set(peerId, { at: Date.now(), value: result });
+  if (source.length) { CACHE.set(peerId, { at: Date.now(), value: result }); persistLsCache(); }
   return result;
 }
