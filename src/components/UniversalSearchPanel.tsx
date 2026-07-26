@@ -87,83 +87,102 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
   const [pill, setPill] = useState<PillKey>(defaultPill);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<ResultItem[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
   const abortRef = useRef<AbortController | null>(null);
 
   const debouncedQuery = useDebounced(query.trim(), 300);
   const hasQuery = debouncedQuery.length >= 2;
 
-  // Fetch — só dispara se o painel está aberto E há pelo menos 2 chars
-  useEffect(() => {
-    if (!open || !hasQuery) {
+  // Executor da busca — reutilizado pelo debounce E pelo Realtime.
+  const runQuery = useCallback(async () => {
+    if (!hasQuery) {
       setRows([]);
       return;
     }
-    let cancelled = false;
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
     setLoading(true);
+    try {
+      const q = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60);
+      const { data, error } = await supabaseExternal
+        .from("profiles")
+        .select("id, full_name, city, state, avatar_url, category")
+        .or(
+          [
+            `full_name.ilike.%${q}%`,
+            `city.ilike.%${q}%`,
+            `category.ilike.%${q}%`,
+          ].join(","),
+        )
+        .limit(80)
+        .abortSignal(ac.signal);
+      if (error) throw error;
 
-    (async () => {
-      try {
-        const q = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60);
-        // Busca ampla em profiles — nomes, cidade, categoria
-        const { data, error } = await supabaseExternal
-          .from("profiles")
-          .select("id, full_name, city, state, avatar_url, category")
-          .or(
-            [
-              `full_name.ilike.%${q}%`,
-              `city.ilike.%${q}%`,
-              `category.ilike.%${q}%`,
-            ].join(","),
-          )
-          .limit(80)
-          .abortSignal(ac.signal);
-        if (error) throw error;
-        if (cancelled) return;
+      const mapped: ResultItem[] = (data ?? [])
+        .map((r: any) => {
+          const cat = normalizeCategory(r.category);
+          if (!cat) return null;
+          const c = cityCoords(r.city);
+          const km = c && userCoords ? haversineKm(userCoords, c) : null;
+          return {
+            id: r.id,
+            name: r.full_name || "Usuário FIXXER",
+            city: r.city ?? null,
+            state: r.state ?? null,
+            avatar_url: r.avatar_url ?? null,
+            category: cat,
+            distanceKm: km,
+            subtitle:
+              cat === "prestador"
+                ? "Prestador de Serviço"
+                : cat === "lojista"
+                ? "Loja / Empresa"
+                : cat === "fornecedor"
+                ? "Atacado / Insumos B2B"
+                : "Cliente Final",
+          } as ResultItem;
+        })
+        .filter(Boolean) as ResultItem[];
 
-        const mapped: ResultItem[] = (data ?? [])
-          .map((r: any) => {
-            const cat = normalizeCategory(r.category);
-            if (!cat) return null;
-            const c = cityCoords(r.city);
-            const km = c && userCoords ? haversineKm(userCoords, c) : null;
-            return {
-              id: r.id,
-              name: r.full_name || "Usuário FIXXER",
-              city: r.city ?? null,
-              state: r.state ?? null,
-              avatar_url: r.avatar_url ?? null,
-              category: cat,
-              distanceKm: km,
-              subtitle:
-                cat === "prestador"
-                  ? "Prestador de Serviço"
-                  : cat === "lojista"
-                  ? "Loja / Empresa"
-                  : cat === "fornecedor"
-                  ? "Atacado / Insumos B2B"
-                  : "Cliente Final",
-            } as ResultItem;
-          })
-          .filter(Boolean) as ResultItem[];
+      setRows(mapped);
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      console.warn("[UniversalSearch] fetch", e);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [debouncedQuery, hasQuery, userCoords]);
 
-        setRows(mapped);
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
-        console.warn("[UniversalSearch] fetch", e);
-        setRows([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+  // Debounce → dispara a query.
+  useEffect(() => {
+    if (!open) return;
+    runQuery();
+    return () => abortRef.current?.abort();
+  }, [open, runQuery]);
 
-    return () => {
-      cancelled = true;
-      ac.abort();
+  // Realtime — refetch instantâneo quando profiles mudam durante a busca.
+  useEffect(() => {
+    if (!open || !hasQuery) return;
+    let scheduled: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (scheduled) return;
+      scheduled = setTimeout(() => {
+        scheduled = null;
+        runQuery();
+      }, 500);
     };
-  }, [debouncedQuery, hasQuery, open, userCoords]);
+    const ch = supabaseExternal
+      .channel(`universal-search:${Math.random().toString(36).slice(2, 8)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, bump)
+      .subscribe();
+    return () => {
+      if (scheduled) clearTimeout(scheduled);
+      supabaseExternal.removeChannel(ch).catch(() => undefined);
+    };
+  }, [open, hasQuery, runQuery]);
+
 
   // Aplica filtro de raio + pílula de categoria + ordena por distância
   const filtered = useMemo(() => {
