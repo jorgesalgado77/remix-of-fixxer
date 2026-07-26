@@ -172,7 +172,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
 
       const mapped: ResultItem[] = (data ?? [])
         .map((r: any) => {
-          const cat = normalizeCategory(r.category ?? r.role);
+          const cat = normalizeCategory(r.category ?? r.role ?? r.user_type);
           if (!cat) return null;
           const c = cityCoords(r.city);
           const km = c && userCoords ? haversineKm(userCoords, c) : null;
