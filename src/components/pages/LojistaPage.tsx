@@ -106,6 +106,7 @@ export function LojistaDashboard() {
     state?: string;
   }>({});
   const [profileMissing, setProfileMissing] = useState<string[]>([]);
+  const [profileMissingKeys, setProfileMissingKeys] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
 
