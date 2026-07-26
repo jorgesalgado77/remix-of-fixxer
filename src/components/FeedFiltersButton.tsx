@@ -37,6 +37,8 @@ export type FeedFiltersButtonProps = {
   // ------- raio -------
   onRadiusChange?: (km: number) => void;
   badge?: { icon?: string; text: string };
+  /** Slot opcional para substituir o badge estático por um componente dinâmico. */
+  badgeSlot?: ReactNode;
   // ------- busca inline -------
   searchInput?: ReactNode;
   // ------- slot opcional para botão Voltar alinhado com Filtros -------
