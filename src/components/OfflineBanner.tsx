@@ -1,53 +1,131 @@
-import { useEffect, useState } from "react";
-import { WifiOff, Wifi, RefreshCcw } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { WifiOff, Wifi, RefreshCcw, Loader2 } from "lucide-react";
 import { getLatestFeedCacheAt, formatRelativeTime } from "@/lib/feed-cache";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 
 /**
- * Banner global de modo offline.
- * — Escuta `online`/`offline` do navegador.
- * — Quando offline, exibe uma faixa fixa no topo permitindo o usuário
- *   continuar navegando pelos cards em cache com o rótulo
- *   "atualizado há X" (baseado no snapshot mais recente do feed-cache).
- * — Quando a conexão volta, mostra confirmação por poucos segundos e some.
+ * Banner global de modo offline — versão resiliente.
+ *
+ * Regras (evitam falsos positivos ao trocar de rota em celulares fracos):
+ *  1. Só declara OFFLINE quando `navigator.onLine === false` E um ping real
+ *     ao Supabase falhar. Micro-oscilações do navegador ao trocar de aba
+ *     NÃO disparam o banner amarelo.
+ *  2. Debounce de 4s entre o evento `offline` e a exibição do banner —
+ *     dá tempo do navegador reassentar após uma navegação.
+ *  3. Botão "Tentar" faz reconexão SILENCIOSA: revalida a sessão do
+ *     Supabase (`getSession`) e faz um ping ao backend, sem `reload()`,
+ *     preservando a rota atual, o histórico e o estado da aplicação.
+ *  4. Se o usuário está de fato online, o banner fica escondido — não
+ *     reaparece em transições de rota.
  */
+
+const OFFLINE_DEBOUNCE_MS = 4000;
+const PING_TIMEOUT_MS = 6000;
+
+async function pingBackend(): Promise<boolean> {
+  // getSession é local (não faz round-trip). Usamos uma leitura leve
+  // ao Supabase Auth para confirmar conectividade real de rede.
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
+    const url = (import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
+    if (!url) { clearTimeout(timer); return true; } // sem URL, não bloqueia
+    const res = await fetch(`${url}/auth/v1/health`, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+      headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || "" },
+    });
+    clearTimeout(timer);
+    return res.ok || res.status === 401 || res.status === 404; // servidor respondeu
+  } catch {
+    return false;
+  }
+}
+
 export function OfflineBanner() {
   const [online, setOnline] = useState<boolean>(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
   );
   const [justBack, setJustBack] = useState(false);
   const [lastAt, setLastAt] = useState<number | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const [, tick] = useState(0);
+  const debounceRef = useRef<number | null>(null);
 
-  // listeners online/offline
+  const clearDebounce = () => {
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+  };
+
+  const confirmAndSetOffline = useCallback(() => {
+    clearDebounce();
+    debounceRef.current = window.setTimeout(async () => {
+      // Se o navegador voltou a reportar online nesse meio-tempo, aborta.
+      if (typeof navigator !== "undefined" && navigator.onLine) {
+        const ok = await pingBackend();
+        if (ok) { setOnline(true); return; }
+      }
+      const ok = await pingBackend();
+      if (ok) {
+        setOnline(true);
+      } else {
+        setOnline(false);
+        setLastAt(getLatestFeedCacheAt());
+      }
+    }, OFFLINE_DEBOUNCE_MS);
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const goOffline = () => {
-      setOnline(false);
-      setLastAt(getLatestFeedCacheAt());
-    };
+    const goOffline = () => confirmAndSetOffline();
     const goOnline = () => {
+      clearDebounce();
       setOnline(true);
       setJustBack(true);
-      setTimeout(() => setJustBack(false), 3500);
+      window.setTimeout(() => setJustBack(false), 3500);
     };
     window.addEventListener("offline", goOffline);
     window.addEventListener("online", goOnline);
-    if (!navigator.onLine) goOffline();
+    // Estado inicial: se o navegador diz offline, confirma com ping antes.
+    if (!navigator.onLine) confirmAndSetOffline();
     return () => {
       window.removeEventListener("offline", goOffline);
       window.removeEventListener("online", goOnline);
+      clearDebounce();
     };
-  }, []);
+  }, [confirmAndSetOffline]);
 
-  // relógio: re-renderiza a cada 30s para atualizar "há X min"
+  // Relógio: atualiza o "há X min" a cada 30s enquanto offline.
   useEffect(() => {
     if (online) return;
-    const id = setInterval(() => {
+    const id = window.setInterval(() => {
       setLastAt(getLatestFeedCacheAt());
       tick((n) => n + 1);
     }, 30_000);
-    return () => clearInterval(id);
+    return () => window.clearInterval(id);
   }, [online]);
+
+  const silentRetry = useCallback(async () => {
+    if (retrying) return;
+    setRetrying(true);
+    try {
+      // Reconexão silenciosa: NÃO recarrega a página, preserva a rota.
+      await supabaseExternal.auth.getSession().catch(() => null);
+      const ok = await pingBackend();
+      if (ok) {
+        setOnline(true);
+        setJustBack(true);
+        window.setTimeout(() => setJustBack(false), 2500);
+      } else {
+        setLastAt(getLatestFeedCacheAt());
+      }
+    } finally {
+      setRetrying(false);
+    }
+  }, [retrying]);
 
   if (online && !justBack) return null;
 
@@ -83,11 +161,12 @@ export function OfflineBanner() {
         </div>
         <button
           type="button"
-          onClick={() => window.location.reload()}
-          className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-black/15 hover:bg-black/25 active:scale-95 transition text-[10px] uppercase tracking-widest font-black"
+          onClick={silentRetry}
+          disabled={retrying}
+          className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-black/15 hover:bg-black/25 active:scale-95 transition text-[10px] uppercase tracking-widest font-black disabled:opacity-60"
         >
-          <RefreshCcw className="w-3 h-3" />
-          Tentar
+          {retrying ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCcw className="w-3 h-3" />}
+          {retrying ? "Tentando" : "Tentar"}
         </button>
       </div>
     </div>
