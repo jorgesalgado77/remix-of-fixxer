@@ -892,7 +892,7 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string } }) {
+function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [] }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[] }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
@@ -931,7 +931,28 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     </div>
                 </div>
             </div>
-            
+
+            {!isProfileComplete && missingLabels.length > 0 && (
+                <div
+                    data-testid="profile-missing-panel"
+                    className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5"
+                >
+                    <div className="text-[9px] font-black uppercase italic tracking-widest text-amber-300">
+                        ⚠️ Preencha para liberar Publicar e Avaliações
+                    </div>
+                    <ul className="flex flex-wrap gap-1">
+                        {missingLabels.map((label) => (
+                            <li
+                                key={label}
+                                className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-200 text-[9px] font-bold uppercase"
+                            >
+                                {label}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
             <div className={`grid grid-cols-2 gap-2 pt-2 border-t border-white/5 ${!isProfileComplete ? 'opacity-50 grayscale' : ''}`}>
                 <div className="flex flex-col">
                     <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">Reputação</span>
@@ -948,7 +969,7 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     </div>
                 </div>
             </div>
-            
+
             <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-primary/5 border border-primary/10">
                 <ShieldCheck className="w-3 h-3 text-primary" />
                 <span className="text-[8px] font-black text-primary uppercase italic">Selo Ouro FIXXER</span>
