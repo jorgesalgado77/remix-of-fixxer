@@ -799,38 +799,21 @@ export default function FeedParceiroPage() {
       <UniversalSearchPanel defaultPill="fornecedor" />
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur">
-        <div className="mx-auto grid max-w-3xl grid-cols-[auto_1fr] items-start gap-2 px-3 sm:px-4 py-3">
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/dashboard/parceiro" }).catch(() => undefined)}
-            className="rounded-full border border-white/10 bg-[#1A1A1B] p-2 text-white/80 transition hover:border-[#A855F7]/40 hover:text-[#A855F7] shrink-0"
-            aria-label="Voltar para Dashboard do Fornecedor"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+        <div className="mx-auto max-w-3xl">
           <FeedFiltersBar
             accent="#A855F7"
             category="fornecedor"
             resultCount={filtered.length}
             resultLabel="demanda"
-            searchInput={
-              <div className="flex flex-1 items-center gap-2 rounded-full border border-white/10 bg-[#1A1A1B] px-3 py-2">
-                <Search className="h-4 w-4 text-white/40 shrink-0" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar material, loja ou cidade..."
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-white/40"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="text-white/40 hover:text-white shrink-0"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
+            backSlot={
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/dashboard/parceiro" }).catch(() => undefined)}
+                className="w-10 h-10 rounded-xl border border-white/10 bg-[#1A1A1B] text-white/80 transition hover:border-[#A855F7]/40 hover:text-[#A855F7] flex items-center justify-center shrink-0"
+                aria-label="Voltar para Dashboard do Fornecedor"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
             }
             onMacroSearchTerm={(term) => setSearch(term ?? "")}
             pillLabel="Setor B2B"
