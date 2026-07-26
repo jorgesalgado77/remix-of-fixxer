@@ -1052,9 +1052,9 @@ function ChatInboxPage() {
                       </button>
                     </div>
                   )}
-                </li>
+                </div>
               );})}
-            </ul>
+            </div>
             <div ref={sentinelRef} className="h-16 flex items-center justify-center mt-4">
               {loadingMore ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
