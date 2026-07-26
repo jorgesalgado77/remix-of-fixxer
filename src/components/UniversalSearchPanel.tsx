@@ -160,17 +160,42 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       // injeta o card de referência (Jorge Salgado) — some apenas se já
       // existir um resultado com o mesmo id vindo do banco.
       const matchesConferente = /confer/i.test(debouncedQuery);
-      if (matchesConferente && !mapped.some((m) => m.id === "user_jorge_conferente")) {
-        mapped.unshift({
-          id: "user_jorge_conferente",
-          name: "Jorge Salgado",
-          city: "Votorantim",
-          state: "SP",
-          avatar_url: null,
-          category: "prestador",
-          distanceKm: 4.8,
-          subtitle: "Conferente Técnico",
-        });
+      if (matchesConferente) {
+        // Busca o perfil real do Jorge para usar o avatar salvo.
+        let jorgeReal: any = null;
+        try {
+          const { data: jd } = await supabaseExternal
+            .from("profiles")
+            .select("*")
+            .or(
+              "email.ilike.jorgericardosalgado@gmail.com,full_name.ilike.%jorge%salgado%,display_name.ilike.%jorge%salgado%",
+            )
+            .limit(1);
+          jorgeReal = jd?.[0] ?? null;
+        } catch {
+          /* ignore */
+        }
+
+        const jorgeId = jorgeReal?.id ?? "user_jorge_conferente";
+        if (!mapped.some((m) => m.id === jorgeId)) {
+          mapped.unshift({
+            id: jorgeId,
+            name:
+              jorgeReal?.display_name ||
+              jorgeReal?.full_name ||
+              "Jorge Salgado",
+            city: jorgeReal?.city ?? "Votorantim",
+            state: jorgeReal?.state ?? "SP",
+            avatar_url: jorgeReal?.avatar_url ?? null,
+            category: "prestador",
+            distanceKm: 4.8,
+            subtitle:
+              jorgeReal?.specialty ||
+              jorgeReal?.business_category ||
+              jorgeReal?.activity_branch ||
+              "Conferente Técnico",
+          });
+        }
       }
 
       setRows(mapped);
@@ -179,21 +204,42 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       console.warn("[UniversalSearch] fetch", e);
       // Fallback preview mesmo em erro de rede, quando aplicável.
       if (/confer/i.test(debouncedQuery)) {
+        let jorgeReal: any = null;
+        try {
+          const { data: jd } = await supabaseExternal
+            .from("profiles")
+            .select("*")
+            .or(
+              "email.ilike.jorgericardosalgado@gmail.com,full_name.ilike.%jorge%salgado%,display_name.ilike.%jorge%salgado%",
+            )
+            .limit(1);
+          jorgeReal = jd?.[0] ?? null;
+        } catch {
+          /* ignore */
+        }
         setRows([
           {
-            id: "user_jorge_conferente",
-            name: "Jorge Salgado",
-            city: "Votorantim",
-            state: "SP",
-            avatar_url: null,
+            id: jorgeReal?.id ?? "user_jorge_conferente",
+            name:
+              jorgeReal?.display_name ||
+              jorgeReal?.full_name ||
+              "Jorge Salgado",
+            city: jorgeReal?.city ?? "Votorantim",
+            state: jorgeReal?.state ?? "SP",
+            avatar_url: jorgeReal?.avatar_url ?? null,
             category: "prestador",
             distanceKm: 4.8,
-            subtitle: "Conferente Técnico",
+            subtitle:
+              jorgeReal?.specialty ||
+              jorgeReal?.business_category ||
+              jorgeReal?.activity_branch ||
+              "Conferente Técnico",
           },
         ]);
       } else {
         setRows([]);
       }
+
     } finally {
       setLoading(false);
     }
