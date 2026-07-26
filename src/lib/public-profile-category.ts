@@ -110,6 +110,17 @@ export function primePublicProfileCategory(userId: string, category: PublicProfi
   CATEGORY_CACHE.set(userId, { at: Date.now(), value: category });
 }
 
+/**
+ * Leitura síncrona do cache — útil para "seed" do tema visual sem esperar
+ * a resolução assíncrona (evita flash de cor errado ao abrir perfis).
+ */
+export function peekPublicProfileCategory(userId: string): PublicProfileCategory | null {
+  if (!userId) return null;
+  const cached = CATEGORY_CACHE.get(userId);
+  if (cached && Date.now() - cached.at < CATEGORY_TTL_MS) return cached.value;
+  return null;
+}
+
 export function clearPublicProfileCategoryCache(userId?: string) {
   if (userId) {
     CATEGORY_CACHE.delete(userId);
