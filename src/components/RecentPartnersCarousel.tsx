@@ -260,6 +260,26 @@ function RecentPartnersCarouselInner() {
     // "Jorge Salgado / Carlos Silva" mesmo com prestadores reais cadastrados.
     const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, banner_url, role, business_category, custom_branch, preferred_service, job_roles, city, state, rating, created_at, lat, lng";
     try {
+      // Bloqueia administradores e o próprio usuário logado do carrossel público.
+      let selfId: string | null = null;
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        selfId = auth?.user?.id ?? null;
+      } catch { /* silencioso */ }
+
+      const adminIds = new Set<string>();
+      try {
+        const { data: roles } = await supabaseExternal
+          .from("user_roles")
+          .select("user_id, role")
+          .eq("role", "admin")
+          .limit(500);
+        for (const r of (roles as any[]) ?? []) {
+          const uid = r?.user_id;
+          if (uid) adminIds.add(String(uid));
+        }
+      } catch { /* opcional */ }
+
       const { data, error } = await supabaseExternal
         .from("profiles")
         .select(SAFE_COLS)
@@ -270,6 +290,9 @@ function RecentPartnersCarouselInner() {
 
       const rows = ((data as unknown as PartnerRow[]) ?? [])
         .map((r) => {
+          const rid = String(r.id);
+          if (adminIds.has(rid)) return null;
+          if (selfId && rid === selfId) return null;
           const kind = classifyRole(r.role);
           if (!kind) return null;
           // Normaliza campos "amigáveis" a partir do que realmente existe no banco.
@@ -301,6 +324,7 @@ function RecentPartnersCarouselInner() {
       return { ok: false };
     }
   }, []);
+
 
   useEffect(() => {
     let cancelled = false;
