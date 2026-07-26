@@ -552,7 +552,7 @@ function ViewProfileModal({ user, onClose }: { user: AdminUser; onClose: () => v
     <ModalShell title="Perfil completo (auditoria)" onClose={onClose} wide>
       <div className="flex items-center gap-3">
         <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
-          {user.avatar_url ? <img src={user.avatar_url} className="w-full h-full object-cover" /> : null}
+          {user.avatar_url ? <img src={user.avatar_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : null}
         </div>
         <div>
           <div className="text-white font-black text-lg">{user.full_name || "Sem nome"}</div>
