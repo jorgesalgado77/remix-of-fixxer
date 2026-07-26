@@ -3219,7 +3219,7 @@ function ProfileView({
                                             <div className="flex gap-3">
                                                 <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
                                                     {fav.store_profiles?.logo_url ? (
-                                                        <img src={fav.store_profiles.logo_url} className="w-full h-full object-cover" />
+                                                        <img src={fav.store_profiles.logo_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                                     ) : (
                                                         <Store className="w-6 h-6 text-primary" />
                                                     )}
