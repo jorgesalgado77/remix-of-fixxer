@@ -725,6 +725,20 @@ function ChatInboxPage() {
     getItemKey: (i) => visible[i]?.peerId ?? i,
   });
 
+  // Pré-carregamento orientado pelo virtualizer: dispara loadMore assim que
+  // o usuário rolar até ~5 threads do fim, deixando a paginação instantânea
+  // mesmo em conversas com muitos itens (complementa o IntersectionObserver).
+  const virtualItems = virtualizer.getVirtualItems();
+  useEffect(() => {
+    if (!userId || !hasMore || loadingMore || visible.length === 0) return;
+    const last = virtualItems[virtualItems.length - 1];
+    if (!last) return;
+    if (last.index >= visible.length - 5) {
+      void loadMore(userId);
+    }
+  }, [virtualItems, visible.length, hasMore, loadingMore, userId, loadMore]);
+
+
   const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
   const archivedCount = conversationsWithMock.filter((c) => c.archived).length;
 

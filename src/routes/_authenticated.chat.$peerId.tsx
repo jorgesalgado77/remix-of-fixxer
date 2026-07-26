@@ -257,6 +257,11 @@ function ConversationPage() {
   const idSetRef = useRef<Set<string>>(new Set());
   const [dragActive, setDragActive] = useState(false);
   const dragCounterRef = useRef(0);
+  // Auto-scroll inteligente: só rola pro fim quando o usuário já está perto do fim
+  // (ou quando a mensagem nova é dele). Do contrário, oferece um botão "↓ novas".
+  const isNearBottomRef = useRef(true);
+  const prevLastIdRef = useRef<string | null>(null);
+  const [pendingScrollHint, setPendingScrollHint] = useState(0);
 
   const selectCols =
     "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name, client_message_id";
@@ -672,9 +677,13 @@ function ConversationPage() {
   };
 
   const onScrollFeed = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+    if (isNearBottomRef.current && pendingScrollHint > 0) setPendingScrollHint(0);
     if (!hasMore || loading) return;
-    if (e.currentTarget.scrollTop < 80) void loadOlder();
+    if (el.scrollTop < 80) void loadOlder();
   };
+
 
 
   const sendTyping = () => {
@@ -1235,11 +1244,32 @@ function ConversationPage() {
     measureElement: (el) => el.getBoundingClientRect().height,
   });
 
-  // Ancoragem no fim após o virtualizer medir os itens reais.
+  // Pré-carregamento por proximidade do índice: quando os primeiros itens
+  // virtuais estão a menos de 5 do topo, dispara loadOlder — evita esperar
+  // o usuário raspar até scrollTop < 80 e mantém o histórico "sempre pronto".
+  const msgVirtualItems = messagesVirtualizer.getVirtualItems();
+  useEffect(() => {
+    if (!userId || !hasMore || loadingOlderRef.current || messages.length === 0) return;
+    const first = msgVirtualItems[0];
+    if (first && first.index <= 5) {
+      void loadOlder();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [msgVirtualItems, hasMore, userId, messages.length]);
+
+
+  // Ancoragem no fim após o virtualizer medir os itens reais — só rola
+  // se o usuário estiver perto do fim OU se a última mensagem for dele.
   useEffect(() => {
     if (!scrollRef.current) return;
     const el = scrollRef.current;
-    if (isInitialLoadRef.current && messages.length > 0) {
+    const last = messages[messages.length - 1];
+    const lastId = last?.id ?? null;
+    const isNewLast = !!lastId && lastId !== prevLastIdRef.current;
+    const isMineLast = !!last && last.sender_id === userId;
+    prevLastIdRef.current = lastId;
+
+    const scrollToEnd = () => {
       requestAnimationFrame(() => {
         try {
           if (feedRows.length > 0) messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
@@ -1248,20 +1278,33 @@ function ConversationPage() {
           if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
       });
+    };
+
+    if (isInitialLoadRef.current && messages.length > 0) {
+      scrollToEnd();
       isInitialLoadRef.current = false;
+      isNearBottomRef.current = true;
       return;
     }
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
-    if (nearBottom) {
-      try {
-        if (feedRows.length > 0) messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
-        else el.scrollTop = el.scrollHeight;
-      } catch {
-        el.scrollTop = el.scrollHeight;
+
+    if (isNewLast) {
+      if (isMineLast || isNearBottomRef.current) {
+        scrollToEnd();
+        setPendingScrollHint(0);
+      } else {
+        // Não interrompe leitura: apenas conta as novas mensagens não vistas.
+        setPendingScrollHint((n) => n + 1);
       }
+      return;
+    }
+
+    // Typing e re-medições: só reancorar se realmente perto do fim.
+    if (peerTyping && isNearBottomRef.current) {
+      scrollToEnd();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, peerTyping, feedRows.length]);
+
 
 
   const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
@@ -1669,6 +1712,33 @@ function ConversationPage() {
         )}
       </div>
 
+      {pendingScrollHint > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              if (feedRows.length > 0) messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
+              else if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            } catch {
+              if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }
+            setPendingScrollHint(0);
+            isNearBottomRef.current = true;
+          }}
+          className="fixed left-1/2 -translate-x-1/2 bottom-[160px] z-[95] rounded-full px-3 h-9 font-black italic uppercase text-[10px] tracking-widest flex items-center gap-1.5 shadow-2xl border-2 animate-in fade-in slide-in-from-bottom-2"
+          style={{
+            backgroundColor: peerTheme.hex,
+            color: "#000",
+            borderColor: peerTheme.hex,
+            boxShadow: `0 6px 20px rgba(${peerTheme.rgb}, 0.55)`,
+          }}
+          aria-label={`${pendingScrollHint} nova${pendingScrollHint > 1 ? "s" : ""} mensagem${pendingScrollHint > 1 ? "s" : ""}`}
+        >
+          ↓ {pendingScrollHint} nova{pendingScrollHint > 1 ? "s" : ""}
+        </button>
+      )}
+
+
       <div
         className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
@@ -1899,6 +1969,7 @@ function AttachmentBlock({
   const audio = isAudioType(type, name);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [rate, setRate] = useState(1);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
   const cycleRate = () => {
     const next = rate === 1 ? 1.5 : rate === 1.5 ? 2 : 1;
     setRate(next);
@@ -1907,14 +1978,35 @@ function AttachmentBlock({
   return (
     <div className="mb-1 space-y-1">
       {image ? (
-        <img src={url} alt={name} loading="lazy" decoding="async" className="rounded-lg max-h-64 object-cover" />
+        <div className="relative rounded-lg overflow-hidden bg-white/5 min-h-[6rem]">
+          {!mediaLoaded && (
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/10 via-white/[0.04] to-white/10" aria-hidden />
+          )}
+          <img
+            src={url}
+            alt={name}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setMediaLoaded(true)}
+            onError={() => setMediaLoaded(true)}
+            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
+          />
+        </div>
       ) : video ? (
-        <video
-          src={url}
-          controls
-          preload="metadata"
-          className="rounded-lg max-h-64 w-full bg-black"
-        />
+        <div className="relative rounded-lg overflow-hidden bg-black min-h-[8rem]">
+          {!mediaLoaded && (
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/10 via-white/[0.04] to-white/10" aria-hidden />
+          )}
+          <video
+            src={url}
+            controls
+            preload="metadata"
+            onLoadedMetadata={() => setMediaLoaded(true)}
+            onError={() => setMediaLoaded(true)}
+            className={`rounded-lg max-h-64 w-full bg-black transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
+          />
+        </div>
+
       ) : audio ? (
         <div className={`flex items-center gap-2 p-2 rounded-lg ${mine ? "bg-black/20" : "bg-white/5 border border-white/10"}`}>
           <audio
