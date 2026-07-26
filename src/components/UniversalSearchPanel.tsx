@@ -20,6 +20,14 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
 import { getCategoryColor } from "@/lib/getCategoryColor";
+import {
+  stripAccents,
+  rowMatchesTerm,
+  getMatchedFields,
+  scoreRow,
+  splitHighlight,
+  SEARCHED_FIELDS,
+} from "@/lib/universal-search";
 import { toast } from "sonner";
 
 type Cat = "prestador" | "lojista" | "fornecedor" | "cliente";
