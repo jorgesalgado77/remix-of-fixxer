@@ -1468,148 +1468,172 @@ function ConversationPage() {
             Nenhuma mensagem ainda. Diga um "olá" para iniciar 👋
           </div>
         ) : (
-          grouped.map((g) => (
-            <div key={g.date} className="space-y-2">
-              <div className="text-center">
-                <span className="text-[10px] font-black uppercase italic tracking-widest text-muted-foreground bg-white/5 border border-white/10 rounded-full px-3 py-1">
-                  {g.date}
-                </span>
-              </div>
-              {g.items.map((m) => {
-                const mine = m.sender_id === userId;
-                return (
-                  <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm relative border ${
-                        mine
-                          ? m._failed
-                            ? "bg-red-500/20 border-red-500/40 text-white rounded-br-sm"
-                            : "text-white rounded-br-sm"
-                          : "bg-[#1A1A1B] text-white rounded-bl-sm"
-                      } ${m._pending ? "opacity-70" : ""}`}
-                      style={
-                        mine && !m._failed
-                          ? { backgroundColor: `rgba(${ownTheme.rgb}, 0.22)`, borderColor: ownTheme.hex }
-                          : !mine
-                            ? { borderColor: `rgba(${peerTheme.rgb}, 0.35)` }
-                            : undefined
-                      }
-                    >
-                      {m.attachment_url && (
-                        <AttachmentBlock
-                          url={m.attachment_url}
-                          type={m.attachment_type}
-                          name={m.attachment_name || "anexo"}
-                          mine={mine}
-                          messageId={m.id}
-                          state={downloads[m.id]}
-                          onDownload={async () => {
-                            setDownloads((s) => ({ ...s, [m.id]: { pct: 0, loading: true } }));
-                            try {
-                              await downloadAttachment(m.attachment_url!, m.attachment_name || "anexo", (p) =>
-                                setDownloads((s) => ({ ...s, [m.id]: { pct: p.percent, loading: true } })),
-                              );
-                              toast.success("Download concluído");
-                            } catch (err: any) {
-                              toast.error("Falha no download", { description: err?.message });
-                            } finally {
-                              setDownloads((s) => {
-                                const next = { ...s };
-                                delete next[m.id];
-                                return next;
-                              });
-                            }
-                          }}
-                        />
-                      )}
-                      {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
-                      {m._pending && m._uploading && m._draftFile && (
-                        <div className="mt-2 flex items-center gap-2">
-                          <div className="flex-1 bg-black/30 rounded-full h-1.5 overflow-hidden">
-                            <div
-                              className="h-full bg-white/80 transition-all"
-                              style={{ width: `${m._uploadPct ?? 0}%` }}
-                            />
-                          </div>
-                          <span className="text-[9px] font-bold tabular-nums opacity-80">
-                            {Math.round(m._uploadPct ?? 0)}%
-                          </span>
-                        </div>
-                      )}
-                      <p className={`text-[9px] mt-1 flex items-center gap-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
-                        {new Date(m.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                        {mine && !m._pending && !m._failed && (() => {
-                          const seenAt =
-                            peerLastReadAt && new Date(m.created_at) <= new Date(peerLastReadAt)
-                              ? peerLastReadAt
-                              : null;
-                          const isRead = !!m.read || !!seenAt;
-                          const isDelivered = isRead || !!m._delivered;
-                          const icon = isRead ? (
-                            <CheckCheck className="w-3 h-3 text-sky-300 inline" />
-                          ) : isDelivered ? (
-                            <CheckCheck className="w-3 h-3 text-white/60 inline" />
-                          ) : (
-                            <Check className="w-3 h-3 inline" />
-                          );
-                          const label = isRead
-                            ? seenAt
-                              ? `Lida ${new Date(seenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-                              : "Lida"
-                            : isDelivered
-                              ? "Entregue"
-                              : "Enviada";
-                          return (
-                            <span className="inline-flex items-center gap-0.5">
-                              {" · "}
-                              {icon}
-                              {label}
-                            </span>
-                          );
-                        })()}
-                        {m._pending && <> · <Loader2 className="w-2.5 h-2.5 animate-spin inline" /> enviando</>}
-                        {m._failed && <> · <AlertCircle className="w-3 h-3 inline text-red-300" /> não enviada</>}
-                      </p>
-                      {m._failed && (
-                        <div
-                          role="alert"
-                          className="mt-2 flex flex-col gap-2 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/40 text-red-100 text-[11px] leading-snug"
-                        >
-                          <div className="flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-black uppercase italic tracking-widest text-red-200">
-                                Falha ao enviar
-                              </p>
-                              <p className="text-red-100/90 break-words">
-                                {m._error || "Não foi possível entregar sua mensagem. Verifique sua conexão."}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                              onClick={() => retrySend(m)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/30 border border-red-500/60 hover:bg-red-500/45 text-white font-black uppercase italic tracking-widest text-[10px]"
-                            >
-                              <RotateCcw className="w-3 h-3" /> Tentar novamente
-                            </button>
-                            <button
-                              onClick={() => discardFailed(m.id)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/80 font-bold uppercase tracking-widest text-[10px]"
-                            >
-                              Descartar
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-
+          <div
+            style={{
+              height: messagesVirtualizer.getTotalSize(),
+              position: "relative",
+              width: "100%",
+            }}
+          >
+            {messagesVirtualizer.getVirtualItems().map((vi) => {
+              const row = feedRows[vi.index];
+              if (!row) return null;
+              return (
+                <div
+                  key={vi.key}
+                  data-index={vi.index}
+                  ref={messagesVirtualizer.measureElement}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    transform: `translateY(${vi.start}px)`,
+                    paddingBottom: 8,
+                  }}
+                >
+                  {row.kind === "header" ? (
+                    <div className="text-center">
+                      <span className="text-[10px] font-black uppercase italic tracking-widest text-muted-foreground bg-white/5 border border-white/10 rounded-full px-3 py-1">
+                        {row.date}
+                      </span>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))
+                  ) : (() => {
+                    const m = row.m;
+                    const mine = m.sender_id === userId;
+                    return (
+                      <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                        <div
+                          className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm relative border ${
+                            mine
+                              ? m._failed
+                                ? "bg-red-500/20 border-red-500/40 text-white rounded-br-sm"
+                                : "text-white rounded-br-sm"
+                              : "bg-[#1A1A1B] text-white rounded-bl-sm"
+                          } ${m._pending ? "opacity-70" : ""}`}
+                          style={
+                            mine && !m._failed
+                              ? { backgroundColor: `rgba(${ownTheme.rgb}, 0.22)`, borderColor: ownTheme.hex }
+                              : !mine
+                                ? { borderColor: `rgba(${peerTheme.rgb}, 0.35)` }
+                                : undefined
+                          }
+                        >
+                          {m.attachment_url && (
+                            <AttachmentBlock
+                              url={m.attachment_url}
+                              type={m.attachment_type}
+                              name={m.attachment_name || "anexo"}
+                              mine={mine}
+                              messageId={m.id}
+                              state={downloads[m.id]}
+                              onDownload={async () => {
+                                setDownloads((s) => ({ ...s, [m.id]: { pct: 0, loading: true } }));
+                                try {
+                                  await downloadAttachment(m.attachment_url!, m.attachment_name || "anexo", (p) =>
+                                    setDownloads((s) => ({ ...s, [m.id]: { pct: p.percent, loading: true } })),
+                                  );
+                                  toast.success("Download concluído");
+                                } catch (err: any) {
+                                  toast.error("Falha no download", { description: err?.message });
+                                } finally {
+                                  setDownloads((s) => {
+                                    const next = { ...s };
+                                    delete next[m.id];
+                                    return next;
+                                  });
+                                }
+                              }}
+                            />
+                          )}
+                          {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
+                          {m._pending && m._uploading && m._draftFile && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="flex-1 bg-black/30 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="h-full bg-white/80 transition-all"
+                                  style={{ width: `${m._uploadPct ?? 0}%` }}
+                                />
+                              </div>
+                              <span className="text-[9px] font-bold tabular-nums opacity-80">
+                                {Math.round(m._uploadPct ?? 0)}%
+                              </span>
+                            </div>
+                          )}
+                          <p className={`text-[9px] mt-1 flex items-center gap-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
+                            {new Date(m.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                            {mine && !m._pending && !m._failed && (() => {
+                              const seenAt =
+                                peerLastReadAt && new Date(m.created_at) <= new Date(peerLastReadAt)
+                                  ? peerLastReadAt
+                                  : null;
+                              const isRead = !!m.read || !!seenAt;
+                              const isDelivered = isRead || !!m._delivered;
+                              const icon = isRead ? (
+                                <CheckCheck className="w-3 h-3 text-sky-300 inline" />
+                              ) : isDelivered ? (
+                                <CheckCheck className="w-3 h-3 text-white/60 inline" />
+                              ) : (
+                                <Check className="w-3 h-3 inline" />
+                              );
+                              const label = isRead
+                                ? seenAt
+                                  ? `Lida ${new Date(seenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                                  : "Lida"
+                                : isDelivered
+                                  ? "Entregue"
+                                  : "Enviada";
+                              return (
+                                <span className="inline-flex items-center gap-0.5">
+                                  {" · "}
+                                  {icon}
+                                  {label}
+                                </span>
+                              );
+                            })()}
+                            {m._pending && <> · <Loader2 className="w-2.5 h-2.5 animate-spin inline" /> enviando</>}
+                            {m._failed && <> · <AlertCircle className="w-3 h-3 inline text-red-300" /> não enviada</>}
+                          </p>
+                          {m._failed && (
+                            <div
+                              role="alert"
+                              className="mt-2 flex flex-col gap-2 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/40 text-red-100 text-[11px] leading-snug"
+                            >
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-black uppercase italic tracking-widest text-red-200">
+                                    Falha ao enviar
+                                  </p>
+                                  <p className="text-red-100/90 break-words">
+                                    {m._error || "Não foi possível entregar sua mensagem. Verifique sua conexão."}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                  onClick={() => retrySend(m)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/30 border border-red-500/60 hover:bg-red-500/45 text-white font-black uppercase italic tracking-widest text-[10px]"
+                                >
+                                  <RotateCcw className="w-3 h-3" /> Tentar novamente
+                                </button>
+                                <button
+                                  onClick={() => discardFailed(m.id)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/80 font-bold uppercase tracking-widest text-[10px]"
+                                >
+                                  Descartar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            })}
+          </div>
         )}
 
         {peerTyping && (
