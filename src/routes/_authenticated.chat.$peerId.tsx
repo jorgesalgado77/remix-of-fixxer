@@ -1955,6 +1955,7 @@ function AttachmentBlock({
   const audio = isAudioType(type, name);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [rate, setRate] = useState(1);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
   const cycleRate = () => {
     const next = rate === 1 ? 1.5 : rate === 1.5 ? 2 : 1;
     setRate(next);
@@ -1963,14 +1964,35 @@ function AttachmentBlock({
   return (
     <div className="mb-1 space-y-1">
       {image ? (
-        <img src={url} alt={name} loading="lazy" decoding="async" className="rounded-lg max-h-64 object-cover" />
+        <div className="relative rounded-lg overflow-hidden bg-white/5 min-h-[6rem]">
+          {!mediaLoaded && (
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/10 via-white/[0.04] to-white/10" aria-hidden />
+          )}
+          <img
+            src={url}
+            alt={name}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setMediaLoaded(true)}
+            onError={() => setMediaLoaded(true)}
+            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
+          />
+        </div>
       ) : video ? (
-        <video
-          src={url}
-          controls
-          preload="metadata"
-          className="rounded-lg max-h-64 w-full bg-black"
-        />
+        <div className="relative rounded-lg overflow-hidden bg-black min-h-[8rem]">
+          {!mediaLoaded && (
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/10 via-white/[0.04] to-white/10" aria-hidden />
+          )}
+          <video
+            src={url}
+            controls
+            preload="metadata"
+            onLoadedMetadata={() => setMediaLoaded(true)}
+            onError={() => setMediaLoaded(true)}
+            className={`rounded-lg max-h-64 w-full bg-black transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
+          />
+        </div>
+
       ) : audio ? (
         <div className={`flex items-center gap-2 p-2 rounded-lg ${mine ? "bg-black/20" : "bg-white/5 border border-white/10"}`}>
           <audio
