@@ -58,17 +58,24 @@ const CATEGORY_BONUS: Record<UserCategory, number> = {
   cliente: 0,
 };
 
-/** Sinônimos leves para tolerância a variações comuns em pt-BR. */
-const SYNONYMS: Record<string, string[]> = {
-  moveis: ["movel", "moveis", "mobilia", "mobiliario"],
-  movel: ["movel", "moveis"],
-  barbearia: ["barbeiro", "barbearia", "barber"],
-  eletricista: ["eletrico", "eletrica", "eletricista"],
-  chaveiro: ["chave", "chaveiro"],
-  pintura: ["pintor", "pintura"],
-  montador: ["montagem", "montador"],
-  conferente: ["conferencia", "conferente", "confer"],
-};
+/** Sinônimos leves para tolerância a variações comuns em pt-BR. Grupos
+ * bidirecionais: qualquer token do grupo expande para todos os outros. */
+const SYNONYM_GROUPS: string[][] = [
+  ["moveis", "movel", "mobilia", "mobiliario"],
+  ["barbearia", "barbeiro", "barber"],
+  ["eletricista", "eletrico", "eletrica"],
+  ["chaveiro", "chave"],
+  ["pintura", "pintor"],
+  ["montador", "montagem"],
+  ["conferente", "conferencia", "confer"],
+];
+const SYNONYMS: Record<string, string[]> = (() => {
+  const map: Record<string, string[]> = {};
+  for (const group of SYNONYM_GROUPS) {
+    for (const word of group) map[word] = group;
+  }
+  return map;
+})();
 
 /** Remove acentos, normaliza espaços/pontuação e caixa. */
 export function stripAccents(s: unknown): string {
