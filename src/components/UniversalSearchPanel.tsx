@@ -46,107 +46,22 @@ type ResultItem = {
   rating?: number;
 };
 
-/** Remove acentos e normaliza p/ comparação case-insensitive. */
-function stripAccents(s: string): string {
-  return (s || "")
-    .toString()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9@._\-\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Retorna nós React com <mark> nos trechos que casam com o termo (accent-insensitive). */
-function highlight(text: string | null | undefined, term: string) {
-  const src = String(text ?? "");
-  if (!term || term.length < 2 || !src) return src;
-  const normSrc = stripAccents(src);
-  const normTerm = stripAccents(term);
-  const idx = normSrc.indexOf(normTerm);
-  if (idx === -1) return src;
-  const before = src.slice(0, idx);
-  const hit = src.slice(idx, idx + normTerm.length);
-  const after = src.slice(idx + normTerm.length);
+/** Renderiza segmentos com <mark> preservando acentos originais. */
+function Highlight({ text, term }: { text: string | null | undefined; term: string }) {
+  const parts = splitHighlight(text, term);
   return (
     <>
-      {before}
-      <mark className="bg-[#00E5FF]/30 text-white rounded px-0.5">{hit}</mark>
-      {after}
+      {parts.map((p, i) =>
+        p.hit ? (
+          <mark key={i} className="bg-[#00E5FF]/30 text-white rounded px-0.5">
+            {p.text}
+          </mark>
+        ) : (
+          <span key={i}>{p.text}</span>
+        ),
+      )}
     </>
   );
-}
-
-/** Campos que a busca varre — usado tanto para filtrar client-side quanto pro chip de debug. */
-const SEARCHED_FIELDS = [
-  "full_name",
-  "display_name",
-  "company_name",
-  "city",
-  "state",
-  "business_category",
-  "custom_branch",
-  "specialty",
-  "description",
-  "role",
-  "user_type",
-  "categories",
-  "custom_sections",
-] as const;
-
-type SearchableField = (typeof SEARCHED_FIELDS)[number];
-
-function stringifySearchValue(value: unknown): string {
-  if (value == null) return "";
-  if (Array.isArray(value)) return value.map(stringifySearchValue).filter(Boolean).join(" ");
-  if (typeof value === "object") {
-    try {
-      return Object.values(value as Record<string, unknown>).map(stringifySearchValue).filter(Boolean).join(" ");
-    } catch {
-      return "";
-    }
-  }
-  return String(value);
-}
-
-function getSearchableValue(row: any, field: SearchableField): string {
-  if (!row || typeof row !== "object") return "";
-  if (field === "custom_sections") {
-    const extras = row.custom_sections?.__extras ?? {};
-    return stringifySearchValue({
-      custom_sections: row.custom_sections,
-      extras,
-      vehicle_type: row.vehicle_type,
-      vehicle_brand: row.vehicle_brand,
-      vehicle_model: row.vehicle_model,
-      work_modes: row.work_modes,
-      preferred_services: row.preferred_services,
-      offerings: row.offerings,
-      specialties: row.specialties,
-    });
-  }
-  return stringifySearchValue(row[field]);
-}
-
-function rowMatchesTerm(row: any, rawTerm: string): boolean {
-  const normalizedTerm = stripAccents(rawTerm);
-  if (!normalizedTerm) return false;
-  const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
-  const haystack = stripAccents(SEARCHED_FIELDS.map((f) => getSearchableValue(row, f)).join(" "));
-  if (haystack.includes(normalizedTerm)) return true;
-  return words.length > 0 && words.every((word) => haystack.includes(word));
-}
-
-function getMatchedFields(row: any, rawTerm: string): string[] {
-  const normalizedTerm = stripAccents(rawTerm);
-  const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
-  return SEARCHED_FIELDS.filter((field) => {
-    const value = stripAccents(getSearchableValue(row, field));
-    if (!value) return false;
-    if (value.includes(normalizedTerm)) return true;
-    return words.length > 0 && words.every((word) => value.includes(word));
-  });
 }
 
 function mergeRows(primary: any[] = [], fallback: any[] = []): any[] {
