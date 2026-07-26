@@ -1244,11 +1244,18 @@ function ConversationPage() {
     measureElement: (el) => el.getBoundingClientRect().height,
   });
 
-  // Ancoragem no fim após o virtualizer medir os itens reais.
+  // Ancoragem no fim após o virtualizer medir os itens reais — só rola
+  // se o usuário estiver perto do fim OU se a última mensagem for dele.
   useEffect(() => {
     if (!scrollRef.current) return;
     const el = scrollRef.current;
-    if (isInitialLoadRef.current && messages.length > 0) {
+    const last = messages[messages.length - 1];
+    const lastId = last?.id ?? null;
+    const isNewLast = !!lastId && lastId !== prevLastIdRef.current;
+    const isMineLast = !!last && last.sender_id === userId;
+    prevLastIdRef.current = lastId;
+
+    const scrollToEnd = () => {
       requestAnimationFrame(() => {
         try {
           if (feedRows.length > 0) messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
@@ -1257,20 +1264,33 @@ function ConversationPage() {
           if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
       });
+    };
+
+    if (isInitialLoadRef.current && messages.length > 0) {
+      scrollToEnd();
       isInitialLoadRef.current = false;
+      isNearBottomRef.current = true;
       return;
     }
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
-    if (nearBottom) {
-      try {
-        if (feedRows.length > 0) messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
-        else el.scrollTop = el.scrollHeight;
-      } catch {
-        el.scrollTop = el.scrollHeight;
+
+    if (isNewLast) {
+      if (isMineLast || isNearBottomRef.current) {
+        scrollToEnd();
+        setPendingScrollHint(0);
+      } else {
+        // Não interrompe leitura: apenas conta as novas mensagens não vistas.
+        setPendingScrollHint((n) => n + 1);
       }
+      return;
+    }
+
+    // Typing e re-medições: só reancorar se realmente perto do fim.
+    if (peerTyping && isNearBottomRef.current) {
+      scrollToEnd();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, peerTyping, feedRows.length]);
+
 
 
   const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
