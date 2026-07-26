@@ -48,7 +48,7 @@ function stripAccents(s: string): string {
 }
 
 /** Retorna nós React com <mark> nos trechos que casam com o termo (accent-insensitive). */
-function highlight(text: string | null | undefined, term: string): React.ReactNode {
+function highlight(text: string | null | undefined, term: string) {
   const src = String(text ?? "");
   if (!term || term.length < 2 || !src) return src;
   const normSrc = stripAccents(src);
