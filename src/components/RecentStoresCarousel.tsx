@@ -6,6 +6,7 @@ import { useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
 
 /**
  * Seção "Lojistas e Fornecedores Recentes" — carrossel horizontal
