@@ -103,17 +103,12 @@ function LoginComponent() {
           return;
         }
 
-        // Papel de admin — checagem resiliente:
-        //  1) e-mail mestre (bypass garantido)
-        //  2) flags opcionais em profiles (is_admin / role)
-        //  3) tabela canônica user_roles
-        const MASTER_ADMIN = 'jorgericardosalgado@gmail.com';
-        const userEmail = (data.session.user.email || normalizedEmail || '').toLowerCase();
-        const isEmailAdmin = userEmail === MASTER_ADMIN;
-        const isAdminRole =
+        // Papel de admin — única fonte de verdade: tabela user_roles no banco.
+        // Flags no client (localStorage / e-mail hardcoded) foram removidas para
+        // eliminar risco de escalação de privilégio via manipulação do frontend.
+        let isAdmin =
           safeGet('is_admin') === true ||
           String(safeGet('role') || '').toLowerCase() === 'admin';
-        let isAdmin = isEmailAdmin || isAdminRole;
 
         if (!isAdmin) {
           try {
