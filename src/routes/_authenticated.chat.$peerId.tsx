@@ -1841,7 +1841,7 @@ function AttachmentBlock({
   return (
     <div className="mb-1 space-y-1">
       {image ? (
-        <img src={url} alt={name} className="rounded-lg max-h-64 object-cover" />
+        <img src={url} alt={name} loading="lazy" decoding="async" className="rounded-lg max-h-64 object-cover" />
       ) : video ? (
         <video
           src={url}
