@@ -66,8 +66,10 @@ export class GlobalErrorBoundary extends Component<Props, State> {
               Voltar ao início
             </button>
           </div>
-          <div className="text-[10px] font-mono text-muted-foreground/40 break-all max-h-24 overflow-hidden">
+          <div className="text-[10px] font-mono text-muted-foreground/50 break-all max-h-48 overflow-auto text-left whitespace-pre-wrap">
             {this.state.error.message}
+            {"\n"}
+            {(this.state.error.stack || "").split("\n").slice(0, 8).join("\n")}
           </div>
         </div>
       </div>

@@ -11,7 +11,7 @@ export const PIX_KEY_TYPE_LABELS: Record<PixKeyType, string> = {
   random: "Aleatória (EVP)",
 };
 
-const onlyDigits = (v: string) => (v || "").replace(/\D+/g, "");
+const onlyDigits = (v: string | null | undefined) => String(v ?? "").replace(/\D+/g, "");
 
 /** Tenta detectar o tipo da chave a partir do conteúdo. Retorna null se não puder inferir. */
 export function detectPixKeyType(raw: string): PixKeyType | null {

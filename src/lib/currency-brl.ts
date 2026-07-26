@@ -26,9 +26,10 @@ export const maskCurrencyBRL = (raw: string): string => {
 };
 
 /** Converte string mascarada BRL para número (float). */
-export const parseCurrencyBRL = (masked: string): number => {
-  if (!masked) return 0;
-  const digits = masked.replace(/\D/g, "");
+export const parseCurrencyBRL = (masked: string | number | null | undefined): number => {
+  if (masked == null || masked === "") return 0;
+  if (typeof masked === "number") return Number.isFinite(masked) ? masked : 0;
+  const digits = String(masked).replace(/\D/g, "");
   if (!digits) return 0;
   return Number(digits) / 100;
 };
