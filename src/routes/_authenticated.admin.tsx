@@ -29,7 +29,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { requireAdmin } from "@/lib/admin-guard";
+
 export const Route = createFileRoute("/_authenticated/admin")({
+  beforeLoad: requireAdmin,
   component: AdminDashboardComponent,
 });
 
