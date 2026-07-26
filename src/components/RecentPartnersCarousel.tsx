@@ -258,7 +258,7 @@ function RecentPartnersCarouselInner() {
     // Supabase externo. Qualquer coluna extra faz o PostgREST responder 400 e cai
     // no fallback silencioso (mock), o que explicava o card mostrando somente
     // "Jorge Salgado / Carlos Silva" mesmo com prestadores reais cadastrados.
-    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, business_category, custom_branch, city, state, created_at";
+    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, business_category, custom_branch, preferred_service, job_roles, city, state, created_at";
     try {
       // Bloqueia administradores e o próprio usuário logado do carrossel público.
       let selfId: string | null = null;
