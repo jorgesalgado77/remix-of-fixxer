@@ -816,6 +816,7 @@ export default function FeedLojistaPage() {
       className="min-h-screen bg-[#0A0A0B] text-white flex flex-col font-sans pb-32"
       onClick={() => setOpenMenu(null)}
     >
+      <UniversalSearchPanel defaultPill="lojista" />
       {/* Topbar Fixa */}
       <header className="border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-3 sm:px-4 pt-3 pb-1 grid grid-cols-[auto_1fr] items-start gap-2">
