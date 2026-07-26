@@ -209,14 +209,20 @@ export function LojistaDashboard() {
           phone: src.phone || unified.whatsapp || "",
           zipcode:
             src.zipcode || unified.cep || unified.zipcode || unified.postal_code || "",
+          address:
+            src.address || unified.address || unified.street || unified.logradouro || "",
+          address_number:
+            src.address_number || unified.address_number || unified.numero || "",
+          neighborhood:
+            src.neighborhood || unified.neighborhood || unified.bairro || "",
           activity_branch:
             src.activity_branch ||
             unified.business_category ||
             unified.custom_branch ||
             "",
           logo_url: src.logo_url || unified.logo_url || unified.avatar_url || null,
-          city: src.city || unified.city || "",
-          state: src.state || unified.state || "",
+          city: src.city || unified.city || unified.localidade || "",
+          state: src.state || unified.state || unified.uf || "",
         };
 
         if (error) {
@@ -251,10 +257,13 @@ export function LojistaDashboard() {
             whatsapp: src.whatsapp || unified.phone || "",
             phone: src.phone || unified.whatsapp || "",
             zipcode: src.zipcode || unified.cep || unified.postal_code || "",
+            address: src.address || unified.address || unified.street || unified.logradouro || "",
+            address_number: src.address_number || unified.address_number || unified.numero || "",
+            neighborhood: src.neighborhood || unified.neighborhood || unified.bairro || "",
             activity_branch: src.activity_branch || unified.business_category || unified.custom_branch || "",
             logo_url: src.logo_url || unified.logo_url || unified.avatar_url || null,
-            city: src.city || unified.city || "",
-            state: src.state || unified.state || "",
+            city: src.city || unified.city || unified.localidade || "",
+            state: src.state || unified.state || unified.uf || "",
           });
         } catch {}
       })();
@@ -566,7 +575,7 @@ export function LojistaDashboard() {
                     </button>
                 </div>
 
-                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} />
+                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} />
 
 
                 <TooltipProvider>
@@ -634,7 +643,7 @@ export function LojistaDashboard() {
       <aside className="w-72 border-r border-white/10 p-6 flex flex-col gap-6 hidden md:flex bg-[#0A0A0A] overflow-y-auto scrollbar-none">
 {/* Logo FIXXER removida da sidebar — já é exibida na barra superior (_authenticated.tsx) */}
 
-        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} />
+        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} />
 
 
         <TooltipProvider>
@@ -883,7 +892,7 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string } }) {
+function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [] }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[] }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
@@ -922,7 +931,28 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     </div>
                 </div>
             </div>
-            
+
+            {!isProfileComplete && missingLabels.length > 0 && (
+                <div
+                    data-testid="profile-missing-panel"
+                    className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5"
+                >
+                    <div className="text-[9px] font-black uppercase italic tracking-widest text-amber-300">
+                        ⚠️ Preencha para liberar Publicar e Avaliações
+                    </div>
+                    <ul className="flex flex-wrap gap-1">
+                        {missingLabels.map((label) => (
+                            <li
+                                key={label}
+                                className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-200 text-[9px] font-bold uppercase"
+                            >
+                                {label}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
             <div className={`grid grid-cols-2 gap-2 pt-2 border-t border-white/5 ${!isProfileComplete ? 'opacity-50 grayscale' : ''}`}>
                 <div className="flex flex-col">
                     <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">Reputação</span>
@@ -939,7 +969,7 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     </div>
                 </div>
             </div>
-            
+
             <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-primary/5 border border-primary/10">
                 <ShieldCheck className="w-3 h-3 text-primary" />
                 <span className="text-[8px] font-black text-primary uppercase italic">Selo Ouro FIXXER</span>
