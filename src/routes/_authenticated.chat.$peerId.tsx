@@ -637,31 +637,7 @@ function ConversationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peerId, loadPage]);
 
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    const el = scrollRef.current;
-    if (isInitialLoadRef.current && messages.length > 0) {
-      // Após o virtualizer medir os itens reais, ancora no fim de forma confiável
-      requestAnimationFrame(() => {
-        try {
-          messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
-        } catch {
-          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      });
-      isInitialLoadRef.current = false;
-      return;
-    }
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
-    if (nearBottom) {
-      try {
-        if (feedRows.length > 0) messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
-        else el.scrollTop = el.scrollHeight;
-      } catch {
-        el.scrollTop = el.scrollHeight;
-      }
-    }
-  }, [messages, peerTyping, feedRows.length, messagesVirtualizer]);
+  // (efeito de ancoragem no fim foi movido para após a definição do virtualizer)
 
   // Presença global — reflete o status online do peer mesmo antes do canal por-par sincronizar
   useEffect(() => {
