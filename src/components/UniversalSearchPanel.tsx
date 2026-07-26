@@ -38,8 +38,6 @@ type ResultItem = {
   rating?: number;
 };
 
-type SearchableField = (typeof SEARCHED_FIELDS)[number];
-
 /** Remove acentos e normaliza p/ comparação case-insensitive. */
 function stripAccents(s: string): string {
   return (s || "")
@@ -88,6 +86,8 @@ const SEARCHED_FIELDS = [
   "categories",
   "custom_sections",
 ] as const;
+
+type SearchableField = (typeof SEARCHED_FIELDS)[number];
 
 function stringifySearchValue(value: unknown): string {
   if (value == null) return "";
