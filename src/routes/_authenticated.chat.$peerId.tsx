@@ -1698,6 +1698,33 @@ function ConversationPage() {
         )}
       </div>
 
+      {pendingScrollHint > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              if (feedRows.length > 0) messagesVirtualizer.scrollToIndex(feedRows.length - 1, { align: "end" });
+              else if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            } catch {
+              if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }
+            setPendingScrollHint(0);
+            isNearBottomRef.current = true;
+          }}
+          className="fixed left-1/2 -translate-x-1/2 bottom-[160px] z-[95] rounded-full px-3 h-9 font-black italic uppercase text-[10px] tracking-widest flex items-center gap-1.5 shadow-2xl border-2 animate-in fade-in slide-in-from-bottom-2"
+          style={{
+            backgroundColor: peerTheme.hex,
+            color: "#000",
+            borderColor: peerTheme.hex,
+            boxShadow: `0 6px 20px rgba(${peerTheme.rgb}, 0.55)`,
+          }}
+          aria-label={`${pendingScrollHint} nova${pendingScrollHint > 1 ? "s" : ""} mensagem${pendingScrollHint > 1 ? "s" : ""}`}
+        >
+          ↓ {pendingScrollHint} nova{pendingScrollHint > 1 ? "s" : ""}
+        </button>
+      )}
+
+
       <div
         className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
