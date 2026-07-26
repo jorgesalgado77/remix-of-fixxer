@@ -1346,10 +1346,10 @@ function ConversationPage() {
 
 
   return (
-    <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-24 overscroll-contain">
+    <div className="h-[100dvh] bg-black text-white flex flex-col overscroll-contain overflow-hidden">
       <header
-        className="sticky top-0 z-30 bg-black/90 backdrop-blur-xl border-b-2 px-3 py-2.5"
-        style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)`, top: "env(safe-area-inset-top)" }}
+        className="shrink-0 z-30 bg-black/90 backdrop-blur-xl border-b-2 px-3 py-2.5"
+        style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)`, paddingTop: "calc(env(safe-area-inset-top) + 0.625rem)" }}
       >
         <div className="flex items-center gap-3">
           <button
