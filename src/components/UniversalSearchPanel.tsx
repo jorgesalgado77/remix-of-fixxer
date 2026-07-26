@@ -150,15 +150,20 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       // restrita ao que sabemos existir e complementamos com filtro client-side.
       const orParts = [
         `full_name.ilike.%${q}%`,
+        `display_name.ilike.%${q}%`,
+        `company_name.ilike.%${q}%`,
         `city.ilike.%${q}%`,
         `state.ilike.%${q}%`,
         `category.ilike.%${q}%`,
         `specialty.ilike.%${q}%`,
         `description.ilike.%${q}%`,
         `business_category.ilike.%${q}%`,
+        `custom_branch.ilike.%${q}%`,
+        `role.ilike.%${q}%`,
+        `user_type.ilike.%${q}%`,
       ];
       const { data, error } = await supabaseExternal
-        .from("profiles")
+        .from("profiles_public")
         .select("*")
         .or(orParts.join(","))
         .limit(120)
