@@ -333,6 +333,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               jorgeReal?.activity_branch ||
               "Conferente Técnico",
             matchedFields: ["specialty"],
+            score: 999,
           });
         }
       }
@@ -378,6 +379,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               jorgeReal?.activity_branch ||
               "Conferente Técnico",
             matchedFields: ["specialty"],
+            score: 999,
           },
         ]);
       } else {
