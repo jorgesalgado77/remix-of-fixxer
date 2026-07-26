@@ -341,7 +341,11 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setQuery(v);
+              if (v.trim().length < 2) setPill("todos");
+            }}
             autoFocus
             placeholder="O que você precisa resolver hoje? (Montador, Chaveiro, Marca…)"
             className="w-full rounded-xl bg-[#1A1A1B] border border-white/10 pl-9 pr-10 py-2.5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[#00E5FF]"
