@@ -355,7 +355,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
           {compact && (
             <button
               type="button"
-              onClick={() => { setOpen(false); setQuery(""); }}
+              onClick={() => { setOpen(false); setQuery(""); setPill("todos"); }}
               aria-label="Fechar busca"
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-white/60 hover:text-white"
             >
