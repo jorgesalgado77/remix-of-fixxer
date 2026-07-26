@@ -30,6 +30,7 @@ import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
 
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import {
@@ -1221,6 +1222,28 @@ function ConversationPage() {
     }
     return out;
   }, [messages]);
+
+  // Lista plana (header + mensagens) para virtualização
+  type FeedRow =
+    | { kind: "header"; key: string; date: string }
+    | { kind: "msg"; key: string; m: MessageRow };
+  const feedRows = useMemo<FeedRow[]>(() => {
+    const out: FeedRow[] = [];
+    for (const g of grouped) {
+      out.push({ kind: "header", key: `h-${g.date}`, date: g.date });
+      for (const m of g.items) out.push({ kind: "msg", key: `m-${m.id}`, m });
+    }
+    return out;
+  }, [grouped]);
+
+  const messagesVirtualizer = useVirtualizer({
+    count: feedRows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (i) => (feedRows[i]?.kind === "header" ? 32 : 88),
+    overscan: 8,
+    getItemKey: (i) => feedRows[i]?.key ?? i,
+    measureElement: (el) => el.getBoundingClientRect().height,
+  });
 
   const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
 
