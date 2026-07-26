@@ -84,6 +84,9 @@ function resolvePhoto(row: any): string | null {
     if (typeof c === "string" && /^https?:\/\//i.test(c)) return c;
   }
   return null;
+}
+
+
 
 function useDebounced<T>(value: T, delay = 300): T {
   const [v, setV] = useState(value);
