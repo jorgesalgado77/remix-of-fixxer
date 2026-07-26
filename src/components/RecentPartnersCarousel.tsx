@@ -63,7 +63,7 @@ type PartnerCard = PartnerRow & { _kind: PartnerKind };
 type SortMode = "recent" | "rating" | "nearby";
 type KindFilter = "all" | PartnerKind;
 
-const CACHE_KEY = "fixxer_recent_partners_v2";
+const CACHE_KEY = "fixxer_recent_partners_v3";
 const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
 const SORT_KEY = "fixxer_recent_partners_sort_v1";
 const FILTER_KEY = "fixxer_recent_partners_filter_v1";
