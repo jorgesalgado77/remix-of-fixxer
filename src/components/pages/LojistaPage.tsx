@@ -106,6 +106,7 @@ export function LojistaDashboard() {
     state?: string;
   }>({});
   const [profileMissing, setProfileMissing] = useState<string[]>([]);
+  const [profileMissingKeys, setProfileMissingKeys] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
 
@@ -136,6 +137,7 @@ export function LojistaDashboard() {
       if (cancelled) return;
       setIsProfileComplete(result.complete);
       setProfileMissing(result.missingLabels);
+      setProfileMissingKeys(result.missing);
       setProfileSummary({
         id: data.user_id || data.id,
         companyName: data.company_name || "",
@@ -472,6 +474,7 @@ export function LojistaDashboard() {
   };
 
 
+
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
       {/* Mobile Top Header */}
@@ -575,7 +578,7 @@ export function LojistaDashboard() {
                     </button>
                 </div>
 
-                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} />
+                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} missingKeys={profileMissingKeys} onOpenProfile={handleOpenSettings} />
 
 
                 <TooltipProvider>
@@ -643,7 +646,7 @@ export function LojistaDashboard() {
       <aside className="w-72 border-r border-white/10 p-6 flex flex-col gap-6 hidden md:flex bg-[#0A0A0A] overflow-y-auto scrollbar-none">
 {/* Logo FIXXER removida da sidebar — já é exibida na barra superior (_authenticated.tsx) */}
 
-        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} />
+        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} missingKeys={profileMissingKeys} onOpenProfile={handleOpenSettings} />
 
 
         <TooltipProvider>
@@ -833,6 +836,7 @@ export function LojistaDashboard() {
                     branches={branches}
                     loadingFavorites={loadingFavorites}
                     filteredFavorites={filteredFavorites}
+                    missingKeys={profileMissingKeys}
                 />
             )}
             {activeTab === 'reviews' && <ReviewsView />}
@@ -892,7 +896,7 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [] }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[] }) {
+function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [], missingKeys = [], onOpenProfile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[]; missingKeys?: string[]; onOpenProfile?: () => void }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
@@ -933,24 +937,42 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
             </div>
 
             {!isProfileComplete && missingLabels.length > 0 && (
-                <div
+                <button
+                    type="button"
                     data-testid="profile-missing-panel"
-                    className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5"
+                    onClick={() => {
+                        onOpenProfile?.();
+                        // scroll até o primeiro campo faltante
+                        setTimeout(() => {
+                            const firstKey = missingKeys[0];
+                            if (firstKey) {
+                                const el = document.querySelector(`[data-profile-field="${firstKey}"]`) as HTMLElement | null;
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    const input = el.querySelector('input,textarea,select') as HTMLElement | null;
+                                    input?.focus();
+                                }
+                            }
+                        }, 300);
+                    }}
+                    className="w-full text-left rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-400/70 p-3 space-y-1.5 transition-all cursor-pointer"
+                    aria-label="Abrir perfil para completar campos faltantes"
                 >
-                    <div className="text-[9px] font-black uppercase italic tracking-widest text-amber-300">
-                        ⚠️ Preencha para liberar Publicar e Avaliações
+                    <div className="text-[9px] font-black uppercase italic tracking-widest text-amber-300 flex items-center justify-between gap-2">
+                        <span>⚠️ Preencha para liberar Publicar e Avaliações</span>
+                        <span className="text-amber-200 normal-case tracking-normal">Toque para completar →</span>
                     </div>
                     <ul className="flex flex-wrap gap-1">
                         {missingLabels.map((label) => (
                             <li
                                 key={label}
-                                className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-200 text-[9px] font-bold uppercase"
+                                className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-100 text-[9px] font-bold uppercase"
                             >
                                 {label}
                             </li>
                         ))}
                     </ul>
-                </div>
+                </button>
             )}
 
             <div className={`grid grid-cols-2 gap-2 pt-2 border-t border-white/5 ${!isProfileComplete ? 'opacity-50 grayscale' : ''}`}>
@@ -1657,7 +1679,8 @@ function ProfileView({
     setFavoriteCategory,
     branches,
     loadingFavorites,
-    filteredFavorites
+    filteredFavorites,
+    missingKeys = []
 }: { 
     setIsProfileComplete: (complete: boolean) => void; 
     rating: number; 
@@ -1680,7 +1703,13 @@ function ProfileView({
     branches: string[];
     loadingFavorites: boolean;
     filteredFavorites: any[];
+    missingKeys?: string[];
 }) {
+    // Realça em amarelo os campos que ainda estão faltando (mesma lista da sidebar).
+    const hlField = (key: string) =>
+      missingKeys.includes(key)
+        ? 'rounded-xl p-2 -m-2 ring-2 ring-amber-400/70 bg-amber-500/10'
+        : '';
     const navigate = useNavigate();
     const [userEmail, setUserEmail] = useState("");
     const [companyName, setCompanyName] = useState("");
@@ -2290,7 +2319,7 @@ function ProfileView({
                          <User className="w-3 h-3" /> Dados da Empresa e Responsável
                      </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
+                        <div data-profile-field="company_name" className={`space-y-2 ${hlField('company_name')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome Fantasia da Empresa *</Label>
                             <Input required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="FIXXER Móveis Planejados" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                          </div>
@@ -2298,7 +2327,7 @@ function ProfileView({
                             <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Razão Social *</Label>
                             <Input required value={socialName} onChange={(e) => setSocialName(e.target.value)} placeholder="FIXXER LTDA" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                          </div>
-                         <div className="space-y-2">
+                         <div data-profile-field="cnpj" className={`space-y-2 ${hlField('cnpj')}`}>
                             <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CNPJ *</Label>
                             <IMaskInput
                               mask="00.000.000/0000-00"
@@ -2309,15 +2338,15 @@ function ProfileView({
                               className="flex h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary/50 transition-all" 
                             />
                          </div>
-                         <div className="space-y-2">
+                         <div data-profile-field="responsible_name" className={`space-y-2 ${hlField('responsible_name')}`}>
                             <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Nome do Responsável (Obrigatório) *</Label>
                             <Input required value={responsibleName} onChange={(e) => setResponsibleName(e.target.value)} placeholder="Digite o nome do responsável" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                          </div>
-                         <div className="space-y-2">
+                         <div data-profile-field="email_contact" className={`space-y-2 ${hlField('email_contact')}`}>
                             <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">E-mail de Contato Principal *</Label>
                             <Input required type="email" value={emailContact} onChange={(e) => setEmailContact(e.target.value)} placeholder="contato@fixxer.com.br" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
-                        <div className="space-y-2">
+                        <div data-profile-field="whatsapp" className={`space-y-2 ${hlField('whatsapp')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest flex items-center gap-2">
                              <MessageCircle className="w-3 h-3 text-[#25D366]" /> WhatsApp (Comercial) *
                            </Label>
@@ -2346,7 +2375,9 @@ function ProfileView({
                  </div>
 
                   <div className="space-y-6 pt-6 border-t border-white/5">
-                    <ActivitySelect value={activityBranch} onChange={setActivityBranch} />
+                    <div data-profile-field="activity_branch" className={hlField('activity_branch')}>
+                      <ActivitySelect value={activityBranch} onChange={setActivityBranch} />
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-2xl bg-black/20 border border-white/5">
                         <div className="space-y-3">
@@ -2423,7 +2454,7 @@ function ProfileView({
                         <MapPin className="w-3 h-3" /> Endereço Completo
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-2 relative">
+                        <div data-profile-field="zipcode" className={`space-y-2 relative ${hlField('zipcode')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CEP *</Label>
                            <IMaskInput 
                              mask="00000-000"
@@ -2435,7 +2466,7 @@ function ProfileView({
                            />
                            {isLoadingCep && <div className="absolute right-3 bottom-3 animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />}
                         </div>
-                        <div className="md:col-span-2 space-y-2">
+                        <div data-profile-field="address" className={`md:col-span-2 space-y-2 ${hlField('address')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logradouro / Rua *</Label>
                            <Input 
                              required
@@ -2455,7 +2486,7 @@ function ProfileView({
                              className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" 
                            />
                         </div>
-                        <div className="space-y-2">
+                        <div data-profile-field="city" className={`space-y-2 ${hlField('city')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Cidade *</Label>
                            <Input 
                              required
@@ -2465,7 +2496,7 @@ function ProfileView({
                              className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" 
                            />
                         </div>
-                        <div className="space-y-2">
+                        <div data-profile-field="state" className={`space-y-2 ${hlField('state')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Estado / UF *</Label>
                            <Input 
                              required
@@ -2475,7 +2506,7 @@ function ProfileView({
                              className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" 
                            />
                         </div>
-                        <div className="space-y-2">
+                        <div data-profile-field="address_number" className={`space-y-2 ${hlField('address_number')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Número *</Label>
                            <Input required value={address.numero} onChange={(e) => setAddress({...address, numero: e.target.value})} placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
