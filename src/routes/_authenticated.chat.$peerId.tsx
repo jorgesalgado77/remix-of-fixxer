@@ -1329,10 +1329,10 @@ function ConversationPage() {
   }, [peerCategory]);
 
   return (
-    <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-32 overscroll-contain">
+    <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-24 overscroll-contain">
       <header
-        className="sticky top-0 z-10 bg-black/85 backdrop-blur-xl border-b-2 px-3 py-2.5"
-        style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)` }}
+        className="sticky top-0 z-30 bg-black/90 backdrop-blur-xl border-b-2 px-3 py-2.5"
+        style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)`, top: "env(safe-area-inset-top)" }}
       >
         <div className="flex items-center gap-3">
           <button
@@ -1730,7 +1730,7 @@ function ConversationPage() {
             setPendingScrollHint(0);
             isNearBottomRef.current = true;
           }}
-          className="fixed left-1/2 -translate-x-1/2 bottom-[160px] z-[95] rounded-full px-3 h-9 font-black italic uppercase text-[10px] tracking-widest flex items-center gap-1.5 shadow-2xl border-2 animate-in fade-in slide-in-from-bottom-2"
+          className="fixed left-1/2 -translate-x-1/2 bottom-[96px] z-[95] rounded-full px-3 h-9 font-black italic uppercase text-[10px] tracking-widest flex items-center gap-1.5 shadow-2xl border-2 animate-in fade-in slide-in-from-bottom-2"
           style={{
             backgroundColor: peerTheme.hex,
             color: "#000",
@@ -1745,7 +1745,7 @@ function ConversationPage() {
 
 
       <div
-        className="fixed bottom-[76px] left-0 right-0 z-[90] bg-black/85 backdrop-blur-xl border-t border-white/10 px-4 py-3"
+        className="fixed bottom-0 left-0 right-0 z-[90] bg-black/90 backdrop-blur-xl border-t border-white/10 px-4 py-3"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
 

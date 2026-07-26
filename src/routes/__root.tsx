@@ -199,12 +199,16 @@ function RootComponent() {
     })();
   }, []);
 
-  // Rotas públicas/marketing/auth onde a barra não deve aparecer
+  // Rotas públicas/marketing/auth onde a barra não deve aparecer.
+  // Também escondemos a barra ao abrir uma conversa individual (/chat/<peerId>),
+  // para o rodapé ficar reservado apenas para a caixa de digitação do chat.
+  const isConversationRoute = /^\/chat\/[^/]+/.test(pathname);
   const hideBar =
     pathname === "/" ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/cadastro") ||
-    pathname.startsWith("/terms");
+    pathname.startsWith("/terms") ||
+    isConversationRoute;
 
   return (
     <QueryClientProvider client={queryClient}>
