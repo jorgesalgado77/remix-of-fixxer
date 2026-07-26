@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Star, MapPin, UserCircle2, RefreshCw, UsersRound, AlertTriangle, ArrowUpDown, X } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
@@ -422,6 +423,17 @@ function RecentPartnersCarouselInner() {
   };
 
   const openProfile = (p: PartnerCard) => {
+    // Prime cache com a categoria já conhecida do card → evita "flash" de cor
+    // ao passar pelo redirecionador /perfil/:id (que resolve categoria e navega
+    // para /prestador, /parceiro, /lojista ou /cliente).
+    const kindToCategory: Record<string, PublicProfileCategory> = {
+      prestador: "prestador",
+      fornecedor: "fornecedor",
+      lojista: "lojista",
+      cliente: "cliente",
+    };
+    const cat = kindToCategory[p._kind as string];
+    if (cat) primePublicProfileCategory(p.id, cat);
     const path = `/perfil/${encodeURIComponent(p.id)}`;
     try { navigate({ to: path as any }); } catch { window.location.href = path; }
   };
