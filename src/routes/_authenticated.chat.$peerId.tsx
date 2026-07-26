@@ -25,6 +25,8 @@ import {
   Ban,
   FileDown,
   Settings,
+  Camera,
+  Video as VideoCapture,
 } from "lucide-react";
 import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
 
