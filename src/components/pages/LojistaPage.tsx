@@ -229,17 +229,33 @@ export function LojistaDashboard() {
     })();
 
     const onProfileSaved = () => {
-      // Recarrega quando o ProfileView emite evento após salvar
+      // Recarrega quando o ProfileView emite evento após salvar,
+      // mesclando store_profiles + profiles (schema unificado).
       (async () => {
         try {
           const { data: { user } } = await supabaseExternal.auth.getUser();
           if (!user?.email) return;
-          const { data } = await supabaseExternal
-            .from("store_profiles")
-            .select("*")
-            .eq("user_email", user.email)
-            .maybeSingle();
-          if (data) evaluate(data);
+          const [{ data: sp }, { data: prof }] = await Promise.all([
+            supabaseExternal.from("store_profiles").select("*").eq("user_email", user.email).maybeSingle(),
+            supabaseExternal.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+          ]);
+          const extras = ((prof as any)?.custom_sections?.__extras) || {};
+          const unified: any = prof ? { ...extras, ...prof } : {};
+          const src: any = { ...unified, ...(sp || {}) };
+          evaluate({
+            id: src.id || src.user_id || unified.id,
+            company_name: src.company_name || unified.display_name || unified.full_name || "",
+            cnpj: src.cnpj || unified.document_number || "",
+            responsible_name: src.responsible_name || unified.full_name || unified.display_name || "",
+            email_contact: src.email_contact || unified.email || user.email || "",
+            whatsapp: src.whatsapp || unified.phone || "",
+            phone: src.phone || unified.whatsapp || "",
+            zipcode: src.zipcode || unified.cep || unified.postal_code || "",
+            activity_branch: src.activity_branch || unified.business_category || unified.custom_branch || "",
+            logo_url: src.logo_url || unified.logo_url || unified.avatar_url || null,
+            city: src.city || unified.city || "",
+            state: src.state || unified.state || "",
+          });
         } catch {}
       })();
     };
