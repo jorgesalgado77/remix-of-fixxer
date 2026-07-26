@@ -162,17 +162,7 @@ function ConversationPage() {
   // para pintar o tema correto ANTES da primeira renderização — evita qualquer
   // piscada de cor (ex.: azul lojista antes de virar âmbar prestador) enquanto
   // `resolvePeerProfile` roda de forma assíncrona.
-  const [peerRole, setPeerRole] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { peekPublicProfileCategory } = require("@/lib/public-profile-category");
-      const cached = peekPublicProfileCategory(peerId);
-      return cached ?? null;
-    } catch {
-      return null;
-    }
-  });
+  const [peerRole, setPeerRole] = useState<string | null>(() => peekPublicProfileCategory(peerId));
   const [peerInitials, setPeerInitials] = useState<string>("?");
   const [peerIsFallback, setPeerIsFallback] = useState<boolean>(true);
   const [peerLoading, setPeerLoading] = useState<boolean>(true);
