@@ -240,8 +240,6 @@ export function LojistaPublicProfilePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [contactLoading, setContactLoading] = useState(false);
 
-  useEffect(() => {
-    setResolvedCategory(routeCategory);
   // Ao trocar de perfil visitado, re-seeda a partir do cache compartilhado
   // (priorizando o valor já resolvido por outra fonte) e só cai para o
   // routeCategory quando não há cache. Isso evita o flash de cor errada e
