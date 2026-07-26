@@ -24,6 +24,7 @@ import { isConversationMuted } from "@/lib/chat-preferences";
 
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import {
@@ -709,7 +710,19 @@ function ChatInboxPage() {
     });
   }, [conversationsWithMock, activeTerms, showArchived, role, messagesByPeer]);
 
-
+  // Virtualização da lista (janela) — reduz DOM em celulares de entrada
+  // com centenas de threads. Altura estimada 132px por card; medição
+  // dinâmica corrige diferenças (histórico, badges).
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const virtualizer = useWindowVirtualizer({
+    count: visible.length,
+    estimateSize: () => 132,
+    overscan: 6,
+    scrollMargin: listRef.current?.getBoundingClientRect().top
+      ? listRef.current.getBoundingClientRect().top + window.scrollY
+      : 0,
+    getItemKey: (i) => visible[i]?.peerId ?? i,
+  });
 
   const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
   const archivedCount = conversationsWithMock.filter((c) => c.archived).length;
@@ -864,15 +877,33 @@ function ChatInboxPage() {
           </div>
         ) : (
           <>
-            <ul className="space-y-2">
-              {visible.map((c) => {
+            <div
+              ref={listRef}
+              style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}
+            >
+              {virtualizer.getVirtualItems().map((vi) => {
+                const c = visible[vi.index];
+                if (!c) return null;
                 const theme = getPeerTheme(c.peerRole);
                 const historySnippet =
                   activeTerms.length > 0 && !normStr(c.lastMessage || "").includes(activeTerms[0])
                     ? buildHistorySnippet(messagesByPeer.get(c.peerId) || "", activeTerms)
                     : null;
                 return (
-                <li key={c.peerId} className="relative">
+                <div
+                  key={c.peerId}
+                  data-index={vi.index}
+                  ref={virtualizer.measureElement}
+                  className="relative"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    transform: `translateY(${vi.start - virtualizer.options.scrollMargin}px)`,
+                    paddingBottom: 8,
+                  }}
+                >
                   <button
                     onClick={() => openConversation(c.peerId)}
 
@@ -1021,9 +1052,9 @@ function ChatInboxPage() {
                       </button>
                     </div>
                   )}
-                </li>
+                </div>
               );})}
-            </ul>
+            </div>
             <div ref={sentinelRef} className="h-16 flex items-center justify-center mt-4">
               {loadingMore ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
