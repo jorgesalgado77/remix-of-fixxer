@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import AppointmentDetailPage from "@/pages/AppointmentDetailPage";
+import AppointmentDetailPage from "@/components/pages/AppointmentDetailPage";
 
 export const Route = createFileRoute("/_authenticated/agenda/$id")({
   head: () => ({
