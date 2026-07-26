@@ -44,7 +44,10 @@ function stripAccents(s: string): string {
     .toString()
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[^a-z0-9@._\-\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** Retorna nós React com <mark> nos trechos que casam com o termo (accent-insensitive). */
@@ -80,7 +83,75 @@ const SEARCHED_FIELDS = [
   "description",
   "role",
   "user_type",
+  "categories",
+  "custom_sections",
 ] as const;
+
+type SearchableField = (typeof SEARCHED_FIELDS)[number];
+
+function stringifySearchValue(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) return value.map(stringifySearchValue).filter(Boolean).join(" ");
+  if (typeof value === "object") {
+    try {
+      return Object.values(value as Record<string, unknown>).map(stringifySearchValue).filter(Boolean).join(" ");
+    } catch {
+      return "";
+    }
+  }
+  return String(value);
+}
+
+function getSearchableValue(row: any, field: SearchableField): string {
+  if (!row || typeof row !== "object") return "";
+  if (field === "custom_sections") {
+    const extras = row.custom_sections?.__extras ?? {};
+    return stringifySearchValue({
+      custom_sections: row.custom_sections,
+      extras,
+      vehicle_type: row.vehicle_type,
+      vehicle_brand: row.vehicle_brand,
+      vehicle_model: row.vehicle_model,
+      work_modes: row.work_modes,
+      preferred_services: row.preferred_services,
+      offerings: row.offerings,
+      specialties: row.specialties,
+    });
+  }
+  return stringifySearchValue(row[field]);
+}
+
+function rowMatchesTerm(row: any, rawTerm: string): boolean {
+  const normalizedTerm = stripAccents(rawTerm);
+  if (!normalizedTerm) return false;
+  const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
+  const haystack = stripAccents(SEARCHED_FIELDS.map((f) => getSearchableValue(row, f)).join(" "));
+  if (haystack.includes(normalizedTerm)) return true;
+  return words.length > 0 && words.every((word) => haystack.includes(word));
+}
+
+function getMatchedFields(row: any, rawTerm: string): string[] {
+  const normalizedTerm = stripAccents(rawTerm);
+  const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
+  return SEARCHED_FIELDS.filter((field) => {
+    const value = stripAccents(getSearchableValue(row, field));
+    if (!value) return false;
+    if (value.includes(normalizedTerm)) return true;
+    return words.length > 0 && words.every((word) => value.includes(word));
+  });
+}
+
+function mergeRows(primary: any[] = [], fallback: any[] = []): any[] {
+  const seen = new Set<string>();
+  const out: any[] = [];
+  for (const row of [...primary, ...fallback]) {
+    const key = String(row?.id ?? row?.user_id ?? row?.email ?? JSON.stringify(row));
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(row);
+  }
+  return out;
+}
 
 const TERM_SUGGESTIONS = [
   "Barbearia",
@@ -92,6 +163,8 @@ const TERM_SUGGESTIONS = [
   "Gesso",
   "Conferente",
 ];
+
+const FALLBACK_SEARCH_LIMIT = 1000;
 
 type Radius = 5 | 15 | 30 | 0; // 0 = Toda região
 const RADII: { v: Radius; label: string }[] = [
@@ -198,44 +271,58 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
     abortRef.current = ac;
     setLoading(true);
     try {
-      const rawTerm = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60);
+      const rawTerm = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60).trim();
       const q = rawTerm.toLowerCase();
-      const nTerm = stripAccents(rawTerm);
+      const qNoAccent = stripAccents(rawTerm);
 
       // Preferimos a função RPC `search_profiles_public` (accent-insensitive
       // via unaccent no servidor). Caso a função ainda não exista no banco,
-      // caímos para o `.or()` client-side no view `profiles_public`.
-      let data: any[] | null = null;
+      // caímos para uma busca ampla e filtramos no cliente sem acentos.
+      let data: any[] = [];
       let usedPath: "rpc" | "or" = "rpc";
       const rpc = await supabaseExternal
-        .rpc("search_profiles_public", { q })
+        .rpc("search_profiles_public", { q: rawTerm })
         .abortSignal(ac.signal);
       if (rpc.error) {
         usedPath = "or";
         console.warn("[UniversalSearch] RPC indisponível, usando fallback .or()", rpc.error?.message);
-        const orParts = [
-          `full_name.ilike.%${q}%`,
-          `display_name.ilike.%${q}%`,
-          `company_name.ilike.%${q}%`,
-          `city.ilike.%${q}%`,
-          `state.ilike.%${q}%`,
-          `business_category.ilike.%${q}%`,
-          `custom_branch.ilike.%${q}%`,
-          `specialty.ilike.%${q}%`,
-          `description.ilike.%${q}%`,
-          `role.ilike.%${q}%`,
-          `user_type.ilike.%${q}%`,
-        ];
-        const alt = await supabaseExternal
-          .from("profiles_public")
-          .select("*")
-          .or(orParts.join(","))
-          .limit(120)
-          .abortSignal(ac.signal);
-        if (alt.error) throw alt.error;
-        data = alt.data;
+        const variants = Array.from(new Set([rawTerm, q, qNoAccent].filter(Boolean)));
+        const textFields = SEARCHED_FIELDS.filter(
+          (f) => f !== "custom_sections" && f !== "categories",
+        );
+        const orParts = variants.flatMap((term) =>
+          textFields.map((field) => `${field}.ilike.%${term.replace(/[(),]/g, " ")}%`),
+        );
+
+        const [{ data: directData, error: directError }, { data: broadData, error: broadError }] = await Promise.all([
+          supabaseExternal
+            .from("profiles_public")
+            .select("*")
+            .or(orParts.join(","))
+            .limit(120)
+            .abortSignal(ac.signal),
+          supabaseExternal
+            .from("profiles_public")
+            .select("*")
+            .limit(FALLBACK_SEARCH_LIMIT)
+            .abortSignal(ac.signal),
+        ]);
+
+        if (directError && broadError) throw directError;
+        data = mergeRows(directData ?? [], broadData ?? []).filter((row) => rowMatchesTerm(row, rawTerm));
       } else {
-        data = rpc.data as any[];
+        const rpcRows = (rpc.data as any[]) ?? [];
+        data = rpcRows.filter((row) => rowMatchesTerm(row, rawTerm));
+
+        if (data.length === 0) {
+          const { data: broadData, error: broadError } = await supabaseExternal
+            .from("profiles_public")
+            .select("*")
+            .limit(FALLBACK_SEARCH_LIMIT)
+            .abortSignal(ac.signal);
+          if (broadError) throw broadError;
+          data = mergeRows(rpcRows, broadData ?? []).filter((row) => rowMatchesTerm(row, rawTerm));
+        }
       }
 
       const mapped: ResultItem[] = (data ?? [])
@@ -262,9 +349,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               : "Cliente Final");
 
           // Recomputa quais campos casaram — usado no destaque do card.
-          const matchedFields = SEARCHED_FIELDS.filter((f) =>
-            stripAccents(String(r?.[f] ?? "")).includes(nTerm),
-          );
+          const matchedFields = getMatchedFields(r, rawTerm);
 
           return {
             id: r.id,
