@@ -15,7 +15,10 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 const DAY_MS = 86400_000;
 const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS);
 
+import { requireAdmin } from "@/lib/admin-guard";
+
 export const Route = createFileRoute("/_authenticated/admin/disputas")({
+  beforeLoad: requireAdmin,
   component: AdminDisputesPage,
 });
 

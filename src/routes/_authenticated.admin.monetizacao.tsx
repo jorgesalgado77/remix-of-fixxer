@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { requireAdmin } from "@/lib/admin-guard";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -24,6 +25,7 @@ import {
 } from "@/lib/monetization";
 
 export const Route = createFileRoute("/_authenticated/admin/monetizacao")({
+  beforeLoad: requireAdmin,
   component: AdminMonetizacaoPage,
 });
 

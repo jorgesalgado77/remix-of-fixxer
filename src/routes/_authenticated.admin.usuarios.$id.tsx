@@ -7,7 +7,10 @@ import {
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 
+import { requireAdmin } from "@/lib/admin-guard";
+
 export const Route = createFileRoute("/_authenticated/admin/usuarios/$id")({
+  beforeLoad: requireAdmin,
   component: AuditoriaUsuarioPage,
 });
 

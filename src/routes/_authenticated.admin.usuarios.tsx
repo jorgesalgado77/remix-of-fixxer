@@ -10,7 +10,10 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { creditCoins, consumeCoins } from "@/lib/coins";
 import { toast } from "sonner";
 
+import { requireAdmin } from "@/lib/admin-guard";
+
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
+  beforeLoad: requireAdmin,
   component: AdminUsuariosPage,
 });
 
