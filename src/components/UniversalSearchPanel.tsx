@@ -160,7 +160,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
             name: r.display_name || r.full_name || "Usuário FIXXER",
             city: r.city ?? null,
             state: r.state ?? null,
-            avatar_url: r.avatar_url ?? null,
+            avatar_url: resolvePhoto(r),
             category: cat,
             distanceKm: km,
             subtitle,
