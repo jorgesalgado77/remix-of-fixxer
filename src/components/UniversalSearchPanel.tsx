@@ -612,11 +612,12 @@ const CategoryPill = memo(function CategoryPill(props: {
 
 const ResultCard = memo(function ResultCard(props: {
   item: ResultItem;
+  term?: string;
   favorited?: boolean;
   onChat: () => void;
   onFav: () => void;
 }) {
-  const { item, favorited = false, onChat, onFav } = props;
+  const { item, term = "", favorited = false, onChat, onFav } = props;
   const c = getCategoryColor(item.category);
   const meta = CAT_META[item.category];
   const distance =
@@ -634,6 +635,8 @@ const ResultCard = memo(function ResultCard(props: {
       : item.category === "cliente"
       ? `/cliente/${item.id}`
       : `/lojista/${item.id}`;
+
+  const location = item.city ? `${item.city}${item.state ? "/" + item.state : ""}` : "";
 
   return (
     <li
@@ -670,19 +673,29 @@ const ResultCard = memo(function ResultCard(props: {
               to={profileHref as any}
               className="text-sm font-semibold text-white truncate hover:underline"
             >
-              {item.name}
+              {highlight(item.name, term)}
             </Link>
             <span className={["text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border", c.badgeBg].join(" ")}>
               {meta.badge} {meta.label}
             </span>
           </div>
           <p className="text-[11px] text-white/60 truncate">
-            {item.subtitle}
-            {item.city ? ` • ${item.city}${item.state ? "/" + item.state : ""}` : ""}
+            {highlight(item.subtitle, term)}
+            {location && (
+              <>
+                {" • "}
+                {highlight(location, term)}
+              </>
+            )}
           </p>
           {distance && (
             <p className="text-[10px] text-white/50 mt-0.5 flex items-center gap-1">
               <MapPin className="h-3 w-3" /> a {distance} de você
+            </p>
+          )}
+          {item.matchedFields && item.matchedFields.length > 0 && (
+            <p className="text-[9px] uppercase tracking-widest text-white/30 mt-1 truncate">
+              Casou em: {item.matchedFields.join(", ")}
             </p>
           )}
         </div>
@@ -727,15 +740,52 @@ const ResultCard = memo(function ResultCard(props: {
   );
 });
 
-function EmptyState(props: { radius: Radius; onExpand: () => void; onPublish: () => void }) {
-  const { radius, onExpand, onPublish } = props;
+function EmptyState(props: {
+  radius: Radius;
+  term: string;
+  onExpand: () => void;
+  onPublish: () => void;
+  onSuggestion: (term: string) => void;
+}) {
+  const { radius, term, onExpand, onPublish, onSuggestion } = props;
+  // Sugere termos próximos que não sejam iguais ao termo digitado.
+  const nTerm = stripAccents(term);
+  const suggestions = TERM_SUGGESTIONS.filter(
+    (s) => stripAccents(s) !== nTerm,
+  ).slice(0, 6);
+
   return (
     <div className="text-center py-6 space-y-3">
-      <p className="text-sm text-white/70">
-        Nenhum profissional ou produto encontrado
+      <p className="text-sm text-white/80">
+        Nenhum resultado para{" "}
+        <span className="text-white font-semibold">"{term}"</span>
         {radius > 0 ? ` em ${radius} km.` : "."}
       </p>
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+      <p className="text-[11px] text-white/50">
+        Buscamos em: <span className="text-white/70">{SEARCHED_FIELDS.join(", ")}</span>
+      </p>
+
+      {suggestions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">
+            Tente também
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onSuggestion(s)}
+                className="rounded-full border border-white/15 bg-white/5 text-white/80 hover:border-[#00E5FF]/60 hover:text-[#00E5FF] text-[11px] px-3 py-1 transition"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
         {radius !== 30 && radius !== 0 && (
           <button
             type="button"
