@@ -78,17 +78,23 @@ function LoginComponent() {
 
       if (data?.session) {
         // Bloqueio de acesso — lê o perfil no Supabase externo (fonte de verdade).
-        let statusRow: { status?: string | null; role?: string | null; user_type?: string | null; business_category?: string | null; is_admin?: boolean | null } | null = null;
+        // Usa select('*') para não quebrar caso alguma coluna (role, is_admin, etc.)
+        // ainda não exista no schema do projeto.
+        let statusRow: Record<string, any> | null = null;
         try {
           const { data: ext } = await supabaseExternal
             .from('profiles')
-            .select('status, role, user_type, business_category, is_admin')
+            .select('*')
             .eq('id', data.session.user.id)
             .maybeSingle();
           statusRow = (ext as any) || null;
-        } catch { /* silencioso */ }
+        } catch { /* silencioso — schema pode variar */ }
 
-        if (statusRow?.status === 'bloqueado') {
+        const safeGet = (key: string): any => {
+          try { return statusRow ? (statusRow as any)[key] : undefined; } catch { return undefined; }
+        };
+
+        if (safeGet('status') === 'bloqueado') {
           await supabaseExternal.auth.signOut();
           const msg = 'Sua conta está SUSPENSA. Contate o suporte para mais informações.';
           setErrorMsg(msg);
@@ -97,12 +103,18 @@ function LoginComponent() {
           return;
         }
 
-        // Papel de admin: e-mail mestre OU tabela user_roles OU flags no profile.
+        // Papel de admin — checagem resiliente:
+        //  1) e-mail mestre (bypass garantido)
+        //  2) flags opcionais em profiles (is_admin / role)
+        //  3) tabela canônica user_roles
         const MASTER_ADMIN = 'jorgericardosalgado@gmail.com';
-        let isAdmin =
-          normalizedEmail === MASTER_ADMIN ||
-          statusRow?.is_admin === true ||
-          String(statusRow?.role || '').toLowerCase() === 'admin';
+        const userEmail = (data.session.user.email || normalizedEmail || '').toLowerCase();
+        const isEmailAdmin = userEmail === MASTER_ADMIN;
+        const isAdminRole =
+          safeGet('is_admin') === true ||
+          String(safeGet('role') || '').toLowerCase() === 'admin';
+        let isAdmin = isEmailAdmin || isAdminRole;
+
         if (!isAdmin) {
           try {
             const { data: adminRow } = await supabaseExternal
@@ -121,7 +133,10 @@ function LoginComponent() {
           try { localStorage.removeItem('@fixxer:is_admin'); } catch {}
         }
 
-        const rawRole = (statusRow?.role || statusRow?.user_type || statusRow?.business_category || '').toString().toLowerCase();
+        const rawRole = (
+          safeGet('role') || safeGet('user_type') || safeGet('business_category') || ''
+        ).toString().toLowerCase();
+
 
         let category: 'admin' | 'lojista' | 'prestador' | 'fornecedor' | 'cliente' = 'lojista';
         if (isAdmin) category = 'admin';
