@@ -35,7 +35,7 @@ type Row = {
 type Kind = "lojista" | "fornecedor";
 type Card = Row & { _kind: Kind; _branch: string | null };
 
-const CACHE_KEY = "fixxer_recent_stores_v4";
+const CACHE_KEY = "fixxer_recent_stores_v5";
 
 function safeStr(v: unknown): string | null {
   if (v == null) return null;
