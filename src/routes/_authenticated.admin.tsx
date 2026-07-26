@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { requireAdmin } from "@/lib/admin-guard";
+import { requireAdmin, useAdminFocusRevalidation } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: requireAdmin,
@@ -39,26 +39,20 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 export function AdminDashboardComponent() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { glassClass } = usePerformanceMode();
+
+  // Revalida permissão ao voltar o foco (token expirado / role removida).
+  useAdminFocusRevalidation();
 
   // Estados do Feed Global Admin
   const [activeTab, setActiveTab] = useState<"os" | "fornecedores" | "prestadores" | "ocorrencias" | "categorias">("os");
   const [selectedCategory, setSelectedCategory] = useState("todas");
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      const { isCurrentUserAdmin } = await import("@/lib/current-user");
-      const ok = await isCurrentUserAdmin(true);
-      if (!ok) {
-        console.warn("[ADMIN SECURITY]: Acesso negado. Redirecionando para a Dashboard...");
-        navigate({ to: '/dashboard' as any });
-        return;
-      }
-      setLoading(false);
-    })();
-  }, [navigate]);
+  // Auth já validado no beforeLoad (requireAdmin). Nada a fazer aqui.
+  void navigate;
+
 
 
   if (loading) {

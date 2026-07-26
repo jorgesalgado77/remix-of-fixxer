@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requireAdmin, useAdminFocusRevalidation } from "@/lib/admin-guard";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -39,24 +39,20 @@ function AdminMonetizacaoPage() {
   const [remoteOk, setRemoteOk] = useState<boolean | null>(null);
   const [tab, setTab] = useState<TabId>("planos");
 
+  // Auth já validado no beforeLoad (requireAdmin); hook cobre expiração em foco.
+  useAdminFocusRevalidation();
+  void navigate;
+
   useEffect(() => {
-    (async () => {
-      const { isCurrentUserAdmin } = await import("@/lib/current-user");
-      const ok = await isCurrentUserAdmin(true);
-      if (!ok) {
-        toast.error("Acesso restrito ao Admin Master");
-        navigate({ to: "/dashboard" as any });
-        return;
-      }
-      fetchMonetizationConfig().then((c) => setCfg(c));
-    })();
+    fetchMonetizationConfig().then((c) => setCfg(c));
     // atualização em tempo real caso outro admin salve
     const unsub = subscribeMonetization((c) => {
       setCfg((cur) => (cur && dirty ? cur : c));
     });
     return () => unsub();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate]);
+  }, []);
+
 
 
   const update = (patch: Partial<MonetizationConfig>) => {
