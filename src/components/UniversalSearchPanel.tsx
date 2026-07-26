@@ -87,83 +87,102 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
   const [pill, setPill] = useState<PillKey>(defaultPill);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<ResultItem[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
   const abortRef = useRef<AbortController | null>(null);
 
   const debouncedQuery = useDebounced(query.trim(), 300);
   const hasQuery = debouncedQuery.length >= 2;
 
-  // Fetch — só dispara se o painel está aberto E há pelo menos 2 chars
-  useEffect(() => {
-    if (!open || !hasQuery) {
+  // Executor da busca — reutilizado pelo debounce E pelo Realtime.
+  const runQuery = useCallback(async () => {
+    if (!hasQuery) {
       setRows([]);
       return;
     }
-    let cancelled = false;
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
     setLoading(true);
+    try {
+      const q = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60);
+      const { data, error } = await supabaseExternal
+        .from("profiles")
+        .select("id, full_name, city, state, avatar_url, category")
+        .or(
+          [
+            `full_name.ilike.%${q}%`,
+            `city.ilike.%${q}%`,
+            `category.ilike.%${q}%`,
+          ].join(","),
+        )
+        .limit(80)
+        .abortSignal(ac.signal);
+      if (error) throw error;
 
-    (async () => {
-      try {
-        const q = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60);
-        // Busca ampla em profiles — nomes, cidade, categoria
-        const { data, error } = await supabaseExternal
-          .from("profiles")
-          .select("id, full_name, city, state, avatar_url, category")
-          .or(
-            [
-              `full_name.ilike.%${q}%`,
-              `city.ilike.%${q}%`,
-              `category.ilike.%${q}%`,
-            ].join(","),
-          )
-          .limit(80)
-          .abortSignal(ac.signal);
-        if (error) throw error;
-        if (cancelled) return;
+      const mapped: ResultItem[] = (data ?? [])
+        .map((r: any) => {
+          const cat = normalizeCategory(r.category);
+          if (!cat) return null;
+          const c = cityCoords(r.city);
+          const km = c && userCoords ? haversineKm(userCoords, c) : null;
+          return {
+            id: r.id,
+            name: r.full_name || "Usuário FIXXER",
+            city: r.city ?? null,
+            state: r.state ?? null,
+            avatar_url: r.avatar_url ?? null,
+            category: cat,
+            distanceKm: km,
+            subtitle:
+              cat === "prestador"
+                ? "Prestador de Serviço"
+                : cat === "lojista"
+                ? "Loja / Empresa"
+                : cat === "fornecedor"
+                ? "Atacado / Insumos B2B"
+                : "Cliente Final",
+          } as ResultItem;
+        })
+        .filter(Boolean) as ResultItem[];
 
-        const mapped: ResultItem[] = (data ?? [])
-          .map((r: any) => {
-            const cat = normalizeCategory(r.category);
-            if (!cat) return null;
-            const c = cityCoords(r.city);
-            const km = c && userCoords ? haversineKm(userCoords, c) : null;
-            return {
-              id: r.id,
-              name: r.full_name || "Usuário FIXXER",
-              city: r.city ?? null,
-              state: r.state ?? null,
-              avatar_url: r.avatar_url ?? null,
-              category: cat,
-              distanceKm: km,
-              subtitle:
-                cat === "prestador"
-                  ? "Prestador de Serviço"
-                  : cat === "lojista"
-                  ? "Loja / Empresa"
-                  : cat === "fornecedor"
-                  ? "Atacado / Insumos B2B"
-                  : "Cliente Final",
-            } as ResultItem;
-          })
-          .filter(Boolean) as ResultItem[];
+      setRows(mapped);
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      console.warn("[UniversalSearch] fetch", e);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [debouncedQuery, hasQuery, userCoords]);
 
-        setRows(mapped);
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
-        console.warn("[UniversalSearch] fetch", e);
-        setRows([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+  // Debounce → dispara a query.
+  useEffect(() => {
+    if (!open) return;
+    runQuery();
+    return () => abortRef.current?.abort();
+  }, [open, runQuery]);
 
-    return () => {
-      cancelled = true;
-      ac.abort();
+  // Realtime — refetch instantâneo quando profiles mudam durante a busca.
+  useEffect(() => {
+    if (!open || !hasQuery) return;
+    let scheduled: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (scheduled) return;
+      scheduled = setTimeout(() => {
+        scheduled = null;
+        runQuery();
+      }, 500);
     };
-  }, [debouncedQuery, hasQuery, open, userCoords]);
+    const ch = supabaseExternal
+      .channel(`universal-search:${Math.random().toString(36).slice(2, 8)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, bump)
+      .subscribe();
+    return () => {
+      if (scheduled) clearTimeout(scheduled);
+      supabaseExternal.removeChannel(ch).catch(() => undefined);
+    };
+  }, [open, hasQuery, runQuery]);
+
 
   // Aplica filtro de raio + pílula de categoria + ordena por distância
   const filtered = useMemo(() => {
@@ -297,16 +316,30 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
 
         {hasQuery && !loading && filtered.length > 0 && (
           <ul className="space-y-2 max-h-[60vh] overflow-y-auto -mx-1 px-1">
-            {filtered.slice(0, 40).map((it) => (
-              <ResultCard
-                key={it.id}
-                item={it}
-                onChat={() => openChat(it.id)}
-                onFav={() => toast.success("Adicionado aos favoritos")}
-              />
-            ))}
+            {filtered.slice(0, 40).map((it) => {
+              const isFav = favorites.has(it.id);
+              return (
+                <ResultCard
+                  key={it.id}
+                  item={it}
+                  favorited={isFav}
+                  onChat={() => openChat(it.id)}
+                  onFav={() => {
+                    // Optimistic UI: alterna imediatamente no cliente e avisa.
+                    setFavorites((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(it.id)) next.delete(it.id);
+                      else next.add(it.id);
+                      return next;
+                    });
+                    toast.success(isFav ? "Removido dos favoritos" : "Adicionado aos favoritos");
+                  }}
+                />
+              );
+            })}
           </ul>
         )}
+
       </div>
     </div>
   );
@@ -355,10 +388,11 @@ const CategoryPill = memo(function CategoryPill(props: {
 
 const ResultCard = memo(function ResultCard(props: {
   item: ResultItem;
+  favorited?: boolean;
   onChat: () => void;
   onFav: () => void;
 }) {
-  const { item, onChat, onFav } = props;
+  const { item, favorited = false, onChat, onFav } = props;
   const c = getCategoryColor(item.category);
   const meta = CAT_META[item.category];
   const distance =
@@ -433,16 +467,24 @@ const ResultCard = memo(function ResultCard(props: {
         <button
           type="button"
           onClick={onFav}
-          aria-label="Favoritar"
-          className="h-9 px-3 rounded-xl border border-white/10 bg-[#0A0A0B] text-white/70 text-xs flex items-center gap-1 hover:border-white/20"
+          aria-pressed={favorited}
+          aria-label={favorited ? "Remover dos favoritos" : "Favoritar"}
+          className={[
+            "h-9 px-3 rounded-xl border text-xs flex items-center gap-1 transition active:scale-95",
+            favorited
+              ? "border-[#FF3B6B]/60 bg-[#FF3B6B]/10 text-[#FF3B6B]"
+              : "border-white/10 bg-[#0A0A0B] text-white/70 hover:border-white/20",
+          ].join(" ")}
         >
-          <Heart className="h-3.5 w-3.5" /> Favoritar
+          <Heart className={["h-3.5 w-3.5", favorited ? "fill-current" : ""].join(" ")} />
+          {favorited ? "Favorito" : "Favoritar"}
         </button>
+
         <button
           type="button"
           onClick={onChat}
           className={[
-            "h-9 flex-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-[#0A0A0B]",
+            "h-9 flex-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-[#0A0A0B] transition active:scale-95",
             c.bg,
           ].join(" ")}
         >
