@@ -25,6 +25,7 @@ import {
 } from "@/lib/monetization";
 
 export const Route = createFileRoute("/_authenticated/admin/monetizacao")({
+  beforeLoad: requireAdmin,
   component: AdminMonetizacaoPage,
 });
 
