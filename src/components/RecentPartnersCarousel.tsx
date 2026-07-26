@@ -423,6 +423,17 @@ function RecentPartnersCarouselInner() {
   };
 
   const openProfile = (p: PartnerCard) => {
+    // Prime cache com a categoria já conhecida do card → evita "flash" de cor
+    // ao passar pelo redirecionador /perfil/:id (que resolve categoria e navega
+    // para /prestador, /parceiro, /lojista ou /cliente).
+    const kindToCategory: Record<string, PublicProfileCategory> = {
+      prestador: "prestador",
+      fornecedor: "fornecedor",
+      lojista: "lojista",
+      cliente: "cliente",
+    };
+    const cat = kindToCategory[p._kind as string];
+    if (cat) primePublicProfileCategory(p.id, cat);
     const path = `/perfil/${encodeURIComponent(p.id)}`;
     try { navigate({ to: path as any }); } catch { window.location.href = path; }
   };
