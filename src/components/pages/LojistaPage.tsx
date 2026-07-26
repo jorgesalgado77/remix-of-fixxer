@@ -576,10 +576,7 @@ export function LojistaDashboard() {
 
       {/* Sidebar Retrátil (Desktop) */}
       <aside className="w-72 border-r border-white/10 p-6 flex flex-col gap-6 hidden md:flex bg-[#0A0A0A] overflow-y-auto scrollbar-none">
-        <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(0,255,135,0.3)]">F</div>
-            <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
-        </div>
+{/* Logo FIXXER removida da sidebar — já é exibida na barra superior (_authenticated.tsx) */}
 
         <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} />
 
