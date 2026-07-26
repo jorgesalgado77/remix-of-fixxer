@@ -1,4 +1,5 @@
 import { FeedFiltersBar } from "@/components/FeedFiltersButton";
+import { UniversalSearchPanel } from "@/components/UniversalSearchPanel";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
 import { FeedEmptyState } from "@/components/FeedEmptyState";
@@ -787,6 +788,7 @@ export default function FeedParceiroPage() {
   return (
     <PullToRefresh onRefresh={handleRefresh} accent="#A855F7">
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
+      <UniversalSearchPanel defaultPill="fornecedor" />
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur">
         <div className="mx-auto grid max-w-3xl grid-cols-[auto_1fr] items-start gap-2 px-3 sm:px-4 py-3">
