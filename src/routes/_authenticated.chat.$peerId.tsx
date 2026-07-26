@@ -1446,7 +1446,7 @@ function ConversationPage() {
 
       {linkedAd && (
         <div
-          className="sticky top-[64px] z-[9] px-4 py-3 border-b backdrop-blur-xl"
+          className="shrink-0 z-[9] px-4 py-3 border-b backdrop-blur-xl"
           style={{
             background: `linear-gradient(180deg, rgba(${peerTheme.rgb},0.14) 0%, rgba(0,0,0,0.85) 100%)`,
             borderColor: `rgba(${peerTheme.rgb},0.35)`,
