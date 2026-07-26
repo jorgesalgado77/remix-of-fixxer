@@ -2454,7 +2454,7 @@ function ProfileView({
                         <MapPin className="w-3 h-3" /> Endereço Completo
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-2 relative">
+                        <div data-profile-field="zipcode" className={`space-y-2 relative ${hlField('zipcode')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">CEP *</Label>
                            <IMaskInput 
                              mask="00000-000"
@@ -2466,7 +2466,7 @@ function ProfileView({
                            />
                            {isLoadingCep && <div className="absolute right-3 bottom-3 animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />}
                         </div>
-                        <div className="md:col-span-2 space-y-2">
+                        <div data-profile-field="address" className={`md:col-span-2 space-y-2 ${hlField('address')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Logradouro / Rua *</Label>
                            <Input 
                              required
@@ -2486,7 +2486,7 @@ function ProfileView({
                              className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" 
                            />
                         </div>
-                        <div className="space-y-2">
+                        <div data-profile-field="city" className={`space-y-2 ${hlField('city')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Cidade *</Label>
                            <Input 
                              required
@@ -2496,7 +2496,7 @@ function ProfileView({
                              className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" 
                            />
                         </div>
-                        <div className="space-y-2">
+                        <div data-profile-field="state" className={`space-y-2 ${hlField('state')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Estado / UF *</Label>
                            <Input 
                              required
@@ -2506,7 +2506,7 @@ function ProfileView({
                              className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" 
                            />
                         </div>
-                        <div className="space-y-2">
+                        <div data-profile-field="address_number" className={`space-y-2 ${hlField('address_number')}`}>
                            <Label className="uppercase font-bold text-[10px] text-muted-foreground tracking-widest">Número *</Label>
                            <Input required value={address.numero} onChange={(e) => setAddress({...address, numero: e.target.value})} placeholder="123" className="bg-black/40 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all" />
                         </div>
