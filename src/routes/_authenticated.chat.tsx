@@ -808,9 +808,17 @@ function ChatInboxPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pb-32" onClick={() => setOpenMenu(null)}>
+    <div
+      className="min-h-screen bg-black text-white px-6 pt-6"
+      style={{ paddingBottom: "calc(9rem + env(safe-area-inset-bottom))" }}
+      onClick={() => setOpenMenu(null)}
+    >
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
+        <div
+          className="sticky top-0 z-30 -mx-6 px-6 pt-2 pb-3 bg-black/85 backdrop-blur-xl border-b border-white/5"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
+        >
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <MessageCircle className="w-6 h-6" />
           </div>
@@ -875,6 +883,11 @@ function ChatInboxPage() {
             )}
           </p>
         )}
+        </div>
+
+        <div className="pt-4" />
+
+
 
 
 
