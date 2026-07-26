@@ -121,4 +121,74 @@ describe("perfil público — tema derivado no primeiro render", () => {
       expect(utility.badgeBg).toContain(hex);
     }
   });
+
+  describe("visitante LOJISTA (ciano) abrindo perfis de outras categorias", () => {
+    // Simula o contexto: usuário logado é lojista (ciano). O tema visitado
+    // NÃO pode vazar ciano para perfis de fornecedor/cliente no 1º render.
+    const LOJISTA_HEX = CATEGORY_COLORS.lojista;
+
+    it("fornecedor → aplica ROXO (#A855F7) desde o primeiro render, via cache", () => {
+      const peerId = "fornecedor-abc";
+      primePublicProfileCategory(peerId, "fornecedor");
+      // Mesmo se o link visitado for o antigo /lojista/:id, cache decide.
+      for (const pathname of [`/parceiro/${peerId}`, `/fornecedor/${peerId}`, `/lojista/${peerId}`]) {
+        const { category, style, utility } = seedThemeStyle(peerId, pathname);
+        expect(category).toBe("fornecedor");
+        expect(style["--primary"]).toBe(CATEGORY_COLORS.fornecedor);
+        expect(style["--primary"]).not.toBe(LOJISTA_HEX);
+        expect(utility.hex).toBe("#A855F7");
+        expect(utility.border).toBe("border-[#A855F7]");
+        expect(utility.text).toBe("text-[#A855F7]");
+        expect(utility.bg).toBe("bg-[#A855F7]");
+        expect(utility.badgeBg).toContain("#A855F7");
+        expect(utility.bgGlow).toContain("168,85,247");
+      }
+    });
+
+    it("fornecedor → aplica ROXO via segmento canônico da URL sem cache", () => {
+      const { category, style, utility } = seedThemeStyle("forn-sem-cache", "/parceiro/forn-sem-cache");
+      expect(category).toBe("fornecedor");
+      expect(style["--primary"]).toBe(CATEGORY_COLORS.fornecedor);
+      expect(style["--primary"]).not.toBe(LOJISTA_HEX);
+      expect(utility.hex).toBe("#A855F7");
+    });
+
+    it("cliente final → aplica VERDE (#00FF87) desde o primeiro render, via cache", () => {
+      const peerId = "cliente-xyz";
+      primePublicProfileCategory(peerId, "cliente");
+      for (const pathname of [`/cliente/${peerId}`, `/lojista/${peerId}`]) {
+        const { category, style, utility } = seedThemeStyle(peerId, pathname);
+        expect(category).toBe("cliente");
+        expect(style["--primary"]).toBe(CATEGORY_COLORS.cliente);
+        expect(style["--primary"]).not.toBe(LOJISTA_HEX);
+        expect(utility.hex).toBe("#00FF87");
+        expect(utility.border).toBe("border-[#00FF87]");
+        expect(utility.text).toBe("text-[#00FF87]");
+        expect(utility.bg).toBe("bg-[#00FF87]");
+        expect(utility.badgeBg).toContain("#00FF87");
+        expect(utility.bgGlow).toContain("0,255,135");
+      }
+    });
+
+    it("cliente final → aplica VERDE via segmento canônico da URL sem cache", () => {
+      const { category, style, utility } = seedThemeStyle("cli-sem-cache", "/cliente/cli-sem-cache");
+      expect(category).toBe("cliente");
+      expect(style["--primary"]).toBe(CATEGORY_COLORS.cliente);
+      expect(style["--primary"]).not.toBe(LOJISTA_HEX);
+      expect(utility.hex).toBe("#00FF87");
+    });
+
+    it("alternar entre fornecedor e cliente não mistura temas (cache isolado por userId)", () => {
+      primePublicProfileCategory("uid-forn", "fornecedor");
+      primePublicProfileCategory("uid-cli", "cliente");
+      const forn = seedThemeStyle("uid-forn", "/parceiro/uid-forn");
+      const cli = seedThemeStyle("uid-cli", "/cliente/uid-cli");
+      expect(forn.style["--primary"]).toBe(CATEGORY_COLORS.fornecedor);
+      expect(cli.style["--primary"]).toBe(CATEGORY_COLORS.cliente);
+      expect(forn.utility.hex).not.toBe(cli.utility.hex);
+      // Nenhum dos dois pode ter herdado ciano do visitante lojista.
+      expect(forn.style["--primary"]).not.toBe(LOJISTA_HEX);
+      expect(cli.style["--primary"]).not.toBe(LOJISTA_HEX);
+    });
+  });
 });
