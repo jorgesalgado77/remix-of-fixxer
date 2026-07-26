@@ -199,14 +199,16 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
   }
 
   const owner = current.ownerUid || peerId;
-  // Sempre consulta provider_profiles e store_profiles para obter o role
-  // autoritativo. Um valor genérico em profiles.role (ex.: "user") não deve
-  // sobrescrever a categoria real derivada da tabela específica.
+  // Consulta todas as tabelas especializadas — elas são a fonte autoritativa
+  // de categoria. Qualquer valor genérico em profiles.role ("user", "usuario")
+  // NÃO deve sobrescrever a categoria real derivada da tabela específica.
   let storeHit = false;
   let providerHit = false;
+  let supplierHit = false;
   for (const [table, columns] of [
     ["provider_profiles", ["user_id", "id"]],
     ["store_profiles", ["user_id", "id"]],
+    ["supplier_profiles", ["user_id", "id"]],
   ] as const) {
     for (const column of columns) {
       const row = await querySingle(table, column, owner, diagnostics);
@@ -214,27 +216,20 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
         source.push(`${table}.${column}`);
         if (table === "store_profiles") storeHit = true;
         if (table === "provider_profiles") providerHit = true;
+        if (table === "supplier_profiles") supplierHit = true;
         current = absorbRow(row, `${table}.${column}`, current, source, diagnostics);
         break;
       }
     }
   }
 
-  // Override autoritativo: a existência de uma linha em store_profiles/provider_profiles
-  // é o sinal mais confiável de categoria — sobrepõe qualquer role genérico do profiles.
-  if (storeHit) current.role = "lojista";
-  else if (providerHit) current.role = "prestador";
+  // Override autoritativo: a existência de uma linha em
+  // store/provider/supplier_profiles é o sinal mais confiável de categoria —
+  // sobrepõe qualquer role genérico do profiles ("user", "usuario", etc.).
+  if (providerHit) current.role = "prestador";
+  else if (supplierHit) current.role = "fornecedor";
+  else if (storeHit) current.role = "lojista";
 
-
-
-  // Fallback de role a partir da tabela de origem quando a coluna role estiver vazia.
-  // Ex.: se o dado veio de `store_profiles` mas nenhum campo textual de role foi
-  // encontrado, assumimos "lojista". Idem para provider_profiles → "prestador".
-  if (!current.role) {
-    const joined = source.join(" | ");
-    if (/store_profiles/.test(joined)) current.role = "lojista";
-    else if (/provider_profiles/.test(joined)) current.role = "prestador";
-  }
 
   const finalName = current.name || "Conversa";
 
