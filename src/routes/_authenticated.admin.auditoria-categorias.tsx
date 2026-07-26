@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/admin/auditoria-categorias
 });
 
 function AuditCategoriesPage() {
+  useAdminFocusRevalidation();
+
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [report, setReport] = useState<AuditReport | null>(null);
