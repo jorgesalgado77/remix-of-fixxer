@@ -10,7 +10,18 @@
  * Retorna SEMPRE um objeto renderizável (name + initials), mesmo em falha.
  */
 import { supabaseExternal } from "@/lib/supabaseExternal";
-import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
+import {
+  primePublicProfileCategory,
+  resolvePublicProfileCategory,
+  type PublicProfileCategory,
+} from "@/lib/public-profile-category";
+
+const CATEGORY_TO_ROLE: Record<PublicProfileCategory, string> = {
+  lojista: "lojista",
+  prestador: "prestador",
+  fornecedor: "fornecedor",
+  cliente: "cliente",
+};
 
 export type PeerProfile = {
   id: string;
