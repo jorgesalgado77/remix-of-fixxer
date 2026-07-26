@@ -34,8 +34,64 @@ type ResultItem = {
   category: Cat;
   distanceKm: number | null;
   subtitle: string;
+  matchedFields: string[];
   rating?: number;
 };
+
+/** Remove acentos e normaliza p/ comparação case-insensitive. */
+function stripAccents(s: string): string {
+  return (s || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}
+
+/** Retorna nós React com <mark> nos trechos que casam com o termo (accent-insensitive). */
+function highlight(text: string | null | undefined, term: string): React.ReactNode {
+  const src = String(text ?? "");
+  if (!term || term.length < 2 || !src) return src;
+  const normSrc = stripAccents(src);
+  const normTerm = stripAccents(term);
+  const idx = normSrc.indexOf(normTerm);
+  if (idx === -1) return src;
+  const before = src.slice(0, idx);
+  const hit = src.slice(idx, idx + normTerm.length);
+  const after = src.slice(idx + normTerm.length);
+  return (
+    <>
+      {before}
+      <mark className="bg-[#00E5FF]/30 text-white rounded px-0.5">{hit}</mark>
+      {after}
+    </>
+  );
+}
+
+/** Campos que a busca varre — usado tanto para filtrar client-side quanto pro chip de debug. */
+const SEARCHED_FIELDS = [
+  "full_name",
+  "display_name",
+  "company_name",
+  "city",
+  "state",
+  "business_category",
+  "custom_branch",
+  "specialty",
+  "description",
+  "role",
+  "user_type",
+] as const;
+
+const TERM_SUGGESTIONS = [
+  "Barbearia",
+  "Montador",
+  "Chaveiro",
+  "Eletricista",
+  "Marmoraria",
+  "Pintura",
+  "Gesso",
+  "Conferente",
+];
 
 type Radius = 5 | 15 | 30 | 0; // 0 = Toda região
 const RADII: { v: Radius; label: string }[] = [
