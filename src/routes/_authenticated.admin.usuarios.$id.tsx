@@ -7,7 +7,7 @@ import {
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 
-import { requireAdmin } from "@/lib/admin-guard";
+import { requireAdmin, useAdminFocusRevalidation } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios/$id")({
   beforeLoad: requireAdmin,
@@ -42,7 +42,9 @@ function fmt(iso: string | null) {
 
 function AuditoriaUsuarioPage() {
   const { id } = Route.useParams();
-  const [authOk, setAuthOk] = useState(false);
+  // beforeLoad (requireAdmin) já valida acesso; hook revalida em focus.
+  useAdminFocusRevalidation();
+  const authOk = true;
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [balance, setBalance] = useState(0);
@@ -50,16 +52,6 @@ function AuditoriaUsuarioPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [chats, setChats] = useState<any[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      const { isCurrentUserAdmin } = await import("@/lib/current-user");
-      const ok = await isCurrentUserAdmin(true);
-      if (!ok) { window.location.replace("/dashboard"); return; }
-      setAuthOk(true);
-    })();
-  }, []);
-
 
   useEffect(() => {
     if (!authOk) return;
@@ -73,6 +65,7 @@ function AuditoriaUsuarioPage() {
       .subscribe();
     return () => { try { supabaseExternal.removeChannel(ch); } catch {} };
   }, [authOk, id]);
+
 
   async function load() {
     setLoading(true);

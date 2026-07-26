@@ -15,7 +15,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 const DAY_MS = 86400_000;
 const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS);
 
-import { requireAdmin } from "@/lib/admin-guard";
+import { requireAdmin, useAdminFocusRevalidation } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/_authenticated/admin/disputas")({
   beforeLoad: requireAdmin,
@@ -24,20 +24,16 @@ export const Route = createFileRoute("/_authenticated/admin/disputas")({
 
 function AdminDisputesPage() {
   const navigate = useNavigate();
-  const [ok, setOk] = useState(false);
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<DisputeWithContext[]>([]);
   const [status, setStatus] = useState<DisputeStatus | "all">("open");
   const [selected, setSelected] = useState<DisputeWithContext | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { isCurrentUserAdmin } = await import("@/lib/current-user");
-      const ok = await isCurrentUserAdmin(true);
-      if (!ok) { navigate({ to: "/dashboard" as any }); return; }
-      setOk(true);
-    })();
-  }, [navigate]);
+  // Auth já validado no beforeLoad; hook revalida em focus/visibilitychange.
+  useAdminFocusRevalidation();
+  void navigate;
+  const ok = true;
+
 
 
   const load = useCallback(async () => {

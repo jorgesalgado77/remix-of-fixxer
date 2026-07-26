@@ -10,7 +10,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { creditCoins, consumeCoins } from "@/lib/coins";
 import { toast } from "sonner";
 
-import { requireAdmin } from "@/lib/admin-guard";
+import { requireAdmin, useAdminFocusRevalidation } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
   beforeLoad: requireAdmin,
@@ -79,7 +79,10 @@ function useDebounced<T>(value: T, delay = 250): T {
 
 function AdminUsuariosPage() {
   const navigate = useNavigate();
-  const [authOk, setAuthOk] = useState(false);
+  // beforeLoad (requireAdmin) já garante acesso; hook revalida em focus.
+  useAdminFocusRevalidation();
+  void navigate;
+  const authOk = true;
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [q, setQ] = useState("");
@@ -93,15 +96,7 @@ function AdminUsuariosPage() {
   const [menuOpenAnchor, _setMenuOpenAnchor] = useState<string | null>(null); void menuOpenAnchor; void _setMenuOpenAnchor;
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
-  // Gate admin (via public.user_roles — nunca por email/localStorage)
-  useEffect(() => {
-    (async () => {
-      const { isCurrentUserAdmin } = await import("@/lib/current-user");
-      const ok = await isCurrentUserAdmin(true);
-      if (!ok) { navigate({ to: "/dashboard" as any }); return; }
-      setAuthOk(true);
-    })();
-  }, [navigate]);
+
 
 
   const loadUsers = async () => {

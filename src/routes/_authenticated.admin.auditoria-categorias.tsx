@@ -10,7 +10,7 @@ import {
 } from "@/lib/category-audit";
 import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/category-colors";
 
-import { requireAdmin } from "@/lib/admin-guard";
+import { requireAdmin, useAdminFocusRevalidation } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria-categorias")({
   beforeLoad: requireAdmin,
@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/admin/auditoria-categorias
 });
 
 function AuditCategoriesPage() {
+  useAdminFocusRevalidation();
+
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [report, setReport] = useState<AuditReport | null>(null);

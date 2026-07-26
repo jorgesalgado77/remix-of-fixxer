@@ -1,21 +1,105 @@
 // Guard compartilhado para rotas /admin/*.
-// Roda no beforeLoad (client-side, pois todas ficam sob _authenticated ssr:false)
-// e bloqueia acesso ANTES de renderizar o componente — mesmo com token expirado
-// ou perfil inconsistente. Fonte de verdade: supabaseExternal.auth.getUser() +
-// public.user_roles(role='admin'). NENHUMA leitura de localStorage.
-import { redirect } from "@tanstack/react-router";
+//
+// Fonte de verdade: supabaseExternal.auth.getUser() + public.user_roles.
+// Nenhuma decisão baseada em localStorage.
+//
+// Recursos:
+//  - requireAdmin(): usado em beforeLoad. Bloqueia render, dispara toast com o
+//    motivo (sem sessão vs sem role) e um botão "Ir para login".
+//  - useAdminFocusRevalidation(): hook para componentes admin — revalida a
+//    permissão quando a aba volta ao foco (visibilitychange) e desloga
+//    automaticamente se o token expirou ou a role foi removida.
+//  - reasonForBlock(): utilitário puro, testável.
+import { useEffect } from "react";
+import { redirect, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { getCurrentUserId, isCurrentUserAdmin } from "@/lib/current-user";
 
-export async function requireAdmin() {
+export type AdminBlockReason = "no-session" | "not-admin";
+
+export function reasonForBlock(uid: string | null, isAdmin: boolean): AdminBlockReason | null {
+  if (!uid) return "no-session";
+  if (!isAdmin) return "not-admin";
+  return null;
+}
+
+const REASON_MESSAGES: Record<AdminBlockReason, string> = {
+  "no-session": "Sua sessão expirou. Faça login novamente para acessar o painel administrativo.",
+  "not-admin": "Você não tem permissão de administrador para acessar esta área.",
+};
+
+function clearAdminFlag() {
+  try { localStorage.removeItem("@fixxer:is_admin"); } catch {}
+}
+
+function notifyBlock(reason: AdminBlockReason) {
+  if (typeof window === "undefined") return;
+  const message = REASON_MESSAGES[reason];
+  const target = reason === "no-session" ? "/auth" : "/dashboard";
+  // Defer para não competir com o redirect do router.
+  setTimeout(() => {
+    try {
+      toast.error(message, {
+        duration: 8000,
+        action: {
+          label: reason === "no-session" ? "Ir para login" : "Voltar",
+          onClick: () => { window.location.replace(target); },
+        },
+      });
+    } catch {
+      /* toast pode não estar montado durante SSR */
+    }
+  }, 0);
+}
+
+export async function evaluateAdminAccess(force = true): Promise<
+  { ok: true; userId: string } | { ok: false; reason: AdminBlockReason }
+> {
   const uid = await getCurrentUserId();
-  if (!uid) {
-    try { localStorage.removeItem("@fixxer:is_admin"); } catch {}
-    throw redirect({ to: "/auth" as any });
+  if (!uid) return { ok: false, reason: "no-session" };
+  const isAdmin = await isCurrentUserAdmin(force);
+  const reason = reasonForBlock(uid, isAdmin);
+  if (reason) return { ok: false, reason };
+  return { ok: true, userId: uid };
+}
+
+export async function requireAdmin() {
+  const result = await evaluateAdminAccess(true);
+  if (!result.ok) {
+    clearAdminFlag();
+    notifyBlock(result.reason);
+    throw redirect({ to: (result.reason === "no-session" ? "/auth" : "/dashboard") as any });
   }
-  const ok = await isCurrentUserAdmin(true);
-  if (!ok) {
-    try { localStorage.removeItem("@fixxer:is_admin"); } catch {}
-    throw redirect({ to: "/dashboard" as any });
-  }
-  return { userId: uid, isAdmin: true as const };
+  return { userId: result.userId, isAdmin: true as const };
+}
+
+// Hook: revalida permissão de admin sempre que a aba volta ao foco.
+// Se o token expirou ou a role foi removida, desloga o usuário da área admin.
+export function useAdminFocusRevalidation() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    let running = false;
+    const check = async () => {
+      if (running) return;
+      running = true;
+      try {
+        const result = await evaluateAdminAccess(true);
+        if (!result.ok) {
+          clearAdminFlag();
+          notifyBlock(result.reason);
+          navigate({ to: (result.reason === "no-session" ? "/auth" : "/dashboard") as any });
+        }
+      } finally {
+        running = false;
+      }
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") void check(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", check);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", check);
+    };
+  }, [navigate]);
 }
