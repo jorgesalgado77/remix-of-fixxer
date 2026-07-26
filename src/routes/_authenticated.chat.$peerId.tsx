@@ -1911,7 +1911,7 @@ function ConversationPage() {
             ref={cameraPhotoRef}
             type="file"
             accept="image/*"
-            capture="environment"
+            {...({ capture: "environment" } as any)}
             className="hidden"
             onChange={(e) => {
               const picked = Array.from(e.target.files ?? []);
@@ -1923,7 +1923,7 @@ function ConversationPage() {
             ref={cameraVideoRef}
             type="file"
             accept="video/*"
-            capture="environment"
+            {...({ capture: "environment" } as any)}
             className="hidden"
             onChange={(e) => {
               const picked = Array.from(e.target.files ?? []);
@@ -1931,6 +1931,7 @@ function ConversationPage() {
               if (cameraVideoRef.current) cameraVideoRef.current.value = "";
             }}
           />
+
           <div className="mb-2 flex items-center gap-1.5">
             <button
               onClick={() => fileRef.current?.click()}
@@ -1942,7 +1943,12 @@ function ConversationPage() {
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
             </button>
             <button
-              onClick={() => cameraPhotoRef.current?.click()}
+              onClick={() => {
+                const el = cameraPhotoRef.current;
+                if (!el) return;
+                el.setAttribute("capture", "environment");
+                el.click();
+              }}
               disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
               title="Tirar foto"
               className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
@@ -1951,7 +1957,12 @@ function ConversationPage() {
               <Camera className="w-4 h-4" />
             </button>
             <button
-              onClick={() => cameraVideoRef.current?.click()}
+              onClick={() => {
+                const el = cameraVideoRef.current;
+                if (!el) return;
+                el.setAttribute("capture", "environment");
+                el.click();
+              }}
               disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
               title="Gravar vídeo"
               className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
