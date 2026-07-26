@@ -47,8 +47,9 @@ export function getCategoryTheme(cat: CategoryKey | string | null | undefined) {
   return {
     hex,
     rgb,
-    label: CATEGORY_LABEL[cat],
-    highlight: CATEGORY_HIGHLIGHT[cat],
+    label: CATEGORY_LABEL[key],
+    highlight: CATEGORY_HIGHLIGHT[key],
+
     // estilos inline
     color: { color: hex },
     bgSoft: { backgroundColor: `rgba(${rgb}, 0.10)` },
