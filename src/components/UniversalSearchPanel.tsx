@@ -687,18 +687,18 @@ const ResultCard = memo(function ResultCard(props: {
               to={profileHref as any}
               className="text-sm font-semibold text-white truncate hover:underline"
             >
-              {highlight(item.name, term)}
+              <Highlight text={item.name} term={term} />
             </Link>
             <span className={["text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border", c.badgeBg].join(" ")}>
               {meta.badge} {meta.label}
             </span>
           </div>
           <p className="text-[11px] text-white/60 truncate">
-            {highlight(item.subtitle, term)}
+            <Highlight text={item.subtitle} term={term} />
             {location && (
               <>
                 {" • "}
-                {highlight(location, term)}
+                <Highlight text={location} term={term} />
               </>
             )}
           </p>
