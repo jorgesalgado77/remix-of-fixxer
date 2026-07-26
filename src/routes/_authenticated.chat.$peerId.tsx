@@ -225,6 +225,8 @@ function ConversationPage() {
   const [uploadPct, setUploadPct] = useState(0); // % do arquivo atual
   const [uploadingIndex, setUploadingIndex] = useState(0); // índice do arquivo atual
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraPhotoRef = useRef<HTMLInputElement>(null);
+  const cameraVideoRef = useRef<HTMLInputElement>(null);
   const [downloads, setDownloads] = useState<Record<string, { pct: number; loading: boolean }>>({});
 
   // Miniaturas locais (blob URLs) para imagens/vídeos anexados antes de enviar.
