@@ -894,7 +894,7 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [] }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[] }) {
+function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [], missingKeys = [], onOpenProfile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[]; missingKeys?: string[]; onOpenProfile?: () => void }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
@@ -935,24 +935,42 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
             </div>
 
             {!isProfileComplete && missingLabels.length > 0 && (
-                <div
+                <button
+                    type="button"
                     data-testid="profile-missing-panel"
-                    className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5"
+                    onClick={() => {
+                        onOpenProfile?.();
+                        // scroll até o primeiro campo faltante
+                        setTimeout(() => {
+                            const firstKey = missingKeys[0];
+                            if (firstKey) {
+                                const el = document.querySelector(`[data-profile-field="${firstKey}"]`) as HTMLElement | null;
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    const input = el.querySelector('input,textarea,select') as HTMLElement | null;
+                                    input?.focus();
+                                }
+                            }
+                        }, 300);
+                    }}
+                    className="w-full text-left rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-400/70 p-3 space-y-1.5 transition-all cursor-pointer"
+                    aria-label="Abrir perfil para completar campos faltantes"
                 >
-                    <div className="text-[9px] font-black uppercase italic tracking-widest text-amber-300">
-                        ⚠️ Preencha para liberar Publicar e Avaliações
+                    <div className="text-[9px] font-black uppercase italic tracking-widest text-amber-300 flex items-center justify-between gap-2">
+                        <span>⚠️ Preencha para liberar Publicar e Avaliações</span>
+                        <span className="text-amber-200 normal-case tracking-normal">Toque para completar →</span>
                     </div>
                     <ul className="flex flex-wrap gap-1">
                         {missingLabels.map((label) => (
                             <li
                                 key={label}
-                                className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-200 text-[9px] font-bold uppercase"
+                                className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-100 text-[9px] font-bold uppercase"
                             >
                                 {label}
                             </li>
                         ))}
                     </ul>
-                </div>
+                </button>
             )}
 
             <div className={`grid grid-cols-2 gap-2 pt-2 border-t border-white/5 ${!isProfileComplete ? 'opacity-50 grayscale' : ''}`}>
