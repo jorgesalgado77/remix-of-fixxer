@@ -51,6 +51,7 @@ import { Route as AuthenticatedAgendaIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated.admin.usuarios'
 import { Route as AuthenticatedAdminMonetizacaoRouteImport } from './routes/_authenticated.admin.monetizacao'
 import { Route as AuthenticatedAdminDisputasRouteImport } from './routes/_authenticated.admin.disputas'
+import { Route as AuthenticatedAdminAuditoriaCategoriasRouteImport } from './routes/_authenticated.admin.auditoria-categorias'
 import { Route as ApiPublicPushDispatchRouteImport } from './routes/api/public/push.dispatch'
 import { Route as AuthenticatedAdminUsuariosIdRouteImport } from './routes/_authenticated.admin.usuarios.$id'
 
@@ -273,6 +274,12 @@ const AuthenticatedAdminDisputasRoute =
     path: '/disputas',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAuditoriaCategoriasRoute =
+  AuthenticatedAdminAuditoriaCategoriasRouteImport.update({
+    id: '/auditoria-categorias',
+    path: '/auditoria-categorias',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const ApiPublicPushDispatchRoute = ApiPublicPushDispatchRouteImport.update({
   id: '/api/public/push/dispatch',
   path: '/api/public/push/dispatch',
@@ -315,6 +322,7 @@ export interface FileRoutesByFullPath {
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
   '/auth/': typeof AuthIndexRoute
+  '/admin/auditoria-categorias': typeof AuthenticatedAdminAuditoriaCategoriasRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
@@ -358,6 +366,7 @@ export interface FileRoutesByTo {
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
   '/auth': typeof AuthIndexRoute
+  '/admin/auditoria-categorias': typeof AuthenticatedAdminAuditoriaCategoriasRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
@@ -405,6 +414,7 @@ export interface FileRoutesById {
   '/prestador/$id': typeof PrestadorIdRoute
   '/r/$code': typeof RCodeRoute
   '/auth/': typeof AuthIndexRoute
+  '/_authenticated/admin/auditoria-categorias': typeof AuthenticatedAdminAuditoriaCategoriasRoute
   '/_authenticated/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/_authenticated/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
@@ -452,6 +462,7 @@ export interface FileRouteTypes {
     | '/prestador/$id'
     | '/r/$code'
     | '/auth/'
+    | '/admin/auditoria-categorias'
     | '/admin/disputas'
     | '/admin/monetizacao'
     | '/admin/usuarios'
@@ -495,6 +506,7 @@ export interface FileRouteTypes {
     | '/prestador/$id'
     | '/r/$code'
     | '/auth'
+    | '/admin/auditoria-categorias'
     | '/admin/disputas'
     | '/admin/monetizacao'
     | '/admin/usuarios'
@@ -541,6 +553,7 @@ export interface FileRouteTypes {
     | '/prestador/$id'
     | '/r/$code'
     | '/auth/'
+    | '/_authenticated/admin/auditoria-categorias'
     | '/_authenticated/admin/disputas'
     | '/_authenticated/admin/monetizacao'
     | '/_authenticated/admin/usuarios'
@@ -872,6 +885,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminDisputasRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/auditoria-categorias': {
+      id: '/_authenticated/admin/auditoria-categorias'
+      path: '/auditoria-categorias'
+      fullPath: '/admin/auditoria-categorias'
+      preLoaderRoute: typeof AuthenticatedAdminAuditoriaCategoriasRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/api/public/push/dispatch': {
       id: '/api/public/push/dispatch'
       path: '/api/public/push/dispatch'
@@ -904,12 +924,15 @@ const AuthenticatedAdminUsuariosRouteWithChildren =
   )
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAuditoriaCategoriasRoute: typeof AuthenticatedAdminAuditoriaCategoriasRoute
   AuthenticatedAdminDisputasRoute: typeof AuthenticatedAdminDisputasRoute
   AuthenticatedAdminMonetizacaoRoute: typeof AuthenticatedAdminMonetizacaoRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRouteWithChildren
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAuditoriaCategoriasRoute:
+    AuthenticatedAdminAuditoriaCategoriasRoute,
   AuthenticatedAdminDisputasRoute: AuthenticatedAdminDisputasRoute,
   AuthenticatedAdminMonetizacaoRoute: AuthenticatedAdminMonetizacaoRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRouteWithChildren,
