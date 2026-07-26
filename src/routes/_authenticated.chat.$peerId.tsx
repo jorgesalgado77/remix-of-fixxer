@@ -157,7 +157,21 @@ function ConversationPage() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [peerName, setPeerName] = useState<string>("Conversa");
   const [peerAvatar, setPeerAvatar] = useState<string | null>(null);
-  const [peerRole, setPeerRole] = useState<string | null>(null);
+  // Semeia a categoria a partir do cache compartilhado (perfil público ↔ chat)
+  // para pintar o tema correto ANTES da primeira renderização — evita qualquer
+  // piscada de cor (ex.: azul lojista antes de virar âmbar prestador) enquanto
+  // `resolvePeerProfile` roda de forma assíncrona.
+  const [peerRole, setPeerRole] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { peekPublicProfileCategory } = require("@/lib/public-profile-category");
+      const cached = peekPublicProfileCategory(peerId);
+      return cached ?? null;
+    } catch {
+      return null;
+    }
+  });
   const [peerInitials, setPeerInitials] = useState<string>("?");
   const [peerIsFallback, setPeerIsFallback] = useState<boolean>(true);
   const [peerLoading, setPeerLoading] = useState<boolean>(true);
