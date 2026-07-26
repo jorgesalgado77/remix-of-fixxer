@@ -182,26 +182,47 @@ export function LojistaDashboard() {
           .eq("user_email", user.email)
           .maybeSingle();
 
-        if (!error && data && (data.company_name || data.logo_url)) {
-          evaluate(data);
-        } else {
-          // Fallback: usa dados do perfil unificado (public.profiles) quando store_profiles está vazio
-          const { data: prof } = await supabaseExternal
-            .from("profiles")
-            .select("id,display_name,full_name,logo_url,avatar_url,city,state,business_category,custom_branch")
-            .eq("id", user.id)
-            .maybeSingle();
-          if (prof) {
-            evaluate({
-              id: prof.id,
-              company_name: prof.display_name || prof.full_name || "",
-              logo_url: prof.logo_url || prof.avatar_url || null,
-              city: prof.city || "",
-              state: prof.state || "",
-              activity_branch: prof.business_category || prof.custom_branch || "",
-            });
-          }
+        // Sempre carrega o perfil unificado (public.profiles) para preencher lacunas
+        // do store_profiles — o formulário de perfil salva TUDO em public.profiles.
+        const { data: prof } = await supabaseExternal
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        const extras = ((prof as any)?.custom_sections?.__extras) || {};
+        const unified: any = prof ? { ...extras, ...prof } : {};
+
+        // Mescla store_profiles (prioridade) com profiles (fallback + sinônimos).
+        const src: any = { ...unified, ...(data || {}) };
+
+        const mapped: any = {
+          id: src.id || src.user_id || unified.id,
+          company_name:
+            src.company_name || unified.display_name || unified.full_name || "",
+          cnpj: src.cnpj || unified.document_number || "",
+          responsible_name:
+            src.responsible_name || unified.full_name || unified.display_name || "",
+          email_contact:
+            src.email_contact || unified.email || user.email || "",
+          whatsapp: src.whatsapp || unified.phone || "",
+          phone: src.phone || unified.whatsapp || "",
+          zipcode:
+            src.zipcode || unified.cep || unified.zipcode || unified.postal_code || "",
+          activity_branch:
+            src.activity_branch ||
+            unified.business_category ||
+            unified.custom_branch ||
+            "",
+          logo_url: src.logo_url || unified.logo_url || unified.avatar_url || null,
+          city: src.city || unified.city || "",
+          state: src.state || unified.state || "",
+        };
+
+        if (error) {
+          console.warn("[LojistaDashboard] store_profiles indisponível, usando profiles:", error?.message);
         }
+        evaluate(mapped);
       } catch (err) {
         console.warn("[LojistaDashboard] falha ao verificar completude do perfil:", err);
       }
