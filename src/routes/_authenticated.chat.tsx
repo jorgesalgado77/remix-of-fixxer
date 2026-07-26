@@ -710,7 +710,19 @@ function ChatInboxPage() {
     });
   }, [conversationsWithMock, activeTerms, showArchived, role, messagesByPeer]);
 
-
+  // Virtualização da lista (janela) — reduz DOM em celulares de entrada
+  // com centenas de threads. Altura estimada 132px por card; medição
+  // dinâmica corrige diferenças (histórico, badges).
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const virtualizer = useWindowVirtualizer({
+    count: visible.length,
+    estimateSize: () => 132,
+    overscan: 6,
+    scrollMargin: listRef.current?.getBoundingClientRect().top
+      ? listRef.current.getBoundingClientRect().top + window.scrollY
+      : 0,
+    getItemKey: (i) => visible[i]?.peerId ?? i,
+  });
 
   const totalUnread = conversationsWithMock.reduce((s, c) => s + (c.muted ? 0 : c.unread), 0);
   const archivedCount = conversationsWithMock.filter((c) => c.archived).length;
