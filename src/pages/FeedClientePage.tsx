@@ -1,4 +1,5 @@
 import { FeedFiltersBar } from "@/components/FeedFiltersButton";
+import { UniversalSearchPanel } from "@/components/UniversalSearchPanel";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { FeedEmptyState } from "@/components/FeedEmptyState";
@@ -575,6 +576,7 @@ export default function FeedClientePage() {
   return (
     <PullToRefresh onRefresh={handleRefresh} accent="#00E5FF">
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
+      <UniversalSearchPanel defaultPill="cliente" />
       {/* HEADER FIXO */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0A0A0B]/90 border-b border-white/10">
         <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 grid grid-cols-[auto_1fr] items-start gap-2">
