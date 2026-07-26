@@ -419,7 +419,9 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
   }, [open, hasQuery, runQuery]);
 
 
-  // Aplica filtro de raio + pílula de categoria + ordena por distância
+  // Aplica filtro de raio + pílula de categoria + ordena por RELEVÂNCIA
+  // (score) e usa a distância como desempate secundário. Isso mantém lojistas
+  // e prestadores misturados por qualidade da correspondência ao termo.
   const filtered = useMemo(() => {
     const r = radius;
     return rows
@@ -429,7 +431,10 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
         if (it.distanceKm == null) return true; // sem coords ⇒ mantém
         return it.distanceKm <= r;
       })
-      .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+      .sort((a, b) => {
+        if ((b.score ?? 0) !== (a.score ?? 0)) return (b.score ?? 0) - (a.score ?? 0);
+        return (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999);
+      });
   }, [rows, radius, pill]);
 
   const counts = useMemo(() => {
