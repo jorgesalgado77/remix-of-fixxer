@@ -210,7 +210,7 @@ function preloadImage(url: string | null | undefined) {
   } catch { imagePreloadCache.delete(url); }
 }
 
-export function RecentPartnersCarousel() {
+function RecentPartnersCarouselInner() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
 
@@ -881,3 +881,6 @@ function PartnerAvatar({ src, alt, color }: { src: string | null; alt: string; c
     </>
   );
 }
+
+import { memo as __memo } from "react";
+export const RecentPartnersCarousel = __memo(RecentPartnersCarouselInner);

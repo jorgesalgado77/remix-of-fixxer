@@ -1265,7 +1265,7 @@ function ConversationPage() {
             style={{ borderColor: peerTheme.hex, boxShadow: `0 0 12px rgba(${peerTheme.rgb}, 0.45)` }}
           >
             {peerAvatar && !peerIsFallback ? (
-              <img src={peerAvatar} alt={peerName} className="w-full h-full object-cover" />
+              <img src={peerAvatar} alt={peerName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
             ) : peerLoading ? (
               <span className="w-full h-full animate-pulse bg-white/10" aria-label="Carregando avatar" />
             ) : (
@@ -1841,7 +1841,7 @@ function AttachmentBlock({
   return (
     <div className="mb-1 space-y-1">
       {image ? (
-        <img src={url} alt={name} className="rounded-lg max-h-64 object-cover" />
+        <img src={url} alt={name} loading="lazy" decoding="async" className="rounded-lg max-h-64 object-cover" />
       ) : video ? (
         <video
           src={url}

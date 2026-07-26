@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { 
   Store, 
   PlusCircle, 
@@ -55,7 +55,7 @@ import autoTable from 'jspdf-autotable';
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
-import { CreateAdModal } from "@/components/CreateAdModal";
+const CreateAdModal = lazy(() => import("@/components/CreateAdModal").then(m => ({ default: m.CreateAdModal })));
 import { CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
 import {
   evaluateProfileCompleteness,
@@ -85,9 +85,9 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { compressImage } from "@/utils/image-compression";
 import { subscribeBalance, getCachedBalance } from "@/lib/coins";
 import { useMonetization } from "@/hooks/use-monetization";
-import { CoinsExtractModal } from "@/components/CoinsExtractModal";
-import { CoinPacksStoreModal } from "@/components/CoinPacksStoreModal";
-import { PlanDetailsModal } from "@/components/PlanDetailsModal";
+const CoinsExtractModal   = lazy(() => import("@/components/CoinsExtractModal").then(m => ({ default: m.CoinsExtractModal })));
+const CoinPacksStoreModal = lazy(() => import("@/components/CoinPacksStoreModal").then(m => ({ default: m.CoinPacksStoreModal })));
+const PlanDetailsModal    = lazy(() => import("@/components/PlanDetailsModal").then(m => ({ default: m.PlanDetailsModal })));
 import type { PlanId } from "@/lib/monetization";
 
 export function LojistaDashboard() {
@@ -817,11 +817,15 @@ export function LojistaDashboard() {
             <span className="text-[8px] font-black uppercase italic">Menu</span>
         </button>
       </div>
-      <CreateAdModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        defaultCategory={userRole}
-      />
+      {showCreateModal && (
+        <Suspense fallback={null}>
+          <CreateAdModal
+            open={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            defaultCategory={userRole}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
@@ -1482,16 +1486,18 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 </div>
             </div>
 
-            {/* Modais do card "Plano & Moedas" (Passo 7) */}
-            {showExtractModal && <CoinsExtractModal onClose={() => setShowExtractModal(false)} />}
-            {showCoinStore && <CoinPacksStoreModal onClose={() => setShowCoinStore(false)} />}
-            {showPlanModal && (
+            {/* Modais do card "Plano & Moedas" (Passo 7) — lazy */}
+            <Suspense fallback={null}>
+              {showExtractModal && <CoinsExtractModal onClose={() => setShowExtractModal(false)} />}
+              {showCoinStore && <CoinPacksStoreModal onClose={() => setShowCoinStore(false)} />}
+              {showPlanModal && (
                 <PlanDetailsModal
-                    currentPlan={planId}
-                    renewsAt={renewsAt}
-                    onClose={() => setShowPlanModal(false)}
+                  currentPlan={planId}
+                  renewsAt={renewsAt}
+                  onClose={() => setShowPlanModal(false)}
                 />
-            )}
+              )}
+            </Suspense>
         </div>
     );
 }
@@ -3219,7 +3225,7 @@ function ProfileView({
                                             <div className="flex gap-3">
                                                 <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
                                                     {fav.store_profiles?.logo_url ? (
-                                                        <img src={fav.store_profiles.logo_url} className="w-full h-full object-cover" />
+                                                        <img src={fav.store_profiles.logo_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                                     ) : (
                                                         <Store className="w-6 h-6 text-primary" />
                                                     )}
@@ -3300,7 +3306,7 @@ function SortableItem({ id, isVideo, onRemove, isSelected, onToggleSelect }: { i
                 {isVideo ? (
                     <video src={id} className="w-full h-full object-cover" />
                 ) : (
-                    <img src={id} alt="Gallery" className="w-full h-full object-cover" />
+                    <img src={id} alt="Gallery" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 )}
             </div>
             
