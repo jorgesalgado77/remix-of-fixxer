@@ -7,7 +7,11 @@
  * tiver todos os campos preenchidos, `complete` fica `true` e a UI deve
  * liberar as funções sem exigir recarregar a página.
  *
- * A avaliação é role-agnóstica e serve para todos os dashboards.
+ * IMPORTANTE: para o papel `lojista`, esta lista deve espelhar EXATAMENTE
+ * a validação do submit do formulário em `LojistaPage.tsx` (linha ~2972),
+ * senão o usuário salva "com sucesso" mas os botões continuam travados.
+ * Campos aqui = Nome empresa, CNPJ (14), Responsável, E-mail, WhatsApp (>=10),
+ * CEP (8), Endereço, Número, Cidade, Estado, Ramo de atividade.
  */
 
 export type ProfileRole =
@@ -18,45 +22,69 @@ export type ProfileRole =
   | "casual"
   | "admin";
 
-type RequiredField = { key: string; label: string };
+type RequiredField = {
+  key: string;
+  label: string;
+  /** Validador opcional. Se ausente, usa `hasValue` (não-vazio). */
+  validate?: (v: any) => boolean;
+};
+
+const onlyDigits = (v: any) => String(v ?? "").replace(/\D/g, "");
+const isEmail = (v: any) =>
+  typeof v === "string" && /^\S+@\S+\.\S+$/.test(v.trim());
+const isCnpj = (v: any) => onlyDigits(v).length === 14;
+const isCpfOrCnpj = (v: any) => {
+  const d = onlyDigits(v).length;
+  return d === 11 || d === 14;
+};
+const isCep = (v: any) => onlyDigits(v).length === 8;
+const isPhoneBR = (v: any) => onlyDigits(v).length >= 10;
 
 const COMMON_CONTACT: RequiredField[] = [
   { key: "responsible_name", label: "Nome do responsável" },
-  { key: "email_contact", label: "E-mail de contato" },
-  { key: "whatsapp", label: "WhatsApp" },
-  { key: "zipcode", label: "CEP" },
+  { key: "email_contact", label: "E-mail de contato", validate: isEmail },
+  { key: "whatsapp", label: "WhatsApp", validate: isPhoneBR },
+  { key: "zipcode", label: "CEP", validate: isCep },
+];
+
+const ADDRESS_FIELDS: RequiredField[] = [
+  { key: "address", label: "Endereço" },
+  { key: "address_number", label: "Número" },
+  { key: "city", label: "Cidade" },
+  { key: "state", label: "Estado" },
 ];
 
 const REQUIRED_BY_ROLE: Record<ProfileRole, RequiredField[]> = {
   lojista: [
     { key: "company_name", label: "Nome da empresa" },
-    { key: "cnpj", label: "CNPJ" },
+    { key: "cnpj", label: "CNPJ válido", validate: isCnpj },
     ...COMMON_CONTACT,
+    ...ADDRESS_FIELDS,
     { key: "activity_branch", label: "Ramo de atividade" },
   ],
   prestador: [
     { key: "company_name", label: "Nome / Razão social" },
-    { key: "cnpj", label: "CPF ou CNPJ" },
+    { key: "cnpj", label: "CPF ou CNPJ", validate: isCpfOrCnpj },
     ...COMMON_CONTACT,
     { key: "activity_branch", label: "Especialidade" },
   ],
   fornecedor: [
     { key: "company_name", label: "Nome da empresa" },
-    { key: "cnpj", label: "CNPJ" },
+    { key: "cnpj", label: "CNPJ válido", validate: isCnpj },
     ...COMMON_CONTACT,
     { key: "activity_branch", label: "Segmento de fornecimento" },
   ],
   cliente: [
     { key: "responsible_name", label: "Nome completo" },
-    { key: "email_contact", label: "E-mail de contato" },
-    { key: "whatsapp", label: "WhatsApp" },
-    { key: "zipcode", label: "CEP" },
+    { key: "email_contact", label: "E-mail de contato", validate: isEmail },
+    { key: "whatsapp", label: "WhatsApp", validate: isPhoneBR },
+    { key: "zipcode", label: "CEP", validate: isCep },
   ],
   casual: [
     { key: "responsible_name", label: "Nome completo" },
-    { key: "email_contact", label: "E-mail de contato" },
-    { key: "whatsapp", label: "WhatsApp" },
-    { key: "zipcode", label: "CEP" },
+    { key: "email_contact", label: "E-mail de contato", validate: isEmail },
+    { key: "whatsapp", label: "WhatsApp", validate: isPhoneBR },
+    { key: "zipcode", label: "CEP", validate: isCep },
   ],
   admin: [],
 };
@@ -104,7 +132,12 @@ export function evaluateProfileCompleteness(
     };
   }
 
-  const missingFields = required.filter((f) => !hasValue(data[f.key]));
+  const missingFields = required.filter((f) => {
+    const value = data[f.key];
+    if (!hasValue(value)) return true;
+    if (f.validate && !f.validate(value)) return true;
+    return false;
+  });
 
   const result: ProfileCompletenessResult = {
     complete: missingFields.length === 0,
@@ -114,8 +147,6 @@ export function evaluateProfileCompleteness(
   };
 
   if (!result.complete) {
-    // Log de debug amigável para investigar rapidamente qual campo bloqueia
-    // a liberação das funções na dashboard.
     console.info(
       `[profile-completeness] role="${normalizedRole}" incompleto. Campos faltando:`,
       result.missingLabels,
