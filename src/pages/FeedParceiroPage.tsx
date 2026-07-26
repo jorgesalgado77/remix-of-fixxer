@@ -1,4 +1,5 @@
 import { FeedFiltersBar } from "@/components/FeedFiltersButton";
+import { UniversalSearchPanel } from "@/components/UniversalSearchPanel";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
 import { FeedEmptyState } from "@/components/FeedEmptyState";
