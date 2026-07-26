@@ -258,6 +258,8 @@ function ConversationPage() {
   const stopTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [footerHeight, setFooterHeight] = useState(96);
   const isInitialLoadRef = useRef(true);
   const idSetRef = useRef<Set<string>>(new Set());
   const [dragActive, setDragActive] = useState(false);
