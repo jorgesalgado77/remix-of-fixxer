@@ -182,7 +182,26 @@ export function LojistaDashboard() {
           .eq("user_email", user.email)
           .maybeSingle();
 
-        if (!error && data) evaluate(data);
+        if (!error && data && (data.company_name || data.logo_url)) {
+          evaluate(data);
+        } else {
+          // Fallback: usa dados do perfil unificado (public.profiles) quando store_profiles está vazio
+          const { data: prof } = await supabaseExternal
+            .from("profiles")
+            .select("id,display_name,full_name,logo_url,avatar_url,city,state,business_category,custom_branch")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (prof) {
+            evaluate({
+              id: prof.id,
+              company_name: prof.display_name || prof.full_name || "",
+              logo_url: prof.logo_url || prof.avatar_url || null,
+              city: prof.city || "",
+              state: prof.state || "",
+              activity_branch: prof.business_category || prof.custom_branch || "",
+            });
+          }
+        }
       } catch (err) {
         console.warn("[LojistaDashboard] falha ao verificar completude do perfil:", err);
       }
@@ -576,10 +595,7 @@ export function LojistaDashboard() {
 
       {/* Sidebar Retrátil (Desktop) */}
       <aside className="w-72 border-r border-white/10 p-6 flex flex-col gap-6 hidden md:flex bg-[#0A0A0A] overflow-y-auto scrollbar-none">
-        <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(0,255,135,0.3)]">F</div>
-            <h1 className="font-bold text-white tracking-tight uppercase italic">FIXXER</h1>
-        </div>
+{/* Logo FIXXER removida da sidebar — já é exibida na barra superior (_authenticated.tsx) */}
 
         <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} />
 
