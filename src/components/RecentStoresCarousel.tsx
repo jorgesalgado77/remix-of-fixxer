@@ -255,6 +255,16 @@ function RecentStoresCarouselInner() {
   }, [items, myBranch, kindFilter]);
 
   const openProfile = (p: Card) => {
+    // Prime cache com a categoria conhecida do card para eliminar o "flash"
+    // de tema (ciano) ao redirecionar via /perfil/:id.
+    const kindToCategory: Record<string, PublicProfileCategory> = {
+      lojista: "lojista",
+      fornecedor: "fornecedor",
+      prestador: "prestador",
+      cliente: "cliente",
+    };
+    const cat = kindToCategory[p._kind as string];
+    if (cat) primePublicProfileCategory(p.id, cat);
     const path = `/perfil/${encodeURIComponent(p.id)}`;
     try { navigate({ to: path as any }); } catch { window.location.href = path; }
   };
