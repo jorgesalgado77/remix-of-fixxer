@@ -2,6 +2,7 @@ import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { UniversalSearchPanel } from "@/components/UniversalSearchPanel";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
+import { OpportunitiesBadge } from "@/components/OpportunitiesBadge";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FeedCardSkeletonList } from "@/components/FeedCardSkeleton";
 import { thumbSrc } from "@/lib/feed-thumb";

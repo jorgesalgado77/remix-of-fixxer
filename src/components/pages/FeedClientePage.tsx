@@ -13,6 +13,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { formatDistanceFromCity } from "@/lib/geo-distance";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
+import { OpportunitiesBadge } from "@/components/OpportunitiesBadge";
 import { FeedErrorState } from "@/components/FeedErrorState";
 import { useFeedPreload } from "@/hooks/use-feed-preload";
 import { usePersistedState } from "@/lib/feed-persist";

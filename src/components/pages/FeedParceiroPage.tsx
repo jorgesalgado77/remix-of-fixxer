@@ -2,6 +2,7 @@ import { FeedFiltersBar } from "@/components/FeedFiltersButton";
 import { UniversalSearchPanel } from "@/components/UniversalSearchPanel";
 import { RadiusFilter } from "@/components/RadiusFilter";
 import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
+import { OpportunitiesBadge } from "@/components/OpportunitiesBadge";
 import { FeedEmptyState } from "@/components/FeedEmptyState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
