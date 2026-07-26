@@ -473,11 +473,6 @@ export function LojistaDashboard() {
     }, 100);
   };
 
-  // Realça em amarelo os campos que ainda estão faltando (usado no formulário do perfil).
-  const hlField = (key: string) =>
-    profileMissingKeys.includes(key)
-      ? 'rounded-xl p-2 -m-2 ring-2 ring-amber-400/70 bg-amber-500/10'
-      : '';
 
 
   return (
