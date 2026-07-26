@@ -459,3 +459,6 @@ function StoreAvatar({ src, alt, color }: { src: string | null; alt: string; col
     </>
   );
 }
+
+import { memo as __memo } from "react";
+export const RecentStoresCarousel = __memo(RecentStoresCarouselInner);
