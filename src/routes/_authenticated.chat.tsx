@@ -24,6 +24,7 @@ import { isConversationMuted } from "@/lib/chat-preferences";
 
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import {
