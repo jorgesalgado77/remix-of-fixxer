@@ -881,3 +881,6 @@ function PartnerAvatar({ src, alt, color }: { src: string | null; alt: string; c
     </>
   );
 }
+
+import { memo as __memo } from "react";
+export const RecentPartnersCarousel = __memo(RecentPartnersCarouselInner);
