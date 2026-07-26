@@ -1905,6 +1905,30 @@ function ConversationPage() {
               if (fileRef.current) fileRef.current.value = "";
             }}
           />
+          <input
+            ref={cameraPhotoRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? []);
+              if (picked.length) acceptIncomingFiles(picked);
+              if (cameraPhotoRef.current) cameraPhotoRef.current.value = "";
+            }}
+          />
+          <input
+            ref={cameraVideoRef}
+            type="file"
+            accept="video/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? []);
+              if (picked.length) acceptIncomingFiles(picked);
+              if (cameraVideoRef.current) cameraVideoRef.current.value = "";
+            }}
+          />
           <div className="mb-2 flex items-center gap-1.5">
             <button
               onClick={() => fileRef.current?.click()}
@@ -1914,6 +1938,24 @@ function ConversationPage() {
               aria-label="Anexar arquivos"
             >
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => cameraPhotoRef.current?.click()}
+              disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
+              title="Tirar foto"
+              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
+              aria-label="Tirar foto"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => cameraVideoRef.current?.click()}
+              disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
+              title="Gravar vídeo"
+              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
+              aria-label="Gravar vídeo"
+            >
+              <Film className="w-4 h-4" />
             </button>
             <button
               onClick={() => setScheduleOpen(true)}
