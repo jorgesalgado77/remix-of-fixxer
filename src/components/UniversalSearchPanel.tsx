@@ -34,8 +34,64 @@ type ResultItem = {
   category: Cat;
   distanceKm: number | null;
   subtitle: string;
+  matchedFields: string[];
   rating?: number;
 };
+
+/** Remove acentos e normaliza p/ comparação case-insensitive. */
+function stripAccents(s: string): string {
+  return (s || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}
+
+/** Retorna nós React com <mark> nos trechos que casam com o termo (accent-insensitive). */
+function highlight(text: string | null | undefined, term: string) {
+  const src = String(text ?? "");
+  if (!term || term.length < 2 || !src) return src;
+  const normSrc = stripAccents(src);
+  const normTerm = stripAccents(term);
+  const idx = normSrc.indexOf(normTerm);
+  if (idx === -1) return src;
+  const before = src.slice(0, idx);
+  const hit = src.slice(idx, idx + normTerm.length);
+  const after = src.slice(idx + normTerm.length);
+  return (
+    <>
+      {before}
+      <mark className="bg-[#00E5FF]/30 text-white rounded px-0.5">{hit}</mark>
+      {after}
+    </>
+  );
+}
+
+/** Campos que a busca varre — usado tanto para filtrar client-side quanto pro chip de debug. */
+const SEARCHED_FIELDS = [
+  "full_name",
+  "display_name",
+  "company_name",
+  "city",
+  "state",
+  "business_category",
+  "custom_branch",
+  "specialty",
+  "description",
+  "role",
+  "user_type",
+] as const;
+
+const TERM_SUGGESTIONS = [
+  "Barbearia",
+  "Montador",
+  "Chaveiro",
+  "Eletricista",
+  "Marmoraria",
+  "Pintura",
+  "Gesso",
+  "Conferente",
+];
 
 type Radius = 5 | 15 | 30 | 0; // 0 = Toda região
 const RADII: { v: Radius; label: string }[] = [
@@ -142,33 +198,45 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
     abortRef.current = ac;
     setLoading(true);
     try {
-      const q = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60).toLowerCase();
-      // Busca multi-campo case-insensitive. Campos opcionais do schema
-      // (specialty, description, display_name, business_category) são
-      // tolerados: se a coluna não existir, o Postgres ignora silenciosamente
-      // dentro do .or() apenas quando existe — por isso mantemos a lista
-      // restrita ao que sabemos existir e complementamos com filtro client-side.
-      const orParts = [
-        `full_name.ilike.%${q}%`,
-        `display_name.ilike.%${q}%`,
-        `company_name.ilike.%${q}%`,
-        `city.ilike.%${q}%`,
-        `state.ilike.%${q}%`,
-        `category.ilike.%${q}%`,
-        `specialty.ilike.%${q}%`,
-        `description.ilike.%${q}%`,
-        `business_category.ilike.%${q}%`,
-        `custom_branch.ilike.%${q}%`,
-        `role.ilike.%${q}%`,
-        `user_type.ilike.%${q}%`,
-      ];
-      const { data, error } = await supabaseExternal
-        .from("profiles_public")
-        .select("*")
-        .or(orParts.join(","))
-        .limit(120)
+      const rawTerm = debouncedQuery.replace(/[%_]/g, " ").slice(0, 60);
+      const q = rawTerm.toLowerCase();
+      const nTerm = stripAccents(rawTerm);
+
+      // Preferimos a função RPC `search_profiles_public` (accent-insensitive
+      // via unaccent no servidor). Caso a função ainda não exista no banco,
+      // caímos para o `.or()` client-side no view `profiles_public`.
+      let data: any[] | null = null;
+      let usedPath: "rpc" | "or" = "rpc";
+      const rpc = await supabaseExternal
+        .rpc("search_profiles_public", { q })
         .abortSignal(ac.signal);
-      if (error) throw error;
+      if (rpc.error) {
+        usedPath = "or";
+        console.warn("[UniversalSearch] RPC indisponível, usando fallback .or()", rpc.error?.message);
+        const orParts = [
+          `full_name.ilike.%${q}%`,
+          `display_name.ilike.%${q}%`,
+          `company_name.ilike.%${q}%`,
+          `city.ilike.%${q}%`,
+          `state.ilike.%${q}%`,
+          `business_category.ilike.%${q}%`,
+          `custom_branch.ilike.%${q}%`,
+          `specialty.ilike.%${q}%`,
+          `description.ilike.%${q}%`,
+          `role.ilike.%${q}%`,
+          `user_type.ilike.%${q}%`,
+        ];
+        const alt = await supabaseExternal
+          .from("profiles_public")
+          .select("*")
+          .or(orParts.join(","))
+          .limit(120)
+          .abortSignal(ac.signal);
+        if (alt.error) throw alt.error;
+        data = alt.data;
+      } else {
+        data = rpc.data as any[];
+      }
 
       const mapped: ResultItem[] = (data ?? [])
         .map((r: any) => {
@@ -176,7 +244,13 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
           if (!cat) return null;
           const c = cityCoords(r.city);
           const km = c && userCoords ? haversineKm(userCoords, c) : null;
-          const specialty = r.specialty || r.business_category || r.activity_branch;
+          // Fallback: quando custom_branch estiver vazio, usa company_name.
+          const specialty =
+            r.specialty ||
+            r.business_category ||
+            r.custom_branch ||
+            r.activity_branch ||
+            r.company_name;
           const subtitle =
             specialty ||
             (cat === "prestador"
@@ -186,25 +260,29 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               : cat === "fornecedor"
               ? "Atacado / Insumos B2B"
               : "Cliente Final");
+
+          // Recomputa quais campos casaram — usado no destaque do card.
+          const matchedFields = SEARCHED_FIELDS.filter((f) =>
+            stripAccents(String(r?.[f] ?? "")).includes(nTerm),
+          );
+
           return {
             id: r.id,
-            name: r.display_name || r.full_name || "Usuário FIXXER",
+            name: r.display_name || r.full_name || r.company_name || "Usuário FIXXER",
             city: r.city ?? null,
             state: r.state ?? null,
             avatar_url: resolvePhoto(r),
             category: cat,
             distanceKm: km,
             subtitle,
+            matchedFields,
           } as ResultItem;
         })
         .filter(Boolean) as ResultItem[];
 
-      // Fallback preview garantido: sempre que o termo casar com "conferente",
-      // injeta o card de referência (Jorge Salgado) — some apenas se já
-      // existir um resultado com o mesmo id vindo do banco.
+      // Fallback preview garantido para o termo "conferente".
       const matchesConferente = /confer/i.test(debouncedQuery);
       if (matchesConferente) {
-        // Busca o perfil real do Jorge para usar o avatar salvo.
         let jorgeReal: any = null;
         try {
           const { data: jd } = await supabaseExternal
@@ -237,15 +315,20 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               jorgeReal?.business_category ||
               jorgeReal?.activity_branch ||
               "Conferente Técnico",
+            matchedFields: ["specialty"],
           });
         }
+      }
+
+      // Debug leve — visível apenas no console durante desenvolvimento.
+      if (typeof window !== "undefined" && (window as any).__FIXXER_DEBUG_SEARCH) {
+        console.info("[UniversalSearch]", { path: usedPath, term: rawTerm, hits: mapped.length });
       }
 
       setRows(mapped);
     } catch (e: any) {
       if (e?.name === "AbortError") return;
       console.warn("[UniversalSearch] fetch", e);
-      // Fallback preview mesmo em erro de rede, quando aplicável.
       if (/confer/i.test(debouncedQuery)) {
         let jorgeReal: any = null;
         try {
@@ -277,12 +360,12 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               jorgeReal?.business_category ||
               jorgeReal?.activity_branch ||
               "Conferente Técnico",
+            matchedFields: ["specialty"],
           },
         ]);
       } else {
         setRows([]);
       }
-
     } finally {
       setLoading(false);
     }
@@ -447,8 +530,10 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
         {hasQuery && !loading && filtered.length === 0 && (
           <EmptyState
             radius={radius}
+            term={debouncedQuery}
             onExpand={() => setRadius(30)}
             onPublish={() => navigate({ to: "/feed/cliente" as any }).catch(() => undefined)}
+            onSuggestion={(term) => setQuery(term)}
           />
         )}
 
@@ -460,6 +545,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
                 <ResultCard
                   key={it.id}
                   item={it}
+                  term={debouncedQuery}
                   favorited={isFav}
                   onChat={() => openChat(it.id)}
                   onFav={() => {
@@ -526,11 +612,12 @@ const CategoryPill = memo(function CategoryPill(props: {
 
 const ResultCard = memo(function ResultCard(props: {
   item: ResultItem;
+  term?: string;
   favorited?: boolean;
   onChat: () => void;
   onFav: () => void;
 }) {
-  const { item, favorited = false, onChat, onFav } = props;
+  const { item, term = "", favorited = false, onChat, onFav } = props;
   const c = getCategoryColor(item.category);
   const meta = CAT_META[item.category];
   const distance =
@@ -548,6 +635,8 @@ const ResultCard = memo(function ResultCard(props: {
       : item.category === "cliente"
       ? `/cliente/${item.id}`
       : `/lojista/${item.id}`;
+
+  const location = item.city ? `${item.city}${item.state ? "/" + item.state : ""}` : "";
 
   return (
     <li
@@ -584,19 +673,29 @@ const ResultCard = memo(function ResultCard(props: {
               to={profileHref as any}
               className="text-sm font-semibold text-white truncate hover:underline"
             >
-              {item.name}
+              {highlight(item.name, term)}
             </Link>
             <span className={["text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border", c.badgeBg].join(" ")}>
               {meta.badge} {meta.label}
             </span>
           </div>
           <p className="text-[11px] text-white/60 truncate">
-            {item.subtitle}
-            {item.city ? ` • ${item.city}${item.state ? "/" + item.state : ""}` : ""}
+            {highlight(item.subtitle, term)}
+            {location && (
+              <>
+                {" • "}
+                {highlight(location, term)}
+              </>
+            )}
           </p>
           {distance && (
             <p className="text-[10px] text-white/50 mt-0.5 flex items-center gap-1">
               <MapPin className="h-3 w-3" /> a {distance} de você
+            </p>
+          )}
+          {item.matchedFields && item.matchedFields.length > 0 && (
+            <p className="text-[9px] uppercase tracking-widest text-white/30 mt-1 truncate">
+              Casou em: {item.matchedFields.join(", ")}
             </p>
           )}
         </div>
@@ -641,15 +740,52 @@ const ResultCard = memo(function ResultCard(props: {
   );
 });
 
-function EmptyState(props: { radius: Radius; onExpand: () => void; onPublish: () => void }) {
-  const { radius, onExpand, onPublish } = props;
+function EmptyState(props: {
+  radius: Radius;
+  term: string;
+  onExpand: () => void;
+  onPublish: () => void;
+  onSuggestion: (term: string) => void;
+}) {
+  const { radius, term, onExpand, onPublish, onSuggestion } = props;
+  // Sugere termos próximos que não sejam iguais ao termo digitado.
+  const nTerm = stripAccents(term);
+  const suggestions = TERM_SUGGESTIONS.filter(
+    (s) => stripAccents(s) !== nTerm,
+  ).slice(0, 6);
+
   return (
     <div className="text-center py-6 space-y-3">
-      <p className="text-sm text-white/70">
-        Nenhum profissional ou produto encontrado
+      <p className="text-sm text-white/80">
+        Nenhum resultado para{" "}
+        <span className="text-white font-semibold">"{term}"</span>
         {radius > 0 ? ` em ${radius} km.` : "."}
       </p>
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+      <p className="text-[11px] text-white/50">
+        Buscamos em: <span className="text-white/70">{SEARCHED_FIELDS.join(", ")}</span>
+      </p>
+
+      {suggestions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">
+            Tente também
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onSuggestion(s)}
+                className="rounded-full border border-white/15 bg-white/5 text-white/80 hover:border-[#00E5FF]/60 hover:text-[#00E5FF] text-[11px] px-3 py-1 transition"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
         {radius !== 30 && radius !== 0 && (
           <button
             type="button"
