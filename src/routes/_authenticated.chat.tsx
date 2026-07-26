@@ -890,7 +890,20 @@ function ChatInboxPage() {
                     ? buildHistorySnippet(messagesByPeer.get(c.peerId) || "", activeTerms)
                     : null;
                 return (
-                <li key={c.peerId} className="relative">
+                <div
+                  key={c.peerId}
+                  data-index={vi.index}
+                  ref={virtualizer.measureElement}
+                  className="relative"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    transform: `translateY(${vi.start - virtualizer.options.scrollMargin}px)`,
+                    paddingBottom: 8,
+                  }}
+                >
                   <button
                     onClick={() => openConversation(c.peerId)}
 
