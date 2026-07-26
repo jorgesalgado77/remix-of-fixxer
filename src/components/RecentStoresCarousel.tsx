@@ -35,7 +35,7 @@ type Row = {
 type Kind = "lojista" | "fornecedor";
 type Card = Row & { _kind: Kind; _branch: string | null };
 
-const CACHE_KEY = "fixxer_recent_stores_v4";
+const CACHE_KEY = "fixxer_recent_stores_v5";
 
 function safeStr(v: unknown): string | null {
   if (v == null) return null;
@@ -193,13 +193,14 @@ function RecentStoresCarouselInner() {
         }
       } catch { /* opcional */ }
 
-      // 2) Perfis reais — só interessam Lojistas e Fornecedores.
+      // 2) Perfis reais — via View pública `profiles_public` (bypassa RLS restrito de `profiles`).
       const { data, error } = await supabaseExternal
-        .from("profiles")
-        .select("id, full_name, display_name, company_name, avatar_url, role, user_type, business_category, custom_branch, city, state, rating, created_at, lat, lng")
+        .from("profiles_public")
+        .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, user_type, city, state, created_at")
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
+
 
       const rows: Card[] = ((data as unknown as (Row & { user_type?: string | null })[]) ?? [])
         .map((r) => {
@@ -221,7 +222,9 @@ function RecentStoresCarouselInner() {
           else kind = null;
 
           if (!kind) return null;
-          return { ...r, _kind: kind, _branch: mainBranchOf(r.business_category, r.custom_branch) } as Card;
+          const avatar = safeStr((r as any).avatar_url) || safeStr((r as any).logo_url);
+          return { ...r, avatar_url: avatar, _kind: kind, _branch: mainBranchOf(r.business_category, r.custom_branch) } as Card;
+
         })
         .filter((x): x is Card => !!x)
         .slice(0, 60);

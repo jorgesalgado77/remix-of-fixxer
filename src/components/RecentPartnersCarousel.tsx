@@ -63,7 +63,7 @@ type PartnerCard = PartnerRow & { _kind: PartnerKind };
 type SortMode = "recent" | "rating" | "nearby";
 type KindFilter = "all" | PartnerKind;
 
-const CACHE_KEY = "fixxer_recent_partners_v3";
+const CACHE_KEY = "fixxer_recent_partners_v4";
 const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
 const SORT_KEY = "fixxer_recent_partners_sort_v1";
 const FILTER_KEY = "fixxer_recent_partners_filter_v1";
@@ -258,7 +258,7 @@ function RecentPartnersCarouselInner() {
     // Supabase externo. Qualquer coluna extra faz o PostgREST responder 400 e cai
     // no fallback silencioso (mock), o que explicava o card mostrando somente
     // "Jorge Salgado / Carlos Silva" mesmo com prestadores reais cadastrados.
-    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, banner_url, role, business_category, custom_branch, preferred_service, job_roles, city, state, rating, created_at, lat, lng";
+    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, city, state, created_at";
     try {
       // Bloqueia administradores e o próprio usuário logado do carrossel público.
       let selfId: string | null = null;
@@ -281,9 +281,10 @@ function RecentPartnersCarouselInner() {
       } catch { /* opcional */ }
 
       const { data, error } = await supabaseExternal
-        .from("profiles")
+        .from("profiles_public")
         .select(SAFE_COLS)
         .not("role", "is", null)
+
         .order("created_at", { ascending: false })
         .limit(120);
       if (error) throw error;
