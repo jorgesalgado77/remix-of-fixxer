@@ -196,7 +196,12 @@ export function LojistaPublicProfilePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const routeCategory = useMemo<PublicProfileCategory>(() => categoryFromProfilePath(location.pathname) ?? "lojista", [location.pathname]);
-  const [resolvedCategory, setResolvedCategory] = useState<PublicProfileCategory>(routeCategory);
+  // Seed inicial a partir do cache compartilhado: se outro componente já
+  // resolveu a categoria deste userId (ex: carrossel primou ao clicar),
+  // o tema entra correto sem flash de ciano.
+  const [resolvedCategory, setResolvedCategory] = useState<PublicProfileCategory>(
+    () => (params?.id ? peekPublicProfileCategory(String(params.id)) : null) ?? routeCategory,
+  );
   const category: CategoryKey = resolvedCategory;
   const theme = useMemo(() => getCategoryTheme(category), [category]);
   const themeStyle = {
