@@ -817,11 +817,15 @@ export function LojistaDashboard() {
             <span className="text-[8px] font-black uppercase italic">Menu</span>
         </button>
       </div>
-      <CreateAdModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        defaultCategory={userRole}
-      />
+      {showCreateModal && (
+        <Suspense fallback={null}>
+          <CreateAdModal
+            open={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            defaultCategory={userRole}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
