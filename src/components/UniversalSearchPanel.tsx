@@ -43,6 +43,8 @@ type ResultItem = {
   distanceKm: number | null;
   subtitle: string;
   matchedFields: string[];
+  /** Score de relevância calculado por `scoreRow`. */
+  score: number;
   rating?: number;
 };
 
