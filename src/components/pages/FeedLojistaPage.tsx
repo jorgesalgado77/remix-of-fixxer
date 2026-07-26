@@ -820,39 +820,20 @@ export default function FeedLojistaPage() {
       <UniversalSearchPanel defaultPill="lojista" />
       {/* Topbar Fixa */}
       <header className="border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 pt-3 pb-1 grid grid-cols-[auto_1fr] items-start gap-2">
-          <Link
-            to="/lojista"
-            aria-label="Voltar para a Dashboard do Lojista"
-            className="w-10 h-10 shrink-0 bg-[#1A1A1B] border border-white/10 rounded-xl flex items-center justify-center text-white/70 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+        <div className="max-w-3xl mx-auto">
           <FeedFiltersBar
             accent="#00E5FF"
             category="lojista"
             resultCount={visible.length}
             resultLabel="publicação"
-            searchInput={
-              <div className="relative w-full">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar palavra-chave, cidade..."
-                  className="w-full bg-[#1A1A1B] border border-white/10 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00E5FF]"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/50"
-                    aria-label="Limpar busca"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+            backSlot={
+              <Link
+                to="/lojista"
+                aria-label="Voltar para a Dashboard do Lojista"
+                className="w-10 h-10 shrink-0 bg-[#1A1A1B] border border-white/10 rounded-xl flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
             }
             onMacroSearchTerm={(term) => setSearch(term ?? "")}
             pillLabel="Tipo de Anúncio"
