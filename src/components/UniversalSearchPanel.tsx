@@ -77,7 +77,8 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
   /** Se `true`, renderiza colapsado até o usuário focar/digitar. */
   compact?: boolean;
 }) {
-  const { defaultPill = "todos", compact = true } = props;
+  const { compact = true } = props;
+  const defaultPill: PillKey = "todos";
   const navigate = useNavigate();
   const userCoords = useUserCoords();
 
