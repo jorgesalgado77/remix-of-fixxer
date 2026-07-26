@@ -677,9 +677,13 @@ function ConversationPage() {
   };
 
   const onScrollFeed = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+    if (isNearBottomRef.current && pendingScrollHint > 0) setPendingScrollHint(0);
     if (!hasMore || loading) return;
-    if (e.currentTarget.scrollTop < 80) void loadOlder();
+    if (el.scrollTop < 80) void loadOlder();
   };
+
 
 
   const sendTyping = () => {
