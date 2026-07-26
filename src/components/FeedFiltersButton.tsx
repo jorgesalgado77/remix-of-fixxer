@@ -39,6 +39,8 @@ export type FeedFiltersButtonProps = {
   badge?: { icon?: string; text: string };
   // ------- busca inline -------
   searchInput?: ReactNode;
+  // ------- slot opcional para botão Voltar alinhado com Filtros -------
+  backSlot?: ReactNode;
   // ------- contagem de resultados (opcional) -------
   resultCount?: number;
   resultLabel?: string; // singular; usado como "{n} {label}" e pluralizado com "s"
