@@ -242,7 +242,24 @@ export function LojistaPublicProfilePage() {
 
   useEffect(() => {
     setResolvedCategory(routeCategory);
+  // Ao trocar de perfil visitado, re-seeda a partir do cache compartilhado
+  // (priorizando o valor já resolvido por outra fonte) e só cai para o
+  // routeCategory quando não há cache. Isso evita o flash de cor errada e
+  // preserva o tema quando a categoria real ≠ segmento da URL.
+  useEffect(() => {
+    const cached = storeId ? peekPublicProfileCategory(String(storeId)) : null;
+    setResolvedCategory(cached ?? routeCategory);
   }, [routeCategory, storeId]);
+
+  // Propaga a categoria do perfil visitado para o tema GLOBAL (usado por
+  // DashboardLayout, GlobalActionBar, NotificationsCenter etc). Assim que a
+  // página monta com a cor certa, componentes compartilhados acompanham —
+  // sem esperar o redirect para a rota canônica da categoria.
+  useEffect(() => {
+    setContextCategoryOverride(resolvedCategory);
+    if (storeId) primePublicProfileCategory(String(storeId), resolvedCategory);
+    return () => setContextCategoryOverride(null);
+  }, [resolvedCategory, storeId]);
 
   useEffect(() => {
     let mounted = true;
