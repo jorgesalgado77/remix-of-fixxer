@@ -1750,6 +1750,7 @@ function ConversationPage() {
           }}
           className="fixed left-1/2 -translate-x-1/2 bottom-[96px] z-[95] rounded-full px-3 h-9 font-black italic uppercase text-[10px] tracking-widest flex items-center gap-1.5 shadow-2xl border-2 animate-in fade-in slide-in-from-bottom-2"
           style={{
+            bottom: `${footerHeight + 12}px`,
             backgroundColor: peerTheme.hex,
             color: "#000",
             borderColor: peerTheme.hex,
