@@ -256,23 +256,37 @@ function ChatInboxPage() {
       const peerIds = Array.from(
         new Set(data.map((m) => (m.sender_id === uid ? m.recipient_id : m.sender_id)).filter(Boolean)),
       );
-      // Ao abrir/reabrir a lista, invalida nomes/fotos em memória para buscar
-      // os dados públicos mais recentes do usuário correto (user_id do peer).
+      // Preserva dados de peers já em cache (LS/memória) para render instantâneo.
+      // Apenas insere fallback para peers realmente desconhecidos — sem apagar
+      // nomes/fotos/categorias já resolvidos.
       try {
-        const { clearPeerCache, fallbackPeer } = await import("@/lib/chat-peer-profile");
-        const fallbackMap: Record<string, PeerInfo> = {};
-        for (const peerId of peerIds) {
-          clearPeerCache(peerId);
-          const fallback = fallbackPeer(peerId);
-          fallbackMap[peerId] = {
-            name: fallback.name,
-            avatar: null,
-            role: null,
-            isFallback: true,
-            initials: fallback.initials,
-          };
-        }
-        if (peerIds.length > 0) setPeers((prev) => ({ ...prev, ...fallbackMap }));
+        const { getCachedPeer, fallbackPeer } = await import("@/lib/chat-peer-profile");
+        const addFallback: Record<string, PeerInfo> = {};
+        setPeers((prev) => {
+          for (const peerId of peerIds) {
+            if (prev[peerId] && !prev[peerId].isFallback) continue;
+            const cached = getCachedPeer(peerId);
+            if (cached) {
+              addFallback[peerId] = {
+                name: cached.name || "Conversa",
+                avatar: cached.avatarUrl ?? null,
+                role: cached.role ?? null,
+                isFallback: false,
+                initials: cached.initials,
+              };
+            } else if (!prev[peerId]) {
+              const fb = fallbackPeer(peerId);
+              addFallback[peerId] = {
+                name: fb.name,
+                avatar: null,
+                role: null,
+                isFallback: true,
+                initials: fb.initials,
+              };
+            }
+          }
+          return Object.keys(addFallback).length ? { ...prev, ...addFallback } : prev;
+        });
       } catch {}
       idSetRef.current = new Set(data.map((m) => m.id));
       setMessages(data);
