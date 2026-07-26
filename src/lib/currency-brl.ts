@@ -15,8 +15,11 @@ export const formatBRL = (v: string | number): string => {
  * Aplica máscara BRL retornando apenas o corpo "12.345,67" (sem prefixo R$).
  * Ignora qualquer não-dígito — funciona com colagem/edit/delete/setas.
  */
-export const maskCurrencyBRL = (raw: string): string => {
-  const digits = (raw || "").replace(/\D/g, "").slice(0, 14);
+export const maskCurrencyBRL = (raw: unknown): string => {
+  // Aceita string | number | null | undefined sem quebrar (defensivo: nunca
+  // chama .replace em não-string).
+  const src = raw == null ? "" : typeof raw === "string" ? raw : String(raw);
+  const digits = src.replace(/\D/g, "").slice(0, 14);
   if (!digits) return "";
   const n = Number(digits) / 100;
   return n.toLocaleString("pt-BR", {
@@ -24,6 +27,7 @@ export const maskCurrencyBRL = (raw: string): string => {
     maximumFractionDigits: 2,
   });
 };
+
 
 /** Converte string mascarada BRL para número (float). */
 export const parseCurrencyBRL = (masked: string | number | null | undefined): number => {
