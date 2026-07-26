@@ -1957,7 +1957,12 @@ function ConversationPage() {
               <Camera className="w-4 h-4" />
             </button>
             <button
-              onClick={() => cameraVideoRef.current?.click()}
+              onClick={() => {
+                const el = cameraVideoRef.current;
+                if (!el) return;
+                el.setAttribute("capture", "environment");
+                el.click();
+              }}
               disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
               title="Gravar vídeo"
               className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
