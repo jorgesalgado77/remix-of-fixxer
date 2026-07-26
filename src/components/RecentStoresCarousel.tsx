@@ -196,7 +196,7 @@ function RecentStoresCarouselInner() {
       // 2) Perfis reais — via View pública `profiles_public` (bypassa RLS restrito de `profiles`).
       const { data, error } = await supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, user_type, city, state, created_at")
+        .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, user_type, business_category, custom_branch, city, state, created_at")
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
