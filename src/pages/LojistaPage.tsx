@@ -85,9 +85,9 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { compressImage } from "@/utils/image-compression";
 import { subscribeBalance, getCachedBalance } from "@/lib/coins";
 import { useMonetization } from "@/hooks/use-monetization";
-import { CoinsExtractModal } from "@/components/CoinsExtractModal";
-import { CoinPacksStoreModal } from "@/components/CoinPacksStoreModal";
-import { PlanDetailsModal } from "@/components/PlanDetailsModal";
+const CoinsExtractModal   = lazy(() => import("@/components/CoinsExtractModal").then(m => ({ default: m.CoinsExtractModal })));
+const CoinPacksStoreModal = lazy(() => import("@/components/CoinPacksStoreModal").then(m => ({ default: m.CoinPacksStoreModal })));
+const PlanDetailsModal    = lazy(() => import("@/components/PlanDetailsModal").then(m => ({ default: m.PlanDetailsModal })));
 import type { PlanId } from "@/lib/monetization";
 
 export function LojistaDashboard() {
