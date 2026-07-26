@@ -33,6 +33,7 @@ import {
   categoryFromProfilePath,
   publicProfilePathFor,
   resolvePublicProfileCategory,
+  peekPublicProfileCategory,
   type PublicProfileCategory,
 } from "@/lib/public-profile-category";
 import { useUserCoords, cityCoords } from "@/lib/geo-distance";
