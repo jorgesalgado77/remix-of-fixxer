@@ -877,8 +877,13 @@ function ChatInboxPage() {
           </div>
         ) : (
           <>
-            <ul className="space-y-2">
-              {visible.map((c) => {
+            <div
+              ref={listRef}
+              style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}
+            >
+              {virtualizer.getVirtualItems().map((vi) => {
+                const c = visible[vi.index];
+                if (!c) return null;
                 const theme = getPeerTheme(c.peerRole);
                 const historySnippet =
                   activeTerms.length > 0 && !normStr(c.lastMessage || "").includes(activeTerms[0])
