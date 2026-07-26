@@ -484,7 +484,7 @@ const ResultCard = memo(function ResultCard(props: {
           type="button"
           onClick={onChat}
           className={[
-            "h-9 flex-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-[#0A0A0B]",
+            "h-9 flex-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-[#0A0A0B] transition active:scale-95",
             c.bg,
           ].join(" ")}
         >
