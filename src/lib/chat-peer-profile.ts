@@ -10,6 +10,7 @@
  * Retorna SEMPRE um objeto renderizável (name + initials), mesmo em falha.
  */
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
 
 export type PeerProfile = {
   id: string;
@@ -226,9 +227,15 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
   // Override autoritativo: a existência de uma linha em
   // store/provider/supplier_profiles é o sinal mais confiável de categoria —
   // sobrepõe qualquer role genérico do profiles ("user", "usuario", etc.).
-  if (providerHit) current.role = "prestador";
-  else if (supplierHit) current.role = "fornecedor";
-  else if (storeHit) current.role = "lojista";
+  let detectedCategory: PublicProfileCategory | null = null;
+  if (providerHit) { current.role = "prestador"; detectedCategory = "prestador"; }
+  else if (supplierHit) { current.role = "fornecedor"; detectedCategory = "fornecedor"; }
+  else if (storeHit) { current.role = "lojista"; detectedCategory = "lojista"; }
+
+  // Compartilha o resultado com o cache do perfil público — evita que abrir
+  // o perfil desse peer logo depois faça as mesmas consultas de novo.
+  if (detectedCategory) primePublicProfileCategory(owner, detectedCategory);
+
 
 
   const finalName = current.name || "Conversa";

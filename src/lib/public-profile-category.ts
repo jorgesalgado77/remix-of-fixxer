@@ -94,7 +94,33 @@ async function hasSpecializedRow(table: string, id: string): Promise<boolean> {
   return false;
 }
 
-export async function resolvePublicProfileCategory(
+/**
+ * Cache compartilhado entre perfil público e chat.
+ * - TTL de 60s (mesma janela de visualização de mensagens).
+ * - De-duplica requisições concorrentes: se dois componentes pedirem a
+ *   categoria do mesmo userId ao mesmo tempo, só uma consulta ao Supabase
+ *   é disparada; a segunda aguarda a mesma promise.
+ */
+const CATEGORY_CACHE = new Map<string, { at: number; value: PublicProfileCategory }>();
+const CATEGORY_INFLIGHT = new Map<string, Promise<PublicProfileCategory>>();
+const CATEGORY_TTL_MS = 60_000;
+
+export function primePublicProfileCategory(userId: string, category: PublicProfileCategory) {
+  if (!userId || !category) return;
+  CATEGORY_CACHE.set(userId, { at: Date.now(), value: category });
+}
+
+export function clearPublicProfileCategoryCache(userId?: string) {
+  if (userId) {
+    CATEGORY_CACHE.delete(userId);
+    CATEGORY_INFLIGHT.delete(userId);
+  } else {
+    CATEGORY_CACHE.clear();
+    CATEGORY_INFLIGHT.clear();
+  }
+}
+
+async function computePublicProfileCategory(
   userId: string,
   options?: { profile?: any; routeHint?: PublicProfileCategory | null },
 ): Promise<PublicProfileCategory> {
@@ -121,4 +147,29 @@ export async function resolvePublicProfileCategory(
   return options?.routeHint && CATEGORY_VALUES.includes(options.routeHint)
     ? options.routeHint
     : "cliente";
+}
+
+export async function resolvePublicProfileCategory(
+  userId: string,
+  options?: { profile?: any; routeHint?: PublicProfileCategory | null; refresh?: boolean },
+): Promise<PublicProfileCategory> {
+  if (!userId) return options?.routeHint ?? "cliente";
+
+  if (!options?.refresh) {
+    const cached = CATEGORY_CACHE.get(userId);
+    if (cached && Date.now() - cached.at < CATEGORY_TTL_MS) return cached.value;
+    const inflight = CATEGORY_INFLIGHT.get(userId);
+    if (inflight) return inflight;
+  }
+
+  const p = computePublicProfileCategory(userId, options)
+    .then((value) => {
+      CATEGORY_CACHE.set(userId, { at: Date.now(), value });
+      return value;
+    })
+    .finally(() => {
+      CATEGORY_INFLIGHT.delete(userId);
+    });
+  CATEGORY_INFLIGHT.set(userId, p);
+  return p;
 }
