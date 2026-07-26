@@ -39,6 +39,8 @@ export type FeedFiltersButtonProps = {
   badge?: { icon?: string; text: string };
   // ------- busca inline -------
   searchInput?: ReactNode;
+  // ------- slot opcional para botão Voltar alinhado com Filtros -------
+  backSlot?: ReactNode;
   // ------- contagem de resultados (opcional) -------
   resultCount?: number;
   resultLabel?: string; // singular; usado como "{n} {label}" e pluralizado com "s"
@@ -106,6 +108,7 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     onRadiusChange,
     badge,
     searchInput,
+    backSlot,
     resultCount,
     resultLabel = "resultado",
     loading,
@@ -224,10 +227,13 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
             searchInput ? "" : "max-w-3xl mx-auto"
           }`}
         >
+          {backSlot && <div className="shrink-0">{backSlot}</div>}
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors shrink-0"
+            className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-semibold uppercase tracking-wide transition-colors ${
+              backSlot && !searchInput ? "flex-1 h-10" : "shrink-0 py-2"
+            }`}
             style={{
               borderColor: hexToRgba(accent, 0.35),
               backgroundColor: hexToRgba(accent, 0.08),

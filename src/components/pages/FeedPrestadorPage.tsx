@@ -1037,6 +1037,14 @@ export default function FeedPrestadorPage() {
   const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_prestador_status", "todos");
   const [detailsFor, setDetailsFor] = useState<JobPost | null>(null);
   const [search, setSearch] = usePersistedState<string>("fixxer_feed_prestador_search", "");
+  useEffect(() => {
+    const h = (e: Event) => {
+      const q = (e as CustomEvent<{ query?: string }>).detail?.query ?? "";
+      setSearch(q);
+    };
+    window.addEventListener("fixxer:universal-search", h as EventListener);
+    return () => window.removeEventListener("fixxer:universal-search", h as EventListener);
+  }, [setSearch]);
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [applied, setApplied] = useState<Set<string>>(new Set());
@@ -1252,22 +1260,13 @@ export default function FeedPrestadorPage() {
       {/* TOPBAR FIXO */}
       <header className="sticky top-0 z-50 bg-[#0A0A0B]/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-5xl mx-auto px-4 py-3 space-y-2">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate({ to: "/dashboard/prestador" })}
-              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all shrink-0"
-              aria-label="Voltar para dashboard"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-base font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
-                <Zap className="w-4 h-4 text-[#FF9F0A]" /> Feed do Prestador
-              </h1>
-              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest truncate">
-                Mural de Oportunidades e O.S.
-              </p>
-            </div>
+          <div className="min-w-0 px-3 sm:px-4">
+            <h1 className="text-base font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
+              <Zap className="w-4 h-4 text-[#FF9F0A]" /> Feed do Prestador
+            </h1>
+            <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest truncate">
+              Mural de Oportunidades e O.S.
+            </p>
           </div>
 
           <FeedFiltersBar
@@ -1275,27 +1274,14 @@ export default function FeedPrestadorPage() {
             category="prestador"
             resultCount={filtered.length}
             resultLabel="vaga"
-            searchInput={
-              <div
-                className={`flex items-center gap-3 px-3 py-2 rounded-xl border border-white/10 ${glassClass}`}
+            backSlot={
+              <button
+                onClick={() => navigate({ to: "/dashboard/prestador" })}
+                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all flex items-center justify-center shrink-0"
+                aria-label="Voltar para dashboard"
               >
-                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar palavra-chave ou cidade..."
-                  className="bg-transparent border-none outline-none text-xs text-white w-full font-medium placeholder:text-muted-foreground"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="text-muted-foreground hover:text-white"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+                <ArrowLeft className="w-4 h-4" />
+              </button>
             }
             onMacroSearchTerm={(term) => setSearch(term ?? "")}
             pillLabel="Especialidade"
