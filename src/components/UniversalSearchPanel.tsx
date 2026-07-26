@@ -62,6 +62,32 @@ function normalizeCategory(raw: any): Cat | null {
   return null;
 }
 
+/**
+ * Resolve a URL de foto do perfil tentando múltiplas colunas conhecidas
+ * (avatar_url, logo_url, photo_url, foto_url, profile_photo_url) e o
+ * fallback nos extras salvos em `custom_sections.__extras`.
+ */
+function resolvePhoto(row: any): string | null {
+  if (!row || typeof row !== "object") return null;
+  const extras = (row.custom_sections && (row.custom_sections as any).__extras) || {};
+  const candidates = [
+    row.avatar_url,
+    row.logo_url,
+    row.photo_url,
+    row.foto_url,
+    row.profile_photo_url,
+    extras.avatar_url,
+    extras.logo_url,
+    extras.photo_url,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && /^https?:\/\//i.test(c)) return c;
+  }
+  return null;
+}
+
+
+
 function useDebounced<T>(value: T, delay = 300): T {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -160,7 +186,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
             name: r.display_name || r.full_name || "Usuário FIXXER",
             city: r.city ?? null,
             state: r.state ?? null,
-            avatar_url: r.avatar_url ?? null,
+            avatar_url: resolvePhoto(r),
             category: cat,
             distanceKm: km,
             subtitle,
@@ -198,7 +224,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               "Jorge Salgado",
             city: jorgeReal?.city ?? "Votorantim",
             state: jorgeReal?.state ?? "SP",
-            avatar_url: jorgeReal?.avatar_url ?? null,
+            avatar_url: resolvePhoto(jorgeReal),
             category: "prestador",
             distanceKm: 4.8,
             subtitle:
@@ -238,7 +264,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
               "Jorge Salgado",
             city: jorgeReal?.city ?? "Votorantim",
             state: jorgeReal?.state ?? "SP",
-            avatar_url: jorgeReal?.avatar_url ?? null,
+            avatar_url: resolvePhoto(jorgeReal),
             category: "prestador",
             distanceKm: 4.8,
             subtitle:
