@@ -42,6 +42,7 @@ import { enqueueMarkAllRead, enqueueMarkConversationRead } from "@/lib/chat-read
 import { MOCK_CONVERSATIONS, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
 import { getMockSeenAt, markMockConversationSeen } from "@/lib/chat-drafts";
 import { getPeerTheme } from "@/lib/category-colors";
+import { ThreadCard } from "@/components/chat/ThreadCard";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatRouteShell,
