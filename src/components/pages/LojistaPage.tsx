@@ -1684,7 +1684,8 @@ function ProfileView({
     setFavoriteCategory,
     branches,
     loadingFavorites,
-    filteredFavorites
+    filteredFavorites,
+    missingKeys = []
 }: { 
     setIsProfileComplete: (complete: boolean) => void; 
     rating: number; 
@@ -1707,7 +1708,13 @@ function ProfileView({
     branches: string[];
     loadingFavorites: boolean;
     filteredFavorites: any[];
+    missingKeys?: string[];
 }) {
+    // Realça em amarelo os campos que ainda estão faltando (mesma lista da sidebar).
+    const hlField = (key: string) =>
+      missingKeys.includes(key)
+        ? 'rounded-xl p-2 -m-2 ring-2 ring-amber-400/70 bg-amber-500/10'
+        : '';
     const navigate = useNavigate();
     const [userEmail, setUserEmail] = useState("");
     const [companyName, setCompanyName] = useState("");
