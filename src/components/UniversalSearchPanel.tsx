@@ -94,6 +94,17 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
   const debouncedQuery = useDebounced(query.trim(), 300);
   const hasQuery = debouncedQuery.length >= 2;
 
+  // Propaga o termo digitado para os feeds abaixo — assim eliminamos o
+  // segundo campo "Buscar palavra-chave" e mantemos apenas esta barra.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("fixxer:universal-search", {
+        detail: { query: debouncedQuery },
+      }),
+    );
+  }, [debouncedQuery]);
+
   // Executor da busca — reutilizado pelo debounce E pelo Realtime.
   const runQuery = useCallback(async () => {
     if (!hasQuery) {
