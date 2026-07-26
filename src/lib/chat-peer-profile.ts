@@ -214,9 +214,9 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
   // Consulta todas as tabelas especializadas — elas são a fonte autoritativa
   // de categoria. Qualquer valor genérico em profiles.role ("user", "usuario")
   // NÃO deve sobrescrever a categoria real derivada da tabela específica.
-  let storeHit = false;
-  let providerHit = false;
-  let supplierHit = false;
+  // Coletamos apenas name/avatar dessas tabelas; a categoria final vem do
+  // resolver canônico (público) para manter chat e perfil público em sincronia.
+  let loadedProfileRow: any = null;
   for (const [table, columns] of [
     ["provider_profiles", ["user_id", "id"]],
     ["store_profiles", ["user_id", "id"]],
@@ -226,26 +226,31 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
       const row = await querySingle(table, column, owner, diagnostics);
       if (row) {
         source.push(`${table}.${column}`);
-        if (table === "store_profiles") storeHit = true;
-        if (table === "provider_profiles") providerHit = true;
-        if (table === "supplier_profiles") supplierHit = true;
+        if (!loadedProfileRow) loadedProfileRow = row;
         current = absorbRow(row, `${table}.${column}`, current, source, diagnostics);
         break;
       }
     }
   }
 
-  // Override autoritativo: a existência de uma linha em
-  // store/provider/supplier_profiles é o sinal mais confiável de categoria —
-  // sobrepõe qualquer role genérico do profiles ("user", "usuario", etc.).
+  // Delega a categoria ao resolver canônico (mesmo usado pelo perfil público).
+  // Isso garante que provider_profiles vença store_profiles residual, que
+  // profiles.role autoritativo (ex.: "prestador") sobreponha tabelas antigas
+  // e que chat + perfil público mostrem sempre a MESMA cor para o mesmo peer.
   let detectedCategory: PublicProfileCategory | null = null;
-  if (providerHit) { current.role = "prestador"; detectedCategory = "prestador"; }
-  else if (supplierHit) { current.role = "fornecedor"; detectedCategory = "fornecedor"; }
-  else if (storeHit) { current.role = "lojista"; detectedCategory = "lojista"; }
-
-  // Compartilha o resultado com o cache do perfil público — evita que abrir
-  // o perfil desse peer logo depois faça as mesmas consultas de novo.
-  if (detectedCategory) primePublicProfileCategory(owner, detectedCategory);
+  try {
+    detectedCategory = await resolvePublicProfileCategory(owner, {
+      profile: loadedProfileRow,
+      refresh: options?.refresh,
+    });
+  } catch (e: any) {
+    diagnostics.push(`resolvePublicProfileCategory: exceção ${e?.message || String(e)}`);
+  }
+  if (detectedCategory) {
+    current.role = CATEGORY_TO_ROLE[detectedCategory];
+    source.push(`category.${detectedCategory}`);
+    primePublicProfileCategory(owner, detectedCategory);
+  }
 
 
 
