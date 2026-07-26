@@ -884,7 +884,7 @@ function ChatInboxPage() {
                       style={{ borderColor: theme.hex, boxShadow: `0 0 10px rgba(${theme.rgb}, 0.35)` }}
                     >
                       {c.peerAvatar && !c.peerIsFallback ? (
-                        <img src={c.peerAvatar} alt={c.peerName} className="w-full h-full object-cover" />
+                        <img src={c.peerAvatar} alt={c.peerName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       ) : (
                         <span className="relative flex h-full w-full items-center justify-center bg-white/5" aria-label="Avatar padrão">
                           <UserCircle2 className="h-7 w-7 text-muted-foreground/70" />
