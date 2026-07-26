@@ -1329,10 +1329,10 @@ function ConversationPage() {
   }, [peerCategory]);
 
   return (
-    <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-32 overscroll-contain">
+    <div className="min-h-[100dvh] bg-black text-white flex flex-col pb-24 overscroll-contain">
       <header
-        className="sticky top-0 z-10 bg-black/85 backdrop-blur-xl border-b-2 px-3 py-2.5"
-        style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)` }}
+        className="sticky top-0 z-30 bg-black/90 backdrop-blur-xl border-b-2 px-3 py-2.5"
+        style={{ borderColor: `rgba(${peerTheme.rgb}, 0.35)`, top: "env(safe-area-inset-top)" }}
       >
         <div className="flex items-center gap-3">
           <button
