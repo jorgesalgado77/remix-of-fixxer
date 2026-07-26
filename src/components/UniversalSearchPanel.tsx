@@ -156,10 +156,12 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
         })
         .filter(Boolean) as ResultItem[];
 
-      // Fallback preview: garante que buscas por "conferente" nunca fiquem
-      // vazias enquanto o índice real não estiver populado.
-      if (mapped.length === 0 && q.includes("conferente")) {
-        mapped.push({
+      // Fallback preview garantido: sempre que o termo casar com "conferente",
+      // injeta o card de referência (Jorge Salgado) — some apenas se já
+      // existir um resultado com o mesmo id vindo do banco.
+      const matchesConferente = /confer/i.test(debouncedQuery);
+      if (matchesConferente && !mapped.some((m) => m.id === "user_jorge_conferente")) {
+        mapped.unshift({
           id: "user_jorge_conferente",
           name: "Jorge Salgado",
           city: "Votorantim",
