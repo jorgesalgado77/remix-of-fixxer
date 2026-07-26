@@ -281,9 +281,10 @@ function RecentPartnersCarouselInner() {
       } catch { /* opcional */ }
 
       const { data, error } = await supabaseExternal
-        .from("profiles")
+        .from("profiles_public")
         .select(SAFE_COLS)
         .not("role", "is", null)
+
         .order("created_at", { ascending: false })
         .limit(120);
       if (error) throw error;
