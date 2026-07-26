@@ -40,7 +40,6 @@ import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedAfiliadosRouteImport } from './routes/_authenticated.afiliados'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedFeedIndexRouteImport } from './routes/_authenticated.feed.index'
-import { Route as ApiPublicSetupDbRouteImport } from './routes/api/public/setup-db'
 import { Route as AuthenticatedPreferenciasNotificacoesRouteImport } from './routes/_authenticated.preferencias.notificacoes'
 import { Route as AuthenticatedFeedPrestadorRouteImport } from './routes/_authenticated.feed.prestador'
 import { Route as AuthenticatedFeedParceiroRouteImport } from './routes/_authenticated.feed.parceiro'
@@ -211,11 +210,6 @@ const AuthenticatedFeedIndexRoute = AuthenticatedFeedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedFeedRoute,
 } as any)
-const ApiPublicSetupDbRoute = ApiPublicSetupDbRouteImport.update({
-  id: '/api/public/setup-db',
-  path: '/api/public/setup-db',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedPreferenciasNotificacoesRoute =
   AuthenticatedPreferenciasNotificacoesRouteImport.update({
     id: '/preferencias/notificacoes',
@@ -333,7 +327,6 @@ export interface FileRoutesByFullPath {
   '/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/preferencias/notificacoes': typeof AuthenticatedPreferenciasNotificacoesRoute
-  '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/feed/': typeof AuthenticatedFeedIndexRoute
   '/admin/usuarios/$id': typeof AuthenticatedAdminUsuariosIdRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
@@ -377,7 +370,6 @@ export interface FileRoutesByTo {
   '/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/preferencias/notificacoes': typeof AuthenticatedPreferenciasNotificacoesRoute
-  '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/feed': typeof AuthenticatedFeedIndexRoute
   '/admin/usuarios/$id': typeof AuthenticatedAdminUsuariosIdRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
@@ -425,7 +417,6 @@ export interface FileRoutesById {
   '/_authenticated/feed/parceiro': typeof AuthenticatedFeedParceiroRoute
   '/_authenticated/feed/prestador': typeof AuthenticatedFeedPrestadorRoute
   '/_authenticated/preferencias/notificacoes': typeof AuthenticatedPreferenciasNotificacoesRoute
-  '/api/public/setup-db': typeof ApiPublicSetupDbRoute
   '/_authenticated/feed/': typeof AuthenticatedFeedIndexRoute
   '/_authenticated/admin/usuarios/$id': typeof AuthenticatedAdminUsuariosIdRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
@@ -473,7 +464,6 @@ export interface FileRouteTypes {
     | '/feed/parceiro'
     | '/feed/prestador'
     | '/preferencias/notificacoes'
-    | '/api/public/setup-db'
     | '/feed/'
     | '/admin/usuarios/$id'
     | '/api/public/push/dispatch'
@@ -517,7 +507,6 @@ export interface FileRouteTypes {
     | '/feed/parceiro'
     | '/feed/prestador'
     | '/preferencias/notificacoes'
-    | '/api/public/setup-db'
     | '/feed'
     | '/admin/usuarios/$id'
     | '/api/public/push/dispatch'
@@ -564,7 +553,6 @@ export interface FileRouteTypes {
     | '/_authenticated/feed/parceiro'
     | '/_authenticated/feed/prestador'
     | '/_authenticated/preferencias/notificacoes'
-    | '/api/public/setup-db'
     | '/_authenticated/feed/'
     | '/_authenticated/admin/usuarios/$id'
     | '/api/public/push/dispatch'
@@ -585,7 +573,6 @@ export interface RootRouteChildren {
   PerfilLojistaRoute: typeof PerfilLojistaRoute
   PrestadorIdRoute: typeof PrestadorIdRoute
   RCodeRoute: typeof RCodeRoute
-  ApiPublicSetupDbRoute: typeof ApiPublicSetupDbRoute
   ApiPublicPushDispatchRoute: typeof ApiPublicPushDispatchRoute
 }
 
@@ -807,13 +794,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/feed/'
       preLoaderRoute: typeof AuthenticatedFeedIndexRouteImport
       parentRoute: typeof AuthenticatedFeedRoute
-    }
-    '/api/public/setup-db': {
-      id: '/api/public/setup-db'
-      path: '/api/public/setup-db'
-      fullPath: '/api/public/setup-db'
-      preLoaderRoute: typeof ApiPublicSetupDbRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/preferencias/notificacoes': {
       id: '/_authenticated/preferencias/notificacoes'
@@ -1050,7 +1030,6 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilLojistaRoute: PerfilLojistaRoute,
   PrestadorIdRoute: PrestadorIdRoute,
   RCodeRoute: RCodeRoute,
-  ApiPublicSetupDbRoute: ApiPublicSetupDbRoute,
   ApiPublicPushDispatchRoute: ApiPublicPushDispatchRoute,
 }
 export const routeTree = rootRouteImport
