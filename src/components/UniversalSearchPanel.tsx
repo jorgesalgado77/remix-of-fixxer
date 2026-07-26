@@ -319,13 +319,13 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
 
   if (compact && !open) {
     return (
-      <div className="mx-auto max-w-3xl px-3 pt-2">
+      <div className="mx-auto w-full max-w-3xl min-w-0 px-3 pt-2 overflow-hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
           className="w-full flex items-center gap-2 rounded-2xl border border-white/10 bg-[#111113] px-4 py-3 text-left text-sm text-white/60 hover:border-white/20 transition"
         >
-          <Search className="h-4 w-4 text-white/50" />
+          <Search className="h-4 w-4 text-white/50 shrink-0" />
           <span className="truncate">O que você precisa resolver hoje?</span>
         </button>
       </div>
@@ -333,8 +333,9 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-3 pt-2 pb-3">
-      <div className="rounded-2xl border border-white/10 bg-[#0F0F11]/95 backdrop-blur p-3 space-y-3 shadow-lg">
+    <div className="mx-auto w-full max-w-3xl min-w-0 px-3 pt-2 pb-3 overflow-hidden">
+      <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#0F0F11]/95 backdrop-blur p-3 space-y-3 shadow-lg">
+
         {/* Input universal */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
