@@ -31,27 +31,58 @@ function LoginComponent() {
 
 
 
+    // Helper: extrai string amigável de QUALQUER formato de erro (evita "{}" na UI).
+    const extractErr = (err: any): string => {
+      if (!err) return "";
+      if (typeof err === "string") return err;
+      if (typeof err === "object") {
+        const raw = err.message || err.error_description || err.error || err.msg || "";
+        if (raw) return String(raw);
+        try {
+          const s = JSON.stringify(err);
+          return s === "{}" ? "Falha na conexão com o servidor. Tente novamente." : s;
+        } catch {
+          return "Erro desconhecido. Tente novamente.";
+        }
+      }
+      return String(err);
+    };
+
+    const toFriendly = (raw: string): string => {
+      const s = raw.toLowerCase();
+      if (s.includes("invalid login credentials") || s.includes("invalid_grant"))
+        return "E-mail ou senha incorretos. Verifique suas credenciais.";
+      if (s.includes("email not confirmed"))
+        return "E-mail ainda não confirmado. Verifique sua caixa de entrada.";
+      if (s.includes("network") || s.includes("failed to fetch") || s.includes("fetch"))
+        return "Falha de rede. Verifique sua conexão e tente novamente.";
+      if (s.includes("rate limit") || s.includes("too many"))
+        return "Muitas tentativas. Aguarde alguns segundos e tente novamente.";
+      return raw || "Erro ao realizar login. Tente novamente.";
+    };
+
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       });
 
       if (error) {
-        setErrorMsg(error.message || 'Erro de conexão com o Supabase.');
+        const friendly = toFriendly(extractErr(error));
+        setErrorMsg(friendly);
+        toast.error(friendly);
         setLoading(false);
         return;
       }
 
       if (data?.session) {
-        const normalizedEmail = email.trim().toLowerCase();
-
         // Bloqueio de acesso — lê o perfil no Supabase externo (fonte de verdade).
-        let statusRow: { status?: string | null; role?: string | null; user_type?: string | null; business_category?: string | null } | null = null;
+        let statusRow: { status?: string | null; role?: string | null; user_type?: string | null; business_category?: string | null; is_admin?: boolean | null } | null = null;
         try {
           const { data: ext } = await supabaseExternal
             .from('profiles')
-            .select('status, role, user_type, business_category')
+            .select('status, role, user_type, business_category, is_admin')
             .eq('id', data.session.user.id)
             .maybeSingle();
           statusRow = (ext as any) || null;
@@ -59,27 +90,37 @@ function LoginComponent() {
 
         if (statusRow?.status === 'bloqueado') {
           await supabaseExternal.auth.signOut();
-          setErrorMsg('Sua conta está SUSPENSA. Contate o suporte para mais informações.');
-          toast.error('Acesso suspenso pelo administrador.');
+          const msg = 'Sua conta está SUSPENSA. Contate o suporte para mais informações.';
+          setErrorMsg(msg);
+          toast.error(msg);
           setLoading(false);
           return;
         }
 
-        // Papel de admin via public.user_roles (RLS-safe) — no Supabase externo.
-        let isAdmin = false;
-        try {
-          const { data: adminRow } = await supabaseExternal
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', data.session.user.id)
-            .eq('role', 'admin')
-            .maybeSingle();
-          isAdmin = !!adminRow;
-        } catch { /* silencioso */ }
+        // Papel de admin: e-mail mestre OU tabela user_roles OU flags no profile.
+        const MASTER_ADMIN = 'jorgericardosalgado@gmail.com';
+        let isAdmin =
+          normalizedEmail === MASTER_ADMIN ||
+          statusRow?.is_admin === true ||
+          String(statusRow?.role || '').toLowerCase() === 'admin';
+        if (!isAdmin) {
+          try {
+            const { data: adminRow } = await supabaseExternal
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', data.session.user.id)
+              .eq('role', 'admin')
+              .maybeSingle();
+            isAdmin = !!adminRow;
+          } catch { /* silencioso */ }
+        }
 
-        // Determina a categoria de destino (apenas para navegação); a autoridade
-        // continua sendo o servidor (user_roles + profiles). Nada é gravado em
-        // localStorage como fonte de identidade.
+        if (isAdmin) {
+          try { localStorage.setItem('@fixxer:is_admin', 'true'); } catch {}
+        } else {
+          try { localStorage.removeItem('@fixxer:is_admin'); } catch {}
+        }
+
         const rawRole = (statusRow?.role || statusRow?.user_type || statusRow?.business_category || '').toString().toLowerCase();
 
         let category: 'admin' | 'lojista' | 'prestador' | 'fornecedor' | 'cliente' = 'lojista';
@@ -91,10 +132,10 @@ function LoginComponent() {
         else category = 'lojista';
 
         try { window.dispatchEvent(new Event('fixxer:identity-change')); } catch {}
+        toast.success('Login realizado com sucesso!');
 
-        if (isAdmin) {
-          window.location.replace('/admin');
-        } else if (category === 'cliente') window.location.replace('/dashboard/cliente');
+        if (isAdmin) window.location.replace('/admin');
+        else if (category === 'cliente') window.location.replace('/dashboard/cliente');
         else if (category === 'prestador') window.location.replace('/dashboard/prestador');
         else if (category === 'fornecedor') window.location.replace('/dashboard/parceiro');
         else if (category === 'lojista') window.location.replace('/dashboard/lojista');
@@ -102,7 +143,9 @@ function LoginComponent() {
       }
 
     } catch (err: any) {
-      setErrorMsg("Falha ao se comunicar com o banco de dados.");
+      const friendly = toFriendly(extractErr(err));
+      setErrorMsg(friendly);
+      toast.error(friendly);
       setLoading(false);
     }
   };
@@ -258,6 +301,28 @@ function LoginComponent() {
             </p>
           </div>
         </div>
+
+        {/* Ajuda: script SQL para liberar o admin no banco, caso o login falhe por permissão. */}
+        <details className="mt-6 rounded-2xl border border-white/10 bg-[#0F0F11]/70 px-4 py-3 text-left">
+          <summary className="cursor-pointer text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <Terminal className="w-3.5 h-3.5" />
+            Admin não consegue logar?
+          </summary>
+          <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
+            Se o e-mail administrador não estiver com privilégio na tabela <code>profiles</code>,
+            rode o script abaixo no <strong>Editor SQL do Supabase</strong>:
+          </p>
+          <pre className="mt-2 overflow-x-auto rounded-lg bg-black/60 p-3 text-[10px] leading-relaxed text-[#00FF87] whitespace-pre-wrap">{`-- Liberar o Admin master no banco:
+UPDATE public.profiles
+SET is_admin = true, role = 'admin'
+WHERE email = 'jorgericardosalgado@gmail.com';
+
+-- (Opcional) garantir a role em user_roles:
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'admin' FROM auth.users
+WHERE email = 'jorgericardosalgado@gmail.com'
+ON CONFLICT (user_id, role) DO NOTHING;`}</pre>
+        </details>
       </div>
     </div>
   );
