@@ -218,6 +218,7 @@ function ChatInboxPage() {
   const [typingByPeer, setTypingByPeer] = useState<Record<string, number>>({});
   const [onlineSet, setOnlineSet] = useState<Set<string>>(() => new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
 
   const idSetRef = useRef<Set<string>>(new Set());
@@ -844,8 +845,8 @@ function ChatInboxPage() {
   return (
     <div
       className="min-h-screen bg-black text-white px-6 pt-6"
-      style={{ paddingBottom: "calc(9rem + env(safe-area-inset-bottom))" }}
-      onClick={() => setOpenMenu(null)}
+      style={{ paddingBottom: "calc(14rem + env(safe-area-inset-bottom))" }}
+      onClick={() => { setOpenMenu(null); setHeaderMenuOpen(false); }}
     >
       <div className="max-w-3xl mx-auto">
         <div
@@ -863,23 +864,40 @@ function ChatInboxPage() {
               {totalUnread > 0 ? `${totalUnread} não lida${totalUnread > 1 ? "s" : ""}` : "Tudo em dia"}
             </p>
           </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowArchived((v) => !v); }}
-            className={`px-3 h-9 rounded-xl border text-[10px] font-black uppercase italic tracking-widest flex items-center gap-2 ${
-              showArchived ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/5 border-white/10 text-muted-foreground hover:text-white"
-            }`}
-          >
-            <Archive className="w-3.5 h-3.5" />
-            {showArchived ? "Ativas" : `Arquivadas${archivedCount ? ` · ${archivedCount}` : ""}`}
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); setSettingsOpen(true); }}
-            className="w-9 h-9 rounded-xl border bg-white/5 border-white/10 text-muted-foreground hover:text-white flex items-center justify-center"
-            aria-label="Configurações do chat"
-            title="Configurações do chat"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setHeaderMenuOpen((v) => !v)}
+              className="w-9 h-9 rounded-xl border bg-white/5 border-white/10 text-muted-foreground hover:text-white flex items-center justify-center"
+              aria-label="Mais opções"
+              aria-expanded={headerMenuOpen}
+              title="Mais opções"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            {headerMenuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl bg-[#121214] border border-white/10 shadow-2xl overflow-hidden py-1"
+              >
+                <button
+                  onClick={() => { setHeaderMenuOpen(false); setSettingsOpen(true); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-left text-white hover:bg-white/5"
+                >
+                  <Settings className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Configurações de notificações</span>
+                </button>
+                <button
+                  onClick={() => { setHeaderMenuOpen(false); setShowArchived((v) => !v); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-left text-white hover:bg-white/5"
+                >
+                  <Archive className="w-4 h-4 shrink-0" />
+                  <span className="truncate">
+                    {showArchived ? "Ver conversas ativas" : `Ver arquivadas${archivedCount ? ` (${archivedCount})` : ""}`}
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
 
         </div>
 
