@@ -316,16 +316,30 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
 
         {hasQuery && !loading && filtered.length > 0 && (
           <ul className="space-y-2 max-h-[60vh] overflow-y-auto -mx-1 px-1">
-            {filtered.slice(0, 40).map((it) => (
-              <ResultCard
-                key={it.id}
-                item={it}
-                onChat={() => openChat(it.id)}
-                onFav={() => toast.success("Adicionado aos favoritos")}
-              />
-            ))}
+            {filtered.slice(0, 40).map((it) => {
+              const isFav = favorites.has(it.id);
+              return (
+                <ResultCard
+                  key={it.id}
+                  item={it}
+                  favorited={isFav}
+                  onChat={() => openChat(it.id)}
+                  onFav={() => {
+                    // Optimistic UI: alterna imediatamente no cliente e avisa.
+                    setFavorites((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(it.id)) next.delete(it.id);
+                      else next.add(it.id);
+                      return next;
+                    });
+                    toast.success(isFav ? "Removido dos favoritos" : "Adicionado aos favoritos");
+                  }}
+                />
+              );
+            })}
           </ul>
         )}
+
       </div>
     </div>
   );
