@@ -292,6 +292,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
             distanceKm: km,
             subtitle,
             matchedFields,
+            score: scoreRow(r, rawTerm, cat),
           } as ResultItem;
         })
         .filter(Boolean) as ResultItem[];
