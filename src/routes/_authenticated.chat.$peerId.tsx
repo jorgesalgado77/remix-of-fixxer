@@ -1520,7 +1520,8 @@ function ConversationPage() {
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        className={`flex-1 overflow-y-auto px-4 py-4 space-y-4 relative ${
+        style={{ paddingBottom: `${footerHeight + 16}px` }}
+        className={`flex-1 min-h-0 overflow-y-auto px-4 pt-4 space-y-4 relative ${
           dragActive ? "outline-dashed outline-2 outline-primary/70 outline-offset-[-8px] bg-primary/5" : ""
         }`}
       >
