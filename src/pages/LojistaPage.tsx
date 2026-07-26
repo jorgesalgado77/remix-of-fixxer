@@ -55,7 +55,7 @@ import autoTable from 'jspdf-autotable';
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
-import { CreateAdModal } from "@/components/CreateAdModal";
+const CreateAdModal = lazy(() => import("@/components/CreateAdModal").then(m => ({ default: m.CreateAdModal })));
 import { CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
 import {
   evaluateProfileCompleteness,
