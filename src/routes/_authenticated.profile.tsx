@@ -125,6 +125,112 @@ function validateFileForType(
 }
 
 
+/**
+ * Card de documento privado. Resolve a URL sob demanda:
+ * - se o item tem `path`, gera `signedUrl` (válida por 1h) do bucket privado;
+ * - se tem só `url` (legado público), usa como está.
+ * A URL nunca é persistida — se expirar, o próximo mount gera nova.
+ */
+function DocItem(props: {
+  doc: any;
+  index: number;
+  total: number;
+  onDragStart: () => void;
+  onDrop: () => void;
+  onReorderKey: (ev: React.KeyboardEvent, kind: 'image'|'pdf'|'other', url: string) => void;
+  onPreview: (url: string, kind: 'image'|'pdf'|'other') => void;
+  onRemove: () => void;
+}) {
+  const { doc, index, total, onDragStart, onDrop, onReorderKey, onPreview, onRemove } = props;
+  const ext = (doc?.name?.split('.').pop() || '').toLowerCase();
+  const isPdf = ext === 'pdf';
+  const isImg = ['png','jpg','jpeg','webp','gif','avif','svg'].includes(ext);
+  const kind: 'image'|'pdf'|'other' = isImg ? 'image' : isPdf ? 'pdf' : 'other';
+  const [url, setUrl] = useState<string>('');
+  const source = doc?.path || doc?.url || '';
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const resolved = await resolveDocumentUrl(source);
+      if (!cancelled) setUrl(resolved);
+    })();
+    return () => { cancelled = true; };
+  }, [source]);
+
+  return (
+    <div
+      role="listitem"
+      tabIndex={0}
+      aria-label={`Documento ${index + 1} de ${total}: ${doc.name}. Use setas para reordenar, Enter para pré-visualizar.`}
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={(ev) => ev.preventDefault()}
+      onDrop={(ev) => { ev.preventDefault(); onDrop(); }}
+      onKeyDown={(ev) => onReorderKey(ev, kind, url)}
+      className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all cursor-grab active:cursor-grabbing"
+    >
+      <div className="flex items-center gap-3 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => url && onPreview(url, kind)}
+          className="w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center relative"
+          title={`Pré-visualizar ${doc.name}`}
+          aria-label={`Pré-visualizar ${doc.name}`}
+        >
+          {isImg && url ? (
+            <img src={url} alt={doc.name} className="w-full h-full object-cover" loading="lazy" />
+          ) : isPdf && url ? (
+            <>
+              <embed src={`${url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`} type="application/pdf" className="w-full h-full pointer-events-none" />
+              <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-red-500/90 text-white uppercase">PDF</span>
+            </>
+          ) : (
+            <>
+              <File className="w-5 h-5 text-primary" />
+              <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-primary/80 text-black uppercase truncate">{ext || 'DOC'}</span>
+            </>
+          )}
+        </button>
+        <div className="truncate">
+          <p className="text-[11px] font-bold text-white truncate">{doc.name}</p>
+          <p className="text-[9px] text-muted-foreground uppercase">{doc.size || 'N/A'}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => url && onPreview(url, kind)}
+          className="text-muted-foreground hover:text-primary transition-colors"
+          title="Pré-visualizar"
+          aria-label="Pré-visualizar"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+        <a
+          href={url || '#'}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => { if (!url) e.preventDefault(); }}
+          className="text-muted-foreground hover:text-primary transition-colors"
+          title="Abrir em nova aba"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </a>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-muted-foreground hover:text-red-500 transition-colors"
+          title="Remover"
+          aria-label="Remover documento"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
