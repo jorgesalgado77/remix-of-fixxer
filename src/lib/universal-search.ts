@@ -68,7 +68,7 @@ const SYNONYM_GROUPS: string[][] = [
   ["pintura", "pintor", "pintores"],
   ["montador", "montagem", "montadores", "monta"],
   ["conferente", "conferencia", "confer"],
-  ["medidor", "medidores", "medicao", "medida", "medidas", "medir", "hidrometro", "relojoeiro"],
+  ["medidor", "medidores", "hidrometro", "hidrometros"],
   ["encanador", "encanamento", "hidraulico", "hidraulica"],
   ["pedreiro", "alvenaria", "construcao", "obra", "obras"],
   ["mecanico", "mecanica", "auto", "automotivo"],
@@ -124,7 +124,10 @@ export function stripAccents(s: unknown): string {
     .trim();
 }
 
-/** Expande o termo com sinônimos conhecidos + stems aproximados. */
+/** Expande o termo com sinônimos conhecidos + stems aproximados.
+ *  Só emite tokens com pelo menos 4 caracteres para evitar que raízes muito
+ *  curtas (ex.: "med", "medi") casem substrings alheias ao domínio
+ *  ("comédia", "sob medida", "mídia"). */
 export function expandSynonyms(term: string): string[] {
   const base = stripAccents(term);
   if (!base) return [];
@@ -133,15 +136,23 @@ export function expandSynonyms(term: string): string[] {
     if (!word) continue;
     tokens.add(word);
     const stem = stemPt(word);
-    if (stem && stem.length >= 3) tokens.add(stem);
-    const syn = SYNONYMS[word] ?? SYNONYMS[stem];
+    if (stem && stem.length >= 5) tokens.add(stem);
+    const syn = SYNONYMS[word] ?? (stem.length >= 5 ? SYNONYMS[stem] : undefined);
     if (syn) syn.forEach((s) => {
       tokens.add(s);
       const st = stemPt(s);
-      if (st && st.length >= 3) tokens.add(st);
+      if (st && st.length >= 5) tokens.add(st);
     });
   }
-  return Array.from(tokens).filter((t) => t.length >= 3);
+  return Array.from(tokens).filter((t) => t.length >= 4);
+}
+
+/** Casa um token como palavra completa dentro do haystack (accent/case
+ *  já normalizado). Evita que "medi" case "medida" ou "medicao". */
+function matchesWholeWord(haystack: string, token: string): boolean {
+  if (!token) return false;
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(haystack);
 }
 
 function stringifyValue(value: unknown): string {
@@ -199,22 +210,23 @@ export function rowMatchesTerm(row: any, rawTerm: string): boolean {
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
   if (words.length > 0 && words.every((w) => haystack.includes(w))) return true;
 
-  // 3) Sinônimo — qualquer token expandido presente.
-  const synonyms = expandSynonyms(rawTerm);
-  return synonyms.some((s) => haystack.includes(s));
+  // 3) Sinônimo — casamento como PALAVRA COMPLETA para evitar substring alheia
+  //    (ex.: "medi" não deve casar "medida" em "móveis sob medida").
+  const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
+  return synonyms.some((s) => matchesWholeWord(haystack, s));
 }
 
 export function getMatchedFields(row: any, rawTerm: string): SearchableField[] {
   const normalizedTerm = stripAccents(rawTerm);
   if (!normalizedTerm) return [];
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
-  const synonyms = expandSynonyms(rawTerm);
+  const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
   return SEARCHED_FIELDS.filter((field) => {
     const value = stripAccents(getSearchableValue(row, field));
     if (!value) return false;
     if (value.includes(normalizedTerm)) return true;
     if (words.length > 0 && words.every((w) => value.includes(w))) return true;
-    return synonyms.some((s) => value.includes(s));
+    return synonyms.some((s) => matchesWholeWord(value, s));
   });
 }
 
@@ -251,7 +263,7 @@ export function scoreRow(row: any, rawTerm: string, category?: UserCategory | nu
       score += w;
       continue;
     }
-    if (synonyms.some((s) => value.includes(s))) {
+    if (synonyms.some((s) => s !== normalizedTerm && matchesWholeWord(value, s))) {
       score += Math.max(1, Math.floor(w / 2));
     }
   }
