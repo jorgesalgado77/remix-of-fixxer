@@ -35,7 +35,7 @@ function PrestadorDashboard() {
   const { glassClass } = usePerformanceMode();
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 animate-in fade-in duration-500">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 lg:pl-72 animate-in fade-in duration-500">
       <ProfileSummaryCard role="prestador" variant="sidebar" />
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
