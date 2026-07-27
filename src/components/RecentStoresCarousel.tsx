@@ -81,10 +81,14 @@ const KIND_META: Record<Kind, { emoji: string; label: string; color: string; bor
   },
 };
 
+// Fallback diverso — cobre múltiplos ramos p/ que a filtragem "Do meu ramo"
+// tenha demonstração visível em previews de qualquer perfil.
 const FALLBACK: Card[] = [
   { id: "mock-loja-alpha", full_name: "Móveis Alpha", display_name: "Móveis Alpha", company_name: "Móveis Alpha Ltda", avatar_url: null, role: "lojista", business_category: "Móveis Planejados", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Móveis Planejados" },
-  { id: "mock-loja-beta", full_name: "Casa Design", display_name: "Casa Design", company_name: null, avatar_url: null, role: "lojista", business_category: "Decoração", custom_branch: null, city: "Votorantim", state: "SP", rating: 4.8, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Decoração" },
-  { id: "mock-fornec-gama", full_name: "Distribuidora Gama", display_name: "Distribuidora Gama", company_name: "Gama Suprimentos Ltda", avatar_url: null, role: "fornecedor", business_category: "Ferragens", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.7, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Ferragens" },
+  { id: "mock-loja-barbearia", full_name: "Barbearia Central", display_name: "Barbearia Central", company_name: null, avatar_url: null, role: "lojista", business_category: "Barbearia", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.8, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Barbearia" },
+  { id: "mock-loja-salao", full_name: "Salão Beleza Pura", display_name: "Salão Beleza Pura", company_name: null, avatar_url: null, role: "lojista", business_category: "Salão de Beleza & Cabelo", custom_branch: null, city: "Votorantim", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Salão de Beleza & Cabelo" },
+  { id: "mock-fornec-cosmetico", full_name: "Cosméticos Delta", display_name: "Cosméticos Delta", company_name: "Delta Beauty Ltda", avatar_url: null, role: "fornecedor", business_category: "Estética Facial / Corporal", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.7, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Estética Facial / Corporal" },
+  { id: "mock-fornec-gama", full_name: "Distribuidora Gama", display_name: "Distribuidora Gama", company_name: "Gama Suprimentos Ltda", avatar_url: null, role: "fornecedor", business_category: "Marmoraria", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.7, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Marmoraria" },
 ];
 
 function readCache(): Card[] | null {
