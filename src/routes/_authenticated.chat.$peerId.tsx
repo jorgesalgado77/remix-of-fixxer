@@ -273,6 +273,12 @@ function ConversationPage() {
   const isNearBottomRef = useRef(true);
   const prevLastIdRef = useRef<string | null>(null);
   const [pendingScrollHint, setPendingScrollHint] = useState(0);
+  // Compartilha o "catch-up" de mensagens entre effects: quando o listener
+  // reconecta ou a rede volta, disparamos uma verificação imediata no banco
+  // para preencher qualquer gap sem esperar o próximo ciclo de polling (4s).
+  const catchUpRef = useRef<(() => Promise<void>) | null>(null);
+  // Sinaliza para a UI quando o canal em tempo real está reconectando.
+  const [realtimeReconnecting, setRealtimeReconnecting] = useState(false);
 
   const selectCols =
     "id, sender_id, recipient_id, content, created_at, read, attachment_url, attachment_type, attachment_name, client_message_id";
