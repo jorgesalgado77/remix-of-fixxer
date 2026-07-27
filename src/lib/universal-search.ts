@@ -68,7 +68,7 @@ const SYNONYM_GROUPS: string[][] = [
   ["pintura", "pintor", "pintores"],
   ["montador", "montagem", "montadores", "monta"],
   ["conferente", "conferencia", "confer"],
-  ["medidor", "medidores", "medicao", "medida", "medidas", "medir", "hidrometro", "relojoeiro"],
+  ["medidor", "medidores", "hidrometro", "hidrometros"],
   ["encanador", "encanamento", "hidraulico", "hidraulica"],
   ["pedreiro", "alvenaria", "construcao", "obra", "obras"],
   ["mecanico", "mecanica", "auto", "automotivo"],
