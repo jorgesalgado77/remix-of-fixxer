@@ -17,6 +17,8 @@ import {
 import { PanelActions } from "@/components/PanelActions";
 import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
+import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
+
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/parceiro")({
