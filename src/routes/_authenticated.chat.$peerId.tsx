@@ -56,6 +56,7 @@ import { peekPublicProfileCategory } from "@/lib/public-profile-category";
 import { classifyChatError, sendWithRetry, validateChatIdentities } from "@/lib/chat-send";
 import { startGlobalPresence, subscribeGlobalPresence, isPeerOnline } from "@/lib/chat-presence";
 import { playIncomingMessageSound } from "@/lib/chat-sound";
+import { setRoomStatus, incrRoomEvent, clearRoom } from "@/lib/chat-realtime-debug";
 import { ChatEmojiPicker } from "@/components/Chat/EmojiPicker";
 import { ChatVoiceRecorder } from "@/components/Chat/VoiceRecorder";
 import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
