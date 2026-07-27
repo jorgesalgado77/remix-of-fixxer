@@ -5,6 +5,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
+import { scoreRelevance, useUserBranchContext, type Relevance } from "@/lib/branch-relevance";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 
 /**
@@ -61,7 +62,7 @@ type PartnerRow = {
 type PartnerKind = "prestador" | "fornecedor";
 type PartnerCard = PartnerRow & { _kind: PartnerKind };
 type SortMode = "recent" | "rating" | "nearby";
-type KindFilter = "all" | PartnerKind;
+type KindFilter = "all" | "mine" | PartnerKind;
 
 const CACHE_KEY = "fixxer_recent_partners_v4";
 const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
@@ -72,7 +73,7 @@ const FILTER_KEY = "fixxer_recent_partners_filter_v1";
 const URL_SORT_PARAM = "partnersSort";
 const URL_FILTER_PARAM = "partnersKind";
 const VALID_SORTS: SortMode[] = ["recent", "rating", "nearby"];
-const VALID_FILTERS: KindFilter[] = ["all", "prestador", "fornecedor"];
+const VALID_FILTERS: KindFilter[] = ["all", "mine", "prestador", "fornecedor"];
 function readUrlParam<T extends string>(name: string, valid: T[]): T | null {
   if (typeof window === "undefined") return null;
   try {
@@ -177,7 +178,7 @@ function readFilter(): KindFilter {
   if (typeof window === "undefined") return "all";
   try {
     const v = window.localStorage.getItem(FILTER_KEY);
-    return v === "prestador" || v === "fornecedor" ? v : "all";
+    return v === "prestador" || v === "fornecedor" || v === "mine" ? v : "all";
   } catch { return "all"; }
 }
 
@@ -214,6 +215,7 @@ function preloadImage(url: string | null | undefined) {
 function RecentPartnersCarouselInner() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
+  const branchCtx = useUserBranchContext();
 
   const cached = useMemo(() => readCache(), []);
   const [items, setItems] = useState<PartnerCard[]>(() => cached?.items ?? []);
@@ -222,10 +224,20 @@ function RecentPartnersCarouselInner() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>(() => readUrlParam<SortMode>(URL_SORT_PARAM, VALID_SORTS) ?? readSort());
   const [kindFilter, setKindFilter] = useState<KindFilter>(() => readUrlParam<KindFilter>(URL_FILTER_PARAM, VALID_FILTERS) ?? readFilter());
+  const [userTouchedFilter, setUserTouchedFilter] = useState(false);
   const [pull, setPull] = useState(0);
   // Cards descartados manualmente pelo usuário quando não têm coordenadas válidas (badge "Sem localização").
   const [dismissedNoGeo, setDismissedNoGeo] = useState<Set<string>>(() => new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Ao descobrir que o usuário tem ramos configurados, defaulta para "🎯 Do meu ramo".
+  // Só faz o auto-switch se o usuário AINDA não escolheu outro filtro manualmente
+  // e não há preferência salva na URL/localStorage.
+  useEffect(() => {
+    if (userTouchedFilter) return;
+    const hadUrlPref = readUrlParam<KindFilter>(URL_FILTER_PARAM, VALID_FILTERS);
+    if (hadUrlPref) return;
+    if (branchCtx.hasContext && kindFilter === "all") setKindFilter("mine");
+  }, [branchCtx.hasContext, userTouchedFilter, kindFilter]);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -353,49 +365,69 @@ function RecentPartnersCarouselInner() {
   }, [fetchPartners, refreshing]);
 
   // ---- Ordenação em memória (com coords pré-calculadas para "Mais próximos") ----
-  type Enriched = PartnerCard & { _coords: { lat: number; lng: number } | null; _distanceKm: number | null };
+  type Enriched = PartnerCard & {
+    _coords: { lat: number; lng: number } | null;
+    _distanceKm: number | null;
+    _relevance: Relevance;
+  };
   const sortedItems = useMemo<Enriched[]>(() => {
-    const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
-    const enriched: Enriched[] = base.map((p) => {
+    // 1) Filtro por tipo (Prestador / Parceiro) — "mine" e "all" mantêm ambos os tipos.
+    const byKind = (kindFilter === "all" || kindFilter === "mine")
+      ? items
+      : items.filter((p) => p._kind === kindFilter);
+
+    // 2) Calcula relevância vs. ramo do usuário logado.
+    const scored: Enriched[] = byKind.map((p) => {
       const rowCoords = (p.lat != null && p.lng != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)))
         ? { lat: Number(p.lat), lng: Number(p.lng) }
         : null;
       const coords = rowCoords ?? cityCoords(p.city) ?? null;
-      // Distância: prioriza cálculo real via geo do usuário; senão usa distance_km/distance persistido no perfil.
       const liveDist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
       const storedRaw = p.distance_km ?? p.distance;
       const storedDist = storedRaw != null ? Number(storedRaw) : null;
-      // Se o card representa o próprio usuário logado, a distância é sempre 0 km.
       const isSelf = !!currentUserId && p.id === currentUserId;
       const dist = isSelf
         ? 0
         : Number.isFinite(liveDist as number)
           ? (liveDist as number)
           : (storedDist != null && Number.isFinite(storedDist) ? storedDist : null);
-      return { ...p, _coords: coords, _distanceKm: dist };
+      const rel = scoreRelevance(
+        [p.activity_branch, p.business_category, p.custom_branch, p.category, p.preferred_service],
+        branchCtx,
+      );
+      return { ...p, _coords: coords, _distanceKm: dist, _relevance: rel };
     });
 
+    // 3) Se o filtro é "Do meu ramo", oculta 'none'. Se sobrar vazio, cai p/ macro-only
+    // e depois p/ todos, garantindo que a seção nunca fica em branco.
+    let base = scored;
+    if (kindFilter === "mine" && branchCtx.hasContext) {
+      const strict = scored.filter((p) => p._relevance === "exact" || p._relevance === "macro");
+      base = strict.length > 0 ? strict : scored;
+    }
+
+    // 4) Ordenação
     if (sortMode === "rating") {
-      enriched.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      base = [...base].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     } else if (sortMode === "nearby" && userCoords) {
-      // Remove cards descartados manualmente (badge "Sem localização" fechado pelo usuário).
-      const filtered = enriched.filter((p) => !dismissedNoGeo.has(p.id));
-      // Cards COM coords sobem; os SEM coords vão para o final (mas ainda visíveis com badge removível).
-      filtered.sort((a, b) => {
+      base = base.filter((p) => !dismissedNoGeo.has(p.id));
+      base = [...base].sort((a, b) => {
         const da = a._distanceKm ?? Number.POSITIVE_INFINITY;
         const db = b._distanceKm ?? Number.POSITIVE_INFINITY;
         return da - db;
       });
-      return filtered;
     } else {
-      enriched.sort((a, b) => {
+      base = [...base].sort((a, b) => {
         const ta = a.created_at ? Date.parse(a.created_at) : 0;
         const tb = b.created_at ? Date.parse(b.created_at) : 0;
         return tb - ta;
       });
     }
-    return enriched;
-  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo, currentUserId]);
+
+    // 5) Boost por relevância: exact > macro > none, preservando a ordem interna.
+    const relRank = (r: Relevance) => (r === "exact" ? 0 : r === "macro" ? 1 : 2);
+    return [...base].sort((a, b) => relRank(a._relevance) - relRank(b._relevance));
+  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo, currentUserId, branchCtx]);
 
   // ---- IntersectionObserver: pré-carrega /perfil/:id + foto quando o card se aproxima ----
   useEffect(() => {
@@ -540,10 +572,11 @@ function RecentPartnersCarouselInner() {
           {/* Grupo radio: filtro por categoria. Roving tabindex + setas para teclado. */}
           <div role="radiogroup" aria-label="Filtrar parceiros por categoria" className="contents">
             {(() => {
-              const opts = [
-                { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
-                { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
-                { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
+              const opts: Array<{ v: KindFilter; label: string; color: string }> = [
+                ...(branchCtx.hasContext ? [{ v: "mine" as KindFilter, label: "🎯 Do meu ramo", color: "#00FF87" }] : []),
+                { v: "all", label: "🟢 Todos", color: "#00FF87" },
+                { v: "prestador", label: "🛠️ Prestadores", color: "#FF9F0A" },
+                { v: "fornecedor", label: "🚚 Parceiros B2B", color: "#A855F7" },
               ];
               return opts.map((opt, i) => {
                 const active = kindFilter === opt.v;
@@ -555,7 +588,7 @@ function RecentPartnersCarouselInner() {
                     aria-checked={active}
                     aria-label={`Filtrar por ${opt.label.replace(/^\S+\s/, "")}`}
                     tabIndex={active ? 0 : -1}
-                    onClick={() => setKindFilter(opt.v)}
+                    onClick={() => { setUserTouchedFilter(true); setKindFilter(opt.v); }}
                     onKeyDown={(e) => {
                       if (["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) {
                         e.preventDefault();
@@ -566,6 +599,7 @@ function RecentPartnersCarouselInner() {
                         if (e.key === "End") ni = opts.length - 1;
                         const next = opts[ni];
                         if (next) {
+                          setUserTouchedFilter(true);
                           setKindFilter(next.v);
                           const el = e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('button[role="radio"]')[ni];
                           el?.focus();
@@ -845,8 +879,19 @@ function RecentPartnersCarouselInner() {
                     );
                   })()}
 
-                  <div className="mt-2">
+                  <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                     <AvailabilityBadge userId={p.id} />
+                    {p._relevance !== "none" && branchCtx.hasContext && (
+                      <span
+                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={p._relevance === "exact"
+                          ? { background: "rgba(0,255,135,0.15)", color: "#00FF87", border: "1px solid rgba(0,255,135,0.4)" }
+                          : { background: "rgba(255,159,10,0.12)", color: "#FFB84D", border: "1px solid rgba(255,159,10,0.35)" }}
+                        title={p._relevance === "exact" ? "Mesmo ramo que o seu" : "Setor relacionado ao seu"}
+                      >
+                        {p._relevance === "exact" ? "🎯 Meu ramo" : "🔗 Setor afim"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </button>

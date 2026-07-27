@@ -7,6 +7,7 @@ import { haversineKm } from "@/lib/activity-branches";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
+import { scoreRelevance, useUserBranchContext, type Relevance } from "@/lib/branch-relevance";
 
 /**
  * Seção "Lojistas e Fornecedores Recentes" — carrossel horizontal
@@ -80,10 +81,14 @@ const KIND_META: Record<Kind, { emoji: string; label: string; color: string; bor
   },
 };
 
+// Fallback diverso — cobre múltiplos ramos p/ que a filtragem "Do meu ramo"
+// tenha demonstração visível em previews de qualquer perfil.
 const FALLBACK: Card[] = [
   { id: "mock-loja-alpha", full_name: "Móveis Alpha", display_name: "Móveis Alpha", company_name: "Móveis Alpha Ltda", avatar_url: null, role: "lojista", business_category: "Móveis Planejados", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Móveis Planejados" },
-  { id: "mock-loja-beta", full_name: "Casa Design", display_name: "Casa Design", company_name: null, avatar_url: null, role: "lojista", business_category: "Decoração", custom_branch: null, city: "Votorantim", state: "SP", rating: 4.8, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Decoração" },
-  { id: "mock-fornec-gama", full_name: "Distribuidora Gama", display_name: "Distribuidora Gama", company_name: "Gama Suprimentos Ltda", avatar_url: null, role: "fornecedor", business_category: "Ferragens", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.7, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Ferragens" },
+  { id: "mock-loja-barbearia", full_name: "Barbearia Central", display_name: "Barbearia Central", company_name: null, avatar_url: null, role: "lojista", business_category: "Barbearia", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.8, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Barbearia" },
+  { id: "mock-loja-salao", full_name: "Salão Beleza Pura", display_name: "Salão Beleza Pura", company_name: null, avatar_url: null, role: "lojista", business_category: "Salão de Beleza & Cabelo", custom_branch: null, city: "Votorantim", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Salão de Beleza & Cabelo" },
+  { id: "mock-fornec-cosmetico", full_name: "Cosméticos Delta", display_name: "Cosméticos Delta", company_name: "Delta Beauty Ltda", avatar_url: null, role: "fornecedor", business_category: "Estética Facial / Corporal", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.7, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Estética Facial / Corporal" },
+  { id: "mock-fornec-gama", full_name: "Distribuidora Gama", display_name: "Distribuidora Gama", company_name: "Gama Suprimentos Ltda", avatar_url: null, role: "fornecedor", business_category: "Marmoraria", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.7, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Marmoraria" },
 ];
 
 function readCache(): Card[] | null {
@@ -103,34 +108,23 @@ function writeCache(items: Card[]) {
 function RecentStoresCarouselInner() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
+  const branchCtx = useUserBranchContext();
   const cached = useMemo(() => readCache(), []);
   const [items, setItems] = useState<Card[]>(() => cached ?? []);
   const [loading, setLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [myBranch, setMyBranch] = useState<string | null>(null);
-  const [kindFilter, setKindFilter] = useState<"all" | Kind>("all");
+  const [kindFilter, setKindFilter] = useState<"all" | "mine" | Kind>("all");
+  const [userTouchedFilter, setUserTouchedFilter] = useState(false);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-  // Descobre o ramo principal do prestador logado para priorizar lojistas do mesmo ramo.
+  // Ao detectar contexto de ramo do usuário, defaulta "🎯 Do meu ramo".
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: auth } = await supabaseExternal.auth.getUser();
-        const uid = auth?.user?.id;
-        if (!uid) return;
-        const { data } = await supabaseExternal
-          .from("profiles")
-          .select("business_category, custom_branch")
-          .eq("id", uid)
-          .maybeSingle();
-        if (cancelled) return;
-        setMyBranch(mainBranchOf((data as any)?.business_category, (data as any)?.custom_branch));
-      } catch { /* silencioso */ }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    if (!userTouchedFilter && branchCtx.hasContext && kindFilter === "all") setKindFilter("mine");
+  }, [branchCtx.hasContext, userTouchedFilter, kindFilter]);
+
+  // Ramo principal para exibição textual — derivado do contexto compartilhado.
+  const myBranch = branchCtx.branches[0] ?? null;
 
   const fetchList = useCallback(async () => {
     try {
@@ -263,26 +257,39 @@ function RecentStoresCarouselInner() {
     setTimeout(() => setRefreshing(false), 300);
   }, [fetchList, refreshing]);
 
-  // Ordena: (1) Lojistas do mesmo ramo → (2) demais Lojistas → (3) Fornecedores.
-  const sortedItems = useMemo(() => {
-    const filtered = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
-    const branchKey = (myBranch || "").toLowerCase();
-    const bucket = (p: Card) => {
-      if (p._kind === "lojista") {
-        if (branchKey && (p._branch || "").toLowerCase() === branchKey) return 0;
-        return 1;
-      }
-      return 2;
-    };
-    return [...filtered].sort((a, b) => {
-      const ba = bucket(a);
-      const bb = bucket(b);
-      if (ba !== bb) return ba - bb;
+  // Ordena por relevância (mesmo ramo → macro afim → outros) e depois por data.
+  type Scored = Card & { _relevance: Relevance };
+  const sortedItems = useMemo<Scored[]>(() => {
+    // Filtro por tipo: "mine" mantém ambos os tipos e usa relevância no próximo passo.
+    const byKind = (kindFilter === "all" || kindFilter === "mine")
+      ? items
+      : items.filter((p) => p._kind === kindFilter);
+
+    const scored: Scored[] = byKind.map((p) => ({
+      ...p,
+      _relevance: scoreRelevance(
+        [p._branch, p.business_category, p.custom_branch],
+        branchCtx,
+      ),
+    }));
+
+    // Em "🎯 Do meu ramo": esconde 'none'. Se ficar vazio, mantém tudo p/ não zerar a seção.
+    let base = scored;
+    if (kindFilter === "mine" && branchCtx.hasContext) {
+      const strict = scored.filter((p) => p._relevance !== "none");
+      base = strict.length > 0 ? strict : scored;
+    }
+
+    const relRank = (r: Relevance) => (r === "exact" ? 0 : r === "macro" ? 1 : 2);
+    return [...base].sort((a, b) => {
+      const ra = relRank(a._relevance);
+      const rb = relRank(b._relevance);
+      if (ra !== rb) return ra - rb;
       const ta = a.created_at ? Date.parse(a.created_at) : 0;
       const tb = b.created_at ? Date.parse(b.created_at) : 0;
       return tb - ta;
     });
-  }, [items, myBranch, kindFilter]);
+  }, [items, kindFilter, branchCtx]);
 
   const openProfile = (p: Card) => {
     // Prime cache com a categoria conhecida do card para eliminar o "flash"
@@ -323,6 +330,7 @@ function RecentStoresCarouselInner() {
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
           {([
+            ...(branchCtx.hasContext ? [{ v: "mine" as const, label: "🎯 Do meu ramo", color: "#00FF87" }] : []),
             { v: "all" as const, label: "🟢 Todos", color: "#FFFFFF" },
             { v: "lojista" as const, label: "🏬 Lojistas", color: LOJISTA_COLOR },
             { v: "fornecedor" as const, label: "🏭 Fornecedores", color: FORNECEDOR_COLOR },
@@ -332,7 +340,7 @@ function RecentStoresCarouselInner() {
               <button
                 key={opt.v}
                 type="button"
-                onClick={() => setKindFilter(opt.v)}
+                onClick={() => { setUserTouchedFilter(true); setKindFilter(opt.v); }}
                 className="shrink-0 whitespace-nowrap text-[11px] md:text-xs font-bold px-3 py-1.5 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 style={active
                   ? { background: opt.color, color: "#000", borderColor: opt.color, ["--tw-ring-color" as any]: opt.color }
@@ -406,7 +414,8 @@ function RecentStoresCarouselInner() {
             const distanceLabel = dist != null && Number.isFinite(dist)
               ? (dist < 10 ? dist.toFixed(1) : Math.round(dist).toString())
               : null;
-            const sameBranch = myBranch && p._branch && myBranch.toLowerCase() === p._branch.toLowerCase();
+            const relevance = p._relevance;
+            const showRelevanceBadge = branchCtx.hasContext && relevance !== "none";
 
             return (
               <button
@@ -435,13 +444,13 @@ function RecentStoresCarouselInner() {
                   >
                     {meta.emoji} {meta.label}
                   </span>
-                  {sameBranch && (
+                  {showRelevanceBadge && (
                     <span
                       className="absolute bottom-2 left-2 z-10 text-[9px] font-black uppercase tracking-wider bg-black/80 px-2 py-0.5 rounded-full border"
                       style={{ borderColor: meta.color, color: meta.color }}
-                      title="Mesmo ramo principal do seu perfil"
+                      title={relevance === "exact" ? "Mesmo ramo principal do seu perfil" : "Setor relacionado ao seu ramo"}
                     >
-                      ⭐ Mesmo ramo
+                      {relevance === "exact" ? "⭐ Mesmo ramo" : "🔗 Setor afim"}
                     </span>
                   )}
                 </div>
