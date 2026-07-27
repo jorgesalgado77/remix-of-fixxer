@@ -26,6 +26,8 @@ import { ReviewModal } from "@/components/ReviewModal";
 import { PanelActions } from "@/components/PanelActions";
 import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
+import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
+
 
 
 export const Route = createFileRoute("/_authenticated/cliente")({
