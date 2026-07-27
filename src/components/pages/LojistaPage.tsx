@@ -830,9 +830,9 @@ export function LojistaDashboard() {
 function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [], missingKeys = [], onOpenProfile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[]; missingKeys?: string[]; onOpenProfile?: (focusKey?: string) => void }) {
     // 🎉 Detecta a transição incompleto → completo para exibir
     // um pulso verde "Perfil completo!" por alguns segundos, sem reload.
-    const prevCompleteRef = React.useRef(isProfileComplete);
-    const [justCompleted, setJustCompleted] = React.useState(false);
-    React.useEffect(() => {
+    const prevCompleteRef = useRef(isProfileComplete);
+    const [justCompleted, setJustCompleted] = useState(false);
+    useEffect(() => {
         if (!prevCompleteRef.current && isProfileComplete) {
             setJustCompleted(true);
             const t = window.setTimeout(() => setJustCompleted(false), 4000);
@@ -840,6 +840,7 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
         }
         prevCompleteRef.current = isProfileComplete;
     }, [isProfileComplete]);
+
 
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
