@@ -1287,6 +1287,54 @@ function ProfilePage() {
               </div>
 
 
+              {/* REDES SOCIAIS — visível para o próprio dono do perfil */}
+              {!profileId && (
+                <div className="pt-8 space-y-6">
+                  <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                    <ExternalLink className="w-6 h-6 text-primary" />
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Redes Sociais</h3>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest -mt-2">
+                    Aparecem no seu perfil público. Deixe em branco para ocultar.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { key: 'instagram', label: 'Instagram', placeholder: '@suaempresa', accent: 'focus:border-pink-500/50' },
+                      { key: 'facebook',  label: 'Facebook',  placeholder: 'facebook.com/suaempresa', accent: 'focus:border-[#1877F2]/50' },
+                      { key: 'tiktok',    label: 'TikTok',    placeholder: '@suaempresa', accent: 'focus:border-white/40' },
+                      { key: 'site_url',  label: 'Site / Website', placeholder: 'https://www.suaempresa.com.br', accent: 'focus:border-blue-400/50' },
+                    ].map((f) => (
+                      <div key={f.key} className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{f.label}</label>
+                        <input
+                          type="text"
+                          value={profile?.[f.key] ?? ''}
+                          onChange={(e) => setProfile({ ...profile, [f.key]: e.target.value })}
+                          placeholder={f.placeholder}
+                          className={`w-full h-12 rounded-2xl bg-white/5 border border-white/10 px-4 text-sm outline-none transition-all ${f.accent}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SEGURANÇA DA CONTA — senha + zona de perigo */}
+              {!profileId && (
+                <div className="pt-8 space-y-6">
+                  <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                    <BadgeCheck className="w-6 h-6 text-primary" />
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Segurança da Conta</h3>
+                  </div>
+
+                  <SecuritySection />
+                </div>
+              )}
+
+
+
+
+
 
               {/* CAMPOS ESPECÍFICOS: LOJISTA — Tipo de Produto (multi-seleção) */}
               {profile?.role === 'lojista' && (
@@ -2093,5 +2141,167 @@ function ProfilePage() {
 
   );
 }
+
+
+/* ============================================================
+ * SecuritySection — Alterar senha + Zona de perigo (excluir conta)
+ * Usa Supabase Auth externo (supabaseExternal) para operações.
+ * ============================================================ */
+function SecuritySection() {
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState("");
+
+  const handleChangePassword = async () => {
+    if (newPwd.length < 8) {
+      toast.error("A nova senha precisa ter pelo menos 8 caracteres.");
+      return;
+    }
+    if (newPwd !== confirmPwd) {
+      toast.error("A confirmação não confere com a nova senha.");
+      return;
+    }
+    setPwdSaving(true);
+    try {
+      // Reautentica com a senha atual (boa prática — evita troca sem consentimento)
+      const { data: { user } } = await supabaseExternal.auth.getUser();
+      const email = user?.email;
+      if (email && currentPwd) {
+        const { error: signErr } = await supabaseExternal.auth.signInWithPassword({
+          email,
+          password: currentPwd,
+        });
+        if (signErr) {
+          toast.error("Senha atual incorreta.");
+          setPwdSaving(false);
+          return;
+        }
+      }
+      const { error } = await supabaseExternal.auth.updateUser({ password: newPwd });
+      if (error) throw error;
+      toast.success("Senha atualizada com sucesso.");
+      setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+    } catch (e: any) {
+      toast.error("Não foi possível alterar a senha.", { description: e?.message });
+    } finally {
+      setPwdSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (confirmDelete.trim().toUpperCase() !== "EXCLUIR") {
+      toast.warning("Digite EXCLUIR para confirmar.");
+      return;
+    }
+    setDeleting(true);
+    try {
+      const { data: { user } } = await supabaseExternal.auth.getUser();
+      if (!user) throw new Error("Sessão expirada.");
+      // Marca conta como excluída (soft delete) — remoção física exige service_role no backend.
+      await supabaseExternal
+        .from("profiles")
+        .update({ status: "excluido", updated_at: new Date().toISOString() })
+        .eq("id", user.id);
+      await supabaseExternal.auth.signOut();
+      toast.success("Conta marcada para exclusão. Fale com o suporte se mudar de ideia.");
+      window.location.href = "/";
+    } catch (e: any) {
+      toast.error("Falha ao excluir conta.", { description: e?.message });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Alterar Senha */}
+      <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">🔒</div>
+            <div>
+              <div className="text-sm font-black text-white uppercase tracking-tight">Alterar Senha</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Mínimo de 8 caracteres.</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPwd(v => !v)}
+            className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
+          >
+            {showPwd ? "Ocultar" : "Mostrar"}
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input
+            type={showPwd ? "text" : "password"}
+            value={currentPwd}
+            onChange={(e) => setCurrentPwd(e.target.value)}
+            placeholder="Senha atual"
+            autoComplete="current-password"
+            className="h-12 rounded-2xl bg-black/40 border border-white/10 px-4 text-sm outline-none focus:border-primary/50"
+          />
+          <input
+            type={showPwd ? "text" : "password"}
+            value={newPwd}
+            onChange={(e) => setNewPwd(e.target.value)}
+            placeholder="Nova senha"
+            autoComplete="new-password"
+            className="h-12 rounded-2xl bg-black/40 border border-white/10 px-4 text-sm outline-none focus:border-primary/50"
+          />
+          <input
+            type={showPwd ? "text" : "password"}
+            value={confirmPwd}
+            onChange={(e) => setConfirmPwd(e.target.value)}
+            placeholder="Confirmar nova senha"
+            autoComplete="new-password"
+            className="h-12 rounded-2xl bg-black/40 border border-white/10 px-4 text-sm outline-none focus:border-primary/50"
+          />
+        </div>
+        <button
+          onClick={handleChangePassword}
+          disabled={pwdSaving || !newPwd || !confirmPwd}
+          className="w-full md:w-auto px-8 h-12 rounded-2xl bg-primary text-black font-black uppercase italic tracking-widest disabled:opacity-50 hover:bg-primary/90 transition-all"
+        >
+          {pwdSaving ? "Atualizando..." : "Atualizar Senha"}
+        </button>
+      </div>
+
+      {/* Zona de Perigo */}
+      <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/30 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400">⚠️</div>
+          <div>
+            <div className="text-sm font-black text-red-300 uppercase tracking-tight">Zona de Perigo</div>
+            <div className="text-[10px] text-red-300/70 uppercase tracking-widest font-bold">
+              A exclusão remove seu acesso e oculta seu perfil público. Ação irreversível pelo próprio usuário.
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col md:flex-row gap-3">
+          <input
+            type="text"
+            value={confirmDelete}
+            onChange={(e) => setConfirmDelete(e.target.value)}
+            placeholder='Digite EXCLUIR para confirmar'
+            className="flex-1 h-12 rounded-2xl bg-black/40 border border-red-500/30 px-4 text-sm outline-none focus:border-red-500/60"
+          />
+          <button
+            onClick={handleDeleteAccount}
+            disabled={deleting || confirmDelete.trim().toUpperCase() !== "EXCLUIR"}
+            className="px-8 h-12 rounded-2xl bg-red-500 hover:bg-red-500/90 text-white font-black uppercase italic tracking-widest disabled:opacity-40 transition-all"
+          >
+            {deleting ? "Excluindo..." : "Excluir Minha Conta"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 
