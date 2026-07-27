@@ -2160,13 +2160,15 @@ function HeaderActionsMenu(props: {
   muted: boolean;
   archived: boolean;
   blocked: boolean;
+  onSettings: () => void;
   onUnread: () => void;
   onMute: () => void;
   onArchive: () => void;
   onBlock: () => void;
   onExport: () => void;
 }) {
-  const { muted, archived, blocked, onUnread, onMute, onArchive, onBlock, onExport } = props;
+  const { muted, archived, blocked, onSettings, onUnread, onMute, onArchive, onBlock, onExport } = props;
+
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
