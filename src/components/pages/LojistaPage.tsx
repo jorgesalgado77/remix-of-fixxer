@@ -2885,7 +2885,7 @@ function ProfileView({
                                 // 1ª especialidade grátis; a partir da 2ª cobra 10 moedas.
                                 if (specialties.length >= 1) {
                                     try {
-                                        const { data: { user } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getUser());
+                                        const { data: { user } } = await import('@/lib/supabaseExternal').then(m => m.supabaseExternal.auth.getUser());
                                         const uid = user?.id;
 
                                         if (uid) {
