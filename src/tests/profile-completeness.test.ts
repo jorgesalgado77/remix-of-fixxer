@@ -71,18 +71,17 @@ describe("evaluateProfileCompleteness — lojista (botões Publicar/Avaliações
     expect(result.missing).toContain("email_contact");
   });
 
-  it("exige endereço, número, cidade e estado (mesmos campos do submit)", () => {
+  it("exige endereço, cidade e estado (mesmos campos do submit)", () => {
     const partial = {
       ...completeLojistaProfile,
       address: "",
-      address_number: "",
       city: "",
       state: "",
     };
     const result = evaluateProfileCompleteness("lojista", partial);
     expect(result.complete).toBe(false);
     expect(result.missingLabels).toEqual(
-      expect.arrayContaining(["Endereço", "Número", "Cidade", "Estado"]),
+      expect.arrayContaining(["Endereço", "Cidade", "Estado"]),
     );
   });
 
