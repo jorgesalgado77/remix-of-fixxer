@@ -665,7 +665,7 @@ export default function FeedLojistaPage() {
     } catch {}
   }, [saved, savesLoaded]);
 
-  const visible = useMemo(() => {
+  const visibleRaw = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
     const byCategory = MOCK_POSTS.filter((p) => filter === "todos" || p.category === filter);
     const byStatus =
@@ -693,6 +693,22 @@ export default function FeedLojistaPage() {
       return 0;
     });
   }, [filter, statusFilter, debouncedSearch]);
+
+  const branchCtx = useUserBranchContext();
+  const visible = useMemo(() => {
+    if (!branchCtx.hasContext) return visibleRaw;
+    const decorated = visibleRaw.map((p) => ({
+      p,
+      _relevance: scoreRelevanceDetailed(
+        [p.specialty ?? "", ...(p.keywords ?? []), p.title],
+        branchCtx,
+      ),
+    }));
+    const sorted = [...decorated].sort(
+      (a, b) => relevanceRank(a._relevance.level) - relevanceRank(b._relevance.level),
+    );
+    return applyRelevanceFallback(sorted, 3).map((x) => x.p);
+  }, [visibleRaw, branchCtx]);
 
   const paged = useMemo(() => visible.slice(0, page * PAGE_SIZE), [visible, page]);
   const hasMore = paged.length < visible.length;
