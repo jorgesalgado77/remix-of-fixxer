@@ -90,12 +90,12 @@ export function PublishPickerModal({ open, onClose, defaultCategory }: Props) {
               </div>
               <div className="min-w-0">
                 <p className="text-[13px] font-black uppercase text-white">📢 Criar Anúncio</p>
-                <p className="text-[11px] text-white/60">Vendas de produtos, promoções e ofertas.</p>
+                <p className="text-[11px] text-white/60">Vendas de produtos, promoções, ofertas e prestação de serviços.</p>
               </div>
             </div>
             <p className="text-[10px] text-white/50 mt-2 flex items-start gap-1.5">
               <Info className="w-3 h-3 mt-0.5 shrink-0" />
-              Ideal para lojistas e fornecedores divulgarem produtos, kits e liquidações no feed.
+              Ideal para usuários que querem DIVULGAR e APARECER no Feed.
             </p>
           </button>
 
