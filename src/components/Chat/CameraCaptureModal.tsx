@@ -239,6 +239,28 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
         {preview && mode === "video" && (
           <video src={preview.url} className="w-full h-full object-contain" controls playsInline />
         )}
+        {preview && mode === "video" && validating && (
+          <div className="absolute top-3 left-3 right-3 flex items-center justify-center">
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-black/70 text-white text-xs font-bold">
+              <Loader2 className="w-4 h-4 animate-spin" /> Validando clipe…
+            </div>
+          </div>
+        )}
+        {preview && mode === "video" && previewMeta && !previewError && (
+          <div className="absolute top-3 left-3 right-3 flex items-center justify-center pointer-events-none">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/85 text-white text-[11px] font-bold">
+              <Check className="w-3.5 h-3.5" /> {previewMeta.durationSec.toFixed(1)}s · {previewMeta.sizeKb} KB
+            </div>
+          </div>
+        )}
+        {previewError && (
+          <div className="absolute inset-x-0 bottom-0 p-4">
+            <div className="mx-auto max-w-sm bg-red-500/25 border border-red-400/50 text-white rounded-2xl p-3 flex items-start gap-2 text-sm">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{previewError}</span>
+            </div>
+          </div>
+        )}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center text-white">
             <Loader2 className="w-6 h-6 animate-spin" />
@@ -257,8 +279,14 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
             <button onClick={retry} className="w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center" aria-label="Refazer">
               <RotateCcw className="w-6 h-6" />
             </button>
-            <button onClick={confirm} className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg" aria-label="Usar">
-              <Check className="w-7 h-7" />
+            <button
+              onClick={confirm}
+              disabled={!canConfirm}
+              className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Usar"
+              title={!canConfirm ? "Aguarde a validação do vídeo" : "Confirmar"}
+            >
+              {validating ? <Loader2 className="w-7 h-7 animate-spin" /> : <Check className="w-7 h-7" />}
             </button>
           </>
         ) : mode === "photo" ? (
