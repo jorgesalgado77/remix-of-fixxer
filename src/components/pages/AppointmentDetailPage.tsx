@@ -494,7 +494,16 @@ export default function AppointmentDetailPage() {
           }}
         />
       )}
+
+      <AppointmentDetailsModal
+        appointment={rescheduleOpen ? apt : null}
+        open={rescheduleOpen}
+        onOpenChange={(v) => setRescheduleOpen(v)}
+        onChanged={() => load()}
+        initialReschedule
+      />
     </div>
+
   );
 }
 
