@@ -2211,6 +2211,22 @@ function ConversationPage() {
         onClose={() => setCameraOpen(null)}
         onCapture={(file) => acceptIncomingFiles([file])}
       />
+      <ExportChatModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        messages={messages.map((m) => ({
+          id: m.id,
+          created_at: m.created_at,
+          sender_id: m.sender_id,
+          content: m.content,
+          attachment_url: m.attachment_url ?? null,
+          attachment_name: m.attachment_name ?? null,
+          attachment_type: m.attachment_type ?? null,
+        }))}
+        peerName={peerName}
+        selfName="Você"
+        selfId={userId ?? ""}
+      />
     </div>
   );
 
