@@ -230,6 +230,7 @@ function RootComponent() {
         <CoinFeedbackBridge />
         <CoinConfirmProvider />
         <OfflineBanner />
+        <ChatRealtimeDebugPanel />
         <Toaster closeButton duration={2000} />
       </div>
     </QueryClientProvider>
