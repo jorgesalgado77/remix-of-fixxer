@@ -40,6 +40,13 @@ import {
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
+import {
+  useUserBranchContext,
+  scoreRelevanceDetailed,
+  relevanceRank,
+  applyRelevanceFallback,
+} from "@/lib/branch-relevance";
+import { RelevanceBadge } from "@/components/RelevanceBadge";
 
 // =============================================================================
 // TIPOS
