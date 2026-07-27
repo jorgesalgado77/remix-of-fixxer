@@ -879,8 +879,19 @@ function RecentPartnersCarouselInner() {
                     );
                   })()}
 
-                  <div className="mt-2">
+                  <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                     <AvailabilityBadge userId={p.id} />
+                    {p._relevance !== "none" && branchCtx.hasContext && (
+                      <span
+                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={p._relevance === "exact"
+                          ? { background: "rgba(0,255,135,0.15)", color: "#00FF87", border: "1px solid rgba(0,255,135,0.4)" }
+                          : { background: "rgba(255,159,10,0.12)", color: "#FFB84D", border: "1px solid rgba(255,159,10,0.35)" }}
+                        title={p._relevance === "exact" ? "Mesmo ramo que o seu" : "Setor relacionado ao seu"}
+                      >
+                        {p._relevance === "exact" ? "🎯 Meu ramo" : "🔗 Setor afim"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </button>
