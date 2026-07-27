@@ -1317,6 +1317,66 @@ function ProfilePage() {
                       </div>
                     ))}
                   </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={savingSocial || !profile?.id}
+                      onClick={async () => {
+                        if (!profile?.id) return;
+                        setSavingSocial(true);
+                        try {
+                          const patch = {
+                            instagram: profile.instagram ?? null,
+                            facebook: profile.facebook ?? null,
+                            tiktok: profile.tiktok ?? null,
+                            site_url: profile.site_url ?? null,
+                          };
+                          const extras: Record<string, unknown> = {
+                            ...((profile.custom_sections as any)?.__extras || {}),
+                          };
+                          const payload: any = { ...patch };
+                          let attempts = 0;
+                          let lastError: any = null;
+                          while (attempts < 6) {
+                            attempts++;
+                            const { error } = await supabaseExternal
+                              .from('profiles')
+                              .update(payload)
+                              .eq('id', profile.id);
+                            if (!error) { lastError = null; break; }
+                            lastError = error;
+                            const msg = error.message || '';
+                            const m = msg.match(/'([^']+)'\s+column/i) || msg.match(/column\s+"([^"]+)"/i) || msg.match(/Could not find the '([^']+)'/i);
+                            const col = m?.[1];
+                            if (col && col in payload) {
+                              extras[col] = payload[col];
+                              delete payload[col];
+                              payload.custom_sections = { ...(profile.custom_sections || {}), __extras: extras };
+                              continue;
+                            }
+                            break;
+                          }
+                          if (lastError) throw lastError;
+                          toast.success('Redes sociais atualizadas!', { description: 'As mudanças já aparecem no seu perfil público.' });
+                          try {
+                            window.dispatchEvent(new CustomEvent('fixxer:profile-updated', { detail: { id: profile.id } }));
+                            window.dispatchEvent(new CustomEvent('fixxer:profile-saved', { detail: { id: profile.id } }));
+                          } catch { /* noop */ }
+                        } catch (e: any) {
+                          toast.error('Não foi possível salvar as redes sociais.', { description: e?.message });
+                        } finally {
+                          setSavingSocial(false);
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 h-11 px-6 rounded-2xl bg-primary text-black font-black uppercase italic tracking-widest text-xs disabled:opacity-50 hover:bg-primary/90 transition-all"
+                    >
+                      {savingSocial ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      {savingSocial ? 'Salvando...' : 'Salvar redes sociais'}
+                    </button>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                      Atualiza imediatamente em todo o app.
+                    </span>
+                  </div>
                 </div>
               )}
 
