@@ -124,17 +124,24 @@ export function stripAccents(s: unknown): string {
     .trim();
 }
 
-/** Expande o termo com sinônimos conhecidos (retorna lista de tokens). */
+/** Expande o termo com sinônimos conhecidos + stems aproximados. */
 export function expandSynonyms(term: string): string[] {
   const base = stripAccents(term);
   if (!base) return [];
   const tokens = new Set<string>([base]);
   for (const word of base.split(" ")) {
+    if (!word) continue;
     tokens.add(word);
-    const syn = SYNONYMS[word];
-    if (syn) syn.forEach((s) => tokens.add(s));
+    const stem = stemPt(word);
+    if (stem && stem.length >= 3) tokens.add(stem);
+    const syn = SYNONYMS[word] ?? SYNONYMS[stem];
+    if (syn) syn.forEach((s) => {
+      tokens.add(s);
+      const st = stemPt(s);
+      if (st && st.length >= 3) tokens.add(st);
+    });
   }
-  return Array.from(tokens).filter((t) => t.length >= 2);
+  return Array.from(tokens).filter((t) => t.length >= 3);
 }
 
 function stringifyValue(value: unknown): string {
