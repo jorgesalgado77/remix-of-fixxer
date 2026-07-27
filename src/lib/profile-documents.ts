@@ -6,10 +6,10 @@
  * apenas o `path` (relativo ao bucket) — a URL é gerada sob demanda
  * via `createSignedUrl`.
  *
- * Compatibilidade: entradas legadas guardadas como `{ url: "https://…public/media/…" }`
- * continuam funcionando. `resolveDocumentUrl` devolve a própria URL quando
- * recebe algo que já é absoluto (http/https), então o render antigo não quebra
- * até rodar o script de migração.
+ * Cache + retry: `resolveDocumentUrl` mantém as signed URLs em memória
+ * até 5min antes do vencimento e reaproveita a mesma promise concorrente
+ * para o mesmo path (evita rajadas). Em falha, tenta novamente com backoff
+ * exponencial até 3x antes de devolver "".
  */
 import { supabaseExternal } from "@/lib/supabaseExternal";
 
@@ -24,10 +24,11 @@ export type ProfileDocument = {
   created_at?: string;
 };
 
-/**
- * Faz upload em `documents-private/<profileId>/<timestamp>_<sanitized>` e
- * devolve o metadata pronto para persistir em `profiles.documents`.
- */
+type CacheEntry = { url: string; expiresAt: number };
+const urlCache = new Map<string, CacheEntry>();
+const inflight = new Map<string, Promise<string>>();
+const SAFETY_MARGIN_MS = 5 * 60 * 1000; // renova 5min antes de expirar
+
 export async function uploadProfileDocument(
   file: File,
   profileId: string,
@@ -50,11 +51,25 @@ export async function uploadProfileDocument(
   };
 }
 
+async function signWithRetry(path: string, expiresInSec: number): Promise<string> {
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await supabaseExternal.storage
+      .from(DOCUMENTS_BUCKET)
+      .createSignedUrl(path, expiresInSec);
+    if (!error && data?.signedUrl) return data.signedUrl;
+    lastErr = error;
+    // backoff: 250ms, 750ms
+    await new Promise((r) => setTimeout(r, 250 * Math.pow(3, attempt)));
+  }
+  if (lastErr) console.warn("[profile-documents] signed URL falhou:", lastErr);
+  return "";
+}
+
 /**
- * Resolve o item para uma URL utilizável no <img>/<a>/<embed>.
- * - se receber URL http(s), devolve igual (legado);
- * - se receber path do bucket privado, gera signed URL válida por `expiresInSec`.
- * Retorna string vazia em caso de erro (o consumidor pode exibir placeholder).
+ * Resolve o item para uma URL utilizável.
+ * - URL http(s) legada: retorna igual.
+ * - path privado: usa cache; se ausente/expirado, faz signed URL com retry.
  */
 export async function resolveDocumentUrl(
   pathOrUrl: string | null | undefined,
@@ -62,19 +77,32 @@ export async function resolveDocumentUrl(
 ): Promise<string> {
   if (!pathOrUrl) return "";
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-  const { data, error } = await supabaseExternal.storage
-    .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(pathOrUrl, expiresInSec);
-  if (error || !data?.signedUrl) return "";
-  return data.signedUrl;
+
+  const now = Date.now();
+  const cached = urlCache.get(pathOrUrl);
+  if (cached && cached.expiresAt - SAFETY_MARGIN_MS > now) return cached.url;
+
+  const existing = inflight.get(pathOrUrl);
+  if (existing) return existing;
+
+  const p = (async () => {
+    const url = await signWithRetry(pathOrUrl, expiresInSec);
+    if (url) urlCache.set(pathOrUrl, { url, expiresAt: now + expiresInSec * 1000 });
+    return url;
+  })().finally(() => inflight.delete(pathOrUrl));
+
+  inflight.set(pathOrUrl, p);
+  return p;
 }
 
-/**
- * Remove o objeto do bucket privado (best-effort). Ignora legados
- * (que estão no bucket público `media`) — esses são apagados pelo
- * script de migração se rodado com `--purge`.
- */
+/** Invalida entrada de cache (chame após deletar/reupload). */
+export function invalidateDocumentUrl(pathOrUrl?: string | null) {
+  if (!pathOrUrl) { urlCache.clear(); return; }
+  urlCache.delete(pathOrUrl);
+}
+
 export async function deleteProfileDocument(doc: ProfileDocument): Promise<void> {
   if (!doc?.path) return;
+  invalidateDocumentUrl(doc.path);
   await supabaseExternal.storage.from(DOCUMENTS_BUCKET).remove([doc.path]);
 }
