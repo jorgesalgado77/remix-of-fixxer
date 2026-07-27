@@ -1644,17 +1644,34 @@ function ConversationPage() {
             </div>
 
           </div>
-          <HeaderActionsMenu
-            muted={muted}
-            archived={archived}
-            blocked={isBlocked}
-            onSettings={() => setSettingsOpen(true)}
-            onUnread={markAsUnread}
-            onMute={toggleMute}
-            onArchive={toggleArchive}
-            onBlock={toggleBlock}
-            onExport={openExportModal}
-          />
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={toggleMute}
+              title={muted ? "Ativar som de novas mensagens" : "Silenciar som de novas mensagens"}
+              aria-label={muted ? "Ativar som" : "Silenciar som"}
+              aria-pressed={muted}
+              className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors ${
+                muted
+                  ? "bg-red-500/15 border-red-500/40 text-red-200 hover:bg-red-500/25"
+                  : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+              }`}
+            >
+              {muted ? <BellOff className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+            </button>
+            <HeaderActionsMenu
+              muted={muted}
+              archived={archived}
+              blocked={isBlocked}
+              onSettings={() => setSettingsOpen(true)}
+              onUnread={markAsUnread}
+              onMute={toggleMute}
+              onArchive={toggleArchive}
+              onBlock={toggleBlock}
+              onExport={openExportModal}
+            />
+          </div>
+
 
 
 
@@ -1847,10 +1864,21 @@ function ConversationPage() {
                                   });
                                 }
                               }}
+                              uploadState={
+                                m._draftFile || m._pending || m._failed
+                                  ? {
+                                      uploading: !!m._uploading,
+                                      pct: m._uploadPct ?? 0,
+                                      failed: !!m._failed,
+                                      error: m._error ?? null,
+                                    }
+                                  : undefined
+                              }
+                              onRetry={m._failed ? () => retrySend(m) : undefined}
                             />
                           )}
                           {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
-                          {m._pending && m._uploading && m._draftFile && (
+                          {m._pending && m._uploading && m._draftFile && !isImageType(m.attachment_type) && !(m.attachment_type || "").startsWith("video/") && (
                             <div className="mt-2 flex items-center gap-2">
                               <div className="flex-1 bg-black/30 rounded-full h-1.5 overflow-hidden">
                                 <div
@@ -2239,6 +2267,8 @@ function AttachmentBlock({
   mine,
   state,
   onDownload,
+  uploadState,
+  onRetry,
 }: {
   url: string;
   type?: string | null;
@@ -2247,6 +2277,8 @@ function AttachmentBlock({
   messageId: string;
   state?: { pct: number; loading: boolean };
   onDownload: () => void;
+  uploadState?: { uploading: boolean; pct: number; failed: boolean; error?: string | null };
+  onRetry?: () => void;
 }) {
   const image = isImageType(type);
   const video = !!type && type.startsWith("video/");
@@ -2273,8 +2305,9 @@ function AttachmentBlock({
             decoding="async"
             onLoad={() => setMediaLoaded(true)}
             onError={() => setMediaLoaded(true)}
-            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
+            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
           />
+          <MediaUploadOverlay uploadState={uploadState} onRetry={onRetry} />
         </div>
       ) : video ? (
         <div className="relative rounded-lg overflow-hidden bg-black min-h-[8rem]">
@@ -2287,9 +2320,11 @@ function AttachmentBlock({
             preload="metadata"
             onLoadedMetadata={() => setMediaLoaded(true)}
             onError={() => setMediaLoaded(true)}
-            className={`rounded-lg max-h-64 w-full bg-black transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
+            className={`rounded-lg max-h-64 w-full bg-black transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
           />
+          <MediaUploadOverlay uploadState={uploadState} onRetry={onRetry} />
         </div>
+
 
       ) : audio ? (
         <div className={`flex items-center gap-2 p-2 rounded-lg ${mine ? "bg-black/20" : "bg-white/5 border border-white/10"}`}>
@@ -2349,6 +2384,55 @@ function AttachmentBlock({
     </div>
   );
 }
+
+function MediaUploadOverlay({
+  uploadState,
+  onRetry,
+}: {
+  uploadState?: { uploading: boolean; pct: number; failed: boolean; error?: string | null };
+  onRetry?: () => void;
+}) {
+  if (!uploadState) return null;
+  if (uploadState.uploading) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 text-white text-[11px] font-bold">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Enviando {Math.round(uploadState.pct)}%
+        </div>
+        <div className="w-3/4 max-w-[220px] h-1.5 bg-black/50 rounded-full overflow-hidden">
+          <div className="h-full bg-white/90 transition-all" style={{ width: `${uploadState.pct}%` }} />
+        </div>
+      </div>
+    );
+  }
+  if (uploadState.failed) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3">
+        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/80 text-white text-[10px] font-black uppercase italic tracking-widest">
+          <AlertCircle className="w-3 h-3" /> Falhou
+        </div>
+        {uploadState.error && (
+          <p className="text-[10px] text-white/80 text-center max-w-[240px] leading-snug line-clamp-2">
+            {uploadState.error}
+          </p>
+        )}
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white text-black text-[11px] font-black uppercase italic tracking-widest hover:bg-white/90"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> Reenviar
+          </button>
+        )}
+      </div>
+    );
+  }
+  return null;
+}
+
+
 
 
 function HeaderActionsMenu(props: {

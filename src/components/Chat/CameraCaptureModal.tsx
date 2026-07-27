@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Camera, Video, StopCircle, RotateCcw, Check, Loader2, SwitchCamera } from "lucide-react";
+import { X, Camera, Video, StopCircle, RotateCcw, Check, Loader2, SwitchCamera, AlertTriangle } from "lucide-react";
 
 type Mode = "photo" | "video";
 
@@ -21,6 +21,9 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [preview, setPreview] = useState<{ url: string; file: File } | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [previewMeta, setPreviewMeta] = useState<{ durationSec: number; sizeKb: number } | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const tickRef = useRef<number | null>(null);
 
   const stopStream = () => {
@@ -102,6 +105,43 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
     }, "image/jpeg", 0.92);
   };
 
+  /**
+   * Sonda o vídeo capturado antes de permitir confirmar: garante que
+   *  - o arquivo tem bytes,
+   *  - o browser consegue decodificar (loadedmetadata dispara),
+   *  - a duração é finita e maior que 0.
+   * Se qualquer teste falha, marca previewError e bloqueia o botão de usar.
+   */
+  const probeVideo = (file: File, url: string) =>
+    new Promise<{ ok: true; durationSec: number } | { ok: false; error: string }>((resolve) => {
+      if (file.size < 1024) {
+        resolve({ ok: false, error: "O clipe ficou vazio. Grave novamente." });
+        return;
+      }
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.muted = true;
+      v.playsInline = true;
+      let done = false;
+      const finish = (r: { ok: true; durationSec: number } | { ok: false; error: string }) => {
+        if (done) return;
+        done = true;
+        try { v.removeAttribute("src"); v.load(); } catch {}
+        resolve(r);
+      };
+      v.onloadedmetadata = () => {
+        const d = v.duration;
+        if (!isFinite(d) || d <= 0.15) {
+          finish({ ok: false, error: "Não foi possível ler a duração do vídeo. Grave novamente." });
+        } else {
+          finish({ ok: true, durationSec: d });
+        }
+      };
+      v.onerror = () => finish({ ok: false, error: "O formato gravado não pôde ser decodificado. Tente novamente." });
+      setTimeout(() => finish({ ok: false, error: "Tempo esgotado ao validar o vídeo." }), 8000);
+      v.src = url;
+    });
+
   const startRec = () => {
     const s = streamRef.current;
     if (!s) return;
@@ -110,12 +150,27 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
     const mime = mimeCandidates.find((m) => (window as any).MediaRecorder?.isTypeSupported?.(m)) || "";
     const rec = new MediaRecorder(s, mime ? { mimeType: mime } : undefined);
     rec.ondataavailable = (e) => { if (e.data?.size) chunksRef.current.push(e.data); };
-    rec.onstop = () => {
+    rec.onstop = async () => {
       const type = rec.mimeType || "video/webm";
       const ext = type.includes("mp4") ? "mp4" : "webm";
       const blob = new Blob(chunksRef.current, { type });
+      if (blob.size === 0) {
+        setPreviewError("Nada foi gravado. Toque em gravar e tente novamente.");
+        return;
+      }
       const file = new File([blob], `video-${Date.now()}.${ext}`, { type });
-      setPreview({ url: URL.createObjectURL(blob), file });
+      const url = URL.createObjectURL(blob);
+      setValidating(true);
+      setPreviewError(null);
+      setPreviewMeta(null);
+      setPreview({ url, file });
+      const result = await probeVideo(file, url);
+      setValidating(false);
+      if (result.ok) {
+        setPreviewMeta({ durationSec: result.durationSec, sizeKb: Math.round(file.size / 1024) });
+      } else {
+        setPreviewError(result.error);
+      }
     };
     recorderRef.current = rec;
     rec.start(250);
@@ -137,18 +192,26 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
     if (tickRef.current) { window.clearInterval(tickRef.current); tickRef.current = null; }
   };
 
+  const canConfirm = !!preview && !validating && !previewError && (mode === "photo" || !!previewMeta);
+
   const confirm = () => {
-    if (!preview) return;
+    if (!preview || !canConfirm) return;
     onCapture(preview.file);
     try { URL.revokeObjectURL(preview.url); } catch {}
     setPreview(null);
+    setPreviewMeta(null);
+    setPreviewError(null);
     onClose();
   };
 
   const retry = () => {
     if (preview) { try { URL.revokeObjectURL(preview.url); } catch {} }
     setPreview(null);
+    setPreviewMeta(null);
+    setPreviewError(null);
+    setValidating(false);
   };
+
 
   if (!open) return null;
 
@@ -176,6 +239,28 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
         {preview && mode === "video" && (
           <video src={preview.url} className="w-full h-full object-contain" controls playsInline />
         )}
+        {preview && mode === "video" && validating && (
+          <div className="absolute top-3 left-3 right-3 flex items-center justify-center">
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-black/70 text-white text-xs font-bold">
+              <Loader2 className="w-4 h-4 animate-spin" /> Validando clipe…
+            </div>
+          </div>
+        )}
+        {preview && mode === "video" && previewMeta && !previewError && (
+          <div className="absolute top-3 left-3 right-3 flex items-center justify-center pointer-events-none">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/85 text-white text-[11px] font-bold">
+              <Check className="w-3.5 h-3.5" /> {previewMeta.durationSec.toFixed(1)}s · {previewMeta.sizeKb} KB
+            </div>
+          </div>
+        )}
+        {previewError && (
+          <div className="absolute inset-x-0 bottom-0 p-4">
+            <div className="mx-auto max-w-sm bg-red-500/25 border border-red-400/50 text-white rounded-2xl p-3 flex items-start gap-2 text-sm">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{previewError}</span>
+            </div>
+          </div>
+        )}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center text-white">
             <Loader2 className="w-6 h-6 animate-spin" />
@@ -194,8 +279,14 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
             <button onClick={retry} className="w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center" aria-label="Refazer">
               <RotateCcw className="w-6 h-6" />
             </button>
-            <button onClick={confirm} className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg" aria-label="Usar">
-              <Check className="w-7 h-7" />
+            <button
+              onClick={confirm}
+              disabled={!canConfirm}
+              className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Usar"
+              title={!canConfirm ? "Aguarde a validação do vídeo" : "Confirmar"}
+            >
+              {validating ? <Loader2 className="w-7 h-7 animate-spin" /> : <Check className="w-7 h-7" />}
             </button>
           </>
         ) : mode === "photo" ? (
