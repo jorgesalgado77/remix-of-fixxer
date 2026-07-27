@@ -33,9 +33,15 @@ import {
   saveAppointmentPrefs,
   canPlaySoundNow,
   probeAutoplay,
+  showDesktopNotification,
+  desktopSupported,
+  desktopPermission,
+  requestDesktopPermission,
   type AppointmentPrefs,
   type ReminderMinutes,
+  type DesktopPermission,
 } from "@/lib/appointment-prefs";
+
 import { AppointmentDetailsModal } from "@/components/AppointmentDetailsModal";
 
 type Range = "today" | "week" | "month" | "future";
