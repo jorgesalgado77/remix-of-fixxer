@@ -5,7 +5,8 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
-import { scoreRelevance, useUserBranchContext, type Relevance } from "@/lib/branch-relevance";
+import { scoreRelevanceDetailed, useUserBranchContext, relevanceRank, type RelevanceResult } from "@/lib/branch-relevance";
+import { RelevanceBadge } from "@/components/RelevanceBadge";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 
 /**
@@ -368,7 +369,7 @@ function RecentPartnersCarouselInner() {
   type Enriched = PartnerCard & {
     _coords: { lat: number; lng: number } | null;
     _distanceKm: number | null;
-    _relevance: Relevance;
+    _relevance: RelevanceResult;
   };
   const sortedItems = useMemo<Enriched[]>(() => {
     // 1) Filtro por tipo (Prestador / Parceiro) — "mine" e "all" mantêm ambos os tipos.
@@ -376,7 +377,7 @@ function RecentPartnersCarouselInner() {
       ? items
       : items.filter((p) => p._kind === kindFilter);
 
-    // 2) Calcula relevância vs. ramo do usuário logado.
+    // 2) Calcula relevância vs. ramo do usuário logado (com razão para tooltip).
     const scored: Enriched[] = byKind.map((p) => {
       const rowCoords = (p.lat != null && p.lng != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)))
         ? { lat: Number(p.lat), lng: Number(p.lng) }
@@ -391,19 +392,20 @@ function RecentPartnersCarouselInner() {
         : Number.isFinite(liveDist as number)
           ? (liveDist as number)
           : (storedDist != null && Number.isFinite(storedDist) ? storedDist : null);
-      const rel = scoreRelevance(
+      const rel = scoreRelevanceDetailed(
         [p.activity_branch, p.business_category, p.custom_branch, p.category, p.preferred_service],
         branchCtx,
       );
       return { ...p, _coords: coords, _distanceKm: dist, _relevance: rel };
     });
 
-    // 3) Se o filtro é "Do meu ramo", oculta 'none'. Se sobrar vazio, cai p/ macro-only
-    // e depois p/ todos, garantindo que a seção nunca fica em branco.
+    // 3) Filtro "🎯 Do meu ramo": prefere itens relevantes, mas com fallback
+    //    inteligente — se sobrar menos de 3, mantém a lista completa (ordenada
+    //    por relevância) para evitar seção vazia em nichos pequenos.
     let base = scored;
     if (kindFilter === "mine" && branchCtx.hasContext) {
-      const strict = scored.filter((p) => p._relevance === "exact" || p._relevance === "macro");
-      base = strict.length > 0 ? strict : scored;
+      const strict = scored.filter((p) => p._relevance.level !== "none");
+      base = strict.length >= 3 ? strict : scored;
     }
 
     // 4) Ordenação
@@ -424,9 +426,8 @@ function RecentPartnersCarouselInner() {
       });
     }
 
-    // 5) Boost por relevância: exact > macro > none, preservando a ordem interna.
-    const relRank = (r: Relevance) => (r === "exact" ? 0 : r === "macro" ? 1 : 2);
-    return [...base].sort((a, b) => relRank(a._relevance) - relRank(b._relevance));
+    // 5) Boost por relevância: exact > subcategory > macro > none.
+    return [...base].sort((a, b) => relevanceRank(a._relevance.level) - relevanceRank(b._relevance.level));
   }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo, currentUserId, branchCtx]);
 
   // ---- IntersectionObserver: pré-carrega /perfil/:id + foto quando o card se aproxima ----
@@ -881,17 +882,7 @@ function RecentPartnersCarouselInner() {
 
                   <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                     <AvailabilityBadge userId={p.id} />
-                    {p._relevance !== "none" && branchCtx.hasContext && (
-                      <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={p._relevance === "exact"
-                          ? { background: "rgba(0,255,135,0.15)", color: "#00FF87", border: "1px solid rgba(0,255,135,0.4)" }
-                          : { background: "rgba(255,159,10,0.12)", color: "#FFB84D", border: "1px solid rgba(255,159,10,0.35)" }}
-                        title={p._relevance === "exact" ? "Mesmo ramo que o seu" : "Setor relacionado ao seu"}
-                      >
-                        {p._relevance === "exact" ? "🎯 Meu ramo" : "🔗 Setor afim"}
-                      </span>
-                    )}
+                    <RelevanceBadge result={p._relevance} />
                   </div>
                 </div>
               </button>

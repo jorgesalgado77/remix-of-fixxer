@@ -7,7 +7,8 @@ import { haversineKm } from "@/lib/activity-branches";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
-import { scoreRelevance, useUserBranchContext, type Relevance } from "@/lib/branch-relevance";
+import { scoreRelevanceDetailed, useUserBranchContext, relevanceRank, type RelevanceResult } from "@/lib/branch-relevance";
+import { RelevanceBadge } from "@/components/RelevanceBadge";
 
 /**
  * Seção "Lojistas e Fornecedores Recentes" — carrossel horizontal
@@ -257,33 +258,31 @@ function RecentStoresCarouselInner() {
     setTimeout(() => setRefreshing(false), 300);
   }, [fetchList, refreshing]);
 
-  // Ordena por relevância (mesmo ramo → macro afim → outros) e depois por data.
-  type Scored = Card & { _relevance: Relevance };
+  // Ordena por relevância (mesmo ramo → subcategoria → macro afim → outros) e depois por data.
+  type Scored = Card & { _relevance: RelevanceResult };
   const sortedItems = useMemo<Scored[]>(() => {
-    // Filtro por tipo: "mine" mantém ambos os tipos e usa relevância no próximo passo.
     const byKind = (kindFilter === "all" || kindFilter === "mine")
       ? items
       : items.filter((p) => p._kind === kindFilter);
 
     const scored: Scored[] = byKind.map((p) => ({
       ...p,
-      _relevance: scoreRelevance(
+      _relevance: scoreRelevanceDetailed(
         [p._branch, p.business_category, p.custom_branch],
         branchCtx,
       ),
     }));
 
-    // Em "🎯 Do meu ramo": esconde 'none'. Se ficar vazio, mantém tudo p/ não zerar a seção.
+    // Fallback inteligente: precisa de pelo menos 3 relevantes p/ ativar o filtro estrito.
     let base = scored;
     if (kindFilter === "mine" && branchCtx.hasContext) {
-      const strict = scored.filter((p) => p._relevance !== "none");
-      base = strict.length > 0 ? strict : scored;
+      const strict = scored.filter((p) => p._relevance.level !== "none");
+      base = strict.length >= 3 ? strict : scored;
     }
 
-    const relRank = (r: Relevance) => (r === "exact" ? 0 : r === "macro" ? 1 : 2);
     return [...base].sort((a, b) => {
-      const ra = relRank(a._relevance);
-      const rb = relRank(b._relevance);
+      const ra = relevanceRank(a._relevance.level);
+      const rb = relevanceRank(b._relevance.level);
       if (ra !== rb) return ra - rb;
       const ta = a.created_at ? Date.parse(a.created_at) : 0;
       const tb = b.created_at ? Date.parse(b.created_at) : 0;
@@ -414,9 +413,6 @@ function RecentStoresCarouselInner() {
             const distanceLabel = dist != null && Number.isFinite(dist)
               ? (dist < 10 ? dist.toFixed(1) : Math.round(dist).toString())
               : null;
-            const relevance = p._relevance;
-            const showRelevanceBadge = branchCtx.hasContext && relevance !== "none";
-
             return (
               <button
                 key={p.id}
@@ -444,15 +440,9 @@ function RecentStoresCarouselInner() {
                   >
                     {meta.emoji} {meta.label}
                   </span>
-                  {showRelevanceBadge && (
-                    <span
-                      className="absolute bottom-2 left-2 z-10 text-[9px] font-black uppercase tracking-wider bg-black/80 px-2 py-0.5 rounded-full border"
-                      style={{ borderColor: meta.color, color: meta.color }}
-                      title={relevance === "exact" ? "Mesmo ramo principal do seu perfil" : "Setor relacionado ao seu ramo"}
-                    >
-                      {relevance === "exact" ? "⭐ Mesmo ramo" : "🔗 Setor afim"}
-                    </span>
-                  )}
+                  <div className="absolute bottom-2 left-2 z-10">
+                    <RelevanceBadge result={p._relevance} compact />
+                  </div>
                 </div>
 
                 <div className="relative p-3" style={{ background: meta.gradient }}>
