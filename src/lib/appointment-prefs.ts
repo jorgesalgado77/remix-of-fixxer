@@ -15,6 +15,7 @@ export type AppointmentPrefs = {
   reminderMinutes: ReminderMinutes;
   soundEnabled: boolean;
   toastEnabled: boolean;
+  desktopEnabled: boolean; // notificações do navegador (funcionam em segundo plano)
   respectSystem: boolean; // se true, silencia sons quando prefers-reduced-motion
   pauseAllSounds: boolean; // "Pausar todos os sons" (acessibilidade)
 };
@@ -24,10 +25,12 @@ export function defaultAppointmentPrefs(): AppointmentPrefs {
     reminderMinutes: 15,
     soundEnabled: true,
     toastEnabled: true,
+    desktopEnabled: true,
     respectSystem: true,
     pauseAllSounds: false,
   };
 }
+
 
 export function loadAppointmentPrefs(): AppointmentPrefs {
   if (typeof window === "undefined") return defaultAppointmentPrefs();
