@@ -444,13 +444,13 @@ function RecentStoresCarouselInner() {
                   >
                     {meta.emoji} {meta.label}
                   </span>
-                  {sameBranch && (
+                  {showRelevanceBadge && (
                     <span
                       className="absolute bottom-2 left-2 z-10 text-[9px] font-black uppercase tracking-wider bg-black/80 px-2 py-0.5 rounded-full border"
                       style={{ borderColor: meta.color, color: meta.color }}
-                      title="Mesmo ramo principal do seu perfil"
+                      title={relevance === "exact" ? "Mesmo ramo principal do seu perfil" : "Setor relacionado ao seu ramo"}
                     >
-                      ⭐ Mesmo ramo
+                      {relevance === "exact" ? "⭐ Mesmo ramo" : "🔗 Setor afim"}
                     </span>
                   )}
                 </div>
