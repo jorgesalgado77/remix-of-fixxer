@@ -901,8 +901,13 @@ export default function FeedClientePage() {
               onRetry={handleRefresh}
             />
           )}
-          {visible.map((vendor) => (
-            <div key={vendor.id} className="feed-item-cv">
+          {visible.map(({ v: vendor, _relevance }) => (
+            <div key={vendor.id} className="feed-item-cv relative">
+              {_relevance.level !== "none" && (
+                <div className="absolute right-3 top-3 z-10">
+                  <RelevanceBadge result={_relevance} compact />
+                </div>
+              )}
               <VendorCard
                 vendor={vendor}
                 glassClass={glassClass}
