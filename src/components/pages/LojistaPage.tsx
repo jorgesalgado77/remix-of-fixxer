@@ -91,10 +91,7 @@ const PlanDetailsModal    = lazy(() => import("@/components/PlanDetailsModal").t
 import type { PlanId } from "@/lib/monetization";
 
 export function LojistaDashboard() {
-  const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== "undefined" && window.location.hash.replace("#", "") === "profile") return "profile";
-    return "dashboard";
-  });
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [activeSettingsTab, setActiveSettingsTab] = useState("my-profile");
   const [showFavoritesModal, setShowFavoritesModal] = useState(false);
   const [favoriteCategory, setFavoriteCategory] = useState("todas");
