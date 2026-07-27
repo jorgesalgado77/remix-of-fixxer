@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Camera, Video, StopCircle, RotateCcw, Check, Loader2, SwitchCamera } from "lucide-react";
+import { X, Camera, Video, StopCircle, RotateCcw, Check, Loader2, SwitchCamera, AlertTriangle } from "lucide-react";
 
 type Mode = "photo" | "video";
 
