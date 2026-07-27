@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { X, Coins, ArrowDownLeft, ArrowUpRight, Zap, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseExternal as supabase } from "@/lib/supabaseExternal";
 import { fetchTransactions, subscribeBalance, type CoinTransaction } from "@/lib/coins";
 import { CoinPacksStoreModal } from "@/components/CoinPacksStoreModal";
 

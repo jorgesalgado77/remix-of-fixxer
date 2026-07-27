@@ -41,25 +41,44 @@ export const DISPUTE_ACTION_LABEL: Record<DisputeAction, string> = {
   reverse_release: "Estornar liberação para o prestador",
 };
 
-/** Envia arquivos ao bucket `media` (pasta disputes/<appointment_id>) e devolve URLs públicas. */
+/**
+ * Envia arquivos ao bucket PRIVADO `disputes-private` (pasta <appointment_id>/) e
+ * devolve os *paths* (não URLs públicas). O consumidor deve gerar signed URL via
+ * `resolveEvidenceUrl` no momento do render.
+ * Valores legados armazenados como URL pública (http...) continuam funcionando
+ * via `resolveEvidenceUrl` (retorna a própria URL).
+ */
 export async function uploadDisputeEvidences(
   appointmentId: string,
   files: File[],
 ): Promise<string[]> {
   if (!files.length) return [];
-  const urls: string[] = [];
+  const paths: string[] = [];
   for (const file of files) {
     if (file.size > 15 * 1024 * 1024) throw new Error(`"${file.name}" excede 15MB.`);
     const safe = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${file.name.replace(/[^\w.\-]+/g, "_")}`;
-    const path = `disputes/${appointmentId}/${safe}`;
-    const { error } = await supabaseExternal.storage.from("media").upload(path, file, {
+    const path = `${appointmentId}/${safe}`;
+    const { error } = await supabaseExternal.storage.from("disputes-private").upload(path, file, {
       upsert: false, contentType: file.type || "application/octet-stream",
     });
     if (error) throw error;
-    const { data: pub } = supabaseExternal.storage.from("media").getPublicUrl(path);
-    urls.push(pub.publicUrl);
+    paths.push(path);
   }
-  return urls;
+  return paths;
+}
+
+/**
+ * Resolve um item de `evidence_urls` para URL utilizável:
+ * - se já for URL absoluta (legado público), retorna igual;
+ * - se for path do bucket privado, gera signed URL (1h).
+ */
+export async function resolveEvidenceUrl(pathOrUrl: string, expiresInSec = 3600): Promise<string> {
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  const { data, error } = await supabaseExternal
+    .storage.from("disputes-private")
+    .createSignedUrl(pathOrUrl, expiresInSec);
+  if (error || !data?.signedUrl) return "";
+  return data.signedUrl;
 }
 
 async function notify(userId: string, payload: {

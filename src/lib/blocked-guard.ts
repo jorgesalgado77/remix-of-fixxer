@@ -1,6 +1,6 @@
 // Deslogamento automático quando o admin bloqueia o usuário.
 // Escuta `postgres_changes` na linha do profile logado e força signOut + redirect.
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseExternal as supabase } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 
 let currentChannel: any = null;

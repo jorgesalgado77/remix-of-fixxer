@@ -19,7 +19,7 @@ import {
   Truck,
 } from "lucide-react";
 import { getMyAudit, type AvailabilityAudit } from "@/lib/availability";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseExternal as supabase } from "@/lib/supabaseExternal";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useCurrentCategory } from "@/lib/user-category";
 import { getCategoryTheme } from "@/lib/category-colors";

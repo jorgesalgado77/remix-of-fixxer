@@ -5,6 +5,7 @@ import { ArrowLeft, Gavel, Loader2, Filter, ShieldCheck, CheckCircle2, XCircle, 
 import {
   listAllDisputes,
   resolveDispute,
+  resolveEvidenceUrl,
   DISPUTE_STATUS_LABEL,
   DISPUTE_ACTION_LABEL,
   type DisputeStatus,
@@ -14,6 +15,25 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 
 const DAY_MS = 86400_000;
 const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS);
+
+function EvidenceItem({ pathOrUrl }: { pathOrUrl: string }) {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    let alive = true;
+    void resolveEvidenceUrl(pathOrUrl).then((u) => { if (alive) setUrl(u); });
+    return () => { alive = false; };
+  }, [pathOrUrl]);
+  const isImg = /\.(png|jpe?g|webp|gif|avif)$/i.test(pathOrUrl);
+  const label = pathOrUrl.split("/").pop() || "arquivo";
+  return (
+    <a href={url || "#"} target="_blank" rel="noreferrer"
+       className="block rounded-lg overflow-hidden border border-white/10 bg-black/40 aspect-square">
+      {isImg && url
+        ? <img src={url} alt="evidência" className="w-full h-full object-cover" />
+        : <div className="flex items-center justify-center w-full h-full text-[10px] text-white/70 p-1 text-center break-all">{label}</div>}
+    </a>
+  );
+}
 
 import { requireAdmin, useAdminFocusRevalidation } from "@/lib/admin-guard";
 
@@ -278,11 +298,7 @@ function ResolveModal({ dispute, onClose, onDone }: {
               <p className="text-[10px] uppercase text-white/50 font-black mt-2">Evidências</p>
               <div className="grid grid-cols-3 gap-2 mt-1">
                 {dispute.evidence_urls!.map((u, i) => (
-                  <a key={i} href={u} target="_blank" rel="noreferrer" className="block rounded-lg overflow-hidden border border-white/10 bg-black/40 aspect-square">
-                    {/\.(png|jpe?g|webp|gif|avif)$/i.test(u)
-                      ? <img src={u} alt="evidência" className="w-full h-full object-cover" />
-                      : <div className="flex items-center justify-center w-full h-full text-[10px] text-white/70 p-1 text-center break-all">{u.split("/").pop()}</div>}
-                  </a>
+                  <EvidenceItem key={i} pathOrUrl={u} />
                 ))}
               </div>
             </div>
