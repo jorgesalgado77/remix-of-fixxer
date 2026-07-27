@@ -150,6 +150,11 @@ export async function requestDesktopPermission(): Promise<DesktopPermission> {
   }
 }
 
+export type DesktopNotifyAction = {
+  action: string; // "open" | "reschedule" | "cancel" | ...
+  title: string;
+};
+
 export type DesktopNotifyOptions = {
   title: string;
   body: string;
@@ -157,33 +162,68 @@ export type DesktopNotifyOptions = {
   tag?: string;
   requireInteraction?: boolean;
   silent?: boolean;
+  /** Quando presente, o SW usará /agenda/{appointmentId}?action=… para navegar. */
+  appointmentId?: string;
+  /** Botões de ação exibidos na notificação (requer Service Worker). */
+  actions?: DesktopNotifyAction[];
 };
 
 /**
  * Dispara uma notificação do navegador. Retorna true se foi disparada.
- * Respeita a preferência `desktopEnabled` e a permissão do usuário.
- * Funciona com a aba em segundo plano (o SO exibe o toast do navegador).
+ * - Respeita `desktopEnabled`, permissão e "quiet hours" (não perturbe).
+ * - Usa o Service Worker quando há ações; caso contrário, cai para `new Notification`.
+ * - Funciona com a aba em segundo plano.
  */
 export function showDesktopNotification(opts: DesktopNotifyOptions, prefs = loadAppointmentPrefs()): boolean {
   try {
     if (!prefs.desktopEnabled) return false;
     if (!desktopSupported()) return false;
     if (Notification.permission !== "granted") return false;
-    const n = new Notification(opts.title, {
+    if (isQuietHoursActive(prefs)) return false; // Não perturbe
+
+    const tag = opts.tag ?? `fixxer-appt-${opts.appointmentId ?? opts.url ?? "generic"}`;
+    const data = { url: opts.url ?? (opts.appointmentId ? `/agenda/${opts.appointmentId}` : "/agenda"), appointmentId: opts.appointmentId ?? null };
+    const payload: NotificationOptions = {
       body: opts.body,
-      tag: opts.tag ?? `fixxer-appt-${opts.url ?? "generic"}`,
+      tag,
       icon: "/favicon.ico",
       badge: "/favicon.ico",
       requireInteraction: opts.requireInteraction ?? false,
       silent: opts.silent ?? false,
-    });
-    n.onclick = () => {
-      try { window.focus(); } catch { /* ignore */ }
-      if (opts.url) window.location.href = opts.url;
+      data,
     };
+    if (opts.actions && opts.actions.length > 0) {
+      (payload as any).actions = opts.actions.slice(0, 2); // navegadores permitem no máx. 2 botões
+    }
+
+    // Preferir Service Worker (permite botões de ação e sobrevive à aba fechada).
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (reg && typeof reg.showNotification === "function") {
+          reg.showNotification(opts.title, payload).catch(() => {
+            fallbackNotify(opts.title, payload, data.url);
+          });
+        } else {
+          fallbackNotify(opts.title, payload, data.url);
+        }
+      }).catch(() => fallbackNotify(opts.title, payload, data.url));
+      return true;
+    }
+    fallbackNotify(opts.title, payload, data.url);
     return true;
   } catch {
     return false;
   }
 }
+
+function fallbackNotify(title: string, payload: NotificationOptions, url: string) {
+  try {
+    const n = new Notification(title, payload);
+    n.onclick = () => {
+      try { window.focus(); } catch { /* ignore */ }
+      try { window.location.href = url; } catch { /* ignore */ }
+    };
+  } catch { /* ignore */ }
+}
+
 
