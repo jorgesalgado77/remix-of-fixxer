@@ -872,19 +872,8 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     type="button"
                     data-testid="profile-missing-panel"
                     onClick={() => {
-                        onOpenProfile?.();
-                        // scroll até o primeiro campo faltante
-                        setTimeout(() => {
-                            const firstKey = missingKeys[0];
-                            if (firstKey) {
-                                const el = document.querySelector(`[data-profile-field="${firstKey}"]`) as HTMLElement | null;
-                                if (el) {
-                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    const input = el.querySelector('input,textarea,select') as HTMLElement | null;
-                                    input?.focus();
-                                }
-                            }
-                        }, 300);
+                        // Sempre abre a rota canônica /profile passando a 1ª chave faltante.
+                        (onOpenProfile as any)?.(missingKeys[0]);
                     }}
                     className="w-full text-left rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-400/70 p-3 space-y-1.5 transition-all cursor-pointer"
                     aria-label="Abrir perfil para completar campos faltantes"
