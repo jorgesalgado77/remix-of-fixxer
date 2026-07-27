@@ -135,7 +135,14 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
             if (canPlaySoundNow(prefs)) {
               try { playIncomingMessageSound(); } catch { /* ignore */ }
             }
-            notifyDesktop("Novo agendamento", APPOINTMENT_TYPES[a.type]?.label ?? "Compromisso", `/agenda/${a.id}`);
+            showDesktopNotification({
+              title: "Novo agendamento",
+              body: `${APPOINTMENT_TYPES[a.type]?.label ?? "Compromisso"} — ${fmtWhen(a.scheduled_at)}`,
+              url: `/agenda/${a.id}`,
+              tag: `fixxer-appt-new-${a.id}`,
+              silent: !canPlaySoundNow(prefs),
+            }, prefs);
+
           }
         }
       }
