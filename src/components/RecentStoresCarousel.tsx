@@ -108,14 +108,20 @@ function writeCache(items: Card[]) {
 function RecentStoresCarouselInner() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
+  const branchCtx = useUserBranchContext();
   const cached = useMemo(() => readCache(), []);
   const [items, setItems] = useState<Card[]>(() => cached ?? []);
   const [loading, setLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [myBranch, setMyBranch] = useState<string | null>(null);
-  const [kindFilter, setKindFilter] = useState<"all" | Kind>("all");
+  const [kindFilter, setKindFilter] = useState<"all" | "mine" | Kind>("all");
+  const [userTouchedFilter, setUserTouchedFilter] = useState(false);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  // Ao detectar contexto de ramo do usuário, defaulta "🎯 Do meu ramo".
+  useEffect(() => {
+    if (!userTouchedFilter && branchCtx.hasContext && kindFilter === "all") setKindFilter("mine");
+  }, [branchCtx.hasContext, userTouchedFilter, kindFilter]);
 
   // Descobre o ramo principal do prestador logado para priorizar lojistas do mesmo ramo.
   useEffect(() => {
