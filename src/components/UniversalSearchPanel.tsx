@@ -236,7 +236,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
         new Set([rawTerm, q, qNoAccent, ...synonyms].filter((t) => t && t.length >= 2)),
       );
       const textFields = SEARCHED_FIELDS.filter(
-        (f) => f !== "custom_sections" && f !== "categories",
+        (f) => f !== "custom_sections" && f !== "categories" && f !== "positions",
       );
       const orParts = variants.flatMap((term) =>
         textFields.map((field) => `${field}.ilike.%${term.replace(/[(),%_]/g, " ")}%`),
