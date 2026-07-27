@@ -335,9 +335,10 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       );
 
 
-      if (data.length === 0 && rpcRes?.error && orRes?.error && broadRes?.error) {
-        throw rpcRes?.error ?? orRes?.error ?? broadRes?.error;
+      if (data.length === 0 && rpcRes?.error && orRes?.error && profilesOrRes?.error) {
+        throw rpcRes?.error ?? orRes?.error ?? profilesOrRes?.error;
       }
+
 
 
       const mapped: ResultItem[] = (data ?? [])
