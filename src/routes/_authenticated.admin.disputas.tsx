@@ -16,6 +16,25 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 const DAY_MS = 86400_000;
 const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS);
 
+function EvidenceItem({ pathOrUrl }: { pathOrUrl: string }) {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    let alive = true;
+    void resolveEvidenceUrl(pathOrUrl).then((u) => { if (alive) setUrl(u); });
+    return () => { alive = false; };
+  }, [pathOrUrl]);
+  const isImg = /\.(png|jpe?g|webp|gif|avif)$/i.test(pathOrUrl);
+  const label = pathOrUrl.split("/").pop() || "arquivo";
+  return (
+    <a href={url || "#"} target="_blank" rel="noreferrer"
+       className="block rounded-lg overflow-hidden border border-white/10 bg-black/40 aspect-square">
+      {isImg && url
+        ? <img src={url} alt="evidência" className="w-full h-full object-cover" />
+        : <div className="flex items-center justify-center w-full h-full text-[10px] text-white/70 p-1 text-center break-all">{label}</div>}
+    </a>
+  );
+}
+
 import { requireAdmin, useAdminFocusRevalidation } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/_authenticated/admin/disputas")({
