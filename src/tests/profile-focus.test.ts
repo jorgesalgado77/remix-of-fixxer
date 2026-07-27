@@ -48,10 +48,11 @@ describe("findProfileField", () => {
   });
 
   it("não quebra com aspas/backslash na chave", () => {
-    mountField('safe');
-    expect(findProfileField('safe"')).not.toThrow?.();
+    mountField("safe");
+    expect(() => findProfileField('safe"')).not.toThrow();
     expect(() => findProfileField('a\\b"c')).not.toThrow();
   });
+
 });
 
 describe("focusProfileField", () => {
