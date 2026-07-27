@@ -33,9 +33,15 @@ import {
   saveAppointmentPrefs,
   canPlaySoundNow,
   probeAutoplay,
+  showDesktopNotification,
+  desktopSupported,
+  desktopPermission,
+  requestDesktopPermission,
   type AppointmentPrefs,
   type ReminderMinutes,
+  type DesktopPermission,
 } from "@/lib/appointment-prefs";
+
 import { AppointmentDetailsModal } from "@/components/AppointmentDetailsModal";
 
 type Range = "today" | "week" | "month" | "future";
@@ -80,18 +86,10 @@ function fmtWhen(iso: string): string {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + time;
 }
 
-function notifyDesktop(title: string, body: string, url = "/agenda") {
-  try {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
-    const n = new Notification(title, { body, tag: `fixxer-appt-${url}` });
-    n.onclick = () => { window.focus(); window.location.href = url; };
-  } catch { /* ignore */ }
-}
-
 function normalize(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
+
 
 export function MyAppointmentsSection({ className = "" }: { className?: string }) {
   const [range, setRange] = useState<Range>("today");
@@ -105,7 +103,9 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
   const [showSettings, setShowSettings] = useState(false);
   const [prefs, setPrefs] = useState<AppointmentPrefs>(() => loadAppointmentPrefs());
   const [autoplay, setAutoplay] = useState<"granted" | "gesture-required" | "unavailable" | "unknown">("unknown");
+  const [desktopPerm, setDesktopPerm] = useState<DesktopPermission>(() => desktopPermission());
   const knownIds = useRef<Set<string>>(new Set());
+
 
   // Reage a mudanças de preferências vindas de outras abas/componentes
   useEffect(() => {
@@ -135,7 +135,14 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
             if (canPlaySoundNow(prefs)) {
               try { playIncomingMessageSound(); } catch { /* ignore */ }
             }
-            notifyDesktop("Novo agendamento", APPOINTMENT_TYPES[a.type]?.label ?? "Compromisso", `/agenda/${a.id}`);
+            showDesktopNotification({
+              title: "Novo agendamento",
+              body: `${APPOINTMENT_TYPES[a.type]?.label ?? "Compromisso"} — ${fmtWhen(a.scheduled_at)}`,
+              url: `/agenda/${a.id}`,
+              tag: `fixxer-appt-new-${a.id}`,
+              silent: !canPlaySoundNow(prefs),
+            }, prefs);
+
           }
         }
       }
@@ -218,7 +225,14 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
           if (canPlaySoundNow(prefs)) {
             try { playIncomingMessageSound(); } catch { /* ignore */ }
           }
-          notifyDesktop("Compromisso próximo", `${label} — ${fmtWhen(a.scheduled_at)}`, `/agenda/${a.id}`);
+          showDesktopNotification({
+            title: "Compromisso próximo",
+            body: `${label} — ${fmtWhen(a.scheduled_at)}`,
+            url: `/agenda/${a.id}`,
+            tag: `fixxer-appt-reminder-${a.id}`,
+            requireInteraction: true,
+            silent: !canPlaySoundNow(prefs),
+          }, prefs);
         }
       }
     };
@@ -227,13 +241,38 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
     return () => clearInterval(int);
   }, [items, prefs]);
 
+  // Sincroniza status de permissão quando a aba volta ao foco
   useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission().catch(() => undefined);
-      }
-    } catch { /* ignore */ }
+    const onFocus = () => setDesktopPerm(desktopPermission());
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
   }, []);
+
+  async function handleEnableDesktop() {
+    if (!desktopSupported()) {
+      toast.error("Este navegador não suporta notificações.");
+      return;
+    }
+    const p = await requestDesktopPermission();
+    setDesktopPerm(p);
+    if (p === "granted") {
+      updatePrefs({ desktopEnabled: true });
+      toast.success("Notificações do navegador ativadas — você receberá lembretes mesmo com a aba em segundo plano.");
+      showDesktopNotification({
+        title: "Notificações ativadas",
+        body: "Você receberá lembretes dos seus agendamentos.",
+        tag: "fixxer-appt-permission-ok",
+        silent: true,
+      }, { ...prefs, desktopEnabled: true });
+    } else if (p === "denied") {
+      toast.error("Permissão negada. Habilite nas configurações do navegador para receber lembretes em segundo plano.");
+    }
+  }
+
 
   // Reset paginação ao mudar filtros
   useEffect(() => { setPage(1); }, [range, query]);
@@ -375,11 +414,21 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
               onChange={(v) => updatePrefs({ toastEnabled: v })}
             />
             <ToggleRow
+              label="Notificações do navegador"
+              hint="Recebe lembretes mesmo com a aba em segundo plano"
+              checked={prefs.desktopEnabled && desktopPerm === "granted"}
+              onChange={(v) => {
+                if (v && desktopPerm !== "granted") { void handleEnableDesktop(); return; }
+                updatePrefs({ desktopEnabled: v });
+              }}
+            />
+            <ToggleRow
               label="Respeitar sistema"
               hint="Silencia sons quando o SO pede movimento reduzido"
               checked={prefs.respectSystem}
               onChange={(v) => updatePrefs({ respectSystem: v })}
             />
+
             <ToggleRow
               label="Pausar todos os sons"
               hint="Mudo total (útil em reuniões)"
@@ -396,6 +445,26 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
             >
               <PlayCircle className="w-3.5 h-3.5" /> Testar som
             </button>
+            {desktopSupported() && desktopPerm !== "granted" && (
+              <button
+                type="button"
+                onClick={handleEnableDesktop}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#FF9F0A]/50 text-[#FF9F0A] text-[10px] font-black uppercase tracking-widest hover:bg-[#FF9F0A]/10"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                {desktopPerm === "denied" ? "Notificações bloqueadas" : "Ativar notificações do navegador"}
+              </button>
+            )}
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${
+              desktopPerm === "granted" ? "text-[#00FF87]" :
+              desktopPerm === "denied" ? "text-[#FF3B30]" :
+              desktopPerm === "unsupported" ? "text-white/40" : "text-white/60"
+            }`}>
+              {desktopPerm === "granted" && "Navegador: liberado"}
+              {desktopPerm === "denied" && "Navegador: bloqueado"}
+              {desktopPerm === "default" && "Navegador: aguardando permissão"}
+              {desktopPerm === "unsupported" && "Navegador: sem suporte"}
+            </span>
             {autoplay !== "unknown" && (
               <span className={`text-[10px] font-bold uppercase tracking-widest ${
                 autoplay === "granted" ? "text-[#00FF87]" :
@@ -407,6 +476,7 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
               </span>
             )}
           </div>
+
         </div>
       )}
 

@@ -15,6 +15,7 @@ export type AppointmentPrefs = {
   reminderMinutes: ReminderMinutes;
   soundEnabled: boolean;
   toastEnabled: boolean;
+  desktopEnabled: boolean; // notificações do navegador (funcionam em segundo plano)
   respectSystem: boolean; // se true, silencia sons quando prefers-reduced-motion
   pauseAllSounds: boolean; // "Pausar todos os sons" (acessibilidade)
 };
@@ -24,10 +25,12 @@ export function defaultAppointmentPrefs(): AppointmentPrefs {
     reminderMinutes: 15,
     soundEnabled: true,
     toastEnabled: true,
+    desktopEnabled: true,
     respectSystem: true,
     pauseAllSounds: false,
   };
 }
+
 
 export function loadAppointmentPrefs(): AppointmentPrefs {
   if (typeof window === "undefined") return defaultAppointmentPrefs();
@@ -95,3 +98,68 @@ export async function probeAutoplay(): Promise<
     return "unavailable";
   }
 }
+
+/* ---------------- Browser notifications (background-friendly) ---------------- */
+
+export type DesktopPermission = NotificationPermission | "unsupported";
+
+export function desktopSupported(): boolean {
+  return typeof window !== "undefined" && "Notification" in window;
+}
+
+export function desktopPermission(): DesktopPermission {
+  if (!desktopSupported()) return "unsupported";
+  try { return Notification.permission; } catch { return "unsupported"; }
+}
+
+/** Solicita permissão para notificações do navegador. Deve ser chamado a partir de um gesto do usuário. */
+export async function requestDesktopPermission(): Promise<DesktopPermission> {
+  if (!desktopSupported()) return "unsupported";
+  try {
+    if (Notification.permission === "granted" || Notification.permission === "denied") {
+      return Notification.permission;
+    }
+    const p = await Notification.requestPermission();
+    return p;
+  } catch {
+    return desktopPermission();
+  }
+}
+
+export type DesktopNotifyOptions = {
+  title: string;
+  body: string;
+  url?: string;
+  tag?: string;
+  requireInteraction?: boolean;
+  silent?: boolean;
+};
+
+/**
+ * Dispara uma notificação do navegador. Retorna true se foi disparada.
+ * Respeita a preferência `desktopEnabled` e a permissão do usuário.
+ * Funciona com a aba em segundo plano (o SO exibe o toast do navegador).
+ */
+export function showDesktopNotification(opts: DesktopNotifyOptions, prefs = loadAppointmentPrefs()): boolean {
+  try {
+    if (!prefs.desktopEnabled) return false;
+    if (!desktopSupported()) return false;
+    if (Notification.permission !== "granted") return false;
+    const n = new Notification(opts.title, {
+      body: opts.body,
+      tag: opts.tag ?? `fixxer-appt-${opts.url ?? "generic"}`,
+      icon: "/favicon.ico",
+      badge: "/favicon.ico",
+      requireInteraction: opts.requireInteraction ?? false,
+      silent: opts.silent ?? false,
+    });
+    n.onclick = () => {
+      try { window.focus(); } catch { /* ignore */ }
+      if (opts.url) window.location.href = opts.url;
+    };
+    return true;
+  } catch {
+    return false;
+  }
+}
+
