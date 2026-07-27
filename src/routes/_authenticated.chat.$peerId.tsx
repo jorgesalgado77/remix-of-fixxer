@@ -2294,8 +2294,9 @@ function AttachmentBlock({
             decoding="async"
             onLoad={() => setMediaLoaded(true)}
             onError={() => setMediaLoaded(true)}
-            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
+            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
           />
+          <MediaUploadOverlay uploadState={uploadState} onRetry={onRetry} />
         </div>
       ) : video ? (
         <div className="relative rounded-lg overflow-hidden bg-black min-h-[8rem]">
@@ -2308,9 +2309,11 @@ function AttachmentBlock({
             preload="metadata"
             onLoadedMetadata={() => setMediaLoaded(true)}
             onError={() => setMediaLoaded(true)}
-            className={`rounded-lg max-h-64 w-full bg-black transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
+            className={`rounded-lg max-h-64 w-full bg-black transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
           />
+          <MediaUploadOverlay uploadState={uploadState} onRetry={onRetry} />
         </div>
+
 
       ) : audio ? (
         <div className={`flex items-center gap-2 p-2 rounded-lg ${mine ? "bg-black/20" : "bg-white/5 border border-white/10"}`}>
