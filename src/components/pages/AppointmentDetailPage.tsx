@@ -49,6 +49,7 @@ import {
 import { generateAppointmentPdf, downloadPdf, summarizeRefund } from "@/lib/appointment-pdf";
 import { CheckoutPhotosModal } from "@/components/CheckoutPhotosModal";
 import { ComplaintButton } from "@/components/ComplaintButton";
+import { AppointmentDetailsModal } from "@/components/AppointmentDetailsModal";
 import { useMediaUpload } from "@/hooks/use-media-upload";
 
 
@@ -65,7 +66,9 @@ export default function AppointmentDetailPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [photoModal, setPhotoModal] = useState<{ mode: "checkin" | "checkout" } | null>(null);
   const [disputeOpen, setDisputeOpen] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const { uploadFileDetailed } = useMediaUpload();
+
 
   const load = useCallback(async () => {
     try {
