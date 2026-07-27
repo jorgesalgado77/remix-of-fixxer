@@ -881,6 +881,17 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                 </div>
             </div>
 
+            {justCompleted && (
+                <div
+                    data-testid="profile-just-completed"
+                    role="status"
+                    className="rounded-xl border border-emerald-400/60 bg-emerald-500/15 p-3 text-center animate-in fade-in slide-in-from-top-1"
+                >
+                    <div className="text-[10px] font-black uppercase italic tracking-widest text-emerald-300">
+                        ✅ Perfil completo — Publicar e Avaliações liberados!
+                    </div>
+                </div>
+            )}
             {!isProfileComplete && missingLabels.length > 0 && (
                 <button
                     type="button"
