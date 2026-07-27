@@ -329,13 +329,20 @@ function ConversationPage() {
   const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const markReadInflightRef = useRef<Promise<void> | null>(null);
   const markIncomingRead = (uid: string) => {
+    // Só marca como lida quando o destinatário está DE FATO visualizando:
+    // aba visível, documento em foco e scroll perto do fim da conversa.
+    // Se estiver rolando o histórico ou com a aba em segundo plano, adia.
+    if (typeof document !== "undefined") {
+      if (document.visibilityState !== "visible") return;
+      if (typeof document.hasFocus === "function" && !document.hasFocus()) return;
+    }
+    if (!isNearBottomRef.current) return;
     if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
     markReadTimerRef.current = setTimeout(async () => {
       setMarkingRead(true);
       try {
         enqueueMarkConversationRead(uid, peerId);
         markConversationReadLocal(uid, peerId);
-        // Aguarda a confirmação do servidor antes de propagar o evento global.
         const inflight = flushChatReadQueue().catch(() => {});
         markReadInflightRef.current = inflight;
         await inflight;
