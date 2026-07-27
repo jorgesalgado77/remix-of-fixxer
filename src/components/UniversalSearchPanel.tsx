@@ -163,7 +163,7 @@ function resolvePhoto(row: any): string | null {
 
 
 
-function useDebounced<T>(value: T, delay = 300): T {
+function useDebounced<T>(value: T, delay = 350): T {
   const [v, setV] = useState(value);
   useEffect(() => {
     const t = setTimeout(() => setV(value), delay);
@@ -171,6 +171,28 @@ function useDebounced<T>(value: T, delay = 300): T {
   }, [value, delay]);
   return v;
 }
+
+/** Cache LRU curto (TTL 30s) para evitar refazer a rede quando o usuário
+ *  volta a um termo já digitado. Chave = termo + coords aproximadas. */
+const SEARCH_CACHE_MAX = 40;
+const SEARCH_CACHE_TTL_MS = 30_000;
+const SEARCH_CACHE = new Map<string, { at: number; rows: unknown[] }>();
+function cacheGet<T>(key: string): T[] | null {
+  const hit = SEARCH_CACHE.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at > SEARCH_CACHE_TTL_MS) { SEARCH_CACHE.delete(key); return null; }
+  // Reinsere para virar "mais recente" (LRU)
+  SEARCH_CACHE.delete(key); SEARCH_CACHE.set(key, hit);
+  return hit.rows as T[];
+}
+function cacheSet<T>(key: string, rows: T[]) {
+  SEARCH_CACHE.set(key, { at: Date.now(), rows: rows as unknown[] });
+  if (SEARCH_CACHE.size > SEARCH_CACHE_MAX) {
+    const first = SEARCH_CACHE.keys().next().value;
+    if (first) SEARCH_CACHE.delete(first);
+  }
+}
+
 
 export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
   /** Categoria padrão de foco. Se omitida, começa em "todos". */
