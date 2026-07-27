@@ -25,6 +25,7 @@ import { EscrowBadge } from "@/components/EscrowBadge";
 import { ReviewModal } from "@/components/ReviewModal";
 import { PanelActions } from "@/components/PanelActions";
 import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
+import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
 
 
 export const Route = createFileRoute("/_authenticated/cliente")({

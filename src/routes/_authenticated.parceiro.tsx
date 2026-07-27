@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PanelActions } from "@/components/PanelActions";
 import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
+import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/parceiro")({
