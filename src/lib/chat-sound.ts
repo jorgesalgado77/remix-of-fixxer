@@ -106,6 +106,7 @@ export async function ingestCustomSoundFile(file: File): Promise<CustomSound> {
 
 // -------- WebAudio --------
 let audioCtx: AudioContext | null = null;
+let unlockedByGesture = false;
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   try {
@@ -119,6 +120,44 @@ function getCtx(): AudioContext | null {
     }
     return audioCtx;
   } catch { return null; }
+}
+
+/**
+ * Registra listeners globais para "destravar" o AudioContext no primeiro
+ * gesto do usuário (política de autoplay dos navegadores). Sem isso, sons
+ * disparados por realtime/polling não tocam enquanto o usuário não interagir.
+ * Idempotente — chame no bootstrap da app.
+ */
+export function installChatSoundUnlock() {
+  if (typeof window === "undefined" || unlockedByGesture) return;
+  const unlock = () => {
+    unlockedByGesture = true;
+    try {
+      const ctx = getCtx();
+      if (ctx && ctx.state !== "running") ctx.resume().catch(() => {});
+      // Toca um bip inaudível para confirmar a habilitação.
+      if (ctx) {
+        const g = ctx.createGain();
+        g.gain.value = 0.0001;
+        const o = ctx.createOscillator();
+        o.connect(g).connect(ctx.destination);
+        o.start();
+        o.stop(ctx.currentTime + 0.02);
+      }
+    } catch {}
+    window.removeEventListener("pointerdown", unlock);
+    window.removeEventListener("keydown", unlock);
+    window.removeEventListener("touchstart", unlock);
+    window.removeEventListener("click", unlock);
+  };
+  window.addEventListener("pointerdown", unlock, { once: false, passive: true });
+  window.addEventListener("keydown", unlock, { once: false });
+  window.addEventListener("touchstart", unlock, { once: false, passive: true });
+  window.addEventListener("click", unlock, { once: false });
+}
+
+export function isChatSoundUnlocked() {
+  return unlockedByGesture;
 }
 
 type Note = { freq: number; start: number; dur: number; type?: OscillatorType; gain?: number };
