@@ -214,7 +214,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
   const abortRef = useRef<AbortController | null>(null);
 
-  const debouncedQuery = useDebounced(query.trim(), 300);
+  const debouncedQuery = useDebounced(query.trim(), 350);
   const hasQuery = debouncedQuery.length >= 2;
 
   // Propaga o termo digitado para os feeds abaixo — assim eliminamos o
