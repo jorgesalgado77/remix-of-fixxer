@@ -810,6 +810,8 @@ function ConversationPage() {
       } catch {}
     };
     timer = setInterval(tick, 4000);
+    // Expõe o catch-up para o listener realtime disparar após reconectar.
+    catchUpRef.current = tick;
     const onFocus = () => tick();
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onFocus);
