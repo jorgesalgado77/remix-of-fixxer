@@ -257,26 +257,39 @@ function RecentStoresCarouselInner() {
     setTimeout(() => setRefreshing(false), 300);
   }, [fetchList, refreshing]);
 
-  // Ordena: (1) Lojistas do mesmo ramo → (2) demais Lojistas → (3) Fornecedores.
-  const sortedItems = useMemo(() => {
-    const filtered = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
-    const branchKey = (myBranch || "").toLowerCase();
-    const bucket = (p: Card) => {
-      if (p._kind === "lojista") {
-        if (branchKey && (p._branch || "").toLowerCase() === branchKey) return 0;
-        return 1;
-      }
-      return 2;
-    };
-    return [...filtered].sort((a, b) => {
-      const ba = bucket(a);
-      const bb = bucket(b);
-      if (ba !== bb) return ba - bb;
+  // Ordena por relevância (mesmo ramo → macro afim → outros) e depois por data.
+  type Scored = Card & { _relevance: Relevance };
+  const sortedItems = useMemo<Scored[]>(() => {
+    // Filtro por tipo: "mine" mantém ambos os tipos e usa relevância no próximo passo.
+    const byKind = (kindFilter === "all" || kindFilter === "mine")
+      ? items
+      : items.filter((p) => p._kind === kindFilter);
+
+    const scored: Scored[] = byKind.map((p) => ({
+      ...p,
+      _relevance: scoreRelevance(
+        [p._branch, p.business_category, p.custom_branch],
+        branchCtx,
+      ),
+    }));
+
+    // Em "🎯 Do meu ramo": esconde 'none'. Se ficar vazio, mantém tudo p/ não zerar a seção.
+    let base = scored;
+    if (kindFilter === "mine" && branchCtx.hasContext) {
+      const strict = scored.filter((p) => p._relevance !== "none");
+      base = strict.length > 0 ? strict : scored;
+    }
+
+    const relRank = (r: Relevance) => (r === "exact" ? 0 : r === "macro" ? 1 : 2);
+    return [...base].sort((a, b) => {
+      const ra = relRank(a._relevance);
+      const rb = relRank(b._relevance);
+      if (ra !== rb) return ra - rb;
       const ta = a.created_at ? Date.parse(a.created_at) : 0;
       const tb = b.created_at ? Date.parse(b.created_at) : 0;
       return tb - ta;
     });
-  }, [items, myBranch, kindFilter]);
+  }, [items, kindFilter, branchCtx]);
 
   const openProfile = (p: Card) => {
     // Prime cache com a categoria conhecida do card para eliminar o "flash"
