@@ -2209,7 +2209,10 @@ function HeaderActionsMenu(props: {
           role="menu"
           className="absolute right-0 top-full mt-2 z-50 w-60 rounded-2xl bg-[#121214] border border-white/10 shadow-2xl overflow-hidden py-1"
         >
+          {item("Configurações do chat", Settings, onSettings)}
+          <div className="my-1 h-px bg-white/10" />
           {item("Marcar como não lida", MailOpen, onUnread)}
+
           {item(muted ? "Reativar notificações" : "Silenciar notificações", muted ? BellOff : Bell, onMute)}
           {item(archived ? "Desarquivar conversa" : "Arquivar conversa", archived ? ArchiveRestore : Archive, onArchive)}
           <div className="my-1 h-px bg-white/10" />
