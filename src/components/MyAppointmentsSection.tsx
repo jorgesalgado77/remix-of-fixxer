@@ -235,10 +235,16 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
             title: "Compromisso próximo",
             body: `${label} — ${fmtWhen(a.scheduled_at)}`,
             url: `/agenda/${a.id}`,
+            appointmentId: a.id,
             tag: `fixxer-appt-reminder-${a.id}`,
             requireInteraction: true,
             silent: !canPlaySoundNow(prefs),
+            actions: [
+              { action: "reschedule", title: "Reagendar" },
+              { action: "cancel", title: "Cancelar" },
+            ],
           }, prefs);
+
         }
       }
     };
