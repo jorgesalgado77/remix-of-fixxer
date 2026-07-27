@@ -234,6 +234,20 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       setRows([]);
       return;
     }
+
+    // Cache LRU: chave = termo + bucket de coords (~1km) para reaproveitar
+    // resultados quando o usuário volta a um termo já digitado recentemente.
+    const coordKey = userCoords
+      ? `${userCoords.lat.toFixed(2)},${userCoords.lng.toFixed(2)}`
+      : "no-geo";
+    const cacheKey = `${debouncedQuery.toLowerCase()}|${coordKey}`;
+    const cached = cacheGet<ResultItem>(cacheKey);
+    if (cached) {
+      setRows(cached);
+      setLoading(false);
+      return;
+    }
+
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -243,15 +257,9 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       const q = rawTerm.toLowerCase();
       const qNoAccent = stripAccents(rawTerm);
 
-      // Preferimos a função RPC `search_profiles_public` (accent-insensitive
-      // via unaccent no servidor). Caso a função ainda não exista no banco,
-      // caímos para uma busca ampla e filtramos no cliente sem acentos.
-      // Estratégia: dispara RPC (accent-insensitive no servidor) EM PARALELO
-      // com uma varredura ampla da view. Confiamos nas linhas do RPC como
-      // pré-filtradas pelo servidor e complementamos com o resultado do
-      // fallback filtrado no cliente. Isso garante que termos como "moveis"
-      // encontrem "Móveis Planejados" mesmo quando o RPC não expõe todas as
-      // colunas usadas na correspondência local.
+      // Estratégia otimizada: primeiro passe SÓ com RPC + OR (baratos, ~200
+      // linhas cada). Broad scan (1000 linhas) só entra em ação como
+      // fallback quando o primeiro passe não devolve nada.
       let usedPath: "rpc" | "or" | "broad" = "broad";
       const synonyms = expandSynonyms(rawTerm);
       const variants = Array.from(
@@ -264,7 +272,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
         textFields.map((field) => `${field}.ilike.%${term.replace(/[(),%_]/g, " ")}%`),
       );
 
-      const [rpcRes, orRes, broadRes, profilesOrRes, profilesBroadRes] = await Promise.all([
+      const [rpcRes, orRes, profilesOrRes] = await Promise.all([
         supabaseExternal
           .rpc("search_profiles_public", { q: rawTerm })
           .abortSignal(ac.signal)
@@ -277,34 +285,40 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
           .abortSignal(ac.signal)
           .then((r) => r, (err) => ({ data: null, error: err })),
         supabaseExternal
-          .from("profiles_public")
-          .select("*")
-          .limit(FALLBACK_SEARCH_LIMIT)
-          .abortSignal(ac.signal)
-          .then((r) => r, (err) => ({ data: null, error: err })),
-        // Fallback direto na tabela profiles — cobre casos em que a view
-        // profiles_public não expõe algum campo (ex.: __extras) ou ainda
-        // não foi atualizada com o novo perfil recém-cadastrado.
-        supabaseExternal
           .from("profiles")
           .select("*")
           .or(orParts.join(","))
           .limit(200)
           .abortSignal(ac.signal)
           .then((r) => r, (err) => ({ data: null, error: err })),
-        supabaseExternal
-          .from("profiles")
-          .select("*")
-          .limit(FALLBACK_SEARCH_LIMIT)
-          .abortSignal(ac.signal)
-          .then((r) => r, (err) => ({ data: null, error: err })),
       ]);
 
       const rpcRows = Array.isArray(rpcRes?.data) ? (rpcRes!.data as any[]) : [];
       const orRows = Array.isArray(orRes?.data) ? (orRes!.data as any[]) : [];
-      const broadRows = Array.isArray(broadRes?.data) ? (broadRes!.data as any[]) : [];
       const profilesOrRows = Array.isArray(profilesOrRes?.data) ? (profilesOrRes!.data as any[]) : [];
-      const profilesBroadRows = Array.isArray(profilesBroadRes?.data) ? (profilesBroadRes!.data as any[]) : [];
+
+      // Fallback broad-scan APENAS se o primeiro passe não trouxe nada útil.
+      let broadRows: any[] = [];
+      let profilesBroadRows: any[] = [];
+      if (rpcRows.length + orRows.length + profilesOrRows.length === 0) {
+        const [broadRes, profilesBroadRes] = await Promise.all([
+          supabaseExternal
+            .from("profiles_public")
+            .select("*")
+            .limit(FALLBACK_SEARCH_LIMIT)
+            .abortSignal(ac.signal)
+            .then((r) => r, (err) => ({ data: null, error: err })),
+          supabaseExternal
+            .from("profiles")
+            .select("*")
+            .limit(FALLBACK_SEARCH_LIMIT)
+            .abortSignal(ac.signal)
+            .then((r) => r, (err) => ({ data: null, error: err })),
+        ]);
+        broadRows = Array.isArray(broadRes?.data) ? (broadRes!.data as any[]) : [];
+        profilesBroadRows = Array.isArray(profilesBroadRes?.data) ? (profilesBroadRes!.data as any[]) : [];
+      }
+
 
       if (rpcRows.length > 0) usedPath = "rpc";
       else if (orRows.length > 0 || profilesOrRows.length > 0) usedPath = "or";
