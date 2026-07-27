@@ -702,7 +702,12 @@ function ConversationPage() {
           })
           .subscribe(async (status: string) => {
             if (status === "SUBSCRIBED") {
+              setRoomStatus(`presence:${key}`, "connected");
               try { await presenceChannel.track({ online_at: Date.now() }); } catch {}
+            } else if (status === "CHANNEL_ERROR") {
+              setRoomStatus(`presence:${key}`, "error");
+            } else if (status === "TIMED_OUT" || status === "CLOSED") {
+              setRoomStatus(`presence:${key}`, "reconnecting");
             }
           });
         presenceRef.current = presenceChannel;
