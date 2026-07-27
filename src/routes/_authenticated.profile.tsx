@@ -578,6 +578,26 @@ function ProfilePage() {
   const bioOverLimit = bioLen > BIO_MAX_LENGTH;
   const radiusInvalid =
     profile?.default_radius != null && !isAllowedRadius(profile.default_radius);
+  // 🎯 Foco automático em um campo específico via ?focus=<data-profile-field>
+  // Usado pelo card amarelo do painel do lojista para levar o usuário
+  // direto ao campo que ainda falta preencher.
+  useEffect(() => {
+    if (!focusField || loading || !profile?.id) return;
+    const attempt = (tries: number) => {
+      const el = document.querySelector(`[data-profile-field="${focusField}"]`) as HTMLElement | null;
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        const input = el.querySelector("input,textarea,select") as HTMLElement | null;
+        input?.focus();
+        el.classList.add("ring-2", "ring-amber-400/70", "rounded-2xl");
+        setTimeout(() => el.classList.remove("ring-2", "ring-amber-400/70", "rounded-2xl"), 2400);
+        return;
+      }
+      if (tries > 0) setTimeout(() => attempt(tries - 1), 200);
+    };
+    setTimeout(() => attempt(15), 250);
+  }, [focusField, loading, profile?.id]);
+
   const canSave = !saving && !bioOverLimit && !radiusInvalid;
 
   const handleSave = async (opts?: { silent?: boolean }) => {
