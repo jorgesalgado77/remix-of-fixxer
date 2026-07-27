@@ -38,24 +38,35 @@ export type SearchableField = (typeof SEARCHED_FIELDS)[number];
 
 /** Peso por campo no ranking de relevância (quanto maior, mais relevante). */
 const FIELD_WEIGHTS: Record<SearchableField, number> = {
+  // Cargo / função / papel — prioridade máxima para consultas como
+  // "liberador", "conferente", "motorista", etc.
+  job_roles: 14,
+  positions: 14,
+  preferred_service: 12,
+  specialty: 12,
+  role: 11,
   display_name: 10,
   full_name: 9,
   company_name: 9,
   business_category: 8,
   custom_branch: 8,
   activity_branch: 8,
-  specialty: 8,
-  preferred_service: 8,
-  job_roles: 8,
-  positions: 8,
   categories: 6,
-  role: 5,
   user_type: 5,
   description: 4,
   custom_sections: 4,
   city: 3,
   state: 2,
 };
+
+/** Campos considerados "cargo/papel" — recebem multiplicador extra no ranking. */
+const ROLE_FIELDS: readonly SearchableField[] = [
+  "job_roles",
+  "positions",
+  "preferred_service",
+  "specialty",
+  "role",
+] as const;
 
 /** Bônus por categoria — lojistas ficam levemente acima em empate,
  * pois costumam ser resultados mais "resolutivos" na busca (produtos/serviços). */
