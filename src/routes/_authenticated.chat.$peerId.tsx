@@ -612,7 +612,7 @@ function ConversationPage() {
               );
               if (idx >= 0) {
                 const next = prev.slice();
-                next[idx] = { ...next[idx], ...m, _clientId: next[idx]._clientId ?? m.client_message_id };
+                next[idx] = { ...next[idx], ...m, _clientId: next[idx]._clientId ?? m.client_message_id ?? undefined };
                 idSetRef.current.add(m.id);
                 return next;
               }
