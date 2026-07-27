@@ -2129,12 +2129,7 @@ function ConversationPage() {
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
             </button>
             <button
-              onClick={() => {
-                const el = cameraPhotoRef.current;
-                if (!el) return;
-                el.setAttribute("capture", "environment");
-                el.click();
-              }}
+              onClick={() => setCameraOpen("photo")}
               disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
               title="Tirar foto"
               className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
@@ -2143,12 +2138,7 @@ function ConversationPage() {
               <Camera className="w-4 h-4" />
             </button>
             <button
-              onClick={() => {
-                const el = cameraVideoRef.current;
-                if (!el) return;
-                el.setAttribute("capture", "environment");
-                el.click();
-              }}
+              onClick={() => setCameraOpen("video")}
               disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
               title="Gravar vídeo"
               className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
