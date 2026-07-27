@@ -592,6 +592,39 @@ function ConversationPage() {
             setPeerTyping(false);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
           })
+          // Fallback dinâmico (estilo WhatsApp): quando um peer envia mensagem,
+          // ele mesmo transmite a linha via broadcast na sala do par. Isso
+          // funciona INDEPENDENTE de o postgres_changes/publication estar ativo
+          // na tabela `messages`, garantindo entrega em tempo real imediata.
+          .on("broadcast", { event: "message-new" }, ({ payload }: any) => {
+            const m = payload?.row as MessageRow | undefined;
+            if (!m || !m.id) return;
+            const inConv =
+              (m.sender_id === uid && m.recipient_id === peerId) ||
+              (m.sender_id === peerId && m.recipient_id === uid);
+            if (!inConv) return;
+            setMessages((prev) => {
+              // Match por client_message_id (otimista) ou id.
+              const idx = prev.findIndex(
+                (x) =>
+                  (m.client_message_id && (x._clientId === m.client_message_id || x.id === m.client_message_id)) ||
+                  x.id === m.id,
+              );
+              if (idx >= 0) {
+                const next = prev.slice();
+                next[idx] = { ...next[idx], ...m, _clientId: next[idx]._clientId ?? m.client_message_id };
+                idSetRef.current.add(m.id);
+                return next;
+              }
+              idSetRef.current.add(m.id);
+              const incoming = m.recipient_id === uid && m.sender_id !== uid;
+              if (incoming && !isConversationMuted(uid, peerId)) {
+                try { playIncomingMessageSound(); } catch {}
+              }
+              return [...prev, m];
+            });
+            if (m.recipient_id === uid) markIncomingRead(uid);
+          })
           .subscribe(async (status: string) => {
             if (status === "SUBSCRIBED") {
               try { await presenceChannel.track({ online_at: Date.now() }); } catch {}
