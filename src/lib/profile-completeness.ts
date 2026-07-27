@@ -49,7 +49,6 @@ const COMMON_CONTACT: RequiredField[] = [
 
 const ADDRESS_FIELDS: RequiredField[] = [
   { key: "address", label: "Endereço" },
-  { key: "address_number", label: "Número" },
   { key: "city", label: "Cidade" },
   { key: "state", label: "Estado" },
 ];
