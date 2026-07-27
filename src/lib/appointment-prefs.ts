@@ -83,7 +83,7 @@ export async function probeAutoplay(): Promise<
     const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!AC) return "unavailable";
     const ctx: AudioContext = new AC();
-    if (ctx.state === "running") {
+    if ((ctx.state as string) === "running") {
       try { await ctx.close(); } catch { /* ignore */ }
       return "granted";
     }
