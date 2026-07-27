@@ -393,15 +393,16 @@ export function LojistaDashboard() {
     setMobileMenuOpen(false);
   };
 
-  const handleOpenSettings = () => {
-    setActiveTab('profile');
-    setActiveSettingsTab('my-profile');
+  // 🎯 Rota canônica de perfil = /profile (nova página consolidada).
+  // Passamos `focus` opcional com a primeira chave faltante para o
+  // /profile poder rolar/realçar o campo correspondente ao abrir.
+  const handleOpenSettings = (focusKey?: string) => {
     setMobileMenuOpen(false);
-    setTimeout(() => {
-      const el = document.getElementById('settings-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    const search: Record<string, string> = {};
+    if (focusKey) search.focus = focusKey;
+    navigate({ to: "/profile", search: search as any });
   };
+
 
 
 
