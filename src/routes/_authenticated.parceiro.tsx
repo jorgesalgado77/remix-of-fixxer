@@ -53,6 +53,8 @@ function ParceiroDashboard() {
 
       <CoinBalancePlanCard />
 
+      <MyAppointmentsSection />
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
         <StatCard icon={<Users className="w-5 h-5" />} label="Leads" value="24" color="text-blue-400" />

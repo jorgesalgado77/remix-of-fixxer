@@ -66,6 +66,8 @@ function ClientePortal() {
 
       <CoinBalancePlanCard />
 
+      <MyAppointmentsSection />
+
       <main>
 
         {activeTab === 'jornada' && <JornadaObra glassClass={glassClass} />}
