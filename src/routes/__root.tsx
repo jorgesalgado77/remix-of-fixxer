@@ -182,8 +182,8 @@ function RootComponent() {
     // Inicializa saldo de moedas em tempo real assim que houver sessão
     void (async () => {
       try {
-        const [{ supabase }, { initCoinsForUser }] = await Promise.all([
-          import("@/integrations/supabase/client"),
+        const [{ supabaseExternal: supabase }, { initCoinsForUser }] = await Promise.all([
+          import("@/lib/supabaseExternal"),
           import("@/lib/coins"),
         ]);
         const { data } = await supabase.auth.getSession();
