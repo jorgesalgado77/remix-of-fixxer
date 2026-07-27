@@ -1381,7 +1381,8 @@ export default function FeedPrestadorPage() {
                 onUnlock={() => { void postUnlock.unlock(job.id); }}
               />
             </div>
-          ))}
+            );
+          })}
 
         {/* Sentinel de scroll infinito */}
         {!searching && filtered.length > 0 && (
