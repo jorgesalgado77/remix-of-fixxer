@@ -18,6 +18,9 @@ export type AppointmentPrefs = {
   desktopEnabled: boolean; // notificações do navegador (funcionam em segundo plano)
   respectSystem: boolean; // se true, silencia sons quando prefers-reduced-motion
   pauseAllSounds: boolean; // "Pausar todos os sons" (acessibilidade)
+  quietHoursEnabled: boolean; // "Não perturbe" em janela horária
+  quietStart: string; // "HH:MM" — início do silêncio
+  quietEnd: string;   // "HH:MM" — fim do silêncio (se < início, atravessa a meia-noite)
 };
 
 export function defaultAppointmentPrefs(): AppointmentPrefs {
@@ -28,7 +31,27 @@ export function defaultAppointmentPrefs(): AppointmentPrefs {
     desktopEnabled: true,
     respectSystem: true,
     pauseAllSounds: false,
+    quietHoursEnabled: false,
+    quietStart: "22:00",
+    quietEnd: "07:00",
   };
+}
+
+/** Converte "HH:MM" em minutos absolutos do dia (0..1439). */
+function toMin(s: string): number {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s || "");
+  if (!m) return 0;
+  return Math.min(1439, Math.max(0, Number(m[1]) * 60 + Number(m[2])));
+}
+
+/** True se o horário atual está dentro da janela de "não perturbe". */
+export function isQuietHoursActive(prefs = loadAppointmentPrefs(), now = new Date()): boolean {
+  if (!prefs.quietHoursEnabled) return false;
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const s = toMin(prefs.quietStart);
+  const e = toMin(prefs.quietEnd);
+  if (s === e) return false;
+  return s < e ? cur >= s && cur < e : cur >= s || cur < e; // atravessa meia-noite
 }
 
 
