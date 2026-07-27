@@ -59,6 +59,7 @@ import { playIncomingMessageSound } from "@/lib/chat-sound";
 import { setRoomStatus, incrRoomEvent, clearRoom } from "@/lib/chat-realtime-debug";
 import { ChatEmojiPicker } from "@/components/Chat/EmojiPicker";
 import { ChatVoiceRecorder } from "@/components/Chat/VoiceRecorder";
+import CameraCaptureModal from "@/components/Chat/CameraCaptureModal";
 import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
 import { ChatAppointmentsBanner } from "@/components/ChatAppointmentsBanner";
 import {
@@ -226,8 +227,7 @@ function ConversationPage() {
   const [uploadPct, setUploadPct] = useState(0); // % do arquivo atual
   const [uploadingIndex, setUploadingIndex] = useState(0); // índice do arquivo atual
   const fileRef = useRef<HTMLInputElement>(null);
-  const cameraPhotoRef = useRef<HTMLInputElement>(null);
-  const cameraVideoRef = useRef<HTMLInputElement>(null);
+  const [cameraOpen, setCameraOpen] = useState<null | "photo" | "video">(null);
   const [downloads, setDownloads] = useState<Record<string, { pct: number; loading: boolean }>>({});
 
   // Miniaturas locais (blob URLs) para imagens/vídeos anexados antes de enviar.
@@ -2117,30 +2117,6 @@ function ConversationPage() {
               if (fileRef.current) fileRef.current.value = "";
             }}
           />
-          <input
-            ref={cameraPhotoRef}
-            type="file"
-            accept="image/*"
-            {...({ capture: "environment" } as any)}
-            className="hidden"
-            onChange={(e) => {
-              const picked = Array.from(e.target.files ?? []);
-              if (picked.length) acceptIncomingFiles(picked);
-              if (cameraPhotoRef.current) cameraPhotoRef.current.value = "";
-            }}
-          />
-          <input
-            ref={cameraVideoRef}
-            type="file"
-            accept="video/*"
-            {...({ capture: "environment" } as any)}
-            className="hidden"
-            onChange={(e) => {
-              const picked = Array.from(e.target.files ?? []);
-              if (picked.length) acceptIncomingFiles(picked);
-              if (cameraVideoRef.current) cameraVideoRef.current.value = "";
-            }}
-          />
 
           <div className="mb-2 flex items-center gap-1.5">
             <button
@@ -2153,12 +2129,7 @@ function ConversationPage() {
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
             </button>
             <button
-              onClick={() => {
-                const el = cameraPhotoRef.current;
-                if (!el) return;
-                el.setAttribute("capture", "environment");
-                el.click();
-              }}
+              onClick={() => setCameraOpen("photo")}
               disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
               title="Tirar foto"
               className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
@@ -2167,12 +2138,7 @@ function ConversationPage() {
               <Camera className="w-4 h-4" />
             </button>
             <button
-              onClick={() => {
-                const el = cameraVideoRef.current;
-                if (!el) return;
-                el.setAttribute("capture", "environment");
-                el.click();
-              }}
+              onClick={() => setCameraOpen("video")}
               disabled={uploading || sending || pendingFiles.length >= MAX_FILES}
               title="Gravar vídeo"
               className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center disabled:opacity-40"
@@ -2235,6 +2201,12 @@ function ConversationPage() {
         />
       )}
       <ChatSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <CameraCaptureModal
+        open={cameraOpen !== null}
+        mode={cameraOpen ?? "photo"}
+        onClose={() => setCameraOpen(null)}
+        onCapture={(file) => acceptIncomingFiles([file])}
+      />
     </div>
   );
 
