@@ -95,6 +95,32 @@ export default function AppointmentDetailPage() {
     load();
   }, [load]);
 
+  // Ações diretas vindas das notificações do navegador (?action=cancel|reschedule)
+  useEffect(() => {
+    if (!apt) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get("action");
+    if (!action) return;
+    const canCancelNow = ["pending", "confirmed", "rescheduled"].includes(apt.status);
+    const canRescheduleNow = ["pending", "confirmed", "rescheduled", "checked_in"].includes(apt.status);
+    if (action === "cancel" && canCancelNow) {
+      setCancelOpen(true);
+    } else if (action === "reschedule" && canRescheduleNow) {
+      setRescheduleOpen(true);
+    } else {
+      toast.info("Esta ação já não está disponível para o compromisso.");
+    }
+    // Remove o parâmetro para evitar re-abrir ao navegar.
+    try {
+      params.delete("action");
+      const qs = params.toString();
+      const url = window.location.pathname + (qs ? `?${qs}` : "");
+      window.history.replaceState({}, "", url);
+    } catch { /* ignore */ }
+  }, [apt?.id, apt?.status]);
+
+
   // Realtime — compromisso, eventos e disputas
   useEffect(() => {
     const ch = supabaseExternal
