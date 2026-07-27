@@ -210,9 +210,10 @@ export function rowMatchesTerm(row: any, rawTerm: string): boolean {
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
   if (words.length > 0 && words.every((w) => haystack.includes(w))) return true;
 
-  // 3) Sinônimo — qualquer token expandido presente.
-  const synonyms = expandSynonyms(rawTerm);
-  return synonyms.some((s) => haystack.includes(s));
+  // 3) Sinônimo — casamento como PALAVRA COMPLETA para evitar substring alheia
+  //    (ex.: "medi" não deve casar "medida" em "móveis sob medida").
+  const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
+  return synonyms.some((s) => matchesWholeWord(haystack, s));
 }
 
 export function getMatchedFields(row: any, rawTerm: string): SearchableField[] {
