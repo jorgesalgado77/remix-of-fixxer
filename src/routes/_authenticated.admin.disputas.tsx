@@ -279,11 +279,7 @@ function ResolveModal({ dispute, onClose, onDone }: {
               <p className="text-[10px] uppercase text-white/50 font-black mt-2">Evidências</p>
               <div className="grid grid-cols-3 gap-2 mt-1">
                 {dispute.evidence_urls!.map((u, i) => (
-                  <a key={i} href={u} target="_blank" rel="noreferrer" className="block rounded-lg overflow-hidden border border-white/10 bg-black/40 aspect-square">
-                    {/\.(png|jpe?g|webp|gif|avif)$/i.test(u)
-                      ? <img src={u} alt="evidência" className="w-full h-full object-cover" />
-                      : <div className="flex items-center justify-center w-full h-full text-[10px] text-white/70 p-1 text-center break-all">{u.split("/").pop()}</div>}
-                  </a>
+                  <EvidenceItem key={i} pathOrUrl={u} />
                 ))}
               </div>
             </div>
