@@ -572,10 +572,11 @@ function RecentPartnersCarouselInner() {
           {/* Grupo radio: filtro por categoria. Roving tabindex + setas para teclado. */}
           <div role="radiogroup" aria-label="Filtrar parceiros por categoria" className="contents">
             {(() => {
-              const opts = [
-                { v: "all" as const, label: "🟢 Todos", color: "#00FF87" },
-                { v: "prestador" as const, label: "🛠️ Prestadores", color: "#FF9F0A" },
-                { v: "fornecedor" as const, label: "🚚 Parceiros B2B", color: "#A855F7" },
+              const opts: Array<{ v: KindFilter; label: string; color: string }> = [
+                ...(branchCtx.hasContext ? [{ v: "mine" as KindFilter, label: "🎯 Do meu ramo", color: "#00FF87" }] : []),
+                { v: "all", label: "🟢 Todos", color: "#00FF87" },
+                { v: "prestador", label: "🛠️ Prestadores", color: "#FF9F0A" },
+                { v: "fornecedor", label: "🚚 Parceiros B2B", color: "#A855F7" },
               ];
               return opts.map((opt, i) => {
                 const active = kindFilter === opt.v;
@@ -587,7 +588,7 @@ function RecentPartnersCarouselInner() {
                     aria-checked={active}
                     aria-label={`Filtrar por ${opt.label.replace(/^\S+\s/, "")}`}
                     tabIndex={active ? 0 : -1}
-                    onClick={() => setKindFilter(opt.v)}
+                    onClick={() => { setUserTouchedFilter(true); setKindFilter(opt.v); }}
                     onKeyDown={(e) => {
                       if (["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) {
                         e.preventDefault();
