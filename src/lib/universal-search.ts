@@ -263,7 +263,7 @@ export function scoreRow(row: any, rawTerm: string, category?: UserCategory | nu
       score += w;
       continue;
     }
-    if (synonyms.some((s) => value.includes(s))) {
+    if (synonyms.some((s) => s !== normalizedTerm && matchesWholeWord(value, s))) {
       score += Math.max(1, Math.floor(w / 2));
     }
   }
