@@ -1343,6 +1343,8 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
             
             <RecentPartnersCarousel />
 
+            <MyAppointmentsSection />
+
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
                 <div className="flex flex-col space-y-4 mb-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
