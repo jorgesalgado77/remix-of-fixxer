@@ -671,14 +671,27 @@ export default function FeedParceiroPage() {
     });
   }, [search, activeSector, statusFilter]);
 
-  const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  const branchCtx = useUserBranchContext();
+  const rankedFiltered = useMemo(() => {
+    if (!branchCtx.hasContext) return filtered;
+    const decorated = filtered.map((r) => ({
+      r,
+      _relevance: scoreRelevanceDetailed([r.sector, r.title], branchCtx),
+    }));
+    const sorted = [...decorated].sort(
+      (a, b) => relevanceRank(a._relevance.level) - relevanceRank(b._relevance.level),
+    );
+    return applyRelevanceFallback(sorted, 3).map((x) => x.r);
+  }, [filtered, branchCtx]);
+
+  const paged = useMemo(() => rankedFiltered.slice(0, page * PAGE_SIZE), [rankedFiltered, page]);
   useFeedPreload(
-    filtered,
+    rankedFiltered,
     paged.length,
     PAGE_SIZE,
     (r) => r.attachment ?? null,
   );
-  const hasMore = paged.length < filtered.length;
+  const hasMore = paged.length < rankedFiltered.length;
 
   useEffect(() => {
     setPage(1);
