@@ -908,6 +908,15 @@ function ConversationPage() {
           }),
         );
       } catch {}
+      // Broadcast dinâmico (estilo WhatsApp) — entrega instantânea ao peer
+      // mesmo quando a publicação `supabase_realtime` não inclui `messages`.
+      try {
+        presenceRef.current?.send({
+          type: "broadcast",
+          event: "message-new",
+          payload: { row: { ...row, _clientId: clientId } },
+        });
+      } catch {}
     }
 
   };
