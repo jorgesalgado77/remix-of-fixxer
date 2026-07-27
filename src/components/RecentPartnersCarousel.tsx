@@ -215,6 +215,7 @@ function preloadImage(url: string | null | undefined) {
 function RecentPartnersCarouselInner() {
   const navigate = useNavigate();
   const userCoords = useUserCoords();
+  const branchCtx = useUserBranchContext();
 
   const cached = useMemo(() => readCache(), []);
   const [items, setItems] = useState<PartnerCard[]>(() => cached?.items ?? []);
@@ -223,10 +224,20 @@ function RecentPartnersCarouselInner() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>(() => readUrlParam<SortMode>(URL_SORT_PARAM, VALID_SORTS) ?? readSort());
   const [kindFilter, setKindFilter] = useState<KindFilter>(() => readUrlParam<KindFilter>(URL_FILTER_PARAM, VALID_FILTERS) ?? readFilter());
+  const [userTouchedFilter, setUserTouchedFilter] = useState(false);
   const [pull, setPull] = useState(0);
   // Cards descartados manualmente pelo usuário quando não têm coordenadas válidas (badge "Sem localização").
   const [dismissedNoGeo, setDismissedNoGeo] = useState<Set<string>>(() => new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Ao descobrir que o usuário tem ramos configurados, defaulta para "🎯 Do meu ramo".
+  // Só faz o auto-switch se o usuário AINDA não escolheu outro filtro manualmente
+  // e não há preferência salva na URL/localStorage.
+  useEffect(() => {
+    if (userTouchedFilter) return;
+    const hadUrlPref = readUrlParam<KindFilter>(URL_FILTER_PARAM, VALID_FILTERS);
+    if (hadUrlPref) return;
+    if (branchCtx.hasContext && kindFilter === "all") setKindFilter("mine");
+  }, [branchCtx.hasContext, userTouchedFilter, kindFilter]);
   useEffect(() => {
     let cancelled = false;
     (async () => {
