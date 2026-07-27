@@ -22,11 +22,15 @@ export const SEARCHED_FIELDS = [
   "state",
   "business_category",
   "custom_branch",
+  "activity_branch",
   "specialty",
   "description",
   "role",
   "user_type",
   "categories",
+  "preferred_service",
+  "job_roles",
+  "positions",
   "custom_sections",
 ] as const;
 
@@ -39,7 +43,11 @@ const FIELD_WEIGHTS: Record<SearchableField, number> = {
   company_name: 9,
   business_category: 8,
   custom_branch: 8,
+  activity_branch: 8,
   specialty: 8,
+  preferred_service: 8,
+  job_roles: 8,
+  positions: 8,
   categories: 6,
   role: 5,
   user_type: 5,
@@ -186,6 +194,25 @@ export function getSearchableValue(row: any, field: SearchableField): string {
       offerings: row.offerings,
       specialties: row.specialties,
     });
+  }
+  if (field === "positions") {
+    const arr: any[] = Array.isArray(row.positions) ? row.positions : [];
+    return arr
+      .map((p) =>
+        typeof p === "string"
+          ? p
+          : [p?.title, p?.name, p?.role, p?.department, p?.branch]
+              .filter(Boolean)
+              .join(" "),
+      )
+      .filter(Boolean)
+      .join(" ");
+  }
+  if (field === "job_roles") {
+    // Pode vir como CSV "||", array ou string simples.
+    const v = row.job_roles;
+    if (Array.isArray(v)) return v.map(stringifyValue).join(" ");
+    return String(v ?? "").split("||").join(" ");
   }
   return stringifyValue(row[field]);
 }
