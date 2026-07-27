@@ -1340,7 +1340,20 @@ function ConversationPage() {
   useEffect(() => {
     const el = footerRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const measure = () => setFooterHeight(el.getBoundingClientRect().height || 96);
+    const measure = () => {
+      const h = el.getBoundingClientRect().height || 96;
+      setFooterHeight((prev) => {
+        if (Math.abs(prev - h) < 1) return prev;
+        // Se estava colado no fim, mantém após a mudança de altura do rodapé.
+        if (isNearBottomRef.current && scrollRef.current) {
+          const s = scrollRef.current;
+          requestAnimationFrame(() => {
+            try { s.scrollTop = s.scrollHeight; } catch {}
+          });
+        }
+        return h;
+      });
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -1524,7 +1537,7 @@ function ConversationPage() {
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        style={{ paddingBottom: `${footerHeight + 16}px` }}
+        style={{ paddingBottom: `${footerHeight + 40}px`, scrollPaddingBottom: `${footerHeight + 40}px` }}
         className={`flex-1 min-h-0 overflow-y-auto px-4 pt-4 space-y-4 relative ${
           dragActive ? "outline-dashed outline-2 outline-primary/70 outline-offset-[-8px] bg-primary/5" : ""
         }`}
