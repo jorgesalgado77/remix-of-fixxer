@@ -225,7 +225,14 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
           if (canPlaySoundNow(prefs)) {
             try { playIncomingMessageSound(); } catch { /* ignore */ }
           }
-          notifyDesktop("Compromisso próximo", `${label} — ${fmtWhen(a.scheduled_at)}`, `/agenda/${a.id}`);
+          showDesktopNotification({
+            title: "Compromisso próximo",
+            body: `${label} — ${fmtWhen(a.scheduled_at)}`,
+            url: `/agenda/${a.id}`,
+            tag: `fixxer-appt-reminder-${a.id}`,
+            requireInteraction: true,
+            silent: !canPlaySoundNow(prefs),
+          }, prefs);
         }
       }
     };
@@ -234,13 +241,38 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
     return () => clearInterval(int);
   }, [items, prefs]);
 
+  // Sincroniza status de permissão quando a aba volta ao foco
   useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission().catch(() => undefined);
-      }
-    } catch { /* ignore */ }
+    const onFocus = () => setDesktopPerm(desktopPermission());
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
   }, []);
+
+  async function handleEnableDesktop() {
+    if (!desktopSupported()) {
+      toast.error("Este navegador não suporta notificações.");
+      return;
+    }
+    const p = await requestDesktopPermission();
+    setDesktopPerm(p);
+    if (p === "granted") {
+      updatePrefs({ desktopEnabled: true });
+      toast.success("Notificações do navegador ativadas — você receberá lembretes mesmo com a aba em segundo plano.");
+      showDesktopNotification({
+        title: "Notificações ativadas",
+        body: "Você receberá lembretes dos seus agendamentos.",
+        tag: "fixxer-appt-permission-ok",
+        silent: true,
+      }, { ...prefs, desktopEnabled: true });
+    } else if (p === "denied") {
+      toast.error("Permissão negada. Habilite nas configurações do navegador para receber lembretes em segundo plano.");
+    }
+  }
+
 
   // Reset paginação ao mudar filtros
   useEffect(() => { setPage(1); }, [range, query]);
