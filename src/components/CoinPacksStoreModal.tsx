@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { X, Coins, Copy, Check, QrCode, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseExternal as supabase } from "@/lib/supabaseExternal";
 import { type CoinPack } from "@/lib/monetization";
 import { useMonetization } from "@/hooks/use-monetization";
 import { creditCoins } from "@/lib/coins";

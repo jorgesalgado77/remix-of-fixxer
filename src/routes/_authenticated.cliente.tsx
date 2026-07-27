@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseExternal as supabase } from "@/lib/supabaseExternal";
 import { 
   Home, 
   CheckCircle2, 
