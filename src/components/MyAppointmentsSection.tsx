@@ -37,6 +37,7 @@ import {
   desktopSupported,
   desktopPermission,
   requestDesktopPermission,
+  isQuietHoursActive,
   type AppointmentPrefs,
   type ReminderMinutes,
   type DesktopPermission,
