@@ -365,49 +365,69 @@ function RecentPartnersCarouselInner() {
   }, [fetchPartners, refreshing]);
 
   // ---- Ordenação em memória (com coords pré-calculadas para "Mais próximos") ----
-  type Enriched = PartnerCard & { _coords: { lat: number; lng: number } | null; _distanceKm: number | null };
+  type Enriched = PartnerCard & {
+    _coords: { lat: number; lng: number } | null;
+    _distanceKm: number | null;
+    _relevance: Relevance;
+  };
   const sortedItems = useMemo<Enriched[]>(() => {
-    const base = kindFilter === "all" ? items : items.filter((p) => p._kind === kindFilter);
-    const enriched: Enriched[] = base.map((p) => {
+    // 1) Filtro por tipo (Prestador / Parceiro) — "mine" e "all" mantêm ambos os tipos.
+    const byKind = (kindFilter === "all" || kindFilter === "mine")
+      ? items
+      : items.filter((p) => p._kind === kindFilter);
+
+    // 2) Calcula relevância vs. ramo do usuário logado.
+    const scored: Enriched[] = byKind.map((p) => {
       const rowCoords = (p.lat != null && p.lng != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)))
         ? { lat: Number(p.lat), lng: Number(p.lng) }
         : null;
       const coords = rowCoords ?? cityCoords(p.city) ?? null;
-      // Distância: prioriza cálculo real via geo do usuário; senão usa distance_km/distance persistido no perfil.
       const liveDist = (userCoords && coords) ? haversineKm(userCoords, coords) : null;
       const storedRaw = p.distance_km ?? p.distance;
       const storedDist = storedRaw != null ? Number(storedRaw) : null;
-      // Se o card representa o próprio usuário logado, a distância é sempre 0 km.
       const isSelf = !!currentUserId && p.id === currentUserId;
       const dist = isSelf
         ? 0
         : Number.isFinite(liveDist as number)
           ? (liveDist as number)
           : (storedDist != null && Number.isFinite(storedDist) ? storedDist : null);
-      return { ...p, _coords: coords, _distanceKm: dist };
+      const rel = scoreRelevance(
+        [p.activity_branch, p.business_category, p.custom_branch, p.category, p.preferred_service],
+        branchCtx,
+      );
+      return { ...p, _coords: coords, _distanceKm: dist, _relevance: rel };
     });
 
+    // 3) Se o filtro é "Do meu ramo", oculta 'none'. Se sobrar vazio, cai p/ macro-only
+    // e depois p/ todos, garantindo que a seção nunca fica em branco.
+    let base = scored;
+    if (kindFilter === "mine" && branchCtx.hasContext) {
+      const strict = scored.filter((p) => p._relevance === "exact" || p._relevance === "macro");
+      base = strict.length > 0 ? strict : scored;
+    }
+
+    // 4) Ordenação
     if (sortMode === "rating") {
-      enriched.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      base = [...base].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     } else if (sortMode === "nearby" && userCoords) {
-      // Remove cards descartados manualmente (badge "Sem localização" fechado pelo usuário).
-      const filtered = enriched.filter((p) => !dismissedNoGeo.has(p.id));
-      // Cards COM coords sobem; os SEM coords vão para o final (mas ainda visíveis com badge removível).
-      filtered.sort((a, b) => {
+      base = base.filter((p) => !dismissedNoGeo.has(p.id));
+      base = [...base].sort((a, b) => {
         const da = a._distanceKm ?? Number.POSITIVE_INFINITY;
         const db = b._distanceKm ?? Number.POSITIVE_INFINITY;
         return da - db;
       });
-      return filtered;
     } else {
-      enriched.sort((a, b) => {
+      base = [...base].sort((a, b) => {
         const ta = a.created_at ? Date.parse(a.created_at) : 0;
         const tb = b.created_at ? Date.parse(b.created_at) : 0;
         return tb - ta;
       });
     }
-    return enriched;
-  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo, currentUserId]);
+
+    // 5) Boost por relevância: exact > macro > none, preservando a ordem interna.
+    const relRank = (r: Relevance) => (r === "exact" ? 0 : r === "macro" ? 1 : 2);
+    return [...base].sort((a, b) => relRank(a._relevance) - relRank(b._relevance));
+  }, [items, sortMode, userCoords, kindFilter, dismissedNoGeo, currentUserId, branchCtx]);
 
   // ---- IntersectionObserver: pré-carrega /perfil/:id + foto quando o card se aproxima ----
   useEffect(() => {
