@@ -54,11 +54,10 @@ function PrestadorDashboard() {
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Controle de Agendas, O.S. e Reputação</p>
           </div>
         </div>
-        <div className="flex flex-col gap-3 md:contents">
-          <ProfileSummaryCard role="prestador" />
-          <PanelActions role="prestador" />
-        </div>
+        <ProfileSummaryCard role="prestador" />
+        <PanelActions role="prestador" />
       </header>
+
 
 
       <CoinBalancePlanCard />
