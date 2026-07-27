@@ -17,6 +17,8 @@ import {
 import { PanelActions } from "@/components/PanelActions";
 import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
+import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
+
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/parceiro")({
@@ -27,7 +29,8 @@ function ParceiroDashboard() {
   const { glassClass } = usePerformanceMode();
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 animate-in fade-in duration-500">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 lg:pl-72 animate-in fade-in duration-500">
+      <ProfileSummaryCard role="parceiro" variant="sidebar" />
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
@@ -47,9 +50,11 @@ function ParceiroDashboard() {
           <Link to="/feed/parceiro" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
             <TrendingUp className="w-4 h-4" /> Acessar Feed da Categoria
           </Link>
+          <ProfileSummaryCard role="parceiro" />
           <PanelActions role="parceiro" />
         </div>
       </header>
+
 
       <CoinBalancePlanCard />
 
