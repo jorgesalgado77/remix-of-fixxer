@@ -96,8 +96,8 @@ export const Route = createFileRoute("/api/public/push/dispatch")({
           const notif = JSON.stringify({
             title: payload.title,
             body: payload.body,
-            url: payload.url || "/dashboard",
-            tag: payload.tag || "fixxer-notif",
+            url: safeUrl,
+            tag: safeTag,
             sender_id: senderId, // auditoria: quem originou o push
           });
 
