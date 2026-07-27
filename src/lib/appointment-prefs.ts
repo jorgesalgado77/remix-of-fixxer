@@ -91,6 +91,7 @@ export function canPlaySoundNow(prefs = loadAppointmentPrefs()): boolean {
   if (prefs.pauseAllSounds) return false;
   if (!prefs.soundEnabled) return false;
   if (prefs.respectSystem && prefersReducedMotion()) return false;
+  if (isQuietHoursActive(prefs)) return false;
   return true;
 }
 
