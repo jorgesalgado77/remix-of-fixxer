@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, ChevronRight, Handshake, EyeOff, Eye, Store, Users, Wrench } from "lucide-react";
 import type { CategoryKey } from "@/lib/category-colors";
 
@@ -112,6 +112,8 @@ import {
 } from "@/lib/activity-branches";
 import { useCurrentCategory } from "@/lib/user-category";
 import { getCategoryTheme } from "@/lib/category-colors";
+import { scoreRelevanceDetailed, useUserBranchContext, relevanceRank, type RelevanceResult } from "@/lib/branch-relevance";
+import { RelevanceBadge } from "@/components/RelevanceBadge";
 
 const DEFAULT_RADIUS_KM = 25;
 
@@ -129,6 +131,7 @@ function readRadius(): number {
 function B2BSuggestionsCardInner() {
   const category = useCurrentCategory();
   const preset = PRESETS[category] ?? PRESETS.prestador;
+  const branchCtx = useUserBranchContext();
   const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
   const [dismissed, setDismissed] = useState<boolean>(() => readDismissed(category));
   const theme = getCategoryTheme(category);
@@ -225,8 +228,22 @@ function B2BSuggestionsCardInner() {
   }, []);
 
   // Fallback: se não houver sugestões calculadas, usa presets fixos por categoria.
-  const displaySuggestions =
+  const baseList =
     suggestions.length > 0 ? suggestions : FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador;
+
+  // Ranqueia sugestões pela relevância com o ramo do usuário (usa targetBranch
+  // quando disponível — no fallback estático, o item pode não ter targetBranch,
+  // caso em que fica com level="none" e mantém a ordem original).
+  const displaySuggestions = useMemo(() => {
+    const scored = baseList.map((s) => {
+      const rel: RelevanceResult = s.targetBranch
+        ? scoreRelevanceDetailed([s.targetBranch], branchCtx)
+        : { level: "none", matchedBranch: null, reason: null };
+      return { s, rel };
+    });
+    scored.sort((a, b) => relevanceRank(a.rel.level) - relevanceRank(b.rel.level));
+    return scored;
+  }, [baseList, branchCtx]);
 
   // Estado OCULTO: mostra chip discreto para reexibir.
   if (dismissed) {
@@ -291,14 +308,17 @@ function B2BSuggestionsCardInner() {
       </div>
 
       <div className="grid gap-1.5">
-        {displaySuggestions.map((s) => (
+        {displaySuggestions.map(({ s, rel }) => (
           <button
             key={s.title}
             className="w-full text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors"
           >
             <span className="text-base shrink-0">{s.icon}</span>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-bold text-white truncate">{s.title}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[11px] font-bold text-white truncate flex-1">{s.title}</p>
+                <RelevanceBadge result={rel} compact />
+              </div>
               <p className="text-[9px] text-white/50 truncate flex items-center gap-1">
                 <Sparkles className="w-2.5 h-2.5" style={{ color: theme.hex }} />
                 {s.hint}
