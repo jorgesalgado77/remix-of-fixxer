@@ -51,6 +51,7 @@ import { AutosaveStatusPill } from "@/components/AutosaveStatusPill";
 import { saveDraft, loadDraft, clearDraft, markPending, pickDraftPatch } from "@/lib/profile-draft";
 import { detectPixKeyType, validatePixKey, PIX_KEY_TYPE_LABELS, type PixKeyType } from "@/lib/pix-key";
 import { uploadProfileDocument, resolveDocumentUrl, deleteProfileDocument } from "@/lib/profile-documents";
+import { RecommendationPreferences } from "@/components/RecommendationPreferences";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -1446,6 +1447,9 @@ function ProfilePage() {
                 </Link>
                 <AffiliateBanner />
               </div>
+
+              {/* RECOMENDAÇÕES INTELIGENTES — só faz sentido para o próprio dono do perfil */}
+              {!profileId && <RecommendationPreferences />}
 
 
               {/* REDES SOCIAIS — visível para o próprio dono do perfil */}
