@@ -445,6 +445,26 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
             >
               <PlayCircle className="w-3.5 h-3.5" /> Testar som
             </button>
+            {desktopSupported() && desktopPerm !== "granted" && (
+              <button
+                type="button"
+                onClick={handleEnableDesktop}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#FF9F0A]/50 text-[#FF9F0A] text-[10px] font-black uppercase tracking-widest hover:bg-[#FF9F0A]/10"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                {desktopPerm === "denied" ? "Notificações bloqueadas" : "Ativar notificações do navegador"}
+              </button>
+            )}
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${
+              desktopPerm === "granted" ? "text-[#00FF87]" :
+              desktopPerm === "denied" ? "text-[#FF3B30]" :
+              desktopPerm === "unsupported" ? "text-white/40" : "text-white/60"
+            }`}>
+              {desktopPerm === "granted" && "Navegador: liberado"}
+              {desktopPerm === "denied" && "Navegador: bloqueado"}
+              {desktopPerm === "default" && "Navegador: aguardando permissão"}
+              {desktopPerm === "unsupported" && "Navegador: sem suporte"}
+            </span>
             {autoplay !== "unknown" && (
               <span className={`text-[10px] font-bold uppercase tracking-widest ${
                 autoplay === "granted" ? "text-[#00FF87]" :
@@ -456,6 +476,7 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
               </span>
             )}
           </div>
+
         </div>
       )}
 
