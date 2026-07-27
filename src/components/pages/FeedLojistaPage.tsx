@@ -29,6 +29,13 @@ import { FeedErrorState } from "@/components/FeedErrorState";
 import { useFeedPreload } from "@/hooks/use-feed-preload";
 import { usePersistedState } from "@/lib/feed-persist";
 import { Lock, Coins, Loader2 } from "lucide-react";
+import {
+  useUserBranchContext,
+  scoreRelevanceDetailed,
+  relevanceRank,
+  applyRelevanceFallback,
+} from "@/lib/branch-relevance";
+import { RelevanceBadge } from "@/components/RelevanceBadge";
 
 import {
   ArrowLeft,
