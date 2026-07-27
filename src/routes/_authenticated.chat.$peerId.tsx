@@ -1653,7 +1653,7 @@ function ConversationPage() {
             onMute={toggleMute}
             onArchive={toggleArchive}
             onBlock={toggleBlock}
-            onExport={exportConversation}
+            onExport={openExportModal}
           />
 
 
