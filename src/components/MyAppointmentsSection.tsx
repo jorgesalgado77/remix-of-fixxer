@@ -414,11 +414,21 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
               onChange={(v) => updatePrefs({ toastEnabled: v })}
             />
             <ToggleRow
+              label="Notificações do navegador"
+              hint="Recebe lembretes mesmo com a aba em segundo plano"
+              checked={prefs.desktopEnabled && desktopPerm === "granted"}
+              onChange={(v) => {
+                if (v && desktopPerm !== "granted") { void handleEnableDesktop(); return; }
+                updatePrefs({ desktopEnabled: v });
+              }}
+            />
+            <ToggleRow
               label="Respeitar sistema"
               hint="Silencia sons quando o SO pede movimento reduzido"
               checked={prefs.respectSystem}
               onChange={(v) => updatePrefs({ respectSystem: v })}
             />
+
             <ToggleRow
               label="Pausar todos os sons"
               hint="Mudo total (útil em reuniões)"
