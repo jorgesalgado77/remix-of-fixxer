@@ -5,6 +5,16 @@ import { toast } from "sonner";
 import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
 import { compressImage } from "@/utils/image-compression";
 import { MaskedInput, applyCepMask } from "@/components/MaskedInput";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 // Normaliza campos que devem persistir mascarados (ex.: CEP)
 function normalizeMasks(p: any): any {
