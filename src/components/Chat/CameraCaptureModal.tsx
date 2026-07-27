@@ -105,6 +105,43 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
     }, "image/jpeg", 0.92);
   };
 
+  /**
+   * Sonda o vídeo capturado antes de permitir confirmar: garante que
+   *  - o arquivo tem bytes,
+   *  - o browser consegue decodificar (loadedmetadata dispara),
+   *  - a duração é finita e maior que 0.
+   * Se qualquer teste falha, marca previewError e bloqueia o botão de usar.
+   */
+  const probeVideo = (file: File, url: string) =>
+    new Promise<{ ok: true; durationSec: number } | { ok: false; error: string }>((resolve) => {
+      if (file.size < 1024) {
+        resolve({ ok: false, error: "O clipe ficou vazio. Grave novamente." });
+        return;
+      }
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.muted = true;
+      v.playsInline = true;
+      let done = false;
+      const finish = (r: { ok: true; durationSec: number } | { ok: false; error: string }) => {
+        if (done) return;
+        done = true;
+        try { v.removeAttribute("src"); v.load(); } catch {}
+        resolve(r);
+      };
+      v.onloadedmetadata = () => {
+        const d = v.duration;
+        if (!isFinite(d) || d <= 0.15) {
+          finish({ ok: false, error: "Não foi possível ler a duração do vídeo. Grave novamente." });
+        } else {
+          finish({ ok: true, durationSec: d });
+        }
+      };
+      v.onerror = () => finish({ ok: false, error: "O formato gravado não pôde ser decodificado. Tente novamente." });
+      setTimeout(() => finish({ ok: false, error: "Tempo esgotado ao validar o vídeo." }), 8000);
+      v.src = url;
+    });
+
   const startRec = () => {
     const s = streamRef.current;
     if (!s) return;
@@ -113,12 +150,27 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
     const mime = mimeCandidates.find((m) => (window as any).MediaRecorder?.isTypeSupported?.(m)) || "";
     const rec = new MediaRecorder(s, mime ? { mimeType: mime } : undefined);
     rec.ondataavailable = (e) => { if (e.data?.size) chunksRef.current.push(e.data); };
-    rec.onstop = () => {
+    rec.onstop = async () => {
       const type = rec.mimeType || "video/webm";
       const ext = type.includes("mp4") ? "mp4" : "webm";
       const blob = new Blob(chunksRef.current, { type });
+      if (blob.size === 0) {
+        setPreviewError("Nada foi gravado. Toque em gravar e tente novamente.");
+        return;
+      }
       const file = new File([blob], `video-${Date.now()}.${ext}`, { type });
-      setPreview({ url: URL.createObjectURL(blob), file });
+      const url = URL.createObjectURL(blob);
+      setValidating(true);
+      setPreviewError(null);
+      setPreviewMeta(null);
+      setPreview({ url, file });
+      const result = await probeVideo(file, url);
+      setValidating(false);
+      if (result.ok) {
+        setPreviewMeta({ durationSec: result.durationSec, sizeKb: Math.round(file.size / 1024) });
+      } else {
+        setPreviewError(result.error);
+      }
     };
     recorderRef.current = rec;
     rec.start(250);
@@ -140,18 +192,26 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
     if (tickRef.current) { window.clearInterval(tickRef.current); tickRef.current = null; }
   };
 
+  const canConfirm = !!preview && !validating && !previewError && (mode === "photo" || !!previewMeta);
+
   const confirm = () => {
-    if (!preview) return;
+    if (!preview || !canConfirm) return;
     onCapture(preview.file);
     try { URL.revokeObjectURL(preview.url); } catch {}
     setPreview(null);
+    setPreviewMeta(null);
+    setPreviewError(null);
     onClose();
   };
 
   const retry = () => {
     if (preview) { try { URL.revokeObjectURL(preview.url); } catch {} }
     setPreview(null);
+    setPreviewMeta(null);
+    setPreviewError(null);
+    setValidating(false);
   };
+
 
   if (!open) return null;
 
