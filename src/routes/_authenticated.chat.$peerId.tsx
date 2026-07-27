@@ -592,6 +592,39 @@ function ConversationPage() {
             setPeerTyping(false);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
           })
+          // Fallback dinâmico (estilo WhatsApp): quando um peer envia mensagem,
+          // ele mesmo transmite a linha via broadcast na sala do par. Isso
+          // funciona INDEPENDENTE de o postgres_changes/publication estar ativo
+          // na tabela `messages`, garantindo entrega em tempo real imediata.
+          .on("broadcast", { event: "message-new" }, ({ payload }: any) => {
+            const m = payload?.row as MessageRow | undefined;
+            if (!m || !m.id) return;
+            const inConv =
+              (m.sender_id === uid && m.recipient_id === peerId) ||
+              (m.sender_id === peerId && m.recipient_id === uid);
+            if (!inConv) return;
+            setMessages((prev) => {
+              // Match por client_message_id (otimista) ou id.
+              const idx = prev.findIndex(
+                (x) =>
+                  (m.client_message_id && (x._clientId === m.client_message_id || x.id === m.client_message_id)) ||
+                  x.id === m.id,
+              );
+              if (idx >= 0) {
+                const next = prev.slice();
+                next[idx] = { ...next[idx], ...m, _clientId: next[idx]._clientId ?? m.client_message_id ?? undefined };
+                idSetRef.current.add(m.id);
+                return next;
+              }
+              idSetRef.current.add(m.id);
+              const incoming = m.recipient_id === uid && m.sender_id !== uid;
+              if (incoming && !isConversationMuted(uid, peerId)) {
+                try { playIncomingMessageSound(); } catch {}
+              }
+              return [...prev, m];
+            });
+            if (m.recipient_id === uid) markIncomingRead(uid);
+          })
           .subscribe(async (status: string) => {
             if (status === "SUBSCRIBED") {
               try { await presenceChannel.track({ online_at: Date.now() }); } catch {}
@@ -662,6 +695,76 @@ function ConversationPage() {
     });
     return () => { unsub(); };
   }, [peerId]);
+
+
+  // Rede de segurança: polling curto enquanto a aba está visível. Cobre casos
+  // em que broadcast/postgres_changes não entregaram (rede instável, canal
+  // reconectando). Só bate no banco a cada 4s e usa a última data conhecida
+  // como cursor, então o custo é mínimo.
+  useEffect(() => {
+    if (!userId || !peerId || isMockPeerId(peerId)) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const tick = async () => {
+      if (stopped) return;
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      const last = messages.length > 0 ? messages[messages.length - 1].created_at : null;
+      try {
+        let q = supabaseExternal
+          .from("messages")
+          .select(selectCols)
+          .or(
+            `and(sender_id.eq.${userId},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${userId})`,
+          )
+          .order("created_at", { ascending: true })
+          .limit(30);
+        if (last) q = q.gt("created_at", last);
+        const { data } = await q;
+        const rows = (data ?? []) as MessageRow[];
+        if (rows.length === 0) return;
+        setMessages((prev) => {
+          const next = prev.slice();
+          let appended = false;
+          for (const m of rows) {
+            const idx = next.findIndex(
+              (x) =>
+                (m.client_message_id && (x._clientId === m.client_message_id || x.id === m.client_message_id)) ||
+                x.id === m.id,
+            );
+            if (idx >= 0) {
+              next[idx] = { ...next[idx], ...m, _clientId: next[idx]._clientId ?? m.client_message_id ?? undefined };
+            } else if (!idSetRef.current.has(m.id)) {
+              idSetRef.current.add(m.id);
+              next.push(m);
+              appended = true;
+            }
+          }
+          if (appended) {
+            const anyIncoming = rows.some((m) => m.recipient_id === userId && m.sender_id !== userId);
+            if (anyIncoming && !isConversationMuted(userId, peerId)) {
+              try { playIncomingMessageSound(); } catch {}
+            }
+          }
+          return next;
+        });
+        if (rows.some((m) => m.recipient_id === userId)) {
+          markIncomingRead(userId);
+        }
+      } catch {}
+    };
+    timer = setInterval(tick, 4000);
+    const onFocus = () => tick();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      stopped = true;
+      if (timer) clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, peerId]);
+
 
 
   const loadingOlderRef = useRef(false);
@@ -874,6 +977,15 @@ function ConversationPage() {
             detail: { row: { ...row, _clientId: clientId } },
           }),
         );
+      } catch {}
+      // Broadcast dinâmico (estilo WhatsApp) — entrega instantânea ao peer
+      // mesmo quando a publicação `supabase_realtime` não inclui `messages`.
+      try {
+        presenceRef.current?.send({
+          type: "broadcast",
+          event: "message-new",
+          payload: { row: { ...row, _clientId: clientId } },
+        });
       } catch {}
     }
 
