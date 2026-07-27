@@ -1864,10 +1864,21 @@ function ConversationPage() {
                                   });
                                 }
                               }}
+                              uploadState={
+                                m._draftFile || m._pending || m._failed
+                                  ? {
+                                      uploading: !!m._uploading,
+                                      pct: m._uploadPct ?? 0,
+                                      failed: !!m._failed,
+                                      error: m._error ?? null,
+                                    }
+                                  : undefined
+                              }
+                              onRetry={m._failed ? () => retrySend(m) : undefined}
                             />
                           )}
                           {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
-                          {m._pending && m._uploading && m._draftFile && (
+                          {m._pending && m._uploading && m._draftFile && !isImageType(m.attachment_type) && !(m.attachment_type || "").startsWith("video/") && (
                             <div className="mt-2 flex items-center gap-2">
                               <div className="flex-1 bg-black/30 rounded-full h-1.5 overflow-hidden">
                                 <div
