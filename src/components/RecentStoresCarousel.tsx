@@ -414,7 +414,8 @@ function RecentStoresCarouselInner() {
             const distanceLabel = dist != null && Number.isFinite(dist)
               ? (dist < 10 ? dist.toFixed(1) : Math.round(dist).toString())
               : null;
-            const sameBranch = myBranch && p._branch && myBranch.toLowerCase() === p._branch.toLowerCase();
+            const relevance = p._relevance;
+            const showRelevanceBadge = branchCtx.hasContext && relevance !== "none";
 
             return (
               <button
