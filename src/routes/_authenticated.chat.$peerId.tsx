@@ -2374,6 +2374,55 @@ function AttachmentBlock({
   );
 }
 
+function MediaUploadOverlay({
+  uploadState,
+  onRetry,
+}: {
+  uploadState?: { uploading: boolean; pct: number; failed: boolean; error?: string | null };
+  onRetry?: () => void;
+}) {
+  if (!uploadState) return null;
+  if (uploadState.uploading) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 text-white text-[11px] font-bold">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Enviando {Math.round(uploadState.pct)}%
+        </div>
+        <div className="w-3/4 max-w-[220px] h-1.5 bg-black/50 rounded-full overflow-hidden">
+          <div className="h-full bg-white/90 transition-all" style={{ width: `${uploadState.pct}%` }} />
+        </div>
+      </div>
+    );
+  }
+  if (uploadState.failed) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3">
+        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/80 text-white text-[10px] font-black uppercase italic tracking-widest">
+          <AlertCircle className="w-3 h-3" /> Falhou
+        </div>
+        {uploadState.error && (
+          <p className="text-[10px] text-white/80 text-center max-w-[240px] leading-snug line-clamp-2">
+            {uploadState.error}
+          </p>
+        )}
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white text-black text-[11px] font-black uppercase italic tracking-widest hover:bg-white/90"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> Reenviar
+          </button>
+        )}
+      </div>
+    );
+  }
+  return null;
+}
+
+
+
 
 function HeaderActionsMenu(props: {
   muted: boolean;
