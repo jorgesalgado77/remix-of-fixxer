@@ -599,6 +599,7 @@ function RecentPartnersCarouselInner() {
                         if (e.key === "End") ni = opts.length - 1;
                         const next = opts[ni];
                         if (next) {
+                          setUserTouchedFilter(true);
                           setKindFilter(next.v);
                           const el = e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('button[role="radio"]')[ni];
                           el?.focus();
