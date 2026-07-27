@@ -1357,8 +1357,15 @@ export default function FeedPrestadorPage() {
         )}
 
         {!searching &&
-          paged.map((job) => (
-            <div key={job.id} className="feed-item-cv">
+          paged.map((job) => {
+            const _relevance = scoreRelevanceDetailed([job.subcategory, job.title], branchCtx);
+            return (
+            <div key={job.id} className="feed-item-cv relative">
+              {_relevance.level !== "none" && (
+                <div className="absolute right-3 top-3 z-10">
+                  <RelevanceBadge result={_relevance} compact />
+                </div>
+              )}
               <JobCard
                 job={job}
                 saved={saved.has(job.id)}
