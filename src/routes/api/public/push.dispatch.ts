@@ -36,7 +36,7 @@ export const Route = createFileRoute("/api/public/push/dispatch")({
           const payload = (await request.json().catch(() => null)) as
             | { userId: string; title: string; body: string; url?: string; tag?: string }
             | null;
-          if (!payload || !payload.userId || !payload.title || !payload.body) {
+          if (!payload || typeof payload.userId !== "string" || typeof payload.title !== "string" || typeof payload.body !== "string") {
             return Response.json({ error: "payload inválido" }, { status: 400 });
           }
 
@@ -44,6 +44,15 @@ export const Route = createFileRoute("/api/public/push/dispatch")({
           if (payload.title.length > 120 || payload.body.length > 400) {
             return Response.json({ error: "payload excede limites" }, { status: 413 });
           }
+
+          // URL deve ser um path relativo interno (previne open-redirect via push).
+          const safeUrl = (() => {
+            const u = typeof payload.url === "string" ? payload.url.trim() : "";
+            if (!u) return "/dashboard";
+            if (u.startsWith("/") && !u.startsWith("//")) return u.slice(0, 500);
+            return "/dashboard";
+          })();
+          const safeTag = (typeof payload.tag === "string" ? payload.tag : "fixxer-notif").slice(0, 80);
 
           // 3. Busca subscriptions do destinatário via RPC SECURITY DEFINER
 
