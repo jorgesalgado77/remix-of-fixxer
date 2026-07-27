@@ -421,18 +421,16 @@ export function splitHighlight(
   const nTerm = stripAccents(rawTerm);
   if (!src || !nTerm) return [{ text: src, hit: false }];
 
-  // Constrói uma lista de tokens (termo inteiro + palavras).
-  const tokens = Array.from(
-    new Set(
-      [nTerm, ...nTerm.split(" ")]
-        .map((t) => t.trim())
-        .filter((t) => t.length >= 2),
-    ),
-  ).sort((a, b) => b.length - a.length);
+  // Tokens exatos: termo inteiro + palavras individuais + sinônimos expandidos.
+  const baseTokens = new Set<string>([nTerm, ...nTerm.split(" ")]);
+  for (const syn of expandSynonyms(rawTerm)) baseTokens.add(syn);
+  const tokens = Array.from(baseTokens)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2)
+    .sort((a, b) => b.length - a.length);
   if (tokens.length === 0) return [{ text: src, hit: false }];
 
   // Normaliza src caractere-a-caractere mantendo o índice original.
-  // Usamos NFD por caractere para lidar com acentos compostos.
   const normChars: string[] = [];
   const origIdx: number[] = [];
   for (let i = 0; i < src.length; i++) {
@@ -448,7 +446,7 @@ export function splitHighlight(
   }
   const norm = normChars.join("");
 
-  const ranges: Array<[number, number]> = []; // em coords originais
+  const ranges: Array<[number, number]> = [];
   for (const token of tokens) {
     let from = 0;
     while (from <= norm.length - token.length) {
@@ -461,6 +459,31 @@ export function splitHighlight(
       from = idx + token.length;
     }
   }
+
+  // Fuzzy — para cada palavra do termo, destaca palavras do src cuja
+  // distância de edição esteja dentro da tolerância (ex.: "liebrador" ↔
+  // "liberador"). Percorre limites de palavra do texto normalizado.
+  const fuzzyTerms = Array.from(baseTokens)
+    .filter((t) => t.length >= 4);
+  if (fuzzyTerms.length > 0) {
+    const wordRe = /[a-z0-9]+/g;
+    let m: RegExpExecArray | null;
+    while ((m = wordRe.exec(norm)) !== null) {
+      const w = m[0];
+      for (const t of fuzzyTerms) {
+        const tol = fuzzyTolerance(t.length);
+        if (tol === 0) continue;
+        if (Math.abs(w.length - t.length) > tol) continue;
+        if (levenshtein(w, t) <= tol) {
+          const start = origIdx[m.index];
+          const end = origIdx[m.index + w.length - 1] + 1;
+          ranges.push([start, end]);
+          break;
+        }
+      }
+    }
+  }
+
   if (ranges.length === 0) return [{ text: src, hit: false }];
 
   // Merge de intervalos sobrepostos.
