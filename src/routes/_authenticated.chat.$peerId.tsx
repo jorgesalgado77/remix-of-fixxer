@@ -654,6 +654,7 @@ function ConversationPage() {
           })
           .on("broadcast", { event: "typing" }, ({ payload }: any) => {
             if (payload?.from !== peerId) return;
+            incrRoomEvent(`presence:${key}`, "broadcast");
             lastPeerHeartbeat = Date.now();
             setPeerTyping(true);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -661,6 +662,7 @@ function ConversationPage() {
           })
           .on("broadcast", { event: "typing-stop" }, ({ payload }: any) => {
             if (payload?.from !== peerId) return;
+            incrRoomEvent(`presence:${key}`, "broadcast");
             setPeerTyping(false);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
           })
