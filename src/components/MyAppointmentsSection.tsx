@@ -1,12 +1,23 @@
 /**
  * Seção "Meus Agendamentos" reutilizada em todos os painéis (Lojista,
- * Prestador, Cliente, Parceiro). Mostra compromissos do dia, da semana, do
- * mês e futuros — com filtros, Realtime, notificações em tela (toast) e
- * som de lembrete quando o compromisso está a ≤15min de começar.
+ * Prestador, Cliente, Parceiro).
+ *
+ * Recursos:
+ *  - Filtros por período (hoje/semana/mês/futuros)
+ *  - Busca por palavra-chave (nome do contato / serviço / local / notas)
+ *  - Paginação (5 por página)
+ *  - Modal de detalhes ao clicar no item (com reagendar/cancelar)
+ *  - Realtime + notificações em tela e som
+ *  - Painel de configurações: antecedência do lembrete (5/10/15/30 min),
+ *    som/toast liga-desliga, respeitar preferência do sistema,
+ *    "pausar todos os sons" (acessibilidade) e teste de autoplay.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Calendar, Clock, MapPin, ChevronRight, Bell, Loader2 } from "lucide-react";
+import {
+  Calendar, Clock, MapPin, ChevronRight, Bell, Loader2,
+  Search, Settings, VolumeX, Volume2, ChevronLeft, PlayCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
@@ -16,7 +27,16 @@ import {
   type Appointment,
 } from "@/lib/appointments";
 import { isChannelEnabled } from "@/lib/notification-prefs";
-import { playIncomingMessageSound } from "@/lib/chat-sound";
+import { playIncomingMessageSound, playChatSound } from "@/lib/chat-sound";
+import {
+  loadAppointmentPrefs,
+  saveAppointmentPrefs,
+  canPlaySoundNow,
+  probeAutoplay,
+  type AppointmentPrefs,
+  type ReminderMinutes,
+} from "@/lib/appointment-prefs";
+import { AppointmentDetailsModal } from "@/components/AppointmentDetailsModal";
 
 type Range = "today" | "week" | "month" | "future";
 
@@ -28,56 +48,33 @@ const RANGE_LABELS: Record<Range, string> = {
 };
 
 const ACTIVE_STATUSES: Appointment["status"][] = [
-  "pending",
-  "confirmed",
-  "rescheduled",
-  "checked_in",
+  "pending", "confirmed", "rescheduled", "checked_in",
 ];
 
-function startOfDay(d = new Date()) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-function endOfDay(d = new Date()) {
-  const x = new Date(d);
-  x.setHours(23, 59, 59, 999);
-  return x;
-}
-function endOfWeek(d = new Date()) {
-  const x = startOfDay(d);
-  const dow = x.getDay(); // 0=Dom
-  const diff = 6 - dow;
-  x.setDate(x.getDate() + diff);
-  x.setHours(23, 59, 59, 999);
-  return x;
-}
-function endOfMonth(d = new Date()) {
-  const x = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-  return x;
-}
+const PAGE_SIZE = 5;
+const REMINDER_OPTIONS: ReminderMinutes[] = [5, 10, 15, 30];
+
+function startOfDay(d = new Date()) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function endOfDay(d = new Date())   { const x = new Date(d); x.setHours(23,59,59,999); return x; }
+function endOfWeek(d = new Date())  { const x = startOfDay(d); x.setDate(x.getDate() + (6 - x.getDay())); x.setHours(23,59,59,999); return x; }
+function endOfMonth(d = new Date()) { return new Date(d.getFullYear(), d.getMonth()+1, 0, 23,59,59,999); }
 
 function withinRange(a: Appointment, range: Range): boolean {
   const t = new Date(a.scheduled_at).getTime();
   const now = new Date();
   switch (range) {
-    case "today":
-      return t >= startOfDay(now).getTime() && t <= endOfDay(now).getTime();
-    case "week":
-      return t >= startOfDay(now).getTime() && t <= endOfWeek(now).getTime();
-    case "month":
-      return t >= startOfDay(now).getTime() && t <= endOfMonth(now).getTime();
-    case "future":
-      return t >= now.getTime();
+    case "today":  return t >= startOfDay(now).getTime() && t <= endOfDay(now).getTime();
+    case "week":   return t >= startOfDay(now).getTime() && t <= endOfWeek(now).getTime();
+    case "month":  return t >= startOfDay(now).getTime() && t <= endOfMonth(now).getTime();
+    case "future": return t >= now.getTime();
   }
 }
 
 function fmtWhen(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
   const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  if (sameDay) return `Hoje ${time}`;
+  if (d.toDateString() === now.toDateString()) return `Hoje ${time}`;
   const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
   if (d.toDateString() === tomorrow.toDateString()) return `Amanhã ${time}`;
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + time;
@@ -92,33 +89,75 @@ function notifyDesktop(title: string, body: string, url = "/agenda") {
   } catch { /* ignore */ }
 }
 
+function normalize(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 export function MyAppointmentsSection({ className = "" }: { className?: string }) {
   const [range, setRange] = useState<Range>("today");
   const [items, setItems] = useState<Appointment[]>([]);
+  const [contactsById, setContactsById] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [uid, setUid] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [detailsOf, setDetailsOf] = useState<Appointment | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [prefs, setPrefs] = useState<AppointmentPrefs>(() => loadAppointmentPrefs());
+  const [autoplay, setAutoplay] = useState<"granted" | "gesture-required" | "unavailable" | "unknown">("unknown");
   const knownIds = useRef<Set<string>>(new Set());
+
+  // Reage a mudanças de preferências vindas de outras abas/componentes
+  useEffect(() => {
+    const onChange = () => setPrefs(loadAppointmentPrefs());
+    window.addEventListener("fixxer:appt-prefs-changed", onChange);
+    return () => window.removeEventListener("fixxer:appt-prefs-changed", onChange);
+  }, []);
+
+  function updatePrefs(patch: Partial<AppointmentPrefs>) {
+    const next = { ...prefs, ...patch };
+    setPrefs(next);
+    saveAppointmentPrefs(next);
+  }
 
   const load = async () => {
     try {
       const list = await fetchMyAppointments();
       const active = list.filter((a) => ACTIVE_STATUSES.includes(a.status));
-      // Detecta novos agendamentos (aparece após a carga inicial)
       if (knownIds.current.size > 0) {
         for (const a of active) {
           if (!knownIds.current.has(a.id)) {
-            if (isChannelEnabled("appointment_new", "inapp")) {
+            if (prefs.toastEnabled && isChannelEnabled("appointment_new", "inapp")) {
               toast(`📅 Novo agendamento — ${fmtWhen(a.scheduled_at)}`, {
                 description: APPOINTMENT_TYPES[a.type]?.label ?? "Compromisso",
               });
             }
-            try { playIncomingMessageSound(); } catch { /* ignore */ }
+            if (canPlaySoundNow(prefs)) {
+              try { playIncomingMessageSound(); } catch { /* ignore */ }
+            }
             notifyDesktop("Novo agendamento", APPOINTMENT_TYPES[a.type]?.label ?? "Compromisso", `/agenda/${a.id}`);
           }
         }
       }
       knownIds.current = new Set(active.map((a) => a.id));
       setItems(active);
+
+      // Carrega nomes dos contatos (proposer/invitee ≠ eu) para permitir busca por nome
+      const { data: userData } = await supabaseExternal.auth.getUser();
+      const meId = userData.user?.id;
+      if (meId) {
+        const otherIds = Array.from(new Set(active.map(a =>
+          a.proposer_id === meId ? a.invitee_id : a.proposer_id
+        ).filter(Boolean)));
+        const missing = otherIds.filter(id => !contactsById[id]);
+        if (missing.length > 0) {
+          const { data } = await supabaseExternal
+            .from("profiles").select("id, display_name, name").in("id", missing);
+          const map = { ...contactsById };
+          for (const p of data ?? []) map[p.id] = (p.display_name || p.name || "Contato") as string;
+          setContactsById(map);
+        }
+      }
     } catch (err) {
       console.warn("[MyAppointments] falha ao carregar:", err);
     } finally {
@@ -139,46 +178,46 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Realtime: escuta inserts/updates na tabela appointments do usuário
   useEffect(() => {
     if (!uid) return;
     const channel = supabaseExternal
       .channel(`appointments:user:${uid}`)
-      .on(
-        "postgres_changes" as any,
+      .on("postgres_changes" as any,
         { event: "*", schema: "public", table: "appointments" },
         (payload: any) => {
           const row = payload.new ?? payload.old;
           if (!row) return;
           if (row.proposer_id !== uid && row.invitee_id !== uid) return;
           void load();
-        },
-      )
+        })
       .subscribe();
-    return () => {
-      try { supabaseExternal.removeChannel(channel); } catch { /* ignore */ }
-    };
+    return () => { try { supabaseExternal.removeChannel(channel); } catch { /* ignore */ } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
 
-  // Lembrete: verifica a cada 60s se algum compromisso começa nos próximos 15min
+  // Lembrete configurável
   useEffect(() => {
-    const key = (id: string) => `fixxer:appt-reminder:${id}`;
+    const key = (id: string) => `fixxer:appt-reminder:${id}:${prefs.reminderMinutes}`;
     const tick = () => {
       const now = Date.now();
+      const windowMs = prefs.reminderMinutes * 60 * 1000;
       for (const a of items) {
         const t = new Date(a.scheduled_at).getTime();
         const diff = t - now;
-        if (diff > 0 && diff <= 15 * 60 * 1000) {
+        if (diff > 0 && diff <= windowMs) {
           try {
             if (sessionStorage.getItem(key(a.id))) continue;
             sessionStorage.setItem(key(a.id), "1");
           } catch { /* ignore */ }
           const label = APPOINTMENT_TYPES[a.type]?.label ?? "Compromisso";
-          toast(`⏰ Em ${Math.max(1, Math.round(diff / 60000))}min: ${label}`, {
-            description: fmtWhen(a.scheduled_at),
-          });
-          try { playIncomingMessageSound(); } catch { /* ignore */ }
+          if (prefs.toastEnabled) {
+            toast(`⏰ Em ${Math.max(1, Math.round(diff / 60000))}min: ${label}`, {
+              description: fmtWhen(a.scheduled_at),
+            });
+          }
+          if (canPlaySoundNow(prefs)) {
+            try { playIncomingMessageSound(); } catch { /* ignore */ }
+          }
           notifyDesktop("Compromisso próximo", `${label} — ${fmtWhen(a.scheduled_at)}`, `/agenda/${a.id}`);
         }
       }
@@ -186,9 +225,8 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
     tick();
     const int = setInterval(tick, 60 * 1000);
     return () => clearInterval(int);
-  }, [items]);
+  }, [items, prefs]);
 
-  // Pede permissão de notificação uma vez
   useEffect(() => {
     try {
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
@@ -197,11 +235,30 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
     } catch { /* ignore */ }
   }, []);
 
+  // Reset paginação ao mudar filtros
+  useEffect(() => { setPage(1); }, [range, query]);
+
   const filtered = useMemo(() => {
+    const q = normalize(query.trim());
     return [...items]
       .filter((a) => withinRange(a, range))
+      .filter((a) => {
+        if (!q) return true;
+        const other = a.proposer_id === uid ? a.invitee_id : a.proposer_id;
+        const contactName = other ? contactsById[other] ?? "" : "";
+        const hay = [
+          APPOINTMENT_TYPES[a.type]?.label ?? "",
+          a.location_address ?? "",
+          a.notes ?? "",
+          contactName,
+        ].map(normalize).join(" | ");
+        return hay.includes(q);
+      })
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
-  }, [items, range]);
+  }, [items, range, query, uid, contactsById]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const counts = useMemo(() => ({
     today: items.filter((a) => withinRange(a, "today")).length,
@@ -209,6 +266,21 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
     month: items.filter((a) => withinRange(a, "month")).length,
     future: items.filter((a) => withinRange(a, "future")).length,
   }), [items]);
+
+  async function handleTestSound() {
+    const state = await probeAutoplay();
+    setAutoplay(state);
+    if (state === "unavailable") {
+      toast.error("Áudio indisponível neste navegador.");
+      return;
+    }
+    try { playChatSound("ping", 1); } catch { /* ignore */ }
+    if (state === "gesture-required") {
+      toast.warning("Autoplay bloqueado — clique em qualquer lugar da página para liberar.");
+    } else {
+      toast.success("Som funcionando!");
+    }
+  }
 
   return (
     <section
@@ -229,13 +301,114 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
             </p>
           </div>
         </div>
-        <Link
-          to="/agenda"
-          className="text-[10px] font-black uppercase tracking-widest text-[#00FF87] hover:text-white flex items-center gap-1"
-        >
-          Ver agenda <ChevronRight className="w-3 h-3" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => updatePrefs({ pauseAllSounds: !prefs.pauseAllSounds })}
+            aria-label={prefs.pauseAllSounds ? "Reativar sons" : "Pausar todos os sons"}
+            title={prefs.pauseAllSounds ? "Sons pausados — clique para reativar" : "Pausar todos os sons"}
+            className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all ${
+              prefs.pauseAllSounds
+                ? "bg-[#FF3B30]/15 border-[#FF3B30]/50 text-[#FF3B30]"
+                : "bg-white/5 border-white/10 text-white/70 hover:text-white"
+            }`}
+          >
+            {prefs.pauseAllSounds ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSettings((v) => !v)}
+            aria-label="Configurações de agendamentos"
+            aria-expanded={showSettings}
+            className="w-8 h-8 rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-white flex items-center justify-center"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <Link
+            to="/agenda"
+            className="text-[10px] font-black uppercase tracking-widest text-[#00FF87] hover:text-white flex items-center gap-1"
+          >
+            Ver agenda <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
       </header>
+
+      {/* Painel de configurações (lembretes + acessibilidade de sons) */}
+      {showSettings && (
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4 space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-white/60">
+              Antecedência do lembrete
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {REMINDER_OPTIONS.map((m) => {
+                const active = prefs.reminderMinutes === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => updatePrefs({ reminderMinutes: m })}
+                    className={`px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                      active
+                        ? "bg-[#00FF87]/15 border-[#00FF87] text-[#00FF87]"
+                        : "bg-white/5 border-white/10 text-white hover:border-white/20"
+                    }`}
+                  >
+                    {m} min
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ToggleRow
+              label="Som do lembrete"
+              hint="Toca um alerta quando falta pouco para o compromisso"
+              checked={prefs.soundEnabled}
+              onChange={(v) => updatePrefs({ soundEnabled: v })}
+            />
+            <ToggleRow
+              label="Toast na tela"
+              hint="Exibe notificação flutuante no canto"
+              checked={prefs.toastEnabled}
+              onChange={(v) => updatePrefs({ toastEnabled: v })}
+            />
+            <ToggleRow
+              label="Respeitar sistema"
+              hint="Silencia sons quando o SO pede movimento reduzido"
+              checked={prefs.respectSystem}
+              onChange={(v) => updatePrefs({ respectSystem: v })}
+            />
+            <ToggleRow
+              label="Pausar todos os sons"
+              hint="Mudo total (útil em reuniões)"
+              checked={prefs.pauseAllSounds}
+              onChange={(v) => updatePrefs({ pauseAllSounds: v })}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/10">
+            <button
+              type="button"
+              onClick={handleTestSound}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#00FF87]/40 text-[#00FF87] text-[10px] font-black uppercase tracking-widest hover:bg-[#00FF87]/10"
+            >
+              <PlayCircle className="w-3.5 h-3.5" /> Testar som
+            </button>
+            {autoplay !== "unknown" && (
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                autoplay === "granted" ? "text-[#00FF87]" :
+                autoplay === "gesture-required" ? "text-[#FF9F0A]" : "text-[#FF3B30]"
+              }`}>
+                {autoplay === "granted" && "Autoplay: liberado"}
+                {autoplay === "gesture-required" && "Autoplay: precisa de interação"}
+                {autoplay === "unavailable" && "Autoplay: indisponível"}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tabs de período */}
       <div role="tablist" className="flex flex-wrap gap-2">
@@ -262,6 +435,19 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
         })}
       </div>
 
+      {/* Busca */}
+      <div className="relative">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por contato, serviço, local…"
+          aria-label="Buscar agendamentos"
+          className="w-full pl-9 pr-3 py-2 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[#00FF87]/50"
+        />
+      </div>
+
       {/* Lista */}
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground text-xs py-6 justify-center">
@@ -271,7 +457,9 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
         <div className="text-center py-6 space-y-2">
           <div className="text-3xl">🗓️</div>
           <p className="text-xs text-muted-foreground font-medium">
-            Nenhum compromisso {RANGE_LABELS[range].toLowerCase()}.
+            {query
+              ? `Nenhum resultado para "${query}".`
+              : `Nenhum compromisso ${RANGE_LABELS[range].toLowerCase()}.`}
           </p>
           <Link
             to="/agenda"
@@ -281,49 +469,105 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
           </Link>
         </div>
       ) : (
-        <ul className="space-y-2">
-          {filtered.slice(0, 8).map((a) => {
-            const s = APPOINTMENT_STATUS[a.status];
-            const t = APPOINTMENT_TYPES[a.type];
-            return (
-              <li key={a.id}>
-                <Link
-                  to="/agenda/$id"
-                  params={{ id: a.id }}
-                  className="flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:border-[#00FF87]/40 hover:bg-white/10 transition-all group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center text-lg shrink-0">
-                    {t?.icon ?? "📅"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-black text-white uppercase tracking-tight truncate">
-                        {t?.label ?? "Compromisso"}
-                      </span>
-                      <span
-                        className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border"
-                        style={{ color: s?.color, borderColor: `${s?.color}55`, background: `${s?.color}18` }}
-                      >
-                        {s?.icon} {s?.label}
-                      </span>
+        <>
+          <ul className="space-y-2">
+            {pageItems.map((a) => {
+              const s = APPOINTMENT_STATUS[a.status];
+              const t = APPOINTMENT_TYPES[a.type];
+              const other = a.proposer_id === uid ? a.invitee_id : a.proposer_id;
+              const contactName = other ? contactsById[other] : null;
+              return (
+                <li key={a.id}>
+                  <button
+                    type="button"
+                    onClick={() => setDetailsOf(a)}
+                    className="w-full text-left flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:border-[#00FF87]/40 hover:bg-white/10 transition-all group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center text-lg shrink-0">
+                      {t?.icon ?? "📅"}
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{fmtWhen(a.scheduled_at)}</span>
-                      {a.location_address && (
-                        <span className="flex items-center gap-1 truncate">
-                          <MapPin className="w-3 h-3" />{a.location_address}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-black text-white uppercase tracking-tight truncate">
+                          {t?.label ?? "Compromisso"}
                         </span>
-                      )}
+                        <span
+                          className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border"
+                          style={{ color: s?.color, borderColor: `${s?.color}55`, background: `${s?.color}18` }}
+                        >
+                          {s?.icon} {s?.label}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{fmtWhen(a.scheduled_at)}</span>
+                        {contactName && <span className="truncate">👤 {contactName}</span>}
+                        {a.location_address && (
+                          <span className="flex items-center gap-1 truncate">
+                            <MapPin className="w-3 h-3" />{a.location_address}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-[#00FF87]" />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-[#00FF87]" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-white/70 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-3 h-3" /> Anterior
+              </button>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
+                Página {page} de {totalPages} · {filtered.length} resultado(s)
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-white/70 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Próxima <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+        </>
       )}
+
+      <AppointmentDetailsModal
+        appointment={detailsOf}
+        open={!!detailsOf}
+        onOpenChange={(v) => { if (!v) setDetailsOf(null); }}
+        onChanged={() => { void load(); }}
+      />
     </section>
+  );
+}
+
+function ToggleRow({
+  label, hint, checked, onChange,
+}: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:border-white/20">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-1 accent-[#00FF87]"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-black text-white uppercase tracking-tight">{label}</div>
+        {hint && <div className="text-[10px] text-white/50 mt-0.5">{hint}</div>}
+      </div>
+    </label>
   );
 }
 
