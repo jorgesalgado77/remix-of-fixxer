@@ -103,7 +103,9 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
   const [showSettings, setShowSettings] = useState(false);
   const [prefs, setPrefs] = useState<AppointmentPrefs>(() => loadAppointmentPrefs());
   const [autoplay, setAutoplay] = useState<"granted" | "gesture-required" | "unavailable" | "unknown">("unknown");
+  const [desktopPerm, setDesktopPerm] = useState<DesktopPermission>(() => desktopPermission());
   const knownIds = useRef<Set<string>>(new Set());
+
 
   // Reage a mudanças de preferências vindas de outras abas/componentes
   useEffect(() => {
