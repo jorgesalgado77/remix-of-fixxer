@@ -829,9 +829,6 @@ function EmptyState(props: {
         <span className="text-white font-semibold">"{term}"</span>
         {radius > 0 ? ` em ${radius} km.` : "."}
       </p>
-      <p className="text-[11px] text-white/50">
-        Buscamos em: <span className="text-white/70">{SEARCHED_FIELDS.join(", ")}</span>
-      </p>
 
       {suggestions.length > 0 && (
         <div className="space-y-2">
