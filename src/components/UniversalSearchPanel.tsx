@@ -432,6 +432,8 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       }
 
       setRows(mapped);
+      cacheSet(cacheKey, mapped);
+
     } catch (e: any) {
       if (e?.name === "AbortError") return;
       console.warn("[UniversalSearch] fetch", e);
