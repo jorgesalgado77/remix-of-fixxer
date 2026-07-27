@@ -219,13 +219,13 @@ export function getMatchedFields(row: any, rawTerm: string): SearchableField[] {
   const normalizedTerm = stripAccents(rawTerm);
   if (!normalizedTerm) return [];
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
-  const synonyms = expandSynonyms(rawTerm);
+  const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
   return SEARCHED_FIELDS.filter((field) => {
     const value = stripAccents(getSearchableValue(row, field));
     if (!value) return false;
     if (value.includes(normalizedTerm)) return true;
     if (words.length > 0 && words.every((w) => value.includes(w))) return true;
-    return synonyms.some((s) => value.includes(s));
+    return synonyms.some((s) => matchesWholeWord(value, s));
   });
 }
 
