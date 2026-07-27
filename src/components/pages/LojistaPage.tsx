@@ -127,9 +127,34 @@ export function LojistaDashboard() {
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
 
-  // Carrega dados do perfil do lojista para calcular completude e alimentar o card do usuário
+  // 🔎 Fonte única: /profile (public.profiles + custom_sections.__extras).
+  // A página /profile é a origem canônica dos dados; NÃO consultamos mais
+  // store_profiles nem cache localStorage aqui, para evitar "campo faltante"
+  // fantasma quando o usuário já preencheu (ex.: WhatsApp) no novo formulário.
   useEffect(() => {
     let cancelled = false;
+
+    const mapFromProfiles = (prof: any) => {
+      const extras = (prof?.custom_sections?.__extras) || {};
+      const unified: any = { ...extras, ...prof };
+      return {
+        id: unified.id,
+        company_name: unified.company_name || unified.display_name || unified.full_name || "",
+        cnpj: unified.cnpj || unified.cnpj_cpf || unified.document_number || "",
+        responsible_name: unified.responsible_name || unified.full_name || unified.display_name || "",
+        email_contact: unified.email_contact || unified.contact_email || unified.email || "",
+        whatsapp: unified.whatsapp || unified.phone || "",
+        phone: unified.phone || unified.whatsapp || "",
+        zipcode: unified.zipcode || unified.cep || unified.postal_code || "",
+        address: unified.address || unified.street || unified.logradouro || "",
+        address_number: unified.address_number || unified.numero || "",
+        neighborhood: unified.neighborhood || unified.bairro || "",
+        activity_branch: unified.activity_branch || unified.business_category || unified.custom_branch || "",
+        logo_url: unified.logo_url || unified.avatar_url || null,
+        city: unified.city || unified.localidade || "",
+        state: unified.state || unified.uf || "",
+      };
+    };
 
     const evaluate = (data: any) => {
       if (!data) return;
@@ -139,144 +164,49 @@ export function LojistaDashboard() {
       setProfileMissing(result.missingLabels);
       setProfileMissingKeys(result.missing);
       setProfileSummary({
-        id: data.user_id || data.id,
+        id: data.id,
         companyName: data.company_name || "",
         logoUrl: data.logo_url || null,
         city: data.city || "",
         state: data.state || "",
       });
-      const publicKey = data.user_id || data.id;
-      if (publicKey) {
-        try { localStorage.setItem("fixxer_lojista_id", publicKey); } catch {}
+      if (data.id) {
+        try { localStorage.setItem("fixxer_lojista_id", data.id); } catch {}
       }
     };
 
-    (async () => {
+    const load = async () => {
       try {
         const { data: { user } } = await supabaseExternal.auth.getUser();
-        if (!user?.email) return;
-
-        // Fallback do cache local para evitar flicker
-        const cached = localStorage.getItem(`fixxer_profile_${user.email}`);
-        if (cached) {
-          try {
-            const p = JSON.parse(cached);
-            evaluate({
-              id: localStorage.getItem("fixxer_lojista_id") || undefined,
-              company_name: p.companyName,
-              cnpj: p.cnpj,
-              responsible_name: p.responsibleName,
-              email_contact: p.emailContact,
-              whatsapp: p.whatsapp,
-              phone: p.phone,
-              zipcode: p.cep,
-              activity_branch: p.activityBranch,
-              logo_url: p.logoUrl,
-              city: p.city,
-              state: p.state,
-            });
-          } catch {}
-        }
-
-        const { data, error } = await supabaseExternal
-          .from("store_profiles")
-          .select("*")
-          .eq("user_email", user.email)
-          .maybeSingle();
-
-        // Sempre carrega o perfil unificado (public.profiles) para preencher lacunas
-        // do store_profiles — o formulário de perfil salva TUDO em public.profiles.
-        const { data: prof } = await supabaseExternal
+        if (!user?.id) return;
+        const { data: prof, error } = await supabaseExternal
           .from("profiles")
           .select("*")
           .eq("id", user.id)
           .maybeSingle();
-
-        const extras = ((prof as any)?.custom_sections?.__extras) || {};
-        const unified: any = prof ? { ...extras, ...prof } : {};
-
-        // Mescla store_profiles (prioridade) com profiles (fallback + sinônimos).
-        const src: any = { ...unified, ...(data || {}) };
-
-        const mapped: any = {
-          id: src.id || src.user_id || unified.id,
-          company_name:
-            src.company_name || unified.display_name || unified.full_name || "",
-          cnpj: src.cnpj || src.cnpj_cpf || unified.cnpj_cpf || unified.document_number || "",
-          responsible_name:
-            src.responsible_name || unified.full_name || unified.display_name || "",
-          email_contact:
-            src.email_contact || unified.contact_email || unified.email || user.email || "",
-          whatsapp: src.whatsapp || unified.whatsapp || unified.phone || "",
-          phone: src.phone || unified.whatsapp || "",
-          zipcode:
-            src.zipcode || unified.cep || unified.zipcode || unified.postal_code || "",
-          address:
-            src.address || unified.address || unified.street || unified.logradouro || "",
-          address_number:
-            src.address_number || unified.address_number || unified.numero || "",
-          neighborhood:
-            src.neighborhood || unified.neighborhood || unified.bairro || "",
-          activity_branch:
-            src.activity_branch ||
-            unified.business_category ||
-            unified.custom_branch ||
-            "",
-          logo_url: src.logo_url || unified.logo_url || unified.avatar_url || null,
-          city: src.city || unified.city || unified.localidade || "",
-          state: src.state || unified.state || unified.uf || "",
-        };
-
         if (error) {
-          console.warn("[LojistaDashboard] store_profiles indisponível, usando profiles:", error?.message);
+          console.warn("[LojistaDashboard] falha ao carregar profiles:", error.message);
+          return;
         }
-        evaluate(mapped);
+        evaluate(mapFromProfiles({ ...(prof || {}), email_contact: (prof as any)?.contact_email || (prof as any)?.email || user.email }));
       } catch (err) {
-        console.warn("[LojistaDashboard] falha ao verificar completude do perfil:", err);
+        console.warn("[LojistaDashboard] exceção ao carregar profiles:", err);
       }
-    })();
-
-    const onProfileSaved = () => {
-      // Recarrega quando o ProfileView emite evento após salvar,
-      // mesclando store_profiles + profiles (schema unificado).
-      (async () => {
-        try {
-          const { data: { user } } = await supabaseExternal.auth.getUser();
-          if (!user?.email) return;
-          const [{ data: sp }, { data: prof }] = await Promise.all([
-            supabaseExternal.from("store_profiles").select("*").eq("user_email", user.email).maybeSingle(),
-            supabaseExternal.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-          ]);
-          const extras = ((prof as any)?.custom_sections?.__extras) || {};
-          const unified: any = prof ? { ...extras, ...prof } : {};
-          const src: any = { ...unified, ...(sp || {}) };
-          evaluate({
-            id: src.id || src.user_id || unified.id,
-            company_name: src.company_name || unified.display_name || unified.full_name || "",
-            cnpj: src.cnpj || src.cnpj_cpf || unified.cnpj_cpf || unified.document_number || "",
-            responsible_name: src.responsible_name || unified.full_name || unified.display_name || "",
-            email_contact: src.email_contact || unified.contact_email || unified.email || user.email || "",
-            whatsapp: src.whatsapp || unified.whatsapp || unified.phone || "",
-            phone: src.phone || unified.phone || unified.whatsapp || "",
-            zipcode: src.zipcode || unified.cep || unified.postal_code || "",
-            address: src.address || unified.address || unified.street || unified.logradouro || "",
-            address_number: src.address_number || unified.address_number || unified.numero || "",
-            neighborhood: src.neighborhood || unified.neighborhood || unified.bairro || "",
-            activity_branch: src.activity_branch || unified.business_category || unified.custom_branch || "",
-            logo_url: src.logo_url || unified.logo_url || unified.avatar_url || null,
-            city: src.city || unified.city || unified.localidade || "",
-            state: src.state || unified.state || unified.uf || "",
-          });
-        } catch {}
-      })();
     };
+
+    load();
+
+    const onProfileSaved = () => { load(); };
     window.addEventListener("fixxer:profile-saved", onProfileSaved);
+    window.addEventListener("fixxer:profile-updated", onProfileSaved);
 
     return () => {
       cancelled = true;
       window.removeEventListener("fixxer:profile-saved", onProfileSaved);
+      window.removeEventListener("fixxer:profile-updated", onProfileSaved);
     };
   }, [userRole]);
+
 
   // Sincroniza o papel do usuário a partir da sessão real (Supabase).
   useEffect(() => {
@@ -463,15 +393,16 @@ export function LojistaDashboard() {
     setMobileMenuOpen(false);
   };
 
-  const handleOpenSettings = () => {
-    setActiveTab('profile');
-    setActiveSettingsTab('my-profile');
+  // 🎯 Rota canônica de perfil = /profile (nova página consolidada).
+  // Passamos `focus` opcional com a primeira chave faltante para o
+  // /profile poder rolar/realçar o campo correspondente ao abrir.
+  const handleOpenSettings = (focusKey?: string) => {
     setMobileMenuOpen(false);
-    setTimeout(() => {
-      const el = document.getElementById('settings-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    const search: Record<string, string> = {};
+    if (focusKey) search.focus = focusKey;
+    navigate({ to: "/profile", search: search as any });
   };
+
 
 
 
@@ -896,7 +827,7 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [], missingKeys = [], onOpenProfile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[]; missingKeys?: string[]; onOpenProfile?: () => void }) {
+function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [], missingKeys = [], onOpenProfile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[]; missingKeys?: string[]; onOpenProfile?: (focusKey?: string) => void }) {
     return (
         <div className="p-4 rounded-2xl bg-[#1A1A1B] border border-white/10 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
@@ -941,19 +872,8 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                     type="button"
                     data-testid="profile-missing-panel"
                     onClick={() => {
-                        onOpenProfile?.();
-                        // scroll até o primeiro campo faltante
-                        setTimeout(() => {
-                            const firstKey = missingKeys[0];
-                            if (firstKey) {
-                                const el = document.querySelector(`[data-profile-field="${firstKey}"]`) as HTMLElement | null;
-                                if (el) {
-                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    const input = el.querySelector('input,textarea,select') as HTMLElement | null;
-                                    input?.focus();
-                                }
-                            }
-                        }, 300);
+                        // Sempre abre a rota canônica /profile passando a 1ª chave faltante.
+                        (onOpenProfile as any)?.(missingKeys[0]);
                     }}
                     className="w-full text-left rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-400/70 p-3 space-y-1.5 transition-all cursor-pointer"
                     aria-label="Abrir perfil para completar campos faltantes"
