@@ -86,8 +86,8 @@ const SYNONYM_GROUPS: string[][] = [
   ["chaveiro", "chave", "chaves"],
   ["pintura", "pintor", "pintores"],
   ["montador", "montagem", "montadores", "monta"],
-  ["conferente", "conferencia", "confer"],
-  ["medidor", "medidores", "hidrometro", "hidrometros"],
+  ["conferente", "conferencia", "confer", "conferir"],
+  ["medidor", "medidores", "hidrometro", "hidrometros", "medicao"],
   ["encanador", "encanamento", "hidraulico", "hidraulica"],
   ["pedreiro", "alvenaria", "construcao", "obra", "obras"],
   ["mecanico", "mecanica", "auto", "automotivo"],
@@ -98,6 +98,17 @@ const SYNONYM_GROUPS: string[][] = [
   ["serralheria", "serralheiro", "solda", "soldador"],
   ["vidraceiro", "vidracaria", "vidro", "vidros"],
   ["tapeceiro", "tapecaria", "estofado", "estofador"],
+  ["liberador", "liberadores", "liberadora", "liberacao", "liberar", "libera", "liberado"],
+  ["motorista", "motoristas", "condutor", "conducao", "chofer"],
+  ["ajudante", "ajudantes", "auxiliar", "auxiliares", "assistente"],
+  ["entregador", "entregadores", "entrega", "entregas", "delivery", "motoboy"],
+  ["operador", "operadores", "operadora", "operacao", "operar"],
+  ["tecnico", "tecnica", "tecnicos", "tecnicas"],
+  ["porteiro", "porteiros", "portaria", "vigilante", "vigia", "seguranca"],
+  ["cozinheiro", "cozinheira", "cozinha", "chef", "chefe"],
+  ["garcom", "garconete", "atendente", "atendimento"],
+  ["carreteiro", "caminhoneiro", "carreta", "caminhao", "guincho"],
+  ["soldador", "soldagem", "solda"],
 ];
 const SYNONYMS: Record<string, string[]> = (() => {
   const map: Record<string, string[]> = {};
@@ -106,6 +117,60 @@ const SYNONYMS: Record<string, string[]> = (() => {
   }
   return map;
 })();
+
+/** Distância de Levenshtein (edit distance) entre duas strings normalizadas. */
+export function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  const al = a.length, bl = b.length;
+  if (al === 0) return bl;
+  if (bl === 0) return al;
+  let prev = new Array<number>(bl + 1);
+  let cur = new Array<number>(bl + 1);
+  for (let j = 0; j <= bl; j++) prev[j] = j;
+  for (let i = 1; i <= al; i++) {
+    cur[0] = i;
+    for (let j = 1; j <= bl; j++) {
+      const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      cur[j] = Math.min(
+        cur[j - 1] + 1,          // insert
+        prev[j] + 1,             // delete
+        prev[j - 1] + cost,      // substitute
+      );
+      // Damerau — transposição adjacente (ex.: "liebrador" ↔ "liberador").
+      if (i > 1 && j > 1 &&
+          a.charCodeAt(i - 1) === b.charCodeAt(j - 2) &&
+          a.charCodeAt(i - 2) === b.charCodeAt(j - 1)) {
+        cur[j] = Math.min(cur[j], prev[j - 2] !== undefined ? prev[j - 2] + 1 : cur[j]);
+      }
+    }
+    const tmp = prev; prev = cur; cur = tmp;
+  }
+  return prev[bl];
+}
+
+/** Tolerância de edição em função do tamanho do token. */
+function fuzzyTolerance(len: number): number {
+  if (len <= 3) return 0;
+  if (len <= 5) return 1;
+  if (len <= 8) return 2;
+  return 2;
+}
+
+/** Retorna true se alguma palavra do haystack estiver a ≤ N edições do token. */
+export function fuzzyMatchesWord(haystack: string, token: string): boolean {
+  if (!token || token.length < 4) return false;
+  const tol = fuzzyTolerance(token.length);
+  if (tol === 0) return matchesWholeWord(haystack, token);
+  const words = haystack.split(/[^a-z0-9]+/i).filter(Boolean);
+  for (const w of words) {
+    if (Math.abs(w.length - token.length) > tol) continue;
+    if (levenshtein(w, token) <= tol) return true;
+    // Tolera token como prefixo aproximado de palavra maior (ex.: "libera" → "liberador").
+    if (w.length > token.length && levenshtein(w.slice(0, token.length), token) <= tol) return true;
+  }
+  return false;
+}
+
 
 /**
  * Reduz uma palavra à sua raiz aproximada removendo sufixos comuns em pt-BR
