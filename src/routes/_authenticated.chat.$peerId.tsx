@@ -2201,6 +2201,12 @@ function ConversationPage() {
         />
       )}
       <ChatSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <CameraCaptureModal
+        open={cameraOpen !== null}
+        mode={cameraOpen ?? "photo"}
+        onClose={() => setCameraOpen(null)}
+        onCapture={(file) => acceptIncomingFiles([file])}
+      />
     </div>
   );
 
