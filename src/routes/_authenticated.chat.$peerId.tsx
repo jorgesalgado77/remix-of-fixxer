@@ -697,6 +697,76 @@ function ConversationPage() {
   }, [peerId]);
 
 
+  // Rede de segurança: polling curto enquanto a aba está visível. Cobre casos
+  // em que broadcast/postgres_changes não entregaram (rede instável, canal
+  // reconectando). Só bate no banco a cada 4s e usa a última data conhecida
+  // como cursor, então o custo é mínimo.
+  useEffect(() => {
+    if (!userId || !peerId || isMockPeerId(peerId)) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const tick = async () => {
+      if (stopped) return;
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      const last = messages.length > 0 ? messages[messages.length - 1].created_at : null;
+      try {
+        let q = supabaseExternal
+          .from("messages")
+          .select(selectCols)
+          .or(
+            `and(sender_id.eq.${userId},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${userId})`,
+          )
+          .order("created_at", { ascending: true })
+          .limit(30);
+        if (last) q = q.gt("created_at", last);
+        const { data } = await q;
+        const rows = (data ?? []) as MessageRow[];
+        if (rows.length === 0) return;
+        setMessages((prev) => {
+          const next = prev.slice();
+          let appended = false;
+          for (const m of rows) {
+            const idx = next.findIndex(
+              (x) =>
+                (m.client_message_id && (x._clientId === m.client_message_id || x.id === m.client_message_id)) ||
+                x.id === m.id,
+            );
+            if (idx >= 0) {
+              next[idx] = { ...next[idx], ...m, _clientId: next[idx]._clientId ?? m.client_message_id ?? undefined };
+            } else if (!idSetRef.current.has(m.id)) {
+              idSetRef.current.add(m.id);
+              next.push(m);
+              appended = true;
+            }
+          }
+          if (appended) {
+            const anyIncoming = rows.some((m) => m.recipient_id === userId && m.sender_id !== userId);
+            if (anyIncoming && !isConversationMuted(userId, peerId)) {
+              try { playIncomingMessageSound(); } catch {}
+            }
+          }
+          return next;
+        });
+        if (rows.some((m) => m.recipient_id === userId)) {
+          markIncomingRead(userId);
+        }
+      } catch {}
+    };
+    timer = setInterval(tick, 4000);
+    const onFocus = () => tick();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      stopped = true;
+      if (timer) clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, peerId]);
+
+
+
   const loadingOlderRef = useRef(false);
   const loadOlder = async () => {
     if (!userId || messages.length === 0 || !hasMore || loadingOlderRef.current) return;
