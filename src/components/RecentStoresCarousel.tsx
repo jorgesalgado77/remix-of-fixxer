@@ -330,6 +330,7 @@ function RecentStoresCarouselInner() {
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
           {([
+            ...(branchCtx.hasContext ? [{ v: "mine" as const, label: "🎯 Do meu ramo", color: "#00FF87" }] : []),
             { v: "all" as const, label: "🟢 Todos", color: "#FFFFFF" },
             { v: "lojista" as const, label: "🏬 Lojistas", color: LOJISTA_COLOR },
             { v: "fornecedor" as const, label: "🏭 Fornecedores", color: FORNECEDOR_COLOR },
@@ -339,7 +340,7 @@ function RecentStoresCarouselInner() {
               <button
                 key={opt.v}
                 type="button"
-                onClick={() => setKindFilter(opt.v)}
+                onClick={() => { setUserTouchedFilter(true); setKindFilter(opt.v); }}
                 className="shrink-0 whitespace-nowrap text-[11px] md:text-xs font-bold px-3 py-1.5 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 style={active
                   ? { background: opt.color, color: "#000", borderColor: opt.color, ["--tw-ring-color" as any]: opt.color }
