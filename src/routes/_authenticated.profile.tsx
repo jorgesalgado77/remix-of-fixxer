@@ -2209,43 +2209,62 @@ function ProfilePage() {
  * Usa Supabase Auth externo (supabaseExternal) para operações.
  * ============================================================ */
 function SecuritySection() {
+  const [email, setEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdTouched, setPwdTouched] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabaseExternal.auth.getUser();
+      setEmail(data.user?.email ?? null);
+      setUserId(data.user?.id ?? null);
+    })();
+  }, []);
+
+  // Validação da nova senha — mensagens específicas e progressivas
+  const pwdErrors = useMemo(() => {
+    const errs: string[] = [];
+    if (!currentPwd) errs.push("Informe a senha atual.");
+    if (newPwd.length < 8) errs.push("Nova senha precisa ter no mínimo 8 caracteres.");
+    if (!/[A-Za-z]/.test(newPwd)) errs.push("A nova senha precisa ter ao menos uma letra.");
+    if (!/[0-9]/.test(newPwd)) errs.push("A nova senha precisa ter ao menos um número.");
+    if (newPwd && currentPwd && newPwd === currentPwd) errs.push("A nova senha deve ser diferente da atual.");
+    if (!confirmPwd) errs.push("Confirme a nova senha.");
+    else if (newPwd !== confirmPwd) errs.push("A confirmação não confere com a nova senha.");
+    return errs;
+  }, [currentPwd, newPwd, confirmPwd]);
+  const pwdValid = pwdErrors.length === 0;
 
   const handleChangePassword = async () => {
-    if (newPwd.length < 8) {
-      toast.error("A nova senha precisa ter pelo menos 8 caracteres.");
-      return;
-    }
-    if (newPwd !== confirmPwd) {
-      toast.error("A confirmação não confere com a nova senha.");
+    setPwdTouched(true);
+    if (!pwdValid) {
+      toast.error(pwdErrors[0]);
       return;
     }
     setPwdSaving(true);
     try {
-      // Reautentica com a senha atual (boa prática — evita troca sem consentimento)
-      const { data: { user } } = await supabaseExternal.auth.getUser();
-      const email = user?.email;
-      if (email && currentPwd) {
-        const { error: signErr } = await supabaseExternal.auth.signInWithPassword({
-          email,
-          password: currentPwd,
-        });
-        if (signErr) {
-          toast.error("Senha atual incorreta.");
-          setPwdSaving(false);
-          return;
-        }
+      if (!email) throw new Error("Sessão não identificada.");
+      const { error: signErr } = await supabaseExternal.auth.signInWithPassword({
+        email,
+        password: currentPwd,
+      });
+      if (signErr) {
+        toast.error("Senha atual incorreta.", { description: "Verifique e tente novamente." });
+        setPwdSaving(false);
+        return;
       }
       const { error } = await supabaseExternal.auth.updateUser({ password: newPwd });
       if (error) throw error;
-      toast.success("Senha atualizada com sucesso.");
-      setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+      toast.success("Senha atualizada com sucesso!", { description: "Use a nova senha nos próximos logins." });
+      setCurrentPwd(""); setNewPwd(""); setConfirmPwd(""); setPwdTouched(false);
     } catch (e: any) {
       toast.error("Não foi possível alterar a senha.", { description: e?.message });
     } finally {
@@ -2253,28 +2272,181 @@ function SecuritySection() {
     }
   };
 
+  const deleteToken = confirmDelete.trim().toUpperCase();
+  const canOpenDeleteDialog = deleteToken === "EXCLUIR" && !!userId;
+
   const handleDeleteAccount = async () => {
-    if (confirmDelete.trim().toUpperCase() !== "EXCLUIR") {
-      toast.warning("Digite EXCLUIR para confirmar.");
-      return;
-    }
+    if (!canOpenDeleteDialog) return;
     setDeleting(true);
     try {
-      const { data: { user } } = await supabaseExternal.auth.getUser();
-      if (!user) throw new Error("Sessão expirada.");
-      // Marca conta como excluída (soft delete) — remoção física exige service_role no backend.
-      await supabaseExternal
+      const { error } = await supabaseExternal
         .from("profiles")
         .update({ status: "excluido", updated_at: new Date().toISOString() })
-        .eq("id", user.id);
+        .eq("id", userId!);
+      if (error) throw error;
+      try {
+        window.dispatchEvent(new CustomEvent("fixxer:profile-updated", { detail: { id: userId } }));
+        window.dispatchEvent(new CustomEvent("fixxer:profile-saved", { detail: { id: userId } }));
+      } catch { /* noop */ }
       await supabaseExternal.auth.signOut();
-      toast.success("Conta marcada para exclusão. Fale com o suporte se mudar de ideia.");
+      toast.success("Conta marcada para exclusão.", { description: "Fale com o suporte em até 30 dias para reverter." });
+      setDeleteDialogOpen(false);
       window.location.href = "/";
     } catch (e: any) {
       toast.error("Falha ao excluir conta.", { description: e?.message });
     } finally {
       setDeleting(false);
     }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Alterar Senha */}
+      <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">🔒</div>
+            <div>
+              <div className="text-sm font-black text-white uppercase tracking-tight">Alterar Senha</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Mínimo 8 caracteres com letra e número.</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPwd(v => !v)}
+            className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
+          >
+            {showPwd ? "Ocultar" : "Mostrar"}
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input
+            type={showPwd ? "text" : "password"}
+            value={currentPwd}
+            onChange={(e) => setCurrentPwd(e.target.value)}
+            onBlur={() => setPwdTouched(true)}
+            placeholder="Senha atual"
+            autoComplete="current-password"
+            className="h-12 rounded-2xl bg-black/40 border border-white/10 px-4 text-sm outline-none focus:border-primary/50"
+          />
+          <input
+            type={showPwd ? "text" : "password"}
+            value={newPwd}
+            onChange={(e) => setNewPwd(e.target.value)}
+            onBlur={() => setPwdTouched(true)}
+            placeholder="Nova senha"
+            autoComplete="new-password"
+            className="h-12 rounded-2xl bg-black/40 border border-white/10 px-4 text-sm outline-none focus:border-primary/50"
+          />
+          <input
+            type={showPwd ? "text" : "password"}
+            value={confirmPwd}
+            onChange={(e) => setConfirmPwd(e.target.value)}
+            onBlur={() => setPwdTouched(true)}
+            placeholder="Confirmar nova senha"
+            autoComplete="new-password"
+            className="h-12 rounded-2xl bg-black/40 border border-white/10 px-4 text-sm outline-none focus:border-primary/50"
+          />
+        </div>
+
+        {pwdTouched && !pwdValid && (
+          <ul className="text-[11px] text-red-300/90 space-y-1 pl-1">
+            {pwdErrors.map((err) => (
+              <li key={err} className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                {err}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <button
+          onClick={handleChangePassword}
+          disabled={pwdSaving || !pwdValid}
+          className="inline-flex items-center gap-2 w-full md:w-auto px-8 h-12 rounded-2xl bg-primary text-black font-black uppercase italic tracking-widest disabled:opacity-40 hover:bg-primary/90 transition-all"
+        >
+          {pwdSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+          {pwdSaving ? "Atualizando..." : "Atualizar Senha"}
+        </button>
+      </div>
+
+      {/* Zona de Perigo */}
+      <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/30 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400">⚠️</div>
+          <div>
+            <div className="text-sm font-black text-red-300 uppercase tracking-tight">Zona de Perigo</div>
+            <div className="text-[10px] text-red-300/70 uppercase tracking-widest font-bold">
+              A exclusão remove seu acesso e oculta seu perfil público. Ação irreversível pelo próprio usuário.
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col md:flex-row gap-3">
+          <input
+            type="text"
+            value={confirmDelete}
+            onChange={(e) => setConfirmDelete(e.target.value)}
+            placeholder='Digite EXCLUIR para habilitar o botão'
+            className="flex-1 h-12 rounded-2xl bg-black/40 border border-red-500/30 px-4 text-sm outline-none focus:border-red-500/60 uppercase tracking-wider"
+          />
+          <button
+            type="button"
+            onClick={() => setDeleteDialogOpen(true)}
+            disabled={!canOpenDeleteDialog || deleting}
+            className="px-8 h-12 rounded-2xl bg-red-500 hover:bg-red-500/90 text-white font-black uppercase italic tracking-widest disabled:opacity-40 transition-all"
+          >
+            Excluir Minha Conta
+          </button>
+        </div>
+        {confirmDelete && deleteToken !== "EXCLUIR" && (
+          <p className="text-[11px] text-red-300/80">
+            Para prosseguir, digite exatamente <b>EXCLUIR</b> (maiúsculas ou minúsculas).
+          </p>
+        )}
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent className="bg-black border border-red-500/40">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-red-300 uppercase tracking-tighter">
+                Confirmar exclusão da conta
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-white/70 space-y-3">
+                <span className="block">Esta ação é <b className="text-red-300">irreversível</b> pelo próprio usuário. Ao confirmar, o seguinte acontecerá:</span>
+                <ul className="text-[13px] space-y-1.5 pl-4 list-disc marker:text-red-400">
+                  <li>Seu perfil público (<b>{email ?? "sua conta"}</b>) deixa de aparecer nas buscas e carrosséis.</li>
+                  <li>Você será desconectado imediatamente de todos os dispositivos.</li>
+                  <li>Serviços, anúncios e posts atrelados à conta ficarão ocultos.</li>
+                  <li>Conversas em andamento não recebem novas mensagens suas.</li>
+                  <li>Saldo de moedas e histórico ficam retidos por 30 dias para eventual restauração via suporte.</li>
+                </ul>
+                <span className="block text-[12px] text-red-300/80">
+                  Após 30 dias, os dados podem ser removidos definitivamente e não poderão ser recuperados.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting} className="bg-white/5 border-white/10 text-white hover:bg-white/10">
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); handleDeleteAccount(); }}
+                disabled={deleting}
+                className="bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest"
+              >
+                {deleting ? (
+                  <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Excluindo…</span>
+                ) : (
+                  "Sim, excluir definitivamente"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
+}
+
   };
 
   return (
