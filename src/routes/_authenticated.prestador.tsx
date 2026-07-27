@@ -36,6 +36,7 @@ function PrestadorDashboard() {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 animate-in fade-in duration-500">
+      <ProfileSummaryCard role="prestador" variant="sidebar" />
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
@@ -53,8 +54,12 @@ function PrestadorDashboard() {
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Controle de Agendas, O.S. e Reputação</p>
           </div>
         </div>
-        <PanelActions role="prestador" />
+        <div className="flex flex-col gap-3 md:contents">
+          <ProfileSummaryCard role="prestador" />
+          <PanelActions role="prestador" />
+        </div>
       </header>
+
 
       <CoinBalancePlanCard />
 
