@@ -198,23 +198,39 @@ export function stemPt(word: string): string {
 }
 
 /** Remove acentos, normaliza espaços/pontuação e caixa. */
+const STRIP_CACHE = new Map<string, string>();
+const STRIP_CACHE_MAX = 2000;
 export function stripAccents(s: unknown): string {
-  return String(s ?? "")
+  const raw = String(s ?? "");
+  if (raw.length === 0) return "";
+  if (raw.length <= 128) {
+    const cached = STRIP_CACHE.get(raw);
+    if (cached !== undefined) return cached;
+  }
+  const out = raw
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
     .replace(/[^a-z0-9@._\-\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  if (raw.length <= 128) {
+    if (STRIP_CACHE.size >= STRIP_CACHE_MAX) STRIP_CACHE.clear();
+    STRIP_CACHE.set(raw, out);
+  }
+  return out;
 }
 
 /** Expande o termo com sinônimos conhecidos + stems aproximados.
  *  Só emite tokens com pelo menos 4 caracteres para evitar que raízes muito
  *  curtas (ex.: "med", "medi") casem substrings alheias ao domínio
  *  ("comédia", "sob medida", "mídia"). */
+const EXPAND_CACHE = new Map<string, string[]>();
 export function expandSynonyms(term: string): string[] {
   const base = stripAccents(term);
   if (!base) return [];
+  const cached = EXPAND_CACHE.get(base);
+  if (cached) return cached;
   const tokens = new Set<string>([base]);
   for (const word of base.split(" ")) {
     if (!word) continue;
@@ -228,8 +244,12 @@ export function expandSynonyms(term: string): string[] {
       if (st && st.length >= 5) tokens.add(st);
     });
   }
-  return Array.from(tokens).filter((t) => t.length >= 4);
+  const out = Array.from(tokens).filter((t) => t.length >= 4);
+  if (EXPAND_CACHE.size >= 500) EXPAND_CACHE.clear();
+  EXPAND_CACHE.set(base, out);
+  return out;
 }
+
 
 /** Casa um token como palavra completa dentro do haystack (accent/case
  *  já normalizado). Evita que "medi" case "medida" ou "medicao". */
@@ -294,82 +314,114 @@ export function getSearchableValue(row: any, field: SearchableField): string {
 }
 
 /**
+ * Precompute normalizado de uma linha — evita rechamar `stripAccents` e
+ * `getSearchableValue` para cada função de match/score. Cache por objeto
+ * de linha via WeakMap: liberado automaticamente quando a linha some.
+ */
+type RowNorm = { perField: Partial<Record<SearchableField, string>>; haystack: string };
+const ROW_NORM_CACHE = new WeakMap<object, RowNorm>();
+function normalizeRow(row: any): RowNorm {
+  if (!row || typeof row !== "object") return { perField: {}, haystack: "" };
+  const cached = ROW_NORM_CACHE.get(row);
+  if (cached) return cached;
+  const perField: Partial<Record<SearchableField, string>> = {};
+  const parts: string[] = [];
+  for (const f of SEARCHED_FIELDS) {
+    const v = stripAccents(getSearchableValue(row, f));
+    if (v) {
+      perField[f] = v;
+      parts.push(v);
+    }
+  }
+  const out: RowNorm = { perField, haystack: parts.join(" ") };
+  ROW_NORM_CACHE.set(row, out);
+  return out;
+}
+
+/** Precompute do termo — evita normalizar/expandir sinônimos várias vezes. */
+type TermNorm = {
+  normalized: string;
+  words: string[];
+  synonyms: string[];
+  synonymsAll: string[];
+  fuzzyTokens: string[];
+};
+const TERM_NORM_CACHE = new Map<string, TermNorm>();
+function normalizeTerm(rawTerm: string): TermNorm {
+  const key = String(rawTerm ?? "");
+  const cached = TERM_NORM_CACHE.get(key);
+  if (cached) return cached;
+  const normalized = stripAccents(rawTerm);
+  const words = normalized.split(" ").filter((w) => w.length >= 2);
+  const synonymsAll = expandSynonyms(rawTerm);
+  const synonyms = synonymsAll.filter((s) => s !== normalized);
+  const fuzzyTokens = words.length > 0 ? words : [normalized];
+  const out: TermNorm = { normalized, words, synonyms, synonymsAll, fuzzyTokens };
+  if (TERM_NORM_CACHE.size >= 200) TERM_NORM_CACHE.clear();
+  TERM_NORM_CACHE.set(key, out);
+  return out;
+}
+
+/**
  * Verifica se a linha casa com o termo, tolerando acentos, caixa,
  * ordem de palavras, sinônimos e erros de digitação (fuzzy).
  */
 export function rowMatchesTerm(row: any, rawTerm: string): boolean {
-  const normalizedTerm = stripAccents(rawTerm);
-  if (!normalizedTerm) return false;
-
-  const haystack = stripAccents(
-    SEARCHED_FIELDS.map((f) => getSearchableValue(row, f)).join(" "),
-  );
+  const { normalized, words, synonyms, fuzzyTokens } = normalizeTerm(rawTerm);
+  if (!normalized) return false;
+  const { haystack } = normalizeRow(row);
   if (!haystack) return false;
 
-  if (haystack.includes(normalizedTerm)) return true;
-
-  const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
+  if (haystack.includes(normalized)) return true;
   if (words.length > 0 && words.every((w) => haystack.includes(w))) return true;
-
-  const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
   if (synonyms.some((s) => matchesWholeWord(haystack, s))) return true;
-
-  // Fuzzy — tolera erros de digitação em cada palavra do termo.
-  const fuzzyTokens = words.length > 0 ? words : [normalizedTerm];
   if (fuzzyTokens.every((t) => fuzzyMatchesWord(haystack, t))) return true;
-
   return false;
 }
 
 export function getMatchedFields(row: any, rawTerm: string): SearchableField[] {
-  const normalizedTerm = stripAccents(rawTerm);
-  if (!normalizedTerm) return [];
-  const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
-  const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
-  const fuzzyTokens = words.length > 0 ? words : [normalizedTerm];
-  return SEARCHED_FIELDS.filter((field) => {
-    const value = stripAccents(getSearchableValue(row, field));
-    if (!value) return false;
-    if (value.includes(normalizedTerm)) return true;
-    if (words.length > 0 && words.every((w) => value.includes(w))) return true;
-    if (synonyms.some((s) => matchesWholeWord(value, s))) return true;
-    return fuzzyTokens.some((t) => fuzzyMatchesWord(value, t));
-  });
+  const { normalized, words, synonyms, fuzzyTokens } = normalizeTerm(rawTerm);
+  if (!normalized) return [];
+  const { perField } = normalizeRow(row);
+  const out: SearchableField[] = [];
+  for (const field of SEARCHED_FIELDS) {
+    const value = perField[field];
+    if (!value) continue;
+    if (value.includes(normalized)) { out.push(field); continue; }
+    if (words.length > 0 && words.every((w) => value.includes(w))) { out.push(field); continue; }
+    if (synonyms.some((s) => matchesWholeWord(value, s))) { out.push(field); continue; }
+    if (fuzzyTokens.some((t) => fuzzyMatchesWord(value, t))) out.push(field);
+  }
+  return out;
 }
 
 /**
  * Calcula o score de relevância de uma linha para um termo.
- * Combina: peso do campo × tipo de match (literal > prefix > substring
- * > multi-palavra > sinônimo > fuzzy) + bônus por categoria + boost
- * extra quando o match ocorre em campos de cargo/função.
  */
 export function scoreRow(row: any, rawTerm: string, category?: UserCategory | null): number {
-  const normalizedTerm = stripAccents(rawTerm);
-  if (!normalizedTerm) return 0;
-  const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
-  const synonyms = expandSynonyms(rawTerm);
-  const fuzzyTokens = words.length > 0 ? words : [normalizedTerm];
+  const { normalized, words, synonymsAll, fuzzyTokens } = normalizeTerm(rawTerm);
+  if (!normalized) return 0;
+  const { perField } = normalizeRow(row);
 
   let score = 0;
   let matchedRoleField = false;
   for (const field of SEARCHED_FIELDS) {
-    const value = stripAccents(getSearchableValue(row, field));
+    const value = perField[field];
     if (!value) continue;
     const w = FIELD_WEIGHTS[field] ?? 1;
     const isRole = (ROLE_FIELDS as readonly string[]).includes(field);
 
     let hit = 0;
-    if (value === normalizedTerm) hit = w * 5;
-    else if (value.startsWith(normalizedTerm)) hit = w * 3;
-    else if (value.includes(normalizedTerm)) hit = w * 2;
+    if (value === normalized) hit = w * 5;
+    else if (value.startsWith(normalized)) hit = w * 3;
+    else if (value.includes(normalized)) hit = w * 2;
     else if (words.length > 0 && words.every((word) => value.includes(word))) hit = w;
-    else if (synonyms.some((s) => s !== normalizedTerm && matchesWholeWord(value, s)))
+    else if (synonymsAll.some((s) => s !== normalized && matchesWholeWord(value, s)))
       hit = Math.max(1, Math.floor(w / 2));
     else if (fuzzyTokens.every((t) => fuzzyMatchesWord(value, t)))
       hit = Math.max(1, Math.floor(w / 3));
 
     if (hit > 0) {
-      // Cargo/papel casa: multiplicador que empurra o resultado para o topo.
       if (isRole) {
         hit = Math.round(hit * 1.5);
         matchedRoleField = true;
@@ -378,10 +430,12 @@ export function scoreRow(row: any, rawTerm: string, category?: UserCategory | nu
     }
   }
 
-  if (matchedRoleField) score += 20; // desempate global a favor de cargo/função
+  if (matchedRoleField) score += 20;
   if (category && CATEGORY_BONUS[category] != null) score += CATEGORY_BONUS[category];
   return score;
 }
+
+
 
 
 /** Ordena uma lista de linhas por relevância decrescente e desempata por nome. */
