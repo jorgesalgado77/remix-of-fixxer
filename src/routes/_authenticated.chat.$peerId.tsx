@@ -1437,24 +1437,18 @@ function ConversationPage() {
             </div>
 
           </div>
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="w-9 h-9 shrink-0 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-white"
-            aria-label="Configurações do chat"
-            title="Configurações do chat"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
           <HeaderActionsMenu
             muted={muted}
             archived={archived}
             blocked={isBlocked}
+            onSettings={() => setSettingsOpen(true)}
             onUnread={markAsUnread}
             onMute={toggleMute}
             onArchive={toggleArchive}
             onBlock={toggleBlock}
             onExport={exportConversation}
           />
+
 
 
         </div>
@@ -2166,13 +2160,15 @@ function HeaderActionsMenu(props: {
   muted: boolean;
   archived: boolean;
   blocked: boolean;
+  onSettings: () => void;
   onUnread: () => void;
   onMute: () => void;
   onArchive: () => void;
   onBlock: () => void;
   onExport: () => void;
 }) {
-  const { muted, archived, blocked, onUnread, onMute, onArchive, onBlock, onExport } = props;
+  const { muted, archived, blocked, onSettings, onUnread, onMute, onArchive, onBlock, onExport } = props;
+
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -2213,7 +2209,10 @@ function HeaderActionsMenu(props: {
           role="menu"
           className="absolute right-0 top-full mt-2 z-50 w-60 rounded-2xl bg-[#121214] border border-white/10 shadow-2xl overflow-hidden py-1"
         >
+          {item("Configurações do chat", Settings, onSettings)}
+          <div className="my-1 h-px bg-white/10" />
           {item("Marcar como não lida", MailOpen, onUnread)}
+
           {item(muted ? "Reativar notificações" : "Silenciar notificações", muted ? BellOff : Bell, onMute)}
           {item(archived ? "Desarquivar conversa" : "Arquivar conversa", archived ? ArchiveRestore : Archive, onArchive)}
           <div className="my-1 h-px bg-white/10" />
