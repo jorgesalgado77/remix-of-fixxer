@@ -49,6 +49,7 @@ import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAgendaIdRouteImport } from './routes/_authenticated.agenda.$id'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated.admin.usuarios'
 import { Route as AuthenticatedAdminMonetizacaoRouteImport } from './routes/_authenticated.admin.monetizacao'
+import { Route as AuthenticatedAdminDocumentosLegadosRouteImport } from './routes/_authenticated.admin.documentos-legados'
 import { Route as AuthenticatedAdminDisputasRouteImport } from './routes/_authenticated.admin.disputas'
 import { Route as AuthenticatedAdminAuditoriaCategoriasRouteImport } from './routes/_authenticated.admin.auditoria-categorias'
 import { Route as ApiPublicPushDispatchRouteImport } from './routes/api/public/push.dispatch'
@@ -262,6 +263,12 @@ const AuthenticatedAdminMonetizacaoRoute =
     path: '/monetizacao',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminDocumentosLegadosRoute =
+  AuthenticatedAdminDocumentosLegadosRouteImport.update({
+    id: '/documentos-legados',
+    path: '/documentos-legados',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminDisputasRoute =
   AuthenticatedAdminDisputasRouteImport.update({
     id: '/disputas',
@@ -318,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/auth/': typeof AuthIndexRoute
   '/admin/auditoria-categorias': typeof AuthenticatedAdminAuditoriaCategoriasRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
+  '/admin/documentos-legados': typeof AuthenticatedAdminDocumentosLegadosRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
@@ -361,6 +369,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/admin/auditoria-categorias': typeof AuthenticatedAdminAuditoriaCategoriasRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
+  '/admin/documentos-legados': typeof AuthenticatedAdminDocumentosLegadosRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
@@ -408,6 +417,7 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/admin/auditoria-categorias': typeof AuthenticatedAdminAuditoriaCategoriasRoute
   '/_authenticated/admin/disputas': typeof AuthenticatedAdminDisputasRoute
+  '/_authenticated/admin/documentos-legados': typeof AuthenticatedAdminDocumentosLegadosRoute
   '/_authenticated/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
   '/_authenticated/agenda/$id': typeof AuthenticatedAgendaIdRoute
@@ -455,6 +465,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/admin/auditoria-categorias'
     | '/admin/disputas'
+    | '/admin/documentos-legados'
     | '/admin/monetizacao'
     | '/admin/usuarios'
     | '/agenda/$id'
@@ -498,6 +509,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin/auditoria-categorias'
     | '/admin/disputas'
+    | '/admin/documentos-legados'
     | '/admin/monetizacao'
     | '/admin/usuarios'
     | '/agenda/$id'
@@ -544,6 +556,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/_authenticated/admin/auditoria-categorias'
     | '/_authenticated/admin/disputas'
+    | '/_authenticated/admin/documentos-legados'
     | '/_authenticated/admin/monetizacao'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/agenda/$id'
@@ -858,6 +871,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMonetizacaoRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/documentos-legados': {
+      id: '/_authenticated/admin/documentos-legados'
+      path: '/documentos-legados'
+      fullPath: '/admin/documentos-legados'
+      preLoaderRoute: typeof AuthenticatedAdminDocumentosLegadosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/disputas': {
       id: '/_authenticated/admin/disputas'
       path: '/disputas'
@@ -906,6 +926,7 @@ const AuthenticatedAdminUsuariosRouteWithChildren =
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditoriaCategoriasRoute: typeof AuthenticatedAdminAuditoriaCategoriasRoute
   AuthenticatedAdminDisputasRoute: typeof AuthenticatedAdminDisputasRoute
+  AuthenticatedAdminDocumentosLegadosRoute: typeof AuthenticatedAdminDocumentosLegadosRoute
   AuthenticatedAdminMonetizacaoRoute: typeof AuthenticatedAdminMonetizacaoRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRouteWithChildren
 }
@@ -914,6 +935,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAuditoriaCategoriasRoute:
     AuthenticatedAdminAuditoriaCategoriasRoute,
   AuthenticatedAdminDisputasRoute: AuthenticatedAdminDisputasRoute,
+  AuthenticatedAdminDocumentosLegadosRoute:
+    AuthenticatedAdminDocumentosLegadosRoute,
   AuthenticatedAdminMonetizacaoRoute: AuthenticatedAdminMonetizacaoRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRouteWithChildren,
 }
