@@ -641,6 +641,8 @@ function ProfilePage() {
         if (!target) return;
         const nextDocs = currentDocs.filter((d: any) => d !== target);
         await persistMedia(currentMedia, nextDocs);
+        // best-effort: apaga do bucket privado se for do novo formato
+        try { await deleteProfileDocument(target); } catch { /* ignore */ }
       } else {
         const kind = list;
         const items = currentMedia.filter((f: any) => f.type === kind);
