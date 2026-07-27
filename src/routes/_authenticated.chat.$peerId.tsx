@@ -2256,6 +2256,8 @@ function AttachmentBlock({
   mine,
   state,
   onDownload,
+  uploadState,
+  onRetry,
 }: {
   url: string;
   type?: string | null;
@@ -2264,6 +2266,8 @@ function AttachmentBlock({
   messageId: string;
   state?: { pct: number; loading: boolean };
   onDownload: () => void;
+  uploadState?: { uploading: boolean; pct: number; failed: boolean; error?: string | null };
+  onRetry?: () => void;
 }) {
   const image = isImageType(type);
   const video = !!type && type.startsWith("video/");
