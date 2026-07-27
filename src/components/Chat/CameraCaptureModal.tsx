@@ -21,6 +21,9 @@ export default function CameraCaptureModal({ open, mode, onClose, onCapture }: P
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [preview, setPreview] = useState<{ url: string; file: File } | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [previewMeta, setPreviewMeta] = useState<{ durationSec: number; sizeKb: number } | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const tickRef = useRef<number | null>(null);
 
   const stopStream = () => {
