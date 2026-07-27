@@ -859,8 +859,11 @@ function ConversationPage() {
 
   const onScrollFeed = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
+    const wasNear = isNearBottomRef.current;
     isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
     if (isNearBottomRef.current && pendingScrollHint > 0) setPendingScrollHint(0);
+    // Ao chegar ao fim novamente, confirma a leitura das mensagens visíveis.
+    if (!wasNear && isNearBottomRef.current && userId) markIncomingRead(userId);
     if (!hasMore || loading) return;
     if (el.scrollTop < 80) void loadOlder();
   };
