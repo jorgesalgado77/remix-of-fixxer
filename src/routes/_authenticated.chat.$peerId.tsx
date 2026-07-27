@@ -1489,7 +1489,7 @@ function ConversationPage() {
 
 
 
-  const statusLine = peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
+  const statusLine = realtimeReconnecting ? "Reconectando..." : peerTyping ? "Digitando..." : peerOnline ? "Online" : muted ? "Silenciada" : archived ? "Arquivada" : "Offline";
 
   const peerCategory = resolvePeerCategory(peerRole);
   const peerTheme = getPeerTheme(peerRole);
