@@ -50,6 +50,7 @@ import { LiveProfilePreview } from "@/components/LiveProfilePreview";
 import { AutosaveStatusPill } from "@/components/AutosaveStatusPill";
 import { saveDraft, loadDraft, clearDraft, markPending, pickDraftPatch } from "@/lib/profile-draft";
 import { detectPixKeyType, validatePixKey, PIX_KEY_TYPE_LABELS, type PixKeyType } from "@/lib/pix-key";
+import { uploadProfileDocument, resolveDocumentUrl, deleteProfileDocument } from "@/lib/profile-documents";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -123,6 +124,112 @@ function validateFileForType(
   return { ok: true };
 }
 
+
+/**
+ * Card de documento privado. Resolve a URL sob demanda:
+ * - se o item tem `path`, gera `signedUrl` (válida por 1h) do bucket privado;
+ * - se tem só `url` (legado público), usa como está.
+ * A URL nunca é persistida — se expirar, o próximo mount gera nova.
+ */
+function DocItem(props: {
+  doc: any;
+  index: number;
+  total: number;
+  onDragStart: () => void;
+  onDrop: () => void;
+  onReorderKey: (ev: React.KeyboardEvent, kind: 'image'|'pdf'|'other', url: string) => void;
+  onPreview: (url: string, kind: 'image'|'pdf'|'other') => void;
+  onRemove: () => void;
+}) {
+  const { doc, index, total, onDragStart, onDrop, onReorderKey, onPreview, onRemove } = props;
+  const ext = (doc?.name?.split('.').pop() || '').toLowerCase();
+  const isPdf = ext === 'pdf';
+  const isImg = ['png','jpg','jpeg','webp','gif','avif','svg'].includes(ext);
+  const kind: 'image'|'pdf'|'other' = isImg ? 'image' : isPdf ? 'pdf' : 'other';
+  const [url, setUrl] = useState<string>('');
+  const source = doc?.path || doc?.url || '';
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const resolved = await resolveDocumentUrl(source);
+      if (!cancelled) setUrl(resolved);
+    })();
+    return () => { cancelled = true; };
+  }, [source]);
+
+  return (
+    <div
+      role="listitem"
+      tabIndex={0}
+      aria-label={`Documento ${index + 1} de ${total}: ${doc.name}. Use setas para reordenar, Enter para pré-visualizar.`}
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={(ev) => ev.preventDefault()}
+      onDrop={(ev) => { ev.preventDefault(); onDrop(); }}
+      onKeyDown={(ev) => onReorderKey(ev, kind, url)}
+      className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all cursor-grab active:cursor-grabbing"
+    >
+      <div className="flex items-center gap-3 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => url && onPreview(url, kind)}
+          className="w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center relative"
+          title={`Pré-visualizar ${doc.name}`}
+          aria-label={`Pré-visualizar ${doc.name}`}
+        >
+          {isImg && url ? (
+            <img src={url} alt={doc.name} className="w-full h-full object-cover" loading="lazy" />
+          ) : isPdf && url ? (
+            <>
+              <embed src={`${url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`} type="application/pdf" className="w-full h-full pointer-events-none" />
+              <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-red-500/90 text-white uppercase">PDF</span>
+            </>
+          ) : (
+            <>
+              <File className="w-5 h-5 text-primary" />
+              <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-primary/80 text-black uppercase truncate">{ext || 'DOC'}</span>
+            </>
+          )}
+        </button>
+        <div className="truncate">
+          <p className="text-[11px] font-bold text-white truncate">{doc.name}</p>
+          <p className="text-[9px] text-muted-foreground uppercase">{doc.size || 'N/A'}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => url && onPreview(url, kind)}
+          className="text-muted-foreground hover:text-primary transition-colors"
+          title="Pré-visualizar"
+          aria-label="Pré-visualizar"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+        <a
+          href={url || '#'}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => { if (!url) e.preventDefault(); }}
+          className="text-muted-foreground hover:text-primary transition-colors"
+          title="Abrir em nova aba"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </a>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-muted-foreground hover:text-red-500 transition-colors"
+          title="Remover"
+          aria-label="Remover documento"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ProfilePage() {
   const [loading, setLoading] = useState(true);
@@ -350,39 +457,56 @@ function ProfilePage() {
             }
           }
 
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
-          const filePath = `${type}s/${fileName}`;
+          let item: any;
 
-          const uploadWithRetry = async (retries = 2): Promise<any> => {
-            try {
-              const { error: uploadError } = await supabaseExternal.storage
-                .from('media')
-                .upload(filePath, processedFile);
-              if (uploadError) throw uploadError;
-              return true;
-            } catch (err) {
-              if (retries > 0) return uploadWithRetry(retries - 1);
-              throw err;
-            }
-          };
+          if (type === 'document') {
+            // Documentos → bucket PRIVADO (documents-private). Persistimos `path`,
+            // não URL pública. A URL de leitura é gerada sob demanda via signedUrl.
+            const uploaded = await (async () => {
+              try {
+                return await uploadProfileDocument(processedFile, profile.id);
+              } catch (err) {
+                // 1 retry
+                return await uploadProfileDocument(processedFile, profile.id);
+              }
+            })();
+            item = uploaded;
+          } else {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
+            const filePath = `${type}s/${fileName}`;
 
-          await uploadWithRetry();
+            const uploadWithRetry = async (retries = 2): Promise<any> => {
+              try {
+                const { error: uploadError } = await supabaseExternal.storage
+                  .from('media')
+                  .upload(filePath, processedFile);
+                if (uploadError) throw uploadError;
+                return true;
+              } catch (err) {
+                if (retries > 0) return uploadWithRetry(retries - 1);
+                throw err;
+              }
+            };
 
-          const { data: { publicUrl } } = supabaseExternal.storage
-            .from('media')
-            .getPublicUrl(filePath);
+            await uploadWithRetry();
 
-          const item = {
-            name: file.name,
-            url: publicUrl,
-            type,
-            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-            created_at: new Date().toISOString()
-          };
+            const { data: { publicUrl } } = supabaseExternal.storage
+              .from('media')
+              .getPublicUrl(filePath);
+
+            item = {
+              name: file.name,
+              url: publicUrl,
+              type,
+              size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+              created_at: new Date().toISOString(),
+            };
+          }
 
           if (type === 'document') newDocs.push(item);
           else newMedia.push(item);
+
 
           setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'success' } : u));
         } catch (err: any) {
@@ -517,6 +641,8 @@ function ProfilePage() {
         if (!target) return;
         const nextDocs = currentDocs.filter((d: any) => d !== target);
         await persistMedia(currentMedia, nextDocs);
+        // best-effort: apaga do bucket privado se for do novo formato
+        try { await deleteProfileDocument(target); } catch { /* ignore */ }
       } else {
         const kind = list;
         const items = currentMedia.filter((f: any) => f.type === kind);
@@ -1879,89 +2005,37 @@ function ProfilePage() {
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="list" aria-label="Documentos enviados, reordenáveis por arrastar ou setas do teclado">
 
-                    {profile?.documents?.filter((f: any) => f.type === 'document').map((doc: any, i: number) => {
-                      const ext = (doc.name?.split('.').pop() || '').toLowerCase();
-                      const isPdf = ext === 'pdf';
-                      const isImg = ['png','jpg','jpeg','webp','gif','avif','svg'].includes(ext);
-                      const kind: 'image'|'pdf'|'other' = isImg ? 'image' : isPdf ? 'pdf' : 'other';
-                      return (
-                      <div
-                        key={i}
-                        role="listitem"
-                        tabIndex={0}
-                        aria-label={`Documento ${i + 1} de ${profile?.documents?.filter((f: any) => f.type === 'document').length || 0}: ${doc.name}. Use setas para reordenar, Enter para pré-visualizar.`}
-                        draggable
-                        onDragStart={() => { dragRef.current = { list: 'doc', index: i }; }}
-                        onDragOver={(ev) => ev.preventDefault()}
-                        onDrop={(ev) => {
-                          ev.preventDefault();
-                          const src = dragRef.current;
-                          if (src && src.list === 'doc') reorderMedia('doc', src.index, i);
-                          dragRef.current = null;
-                        }}
-                        onKeyDown={(ev) => {
-                          const total = profile?.documents?.filter((f: any) => f.type === 'document').length || 0;
-                          if (ev.key === 'Enter') { ev.preventDefault(); setPreview({ open: true, url: doc.url, name: doc.name, kind }); return; }
-                          handleReorderKeyDown(ev, 'doc', i, total);
-                        }}
-                        className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all cursor-grab active:cursor-grabbing"
-                      >
+                    {(() => {
+                      const docs = profile?.documents?.filter((f: any) => f.type === 'document') || [];
+                      const total = docs.length;
+                      return docs.map((doc: any, i: number) => (
+                        <DocItem
+                          key={doc.path || doc.url || i}
+                          doc={doc}
+                          index={i}
+                          total={total}
+                          onDragStart={() => { dragRef.current = { list: 'doc', index: i }; }}
+                          onDrop={() => {
+                            const src = dragRef.current;
+                            if (src && src.list === 'doc') reorderMedia('doc', src.index, i);
+                            dragRef.current = null;
+                          }}
+                          onReorderKey={(ev, kind, url) => {
+                            if (ev.key === 'Enter') {
+                              ev.preventDefault();
+                              if (url) setPreview({ open: true, url, name: doc.name, kind });
+                              return;
+                            }
+                            handleReorderKeyDown(ev, 'doc', i, total);
+                          }}
+                          onPreview={(url, kind) => setPreview({ open: true, url, name: doc.name, kind })}
+                          onRemove={() => {
+                            if (window.confirm(`Remover "${doc.name}"?`)) removeMediaItem('doc', i);
+                          }}
+                        />
+                      ));
+                    })()}
 
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <button
-                            type="button"
-                            onClick={() => setPreview({ open: true, url: doc.url, name: doc.name, kind })}
-                            className="w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center relative"
-                            title={`Pré-visualizar ${doc.name}`}
-                            aria-label={`Pré-visualizar ${doc.name}`}
-                          >
-                            {isImg ? (
-                              <img src={doc.url} alt={doc.name} className="w-full h-full object-cover" loading="lazy" />
-                            ) : isPdf ? (
-                              <>
-                                <embed src={`${doc.url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`} type="application/pdf" className="w-full h-full pointer-events-none" />
-                                <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-red-500/90 text-white uppercase">PDF</span>
-                              </>
-                            ) : (
-                              <>
-                                <File className="w-5 h-5 text-primary" />
-                                <span className="absolute bottom-0 left-0 right-0 text-[7px] font-black text-center bg-primary/80 text-black uppercase truncate">{ext || 'DOC'}</span>
-                              </>
-                            )}
-                          </button>
-                          <div className="truncate">
-                            <p className="text-[11px] font-bold text-white truncate">{doc.name}</p>
-                            <p className="text-[9px] text-muted-foreground uppercase">{doc.size || 'N/A'}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setPreview({ open: true, url: doc.url, name: doc.name, kind })}
-                            className="text-muted-foreground hover:text-primary transition-colors"
-                            title="Pré-visualizar"
-                            aria-label="Pré-visualizar"
-                          >
-                            <Search className="w-4 h-4" />
-                          </button>
-                          <a href={doc.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors" title="Abrir em nova aba">
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm(`Remover "${doc.name}"?`)) removeMediaItem('doc', i);
-                            }}
-                            className="text-muted-foreground hover:text-red-500 transition-colors"
-                            title="Remover"
-                            aria-label="Remover documento"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      );
-                    })}
                     <label className="border-2 border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition-all cursor-pointer group">
                       <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                       <span className="text-[9px] font-black uppercase text-muted-foreground group-hover:text-primary">Novo Documento</span>
