@@ -38,24 +38,35 @@ export type SearchableField = (typeof SEARCHED_FIELDS)[number];
 
 /** Peso por campo no ranking de relevância (quanto maior, mais relevante). */
 const FIELD_WEIGHTS: Record<SearchableField, number> = {
+  // Cargo / função / papel — prioridade máxima para consultas como
+  // "liberador", "conferente", "motorista", etc.
+  job_roles: 14,
+  positions: 14,
+  preferred_service: 12,
+  specialty: 12,
+  role: 11,
   display_name: 10,
   full_name: 9,
   company_name: 9,
   business_category: 8,
   custom_branch: 8,
   activity_branch: 8,
-  specialty: 8,
-  preferred_service: 8,
-  job_roles: 8,
-  positions: 8,
   categories: 6,
-  role: 5,
   user_type: 5,
   description: 4,
   custom_sections: 4,
   city: 3,
   state: 2,
 };
+
+/** Campos considerados "cargo/papel" — recebem multiplicador extra no ranking. */
+const ROLE_FIELDS: readonly SearchableField[] = [
+  "job_roles",
+  "positions",
+  "preferred_service",
+  "specialty",
+  "role",
+] as const;
 
 /** Bônus por categoria — lojistas ficam levemente acima em empate,
  * pois costumam ser resultados mais "resolutivos" na busca (produtos/serviços). */
@@ -75,8 +86,8 @@ const SYNONYM_GROUPS: string[][] = [
   ["chaveiro", "chave", "chaves"],
   ["pintura", "pintor", "pintores"],
   ["montador", "montagem", "montadores", "monta"],
-  ["conferente", "conferencia", "confer"],
-  ["medidor", "medidores", "hidrometro", "hidrometros"],
+  ["conferente", "conferencia", "confer", "conferir"],
+  ["medidor", "medidores", "hidrometro", "hidrometros", "medicao"],
   ["encanador", "encanamento", "hidraulico", "hidraulica"],
   ["pedreiro", "alvenaria", "construcao", "obra", "obras"],
   ["mecanico", "mecanica", "auto", "automotivo"],
@@ -87,6 +98,17 @@ const SYNONYM_GROUPS: string[][] = [
   ["serralheria", "serralheiro", "solda", "soldador"],
   ["vidraceiro", "vidracaria", "vidro", "vidros"],
   ["tapeceiro", "tapecaria", "estofado", "estofador"],
+  ["liberador", "liberadores", "liberadora", "liberacao", "liberar", "libera", "liberado"],
+  ["motorista", "motoristas", "condutor", "conducao", "chofer"],
+  ["ajudante", "ajudantes", "auxiliar", "auxiliares", "assistente"],
+  ["entregador", "entregadores", "entrega", "entregas", "delivery", "motoboy"],
+  ["operador", "operadores", "operadora", "operacao", "operar"],
+  ["tecnico", "tecnica", "tecnicos", "tecnicas"],
+  ["porteiro", "porteiros", "portaria", "vigilante", "vigia", "seguranca"],
+  ["cozinheiro", "cozinheira", "cozinha", "chef", "chefe"],
+  ["garcom", "garconete", "atendente", "atendimento"],
+  ["carreteiro", "caminhoneiro", "carreta", "caminhao", "guincho"],
+  ["soldador", "soldagem", "solda"],
 ];
 const SYNONYMS: Record<string, string[]> = (() => {
   const map: Record<string, string[]> = {};
@@ -95,6 +117,60 @@ const SYNONYMS: Record<string, string[]> = (() => {
   }
   return map;
 })();
+
+/** Distância de Levenshtein (edit distance) entre duas strings normalizadas. */
+export function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  const al = a.length, bl = b.length;
+  if (al === 0) return bl;
+  if (bl === 0) return al;
+  let prev = new Array<number>(bl + 1);
+  let cur = new Array<number>(bl + 1);
+  for (let j = 0; j <= bl; j++) prev[j] = j;
+  for (let i = 1; i <= al; i++) {
+    cur[0] = i;
+    for (let j = 1; j <= bl; j++) {
+      const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      cur[j] = Math.min(
+        cur[j - 1] + 1,          // insert
+        prev[j] + 1,             // delete
+        prev[j - 1] + cost,      // substitute
+      );
+      // Damerau — transposição adjacente (ex.: "liebrador" ↔ "liberador").
+      if (i > 1 && j > 1 &&
+          a.charCodeAt(i - 1) === b.charCodeAt(j - 2) &&
+          a.charCodeAt(i - 2) === b.charCodeAt(j - 1)) {
+        cur[j] = Math.min(cur[j], prev[j - 2] !== undefined ? prev[j - 2] + 1 : cur[j]);
+      }
+    }
+    const tmp = prev; prev = cur; cur = tmp;
+  }
+  return prev[bl];
+}
+
+/** Tolerância de edição em função do tamanho do token. */
+function fuzzyTolerance(len: number): number {
+  if (len <= 3) return 0;
+  if (len <= 5) return 1;
+  if (len <= 8) return 2;
+  return 2;
+}
+
+/** Retorna true se alguma palavra do haystack estiver a ≤ N edições do token. */
+export function fuzzyMatchesWord(haystack: string, token: string): boolean {
+  if (!token || token.length < 4) return false;
+  const tol = fuzzyTolerance(token.length);
+  if (tol === 0) return matchesWholeWord(haystack, token);
+  const words = haystack.split(/[^a-z0-9]+/i).filter(Boolean);
+  for (const w of words) {
+    if (Math.abs(w.length - token.length) > tol) continue;
+    if (levenshtein(w, token) <= tol) return true;
+    // Tolera token como prefixo aproximado de palavra maior (ex.: "libera" → "liberador").
+    if (w.length > token.length && levenshtein(w.slice(0, token.length), token) <= tol) return true;
+  }
+  return false;
+}
+
 
 /**
  * Reduz uma palavra à sua raiz aproximada removendo sufixos comuns em pt-BR
@@ -219,7 +295,7 @@ export function getSearchableValue(row: any, field: SearchableField): string {
 
 /**
  * Verifica se a linha casa com o termo, tolerando acentos, caixa,
- * ordem de palavras e sinônimos comuns.
+ * ordem de palavras, sinônimos e erros de digitação (fuzzy).
  */
 export function rowMatchesTerm(row: any, rawTerm: string): boolean {
   const normalizedTerm = stripAccents(rawTerm);
@@ -230,17 +306,19 @@ export function rowMatchesTerm(row: any, rawTerm: string): boolean {
   );
   if (!haystack) return false;
 
-  // 1) Match literal do termo inteiro.
   if (haystack.includes(normalizedTerm)) return true;
 
-  // 2) Todas as palavras (>=2 chars) presentes em qualquer ordem.
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
   if (words.length > 0 && words.every((w) => haystack.includes(w))) return true;
 
-  // 3) Sinônimo — casamento como PALAVRA COMPLETA para evitar substring alheia
-  //    (ex.: "medi" não deve casar "medida" em "móveis sob medida").
   const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
-  return synonyms.some((s) => matchesWholeWord(haystack, s));
+  if (synonyms.some((s) => matchesWholeWord(haystack, s))) return true;
+
+  // Fuzzy — tolera erros de digitação em cada palavra do termo.
+  const fuzzyTokens = words.length > 0 ? words : [normalizedTerm];
+  if (fuzzyTokens.every((t) => fuzzyMatchesWord(haystack, t))) return true;
+
+  return false;
 }
 
 export function getMatchedFields(row: any, rawTerm: string): SearchableField[] {
@@ -248,58 +326,63 @@ export function getMatchedFields(row: any, rawTerm: string): SearchableField[] {
   if (!normalizedTerm) return [];
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
   const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
+  const fuzzyTokens = words.length > 0 ? words : [normalizedTerm];
   return SEARCHED_FIELDS.filter((field) => {
     const value = stripAccents(getSearchableValue(row, field));
     if (!value) return false;
     if (value.includes(normalizedTerm)) return true;
     if (words.length > 0 && words.every((w) => value.includes(w))) return true;
-    return synonyms.some((s) => matchesWholeWord(value, s));
+    if (synonyms.some((s) => matchesWholeWord(value, s))) return true;
+    return fuzzyTokens.some((t) => fuzzyMatchesWord(value, t));
   });
 }
 
 /**
  * Calcula o score de relevância de uma linha para um termo.
- * Combina: peso do campo × tipo de match (literal > todas palavras > sinônimo)
- * + bônus por categoria + bônus por match no início do campo (prefix).
+ * Combina: peso do campo × tipo de match (literal > prefix > substring
+ * > multi-palavra > sinônimo > fuzzy) + bônus por categoria + boost
+ * extra quando o match ocorre em campos de cargo/função.
  */
 export function scoreRow(row: any, rawTerm: string, category?: UserCategory | null): number {
   const normalizedTerm = stripAccents(rawTerm);
   if (!normalizedTerm) return 0;
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
   const synonyms = expandSynonyms(rawTerm);
+  const fuzzyTokens = words.length > 0 ? words : [normalizedTerm];
 
   let score = 0;
+  let matchedRoleField = false;
   for (const field of SEARCHED_FIELDS) {
     const value = stripAccents(getSearchableValue(row, field));
     if (!value) continue;
     const w = FIELD_WEIGHTS[field] ?? 1;
+    const isRole = (ROLE_FIELDS as readonly string[]).includes(field);
 
-    if (value === normalizedTerm) {
-      score += w * 5; // match exato do campo inteiro
-      continue;
-    }
-    if (value.startsWith(normalizedTerm)) {
-      score += w * 3;
-      continue;
-    }
-    if (value.includes(normalizedTerm)) {
-      score += w * 2;
-      continue;
-    }
-    if (words.length > 0 && words.every((word) => value.includes(word))) {
-      score += w;
-      continue;
-    }
-    if (synonyms.some((s) => s !== normalizedTerm && matchesWholeWord(value, s))) {
-      score += Math.max(1, Math.floor(w / 2));
+    let hit = 0;
+    if (value === normalizedTerm) hit = w * 5;
+    else if (value.startsWith(normalizedTerm)) hit = w * 3;
+    else if (value.includes(normalizedTerm)) hit = w * 2;
+    else if (words.length > 0 && words.every((word) => value.includes(word))) hit = w;
+    else if (synonyms.some((s) => s !== normalizedTerm && matchesWholeWord(value, s)))
+      hit = Math.max(1, Math.floor(w / 2));
+    else if (fuzzyTokens.every((t) => fuzzyMatchesWord(value, t)))
+      hit = Math.max(1, Math.floor(w / 3));
+
+    if (hit > 0) {
+      // Cargo/papel casa: multiplicador que empurra o resultado para o topo.
+      if (isRole) {
+        hit = Math.round(hit * 1.5);
+        matchedRoleField = true;
+      }
+      score += hit;
     }
   }
 
-  if (category && CATEGORY_BONUS[category] != null) {
-    score += CATEGORY_BONUS[category];
-  }
+  if (matchedRoleField) score += 20; // desempate global a favor de cargo/função
+  if (category && CATEGORY_BONUS[category] != null) score += CATEGORY_BONUS[category];
   return score;
 }
+
 
 /** Ordena uma lista de linhas por relevância decrescente e desempata por nome. */
 export function sortByRelevance<T extends { name?: string; category?: UserCategory | null }>(
@@ -338,18 +421,16 @@ export function splitHighlight(
   const nTerm = stripAccents(rawTerm);
   if (!src || !nTerm) return [{ text: src, hit: false }];
 
-  // Constrói uma lista de tokens (termo inteiro + palavras).
-  const tokens = Array.from(
-    new Set(
-      [nTerm, ...nTerm.split(" ")]
-        .map((t) => t.trim())
-        .filter((t) => t.length >= 2),
-    ),
-  ).sort((a, b) => b.length - a.length);
+  // Tokens exatos: termo inteiro + palavras individuais + sinônimos expandidos.
+  const baseTokens = new Set<string>([nTerm, ...nTerm.split(" ")]);
+  for (const syn of expandSynonyms(rawTerm)) baseTokens.add(syn);
+  const tokens = Array.from(baseTokens)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2)
+    .sort((a, b) => b.length - a.length);
   if (tokens.length === 0) return [{ text: src, hit: false }];
 
   // Normaliza src caractere-a-caractere mantendo o índice original.
-  // Usamos NFD por caractere para lidar com acentos compostos.
   const normChars: string[] = [];
   const origIdx: number[] = [];
   for (let i = 0; i < src.length; i++) {
@@ -365,7 +446,7 @@ export function splitHighlight(
   }
   const norm = normChars.join("");
 
-  const ranges: Array<[number, number]> = []; // em coords originais
+  const ranges: Array<[number, number]> = [];
   for (const token of tokens) {
     let from = 0;
     while (from <= norm.length - token.length) {
@@ -378,6 +459,31 @@ export function splitHighlight(
       from = idx + token.length;
     }
   }
+
+  // Fuzzy — para cada palavra do termo, destaca palavras do src cuja
+  // distância de edição esteja dentro da tolerância (ex.: "liebrador" ↔
+  // "liberador"). Percorre limites de palavra do texto normalizado.
+  const fuzzyTerms = Array.from(baseTokens)
+    .filter((t) => t.length >= 4);
+  if (fuzzyTerms.length > 0) {
+    const wordRe = /[a-z0-9]+/g;
+    let m: RegExpExecArray | null;
+    while ((m = wordRe.exec(norm)) !== null) {
+      const w = m[0];
+      for (const t of fuzzyTerms) {
+        const tol = fuzzyTolerance(t.length);
+        if (tol === 0) continue;
+        if (Math.abs(w.length - t.length) > tol) continue;
+        if (levenshtein(w, t) <= tol) {
+          const start = origIdx[m.index];
+          const end = origIdx[m.index + w.length - 1] + 1;
+          ranges.push([start, end]);
+          break;
+        }
+      }
+    }
+  }
+
   if (ranges.length === 0) return [{ text: src, hit: false }];
 
   // Merge de intervalos sobrepostos.
