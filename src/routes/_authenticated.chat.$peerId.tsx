@@ -2117,30 +2117,6 @@ function ConversationPage() {
               if (fileRef.current) fileRef.current.value = "";
             }}
           />
-          <input
-            ref={cameraPhotoRef}
-            type="file"
-            accept="image/*"
-            {...({ capture: "environment" } as any)}
-            className="hidden"
-            onChange={(e) => {
-              const picked = Array.from(e.target.files ?? []);
-              if (picked.length) acceptIncomingFiles(picked);
-              if (cameraPhotoRef.current) cameraPhotoRef.current.value = "";
-            }}
-          />
-          <input
-            ref={cameraVideoRef}
-            type="file"
-            accept="video/*"
-            {...({ capture: "environment" } as any)}
-            className="hidden"
-            onChange={(e) => {
-              const picked = Array.from(e.target.files ?? []);
-              if (picked.length) acceptIncomingFiles(picked);
-              if (cameraVideoRef.current) cameraVideoRef.current.value = "";
-            }}
-          />
 
           <div className="mb-2 flex items-center gap-1.5">
             <button
