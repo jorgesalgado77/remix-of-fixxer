@@ -88,7 +88,7 @@ export async function probeAutoplay(): Promise<
       return "granted";
     }
     try { await ctx.resume(); } catch { /* ignore */ }
-    const state = ctx.state;
+    const state: string = ctx.state;
     try { await ctx.close(); } catch { /* ignore */ }
     return state === "running" ? "granted" : "gesture-required";
   } catch {
