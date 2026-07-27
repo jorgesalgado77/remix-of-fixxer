@@ -61,13 +61,24 @@ const CATEGORY_BONUS: Record<UserCategory, number> = {
 /** Sinônimos leves para tolerância a variações comuns em pt-BR. Grupos
  * bidirecionais: qualquer token do grupo expande para todos os outros. */
 const SYNONYM_GROUPS: string[][] = [
-  ["moveis", "movel", "mobilia", "mobiliario"],
+  ["moveis", "movel", "mobilia", "mobiliario", "marcenaria", "marceneiro"],
   ["barbearia", "barbeiro", "barber"],
-  ["eletricista", "eletrico", "eletrica"],
-  ["chaveiro", "chave"],
-  ["pintura", "pintor"],
-  ["montador", "montagem"],
+  ["eletricista", "eletrico", "eletrica", "eletricidade", "eletro"],
+  ["chaveiro", "chave", "chaves"],
+  ["pintura", "pintor", "pintores"],
+  ["montador", "montagem", "montadores", "monta"],
   ["conferente", "conferencia", "confer"],
+  ["medidor", "medidores", "medicao", "medida", "medidas", "medir", "hidrometro", "relojoeiro"],
+  ["encanador", "encanamento", "hidraulico", "hidraulica"],
+  ["pedreiro", "alvenaria", "construcao", "obra", "obras"],
+  ["mecanico", "mecanica", "auto", "automotivo"],
+  ["jardineiro", "jardinagem", "jardim", "paisagismo"],
+  ["diarista", "faxina", "faxineira", "limpeza"],
+  ["gesseiro", "gesso", "drywall"],
+  ["marmoraria", "marmore", "granito", "marmorista"],
+  ["serralheria", "serralheiro", "solda", "soldador"],
+  ["vidraceiro", "vidracaria", "vidro", "vidros"],
+  ["tapeceiro", "tapecaria", "estofado", "estofador"],
 ];
 const SYNONYMS: Record<string, string[]> = (() => {
   const map: Record<string, string[]> = {};
@@ -76,6 +87,31 @@ const SYNONYMS: Record<string, string[]> = (() => {
   }
   return map;
 })();
+
+/**
+ * Reduz uma palavra à sua raiz aproximada removendo sufixos comuns em pt-BR
+ * (dor, dora, eiro, eira, ista, agem, cao, mento, ura, ico, ica, ador, edor).
+ * Não é um stemmer completo — só serve para tolerar variações morfológicas
+ * na busca (ex.: "medidor" ↔ "medição", "montador" ↔ "montagem").
+ */
+export function stemPt(word: string): string {
+  const w = stripAccents(word);
+  if (w.length < 5) return w;
+  const suffixes = [
+    "adores", "edores", "idores", "adoras", "edoras", "idoras",
+    "ismos", "istas", "mentos", "coes",
+    "ador", "edor", "idor", "adora", "edora", "idora",
+    "eiro", "eira", "eiros", "eiras",
+    "ista", "agem", "mento", "cao", "ura", "ico", "ica",
+    "oes", "aes", "ais",
+    "ar", "er", "ir",
+    "os", "as", "es", "s",
+  ];
+  for (const suf of suffixes) {
+    if (w.length - suf.length >= 4 && w.endsWith(suf)) return w.slice(0, -suf.length);
+  }
+  return w;
+}
 
 /** Remove acentos, normaliza espaços/pontuação e caixa. */
 export function stripAccents(s: unknown): string {
@@ -88,17 +124,24 @@ export function stripAccents(s: unknown): string {
     .trim();
 }
 
-/** Expande o termo com sinônimos conhecidos (retorna lista de tokens). */
+/** Expande o termo com sinônimos conhecidos + stems aproximados. */
 export function expandSynonyms(term: string): string[] {
   const base = stripAccents(term);
   if (!base) return [];
   const tokens = new Set<string>([base]);
   for (const word of base.split(" ")) {
+    if (!word) continue;
     tokens.add(word);
-    const syn = SYNONYMS[word];
-    if (syn) syn.forEach((s) => tokens.add(s));
+    const stem = stemPt(word);
+    if (stem && stem.length >= 3) tokens.add(stem);
+    const syn = SYNONYMS[word] ?? SYNONYMS[stem];
+    if (syn) syn.forEach((s) => {
+      tokens.add(s);
+      const st = stemPt(s);
+      if (st && st.length >= 3) tokens.add(st);
+    });
   }
-  return Array.from(tokens).filter((t) => t.length >= 2);
+  return Array.from(tokens).filter((t) => t.length >= 3);
 }
 
 function stringifyValue(value: unknown): string {

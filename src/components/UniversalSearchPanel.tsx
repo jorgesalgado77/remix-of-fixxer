@@ -26,6 +26,7 @@ import {
   getMatchedFields,
   scoreRow,
   splitHighlight,
+  expandSynonyms,
   SEARCHED_FIELDS,
 } from "@/lib/universal-search";
 import { toast } from "sonner";
@@ -230,7 +231,10 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
       // encontrem "Móveis Planejados" mesmo quando o RPC não expõe todas as
       // colunas usadas na correspondência local.
       let usedPath: "rpc" | "or" | "broad" = "broad";
-      const variants = Array.from(new Set([rawTerm, q, qNoAccent].filter(Boolean)));
+      const synonyms = expandSynonyms(rawTerm);
+      const variants = Array.from(
+        new Set([rawTerm, q, qNoAccent, ...synonyms].filter((t) => t && t.length >= 2)),
+      );
       const textFields = SEARCHED_FIELDS.filter(
         (f) => f !== "custom_sections" && f !== "categories",
       );
