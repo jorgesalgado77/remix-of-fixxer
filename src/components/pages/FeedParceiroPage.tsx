@@ -40,6 +40,13 @@ import {
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { MacroBranchChips, getMacroSearchTerms } from "@/components/MacroBranchChips";
+import {
+  useUserBranchContext,
+  scoreRelevanceDetailed,
+  relevanceRank,
+  applyRelevanceFallback,
+} from "@/lib/branch-relevance";
+import { RelevanceBadge } from "@/components/RelevanceBadge";
 
 // =============================================================================
 // TIPOS
@@ -664,14 +671,27 @@ export default function FeedParceiroPage() {
     });
   }, [search, activeSector, statusFilter]);
 
-  const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  const branchCtx = useUserBranchContext();
+  const rankedFiltered = useMemo(() => {
+    if (!branchCtx.hasContext) return filtered;
+    const decorated = filtered.map((r) => ({
+      r,
+      _relevance: scoreRelevanceDetailed([r.sector, r.title], branchCtx),
+    }));
+    const sorted = [...decorated].sort(
+      (a, b) => relevanceRank(a._relevance.level) - relevanceRank(b._relevance.level),
+    );
+    return applyRelevanceFallback(sorted, 3).map((x) => x.r);
+  }, [filtered, branchCtx]);
+
+  const paged = useMemo(() => rankedFiltered.slice(0, page * PAGE_SIZE), [rankedFiltered, page]);
   useFeedPreload(
-    filtered,
+    rankedFiltered,
     paged.length,
     PAGE_SIZE,
     (r) => r.attachment ?? null,
   );
-  const hasMore = paged.length < filtered.length;
+  const hasMore = paged.length < rankedFiltered.length;
 
   useEffect(() => {
     setPage(1);
@@ -877,15 +897,21 @@ export default function FeedParceiroPage() {
               const accentRgba = (a: number) =>
                 isPrestador ? `rgba(255, 159, 10, ${a})` : `rgba(0, 229, 255, ${a})`;
               const roleLabel = isPrestador ? "✓ Prestador" : "✓ Lojista";
+              const _relevance = scoreRelevanceDetailed([r.sector, r.title], branchCtx);
               return (
                 <li
                   key={r.id}
-                  className="feed-item-cv overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
+                  className="feed-item-cv overflow-hidden rounded-2xl border-2 bg-[#1A1A1B] relative"
                   style={{
                     borderColor: accentRgba(0.35),
                     boxShadow: `0 0 18px ${accentRgba(0.1)}`,
                   }}
                 >
+                  {_relevance.level !== "none" && (
+                    <div className="absolute right-3 top-3 z-10">
+                      <RelevanceBadge result={_relevance} compact />
+                    </div>
+                  )}
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
                     <Link

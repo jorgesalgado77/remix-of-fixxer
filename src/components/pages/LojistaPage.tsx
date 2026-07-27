@@ -77,6 +77,7 @@ import { ActivitySelect } from "@/components/ActivitySelect";
 import { useActivityBranches } from "@/hooks/use-activity-branches";
 import { PhotoSectionsManager, EMPTY_PHOTO_SECTIONS, type PhotoSectionsValue } from "@/components/PhotoSectionsManager";
 import { RecentPartnersCarousel } from "@/components/RecentPartnersCarousel";
+import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -1342,6 +1343,8 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
             </div>
             
             <RecentPartnersCarousel />
+
+            <MyAppointmentsSection />
 
             <div className="bg-[#1A1A1B] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl">
                 <div className="flex flex-col space-y-4 mb-6">

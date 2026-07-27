@@ -29,6 +29,13 @@ import { FeedErrorState } from "@/components/FeedErrorState";
 import { useFeedPreload } from "@/hooks/use-feed-preload";
 import { usePersistedState } from "@/lib/feed-persist";
 import { Lock, Coins, Loader2 } from "lucide-react";
+import {
+  useUserBranchContext,
+  scoreRelevanceDetailed,
+  relevanceRank,
+  applyRelevanceFallback,
+} from "@/lib/branch-relevance";
+import { RelevanceBadge } from "@/components/RelevanceBadge";
 
 import {
   ArrowLeft,
@@ -658,7 +665,7 @@ export default function FeedLojistaPage() {
     } catch {}
   }, [saved, savesLoaded]);
 
-  const visible = useMemo(() => {
+  const visibleRaw = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
     const byCategory = MOCK_POSTS.filter((p) => filter === "todos" || p.category === filter);
     const byStatus =
@@ -686,6 +693,22 @@ export default function FeedLojistaPage() {
       return 0;
     });
   }, [filter, statusFilter, debouncedSearch]);
+
+  const branchCtx = useUserBranchContext();
+  const visible = useMemo(() => {
+    if (!branchCtx.hasContext) return visibleRaw;
+    const decorated = visibleRaw.map((p) => ({
+      p,
+      _relevance: scoreRelevanceDetailed(
+        [p.specialty ?? "", ...(p.keywords ?? []), p.title],
+        branchCtx,
+      ),
+    }));
+    const sorted = [...decorated].sort(
+      (a, b) => relevanceRank(a._relevance.level) - relevanceRank(b._relevance.level),
+    );
+    return applyRelevanceFallback(sorted, 3).map((x) => x.p);
+  }, [visibleRaw, branchCtx]);
 
   const paged = useMemo(() => visible.slice(0, page * PAGE_SIZE), [visible, page]);
   const hasMore = paged.length < visible.length;
@@ -948,8 +971,17 @@ export default function FeedLojistaPage() {
               )}
               {paged.map((post) => {
                 const locked = !post.author.isMine && !postUnlock.isUnlocked(post.id);
+                const _relevance = scoreRelevanceDetailed(
+                  [post.specialty ?? "", ...(post.keywords ?? []), post.title],
+                  branchCtx,
+                );
                 return (
-                  <div key={post.id} className="feed-item-cv">
+                  <div key={post.id} className="feed-item-cv relative">
+                    {_relevance.level !== "none" && (
+                      <div className="absolute right-3 top-3 z-10">
+                        <RelevanceBadge result={_relevance} compact />
+                      </div>
+                    )}
                     <PostCard
                       post={post}
                       isSaved={saved.has(post.id)}

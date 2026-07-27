@@ -27,6 +27,13 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { FeedErrorState } from "@/components/FeedErrorState";
 import { useFeedPreload } from "@/hooks/use-feed-preload";
 import { usePersistedState } from "@/lib/feed-persist";
+import {
+  useUserBranchContext,
+  scoreRelevanceDetailed,
+  relevanceRank,
+  applyRelevanceFallback,
+} from "@/lib/branch-relevance";
+import { RelevanceBadge } from "@/components/RelevanceBadge";
 
 import {
   ArrowLeft,
@@ -1160,15 +1167,28 @@ export default function FeedPrestadorPage() {
     });
   }, [debouncedSearch, filter, statusFilter]);
 
+  const branchCtx = useUserBranchContext();
+  const rankedFiltered = useMemo(() => {
+    if (!branchCtx.hasContext) return filtered;
+    const decorated = filtered.map((job) => ({
+      job,
+      _relevance: scoreRelevanceDetailed([job.subcategory, job.title], branchCtx),
+    }));
+    const sorted = [...decorated].sort(
+      (a, b) => relevanceRank(a._relevance.level) - relevanceRank(b._relevance.level),
+    );
+    return applyRelevanceFallback(sorted, 3).map((x) => x.job);
+  }, [filtered, branchCtx]);
+
   // Paginação por scroll infinito
-  const paged = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  const paged = useMemo(() => rankedFiltered.slice(0, page * PAGE_SIZE), [rankedFiltered, page]);
   useFeedPreload(
-    filtered,
+    rankedFiltered,
     paged.length,
     PAGE_SIZE,
     (job) => job.media?.[0]?.poster ?? job.media?.[0]?.url ?? null,
   );
-  const hasMore = paged.length < filtered.length;
+  const hasMore = paged.length < rankedFiltered.length;
 
   useEffect(() => {
     setPage(1);
@@ -1337,8 +1357,15 @@ export default function FeedPrestadorPage() {
         )}
 
         {!searching &&
-          paged.map((job) => (
-            <div key={job.id} className="feed-item-cv">
+          paged.map((job) => {
+            const _relevance = scoreRelevanceDetailed([job.subcategory, job.title], branchCtx);
+            return (
+            <div key={job.id} className="feed-item-cv relative">
+              {_relevance.level !== "none" && (
+                <div className="absolute right-3 top-3 z-10">
+                  <RelevanceBadge result={_relevance} compact />
+                </div>
+              )}
               <JobCard
                 job={job}
                 saved={saved.has(job.id)}
@@ -1354,7 +1381,8 @@ export default function FeedPrestadorPage() {
                 onUnlock={() => { void postUnlock.unlock(job.id); }}
               />
             </div>
-          ))}
+            );
+          })}
 
         {/* Sentinel de scroll infinito */}
         {!searching && filtered.length > 0 && (
