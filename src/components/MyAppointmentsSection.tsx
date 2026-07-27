@@ -139,9 +139,15 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
               title: "Novo agendamento",
               body: `${APPOINTMENT_TYPES[a.type]?.label ?? "Compromisso"} — ${fmtWhen(a.scheduled_at)}`,
               url: `/agenda/${a.id}`,
+              appointmentId: a.id,
               tag: `fixxer-appt-new-${a.id}`,
               silent: !canPlaySoundNow(prefs),
+              actions: [
+                { action: "open", title: "Abrir" },
+                { action: "cancel", title: "Cancelar" },
+              ],
             }, prefs);
+
 
           }
         }
