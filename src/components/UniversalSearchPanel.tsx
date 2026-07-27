@@ -218,7 +218,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
         textFields.map((field) => `${field}.ilike.%${term.replace(/[(),%_]/g, " ")}%`),
       );
 
-      const [rpcRes, orRes, broadRes] = await Promise.all([
+      const [rpcRes, orRes, broadRes, profilesOrRes, profilesBroadRes] = await Promise.all([
         supabaseExternal
           .rpc("search_profiles_public", { q: rawTerm })
           .abortSignal(ac.signal)
@@ -236,20 +236,44 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
           .limit(FALLBACK_SEARCH_LIMIT)
           .abortSignal(ac.signal)
           .then((r) => r, (err) => ({ data: null, error: err })),
+        // Fallback direto na tabela profiles — cobre casos em que a view
+        // profiles_public não expõe algum campo (ex.: __extras) ou ainda
+        // não foi atualizada com o novo perfil recém-cadastrado.
+        supabaseExternal
+          .from("profiles")
+          .select("*")
+          .or(orParts.join(","))
+          .limit(200)
+          .abortSignal(ac.signal)
+          .then((r) => r, (err) => ({ data: null, error: err })),
+        supabaseExternal
+          .from("profiles")
+          .select("*")
+          .limit(FALLBACK_SEARCH_LIMIT)
+          .abortSignal(ac.signal)
+          .then((r) => r, (err) => ({ data: null, error: err })),
       ]);
 
       const rpcRows = Array.isArray(rpcRes?.data) ? (rpcRes!.data as any[]) : [];
       const orRows = Array.isArray(orRes?.data) ? (orRes!.data as any[]) : [];
       const broadRows = Array.isArray(broadRes?.data) ? (broadRes!.data as any[]) : [];
+      const profilesOrRows = Array.isArray(profilesOrRes?.data) ? (profilesOrRes!.data as any[]) : [];
+      const profilesBroadRows = Array.isArray(profilesBroadRes?.data) ? (profilesBroadRes!.data as any[]) : [];
 
       if (rpcRows.length > 0) usedPath = "rpc";
-      else if (orRows.length > 0) usedPath = "or";
+      else if (orRows.length > 0 || profilesOrRows.length > 0) usedPath = "or";
 
       // RPC vem pré-filtrado pelo servidor → confiamos. Os demais passam por
       // rowMatchesTerm no cliente (accent/case-insensitive, multi-palavra).
       const orFiltered = orRows.filter((row) => rowMatchesTerm(row, rawTerm));
       const broadFiltered = broadRows.filter((row) => rowMatchesTerm(row, rawTerm));
-      let data = mergeRows(mergeRows(rpcRows, orFiltered), broadFiltered);
+      const profilesOrFiltered = profilesOrRows.filter((row) => rowMatchesTerm(row, rawTerm));
+      const profilesBroadFiltered = profilesBroadRows.filter((row) => rowMatchesTerm(row, rawTerm));
+      let data = mergeRows(
+        mergeRows(mergeRows(rpcRows, orFiltered), broadFiltered),
+        mergeRows(profilesOrFiltered, profilesBroadFiltered),
+      );
+
 
       if (data.length === 0 && rpcRes?.error && orRes?.error && broadRes?.error) {
         throw rpcRes?.error ?? orRes?.error ?? broadRes?.error;
