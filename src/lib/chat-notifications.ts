@@ -22,7 +22,7 @@ export function loadNotifyPrefs(): ChatNotifyPrefs {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return { enabled: false, onlyWhenBlurred: true };
-    return { enabled: false, onlyWhenBlurred: true, ...(JSON.parse(raw) as ChatNotifyPrefs) };
+    return { ...{ enabled: false, onlyWhenBlurred: true }, ...(JSON.parse(raw) as ChatNotifyPrefs) };
   } catch {
     return { enabled: false, onlyWhenBlurred: true };
   }
