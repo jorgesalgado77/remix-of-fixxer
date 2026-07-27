@@ -62,7 +62,7 @@ type PartnerRow = {
 type PartnerKind = "prestador" | "fornecedor";
 type PartnerCard = PartnerRow & { _kind: PartnerKind };
 type SortMode = "recent" | "rating" | "nearby";
-type KindFilter = "all" | PartnerKind;
+type KindFilter = "all" | "mine" | PartnerKind;
 
 const CACHE_KEY = "fixxer_recent_partners_v4";
 const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
