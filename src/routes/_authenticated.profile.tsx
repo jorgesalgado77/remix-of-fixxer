@@ -67,6 +67,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
     return {
       id: search.id as string | undefined,
       context: search.context as string | undefined,
+      focus: search.focus as string | undefined,
     };
   },
   component: ProfilePage,
