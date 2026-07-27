@@ -117,6 +117,26 @@ function normalizeCategory(raw: any): Cat | null {
 }
 
 /**
+ * Infere a categoria do usuário quando `role`/`user_type`/`category` não vêm
+ * preenchidos na view/tabela (ex.: `profiles_public` que expõe subset de
+ * colunas). Heurística conservadora usando pistas do próprio perfil.
+ */
+function inferCategory(row: any): Cat {
+  const extras = (row?.custom_sections && (row.custom_sections as any).__extras) || {};
+  const hasCompany = !!(row?.company_name || row?.cnpj || row?.document_number || extras.cnpj);
+  const hasStoreHints =
+    !!(row?.business_category || row?.store_name || extras.store_name) && hasCompany;
+  if (hasStoreHints) return "lojista";
+  if (hasCompany && /forneced|atacad|distribu|b2b|parceiro/i.test(String(row?.business_category ?? ""))) {
+    return "fornecedor";
+  }
+  if (row?.specialty || row?.custom_branch || row?.activity_branch || row?.job_roles || row?.preferred_service) {
+    return "prestador";
+  }
+  return hasCompany ? "lojista" : "prestador";
+}
+
+/**
  * Resolve a URL de foto do perfil tentando múltiplas colunas conhecidas
  * (avatar_url, logo_url, photo_url, foto_url, profile_photo_url) e o
  * fallback nos extras salvos em `custom_sections.__extras`.
@@ -282,8 +302,11 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
 
       const mapped: ResultItem[] = (data ?? [])
         .map((r: any) => {
-          const cat = normalizeCategory(r.category ?? r.role ?? r.user_type);
-          if (!cat) return null;
+          // Preferimos o campo explícito; quando ausente (comum em
+          // profiles_public que expõe subset de colunas) inferimos por
+          // pistas do próprio perfil ao invés de descartar a linha.
+          const cat =
+            normalizeCategory(r.category ?? r.role ?? r.user_type) ?? inferCategory(r);
           const c = cityCoords(r.city);
           const km = c && userCoords ? haversineKm(userCoords, c) : null;
           // Fallback: quando custom_branch estiver vazio, usa company_name.
