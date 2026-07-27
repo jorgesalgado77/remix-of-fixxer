@@ -40,6 +40,7 @@ function ClientePortal() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-24 animate-in fade-in duration-500">
+      <ProfileSummaryCard role="cliente" variant="sidebar" />
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -62,9 +63,11 @@ function ClientePortal() {
             </Link>
             <TabButton active={activeTab === 'contratacoes'} onClick={() => setActiveTab('contratacoes')} label="Contratações" icon={<ShieldCheck className="w-3 h-3" />} />
           </div>
+          <ProfileSummaryCard role="cliente" />
           <PanelActions role="cliente" />
         </div>
       </header>
+
 
       <CoinBalancePlanCard />
 
