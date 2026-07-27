@@ -124,7 +124,10 @@ export function stripAccents(s: unknown): string {
     .trim();
 }
 
-/** Expande o termo com sinônimos conhecidos + stems aproximados. */
+/** Expande o termo com sinônimos conhecidos + stems aproximados.
+ *  Só emite tokens com pelo menos 4 caracteres para evitar que raízes muito
+ *  curtas (ex.: "med", "medi") casem substrings alheias ao domínio
+ *  ("comédia", "sob medida", "mídia"). */
 export function expandSynonyms(term: string): string[] {
   const base = stripAccents(term);
   if (!base) return [];
@@ -133,15 +136,23 @@ export function expandSynonyms(term: string): string[] {
     if (!word) continue;
     tokens.add(word);
     const stem = stemPt(word);
-    if (stem && stem.length >= 3) tokens.add(stem);
-    const syn = SYNONYMS[word] ?? SYNONYMS[stem];
+    if (stem && stem.length >= 5) tokens.add(stem);
+    const syn = SYNONYMS[word] ?? (stem.length >= 5 ? SYNONYMS[stem] : undefined);
     if (syn) syn.forEach((s) => {
       tokens.add(s);
       const st = stemPt(s);
-      if (st && st.length >= 3) tokens.add(st);
+      if (st && st.length >= 5) tokens.add(st);
     });
   }
-  return Array.from(tokens).filter((t) => t.length >= 3);
+  return Array.from(tokens).filter((t) => t.length >= 4);
+}
+
+/** Casa um token como palavra completa dentro do haystack (accent/case
+ *  já normalizado). Evita que "medi" case "medida" ou "medicao". */
+function matchesWholeWord(haystack: string, token: string): boolean {
+  if (!token) return false;
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(haystack);
 }
 
 function stringifyValue(value: unknown): string {
