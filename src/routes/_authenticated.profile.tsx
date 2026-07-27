@@ -1287,6 +1287,54 @@ function ProfilePage() {
               </div>
 
 
+              {/* REDES SOCIAIS — visível para o próprio dono do perfil */}
+              {!profileId && (
+                <div className="pt-8 space-y-6">
+                  <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                    <ExternalLink className="w-6 h-6 text-primary" />
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Redes Sociais</h3>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest -mt-2">
+                    Aparecem no seu perfil público. Deixe em branco para ocultar.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { key: 'instagram', label: 'Instagram', placeholder: '@suaempresa', accent: 'focus:border-pink-500/50' },
+                      { key: 'facebook',  label: 'Facebook',  placeholder: 'facebook.com/suaempresa', accent: 'focus:border-[#1877F2]/50' },
+                      { key: 'tiktok',    label: 'TikTok',    placeholder: '@suaempresa', accent: 'focus:border-white/40' },
+                      { key: 'site_url',  label: 'Site / Website', placeholder: 'https://www.suaempresa.com.br', accent: 'focus:border-blue-400/50' },
+                    ].map((f) => (
+                      <div key={f.key} className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{f.label}</label>
+                        <input
+                          type="text"
+                          value={profile?.[f.key] ?? ''}
+                          onChange={(e) => setProfile({ ...profile, [f.key]: e.target.value })}
+                          placeholder={f.placeholder}
+                          className={`w-full h-12 rounded-2xl bg-white/5 border border-white/10 px-4 text-sm outline-none transition-all ${f.accent}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SEGURANÇA DA CONTA — senha + zona de perigo */}
+              {!profileId && (
+                <div className="pt-8 space-y-6">
+                  <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                    <BadgeCheck className="w-6 h-6 text-primary" />
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Segurança da Conta</h3>
+                  </div>
+
+                  <SecuritySection />
+                </div>
+              )}
+
+
+
+
+
 
               {/* CAMPOS ESPECÍFICOS: LOJISTA — Tipo de Produto (multi-seleção) */}
               {profile?.role === 'lojista' && (
