@@ -178,7 +178,7 @@ function readFilter(): KindFilter {
   if (typeof window === "undefined") return "all";
   try {
     const v = window.localStorage.getItem(FILTER_KEY);
-    return v === "prestador" || v === "fornecedor" ? v : "all";
+    return v === "prestador" || v === "fornecedor" || v === "mine" ? v : "all";
   } catch { return "all"; }
 }
 
