@@ -17,6 +17,7 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { CoinFeedbackBridge } from "@/components/CoinFeedbackBridge";
 import { CoinConfirmProvider } from "@/components/ConfirmCoinsDialog";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { ChatRealtimeDebugPanel } from "@/components/Chat/RealtimeDebugPanel";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -229,6 +230,7 @@ function RootComponent() {
         <CoinFeedbackBridge />
         <CoinConfirmProvider />
         <OfflineBanner />
+        <ChatRealtimeDebugPanel />
         <Toaster closeButton duration={2000} />
       </div>
     </QueryClientProvider>

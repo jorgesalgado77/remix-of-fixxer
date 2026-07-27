@@ -56,6 +56,7 @@ import { peekPublicProfileCategory } from "@/lib/public-profile-category";
 import { classifyChatError, sendWithRetry, validateChatIdentities } from "@/lib/chat-send";
 import { startGlobalPresence, subscribeGlobalPresence, isPeerOnline } from "@/lib/chat-presence";
 import { playIncomingMessageSound } from "@/lib/chat-sound";
+import { setRoomStatus, incrRoomEvent, clearRoom } from "@/lib/chat-realtime-debug";
 import { ChatEmojiPicker } from "@/components/Chat/EmojiPicker";
 import { ChatVoiceRecorder } from "@/components/Chat/VoiceRecorder";
 import { ScheduleAppointmentModal } from "@/components/ScheduleAppointmentModal";
@@ -328,13 +329,20 @@ function ConversationPage() {
   const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const markReadInflightRef = useRef<Promise<void> | null>(null);
   const markIncomingRead = (uid: string) => {
+    // Só marca como lida quando o destinatário está DE FATO visualizando:
+    // aba visível, documento em foco e scroll perto do fim da conversa.
+    // Se estiver rolando o histórico ou com a aba em segundo plano, adia.
+    if (typeof document !== "undefined") {
+      if (document.visibilityState !== "visible") return;
+      if (typeof document.hasFocus === "function" && !document.hasFocus()) return;
+    }
+    if (!isNearBottomRef.current) return;
     if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
     markReadTimerRef.current = setTimeout(async () => {
       setMarkingRead(true);
       try {
         enqueueMarkConversationRead(uid, peerId);
         markConversationReadLocal(uid, peerId);
-        // Aguarda a confirmação do servidor antes de propagar o evento global.
         const inflight = flushChatReadQueue().catch(() => {});
         markReadInflightRef.current = inflight;
         await inflight;
@@ -522,6 +530,9 @@ function ConversationPage() {
       let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
       let reconnectAttempt = 0;
       let closed = false;
+      // Nome estável da sala para telemetria (independe do channelName aleatório).
+      const roomKey = `messages:${[uid, peerId].sort().join(":")}`;
+      setRoomStatus(roomKey, "connecting");
       const attachMessagesChannel = () => {
         if (cancelled || closed) return;
         try {
@@ -538,6 +549,7 @@ function ConversationPage() {
                   (m.sender_id === uid && m.recipient_id === peerId) ||
                   (m.sender_id === peerId && m.recipient_id === uid);
                 if (!inConv) return;
+                incrRoomEvent(roomKey, "message");
                 if (m.client_message_id) {
                   setMessages((prev) => {
                     const idx = prev.findIndex(
@@ -572,24 +584,28 @@ function ConversationPage() {
               if (status === "SUBSCRIBED") {
                 reconnectAttempt = 0;
                 setRealtimeReconnecting(false);
-                // Preenche qualquer mensagem perdida durante o downtime.
+                setRoomStatus(roomKey, "connected");
                 try { void catchUpRef.current?.(); } catch {}
                 return;
               }
               if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
                 if (cancelled || closed) return;
                 setRealtimeReconnecting(true);
+                setRoomStatus(roomKey, status === "CHANNEL_ERROR" ? "error" : "reconnecting");
                 try { supabaseExternal.removeChannel(ch); } catch {}
                 channel = null;
                 const delay = Math.min(30_000, 1000 * 2 ** reconnectAttempt);
                 reconnectAttempt++;
                 if (reconnectTimer) clearTimeout(reconnectTimer);
-                reconnectTimer = setTimeout(attachMessagesChannel, delay);
+                reconnectTimer = setTimeout(() => {
+                  setRoomStatus(roomKey, "connecting");
+                  attachMessagesChannel();
+                }, delay);
               }
             });
           channel = ch;
         } catch {
-          // Backoff mesmo em falha síncrona.
+          setRoomStatus(roomKey, "error");
           const delay = Math.min(30_000, 1000 * 2 ** reconnectAttempt);
           reconnectAttempt++;
           if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -638,6 +654,7 @@ function ConversationPage() {
           })
           .on("broadcast", { event: "typing" }, ({ payload }: any) => {
             if (payload?.from !== peerId) return;
+            incrRoomEvent(`presence:${key}`, "broadcast");
             lastPeerHeartbeat = Date.now();
             setPeerTyping(true);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -645,6 +662,7 @@ function ConversationPage() {
           })
           .on("broadcast", { event: "typing-stop" }, ({ payload }: any) => {
             if (payload?.from !== peerId) return;
+            incrRoomEvent(`presence:${key}`, "broadcast");
             setPeerTyping(false);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
           })
@@ -659,6 +677,7 @@ function ConversationPage() {
               (m.sender_id === uid && m.recipient_id === peerId) ||
               (m.sender_id === peerId && m.recipient_id === uid);
             if (!inConv) return;
+            incrRoomEvent(`presence:${key}`, "broadcast");
             setMessages((prev) => {
               // Match por client_message_id (otimista) ou id.
               const idx = prev.findIndex(
@@ -683,7 +702,12 @@ function ConversationPage() {
           })
           .subscribe(async (status: string) => {
             if (status === "SUBSCRIBED") {
+              setRoomStatus(`presence:${key}`, "connected");
               try { await presenceChannel.track({ online_at: Date.now() }); } catch {}
+            } else if (status === "CHANNEL_ERROR") {
+              setRoomStatus(`presence:${key}`, "error");
+            } else if (status === "TIMED_OUT" || status === "CLOSED") {
+              setRoomStatus(`presence:${key}`, "reconnecting");
             }
           });
         presenceRef.current = presenceChannel;
@@ -738,6 +762,11 @@ function ConversationPage() {
       if (unsubPeerRead) { try { unsubPeerRead(); } catch {} }
       presenceRef.current = null;
       try { (presenceRef as any).__msgCleanup?.(); (presenceRef as any).__msgCleanup = null; } catch {}
+      try {
+        const key = [userId ?? "?", peerId].sort().join(":");
+        clearRoom(`messages:${[userId ?? "?", peerId].sort().join(":")}`);
+        clearRoom(`presence:${key}`);
+      } catch {}
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -851,8 +880,11 @@ function ConversationPage() {
 
   const onScrollFeed = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
+    const wasNear = isNearBottomRef.current;
     isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
     if (isNearBottomRef.current && pendingScrollHint > 0) setPendingScrollHint(0);
+    // Ao chegar ao fim novamente, confirma a leitura das mensagens visíveis.
+    if (!wasNear && isNearBottomRef.current && userId) markIncomingRead(userId);
     if (!hasMore || loading) return;
     if (el.scrollTop < 80) void loadOlder();
   };
