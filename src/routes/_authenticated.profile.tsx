@@ -146,7 +146,7 @@ function ProfilePage() {
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
-  const { id: profileId, context: postId } = Route.useSearch() as { id?: string; context?: string };
+  const { id: profileId, context: postId, focus: focusField } = Route.useSearch() as { id?: string; context?: string; focus?: string };
   const [targetPost, setTargetPost] = useState<any>(null);
 
   useEffect(() => {
