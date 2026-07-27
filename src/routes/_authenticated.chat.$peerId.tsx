@@ -47,6 +47,9 @@ import {
 } from "@/lib/chat-preferences";
 import { enqueueMarkConversationRead, flushChatReadQueue } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
+import { uploadWithRetry } from "@/lib/upload-with-retry";
+import ExportChatModal from "@/components/Chat/ExportChatModal";
+import { notifyIncomingMessage, requestNotificationPermission, currentPermission } from "@/lib/chat-notifications";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { sanitizeContactText, CONTACT_GUARD_WARNING } from "@/lib/contact-guard";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
