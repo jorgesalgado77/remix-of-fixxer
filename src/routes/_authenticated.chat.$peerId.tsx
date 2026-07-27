@@ -677,6 +677,7 @@ function ConversationPage() {
               (m.sender_id === uid && m.recipient_id === peerId) ||
               (m.sender_id === peerId && m.recipient_id === uid);
             if (!inConv) return;
+            incrRoomEvent(`presence:${key}`, "broadcast");
             setMessages((prev) => {
               // Match por client_message_id (otimista) ou id.
               const idx = prev.findIndex(
