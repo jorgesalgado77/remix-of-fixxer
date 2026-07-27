@@ -73,7 +73,7 @@ const FILTER_KEY = "fixxer_recent_partners_filter_v1";
 const URL_SORT_PARAM = "partnersSort";
 const URL_FILTER_PARAM = "partnersKind";
 const VALID_SORTS: SortMode[] = ["recent", "rating", "nearby"];
-const VALID_FILTERS: KindFilter[] = ["all", "prestador", "fornecedor"];
+const VALID_FILTERS: KindFilter[] = ["all", "mine", "prestador", "fornecedor"];
 function readUrlParam<T extends string>(name: string, valid: T[]): T | null {
   if (typeof window === "undefined") return null;
   try {
