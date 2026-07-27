@@ -1,4 +1,4 @@
-// FIXXER Service Worker — Push Notifications
+// FIXXER Service Worker — Push Notifications + ações do agendamento
 self.addEventListener("install", (e) => {
   self.skipWaiting();
 });
@@ -21,16 +21,28 @@ self.addEventListener("push", (event) => {
     badge: "/favicon.ico",
     tag: data.tag,
     renotify: true,
-    data: { url: data.url || "/dashboard" },
+    data: { url: data.url || "/dashboard", appointmentId: data.appointmentId || null },
     vibrate: [100, 50, 100],
+    actions: Array.isArray(data.actions) ? data.actions.slice(0, 2) : undefined,
   };
 
   event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
+function resolveActionUrl(notif, action) {
+  const base = notif.data?.url || "/dashboard";
+  const apptId = notif.data?.appointmentId;
+  // Se houver ação e appointmentId, roteia para a página de detalhes com ?action=…
+  if (action && apptId && (action === "reschedule" || action === "cancel")) {
+    return `/agenda/${apptId}?action=${action}`;
+  }
+  if (action === "open" && apptId) return `/agenda/${apptId}`;
+  return base;
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || "/dashboard";
+  const targetUrl = resolveActionUrl(event.notification, event.action);
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
