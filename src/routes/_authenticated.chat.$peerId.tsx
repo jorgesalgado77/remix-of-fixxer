@@ -515,57 +515,107 @@ function ConversationPage() {
 
 
 
-      // Canal de INSERT/UPDATE de mensagens
-      try {
-        const channelName = `chat-conv-${Math.random().toString(36).slice(2)}`;
-        channel = supabaseExternal
-          .channel(channelName)
-          .on(
-            "postgres_changes" as any,
-            { event: "*", schema: "public", table: "messages" },
-            (payload: any) => {
-              const m = payload?.new as MessageRow | undefined;
-              if (!m) return;
-              const inConv =
-                (m.sender_id === uid && m.recipient_id === peerId) ||
-                (m.sender_id === peerId && m.recipient_id === uid);
-              if (!inConv) return;
-              // Idempotência: se veio da minha própria escrita otimista,
-              // atualiza a linha em vez de duplicar (match por client_message_id).
-              if (m.client_message_id) {
-                setMessages((prev) => {
-                  const idx = prev.findIndex(
-                    (x) => x._clientId === m.client_message_id || x.id === m.client_message_id,
-                  );
-                  if (idx >= 0) {
+      // Canal de INSERT/UPDATE de mensagens — com RECONEXÃO AUTOMÁTICA.
+      // Se o WebSocket cair (CHANNEL_ERROR / TIMED_OUT / CLOSED), removemos o
+      // canal antigo e reabrimos com backoff exponencial (até 30s). Ao voltar
+      // ao ar, disparamos catch-up imediato para preencher mensagens perdidas.
+      let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+      let reconnectAttempt = 0;
+      let closed = false;
+      const attachMessagesChannel = () => {
+        if (cancelled || closed) return;
+        try {
+          const channelName = `chat-conv-${Math.random().toString(36).slice(2)}`;
+          const ch = supabaseExternal
+            .channel(channelName)
+            .on(
+              "postgres_changes" as any,
+              { event: "*", schema: "public", table: "messages" },
+              (payload: any) => {
+                const m = payload?.new as MessageRow | undefined;
+                if (!m) return;
+                const inConv =
+                  (m.sender_id === uid && m.recipient_id === peerId) ||
+                  (m.sender_id === peerId && m.recipient_id === uid);
+                if (!inConv) return;
+                if (m.client_message_id) {
+                  setMessages((prev) => {
+                    const idx = prev.findIndex(
+                      (x) => x._clientId === m.client_message_id || x.id === m.client_message_id,
+                    );
+                    if (idx >= 0) {
+                      idSetRef.current.add(m.id);
+                      const next = prev.slice();
+                      next[idx] = { ...m, _clientId: m.client_message_id ?? next[idx]._clientId };
+                      return next;
+                    }
+                    if (idSetRef.current.has(m.id)) {
+                      return prev.map((x) => (x.id === m.id ? { ...x, ...m } : x));
+                    }
                     idSetRef.current.add(m.id);
-                    const next = prev.slice();
-                    next[idx] = { ...m, _clientId: m.client_message_id ?? next[idx]._clientId };
-                    return next;
-                  }
-                  if (idSetRef.current.has(m.id)) {
-                    return prev.map((x) => (x.id === m.id ? { ...x, ...m } : x));
-                  }
+                    return [...prev, m];
+                  });
+                } else if (idSetRef.current.has(m.id)) {
+                  setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+                } else {
                   idSetRef.current.add(m.id);
-                  return [...prev, m];
-                });
-              } else if (idSetRef.current.has(m.id)) {
-                setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
-              } else {
-                idSetRef.current.add(m.id);
-                setMessages((prev) => [...prev, m]);
-                // Som de nova mensagem recebida (só para incoming novo)
-                const incoming = m.recipient_id === uid && m.sender_id !== uid;
-                if (incoming && !isConversationMuted(uid, peerId)) {
-                  try { playIncomingMessageSound(); } catch {}
+                  setMessages((prev) => [...prev, m]);
+                  const incoming = m.recipient_id === uid && m.sender_id !== uid;
+                  if (incoming && !isConversationMuted(uid, peerId)) {
+                    try { playIncomingMessageSound(); } catch {}
+                  }
                 }
+                if (m.recipient_id === uid && payload?.eventType !== "UPDATE") markIncomingRead(uid);
+              },
+            )
+            .subscribe((status: string) => {
+              if (status === "SUBSCRIBED") {
+                reconnectAttempt = 0;
+                setRealtimeReconnecting(false);
+                // Preenche qualquer mensagem perdida durante o downtime.
+                try { void catchUpRef.current?.(); } catch {}
+                return;
               }
-              if (m.recipient_id === uid && payload?.eventType !== "UPDATE") markIncomingRead(uid);
+              if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+                if (cancelled || closed) return;
+                setRealtimeReconnecting(true);
+                try { supabaseExternal.removeChannel(ch); } catch {}
+                channel = null;
+                const delay = Math.min(30_000, 1000 * 2 ** reconnectAttempt);
+                reconnectAttempt++;
+                if (reconnectTimer) clearTimeout(reconnectTimer);
+                reconnectTimer = setTimeout(attachMessagesChannel, delay);
+              }
+            });
+          channel = ch;
+        } catch {
+          // Backoff mesmo em falha síncrona.
+          const delay = Math.min(30_000, 1000 * 2 ** reconnectAttempt);
+          reconnectAttempt++;
+          if (reconnectTimer) clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(attachMessagesChannel, delay);
+        }
+      };
+      attachMessagesChannel();
 
-            },
-          )
-          .subscribe();
-      } catch {}
+      // Reconecta na hora quando a rede volta ou a aba fica visível.
+      const forceReconnect = () => {
+        if (cancelled || closed) return;
+        if (channel) { try { supabaseExternal.removeChannel(channel); } catch {} channel = null; }
+        if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+        reconnectAttempt = 0;
+        attachMessagesChannel();
+        try { void catchUpRef.current?.(); } catch {}
+      };
+      const onOnline = () => forceReconnect();
+      window.addEventListener("online", onOnline);
+      // Guarda handlers para o cleanup abaixo remover.
+      (presenceRef as any).__msgCleanup = () => {
+        closed = true;
+        window.removeEventListener("online", onOnline);
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+      };
+
 
 
       // Canal de presença + typing (broadcast) — chave estável por par
