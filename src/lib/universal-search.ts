@@ -295,7 +295,7 @@ export function getSearchableValue(row: any, field: SearchableField): string {
 
 /**
  * Verifica se a linha casa com o termo, tolerando acentos, caixa,
- * ordem de palavras e sinônimos comuns.
+ * ordem de palavras, sinônimos e erros de digitação (fuzzy).
  */
 export function rowMatchesTerm(row: any, rawTerm: string): boolean {
   const normalizedTerm = stripAccents(rawTerm);
@@ -306,17 +306,19 @@ export function rowMatchesTerm(row: any, rawTerm: string): boolean {
   );
   if (!haystack) return false;
 
-  // 1) Match literal do termo inteiro.
   if (haystack.includes(normalizedTerm)) return true;
 
-  // 2) Todas as palavras (>=2 chars) presentes em qualquer ordem.
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
   if (words.length > 0 && words.every((w) => haystack.includes(w))) return true;
 
-  // 3) Sinônimo — casamento como PALAVRA COMPLETA para evitar substring alheia
-  //    (ex.: "medi" não deve casar "medida" em "móveis sob medida").
   const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
-  return synonyms.some((s) => matchesWholeWord(haystack, s));
+  if (synonyms.some((s) => matchesWholeWord(haystack, s))) return true;
+
+  // Fuzzy — tolera erros de digitação em cada palavra do termo.
+  const fuzzyTokens = words.length > 0 ? words : [normalizedTerm];
+  if (fuzzyTokens.every((t) => fuzzyMatchesWord(haystack, t))) return true;
+
+  return false;
 }
 
 export function getMatchedFields(row: any, rawTerm: string): SearchableField[] {
@@ -324,58 +326,63 @@ export function getMatchedFields(row: any, rawTerm: string): SearchableField[] {
   if (!normalizedTerm) return [];
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
   const synonyms = expandSynonyms(rawTerm).filter((s) => s !== normalizedTerm);
+  const fuzzyTokens = words.length > 0 ? words : [normalizedTerm];
   return SEARCHED_FIELDS.filter((field) => {
     const value = stripAccents(getSearchableValue(row, field));
     if (!value) return false;
     if (value.includes(normalizedTerm)) return true;
     if (words.length > 0 && words.every((w) => value.includes(w))) return true;
-    return synonyms.some((s) => matchesWholeWord(value, s));
+    if (synonyms.some((s) => matchesWholeWord(value, s))) return true;
+    return fuzzyTokens.some((t) => fuzzyMatchesWord(value, t));
   });
 }
 
 /**
  * Calcula o score de relevância de uma linha para um termo.
- * Combina: peso do campo × tipo de match (literal > todas palavras > sinônimo)
- * + bônus por categoria + bônus por match no início do campo (prefix).
+ * Combina: peso do campo × tipo de match (literal > prefix > substring
+ * > multi-palavra > sinônimo > fuzzy) + bônus por categoria + boost
+ * extra quando o match ocorre em campos de cargo/função.
  */
 export function scoreRow(row: any, rawTerm: string, category?: UserCategory | null): number {
   const normalizedTerm = stripAccents(rawTerm);
   if (!normalizedTerm) return 0;
   const words = normalizedTerm.split(" ").filter((w) => w.length >= 2);
   const synonyms = expandSynonyms(rawTerm);
+  const fuzzyTokens = words.length > 0 ? words : [normalizedTerm];
 
   let score = 0;
+  let matchedRoleField = false;
   for (const field of SEARCHED_FIELDS) {
     const value = stripAccents(getSearchableValue(row, field));
     if (!value) continue;
     const w = FIELD_WEIGHTS[field] ?? 1;
+    const isRole = (ROLE_FIELDS as readonly string[]).includes(field);
 
-    if (value === normalizedTerm) {
-      score += w * 5; // match exato do campo inteiro
-      continue;
-    }
-    if (value.startsWith(normalizedTerm)) {
-      score += w * 3;
-      continue;
-    }
-    if (value.includes(normalizedTerm)) {
-      score += w * 2;
-      continue;
-    }
-    if (words.length > 0 && words.every((word) => value.includes(word))) {
-      score += w;
-      continue;
-    }
-    if (synonyms.some((s) => s !== normalizedTerm && matchesWholeWord(value, s))) {
-      score += Math.max(1, Math.floor(w / 2));
+    let hit = 0;
+    if (value === normalizedTerm) hit = w * 5;
+    else if (value.startsWith(normalizedTerm)) hit = w * 3;
+    else if (value.includes(normalizedTerm)) hit = w * 2;
+    else if (words.length > 0 && words.every((word) => value.includes(word))) hit = w;
+    else if (synonyms.some((s) => s !== normalizedTerm && matchesWholeWord(value, s)))
+      hit = Math.max(1, Math.floor(w / 2));
+    else if (fuzzyTokens.every((t) => fuzzyMatchesWord(value, t)))
+      hit = Math.max(1, Math.floor(w / 3));
+
+    if (hit > 0) {
+      // Cargo/papel casa: multiplicador que empurra o resultado para o topo.
+      if (isRole) {
+        hit = Math.round(hit * 1.5);
+        matchedRoleField = true;
+      }
+      score += hit;
     }
   }
 
-  if (category && CATEGORY_BONUS[category] != null) {
-    score += CATEGORY_BONUS[category];
-  }
+  if (matchedRoleField) score += 20; // desempate global a favor de cargo/função
+  if (category && CATEGORY_BONUS[category] != null) score += CATEGORY_BONUS[category];
   return score;
 }
+
 
 /** Ordena uma lista de linhas por relevância decrescente e desempata por nome. */
 export function sortByRelevance<T extends { name?: string; category?: UserCategory | null }>(
