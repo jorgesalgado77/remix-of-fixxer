@@ -84,7 +84,7 @@ function LoginComponent() {
         try {
           const { data: ext } = await supabaseExternal
             .from('profiles')
-            .select('*')
+            .select('id, status, role, user_type, business_category')
             .eq('id', data.session.user.id)
             .maybeSingle();
           statusRow = (ext as any) || null;
@@ -103,30 +103,22 @@ function LoginComponent() {
           return;
         }
 
-        // Papel de admin — única fonte de verdade: tabela user_roles no banco.
-        // Flags no client (localStorage / e-mail hardcoded) foram removidas para
-        // eliminar risco de escalação de privilégio via manipulação do frontend.
-        let isAdmin =
-          safeGet('is_admin') === true ||
-          String(safeGet('role') || '').toLowerCase() === 'admin';
+        // Papel de admin — única fonte de verdade: tabela user_roles no servidor.
+        // Não gravamos mais flags de admin no localStorage: o guard consulta
+        // sempre o backend (evita risco de escalação via manipulação do client).
+        let isAdmin = false;
+        try {
+          const { data: adminRow } = await supabaseExternal
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', data.session.user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+          isAdmin = !!adminRow;
+        } catch { /* silencioso */ }
 
-        if (!isAdmin) {
-          try {
-            const { data: adminRow } = await supabaseExternal
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', data.session.user.id)
-              .eq('role', 'admin')
-              .maybeSingle();
-            isAdmin = !!adminRow;
-          } catch { /* silencioso */ }
-        }
-
-        if (isAdmin) {
-          try { localStorage.setItem('@fixxer:is_admin', 'true'); } catch {}
-        } else {
-          try { localStorage.removeItem('@fixxer:is_admin'); } catch {}
-        }
+        // Limpeza defensiva de flag legada (sessões anteriores).
+        try { localStorage.removeItem('@fixxer:is_admin'); } catch {}
 
         const rawRole = (
           safeGet('role') || safeGet('user_type') || safeGet('business_category') || ''
