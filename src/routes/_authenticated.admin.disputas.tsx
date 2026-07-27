@@ -5,6 +5,7 @@ import { ArrowLeft, Gavel, Loader2, Filter, ShieldCheck, CheckCircle2, XCircle, 
 import {
   listAllDisputes,
   resolveDispute,
+  resolveEvidenceUrl,
   DISPUTE_STATUS_LABEL,
   DISPUTE_ACTION_LABEL,
   type DisputeStatus,
