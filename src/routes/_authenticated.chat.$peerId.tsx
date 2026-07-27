@@ -47,6 +47,9 @@ import {
 } from "@/lib/chat-preferences";
 import { enqueueMarkConversationRead, flushChatReadQueue } from "@/lib/chat-read-queue";
 import { uploadWithProgress } from "@/lib/upload-with-progress";
+import { uploadWithRetry } from "@/lib/upload-with-retry";
+import ExportChatModal from "@/components/Chat/ExportChatModal";
+import { notifyIncomingMessage, requestNotificationPermission, currentPermission } from "@/lib/chat-notifications";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { sanitizeContactText, CONTACT_GUARD_WARNING } from "@/lib/contact-guard";
 import { getMockConversation, isMockPeerId, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
@@ -575,6 +578,14 @@ function ConversationPage() {
                   const incoming = m.recipient_id === uid && m.sender_id !== uid;
                   if (incoming && !isConversationMuted(uid, peerId)) {
                     try { playIncomingMessageSound(); } catch {}
+                    try {
+                      notifyIncomingMessage({
+                        messageId: m.id,
+                        title: peerName || "Nova mensagem",
+                        body: m.content || (m.attachment_url ? "📎 Anexo recebido" : "Nova mensagem"),
+                        targetUrl: `/chat/${peerId}`,
+                      });
+                    } catch {}
                   }
                 }
                 if (m.recipient_id === uid && payload?.eventType !== "UPDATE") markIncomingRead(uid);
@@ -695,6 +706,14 @@ function ConversationPage() {
               const incoming = m.recipient_id === uid && m.sender_id !== uid;
               if (incoming && !isConversationMuted(uid, peerId)) {
                 try { playIncomingMessageSound(); } catch {}
+                try {
+                  notifyIncomingMessage({
+                    messageId: m.id,
+                    title: peerName || "Nova mensagem",
+                    body: m.content || (m.attachment_url ? "📎 Anexo recebido" : "Nova mensagem"),
+                    targetUrl: `/chat/${peerId}`,
+                  });
+                } catch {}
               }
               return [...prev, m];
             });
@@ -919,9 +938,12 @@ function ConversationPage() {
     try {
       const ext = file.name.split(".").pop() || "bin";
       const path = `chat/${userId}/${peerId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { publicUrl } = await uploadWithProgress("media", path, file, (p) => {
-        setUploadPct(p.percent);
-        onProgress?.(p.percent);
+      const { publicUrl } = await uploadWithRetry("media", path, file, {
+        onEvent: (ev) => {
+          if (ev.kind === "progress") { setUploadPct(ev.percent); onProgress?.(ev.percent); }
+          else if (ev.kind === "waiting-online") toast.message("Aguardando conexão para enviar o anexo…");
+          else if (ev.kind === "retry") toast.message(`Reenviando anexo (tentativa ${ev.attempt + 1})…`);
+        },
       });
       return { url: publicUrl, type: file.type || "application/octet-stream", name: file.name };
     } catch (e: any) {
@@ -1395,34 +1417,16 @@ function ConversationPage() {
     }
   };
 
-  const exportConversation = () => {
+  const [exportOpen, setExportOpen] = useState(false);
+  const openExportModal = () => {
+    // Solicita permissão de notificação enquanto o usuário abre uma ação
+    // (gesto explícito satisfaz a política dos navegadores).
     try {
-      const lines: string[] = [];
-      lines.push(`Conversa com ${peerName}`);
-      lines.push(`Exportado em ${new Date().toLocaleString("pt-BR")}`);
-      lines.push("".padEnd(40, "-"));
-      for (const m of messages) {
-        const who = m.sender_id === userId ? "Você" : peerName;
-        const when = m.created_at ? new Date(m.created_at).toLocaleString("pt-BR") : "";
-        const body = (m.content || "").trim();
-        const att = m.attachment_url ? ` [anexo: ${m.attachment_name || m.attachment_url}]` : "";
-        lines.push(`[${when}] ${who}: ${body}${att}`);
-      }
-      const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const stamp = new Date().toISOString().slice(0, 10);
-      a.href = url;
-      a.download = `conversa-${(peerName || "chat").replace(/[^\w-]+/g, "_")}-${stamp}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
-      toast.success("Conversa exportada");
-    } catch (e: any) {
-      toast.error("Falha ao exportar", { description: e?.message });
-    }
+      if (currentPermission() === "default") void requestNotificationPermission();
+    } catch {}
+    setExportOpen(true);
   };
+
 
 
   const grouped = useMemo(() => {
@@ -1649,7 +1653,7 @@ function ConversationPage() {
             onMute={toggleMute}
             onArchive={toggleArchive}
             onBlock={toggleBlock}
-            onExport={exportConversation}
+            onExport={openExportModal}
           />
 
 
@@ -2206,6 +2210,22 @@ function ConversationPage() {
         mode={cameraOpen ?? "photo"}
         onClose={() => setCameraOpen(null)}
         onCapture={(file) => acceptIncomingFiles([file])}
+      />
+      <ExportChatModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        messages={messages.map((m) => ({
+          id: m.id,
+          created_at: m.created_at,
+          sender_id: m.sender_id,
+          content: m.content,
+          attachment_url: m.attachment_url ?? null,
+          attachment_name: m.attachment_name ?? null,
+          attachment_type: m.attachment_type ?? null,
+        }))}
+        peerName={peerName}
+        selfName="Você"
+        selfId={userId ?? ""}
       />
     </div>
   );

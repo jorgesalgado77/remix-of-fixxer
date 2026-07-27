@@ -174,6 +174,7 @@ function RootComponent() {
     void import("../lib/theme").then((m) => m.initTheme());
     fixAuthAndPreview();
     void import("../lib/chat-read-queue").then((m) => m.initChatReadQueue());
+    void import("../lib/chat-sound").then((m) => m.installChatSoundUnlock());
     // Registra Service Worker para push notifications (best-effort)
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
