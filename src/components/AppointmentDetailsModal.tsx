@@ -44,11 +44,13 @@ export function AppointmentDetailsModal({
   open,
   onOpenChange,
   onChanged,
+  initialReschedule = false,
 }: {
   appointment: Appointment | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onChanged?: () => void;
+  initialReschedule?: boolean;
 }) {
   const [contact, setContact] = useState<ContactInfo | null>(null);
   const [rescheduling, setRescheduling] = useState(false);
@@ -58,7 +60,8 @@ export function AppointmentDetailsModal({
   useEffect(() => {
     if (!appointment || !open) return;
     setNewDate(toLocalInputValue(appointment.scheduled_at));
-    setRescheduling(false);
+    setRescheduling(initialReschedule);
+
     (async () => {
       const { data: userData } = await supabaseExternal.auth.getUser();
       const meId = userData.user?.id;

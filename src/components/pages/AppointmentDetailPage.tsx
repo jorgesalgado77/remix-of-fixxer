@@ -49,6 +49,7 @@ import {
 import { generateAppointmentPdf, downloadPdf, summarizeRefund } from "@/lib/appointment-pdf";
 import { CheckoutPhotosModal } from "@/components/CheckoutPhotosModal";
 import { ComplaintButton } from "@/components/ComplaintButton";
+import { AppointmentDetailsModal } from "@/components/AppointmentDetailsModal";
 import { useMediaUpload } from "@/hooks/use-media-upload";
 
 
@@ -65,7 +66,9 @@ export default function AppointmentDetailPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [photoModal, setPhotoModal] = useState<{ mode: "checkin" | "checkout" } | null>(null);
   const [disputeOpen, setDisputeOpen] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const { uploadFileDetailed } = useMediaUpload();
+
 
   const load = useCallback(async () => {
     try {
@@ -91,6 +94,32 @@ export default function AppointmentDetailPage() {
     supabaseExternal.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
     load();
   }, [load]);
+
+  // Ações diretas vindas das notificações do navegador (?action=cancel|reschedule)
+  useEffect(() => {
+    if (!apt) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get("action");
+    if (!action) return;
+    const canCancelNow = ["pending", "confirmed", "rescheduled"].includes(apt.status);
+    const canRescheduleNow = ["pending", "confirmed", "rescheduled", "checked_in"].includes(apt.status);
+    if (action === "cancel" && canCancelNow) {
+      setCancelOpen(true);
+    } else if (action === "reschedule" && canRescheduleNow) {
+      setRescheduleOpen(true);
+    } else {
+      toast.info("Esta ação já não está disponível para o compromisso.");
+    }
+    // Remove o parâmetro para evitar re-abrir ao navegar.
+    try {
+      params.delete("action");
+      const qs = params.toString();
+      const url = window.location.pathname + (qs ? `?${qs}` : "");
+      window.history.replaceState({}, "", url);
+    } catch { /* ignore */ }
+  }, [apt?.id, apt?.status]);
+
 
   // Realtime — compromisso, eventos e disputas
   useEffect(() => {
@@ -491,7 +520,16 @@ export default function AppointmentDetailPage() {
           }}
         />
       )}
+
+      <AppointmentDetailsModal
+        appointment={rescheduleOpen ? apt : null}
+        open={rescheduleOpen}
+        onOpenChange={(v) => setRescheduleOpen(v)}
+        onChanged={() => load()}
+        initialReschedule
+      />
     </div>
+
   );
 }
 

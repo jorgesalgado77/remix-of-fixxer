@@ -18,6 +18,9 @@ export type AppointmentPrefs = {
   desktopEnabled: boolean; // notificações do navegador (funcionam em segundo plano)
   respectSystem: boolean; // se true, silencia sons quando prefers-reduced-motion
   pauseAllSounds: boolean; // "Pausar todos os sons" (acessibilidade)
+  quietHoursEnabled: boolean; // "Não perturbe" em janela horária
+  quietStart: string; // "HH:MM" — início do silêncio
+  quietEnd: string;   // "HH:MM" — fim do silêncio (se < início, atravessa a meia-noite)
 };
 
 export function defaultAppointmentPrefs(): AppointmentPrefs {
@@ -28,7 +31,27 @@ export function defaultAppointmentPrefs(): AppointmentPrefs {
     desktopEnabled: true,
     respectSystem: true,
     pauseAllSounds: false,
+    quietHoursEnabled: false,
+    quietStart: "22:00",
+    quietEnd: "07:00",
   };
+}
+
+/** Converte "HH:MM" em minutos absolutos do dia (0..1439). */
+function toMin(s: string): number {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s || "");
+  if (!m) return 0;
+  return Math.min(1439, Math.max(0, Number(m[1]) * 60 + Number(m[2])));
+}
+
+/** True se o horário atual está dentro da janela de "não perturbe". */
+export function isQuietHoursActive(prefs = loadAppointmentPrefs(), now = new Date()): boolean {
+  if (!prefs.quietHoursEnabled) return false;
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const s = toMin(prefs.quietStart);
+  const e = toMin(prefs.quietEnd);
+  if (s === e) return false;
+  return s < e ? cur >= s && cur < e : cur >= s || cur < e; // atravessa meia-noite
 }
 
 
@@ -68,6 +91,7 @@ export function canPlaySoundNow(prefs = loadAppointmentPrefs()): boolean {
   if (prefs.pauseAllSounds) return false;
   if (!prefs.soundEnabled) return false;
   if (prefs.respectSystem && prefersReducedMotion()) return false;
+  if (isQuietHoursActive(prefs)) return false;
   return true;
 }
 
@@ -126,6 +150,11 @@ export async function requestDesktopPermission(): Promise<DesktopPermission> {
   }
 }
 
+export type DesktopNotifyAction = {
+  action: string; // "open" | "reschedule" | "cancel" | ...
+  title: string;
+};
+
 export type DesktopNotifyOptions = {
   title: string;
   body: string;
@@ -133,33 +162,68 @@ export type DesktopNotifyOptions = {
   tag?: string;
   requireInteraction?: boolean;
   silent?: boolean;
+  /** Quando presente, o SW usará /agenda/{appointmentId}?action=… para navegar. */
+  appointmentId?: string;
+  /** Botões de ação exibidos na notificação (requer Service Worker). */
+  actions?: DesktopNotifyAction[];
 };
 
 /**
  * Dispara uma notificação do navegador. Retorna true se foi disparada.
- * Respeita a preferência `desktopEnabled` e a permissão do usuário.
- * Funciona com a aba em segundo plano (o SO exibe o toast do navegador).
+ * - Respeita `desktopEnabled`, permissão e "quiet hours" (não perturbe).
+ * - Usa o Service Worker quando há ações; caso contrário, cai para `new Notification`.
+ * - Funciona com a aba em segundo plano.
  */
 export function showDesktopNotification(opts: DesktopNotifyOptions, prefs = loadAppointmentPrefs()): boolean {
   try {
     if (!prefs.desktopEnabled) return false;
     if (!desktopSupported()) return false;
     if (Notification.permission !== "granted") return false;
-    const n = new Notification(opts.title, {
+    if (isQuietHoursActive(prefs)) return false; // Não perturbe
+
+    const tag = opts.tag ?? `fixxer-appt-${opts.appointmentId ?? opts.url ?? "generic"}`;
+    const data = { url: opts.url ?? (opts.appointmentId ? `/agenda/${opts.appointmentId}` : "/agenda"), appointmentId: opts.appointmentId ?? null };
+    const payload: NotificationOptions = {
       body: opts.body,
-      tag: opts.tag ?? `fixxer-appt-${opts.url ?? "generic"}`,
+      tag,
       icon: "/favicon.ico",
       badge: "/favicon.ico",
       requireInteraction: opts.requireInteraction ?? false,
       silent: opts.silent ?? false,
-    });
-    n.onclick = () => {
-      try { window.focus(); } catch { /* ignore */ }
-      if (opts.url) window.location.href = opts.url;
+      data,
     };
+    if (opts.actions && opts.actions.length > 0) {
+      (payload as any).actions = opts.actions.slice(0, 2); // navegadores permitem no máx. 2 botões
+    }
+
+    // Preferir Service Worker (permite botões de ação e sobrevive à aba fechada).
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (reg && typeof reg.showNotification === "function") {
+          reg.showNotification(opts.title, payload).catch(() => {
+            fallbackNotify(opts.title, payload, data.url);
+          });
+        } else {
+          fallbackNotify(opts.title, payload, data.url);
+        }
+      }).catch(() => fallbackNotify(opts.title, payload, data.url));
+      return true;
+    }
+    fallbackNotify(opts.title, payload, data.url);
     return true;
   } catch {
     return false;
   }
 }
+
+function fallbackNotify(title: string, payload: NotificationOptions, url: string) {
+  try {
+    const n = new Notification(title, payload);
+    n.onclick = () => {
+      try { window.focus(); } catch { /* ignore */ }
+      try { window.location.href = url; } catch { /* ignore */ }
+    };
+  } catch { /* ignore */ }
+}
+
 
