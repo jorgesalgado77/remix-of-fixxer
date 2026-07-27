@@ -897,15 +897,21 @@ export default function FeedParceiroPage() {
               const accentRgba = (a: number) =>
                 isPrestador ? `rgba(255, 159, 10, ${a})` : `rgba(0, 229, 255, ${a})`;
               const roleLabel = isPrestador ? "✓ Prestador" : "✓ Lojista";
+              const _relevance = scoreRelevanceDetailed([r.sector, r.title], branchCtx);
               return (
                 <li
                   key={r.id}
-                  className="feed-item-cv overflow-hidden rounded-2xl border-2 bg-[#1A1A1B]"
+                  className="feed-item-cv overflow-hidden rounded-2xl border-2 bg-[#1A1A1B] relative"
                   style={{
                     borderColor: accentRgba(0.35),
                     boxShadow: `0 0 18px ${accentRgba(0.1)}`,
                   }}
                 >
+                  {_relevance.level !== "none" && (
+                    <div className="absolute right-3 top-3 z-10">
+                      <RelevanceBadge result={_relevance} compact />
+                    </div>
+                  )}
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
                     <Link
