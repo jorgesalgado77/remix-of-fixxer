@@ -449,6 +449,59 @@ export function MyAppointmentsSection({ className = "" }: { className?: string }
             />
           </div>
 
+          {/* Não perturbe (Quiet hours) */}
+          <div className="rounded-xl border border-white/10 bg-black/20 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-white/80">
+                  Não perturbe
+                </div>
+                <div className="text-[10px] text-white/50">
+                  Silencia sons e notificações do navegador no intervalo definido
+                </div>
+              </div>
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={prefs.quietHoursEnabled}
+                  onChange={(e) => updatePrefs({ quietHoursEnabled: e.target.checked })}
+                />
+                <span className="w-9 h-5 rounded-full bg-white/10 peer-checked:bg-[#00FF87]/60 relative transition-colors">
+                  <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" />
+                </span>
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/60">
+                Início
+                <input
+                  type="time"
+                  value={prefs.quietStart}
+                  disabled={!prefs.quietHoursEnabled}
+                  onChange={(e) => updatePrefs({ quietStart: e.target.value })}
+                  className="mt-1 w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs disabled:opacity-40"
+                />
+              </label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/60">
+                Fim
+                <input
+                  type="time"
+                  value={prefs.quietEnd}
+                  disabled={!prefs.quietHoursEnabled}
+                  onChange={(e) => updatePrefs({ quietEnd: e.target.value })}
+                  className="mt-1 w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs disabled:opacity-40"
+                />
+              </label>
+            </div>
+            {prefs.quietHoursEnabled && isQuietHoursActive(prefs) && (
+              <div className="text-[10px] font-black uppercase tracking-widest text-[#FF9F0A]">
+                Silêncio ativo agora — nenhuma notificação será exibida
+              </div>
+            )}
+          </div>
+
+
           <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/10">
             <button
               type="button"
