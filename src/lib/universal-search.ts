@@ -195,6 +195,25 @@ export function getSearchableValue(row: any, field: SearchableField): string {
       specialties: row.specialties,
     });
   }
+  if (field === "positions") {
+    const arr: any[] = Array.isArray(row.positions) ? row.positions : [];
+    return arr
+      .map((p) =>
+        typeof p === "string"
+          ? p
+          : [p?.title, p?.name, p?.role, p?.department, p?.branch]
+              .filter(Boolean)
+              .join(" "),
+      )
+      .filter(Boolean)
+      .join(" ");
+  }
+  if (field === "job_roles") {
+    // Pode vir como CSV "||", array ou string simples.
+    const v = row.job_roles;
+    if (Array.isArray(v)) return v.map(stringifyValue).join(" ");
+    return String(v ?? "").split("||").join(" ");
+  }
   return stringifyValue(row[field]);
 }
 
