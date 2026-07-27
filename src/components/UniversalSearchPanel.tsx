@@ -26,6 +26,7 @@ import {
   getMatchedFields,
   scoreRow,
   splitHighlight,
+  expandSynonyms,
   SEARCHED_FIELDS,
 } from "@/lib/universal-search";
 import { toast } from "sonner";
