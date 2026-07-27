@@ -351,39 +351,56 @@ function ProfilePage() {
             }
           }
 
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
-          const filePath = `${type}s/${fileName}`;
+          let item: any;
 
-          const uploadWithRetry = async (retries = 2): Promise<any> => {
-            try {
-              const { error: uploadError } = await supabaseExternal.storage
-                .from('media')
-                .upload(filePath, processedFile);
-              if (uploadError) throw uploadError;
-              return true;
-            } catch (err) {
-              if (retries > 0) return uploadWithRetry(retries - 1);
-              throw err;
-            }
-          };
+          if (type === 'document') {
+            // Documentos → bucket PRIVADO (documents-private). Persistimos `path`,
+            // não URL pública. A URL de leitura é gerada sob demanda via signedUrl.
+            const uploaded = await (async () => {
+              try {
+                return await uploadProfileDocument(processedFile, profile.id);
+              } catch (err) {
+                // 1 retry
+                return await uploadProfileDocument(processedFile, profile.id);
+              }
+            })();
+            item = uploaded;
+          } else {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${profile.id}-${type}-${Date.now()}-${i}.${fileExt}`;
+            const filePath = `${type}s/${fileName}`;
 
-          await uploadWithRetry();
+            const uploadWithRetry = async (retries = 2): Promise<any> => {
+              try {
+                const { error: uploadError } = await supabaseExternal.storage
+                  .from('media')
+                  .upload(filePath, processedFile);
+                if (uploadError) throw uploadError;
+                return true;
+              } catch (err) {
+                if (retries > 0) return uploadWithRetry(retries - 1);
+                throw err;
+              }
+            };
 
-          const { data: { publicUrl } } = supabaseExternal.storage
-            .from('media')
-            .getPublicUrl(filePath);
+            await uploadWithRetry();
 
-          const item = {
-            name: file.name,
-            url: publicUrl,
-            type,
-            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-            created_at: new Date().toISOString()
-          };
+            const { data: { publicUrl } } = supabaseExternal.storage
+              .from('media')
+              .getPublicUrl(filePath);
+
+            item = {
+              name: file.name,
+              url: publicUrl,
+              type,
+              size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+              created_at: new Date().toISOString(),
+            };
+          }
 
           if (type === 'document') newDocs.push(item);
           else newMedia.push(item);
+
 
           setUploads((prev) => prev.map((u) => u.id === uploadId ? { ...u, status: 'success' } : u));
         } catch (err: any) {
