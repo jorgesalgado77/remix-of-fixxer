@@ -198,23 +198,39 @@ export function stemPt(word: string): string {
 }
 
 /** Remove acentos, normaliza espaços/pontuação e caixa. */
+const STRIP_CACHE = new Map<string, string>();
+const STRIP_CACHE_MAX = 2000;
 export function stripAccents(s: unknown): string {
-  return String(s ?? "")
+  const raw = String(s ?? "");
+  if (raw.length === 0) return "";
+  if (raw.length <= 128) {
+    const cached = STRIP_CACHE.get(raw);
+    if (cached !== undefined) return cached;
+  }
+  const out = raw
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
     .replace(/[^a-z0-9@._\-\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  if (raw.length <= 128) {
+    if (STRIP_CACHE.size >= STRIP_CACHE_MAX) STRIP_CACHE.clear();
+    STRIP_CACHE.set(raw, out);
+  }
+  return out;
 }
 
 /** Expande o termo com sinônimos conhecidos + stems aproximados.
  *  Só emite tokens com pelo menos 4 caracteres para evitar que raízes muito
  *  curtas (ex.: "med", "medi") casem substrings alheias ao domínio
  *  ("comédia", "sob medida", "mídia"). */
+const EXPAND_CACHE = new Map<string, string[]>();
 export function expandSynonyms(term: string): string[] {
   const base = stripAccents(term);
   if (!base) return [];
+  const cached = EXPAND_CACHE.get(base);
+  if (cached) return cached;
   const tokens = new Set<string>([base]);
   for (const word of base.split(" ")) {
     if (!word) continue;
@@ -228,8 +244,12 @@ export function expandSynonyms(term: string): string[] {
       if (st && st.length >= 5) tokens.add(st);
     });
   }
-  return Array.from(tokens).filter((t) => t.length >= 4);
+  const out = Array.from(tokens).filter((t) => t.length >= 4);
+  if (EXPAND_CACHE.size >= 500) EXPAND_CACHE.clear();
+  EXPAND_CACHE.set(base, out);
+  return out;
 }
+
 
 /** Casa um token como palavra completa dentro do haystack (accent/case
  *  já normalizado). Evita que "medi" case "medida" ou "medicao". */
