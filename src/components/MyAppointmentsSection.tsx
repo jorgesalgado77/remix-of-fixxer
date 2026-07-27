@@ -86,18 +86,10 @@ function fmtWhen(iso: string): string {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + time;
 }
 
-function notifyDesktop(title: string, body: string, url = "/agenda") {
-  try {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
-    const n = new Notification(title, { body, tag: `fixxer-appt-${url}` });
-    n.onclick = () => { window.focus(); window.location.href = url; };
-  } catch { /* ignore */ }
-}
-
 function normalize(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
+
 
 export function MyAppointmentsSection({ className = "" }: { className?: string }) {
   const [range, setRange] = useState<Range>("today");
