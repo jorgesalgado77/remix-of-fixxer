@@ -971,8 +971,17 @@ export default function FeedLojistaPage() {
               )}
               {paged.map((post) => {
                 const locked = !post.author.isMine && !postUnlock.isUnlocked(post.id);
+                const _relevance = scoreRelevanceDetailed(
+                  [post.specialty ?? "", ...(post.keywords ?? []), post.title],
+                  branchCtx,
+                );
                 return (
-                  <div key={post.id} className="feed-item-cv">
+                  <div key={post.id} className="feed-item-cv relative">
+                    {_relevance.level !== "none" && (
+                      <div className="absolute right-3 top-3 z-10">
+                        <RelevanceBadge result={_relevance} compact />
+                      </div>
+                    )}
                     <PostCard
                       post={post}
                       isSaved={saved.has(post.id)}
