@@ -5,6 +5,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
+import { scoreRelevance, useUserBranchContext, type Relevance } from "@/lib/branch-relevance";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 
 /**
