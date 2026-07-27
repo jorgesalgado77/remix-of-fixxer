@@ -78,6 +78,8 @@ import { useActivityBranches } from "@/hooks/use-activity-branches";
 import { PhotoSectionsManager, EMPTY_PHOTO_SECTIONS, type PhotoSectionsValue } from "@/components/PhotoSectionsManager";
 import { RecentPartnersCarousel } from "@/components/RecentPartnersCarousel";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
+import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
+
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
