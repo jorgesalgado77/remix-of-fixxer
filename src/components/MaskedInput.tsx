@@ -38,16 +38,19 @@ export const applyCepMask = (value: string) => {
   return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
 };
 
+const applyMask = (mask: string, val: string) => {
+  if (mask === 'phone') return applyPhoneMask(val);
+  if (mask === 'whatsapp') return applyWhatsappMask(val);
+  if (mask === 'cep') return applyCepMask(val);
+  return applyCnpjCpfMask(val);
+};
+
 export const MaskedInput = ({ value, onChange, mask, placeholder, ...props }: any) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    let masked = val;
-    if (mask === 'phone') masked = applyPhoneMask(val);
-    else if (mask === 'whatsapp') masked = applyWhatsappMask(val);
-    else if (mask === 'cep') masked = applyCepMask(val);
-    else masked = applyCnpjCpfMask(val);
-    onChange(masked);
+    onChange(applyMask(mask, e.target.value));
   };
-  return <input value={value} onChange={handleChange} placeholder={placeholder} inputMode={mask === 'phone' || mask === 'whatsapp' || mask === 'cep' || mask === 'cnpj' ? 'numeric' : undefined} {...props} />;
+  // Normaliza o valor exibido (corrige dados legados salvos com máscara antiga)
+  const display = value ? applyMask(mask, String(value)) : '';
+  return <input value={display} onChange={handleChange} placeholder={placeholder} inputMode={mask === 'phone' || mask === 'whatsapp' || mask === 'cep' || mask === 'cnpj' ? 'numeric' : undefined} {...props} />;
 };
 
