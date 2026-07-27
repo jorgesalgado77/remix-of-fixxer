@@ -530,6 +530,9 @@ function ConversationPage() {
       let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
       let reconnectAttempt = 0;
       let closed = false;
+      // Nome estável da sala para telemetria (independe do channelName aleatório).
+      const roomKey = `messages:${[uid, peerId].sort().join(":")}`;
+      setRoomStatus(roomKey, "connecting");
       const attachMessagesChannel = () => {
         if (cancelled || closed) return;
         try {
@@ -546,6 +549,7 @@ function ConversationPage() {
                   (m.sender_id === uid && m.recipient_id === peerId) ||
                   (m.sender_id === peerId && m.recipient_id === uid);
                 if (!inConv) return;
+                incrRoomEvent(roomKey, "message");
                 if (m.client_message_id) {
                   setMessages((prev) => {
                     const idx = prev.findIndex(
@@ -580,24 +584,28 @@ function ConversationPage() {
               if (status === "SUBSCRIBED") {
                 reconnectAttempt = 0;
                 setRealtimeReconnecting(false);
-                // Preenche qualquer mensagem perdida durante o downtime.
+                setRoomStatus(roomKey, "connected");
                 try { void catchUpRef.current?.(); } catch {}
                 return;
               }
               if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
                 if (cancelled || closed) return;
                 setRealtimeReconnecting(true);
+                setRoomStatus(roomKey, status === "CHANNEL_ERROR" ? "error" : "reconnecting");
                 try { supabaseExternal.removeChannel(ch); } catch {}
                 channel = null;
                 const delay = Math.min(30_000, 1000 * 2 ** reconnectAttempt);
                 reconnectAttempt++;
                 if (reconnectTimer) clearTimeout(reconnectTimer);
-                reconnectTimer = setTimeout(attachMessagesChannel, delay);
+                reconnectTimer = setTimeout(() => {
+                  setRoomStatus(roomKey, "connecting");
+                  attachMessagesChannel();
+                }, delay);
               }
             });
           channel = ch;
         } catch {
-          // Backoff mesmo em falha síncrona.
+          setRoomStatus(roomKey, "error");
           const delay = Math.min(30_000, 1000 * 2 ** reconnectAttempt);
           reconnectAttempt++;
           if (reconnectTimer) clearTimeout(reconnectTimer);
