@@ -391,7 +391,19 @@ export default function FeedClientePage() {
     return list;
   }, [query, solution, savedOnly, saved, sortBy, userCity, userCoords]);
 
-  const visible = filtered.slice(0, visibleCount);
+  const branchCtx = useUserBranchContext();
+  const ranked = useMemo(() => {
+    const decorated = filtered.map((v) => ({
+      v,
+      _relevance: scoreRelevanceDetailed([v.name, ...v.solutions], branchCtx),
+    }));
+    if (!branchCtx.hasContext) return decorated;
+    const sorted = [...decorated].sort(
+      (a, b) => relevanceRank(a._relevance.level) - relevanceRank(b._relevance.level),
+    );
+    return applyRelevanceFallback(sorted, 3);
+  }, [filtered, branchCtx]);
+  const visible = ranked.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
   const savedCount = saved.size;
 
