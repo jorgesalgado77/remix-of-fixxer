@@ -706,6 +706,14 @@ function ConversationPage() {
               const incoming = m.recipient_id === uid && m.sender_id !== uid;
               if (incoming && !isConversationMuted(uid, peerId)) {
                 try { playIncomingMessageSound(); } catch {}
+                try {
+                  notifyIncomingMessage({
+                    messageId: m.id,
+                    title: peerName || "Nova mensagem",
+                    body: m.content || (m.attachment_url ? "📎 Anexo recebido" : "Nova mensagem"),
+                    targetUrl: `/chat/${peerId}`,
+                  });
+                } catch {}
               }
               return [...prev, m];
             });
