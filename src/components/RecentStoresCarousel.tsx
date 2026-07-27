@@ -123,25 +123,8 @@ function RecentStoresCarouselInner() {
     if (!userTouchedFilter && branchCtx.hasContext && kindFilter === "all") setKindFilter("mine");
   }, [branchCtx.hasContext, userTouchedFilter, kindFilter]);
 
-  // Descobre o ramo principal do prestador logado para priorizar lojistas do mesmo ramo.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: auth } = await supabaseExternal.auth.getUser();
-        const uid = auth?.user?.id;
-        if (!uid) return;
-        const { data } = await supabaseExternal
-          .from("profiles")
-          .select("business_category, custom_branch")
-          .eq("id", uid)
-          .maybeSingle();
-        if (cancelled) return;
-        setMyBranch(mainBranchOf((data as any)?.business_category, (data as any)?.custom_branch));
-      } catch { /* silencioso */ }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  // Ramo principal para exibição textual — derivado do contexto compartilhado.
+  const myBranch = branchCtx.branches[0] ?? null;
 
   const fetchList = useCallback(async () => {
     try {
