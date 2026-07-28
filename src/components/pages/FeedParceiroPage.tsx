@@ -47,6 +47,7 @@ import {
   applyRelevanceFallback,
 } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
+import FeedAdMenu from "@/components/FeedAdMenu";
 import { AdFiltersBar } from "@/components/AdFiltersBar";
 import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
 import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
