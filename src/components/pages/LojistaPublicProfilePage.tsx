@@ -1799,8 +1799,10 @@ export function LojistaPublicProfilePage() {
                     canDelete={!!currentUserId && r.reviewer_id === currentUserId}
                     onDelete={() => handleDeleteReview(r)}
                     deleteCost={DELETE_REVIEW_COST}
+                    deleting={deletingReviewId === r.id}
                   />
                 ))}
+
               </div>
 
             ) : (
