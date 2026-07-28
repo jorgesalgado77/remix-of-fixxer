@@ -2259,7 +2259,7 @@ function ConversationPage() {
         onClose={() => setReportOpen(false)}
         targetUserId={peerId}
         targetName={peerName}
-        actorUserId={uid}
+        actorUserId={userId}
         context={`chat:${peerId}`}
       />
 
@@ -2488,8 +2488,9 @@ function HeaderActionsMenu(props: {
   onArchive: () => void;
   onBlock: () => void;
   onExport: () => void;
+  onReport: () => void;
 }) {
-  const { muted, archived, blocked, onSettings, onUnread, onMute, onArchive, onBlock, onExport } = props;
+  const { muted, archived, blocked, onSettings, onUnread, onMute, onArchive, onBlock, onExport, onReport } = props;
 
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
