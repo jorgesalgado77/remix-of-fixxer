@@ -10,6 +10,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCategoryTheme } from "@/lib/category-colors";
+import { AdMetaBadges, URGENCY_META, type UrgencyTag } from "@/components/AdMetaBadges";
 import {
   FEED_STATUS_COLOR,
   FEED_STATUS_LABEL,
