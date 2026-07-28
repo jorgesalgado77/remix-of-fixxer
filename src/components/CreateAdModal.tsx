@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { getCategoryTheme, CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useUserCategory } from "@/lib/current-user";
+import { resolveEffectiveCategory } from "@/lib/create-ad-role";
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import {
