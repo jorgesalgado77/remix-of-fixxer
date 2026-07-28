@@ -1467,6 +1467,10 @@ export default function FeedPrestadorPage() {
                 unlockCost={postUnlock.cost}
                 unlockBusy={postUnlock.busy === job.id}
                 onUnlock={() => { void postUnlock.unlock(job.id); }}
+                currentUserId={postUnlock.userId}
+                onEdit={(j) => toast(`Abrindo editor do anúncio "${j.title}"...`)}
+                onDelete={(j) => toast.error(`Excluir "${j.title}"? Confirme em Meus Anúncios.`)}
+                onTogglePause={(j) => toast(`Alternando pausa para "${j.title}"...`)}
               />
             </div>
             );
