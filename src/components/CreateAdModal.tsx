@@ -193,6 +193,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [urgencyTag, setUrgencyTag] = useState<"urgente" | "normal" | "encomenda">("normal");
   const [serviceRadiusKm, setServiceRadiusKm] = useState<5 | 15 | 30 | 0>(15); // 0 = toda a região
   const [tagsInput, setTagsInput] = useState("");
+  // Modalidades de atendimento (multi-select) — 🏠 domicílio, 🏬 retirada, 🚚 entrega, 💻 online
+  const [deliveryModes, setDeliveryModes] = useState<string[]>([]);
   // Validade / Expiração — máximo 15 dias no feed
   const MAX_VALIDITY_DAYS = 15;
   const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -359,7 +361,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       description, notes, techSpecs, otherChecked, otherText,
       priceType, fixedValue, contractValue, commissionPct,
       freightVolumes, freightWeight, otherServiceText,
-      urgencyTag, serviceRadiusKm, tagsInput,
+      urgencyTag, serviceRadiusKm, tagsInput, deliveryModes,
       validityPreset, validityDate,
       files: payload,
     };
@@ -429,6 +431,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       if (d.urgencyTag) setUrgencyTag(d.urgencyTag);
       if (d.serviceRadiusKm !== undefined) setServiceRadiusKm(d.serviceRadiusKm);
       if (typeof d.tagsInput === "string") setTagsInput(d.tagsInput);
+      if (Array.isArray(d.deliveryModes)) setDeliveryModes(d.deliveryModes.filter((x: unknown) => typeof x === "string"));
       if (d.validityPreset !== undefined) setValidityPreset(d.validityPreset);
       if (typeof d.validityDate === "string" && d.validityDate) {
         // Sanidade: se o rascunho salvo tem data > 15 dias, satura no máximo
@@ -799,6 +802,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       urgency_tag: urgencyTag,
       service_radius_km: serviceRadiusKm === 0 ? null : serviceRadiusKm,
       tags: parsedTags,
+      delivery_modes: deliveryModes.length > 0 ? deliveryModes : null,
       valid_until: validityDate,
       expires_at: new Date(`${validityDate}T23:59:59`).toISOString(),
       price_type: priceType,
@@ -1503,6 +1507,48 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   );
                 })}
               </div>
+            </div>
+
+            {/* NOVO — Modalidades de Atendimento (multi-select) */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                Modalidades de Atendimento
+              </Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {[
+                  { id: "domicilio", label: "🏠 À Domicílio" },
+                  { id: "retirada", label: "🏬 Retirada na Loja" },
+                  { id: "entrega", label: "🚚 Entrega Própria" },
+                  { id: "online", label: "💻 Atendimento On-line" },
+                ].map((opt) => {
+                  const active = deliveryModes.includes(opt.id);
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        setDeliveryModes((prev) =>
+                          prev.includes(opt.id)
+                            ? prev.filter((x) => x !== opt.id)
+                            : [...prev, opt.id],
+                        )
+                      }
+                      aria-pressed={active}
+                      className="px-2 py-2 rounded-lg border text-[10px] uppercase font-black italic transition"
+                      style={
+                        active
+                          ? { ...theme.bgSoft, ...theme.borderStrong, color: theme.hex }
+                          : { borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[9px] text-white/40 italic">
+                Selecione uma ou mais formas de atender o cliente.
+              </p>
             </div>
 
             {/* NOVO — Tags de Busca (hashtags) */}
