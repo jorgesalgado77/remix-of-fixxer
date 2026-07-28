@@ -1509,6 +1509,48 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
+            {/* NOVO — Modalidades de Atendimento (multi-select) */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                Modalidades de Atendimento
+              </Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {[
+                  { id: "domicilio", label: "🏠 À Domicílio" },
+                  { id: "retirada", label: "🏬 Retirada na Loja" },
+                  { id: "entrega", label: "🚚 Entrega Própria" },
+                  { id: "online", label: "💻 Atendimento On-line" },
+                ].map((opt) => {
+                  const active = deliveryModes.includes(opt.id);
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        setDeliveryModes((prev) =>
+                          prev.includes(opt.id)
+                            ? prev.filter((x) => x !== opt.id)
+                            : [...prev, opt.id],
+                        )
+                      }
+                      aria-pressed={active}
+                      className="px-2 py-2 rounded-lg border text-[10px] uppercase font-black italic transition"
+                      style={
+                        active
+                          ? { ...theme.bgSoft, ...theme.borderStrong, color: theme.hex }
+                          : { borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[9px] text-white/40 italic">
+                Selecione uma ou mais formas de atender o cliente.
+              </p>
+            </div>
+
             {/* NOVO — Tags de Busca (hashtags) */}
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black tracking-wider text-white/70 flex items-center gap-1.5">
