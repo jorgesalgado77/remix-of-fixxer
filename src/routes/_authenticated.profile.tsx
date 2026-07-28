@@ -274,6 +274,20 @@ function ProfilePage() {
       
       if (profileRes.data) {
         let merged: any = profileRes.data;
+        // 🔒 SEGURANÇA: se estiver visualizando perfil de OUTRO usuário (?id=…),
+        // remove campos sensíveis (chave PIX / repasse) antes de qualquer render.
+        // Defesa em profundidade — a proteção definitiva é RLS/view no backend.
+        if (profileId && profileId !== user?.id) {
+          delete merged.pix_key;
+          delete merged.pix_key_type;
+          const cs: any = merged.custom_sections;
+          if (cs && typeof cs === 'object' && cs.__extras && typeof cs.__extras === 'object') {
+            const ex = { ...cs.__extras };
+            delete ex.pix_key;
+            delete ex.pix_key_type;
+            merged.custom_sections = { ...cs, __extras: ex };
+          }
+        }
         // Reidrata campos "extras" persistidos em custom_sections.__extras
         // (campos que ainda não existem como coluna própria na tabela `profiles`).
         try {
