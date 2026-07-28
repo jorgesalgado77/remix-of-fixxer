@@ -517,32 +517,35 @@ function MeusAnunciosPage() {
       )}
 
       {confirmBoostId && (
-        <Modal onClose={() => !busyBoostId && setConfirmBoostId(null)}>
-          <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#FFB020]/15 border border-[#FFB020]/40 flex items-center justify-center shrink-0">
-              <Rocket className="w-5 h-5 text-[#FFB020]" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black uppercase text-white">Impulsionar Anúncio?</h3>
-              <p className="text-[11px] text-white/60 mt-1 leading-relaxed">
-                Seu anúncio volta ao topo do Feed imediatamente. Custo: <b className="text-[#FFB020]">{boostCost} moedas</b>.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button" disabled={!!busyBoostId}
-              onClick={() => setConfirmBoostId(null)}
-              className="flex-1 h-10 rounded-xl bg-white/5 border border-white/10 text-white/80 text-[11px] font-bold uppercase disabled:opacity-50"
-            >Cancelar</button>
-            <button
-              type="button" disabled={!!busyBoostId} onClick={handleBoost}
-              className="flex-1 h-10 rounded-xl bg-[#FFB020] text-black text-[11px] font-black uppercase inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
-            >
-              <Rocket className="w-3.5 h-3.5" /> {busyBoostId ? "Impulsionando..." : `Confirmar (-${boostCost})`}
-            </button>
-          </div>
-        </Modal>
+        <ActionCostModal
+          onClose={() => !busyBoostId && setConfirmBoostId(null)}
+          title="Impulsionar Anúncio?"
+          description="Seu anúncio volta ao topo do Feed imediatamente e ganha destaque para novos visitantes."
+          Icon={Rocket}
+          accent="#FFB020"
+          cost={boostCost}
+          balance={balance}
+          busy={!!busyBoostId}
+          busyLabel="Impulsionando..."
+          confirmLabel={`Confirmar (-${boostCost})`}
+          onConfirm={handleBoost}
+        />
+      )}
+
+      {confirmRenewId && (
+        <ActionCostModal
+          onClose={() => !busyRenewId && setConfirmRenewId(null)}
+          title="Renovar por +15 dias?"
+          description="A validade é estendida em 15 dias e o anúncio volta ao topo do Feed."
+          Icon={RotateCw}
+          accent="#39FF88"
+          cost={renewCost}
+          balance={balance}
+          busy={!!busyRenewId}
+          busyLabel="Renovando..."
+          confirmLabel={`Renovar (-${renewCost})`}
+          onConfirm={handleRenew}
+        />
       )}
     </div>
   );
