@@ -1935,6 +1935,61 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   Descartar Rascunho
                 </Button>
               </div>
+
+              {/* NOVO — Resumo de Custo em Moedas */}
+              <div
+                className="rounded-xl border p-3 space-y-1.5"
+                style={{
+                  borderColor: costSummary.insufficient ? "#FF3B6B66" : `${theme.hex}44`,
+                  background: "rgba(255,255,255,0.03)",
+                }}
+              >
+                <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-wider">
+                  <span className="flex items-center gap-1.5 text-white/70">
+                    <Coins className="w-3.5 h-3.5" style={{ color: theme.hex }} />
+                    Custo desta Publicação
+                  </span>
+                  <span className="text-white/60">
+                    Plano <span style={{ color: theme.hex }}>{costSummary.planName}</span> · Saldo{" "}
+                    <span className="text-white">{coinBalance}</span> moedas
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5 text-[11px] text-white/70">
+                  <div className="flex justify-between">
+                    <span>Franquia mensal</span>
+                    <span className="text-white/90">
+                      {costSummary.remainingFree}/{costSummary.freeQuota} disponíveis
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Publicação{costSummary.baseCost === 0 ? " (usa franquia)" : " excedente"}</span>
+                    <span className="text-white/90">
+                      {costSummary.baseCost === 0 ? "Grátis" : `${costSummary.baseCost} moedas`}
+                    </span>
+                  </div>
+                  {costSummary.urgentCost > 0 && (
+                    <div className="flex justify-between">
+                      <span>Alerta de urgência no bairro</span>
+                      <span className="text-white/90">+{costSummary.urgentCost} moedas</span>
+                    </div>
+                  )}
+                </div>
+                <div
+                  className="flex items-center justify-between pt-1.5 border-t text-[12px] font-black uppercase italic"
+                  style={{ borderColor: "rgba(255,255,255,0.08)" }}
+                >
+                  <span className="text-white/80">Total</span>
+                  <span style={{ color: costSummary.insufficient ? "#FF3B6B" : theme.hex }}>
+                    {costSummary.total === 0 ? "Sem custo" : `${costSummary.total} moedas`}
+                  </span>
+                </div>
+                {costSummary.insufficient && (
+                  <p className="text-[10px] text-rose-300 italic">
+                    Saldo insuficiente. Compre moedas ou reduza a urgência para publicar.
+                  </p>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   type="button"
