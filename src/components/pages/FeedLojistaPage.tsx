@@ -83,6 +83,9 @@ type FeedPost = {
   budget?: string;
   specialty?: string;
   radiusKm?: number;
+  urgency?: UrgencyTag;
+  serviceRadiusKm?: number;
+  tags?: string[];
   media: MediaItem[];
   keywords: string[];
 };
