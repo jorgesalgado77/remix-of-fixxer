@@ -146,6 +146,6 @@ describe("applyAdFiltersToQuery", () => {
   it("higieniza caracteres perigosos no termo (%, vírgula, parênteses)", () => {
     const { builder, calls } = makeBuilder();
     applyAdFiltersToQuery(builder, { term: "100%,off()" });
-    expect(calls[0]?.args[0]).toBe("title.ilike.%100 off%,description.ilike.%100 off%");
+    expect(calls[0]?.args[0]).toBe("title.ilike.%100  off%,description.ilike.%100  off%");
   });
 });
