@@ -2025,12 +2025,15 @@ function ReviewCard({
   canDelete = false,
   onDelete,
   deleteCost = 30,
+  deleting = false,
 }: {
   review: Review;
   canDelete?: boolean;
   onDelete?: () => void;
   deleteCost?: number;
+  deleting?: boolean;
 }) {
+
   const catInfo: Record<Review["reviewer_category"], { icon: React.ReactNode; label: string }> = {
     lojista: { icon: <ShieldCheck className="w-3 h-3" />, label: "Lojista" },
     prestador: { icon: <Wrench className="w-3 h-3" />, label: "Prestador" },
