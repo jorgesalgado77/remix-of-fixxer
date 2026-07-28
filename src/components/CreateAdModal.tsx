@@ -193,6 +193,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [urgencyTag, setUrgencyTag] = useState<"urgente" | "normal" | "encomenda">("normal");
   const [serviceRadiusKm, setServiceRadiusKm] = useState<5 | 15 | 30 | 0>(15); // 0 = toda a região
   const [tagsInput, setTagsInput] = useState("");
+  // Modalidades de atendimento (multi-select) — 🏠 domicílio, 🏬 retirada, 🚚 entrega, 💻 online
+  const [deliveryModes, setDeliveryModes] = useState<string[]>([]);
   // Validade / Expiração — máximo 15 dias no feed
   const MAX_VALIDITY_DAYS = 15;
   const todayISO = () => new Date().toISOString().slice(0, 10);
