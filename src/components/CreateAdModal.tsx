@@ -802,6 +802,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       urgency_tag: urgencyTag,
       service_radius_km: serviceRadiusKm === 0 ? null : serviceRadiusKm,
       tags: parsedTags,
+      delivery_modes: deliveryModes.length > 0 ? deliveryModes : null,
       valid_until: validityDate,
       expires_at: new Date(`${validityDate}T23:59:59`).toISOString(),
       price_type: priceType,
