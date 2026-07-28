@@ -12,7 +12,7 @@
  */
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { MapPin, Star, User as UserIcon } from "lucide-react";
+import { MapPin, ShieldCheck, Star, User as UserIcon } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { PlanBadge } from "@/components/PlanBadge";
 import { GoldMedalBadge } from "@/components/GoldMedalBadge";
@@ -36,6 +36,13 @@ const ROLE_LABEL: Record<PanelRole, string> = {
   prestador: "PRESTADOR",
   parceiro: "PARCEIRO",
   cliente: "CLIENTE",
+};
+
+const ROLE_ICON: Record<PanelRole, string> = {
+  lojista: "🏪",
+  prestador: "🛠️",
+  parceiro: "🚚",
+  cliente: "👤",
 };
 
 function displayNameOf(p?: ProfileLite | null): string {
@@ -165,6 +172,7 @@ export function ProfileSummaryCard({
               {loading ? "Carregando…" : name}
             </div>
             <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
+              <span aria-hidden="true">{ROLE_ICON[role]}</span>
               {ROLE_LABEL[role]}
             </div>
             {location && (
@@ -183,10 +191,14 @@ export function ProfileSummaryCard({
             </div>
             <div className="mt-0.5 flex items-center gap-1 text-xs font-black text-white">
               <Star className="w-3 h-3 text-emerald-400 fill-current" aria-hidden="true" />
-              {rating ? `${rating.avg.toFixed(1)} / 5.0` : "—"}
-              {rating && (
+              <span>{rating ? rating.avg.toFixed(1) : "0.0"} / 5.0</span>
+              {rating ? (
                 <span className="text-[9px] text-white/50 font-bold">
                   ({rating.count})
+                </span>
+              ) : (
+                <span className="text-[9px] text-white/40 font-bold normal-case tracking-normal">
+                  s/ avaliações
                 </span>
               )}
             </div>
@@ -205,9 +217,16 @@ export function ProfileSummaryCard({
           </div>
         </div>
 
-        {isGold && (
+        {isGold ? (
           <div className="mt-3 flex justify-center">
             <GoldMedalBadge />
+          </div>
+        ) : (
+          <div className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-primary/5 border border-primary/10">
+            <ShieldCheck className="w-3 h-3 text-primary" aria-hidden="true" />
+            <span className="text-[8px] font-black text-primary uppercase italic tracking-widest">
+              Selo Ouro FIXXER
+            </span>
           </div>
         )}
       </Link>
