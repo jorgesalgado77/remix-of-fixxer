@@ -77,6 +77,7 @@ import {
   setDraftFiles,
   setDraftText,
 } from "@/lib/chat-drafts";
+import { consumeAdChatContext, formatAdContextAsMessage } from "@/lib/ad-chat-context";
 
 const MAX_FILES = 6;
 const MAX_FILE_MB = 15;
