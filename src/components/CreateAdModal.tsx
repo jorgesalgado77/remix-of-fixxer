@@ -889,6 +889,13 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       toast.error(err);
       return;
     }
+    if (costSummary.insufficient) {
+      const faltam = Math.max(0, costSummary.total - coinBalance);
+      toast.error(
+        `Saldo insuficiente: precisa de ${costSummary.total} moedas (você tem ${coinBalance}). Faltam ${faltam}.`,
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = buildPayload();
