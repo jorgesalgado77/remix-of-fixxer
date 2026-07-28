@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useLocation, useNavigate, Link } from "@tanstack/react-router";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 
