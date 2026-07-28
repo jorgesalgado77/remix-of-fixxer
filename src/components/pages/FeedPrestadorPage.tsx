@@ -765,6 +765,11 @@ function JobCardImpl({
   unlockCost = 5,
   unlockBusy = false,
   onUnlock,
+  currentUserId,
+  onEdit,
+  onDelete,
+  onTogglePause,
+  isPaused,
 }: {
   job: JobPost;
   saved: boolean;
@@ -778,6 +783,11 @@ function JobCardImpl({
   unlockCost?: number;
   unlockBusy?: boolean;
   onUnlock?: () => void | Promise<void>;
+  currentUserId?: string | null;
+  onEdit?: (job: JobPost) => void;
+  onDelete?: (job: JobPost) => void;
+  onTogglePause?: (job: JobPost) => void;
+  isPaused?: boolean;
 }) {
   const navigate = useNavigate();
   const isClientFinal = job.type === "cliente_final";
