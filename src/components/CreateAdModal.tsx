@@ -38,6 +38,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getCategoryTheme, CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { useUserCategory } from "@/lib/current-user";
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import {
@@ -193,7 +194,21 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: null } : prev));
 
   const fileRef = useRef<HTMLInputElement>(null);
-  const theme = getCategoryTheme(defaultCategory);
+  // Categoria efetiva = do usuário logado (fonte oficial) com fallback para a prop.
+  const userCategory = useUserCategory();
+  const effectiveCategory: CategoryKey = (userCategory && userCategory !== "admin"
+    ? (userCategory as CategoryKey)
+    : defaultCategory) as CategoryKey;
+  const theme = getCategoryTheme(effectiveCategory);
+  // Rótulos dinâmicos por categoria (título do modal + botão de publicação)
+  const roleCopy: Record<CategoryKey, { title: string; publish: string }> = {
+    lojista:    { title: "📢 Criar Novo Anúncio Comercial",              publish: "🚀 Publicar Oferta"   },
+    fornecedor: { title: "📢 Criar Novo Anúncio Comercial",              publish: "🚀 Publicar Oferta"   },
+    prestador:  { title: "📢 Anunciar Pacote de Serviço / Mão de Obra",  publish: "🚀 Publicar Serviço"  },
+    cliente:    { title: "📢 Publicar Solicitação de Serviço / Pedido",  publish: "🚀 Publicar Pedido"   },
+    admin:      { title: "📢 Criar Novo Anúncio",                        publish: "🚀 Publicar"          },
+  };
+  const copy = roleCopy[effectiveCategory] ?? roleCopy.lojista;
 
   // Cache de arquivos codificados em base64 (para auto-save leve)
   const filesCacheRef = useRef<Map<string, { name: string; type: string; size: number; kind: UploadItem["kind"]; dataUrl: string }>>(new Map());
@@ -323,7 +338,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     return {
       v: 2,
       savedAt: new Date().toISOString(),
-      category: defaultCategory,
+      category: effectiveCategory,
       serviceTypes, neighborhood, city, uf,
       rooms, title, startDate, deadline, priority,
       description, notes, techSpecs, otherChecked, otherText,
@@ -681,7 +696,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         : t,
     );
     const base: any = {
-      category: defaultCategory,
+      category: effectiveCategory,
       service_types: finalServiceTypes,
       location: {
         neighborhood: neighborhood.trim(),
@@ -917,7 +932,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             }
           : null
       }
-      categoryOverride={defaultCategory}
+      categoryOverride={effectiveCategory}
       aspect="video"
       emptyLabel="Sem imagem"
     />
@@ -934,7 +949,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           className="absolute top-2 right-2 px-2 py-1 rounded-md text-[9px] uppercase font-black italic"
           style={{ ...theme.bgSoft, color: theme.hex }}
         >
-          {CATEGORY_LABEL[defaultCategory]}
+          {CATEGORY_LABEL[effectiveCategory]}
         </div>
       </div>
       <div className="p-4 space-y-2">
@@ -1026,13 +1041,13 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         >
           <div>
             <h2 className="text-lg font-black uppercase italic text-white tracking-tight">
-              Criar Oportunidade
+              {copy.title}
             </h2>
             <p
               className="text-[10px] uppercase font-bold tracking-wider"
               style={{ color: theme.hex }}
             >
-              {CATEGORY_LABEL[defaultCategory]}
+              {CATEGORY_LABEL[effectiveCategory]}
               {userMacro && (
                 <span className="ml-2 text-white/50 normal-case font-semibold tracking-normal">
                   · {userMacro.icon} {userMacro.label}
@@ -1741,7 +1756,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   style={{ background: theme.hex, ...theme.glowStrong }}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {submitting ? "Publicando..." : "Publicar Oportunidade"}
+                  {submitting ? "Publicando..." : copy.publish}
                 </Button>
               </div>
               <p className="text-[9px] text-white/40 text-center italic">
