@@ -276,6 +276,7 @@ function ConversationPage() {
   const [peerOnline, setPeerOnline] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const presenceRef = useRef<any>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1686,8 +1687,10 @@ function ConversationPage() {
               onArchive={toggleArchive}
               onBlock={toggleBlock}
               onExport={openExportModal}
+              onReport={() => setReportOpen(true)}
             />
           </div>
+
 
 
 
@@ -2251,6 +2254,15 @@ function ConversationPage() {
         />
       )}
       <ChatSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <ReportUserDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        targetUserId={peerId}
+        targetName={peerName}
+        actorUserId={uid}
+        context={`chat:${peerId}`}
+      />
+
       <CameraCaptureModal
         open={cameraOpen !== null}
         mode={cameraOpen ?? "photo"}
