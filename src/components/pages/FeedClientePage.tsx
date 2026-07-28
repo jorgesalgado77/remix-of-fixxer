@@ -375,18 +375,34 @@ export default function FeedClientePage() {
   }, [sortBy, userCoords, geoStatus, requestGeolocation]);
 
   const filtered = useMemo(() => {
+    const distNum =
+      distanceFilter === "todos" ? ("todos" as const) : (Number(distanceFilter) as number);
     let list = MOCK_VENDORS.filter((v) => {
       if (solution !== "Todas as Opções" && !v.solutions.includes(solution)) return false;
       if (savedOnly && !saved.has(v.id)) return false;
       if (query.trim()) {
         const q = query.toLowerCase();
-        return (
+        const hit =
           v.name.toLowerCase().includes(q) ||
           v.headline.toLowerCase().includes(q) ||
-          v.city.toLowerCase().includes(q)
-        );
+          v.city.toLowerCase().includes(q);
+        if (!hit) return false;
       }
-      return true;
+      // Deriva atributos de anúncio para reaproveitar matchesAdFilters (paridade com service_orders)
+      const tags = v.solutions.map((s) =>
+        s.toLowerCase().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}_-]+/gu, ""),
+      );
+      return matchesAdFilters(
+        {
+          urgency_tag: "normal",
+          service_radius_km: 30,
+          tags,
+          title: v.name,
+          description: v.headline,
+          keywords: [v.city, v.state, ...v.solutions],
+        },
+        { urgency: urgencyFilter, distance: distNum, tag: tagFilter },
+      );
     });
 
     if (sortBy === "reputation") {
@@ -409,7 +425,18 @@ export default function FeedClientePage() {
       }
     }
     return list;
-  }, [query, solution, savedOnly, saved, sortBy, userCity, userCoords]);
+  }, [
+    query,
+    solution,
+    savedOnly,
+    saved,
+    sortBy,
+    userCity,
+    userCoords,
+    urgencyFilter,
+    distanceFilter,
+    tagFilter,
+  ]);
 
   const branchCtx = useUserBranchContext();
   const ranked = useMemo(() => {
