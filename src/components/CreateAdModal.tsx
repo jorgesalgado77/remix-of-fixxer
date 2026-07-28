@@ -614,8 +614,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     if (!neighborhood.trim()) return "Informe o bairro do local de execução.";
     if (!city.trim()) return "Informe a cidade do local de execução.";
     if (!uf.trim() || uf.trim().length !== 2) return "Informe a UF (2 letras) do local de execução.";
-    if (!title.trim()) return "Informe o título do serviço.";
-    if (!description.trim()) return "Descreva o serviço.";
+    if (!title.trim()) return "Informe o título da oportunidade.";
+    if (!description.trim()) return "Descreva a oportunidade.";
     if (rooms < 1 || rooms > 25) return "Quantidade de ambientes deve ser entre 1 e 25.";
     if (startDate && deadline && new Date(deadline) < new Date(startDate))
       return "O prazo de execução não pode ser anterior à data de início.";
@@ -846,12 +846,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           }),
         );
       } catch { /* ignore */ }
-      toast.success("Serviço publicado com sucesso e disponível no feed!");
+      toast.success("Oportunidade publicada com sucesso e disponível no feed!");
       discardDraft();
       resetForm();
       onClose();
     } catch (err: any) {
-      toast.error(err?.message || "Falha ao publicar serviço.");
+      toast.error(err?.message || "Falha ao publicar oportunidade.");
     } finally {
       setSubmitting(false);
     }
@@ -939,7 +939,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       </div>
       <div className="p-4 space-y-2">
         <h3 className="text-white font-black text-base leading-tight line-clamp-2">
-          {title || "Título do serviço"}
+          {title || "Título da oportunidade"}
         </h3>
         {serviceTypes.length > 0 && (
           <div className="flex flex-wrap gap-1">
@@ -985,7 +985,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           </div>
         </div>
         <p className="text-white/60 text-xs line-clamp-3">
-          {description || "Descrição do serviço aparecerá aqui..."}
+          {description || "Descrição da oportunidade aparecerá aqui..."}
         </p>
         <div className="flex flex-wrap gap-2 text-[9px] uppercase font-bold text-white/50">
           <span>{rooms} ambiente{rooms > 1 ? "s" : ""}</span>
@@ -1026,7 +1026,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         >
           <div>
             <h2 className="text-lg font-black uppercase italic text-white tracking-tight">
-              Criar Serviço
+              Criar Oportunidade
             </h2>
             <p
               className="text-[10px] uppercase font-bold tracking-wider"
@@ -1608,7 +1608,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descreva o serviço..."
+                placeholder="Descreva a oportunidade..."
                 rows={4}
                 maxLength={1000}
                 className="bg-white/5 border-white/10 text-white resize-none"
@@ -1741,7 +1741,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   style={{ background: theme.hex, ...theme.glowStrong }}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {submitting ? "Publicando..." : "Publicar Serviço"}
+                  {submitting ? "Publicando..." : "Publicar Oportunidade"}
                 </Button>
               </div>
               <p className="text-[9px] text-white/40 text-center italic">
