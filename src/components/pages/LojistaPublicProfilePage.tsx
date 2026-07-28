@@ -1972,7 +1972,7 @@ function ReviewCard({
   onDelete?: () => void;
   deleteCost?: number;
 }) {
-  const catInfo: Record<Review["reviewer_category"], { icon: JSX.Element; label: string }> = {
+  const catInfo: Record<Review["reviewer_category"], { icon: React.ReactNode; label: string }> = {
     lojista: { icon: <ShieldCheck className="w-3 h-3" />, label: "Lojista" },
     prestador: { icon: <Wrench className="w-3 h-3" />, label: "Prestador" },
     fornecedor: { icon: <Truck className="w-3 h-3" />, label: "Fornecedor" },
