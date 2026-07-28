@@ -1049,6 +1049,15 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 </span>
               )}
             </p>
+            {roleFallbackUsed && (
+              <p
+                role="alert"
+                data-testid="role-fallback-warning"
+                className="mt-1 text-[10px] font-semibold text-amber-300"
+              >
+                ⚠️ {roleFallbackMessage}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
