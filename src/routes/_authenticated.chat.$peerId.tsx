@@ -2567,13 +2567,22 @@ function MediaLightbox() {
     setOffset({ x: st.x, y: st.y });
   }, [media?.url]);
 
+  const captureTime = (): number | undefined => {
+    const v = videoRef.current;
+    if (!v || !isFinite(v.currentTime)) return undefined;
+    return v.currentTime;
+  };
+  const snapshot = (): ViewState => ({
+    zoom, x: offset.x, y: offset.y,
+    time: media?.type === "video" ? captureTime() : undefined,
+  });
   const close = () => {
-    if (media) persist(media.url, { zoom, x: offset.x, y: offset.y });
+    if (media) persist(media.url, snapshot());
     setIndex(-1);
   };
   const go = (delta: number) => {
     if (!items.length) return;
-    if (media) persist(media.url, { zoom, x: offset.x, y: offset.y });
+    if (media) persist(media.url, snapshot());
     setIndex((i) => (i + delta + items.length) % items.length);
   };
   const applyZoom = (next: number) => setZoom(Math.max(0.25, Math.min(6, next)));
