@@ -1054,9 +1054,18 @@ function VendorCardImpl({
 
   return (
     <article
-      className={`${glassClass} border-2 rounded-3xl overflow-hidden bg-[#1A1A1B]`}
+      className={`${glassClass} border-2 rounded-3xl overflow-hidden bg-[#1A1A1B] relative`}
       style={{ borderColor: `${vendorHex}55`, boxShadow: `0 0 18px ${vendorHex}22` }}
     >
+      <div className="absolute right-2 top-2 z-20">
+        <FeedAdMenu
+          ownerId={vendor.id}
+          currentUserId={currentUserId ?? null}
+          adId={vendor.id}
+          ownerName={vendor.name}
+          accent={vendorHex}
+        />
+      </div>
       {/* Cabeçalho */}
       <div className="p-4 flex items-start gap-3">
         <div className="relative shrink-0">
