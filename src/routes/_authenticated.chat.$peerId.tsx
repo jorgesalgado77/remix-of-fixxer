@@ -23,6 +23,7 @@ import {
   Trash2,
   MoreVertical,
   Ban,
+  Flag,
   FileDown,
   Settings,
   Camera,
@@ -33,6 +34,7 @@ import {
 
 } from "lucide-react";
 import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
+import { ReportUserDialog } from "@/components/ReportUserDialog";
 
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
