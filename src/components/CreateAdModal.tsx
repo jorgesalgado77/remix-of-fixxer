@@ -45,6 +45,7 @@ import { getActionCost, getPlanConfig, type PlanId } from "@/lib/monetization";
 import { Zap, CalendarDays, Package, Coins, Hash, Radius, CalendarClock } from "lucide-react";
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
+import { normalizeAdTags, formatTagLabel } from "@/lib/ad-filters";
 import {
   maskCurrencyBRL as sharedMaskBRL,
   parseCurrencyBRL as sharedParseBRL,
@@ -542,21 +543,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     return (cv * pct) / 100;
   }, [contractValue, commissionPct]);
 
-  // Tags parseadas (até 5), aceita separação por vírgula ou espaço; normaliza # e slug leve
-  const parsedTags = useMemo(() => {
-    const raw = tagsInput.split(/[,\s]+/g).map((s) => s.trim()).filter(Boolean);
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const r of raw) {
-      const t = r.replace(/^#+/, "").toLowerCase().replace(/[^a-z0-9-_]/g, "").slice(0, 24);
-      if (!t) continue;
-      if (seen.has(t)) continue;
-      seen.add(t);
-      out.push(`#${t}`);
-      if (out.length >= 5) break;
-    }
-    return out;
-  }, [tagsInput]);
+  // Tags parseadas: normalizadas via helper compartilhado (aceita #hashtag,
+  // remove duplicadas, limita a 5, retorna tokens SEM `#` para persistência).
+  const parsedTags = useMemo(() => normalizeAdTags(tagsInput, 5), [tagsInput]);
 
   // Saldo de moedas + custo estimado desta publicação
   const [coinBalance, setCoinBalance] = useState<number>(() => getCachedBalance());
@@ -1531,13 +1520,13 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               />
               {parsedTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {parsedTags.map((t) => (
+                  {parsedTags.map((t: string) => (
                     <span
                       key={t}
                       className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase"
                       style={{ ...theme.bgSoft, color: theme.hex, border: `1px solid ${theme.hex}44` }}
                     >
-                      {t}
+                      {formatTagLabel(t)}
                     </span>
                   ))}
                 </div>
