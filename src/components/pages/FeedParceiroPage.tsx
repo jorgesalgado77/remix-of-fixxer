@@ -877,6 +877,18 @@ export default function FeedParceiroPage() {
       {/* FEED */}
       <main className="mx-auto max-w-3xl px-4 py-4">
         <div className="mb-4">
+          <AdFiltersBar
+            role="parceiro"
+            urgency={urgencyFilter}
+            distance={distanceFilter}
+            tag={tagFilter}
+            onUrgencyChange={setUrgencyFilter}
+            onDistanceChange={setDistanceFilter}
+            onTagChange={setTagFilter}
+            tagPlaceholder="#vidro"
+          />
+        </div>
+        <div className="mb-4">
           <B2BSuggestionsCard />
         </div>
         {loadError && (
