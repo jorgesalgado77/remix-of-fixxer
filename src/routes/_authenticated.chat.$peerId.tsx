@@ -2292,7 +2292,8 @@ function AttachmentBlock({
             decoding="async"
             onLoad={() => setMediaLoaded(true)}
             onError={() => setMediaLoaded(true)}
-            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
+            onClick={() => window.dispatchEvent(new CustomEvent("fixxer:open-media", { detail: { url, type: "image", name } }))}
+            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 cursor-zoom-in ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
           />
           <MediaUploadOverlay uploadState={uploadState} onRetry={onRetry} />
         </div>
@@ -2309,8 +2310,18 @@ function AttachmentBlock({
             onError={() => setMediaLoaded(true)}
             className={`rounded-lg max-h-64 w-full bg-black transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
           />
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("fixxer:open-media", { detail: { url, type: "video", name } }))}
+            title="Expandir em tela cheia"
+            aria-label="Expandir vídeo em tela cheia"
+            className="absolute top-2 right-2 z-10 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 border border-white/20 text-white flex items-center justify-center backdrop-blur-sm"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
           <MediaUploadOverlay uploadState={uploadState} onRetry={onRetry} />
         </div>
+
 
 
       ) : audio ? (
