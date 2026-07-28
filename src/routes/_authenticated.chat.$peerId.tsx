@@ -1572,6 +1572,20 @@ function ConversationPage() {
     return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
 
+  // Registry global de mídias da conversa — usado pelo MediaLightbox para navegar.
+  useEffect(() => {
+    const list = messages
+      .filter((m) => !!m.attachment_url && !!m.attachment_type)
+      .filter((m) => m.attachment_type!.startsWith("image/") || m.attachment_type!.startsWith("video/"))
+      .map((m) => ({
+        url: m.attachment_url!,
+        type: m.attachment_type!.startsWith("image/") ? ("image" as const) : ("video" as const),
+        name: m.attachment_name || "anexo",
+      }));
+    (window as any).__fixxerChatMedia = list;
+  }, [messages]);
+
+
 
   return (
     <div className="h-[100dvh] bg-black text-white flex flex-col overscroll-contain overflow-hidden">
