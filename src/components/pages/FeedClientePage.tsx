@@ -1029,6 +1029,7 @@ function VendorCardImpl({
   onProfile,
   onOpenLightbox,
   userCoords,
+  currentUserId,
 }: {
   vendor: Vendor;
   glassClass: string;
@@ -1038,6 +1039,7 @@ function VendorCardImpl({
   onProfile: () => void;
   onOpenLightbox: (index: number) => void;
   userCoords: { lat: number; lng: number } | null;
+  currentUserId?: string | null;
 }) {
   const [carouselIdx, setCarouselIdx] = useState(0);
   const isLoja = vendor.kind === "loja";
