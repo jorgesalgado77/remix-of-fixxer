@@ -34,6 +34,8 @@ import {
   applyRelevanceFallback,
 } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
+import { AdMetaBadges, URGENCY_META, type UrgencyTag } from "@/components/AdMetaBadges";
+import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
 
 import {
   ArrowLeft,
