@@ -856,9 +856,18 @@ export function LojistaPublicProfilePage() {
       toast.error("Escreva um comentário antes de enviar.");
       return;
     }
+    if (isSelf) {
+      toast.error("Você não pode avaliar o seu próprio perfil.");
+      return;
+    }
     setSubmittingReview(true);
     try {
       const { data: { user } } = await supabaseExternal.auth.getUser();
+      if (user?.id && profile?.user_id && user.id === profile.user_id) {
+        toast.error("Você não pode avaliar o seu próprio perfil.");
+        setSubmittingReview(false);
+        return;
+      }
       const payload = {
         lojista_id: storeId,
         reviewer_id: user?.id,
@@ -886,6 +895,40 @@ export function LojistaPublicProfilePage() {
       setSubmittingReview(false);
     }
   };
+
+  const DELETE_REVIEW_COST = 30;
+  const handleDeleteReview = async (review: Review) => {
+    if (!currentUserId || review.reviewer_id !== currentUserId) return;
+    const ok = window.confirm(
+      `Excluir esta avaliação custará ${DELETE_REVIEW_COST} moedas. Deseja continuar?`,
+    );
+    if (!ok) return;
+    try {
+      const spent = await consumeCoins(
+        currentUserId,
+        DELETE_REVIEW_COST,
+        "Exclusão de avaliação publicada",
+        "action_consume",
+        { operation: "delete_review", reference: review.id, idempotencyKey: `del-rev-${review.id}` },
+      );
+      if (!spent.ok) {
+        toast.error("Saldo insuficiente para excluir a avaliação.");
+        return;
+      }
+      const { error } = await supabaseExternal
+        .from("store_reviews")
+        .delete()
+        .eq("id", review.id)
+        .eq("reviewer_id", currentUserId);
+      if (error) throw error;
+      setReviews((prev) => prev.filter((r) => r.id !== review.id));
+      toast.success(`Avaliação excluída (−${DELETE_REVIEW_COST} moedas).`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao excluir avaliação.");
+    }
+  };
+
 
   const openImageLightbox = (url: string, idx: number) => {
     setLightboxImage(url);
