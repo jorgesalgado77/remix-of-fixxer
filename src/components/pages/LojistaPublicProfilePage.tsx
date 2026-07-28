@@ -427,7 +427,38 @@ export function LojistaPublicProfilePage() {
             .select("*")
             .eq("lojista_id", lojistaKey)
             .order("created_at", { ascending: false });
-          if (!cancelled && revData) setReviews(revData as Review[]);
+          if (!cancelled && revData) {
+            const reviewerIds = Array.from(
+              new Set((revData as any[]).map((r) => r.reviewer_id).filter(Boolean)),
+            );
+            let profMap = new Map<string, any>();
+            if (reviewerIds.length) {
+              const { data: profs } = await supabaseExternal
+                .from("profiles")
+                .select("id,display_name,full_name,avatar_url,role,city")
+                .in("id", reviewerIds as string[]);
+              (profs || []).forEach((p: any) => profMap.set(p.id, p));
+            }
+            const normRole = (r: string): Review["reviewer_category"] => {
+              const s = String(r || "").toLowerCase();
+              if (s.includes("lojista") || s.includes("loja")) return "lojista";
+              if (s.includes("prestador") || s.includes("servi")) return "prestador";
+              if (s.includes("fornec") || s.includes("parceiro") || s.includes("b2b")) return "fornecedor";
+              return "cliente";
+            };
+            const enriched = (revData as any[]).map((r) => {
+              const p = r.reviewer_id ? profMap.get(r.reviewer_id) : null;
+              return {
+                ...r,
+                reviewer_name: p?.display_name || p?.full_name || r.reviewer_name || "Anônimo",
+                reviewer_avatar: p?.avatar_url ?? r.reviewer_avatar ?? null,
+                reviewer_city: p?.city ?? r.reviewer_city,
+                reviewer_category: p?.role ? normRole(p.role) : (r.reviewer_category || "cliente"),
+              } as Review;
+            });
+            setReviews(enriched);
+          }
+
         }
       } catch (err) {
         if (!cancelled) console.error("Erro ao carregar perfil público:", err);
