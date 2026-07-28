@@ -335,8 +335,10 @@ function MeusAnunciosPage() {
     }
   };
 
-  const handleRenew = async (ad: AdRow) => {
-    if (!uid) return;
+  const handleRenew = async () => {
+    if (!confirmRenewId || !uid) return;
+    const ad = ads.find((a) => a.id === confirmRenewId);
+    if (!ad) return;
     setBusyRenewId(ad.id);
     try {
       const res = await spendCoinsForAction(uid, "publish_extra", `renew:${ad.id}`);
@@ -358,7 +360,8 @@ function MeusAnunciosPage() {
       setAds((prev) => prev.map((a) => a.id === ad.id
         ? { ...a, created_at: nowIso, metadata: { ...(a.metadata || {}), expires_at: newExp, renewed_at: nowIso } }
         : a));
-      toast.success(`🔄 Anúncio renovado por +15 dias! (-${renewCost} moedas)`);
+      toast.success(`🔄 Anúncio renovado por +15 dias! (Saldo: ${res.balance ?? "?"})`);
+      setConfirmRenewId(null);
     } finally {
       setBusyRenewId(null);
     }
