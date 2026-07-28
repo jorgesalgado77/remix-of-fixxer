@@ -785,6 +785,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       description: description.trim(),
       notes: notes.trim() || null,
       tech_specs: specsList,
+      urgency_tag: urgencyTag,
+      service_radius_km: serviceRadiusKm === 0 ? null : serviceRadiusKm,
+      tags: parsedTags,
       price_type: priceType,
       files: files.map((i, order) => ({
         name: i.file.name,
