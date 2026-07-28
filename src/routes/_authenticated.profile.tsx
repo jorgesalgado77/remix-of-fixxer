@@ -781,6 +781,24 @@ function ProfilePage() {
       // remove chaves internas/derivadas que nunca devem ir para o banco
       delete payload.id_temp;
 
+      // 🔒 PIX: nunca vai pelo UPDATE de profiles (SELECT dessas colunas foi
+      // revogado no banco). Persistimos via RPC dedicada set_my_pix_key, que
+      // valida auth.uid() no servidor.
+      const pixKeyToSave = typeof payload.pix_key === 'string' ? payload.pix_key : null;
+      const pixTypeToSave = typeof payload.pix_key_type === 'string' ? payload.pix_key_type : null;
+      delete payload.pix_key;
+      delete payload.pix_key_type;
+      if (pixKeyToSave !== null || pixTypeToSave !== null) {
+        try {
+          await supabaseExternal.rpc('set_my_pix_key', {
+            _pix_key: pixKeyToSave ?? '',
+            _pix_key_type: pixTypeToSave ?? '',
+          });
+        } catch (e) {
+          console.warn('[profile.save] Falha ao salvar PIX via RPC:', e);
+        }
+      }
+
       let lastError: any = null;
       let attempts = 0;
       while (attempts < 30) {
