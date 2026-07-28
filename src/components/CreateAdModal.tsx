@@ -2111,12 +2111,25 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 </Button>
                 <Button
                   type="submit"
-                  disabled={submitting}
-                  className="flex-1 uppercase italic font-black text-xs h-12 border-0 text-black"
-                  style={{ background: theme.hex, ...theme.glowStrong }}
+                  disabled={submitting || costSummary.insufficient}
+                  aria-disabled={submitting || costSummary.insufficient}
+                  title={
+                    costSummary.insufficient
+                      ? `Saldo insuficiente. Necessário ${costSummary.total} moedas (você tem ${coinBalance}).`
+                      : undefined
+                  }
+                  className="flex-1 uppercase italic font-black text-xs h-12 border-0 text-black disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: costSummary.insufficient ? "#4a1220" : theme.hex,
+                    ...(costSummary.insufficient ? {} : theme.glowStrong),
+                  }}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {submitting ? "Publicando..." : copy.publish}
+                  {submitting
+                    ? "Publicando..."
+                    : costSummary.insufficient
+                    ? `Faltam ${Math.max(0, costSummary.total - coinBalance)} moedas`
+                    : copy.publish}
                 </Button>
               </div>
               <p className="text-[9px] text-white/40 text-center italic">
