@@ -40,6 +40,9 @@ import { getCategoryTheme, CATEGORY_LABEL, type CategoryKey } from "@/lib/catego
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useUserCategory } from "@/lib/current-user";
 import { resolveEffectiveCategory } from "@/lib/create-ad-role";
+import { getCachedBalance, subscribeBalance } from "@/lib/coins";
+import { getActionCost, getPlanConfig, type PlanId } from "@/lib/monetization";
+import { Zap, CalendarDays, Package, Coins, Hash, Radius } from "lucide-react";
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import {
@@ -185,6 +188,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [freightVolumes, setFreightVolumes] = useState("");
   const [freightWeight, setFreightWeight] = useState("");
   const [otherServiceText, setOtherServiceText] = useState("");
+  // Novos blocos estratégicos
+  const [urgencyTag, setUrgencyTag] = useState<"urgente" | "normal" | "encomenda">("normal");
+  const [serviceRadiusKm, setServiceRadiusKm] = useState<5 | 15 | 30 | 0>(15); // 0 = toda a região
+  const [tagsInput, setTagsInput] = useState("");
   // Erros inline por campo monetário (destaca borda + mensagem sob o input)
   const [fieldErrors, setFieldErrors] = useState<{
     fixedValue?: string | null;
@@ -339,6 +346,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       description, notes, techSpecs, otherChecked, otherText,
       priceType, fixedValue, contractValue, commissionPct,
       freightVolumes, freightWeight, otherServiceText,
+      urgencyTag, serviceRadiusKm, tagsInput,
       files: payload,
     };
   };
@@ -404,6 +412,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       setFreightVolumes(d.freightVolumes || "");
       setFreightWeight(d.freightWeight || "");
       setOtherServiceText(d.otherServiceText || "");
+      if (d.urgencyTag) setUrgencyTag(d.urgencyTag);
+      if (d.serviceRadiusKm !== undefined) setServiceRadiusKm(d.serviceRadiusKm);
+      if (typeof d.tagsInput === "string") setTagsInput(d.tagsInput);
       filesCacheRef.current.clear();
       const restored: UploadItem[] = (d.files || []).map((f: any) => {
         const file = dataUrlToFile(f.dataUrl, f.name, f.type);
@@ -490,6 +501,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     priority, description, notes, techSpecs, otherChecked, otherText,
     priceType, fixedValue, contractValue, commissionPct,
     freightVolumes, freightWeight, otherServiceText,
+    urgencyTag, serviceRadiusKm, tagsInput,
   ]);
 
 
@@ -509,6 +521,70 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     if (!cv || !pct || Number.isNaN(pct)) return 0;
     return (cv * pct) / 100;
   }, [contractValue, commissionPct]);
+
+  // Tags parseadas (até 5), aceita separação por vírgula ou espaço; normaliza # e slug leve
+  const parsedTags = useMemo(() => {
+    const raw = tagsInput.split(/[,\s]+/g).map((s) => s.trim()).filter(Boolean);
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const r of raw) {
+      const t = r.replace(/^#+/, "").toLowerCase().replace(/[^a-z0-9-_]/g, "").slice(0, 24);
+      if (!t) continue;
+      if (seen.has(t)) continue;
+      seen.add(t);
+      out.push(`#${t}`);
+      if (out.length >= 5) break;
+    }
+    return out;
+  }, [tagsInput]);
+
+  // Saldo de moedas + custo estimado desta publicação
+  const [coinBalance, setCoinBalance] = useState<number>(() => getCachedBalance());
+  useEffect(() => subscribeBalance(setCoinBalance), []);
+  const [userPlanId, setUserPlanId] = useState<PlanId>("free");
+  const [freeAdsUsed, setFreeAdsUsed] = useState<number>(0);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return;
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("plan")
+          .eq("id", uid)
+          .maybeSingle();
+        if (cancelled) return;
+        const p = (data?.plan as PlanId) || "free";
+        setUserPlanId(p);
+        // Contador local de anúncios do mês (fallback, sem tabela dedicada)
+        const key = `fixxer:ads:month:${uid}:${new Date().toISOString().slice(0, 7)}`;
+        setFreeAdsUsed(Number(localStorage.getItem(key) || "0"));
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  const costSummary = useMemo(() => {
+    const plan = getPlanConfig(userPlanId);
+    const freeQuota = plan?.freeAdsMonthly ?? 0;
+    const remainingFree = Math.max(0, freeQuota - freeAdsUsed);
+    const baseCost = remainingFree > 0 ? 0 : (getActionCost("publish_extra")?.coins ?? 20);
+    const urgentCost = urgencyTag === "urgente" ? (getActionCost("urgent_neighborhood")?.coins ?? 15) : 0;
+    const total = baseCost + urgentCost;
+    return {
+      planName: plan?.name ?? "Free",
+      freeQuota,
+      remainingFree,
+      baseCost,
+      urgentCost,
+      total,
+      insufficient: total > coinBalance,
+    };
+  }, [userPlanId, freeAdsUsed, urgencyTag, coinBalance]);
+
 
   const simulateProgress = (id: string) => {
     let p = 0;
@@ -616,6 +692,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setFreightVolumes("");
     setFreightWeight("");
     setOtherServiceText("");
+    setUrgencyTag("normal");
+    setServiceRadiusKm(15);
+    setTagsInput("");
     filesCacheRef.current.clear();
   };
 
@@ -706,6 +785,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       description: description.trim(),
       notes: notes.trim() || null,
       tech_specs: specsList,
+      urgency_tag: urgencyTag,
+      service_radius_km: serviceRadiusKm === 0 ? null : serviceRadiusKm,
+      tags: parsedTags,
       price_type: priceType,
       files: files.map((i, order) => ({
         name: i.file.name,
@@ -822,6 +904,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         freight: (payload as any).freight ?? null,
         files: (payload as any).files,
         category: payload.category,
+        urgency_tag: (payload as any).urgency_tag ?? null,
+        service_radius_km: (payload as any).service_radius_km ?? null,
+        tags: (payload as any).tags ?? [],
         status: "PENDENTE",
       };
       let insertedId: string | null = null;
@@ -847,6 +932,17 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         const cKey = "fixxer:os:created:count";
         const n = Number(localStorage.getItem(cKey) || "0") + 1;
         localStorage.setItem(cKey, String(n));
+      } catch { /* ignore */ }
+      // Incrementa contador mensal por usuário (usado no resumo de moedas)
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (uid) {
+          const mkey = `fixxer:ads:month:${uid}:${new Date().toISOString().slice(0, 7)}`;
+          const n = Number(localStorage.getItem(mkey) || "0") + 1;
+          localStorage.setItem(mkey, String(n));
+          setFreeAdsUsed(n);
+        }
       } catch { /* ignore */ }
       // Dissemina para os feeds/dashboards abertos
       try {
@@ -1318,7 +1414,107 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
-            {/* Arquivos (imagens + PDF + vídeo) */}
+            {/* NOVO — Selo de Urgência / Prazo */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                Selo de Urgência / Prazo
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "urgente", label: "Urgente / Hoje", Icon: Zap, color: "#FF3B6B" },
+                  { id: "normal", label: "Normal", Icon: CalendarDays, color: theme.hex },
+                  { id: "encomenda", label: "Sob Encomenda", Icon: Package, color: "#A855F7" },
+                ].map((opt) => {
+                  const active = urgencyTag === (opt.id as typeof urgencyTag);
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setUrgencyTag(opt.id as typeof urgencyTag)}
+                      className="flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-xl border text-[10px] uppercase font-black italic transition"
+                      style={
+                        active
+                          ? { background: "rgba(255,255,255,0.06)", borderColor: opt.color, color: opt.color, boxShadow: `0 0 0 1px ${opt.color}55` }
+                          : { borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }
+                      }
+                    >
+                      <opt.Icon className="w-4 h-4" style={{ color: opt.color }} />
+                      <span className="text-center leading-tight">{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {urgencyTag === "urgente" && (
+                <p className="text-[10px] text-amber-300/80 italic">
+                  Publicação urgente dispara alerta no bairro (+{getActionCost("urgent_neighborhood")?.coins ?? 15} moedas).
+                </p>
+              )}
+            </div>
+
+            {/* NOVO — Raio de Atendimento do Anúncio */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70 flex items-center gap-1.5">
+                <Radius className="w-3.5 h-3.5" style={{ color: theme.hex }} />
+                Raio de Atendimento
+              </Label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { v: 5, label: "5 km" },
+                  { v: 15, label: "15 km" },
+                  { v: 30, label: "30 km" },
+                  { v: 0, label: "Toda Região" },
+                ].map((opt) => {
+                  const active = serviceRadiusKm === opt.v;
+                  return (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      onClick={() => setServiceRadiusKm(opt.v as typeof serviceRadiusKm)}
+                      className="px-2 py-2 rounded-lg border text-[10px] uppercase font-black italic transition"
+                      style={
+                        active
+                          ? { ...theme.bgSoft, ...theme.borderStrong, color: theme.hex }
+                          : { borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* NOVO — Tags de Busca (hashtags) */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70 flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5" style={{ color: theme.hex }} />
+                Tags de Busca (até 5)
+              </Label>
+              <Input
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                placeholder="#promob #mdf #cozinha-planejada"
+                maxLength={140}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              />
+              {parsedTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {parsedTags.map((t) => (
+                    <span
+                      key={t}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase"
+                      style={{ ...theme.bgSoft, color: theme.hex, border: `1px solid ${theme.hex}44` }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p className="text-[9px] text-white/40 italic">
+                Separe por vírgula ou espaço. Impulsiona a busca inteligente.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
@@ -1739,6 +1935,61 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   Descartar Rascunho
                 </Button>
               </div>
+
+              {/* NOVO — Resumo de Custo em Moedas */}
+              <div
+                className="rounded-xl border p-3 space-y-1.5"
+                style={{
+                  borderColor: costSummary.insufficient ? "#FF3B6B66" : `${theme.hex}44`,
+                  background: "rgba(255,255,255,0.03)",
+                }}
+              >
+                <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-wider">
+                  <span className="flex items-center gap-1.5 text-white/70">
+                    <Coins className="w-3.5 h-3.5" style={{ color: theme.hex }} />
+                    Custo desta Publicação
+                  </span>
+                  <span className="text-white/60">
+                    Plano <span style={{ color: theme.hex }}>{costSummary.planName}</span> · Saldo{" "}
+                    <span className="text-white">{coinBalance}</span> moedas
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5 text-[11px] text-white/70">
+                  <div className="flex justify-between">
+                    <span>Franquia mensal</span>
+                    <span className="text-white/90">
+                      {costSummary.remainingFree}/{costSummary.freeQuota} disponíveis
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Publicação{costSummary.baseCost === 0 ? " (usa franquia)" : " excedente"}</span>
+                    <span className="text-white/90">
+                      {costSummary.baseCost === 0 ? "Grátis" : `${costSummary.baseCost} moedas`}
+                    </span>
+                  </div>
+                  {costSummary.urgentCost > 0 && (
+                    <div className="flex justify-between">
+                      <span>Alerta de urgência no bairro</span>
+                      <span className="text-white/90">+{costSummary.urgentCost} moedas</span>
+                    </div>
+                  )}
+                </div>
+                <div
+                  className="flex items-center justify-between pt-1.5 border-t text-[12px] font-black uppercase italic"
+                  style={{ borderColor: "rgba(255,255,255,0.08)" }}
+                >
+                  <span className="text-white/80">Total</span>
+                  <span style={{ color: costSummary.insufficient ? "#FF3B6B" : theme.hex }}>
+                    {costSummary.total === 0 ? "Sem custo" : `${costSummary.total} moedas`}
+                  </span>
+                </div>
+                {costSummary.insufficient && (
+                  <p className="text-[10px] text-rose-300 italic">
+                    Saldo insuficiente. Compre moedas ou reduza a urgência para publicar.
+                  </p>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   type="button"
