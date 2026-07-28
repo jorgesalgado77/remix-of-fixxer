@@ -1219,6 +1219,7 @@ function ProfilePage() {
                   const validationError = pixKey && effectiveType
                     ? validatePixKey(effectiveType as PixKeyType, pixKey)
                     : null;
+                  if (profileId) return null; // 🔒 PIX só é visível ao dono do perfil (isSelf)
                   return (
                     <div className="md:col-span-2 space-y-2">
                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2 flex-wrap">
