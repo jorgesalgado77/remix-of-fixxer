@@ -1608,7 +1608,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descreva o serviço..."
+                placeholder="Descreva a oportunidade..."
                 rows={4}
                 maxLength={1000}
                 className="bg-white/5 border-white/10 text-white resize-none"
