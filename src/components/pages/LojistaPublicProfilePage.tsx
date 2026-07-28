@@ -2102,13 +2102,22 @@ function ReviewCard({
         <div className="flex justify-end pt-1">
           <button
             onClick={onDelete}
-            className="text-[9px] font-black uppercase italic px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition"
+            disabled={deleting}
+            className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase italic px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition disabled:opacity-60 disabled:cursor-not-allowed"
             title={`Excluir esta avaliação custa ${deleteCost} moedas`}
           >
-            🗑 Excluir avaliação (−{deleteCost} moedas)
+            {deleting ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Excluindo…
+              </>
+            ) : (
+              <>🗑 Excluir avaliação (−{deleteCost} moedas)</>
+            )}
           </button>
         </div>
       )}
+
     </div>
   );
 }
