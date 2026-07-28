@@ -1414,7 +1414,107 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             </div>
 
-            {/* Arquivos (imagens + PDF + vídeo) */}
+            {/* NOVO — Selo de Urgência / Prazo */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                Selo de Urgência / Prazo
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "urgente", label: "Urgente / Hoje", Icon: Zap, color: "#FF3B6B" },
+                  { id: "normal", label: "Normal", Icon: CalendarDays, color: theme.hex },
+                  { id: "encomenda", label: "Sob Encomenda", Icon: Package, color: "#A855F7" },
+                ].map((opt) => {
+                  const active = urgencyTag === (opt.id as typeof urgencyTag);
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setUrgencyTag(opt.id as typeof urgencyTag)}
+                      className="flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-xl border text-[10px] uppercase font-black italic transition"
+                      style={
+                        active
+                          ? { background: "rgba(255,255,255,0.06)", borderColor: opt.color, color: opt.color, boxShadow: `0 0 0 1px ${opt.color}55` }
+                          : { borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }
+                      }
+                    >
+                      <opt.Icon className="w-4 h-4" style={{ color: opt.color }} />
+                      <span className="text-center leading-tight">{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {urgencyTag === "urgente" && (
+                <p className="text-[10px] text-amber-300/80 italic">
+                  Publicação urgente dispara alerta no bairro (+{getActionCost("urgent_neighborhood")?.coins ?? 15} moedas).
+                </p>
+              )}
+            </div>
+
+            {/* NOVO — Raio de Atendimento do Anúncio */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70 flex items-center gap-1.5">
+                <Radius className="w-3.5 h-3.5" style={{ color: theme.hex }} />
+                Raio de Atendimento
+              </Label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { v: 5, label: "5 km" },
+                  { v: 15, label: "15 km" },
+                  { v: 30, label: "30 km" },
+                  { v: 0, label: "Toda Região" },
+                ].map((opt) => {
+                  const active = serviceRadiusKm === opt.v;
+                  return (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      onClick={() => setServiceRadiusKm(opt.v as typeof serviceRadiusKm)}
+                      className="px-2 py-2 rounded-lg border text-[10px] uppercase font-black italic transition"
+                      style={
+                        active
+                          ? { ...theme.bgSoft, ...theme.borderStrong, color: theme.hex }
+                          : { borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* NOVO — Tags de Busca (hashtags) */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70 flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5" style={{ color: theme.hex }} />
+                Tags de Busca (até 5)
+              </Label>
+              <Input
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                placeholder="#promob #mdf #cozinha-planejada"
+                maxLength={140}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              />
+              {parsedTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {parsedTags.map((t) => (
+                    <span
+                      key={t}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase"
+                      style={{ ...theme.bgSoft, color: theme.hex, border: `1px solid ${theme.hex}44` }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p className="text-[9px] text-white/40 italic">
+                Separe por vírgula ou espaço. Impulsiona a busca inteligente.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
