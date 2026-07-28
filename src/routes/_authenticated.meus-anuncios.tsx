@@ -10,6 +10,8 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { CommercialAdModal, type CommercialAdInitial } from "@/components/CommercialAdModal";
 import { getCategoryTheme } from "@/lib/category-colors";
 import { spendCoinsForAction, costOf } from "@/lib/monetization";
+import { getCachedBalance, subscribeBalance } from "@/lib/coins";
+import { useAdMetricsLive, type AdMetric } from "@/lib/use-ad-metrics-live";
 
 export const Route = createFileRoute("/_authenticated/meus-anuncios")({
   head: () => ({
@@ -164,11 +166,35 @@ function MeusAnunciosPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmBoostId, setConfirmBoostId] = useState<string | null>(null);
+  const [confirmRenewId, setConfirmRenewId] = useState<string | null>(null);
   const [busyBoostId, setBusyBoostId] = useState<string | null>(null);
   const [busyRenewId, setBusyRenewId] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number>(() => getCachedBalance());
 
   const boostCost = costOf("publish_extra") || 20;
   const renewCost = costOf("publish_extra") || 20;
+
+  // ---- Saldo reativo: reflete gastos/ganhos em tempo real nos modais ----
+  useEffect(() => {
+    const off = subscribeBalance((v) => setBalance(v));
+    return () => off();
+  }, []);
+
+  // ---- Métricas ao vivo (views/chats) sem recarregar a página ----
+  const adIds = useMemo(() => ads.map((a) => a.id), [ads]);
+  const handleMetrics = useCallback((metrics: Record<string, AdMetric>) => {
+    setAds((prev) =>
+      prev.map((a) => {
+        const m = metrics[a.id];
+        if (!m) return a;
+        const curV = Number(a.metadata?.views ?? 0);
+        const curC = Number(a.metadata?.chats ?? 0);
+        if (m.views === curV && m.chats === curC) return a;
+        return { ...a, metadata: { ...(a.metadata || {}), views: m.views, chats: m.chats } };
+      }),
+    );
+  }, []);
+  useAdMetricsLive({ adIds, onMetrics: handleMetrics, enabled: !!uid && ads.length > 0 });
 
   const fetchAds = useCallback(async (currentUid: string) => {
     setLoading(true);
@@ -309,8 +335,10 @@ function MeusAnunciosPage() {
     }
   };
 
-  const handleRenew = async (ad: AdRow) => {
-    if (!uid) return;
+  const handleRenew = async () => {
+    if (!confirmRenewId || !uid) return;
+    const ad = ads.find((a) => a.id === confirmRenewId);
+    if (!ad) return;
     setBusyRenewId(ad.id);
     try {
       const res = await spendCoinsForAction(uid, "publish_extra", `renew:${ad.id}`);
@@ -332,7 +360,8 @@ function MeusAnunciosPage() {
       setAds((prev) => prev.map((a) => a.id === ad.id
         ? { ...a, created_at: nowIso, metadata: { ...(a.metadata || {}), expires_at: newExp, renewed_at: nowIso } }
         : a));
-      toast.success(`🔄 Anúncio renovado por +15 dias! (-${renewCost} moedas)`);
+      toast.success(`🔄 Anúncio renovado por +15 dias! (Saldo: ${res.balance ?? "?"})`);
+      setConfirmRenewId(null);
     } finally {
       setBusyRenewId(null);
     }
@@ -424,7 +453,7 @@ function MeusAnunciosPage() {
                       isRenewing={busyRenewId === ad.id}
                       onEdit={() => openEdit(ad)}
                       onDelete={() => setConfirmDeleteId(ad.id)}
-                      onRenew={() => handleRenew(ad)}
+                      onRenew={() => setConfirmRenewId(ad.id)}
                     />
                   ))}
                 </ul>
@@ -488,32 +517,35 @@ function MeusAnunciosPage() {
       )}
 
       {confirmBoostId && (
-        <Modal onClose={() => !busyBoostId && setConfirmBoostId(null)}>
-          <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#FFB020]/15 border border-[#FFB020]/40 flex items-center justify-center shrink-0">
-              <Rocket className="w-5 h-5 text-[#FFB020]" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black uppercase text-white">Impulsionar Anúncio?</h3>
-              <p className="text-[11px] text-white/60 mt-1 leading-relaxed">
-                Seu anúncio volta ao topo do Feed imediatamente. Custo: <b className="text-[#FFB020]">{boostCost} moedas</b>.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button" disabled={!!busyBoostId}
-              onClick={() => setConfirmBoostId(null)}
-              className="flex-1 h-10 rounded-xl bg-white/5 border border-white/10 text-white/80 text-[11px] font-bold uppercase disabled:opacity-50"
-            >Cancelar</button>
-            <button
-              type="button" disabled={!!busyBoostId} onClick={handleBoost}
-              className="flex-1 h-10 rounded-xl bg-[#FFB020] text-black text-[11px] font-black uppercase inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
-            >
-              <Rocket className="w-3.5 h-3.5" /> {busyBoostId ? "Impulsionando..." : `Confirmar (-${boostCost})`}
-            </button>
-          </div>
-        </Modal>
+        <ActionCostModal
+          onClose={() => !busyBoostId && setConfirmBoostId(null)}
+          title="Impulsionar Anúncio?"
+          description="Seu anúncio volta ao topo do Feed imediatamente e ganha destaque para novos visitantes."
+          Icon={Rocket}
+          accent="#FFB020"
+          cost={boostCost}
+          balance={balance}
+          busy={!!busyBoostId}
+          busyLabel="Impulsionando..."
+          confirmLabel={`Confirmar (-${boostCost})`}
+          onConfirm={handleBoost}
+        />
+      )}
+
+      {confirmRenewId && (
+        <ActionCostModal
+          onClose={() => !busyRenewId && setConfirmRenewId(null)}
+          title="Renovar por +15 dias?"
+          description="A validade é estendida em 15 dias e o anúncio volta ao topo do Feed."
+          Icon={RotateCw}
+          accent="#39FF88"
+          cost={renewCost}
+          balance={balance}
+          busy={!!busyRenewId}
+          busyLabel="Renovando..."
+          confirmLabel={`Renovar (-${renewCost})`}
+          onConfirm={handleRenew}
+        />
       )}
     </div>
   );
@@ -531,6 +563,94 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
         className="w-full max-w-sm bg-[#0A0A0B] border border-white/10 rounded-3xl p-5 space-y-4">
         {children}
       </div>
+    </div>
+  );
+}
+
+// ======================= ACTION COST MODAL (Boost / Renew) =======================
+// Componente unificado que resume saldo atual, custo e saldo após a ação,
+// bloqueia confirmação se o saldo for insuficiente e mostra atalho para o topo.
+function ActionCostModal({
+  onClose, title, description, Icon, accent, cost, balance, busy, busyLabel, confirmLabel, onConfirm,
+}: {
+  onClose: () => void;
+  title: string;
+  description: string;
+  Icon: any;
+  accent: string;
+  cost: number;
+  balance: number;
+  busy: boolean;
+  busyLabel: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+}) {
+  const insufficient = balance < cost;
+  const after = Math.max(0, balance - cost);
+  return (
+    <Modal onClose={onClose}>
+      <div className="flex items-start gap-3">
+        <div
+          className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border"
+          style={{ background: `${accent}15`, borderColor: `${accent}66` }}
+        >
+          <Icon className="w-5 h-5" style={{ color: accent }} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-black uppercase text-white">{title}</h3>
+          <p className="text-[11px] text-white/60 mt-1 leading-relaxed">{description}</p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-2">
+        <Row label="Saldo atual" value={`${balance} moedas`} />
+        <Row label="Custo desta ação" value={`− ${cost} moedas`} color={accent} />
+        <div className="h-px bg-white/10" />
+        <Row
+          label="Saldo após ação"
+          value={insufficient ? "insuficiente" : `${after} moedas`}
+          color={insufficient ? "#FF3B6B" : undefined}
+          bold
+        />
+      </div>
+
+      {insufficient && (
+        <div className="text-[11px] text-[#FF3B6B] leading-snug">
+          Você não tem moedas suficientes. Adquira mais no menu de <b>Moedas</b> e tente novamente.
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="button" disabled={busy}
+          onClick={onClose}
+          className="flex-1 h-10 rounded-xl bg-white/5 border border-white/10 text-white/80 text-[11px] font-bold uppercase disabled:opacity-50"
+        >Cancelar</button>
+        <button
+          type="button" disabled={busy || insufficient} onClick={onConfirm}
+          className="flex-1 h-10 rounded-xl text-black text-[11px] font-black uppercase inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+          style={{ background: accent }}
+        >
+          <Icon className="w-3.5 h-3.5" /> {busy ? busyLabel : confirmLabel}
+        </button>
+      </div>
+
+      <Link
+        to="/meus-anuncios"
+        onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50)}
+        className="block text-center text-[11px] text-white/50 hover:text-white underline underline-offset-2"
+      >
+        Ir para o topo de “Meus Anúncios” após confirmar →
+      </Link>
+    </Modal>
+  );
+}
+
+function Row({ label, value, color, bold }: { label: string; value: string; color?: string; bold?: boolean }) {
+  return (
+    <div className="flex items-center justify-between text-[12px]">
+      <span className="text-white/60">{label}</span>
+      <span className={bold ? "font-black" : "font-bold"} style={{ color: color ?? "#fff" }}>{value}</span>
     </div>
   );
 }

@@ -23,6 +23,7 @@ import {
   Trash2,
   MoreVertical,
   Ban,
+  Flag,
   FileDown,
   Settings,
   Camera,
@@ -33,6 +34,7 @@ import {
 
 } from "lucide-react";
 import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
+import { ReportUserDialog } from "@/components/ReportUserDialog";
 
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
@@ -274,6 +276,7 @@ function ConversationPage() {
   const [peerOnline, setPeerOnline] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const presenceRef = useRef<any>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1684,8 +1687,10 @@ function ConversationPage() {
               onArchive={toggleArchive}
               onBlock={toggleBlock}
               onExport={openExportModal}
+              onReport={() => setReportOpen(true)}
             />
           </div>
+
 
 
 
@@ -2249,6 +2254,15 @@ function ConversationPage() {
         />
       )}
       <ChatSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <ReportUserDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        targetUserId={peerId}
+        targetName={peerName}
+        actorUserId={userId}
+        context={`chat:${peerId}`}
+      />
+
       <CameraCaptureModal
         open={cameraOpen !== null}
         mode={cameraOpen ?? "photo"}
@@ -2474,8 +2488,9 @@ function HeaderActionsMenu(props: {
   onArchive: () => void;
   onBlock: () => void;
   onExport: () => void;
+  onReport: () => void;
 }) {
-  const { muted, archived, blocked, onSettings, onUnread, onMute, onArchive, onBlock, onExport } = props;
+  const { muted, archived, blocked, onSettings, onUnread, onMute, onArchive, onBlock, onExport, onReport } = props;
 
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -2525,6 +2540,8 @@ function HeaderActionsMenu(props: {
           {item(archived ? "Desarquivar conversa" : "Arquivar conversa", archived ? ArchiveRestore : Archive, onArchive)}
           <div className="my-1 h-px bg-white/10" />
           {item("Exportar conversa", FileDown, onExport)}
+          <div className="my-1 h-px bg-white/10" />
+          {item("Denunciar usuário", Flag, onReport, true)}
           {item(blocked ? "Desbloquear usuário" : "Bloquear usuário", Ban, onBlock, true)}
         </div>
       )}
