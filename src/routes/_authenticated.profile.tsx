@@ -274,6 +274,20 @@ function ProfilePage() {
       
       if (profileRes.data) {
         let merged: any = profileRes.data;
+        // 🔒 SEGURANÇA: se estiver visualizando perfil de OUTRO usuário (?id=…),
+        // remove campos sensíveis (chave PIX / repasse) antes de qualquer render.
+        // Defesa em profundidade — a proteção definitiva é RLS/view no backend.
+        if (profileId && profileId !== user?.id) {
+          delete merged.pix_key;
+          delete merged.pix_key_type;
+          const cs: any = merged.custom_sections;
+          if (cs && typeof cs === 'object' && cs.__extras && typeof cs.__extras === 'object') {
+            const ex = { ...cs.__extras };
+            delete ex.pix_key;
+            delete ex.pix_key_type;
+            merged.custom_sections = { ...cs, __extras: ex };
+          }
+        }
         // Reidrata campos "extras" persistidos em custom_sections.__extras
         // (campos que ainda não existem como coluna própria na tabela `profiles`).
         try {
@@ -1205,6 +1219,7 @@ function ProfilePage() {
                   const validationError = pixKey && effectiveType
                     ? validatePixKey(effectiveType as PixKeyType, pixKey)
                     : null;
+                  if (profileId) return null; // 🔒 PIX só é visível ao dono do perfil (isSelf)
                   return (
                     <div className="md:col-span-2 space-y-2">
                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2 flex-wrap">
@@ -1257,7 +1272,7 @@ function ProfilePage() {
                       ) : null}
                       <p id="pix-help" className="text-[10px] text-muted-foreground ml-1">
                         Tipos oficiais: CPF, CNPJ, E-mail, Telefone ou Aleatória (EVP).
-                        Sua chave aparece <b>parcialmente mascarada</b> no perfil público, com botão de copiar seguro.
+                        Sua chave <b>não é exibida em páginas públicas</b> — os pagamentos entre usuários são processados pelo <b>sistema de custódia da plataforma</b>.
                       </p>
                     </div>
                   );
