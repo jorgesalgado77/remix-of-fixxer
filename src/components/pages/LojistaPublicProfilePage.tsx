@@ -954,20 +954,6 @@ export function LojistaPublicProfilePage() {
                   <Badge icon={<Clock className="w-3 h-3" />} label={`Ativo há +${yearsActive} ${yearsActive === 1 ? "ano" : "anos"}`} />
                 </div>
 
-                {/* Botão de Configurações — visível SOMENTE ao dono do perfil.
-                    Leva para /profile onde cada usuário só acessa/edita o próprio perfil. */}
-                {isSelf && (
-                  <div className="pt-1">
-                    <Link
-                      to="/profile"
-                      aria-label="Abrir configurações do meu perfil"
-                      className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-primary/15 border border-primary/40 text-primary font-black uppercase italic tracking-widest text-[11px] hover:bg-primary/25 hover:border-primary/70 transition-all"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Configurações do meu perfil
-                    </Link>
-                  </div>
-                )}
 
                 {/* Métricas */}
                 <div className="grid grid-cols-3 gap-2 md:gap-3 pt-2">
@@ -1052,6 +1038,20 @@ export function LojistaPublicProfilePage() {
                       {favorite.count}
                     </span>
                   </button>
+
+                  {/* Botão de Configurações — visível SOMENTE ao dono do perfil.
+                      Posicionado abaixo do Favoritar, com cor de destaque para chamar atenção. */}
+                  {isSelf && (
+                    <Link
+                      to="/profile"
+                      aria-label="Abrir configurações do meu perfil"
+                      className="w-full md:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-amber-500 border-2 border-amber-600 text-black font-black uppercase italic tracking-widest text-xs md:text-sm hover:bg-amber-400 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                      style={{ boxShadow: "0 0 20px rgba(245, 158, 11, 0.45)" }}
+                    >
+                      <Settings className="w-4 h-4" />
+                      Configurações do meu perfil
+                    </Link>
+                  )}
 
                 </div>
               </div>
