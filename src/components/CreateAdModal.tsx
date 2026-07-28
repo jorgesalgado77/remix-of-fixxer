@@ -522,6 +522,70 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     return (cv * pct) / 100;
   }, [contractValue, commissionPct]);
 
+  // Tags parseadas (até 5), aceita separação por vírgula ou espaço; normaliza # e slug leve
+  const parsedTags = useMemo(() => {
+    const raw = tagsInput.split(/[,\s]+/g).map((s) => s.trim()).filter(Boolean);
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const r of raw) {
+      const t = r.replace(/^#+/, "").toLowerCase().replace(/[^a-z0-9-_]/g, "").slice(0, 24);
+      if (!t) continue;
+      if (seen.has(t)) continue;
+      seen.add(t);
+      out.push(`#${t}`);
+      if (out.length >= 5) break;
+    }
+    return out;
+  }, [tagsInput]);
+
+  // Saldo de moedas + custo estimado desta publicação
+  const [coinBalance, setCoinBalance] = useState<number>(() => getCachedBalance());
+  useEffect(() => subscribeBalance(setCoinBalance), []);
+  const [userPlanId, setUserPlanId] = useState<PlanId>("free");
+  const [freeAdsUsed, setFreeAdsUsed] = useState<number>(0);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return;
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("plan")
+          .eq("id", uid)
+          .maybeSingle();
+        if (cancelled) return;
+        const p = (data?.plan as PlanId) || "free";
+        setUserPlanId(p);
+        // Contador local de anúncios do mês (fallback, sem tabela dedicada)
+        const key = `fixxer:ads:month:${uid}:${new Date().toISOString().slice(0, 7)}`;
+        setFreeAdsUsed(Number(localStorage.getItem(key) || "0"));
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  const costSummary = useMemo(() => {
+    const plan = getPlanConfig(userPlanId);
+    const freeQuota = plan?.freeAdsMonthly ?? 0;
+    const remainingFree = Math.max(0, freeQuota - freeAdsUsed);
+    const baseCost = remainingFree > 0 ? 0 : (getActionCost("publish_extra")?.coins ?? 20);
+    const urgentCost = urgencyTag === "urgente" ? (getActionCost("urgent_neighborhood")?.coins ?? 15) : 0;
+    const total = baseCost + urgentCost;
+    return {
+      planName: plan?.name ?? "Free",
+      freeQuota,
+      remainingFree,
+      baseCost,
+      urgentCost,
+      total,
+      insufficient: total > coinBalance,
+    };
+  }, [userPlanId, freeAdsUsed, urgencyTag, coinBalance]);
+
+
   const simulateProgress = (id: string) => {
     let p = 0;
     const tick = () => {
