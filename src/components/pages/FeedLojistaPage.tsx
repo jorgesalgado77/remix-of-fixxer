@@ -954,6 +954,69 @@ export default function FeedLojistaPage() {
         </aside>
 
         <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
+          {/* Filtros extras: urgência, distância, tag */}
+          <div className="rounded-2xl bg-[#1A1A1B] border border-white/10 p-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/50 mr-1">Urgência:</span>
+              {(["todos", "urgente", "normal", "encomenda"] as const).map((k) => {
+                const active = urgencyFilter === k;
+                const meta = k === "todos" ? null : URGENCY_META[k];
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setUrgencyFilter(k)}
+                    className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-colors"
+                    style={
+                      active && meta
+                        ? { color: meta.color, borderColor: `${meta.color}66`, backgroundColor: meta.bg }
+                        : active
+                        ? { color: "#00E5FF", borderColor: "#00E5FF66", backgroundColor: "rgba(0,229,255,0.12)" }
+                        : { color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                    }
+                  >
+                    {k === "todos" ? "Todas" : meta!.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/50 mr-1">Distância:</span>
+              {(["todos", "5", "15", "30"] as const).map((k) => {
+                const active = distanceFilter === k;
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setDistanceFilter(k)}
+                    className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-colors"
+                    style={
+                      active
+                        ? { color: "#00E5FF", borderColor: "#00E5FF66", backgroundColor: "rgba(0,229,255,0.12)" }
+                        : { color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                    }
+                  >
+                    {k === "todos" ? "Qualquer" : `Até ${k} km`}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Tag:</span>
+              <input
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                placeholder="#promob"
+                className="flex-1 min-w-0 h-8 px-2.5 rounded-lg bg-black/40 border border-white/10 text-[12px] text-white placeholder-white/30 focus:outline-none focus:border-[#00E5FF]/50"
+              />
+              {tagFilter && (
+                <button
+                  onClick={() => setTagFilter("")}
+                  className="text-[10px] text-white/50 hover:text-white uppercase font-bold"
+                >
+                  limpar
+                </button>
+              )}
+            </div>
+          </div>
           <B2BSuggestionsCard />
           {searching ? (
             <div className="space-y-4" aria-live="polite">
