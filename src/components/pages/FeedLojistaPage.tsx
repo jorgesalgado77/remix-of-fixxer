@@ -10,6 +10,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCategoryTheme } from "@/lib/category-colors";
+import { AdMetaBadges, URGENCY_META, type UrgencyTag } from "@/components/AdMetaBadges";
 import {
   FEED_STATUS_COLOR,
   FEED_STATUS_LABEL,
@@ -82,6 +83,9 @@ type FeedPost = {
   budget?: string;
   specialty?: string;
   radiusKm?: number;
+  urgency?: UrgencyTag;
+  serviceRadiusKm?: number;
+  tags?: string[];
   media: MediaItem[];
   keywords: string[];
 };
@@ -551,6 +555,9 @@ export default function FeedLojistaPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = usePersistedState<"todos" | FeedCategory>("fixxer_feed_lojista_filter", "todos");
   const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_lojista_status", "todos");
+  const [urgencyFilter, setUrgencyFilter] = usePersistedState<"todos" | UrgencyTag>("fixxer_feed_lojista_urgency", "todos");
+  const [distanceFilter, setDistanceFilter] = usePersistedState<"todos" | "5" | "15" | "30">("fixxer_feed_lojista_dist", "todos");
+  const [tagFilter, setTagFilter] = usePersistedState<string>("fixxer_feed_lojista_tag", "");
   const [detailsFor, setDetailsFor] = useState<FeedPost | null>(null);
   const [search, setSearch] = usePersistedState<string>("fixxer_feed_lojista_search", "");
   // Sincroniza com a Barra Universal Superior — único input de busca.
@@ -667,13 +674,37 @@ export default function FeedLojistaPage() {
 
   const visibleRaw = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    const byCategory = MOCK_POSTS.filter((p) => filter === "todos" || p.category === filter);
+    // Deriva urgência/raio/tags a partir de keywords quando o mock não traz explícito
+    const decorated: FeedPost[] = MOCK_POSTS.map((p) => {
+      const kws = (p.keywords || []).map((k) => k.toLowerCase());
+      const urgency: UrgencyTag =
+        p.urgency ?? (kws.includes("urgente") ? "urgente" : kws.includes("encomenda") ? "encomenda" : "normal");
+      const serviceRadiusKm =
+        p.serviceRadiusKm ?? (p.radiusKm ? Math.min(p.radiusKm, 30) : undefined);
+      const tags = p.tags ?? (p.keywords || []).slice(0, 4);
+      return { ...p, urgency, serviceRadiusKm, tags };
+    });
+    const byCategory = decorated.filter((p) => filter === "todos" || p.category === filter);
     const byStatus =
       statusFilter === "todos"
         ? byCategory
         : byCategory.filter((p) => getFeedStatus(p.id) === statusFilter);
+    const byUrgency =
+      urgencyFilter === "todos" ? byStatus : byStatus.filter((p) => p.urgency === urgencyFilter);
+    const byDistance =
+      distanceFilter === "todos"
+        ? byUrgency
+        : byUrgency.filter((p) => {
+            const max = Number(distanceFilter);
+            const r = p.serviceRadiusKm ?? p.radiusKm ?? 0;
+            return r > 0 && r <= max;
+          });
+    const tagQ = tagFilter.trim().toLowerCase().replace(/^#/, "");
+    const byTag = tagQ
+      ? byDistance.filter((p) => (p.tags || []).some((t) => t.toLowerCase().includes(tagQ)))
+      : byDistance;
     const filtered = q
-      ? byStatus.filter((p) => {
+      ? byTag.filter((p) => {
           const hay = [
             p.title,
             p.description,
@@ -681,18 +712,19 @@ export default function FeedLojistaPage() {
             p.specialty ?? "",
             p.author.name,
             ...(p.keywords || []),
+            ...(p.tags || []),
           ]
             .join(" ")
             .toLowerCase();
           return hay.includes(q);
         })
-      : byStatus;
+      : byTag;
     return [...filtered].sort((a, b) => {
       if (a.category === "cliente" && b.category !== "cliente") return -1;
       if (b.category === "cliente" && a.category !== "cliente") return 1;
       return 0;
     });
-  }, [filter, statusFilter, debouncedSearch]);
+  }, [filter, statusFilter, urgencyFilter, distanceFilter, tagFilter, debouncedSearch]);
 
   const branchCtx = useUserBranchContext();
   const visible = useMemo(() => {
@@ -922,6 +954,69 @@ export default function FeedLojistaPage() {
         </aside>
 
         <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
+          {/* Filtros extras: urgência, distância, tag */}
+          <div className="rounded-2xl bg-[#1A1A1B] border border-white/10 p-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/50 mr-1">Urgência:</span>
+              {(["todos", "urgente", "normal", "encomenda"] as const).map((k) => {
+                const active = urgencyFilter === k;
+                const meta = k === "todos" ? null : URGENCY_META[k];
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setUrgencyFilter(k)}
+                    className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-colors"
+                    style={
+                      active && meta
+                        ? { color: meta.color, borderColor: `${meta.color}66`, backgroundColor: meta.bg }
+                        : active
+                        ? { color: "#00E5FF", borderColor: "#00E5FF66", backgroundColor: "rgba(0,229,255,0.12)" }
+                        : { color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                    }
+                  >
+                    {k === "todos" ? "Todas" : meta!.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/50 mr-1">Distância:</span>
+              {(["todos", "5", "15", "30"] as const).map((k) => {
+                const active = distanceFilter === k;
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setDistanceFilter(k)}
+                    className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-colors"
+                    style={
+                      active
+                        ? { color: "#00E5FF", borderColor: "#00E5FF66", backgroundColor: "rgba(0,229,255,0.12)" }
+                        : { color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
+                    }
+                  >
+                    {k === "todos" ? "Qualquer" : `Até ${k} km`}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Tag:</span>
+              <input
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                placeholder="#promob"
+                className="flex-1 min-w-0 h-8 px-2.5 rounded-lg bg-black/40 border border-white/10 text-[12px] text-white placeholder-white/30 focus:outline-none focus:border-[#00E5FF]/50"
+              />
+              {tagFilter && (
+                <button
+                  onClick={() => setTagFilter("")}
+                  className="text-[10px] text-white/50 hover:text-white uppercase font-bold"
+                >
+                  limpar
+                </button>
+              )}
+            </div>
+          </div>
           <B2BSuggestionsCard />
           {searching ? (
             <div className="space-y-4" aria-live="polite">
@@ -1467,6 +1562,13 @@ function PostCardImpl({
             {post.budget}
           </div>
         )}
+        <AdMetaBadges
+          urgency={post.urgency}
+          radiusKm={post.serviceRadiusKm ?? post.radiusKm}
+          tags={post.tags}
+          theme={theme}
+          compact
+        />
       </div>
 
       {/* Mídias */}

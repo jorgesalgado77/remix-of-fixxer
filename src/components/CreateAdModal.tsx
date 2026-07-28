@@ -889,6 +889,13 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       toast.error(err);
       return;
     }
+    if (costSummary.insufficient) {
+      const faltam = Math.max(0, costSummary.total - coinBalance);
+      toast.error(
+        `Saldo insuficiente: precisa de ${costSummary.total} moedas (você tem ${coinBalance}). Faltam ${faltam}.`,
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = buildPayload();
@@ -2089,8 +2096,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   </span>
                 </div>
                 {costSummary.insufficient && (
-                  <p className="text-[10px] text-rose-300 italic">
-                    Saldo insuficiente. Compre moedas ou reduza a urgência para publicar.
+                  <p className="text-[10px] text-rose-300 italic leading-relaxed">
+                    ⚠️ Saldo insuficiente. Necessário <strong>{costSummary.total} moedas</strong>
+                    {" "}(franquia mensal: {costSummary.remainingFree}/{costSummary.freeQuota}). Você tem{" "}
+                    <strong>{coinBalance}</strong> — faltam{" "}
+                    <strong>{Math.max(0, costSummary.total - coinBalance)}</strong>. Compre moedas ou reduza a urgência para publicar.
                   </p>
                 )}
               </div>
@@ -2111,12 +2121,25 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 </Button>
                 <Button
                   type="submit"
-                  disabled={submitting}
-                  className="flex-1 uppercase italic font-black text-xs h-12 border-0 text-black"
-                  style={{ background: theme.hex, ...theme.glowStrong }}
+                  disabled={submitting || costSummary.insufficient}
+                  aria-disabled={submitting || costSummary.insufficient}
+                  title={
+                    costSummary.insufficient
+                      ? `Saldo insuficiente. Necessário ${costSummary.total} moedas (você tem ${coinBalance}).`
+                      : undefined
+                  }
+                  className="flex-1 uppercase italic font-black text-xs h-12 border-0 text-black disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: costSummary.insufficient ? "#4a1220" : theme.hex,
+                    ...(costSummary.insufficient ? {} : theme.glowStrong),
+                  }}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {submitting ? "Publicando..." : copy.publish}
+                  {submitting
+                    ? "Publicando..."
+                    : costSummary.insufficient
+                    ? `Faltam ${Math.max(0, costSummary.total - coinBalance)} moedas`
+                    : copy.publish}
                 </Button>
               </div>
               <p className="text-[9px] text-white/40 text-center italic">
