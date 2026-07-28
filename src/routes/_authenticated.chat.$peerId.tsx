@@ -2523,7 +2523,7 @@ function HeaderActionsMenu(props: {
 
 /* ---------------- MediaLightbox ---------------- */
 type LightboxItem = { url: string; type: "image" | "video"; name: string };
-type ViewState = { zoom: number; x: number; y: number };
+type ViewState = { zoom: number; x: number; y: number; time?: number };
 const LIGHTBOX_STATE_CACHE = new Map<string, ViewState>();
 
 function MediaLightbox() {
