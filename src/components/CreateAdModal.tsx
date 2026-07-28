@@ -412,6 +412,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       setFreightVolumes(d.freightVolumes || "");
       setFreightWeight(d.freightWeight || "");
       setOtherServiceText(d.otherServiceText || "");
+      if (d.urgencyTag) setUrgencyTag(d.urgencyTag);
+      if (d.serviceRadiusKm !== undefined) setServiceRadiusKm(d.serviceRadiusKm);
+      if (typeof d.tagsInput === "string") setTagsInput(d.tagsInput);
       filesCacheRef.current.clear();
       const restored: UploadItem[] = (d.files || []).map((f: any) => {
         const file = dataUrlToFile(f.dataUrl, f.name, f.type);
