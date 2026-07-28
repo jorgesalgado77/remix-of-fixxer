@@ -453,7 +453,7 @@ function MeusAnunciosPage() {
                       isRenewing={busyRenewId === ad.id}
                       onEdit={() => openEdit(ad)}
                       onDelete={() => setConfirmDeleteId(ad.id)}
-                      onRenew={() => handleRenew(ad)}
+                      onRenew={() => setConfirmRenewId(ad.id)}
                     />
                   ))}
                 </ul>
