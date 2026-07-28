@@ -428,6 +428,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       if (d.urgencyTag) setUrgencyTag(d.urgencyTag);
       if (d.serviceRadiusKm !== undefined) setServiceRadiusKm(d.serviceRadiusKm);
       if (typeof d.tagsInput === "string") setTagsInput(d.tagsInput);
+      if (d.validityPreset !== undefined) setValidityPreset(d.validityPreset);
+      if (typeof d.validityDate === "string" && d.validityDate) {
+        // Sanidade: se o rascunho salvo tem data > 15 dias, satura no máximo
+        const max = maxValidityISO();
+        setValidityDate(d.validityDate > max ? max : d.validityDate < todayISO() ? todayISO() : d.validityDate);
+      }
       filesCacheRef.current.clear();
       const restored: UploadItem[] = (d.files || []).map((f: any) => {
         const file = dataUrlToFile(f.dataUrl, f.name, f.type);
