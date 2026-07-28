@@ -45,6 +45,7 @@ import { getActionCost, getPlanConfig, type PlanId } from "@/lib/monetization";
 import { Zap, CalendarDays, Package, Coins, Hash, Radius, CalendarClock } from "lucide-react";
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
+import { normalizeAdTags, formatTagLabel } from "@/lib/ad-filters";
 import {
   maskCurrencyBRL as sharedMaskBRL,
   parseCurrencyBRL as sharedParseBRL,
@@ -1519,13 +1520,13 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               />
               {parsedTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {parsedTags.map((t) => (
+                  {parsedTags.map((t: string) => (
                     <span
                       key={t}
                       className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase"
                       style={{ ...theme.bgSoft, color: theme.hex, border: `1px solid ${theme.hex}44` }}
                     >
-                      {t}
+                      {formatTagLabel(t)}
                     </span>
                   ))}
                 </div>
