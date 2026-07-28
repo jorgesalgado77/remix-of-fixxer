@@ -7,7 +7,7 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import { Edit3, Flag, MoreVertical, Pause, Play, Trash2 } from "lucide-react";
-import ReportBlockMenu from "@/components/ReportBlockMenu";
+import { ReportBlockMenu } from "@/components/ReportBlockMenu";
 
 export type FeedAdMenuProps = {
   /** ID do dono do anúncio (para comparação com currentUserId) */
