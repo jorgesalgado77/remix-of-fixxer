@@ -27,6 +27,10 @@ import {
   Settings,
   Camera,
   Film,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+
 } from "lucide-react";
 import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
 
@@ -1645,20 +1649,6 @@ function ConversationPage() {
 
           </div>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={toggleMute}
-              title={muted ? "Ativar som de novas mensagens" : "Silenciar som de novas mensagens"}
-              aria-label={muted ? "Ativar som" : "Silenciar som"}
-              aria-pressed={muted}
-              className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors ${
-                muted
-                  ? "bg-red-500/15 border-red-500/40 text-red-200 hover:bg-red-500/25"
-                  : "bg-white/5 border-white/10 text-white hover:bg-white/10"
-              }`}
-            >
-              {muted ? <BellOff className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-            </button>
             <HeaderActionsMenu
               muted={muted}
               archived={archived}
@@ -1671,6 +1661,7 @@ function ConversationPage() {
               onExport={openExportModal}
             />
           </div>
+
 
 
 
@@ -2255,7 +2246,9 @@ function ConversationPage() {
         selfName="Você"
         selfId={userId ?? ""}
       />
+      <MediaLightbox />
     </div>
+
   );
 
 }
@@ -2305,7 +2298,8 @@ function AttachmentBlock({
             decoding="async"
             onLoad={() => setMediaLoaded(true)}
             onError={() => setMediaLoaded(true)}
-            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
+            onClick={() => window.dispatchEvent(new CustomEvent("fixxer:open-media", { detail: { url, type: "image", name } }))}
+            className={`rounded-lg max-h-64 object-cover transition-opacity duration-200 cursor-zoom-in ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
           />
           <MediaUploadOverlay uploadState={uploadState} onRetry={onRetry} />
         </div>
@@ -2322,8 +2316,18 @@ function AttachmentBlock({
             onError={() => setMediaLoaded(true)}
             className={`rounded-lg max-h-64 w-full bg-black transition-opacity duration-200 ${mediaLoaded ? "opacity-100" : "opacity-0"} ${uploadState?.uploading || uploadState?.failed ? "brightness-50" : ""}`}
           />
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("fixxer:open-media", { detail: { url, type: "video", name } }))}
+            title="Expandir em tela cheia"
+            aria-label="Expandir vídeo em tela cheia"
+            className="absolute top-2 right-2 z-10 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 border border-white/20 text-white flex items-center justify-center backdrop-blur-sm"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
           <MediaUploadOverlay uploadState={uploadState} onRetry={onRetry} />
         </div>
+
 
 
       ) : audio ? (
@@ -2499,6 +2503,148 @@ function HeaderActionsMenu(props: {
           {item(blocked ? "Desbloquear usuário" : "Bloquear usuário", Ban, onBlock, true)}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------------- MediaLightbox ---------------- */
+function MediaLightbox() {
+  const [media, setMedia] = useState<{ url: string; type: "image" | "video"; name: string } | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const draggingRef = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { url: string; type: "image" | "video"; name: string };
+      if (!detail?.url) return;
+      setMedia(detail);
+      setZoom(1);
+      setOffset({ x: 0, y: 0 });
+    };
+    window.addEventListener("fixxer:open-media", onOpen as EventListener);
+    return () => window.removeEventListener("fixxer:open-media", onOpen as EventListener);
+  }, []);
+
+  useEffect(() => {
+    if (!media) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMedia(null);
+      else if (e.key === "+" || e.key === "=") setZoom((z) => Math.min(6, z + 0.25));
+      else if (e.key === "-") setZoom((z) => Math.max(0.25, z - 0.25));
+      else if (e.key === "0") { setZoom(1); setOffset({ x: 0, y: 0 }); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [media]);
+
+  if (!media) return null;
+
+  const isImg = media.type === "image";
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex flex-col"
+      onClick={() => setMedia(null)}
+    >
+      {/* Toolbar */}
+      <div
+        className="flex items-center justify-between gap-2 p-3 border-b border-white/10 bg-black/40"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="text-xs text-white/70 truncate">{media.name}</div>
+        <div className="flex items-center gap-2">
+          {isImg && (
+            <>
+              <button
+                type="button"
+                onClick={() => setZoom((z) => Math.max(0.25, z - 0.25))}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+                title="Diminuir zoom"
+                aria-label="Diminuir zoom"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <div className="text-xs text-white/70 w-14 text-center tabular-nums">{Math.round(zoom * 100)}%</div>
+              <button
+                type="button"
+                onClick={() => setZoom((z) => Math.min(6, z + 0.25))}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+                title="Aumentar zoom"
+                aria-label="Aumentar zoom"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}
+                className="px-3 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs"
+                title="Restaurar zoom"
+              >
+                100%
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => setMedia(null)}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-red-500/40 text-white flex items-center justify-center"
+            title="Fechar"
+            aria-label="Fechar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div
+        className="flex-1 overflow-hidden flex items-center justify-center select-none"
+        onClick={(e) => e.stopPropagation()}
+        onWheel={(e) => {
+          if (!isImg) return;
+          e.preventDefault();
+          setZoom((z) => Math.max(0.25, Math.min(6, z + (e.deltaY < 0 ? 0.15 : -0.15))));
+        }}
+        onMouseDown={(e) => {
+          if (!isImg || zoom <= 1) return;
+          draggingRef.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
+        }}
+        onMouseMove={(e) => {
+          if (!draggingRef.current) return;
+          setOffset({ x: e.clientX - draggingRef.current.x, y: e.clientY - draggingRef.current.y });
+        }}
+        onMouseUp={() => { draggingRef.current = null; }}
+        onMouseLeave={() => { draggingRef.current = null; }}
+        onDoubleClick={() => {
+          if (!isImg) return;
+          setZoom((z) => (z === 1 ? 2 : 1));
+          setOffset({ x: 0, y: 0 });
+        }}
+        style={{ cursor: isImg && zoom > 1 ? (draggingRef.current ? "grabbing" : "grab") : "default" }}
+      >
+        {isImg ? (
+          <img
+            src={media.url}
+            alt={media.name}
+            draggable={false}
+            style={{
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+              transition: draggingRef.current ? "none" : "transform 0.15s ease-out",
+              maxWidth: "95vw",
+              maxHeight: "85vh",
+              objectFit: "contain",
+            }}
+          />
+        ) : (
+          <video
+            src={media.url}
+            controls
+            autoPlay
+            className="max-w-[95vw] max-h-[85vh] bg-black"
+          />
+        )}
+      </div>
     </div>
   );
 }
