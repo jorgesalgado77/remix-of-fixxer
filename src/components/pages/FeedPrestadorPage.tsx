@@ -38,6 +38,7 @@ import { AdMetaBadges, URGENCY_META, type UrgencyTag } from "@/components/AdMeta
 import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
 import { AdFiltersBar } from "@/components/AdFiltersBar";
 import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
+import FeedAdMenu from "@/components/FeedAdMenu";
 
 import {
   ArrowLeft,
