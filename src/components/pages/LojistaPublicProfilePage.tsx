@@ -1716,12 +1716,14 @@ export function LojistaPublicProfilePage() {
               <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
                 <Star className="w-4 h-4" /> Avaliações & Depoimentos
               </h2>
-              <Button
-                onClick={() => setShowReviewModal(true)}
-                className="bg-primary text-black font-black uppercase italic text-[10px] h-9 rounded-xl hover:bg-primary/90"
-              >
-                <Send className="w-3 h-3 mr-1.5" /> Adicionar Avaliação
-              </Button>
+              {!isSelf && (
+                <Button
+                  onClick={() => setShowReviewModal(true)}
+                  className="bg-primary text-black font-black uppercase italic text-[10px] h-9 rounded-xl hover:bg-primary/90"
+                >
+                  <Send className="w-3 h-3 mr-1.5" /> Adicionar Avaliação
+                </Button>
+              )}
             </div>
 
             {/* Filtros */}
@@ -1734,9 +1736,16 @@ export function LojistaPublicProfilePage() {
             {filteredReviews.length > 0 ? (
               <div className="space-y-3">
                 {filteredReviews.map((r) => (
-                  <ReviewCard key={r.id} review={r} />
+                  <ReviewCard
+                    key={r.id}
+                    review={r}
+                    canDelete={!!currentUserId && r.reviewer_id === currentUserId}
+                    onDelete={() => handleDeleteReview(r)}
+                    deleteCost={DELETE_REVIEW_COST}
+                  />
                 ))}
               </div>
+
             ) : (
               <EmptyState label="Nenhuma avaliação encontrada com esses filtros." />
             )}
