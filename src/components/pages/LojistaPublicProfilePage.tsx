@@ -49,7 +49,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
-import { detectPixKeyType, formatPixKey, maskPixKeyForDisplay, PIX_KEY_TYPE_LABELS, type PixKeyType } from "@/lib/pix-key";
+
 
 
 
@@ -962,8 +962,7 @@ export function LojistaPublicProfilePage() {
                   <MetricCard label="Tempo Resposta" value="<15" suffix="min" />
                 </div>
 
-                {/* 💸 CHAVE PIX — exibida parcialmente mascarada + botão de copiar */}
-                <PixPublicBlock profile={profile} themeRgb={theme.rgb} />
+                
 
                 
                 {/* CTA Superior — visível em mobile e desktop */}
@@ -1934,104 +1933,3 @@ function SpecialtyCard({ title, desc }: { title: string; desc: string }) {
   );
 }
 
-
-/**
- * Bloco público da chave PIX.
- * — Só renderiza quando o perfil tem uma chave persistida.
- * — Mostra a chave PARCIALMENTE MASCARADA (nunca a chave crua no DOM até o clique em copiar).
- * — Botão "Copiar" usa a Clipboard API e dá feedback visual + toast.
- * — Inclui aviso de privacidade ao lado, próximo ao WCAG.
- */
-function PixPublicBlock({ profile, themeRgb }: { profile: any; themeRgb: string }) {
-  const [copied, setCopied] = useState(false);
-  const rawKey: string = (profile?.pix_key || "").trim();
-  if (!rawKey) return null;
-  const savedType = profile?.pix_key_type;
-  const type: PixKeyType | null =
-    (savedType && savedType !== "auto" ? (savedType as PixKeyType) : null) ||
-    detectPixKeyType(rawKey);
-  if (!type) return null;
-  const masked = maskPixKeyForDisplay(type, rawKey);
-  const full = formatPixKey(type, rawKey);
-  const handleCopy = async () => {
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(full);
-      } else {
-        // Fallback para navegadores/iframes sem Clipboard API
-        const ta = document.createElement("textarea");
-        ta.value = full;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-      }
-      setCopied(true);
-      toast.success("Chave PIX copiada!", {
-        description: `Cole no seu app do banco para pagar via ${PIX_KEY_TYPE_LABELS[type]}.`,
-      });
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      toast.error("Não foi possível copiar. Copie manualmente a chave.");
-    }
-  };
-  return (
-    <div
-      className="mt-2 rounded-2xl border p-3 md:p-4 flex flex-col sm:flex-row sm:items-center gap-3 min-w-0 overflow-hidden"
-      style={{
-        borderColor: `rgba(${themeRgb}, 0.35)`,
-        background: `linear-gradient(135deg, rgba(${themeRgb},0.08), rgba(0,0,0,0.3))`,
-      }}
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md"
-            style={{ background: `rgba(${themeRgb},0.15)`, color: `rgb(${themeRgb})` }}
-          >
-            💸 PIX • {PIX_KEY_TYPE_LABELS[type]}
-          </span>
-          <span
-            className="text-[9px] font-bold uppercase text-amber-300/90 inline-flex items-center gap-1"
-            title="Chave exibida parcialmente por segurança. Ao copiar, você recebe a chave completa."
-          >
-            🔒 Privacidade — chave mascarada
-          </span>
-        </div>
-        <p
-          className="mt-1 font-mono text-sm md:text-base font-bold break-all truncate"
-          aria-label={`Chave PIX ${PIX_KEY_TYPE_LABELS[type]} parcialmente mascarada`}
-          title={`Chave ${PIX_KEY_TYPE_LABELS[type]} — clique em Copiar para obter o valor completo`}
-        >
-          {masked}
-        </p>
-        <p className="text-[10px] text-muted-foreground mt-1">
-          Copie apenas se for realizar um pagamento. Nunca compartilhe códigos de segurança do seu banco.
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={handleCopy}
-        aria-label="Copiar chave PIX completa para a área de transferência"
-        className="shrink-0 inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl font-black uppercase italic tracking-widest text-[11px] transition-all focus:outline-none focus-visible:ring-2"
-        style={{
-          background: copied ? "rgba(16,185,129,0.15)" : `rgba(${themeRgb},0.15)`,
-          color: copied ? "#10B981" : `rgb(${themeRgb})`,
-          border: `1px solid ${copied ? "rgba(16,185,129,0.5)" : `rgba(${themeRgb},0.5)`}`,
-        }}
-      >
-        {copied ? (
-          <>
-            <Check className="w-4 h-4" /> Copiado
-          </>
-        ) : (
-          <>
-            <Copy className="w-4 h-4" /> Copiar chave
-          </>
-        )}
-      </button>
-    </div>
-  );
-}
