@@ -855,9 +855,22 @@ function JobCardImpl({
               </div>
             </div>
           </div>
-          <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest shrink-0">
-            {job.postedAt}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">
+              {job.postedAt}
+            </span>
+            <FeedAdMenu
+              ownerId={job.contractor.id}
+              currentUserId={currentUserId ?? null}
+              adId={job.id}
+              ownerName={job.contractor.name}
+              isPaused={isPaused}
+              onEdit={onEdit ? () => onEdit(job) : undefined}
+              onDelete={onDelete ? () => onDelete(job) : undefined}
+              onTogglePause={onTogglePause ? () => onTogglePause(job) : undefined}
+              accent={cardTheme.hex}
+            />
+          </div>
         </div>
 
         {/* ESPECIFICAÇÕES */}
