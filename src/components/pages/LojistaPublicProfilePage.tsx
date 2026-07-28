@@ -24,8 +24,6 @@ import {
   Search,
   ArrowUpDown,
   Heart,
-  Copy,
-  Check,
   Loader2,
   Settings,
 } from "lucide-react";
