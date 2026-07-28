@@ -614,8 +614,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     if (!neighborhood.trim()) return "Informe o bairro do local de execução.";
     if (!city.trim()) return "Informe a cidade do local de execução.";
     if (!uf.trim() || uf.trim().length !== 2) return "Informe a UF (2 letras) do local de execução.";
-    if (!title.trim()) return "Informe o título do serviço.";
-    if (!description.trim()) return "Descreva o serviço.";
+    if (!title.trim()) return "Informe o título da oportunidade.";
+    if (!description.trim()) return "Descreva a oportunidade.";
     if (rooms < 1 || rooms > 25) return "Quantidade de ambientes deve ser entre 1 e 25.";
     if (startDate && deadline && new Date(deadline) < new Date(startDate))
       return "O prazo de execução não pode ser anterior à data de início.";
