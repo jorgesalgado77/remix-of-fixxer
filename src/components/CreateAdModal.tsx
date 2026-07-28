@@ -939,7 +939,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       </div>
       <div className="p-4 space-y-2">
         <h3 className="text-white font-black text-base leading-tight line-clamp-2">
-          {title || "Título do serviço"}
+          {title || "Título da oportunidade"}
         </h3>
         {serviceTypes.length > 0 && (
           <div className="flex flex-wrap gap-1">
