@@ -313,6 +313,19 @@ function ProfilePage() {
           } catch { /* noop */ }
         }
         merged = normalizeMasks(merged);
+        // 🔒 PIX: só o próprio dono lê a própria chave via RPC dedicada.
+        if (!profileId) {
+          try {
+            const { data: pixRow } = await supabaseExternal.rpc('get_my_pix_key');
+            const row = Array.isArray(pixRow) ? pixRow[0] : pixRow;
+            if (row) {
+              merged.pix_key = row.pix_key ?? '';
+              merged.pix_key_type = row.pix_key_type ?? '';
+            }
+          } catch (e) {
+            console.warn('[profile.load] Falha ao carregar PIX via RPC:', e);
+          }
+        }
         setProfile(merged);
         lastSavedSnapshotRef.current = JSON.stringify(merged);
         // Sincroniza raio de atuação salvo para uso como padrão nos feeds
