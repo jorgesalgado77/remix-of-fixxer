@@ -846,12 +846,12 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           }),
         );
       } catch { /* ignore */ }
-      toast.success("Serviço publicado com sucesso e disponível no feed!");
+      toast.success("Oportunidade publicada com sucesso e disponível no feed!");
       discardDraft();
       resetForm();
       onClose();
     } catch (err: any) {
-      toast.error(err?.message || "Falha ao publicar serviço.");
+      toast.error(err?.message || "Falha ao publicar oportunidade.");
     } finally {
       setSubmitting(false);
     }
