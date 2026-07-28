@@ -883,6 +883,16 @@ function JobCardImpl({
               </span>
             ))}
           </div>
+          {/* Badges de urgência/raio/tags derivados do JobPost */}
+          <AdMetaBadges
+            urgency={coerceUrgency(job.urgency) ?? "normal"}
+            radiusKm={job.urgency === "critica" ? 5 : job.urgency === "urgente" ? 15 : 30}
+            tags={[job.subcategory, ...(job.tools ?? []).slice(0, 2)]
+              .map((s) => s.toLowerCase().replace(/\s+/g, "-"))
+              .filter(Boolean)}
+            theme={cardTheme}
+            compact
+          />
 
           {job.tools.length > 0 && (
             <div className="text-[9px] text-muted-foreground">
