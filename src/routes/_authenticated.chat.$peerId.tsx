@@ -2522,59 +2522,111 @@ function HeaderActionsMenu(props: {
 }
 
 /* ---------------- MediaLightbox ---------------- */
+type LightboxItem = { url: string; type: "image" | "video"; name: string };
+type ViewState = { zoom: number; x: number; y: number };
+const LIGHTBOX_STATE_CACHE = new Map<string, ViewState>();
+
 function MediaLightbox() {
-  const [media, setMedia] = useState<{ url: string; type: "image" | "video"; name: string } | null>(null);
+  const [items, setItems] = useState<LightboxItem[]>([]);
+  const [index, setIndex] = useState<number>(-1);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const draggingRef = useRef<{ x: number; y: number } | null>(null);
+  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const media = index >= 0 && index < items.length ? items[index] : null;
+
+  // Persist zoom/pan por URL ao trocar/fechar.
+  const persist = (url: string, next: ViewState) => LIGHTBOX_STATE_CACHE.set(url, next);
+  const restore = (url: string): ViewState =>
+    LIGHTBOX_STATE_CACHE.get(url) ?? { zoom: 1, x: 0, y: 0 };
 
   useEffect(() => {
     const onOpen = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { url: string; type: "image" | "video"; name: string };
+      const detail = (e as CustomEvent).detail as LightboxItem;
       if (!detail?.url) return;
-      setMedia(detail);
-      setZoom(1);
-      setOffset({ x: 0, y: 0 });
+      const registry: LightboxItem[] = (window as any).__fixxerChatMedia ?? [];
+      const list = registry.length ? registry : [detail];
+      const i = Math.max(0, list.findIndex((m) => m.url === detail.url));
+      setItems(list);
+      setIndex(i >= 0 ? i : 0);
+      const st = restore(detail.url);
+      setZoom(st.zoom);
+      setOffset({ x: st.x, y: st.y });
     };
     window.addEventListener("fixxer:open-media", onOpen as EventListener);
     return () => window.removeEventListener("fixxer:open-media", onOpen as EventListener);
   }, []);
 
+  // Rehidrata estado de zoom/pan ao navegar entre itens.
+  useEffect(() => {
+    if (!media) return;
+    const st = restore(media.url);
+    setZoom(st.zoom);
+    setOffset({ x: st.x, y: st.y });
+  }, [media?.url]);
+
+  const close = () => {
+    if (media) persist(media.url, { zoom, x: offset.x, y: offset.y });
+    setIndex(-1);
+  };
+  const go = (delta: number) => {
+    if (!items.length) return;
+    if (media) persist(media.url, { zoom, x: offset.x, y: offset.y });
+    setIndex((i) => (i + delta + items.length) % items.length);
+  };
+  const applyZoom = (next: number) => setZoom(Math.max(0.25, Math.min(6, next)));
+
   useEffect(() => {
     if (!media) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMedia(null);
-      else if (e.key === "+" || e.key === "=") setZoom((z) => Math.min(6, z + 0.25));
-      else if (e.key === "-") setZoom((z) => Math.max(0.25, z - 0.25));
-      else if (e.key === "0") { setZoom(1); setOffset({ x: 0, y: 0 }); }
+      if (e.key === "Escape") { e.preventDefault(); close(); }
+      else if (e.key === "+" || e.key === "=") { e.preventDefault(); applyZoom(zoom + 0.25); }
+      else if (e.key === "-") { e.preventDefault(); applyZoom(zoom - 0.25); }
+      else if (e.key === "0") { e.preventDefault(); setZoom(1); setOffset({ x: 0, y: 0 }); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+      else if (e.key === " " && media.type === "video") {
+        e.preventDefault();
+        const v = videoRef.current;
+        if (v) { if (v.paused) v.play().catch(() => {}); else v.pause(); }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [media]);
+  }, [media, zoom, offset.x, offset.y, items.length]);
 
   if (!media) return null;
-
   const isImg = media.type === "image";
+  const hasMany = items.length > 1;
 
   return (
     <div
       className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex flex-col"
-      onClick={() => setMedia(null)}
+      onClick={close}
     >
       {/* Toolbar */}
       <div
         className="flex items-center justify-between gap-2 p-3 border-b border-white/10 bg-black/40"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-xs text-white/70 truncate">{media.name}</div>
+        <div className="text-xs text-white/70 truncate flex items-center gap-2">
+          <span className="truncate">{media.name}</span>
+          {hasMany && (
+            <span className="text-[10px] text-white/50 tabular-nums shrink-0">
+              {index + 1}/{items.length}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           {isImg && (
             <>
               <button
                 type="button"
-                onClick={() => setZoom((z) => Math.max(0.25, z - 0.25))}
+                onClick={() => applyZoom(zoom - 0.25)}
                 className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
-                title="Diminuir zoom"
+                title="Diminuir zoom (-)"
                 aria-label="Diminuir zoom"
               >
                 <ZoomOut className="w-4 h-4" />
@@ -2582,9 +2634,9 @@ function MediaLightbox() {
               <div className="text-xs text-white/70 w-14 text-center tabular-nums">{Math.round(zoom * 100)}%</div>
               <button
                 type="button"
-                onClick={() => setZoom((z) => Math.min(6, z + 0.25))}
+                onClick={() => applyZoom(zoom + 0.25)}
                 className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
-                title="Aumentar zoom"
+                title="Aumentar zoom (+)"
                 aria-label="Aumentar zoom"
               >
                 <ZoomIn className="w-4 h-4" />
@@ -2593,7 +2645,7 @@ function MediaLightbox() {
                 type="button"
                 onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}
                 className="px-3 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs"
-                title="Restaurar zoom"
+                title="Restaurar zoom (0)"
               >
                 100%
               </button>
@@ -2601,9 +2653,9 @@ function MediaLightbox() {
           )}
           <button
             type="button"
-            onClick={() => setMedia(null)}
+            onClick={close}
             className="w-9 h-9 rounded-full bg-white/10 hover:bg-red-500/40 text-white flex items-center justify-center"
-            title="Fechar"
+            title="Fechar (Esc)"
             aria-label="Fechar"
           >
             <X className="w-5 h-5" />
@@ -2613,12 +2665,11 @@ function MediaLightbox() {
 
       {/* Content */}
       <div
-        className="flex-1 overflow-hidden flex items-center justify-center select-none"
+        className="flex-1 overflow-hidden flex items-center justify-center select-none relative touch-none"
         onClick={(e) => e.stopPropagation()}
         onWheel={(e) => {
           if (!isImg) return;
-          e.preventDefault();
-          setZoom((z) => Math.max(0.25, Math.min(6, z + (e.deltaY < 0 ? 0.15 : -0.15))));
+          applyZoom(zoom + (e.deltaY < 0 ? 0.15 : -0.15));
         }}
         onMouseDown={(e) => {
           if (!isImg || zoom <= 1) return;
@@ -2635,8 +2686,56 @@ function MediaLightbox() {
           setZoom((z) => (z === 1 ? 2 : 1));
           setOffset({ x: 0, y: 0 });
         }}
+        onTouchStart={(e) => {
+          if (!isImg) return;
+          if (e.touches.length === 2) {
+            const [a, b] = [e.touches[0], e.touches[1]];
+            const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+            pinchRef.current = { dist, zoom };
+          } else if (e.touches.length === 1 && zoom > 1) {
+            const t = e.touches[0];
+            draggingRef.current = { x: t.clientX - offset.x, y: t.clientY - offset.y };
+          }
+        }}
+        onTouchMove={(e) => {
+          if (!isImg) return;
+          if (e.touches.length === 2 && pinchRef.current) {
+            const [a, b] = [e.touches[0], e.touches[1]];
+            const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+            const ratio = dist / pinchRef.current.dist;
+            applyZoom(pinchRef.current.zoom * ratio);
+          } else if (e.touches.length === 1 && draggingRef.current) {
+            const t = e.touches[0];
+            setOffset({ x: t.clientX - draggingRef.current.x, y: t.clientY - draggingRef.current.y });
+          }
+        }}
+        onTouchEnd={(e) => {
+          if (e.touches.length === 0) { draggingRef.current = null; pinchRef.current = null; }
+        }}
         style={{ cursor: isImg && zoom > 1 ? (draggingRef.current ? "grabbing" : "grab") : "default" }}
       >
+        {hasMany && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); go(-1); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10"
+            title="Anterior (←)"
+            aria-label="Anterior"
+          >
+            ‹
+          </button>
+        )}
+        {hasMany && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); go(1); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10"
+            title="Próximo (→)"
+            aria-label="Próximo"
+          >
+            ›
+          </button>
+        )}
         {isImg ? (
           <img
             src={media.url}
@@ -2644,7 +2743,7 @@ function MediaLightbox() {
             draggable={false}
             style={{
               transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-              transition: draggingRef.current ? "none" : "transform 0.15s ease-out",
+              transition: draggingRef.current || pinchRef.current ? "none" : "transform 0.15s ease-out",
               maxWidth: "95vw",
               maxHeight: "85vh",
               objectFit: "contain",
@@ -2652,6 +2751,7 @@ function MediaLightbox() {
           />
         ) : (
           <video
+            ref={videoRef}
             src={media.url}
             controls
             autoPlay
@@ -2662,3 +2762,4 @@ function MediaLightbox() {
     </div>
   );
 }
+
