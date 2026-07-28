@@ -1741,7 +1741,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   style={{ background: theme.hex, ...theme.glowStrong }}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {submitting ? "Publicando..." : "Publicar Serviço"}
+                  {submitting ? "Publicando..." : "Publicar Oportunidade"}
                 </Button>
               </div>
               <p className="text-[9px] text-white/40 text-center italic">
