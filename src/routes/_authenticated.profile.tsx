@@ -1241,6 +1241,9 @@ function ProfilePage() {
                     Persistida em coluna própria (se existir) ou em custom_sections.__extras
                     via o mecanismo de fallback do autosave. */}
                 {(() => {
+                  // 🔒 Gate rígido: PIX só é renderizado quando isSelf (sem ?id= na URL).
+                  // Retornamos ANTES de ler qualquer campo sensível do profile.
+                  if (profileId) return null;
                   const pixKey = (profile?.pix_key || '').trim();
                   const rawType = profile?.pix_key_type;
                   const detected = pixKey ? detectPixKeyType(pixKey) : null;
@@ -1250,7 +1253,6 @@ function ProfilePage() {
                   const validationError = pixKey && effectiveType
                     ? validatePixKey(effectiveType as PixKeyType, pixKey)
                     : null;
-                  if (profileId) return null; // 🔒 PIX só é visível ao dono do perfil (isSelf)
                   return (
                     <div className="md:col-span-2 space-y-2">
                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2 flex-wrap">
