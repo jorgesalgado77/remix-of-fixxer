@@ -194,7 +194,21 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: null } : prev));
 
   const fileRef = useRef<HTMLInputElement>(null);
-  const theme = getCategoryTheme(defaultCategory);
+  // Categoria efetiva = do usuário logado (fonte oficial) com fallback para a prop.
+  const userCategory = useUserCategory();
+  const effectiveCategory: CategoryKey = (userCategory && userCategory !== "admin"
+    ? (userCategory as CategoryKey)
+    : defaultCategory) as CategoryKey;
+  const theme = getCategoryTheme(effectiveCategory);
+  // Rótulos dinâmicos por categoria (título do modal + botão de publicação)
+  const roleCopy: Record<CategoryKey, { title: string; publish: string }> = {
+    lojista:    { title: "📢 Criar Novo Anúncio Comercial",              publish: "🚀 Publicar Oferta"   },
+    fornecedor: { title: "📢 Criar Novo Anúncio Comercial",              publish: "🚀 Publicar Oferta"   },
+    prestador:  { title: "📢 Anunciar Pacote de Serviço / Mão de Obra",  publish: "🚀 Publicar Serviço"  },
+    cliente:    { title: "📢 Publicar Solicitação de Serviço / Pedido",  publish: "🚀 Publicar Pedido"   },
+    admin:      { title: "📢 Criar Novo Anúncio",                        publish: "🚀 Publicar"          },
+  };
+  const copy = roleCopy[effectiveCategory] ?? roleCopy.lojista;
 
   // Cache de arquivos codificados em base64 (para auto-save leve)
   const filesCacheRef = useRef<Map<string, { name: string; type: string; size: number; kind: UploadItem["kind"]; dataUrl: string }>>(new Map());
