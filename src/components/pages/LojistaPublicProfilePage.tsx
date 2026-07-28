@@ -900,10 +900,15 @@ export function LojistaPublicProfilePage() {
 
   const DELETE_REVIEW_COST = 30;
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  // Guarda síncrona anti double-submit — evita corrida entre cliques rápidos
+  // que ocorrem antes do próximo render aplicar `deletingReviewId`.
+  const deletingLockRef = useRef<Set<string>>(new Set());
 
   const handleDeleteReview = async (review: Review) => {
     if (!currentUserId || review.reviewer_id !== currentUserId) return;
     if (deletingReviewId) return;
+    if (deletingLockRef.current.has(review.id)) return;
+    deletingLockRef.current.add(review.id);
 
     const confirmed = await confirmCoins({
       title: "Excluir avaliação",
@@ -919,10 +924,34 @@ export function LojistaPublicProfilePage() {
       cancelLabel: "Manter avaliação",
       variant: "destructive",
     });
-    if (!confirmed) return;
+    if (!confirmed) {
+      deletingLockRef.current.delete(review.id);
+      return;
+    }
 
     setDeletingReviewId(review.id);
     const loadingToast = toast.loading("Excluindo avaliação…");
+
+    // Atualização otimista de UI + saldo (rollback em caso de erro).
+    const prevReviews = reviews;
+    const prevBalance = getCachedBalance();
+    if (prevBalance < DELETE_REVIEW_COST) {
+      toast.error("Saldo insuficiente. Compre moedas e tente novamente.", { id: loadingToast });
+      setDeletingReviewId(null);
+      deletingLockRef.current.delete(review.id);
+      return;
+    }
+    setReviews((prev) => prev.filter((r) => r.id !== review.id));
+    adjustCachedBalance(-DELETE_REVIEW_COST, currentUserId);
+    let optimisticApplied = true;
+
+    const rollback = () => {
+      if (!optimisticApplied) return;
+      setReviews(prevReviews);
+      adjustCachedBalance(DELETE_REVIEW_COST, currentUserId);
+      optimisticApplied = false;
+    };
+
     try {
       // Caminho preferido: RPC atômica no backend (valida posse + debita + apaga).
       const { data: rpcData, error: rpcError } = await supabaseExternal.rpc(
@@ -933,16 +962,20 @@ export function LojistaPublicProfilePage() {
       if (rpcError) {
         const msg = String(rpcError.message || "").toLowerCase();
         if (msg.includes("insufficient") || msg.includes("saldo")) {
+          rollback();
           toast.error("Saldo insuficiente. Compre moedas e tente novamente.", { id: loadingToast });
           return;
         }
         if (msg.includes("not owner") || msg.includes("permission") || msg.includes("forbidden")) {
+          rollback();
           toast.error("Você não tem permissão para excluir esta avaliação.", { id: loadingToast });
           return;
         }
         if (msg.includes("function") && msg.includes("does not exist")) {
           // Fallback compatível enquanto a RPC não é aplicada no banco.
           console.warn("[review-delete] RPC ausente — usando fluxo legado (menos seguro).");
+          // Desfaz o débito otimista para que consumeCoins faça a contabilidade oficial.
+          adjustCachedBalance(DELETE_REVIEW_COST, currentUserId);
           const spent = await consumeCoins(
             currentUserId,
             DELETE_REVIEW_COST,
@@ -951,20 +984,30 @@ export function LojistaPublicProfilePage() {
             { operation: "delete_review", reference: review.id, idempotencyKey: `del-rev-${review.id}` },
           );
           if (!spent.ok) {
+            setReviews(prevReviews);
+            optimisticApplied = false;
             toast.error("Saldo insuficiente para excluir a avaliação.", { id: loadingToast });
             return;
           }
           const { error } = await supabaseExternal
             .from("store_reviews").delete()
             .eq("id", review.id).eq("reviewer_id", currentUserId);
-          if (error) throw error;
+          if (error) {
+            // Credita de volta (fallback) e restaura lista.
+            adjustCachedBalance(DELETE_REVIEW_COST, currentUserId);
+            setReviews(prevReviews);
+            throw error;
+          }
+          optimisticApplied = false;
         } else {
+          rollback();
           throw rpcError;
         }
+      } else {
+        optimisticApplied = false;
       }
 
-      setReviews((prev) => prev.filter((r) => r.id !== review.id));
-      // Refresh do saldo em tempo real (subscribeBalance notifica os badges).
+      // Sincroniza o saldo com o backend (fonte da verdade) — sobrescreve o otimista.
       try { await initCoinsForUser(currentUserId); } catch { /* ignore */ }
 
       const newBalance = (rpcData as any)?.new_balance;
@@ -975,6 +1018,7 @@ export function LojistaPublicProfilePage() {
         { id: loadingToast },
       );
     } catch (err: any) {
+      rollback();
       console.error("[review-delete]", err);
       toast.error("Erro ao excluir avaliação.", {
         id: loadingToast,
@@ -982,6 +1026,7 @@ export function LojistaPublicProfilePage() {
       });
     } finally {
       setDeletingReviewId(null);
+      deletingLockRef.current.delete(review.id);
     }
   };
 
