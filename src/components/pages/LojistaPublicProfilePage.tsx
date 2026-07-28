@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCategoryColor } from "@/lib/getCategoryColor";
-import { consumeCoins, initCoinsForUser } from "@/lib/coins";
+import { consumeCoins, initCoinsForUser, adjustCachedBalance, getCachedBalance } from "@/lib/coins";
 import { confirmCoins } from "@/components/ConfirmCoinsDialog";
 
 
