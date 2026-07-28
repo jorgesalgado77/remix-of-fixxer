@@ -47,6 +47,9 @@ import {
   applyRelevanceFallback,
 } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
+import { AdFiltersBar } from "@/components/AdFiltersBar";
+import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
+import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
 
 // =============================================================================
 // TIPOS
@@ -655,21 +658,44 @@ export default function FeedParceiroPage() {
     toast.success("Feed atualizado");
   }, []);
 
+  const {
+    urgency: urgencyFilter,
+    distance: distanceFilter,
+    tag: tagFilter,
+    setUrgency: setUrgencyFilter,
+    setDistance: setDistanceFilter,
+    setTag: setTagFilter,
+  } = useAdFilterSearchState("/_authenticated/feed/parceiro");
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
+    const distNum =
+      distanceFilter === "todos" ? ("todos" as const) : (Number(distanceFilter) as number);
     return MOCK_REQUESTS.filter((r) => {
       if (activeSector !== "Todas as Demandas" && r.sector !== activeSector) return false;
       if (statusFilter !== "todos" && getFeedStatus(r.id) !== statusFilter) return false;
-      if (!term) return true;
-      return (
-        r.title.toLowerCase().includes(term) ||
-        r.description.toLowerCase().includes(term) ||
-        r.store.name.toLowerCase().includes(term) ||
-        r.city.toLowerCase().includes(term) ||
-        r.state.toLowerCase().includes(term)
+      // Deriva atributos de anúncio a partir do B2BRequest (compat com applyAdFiltersToQuery).
+      const urgency_tag = coerceUrgency(r.status) ?? (r.status === "urgente" ? "urgente" : "normal");
+      const service_radius_km =
+        (r as unknown as { service_radius_km?: number }).service_radius_km ?? 30;
+      const tags =
+        (r as unknown as { tags?: string[] }).tags ??
+        [r.sector, r.store.name]
+          .map((s) => s.toLowerCase().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}_-]+/gu, ""))
+          .filter(Boolean);
+      return matchesAdFilters(
+        {
+          urgency_tag,
+          service_radius_km,
+          tags,
+          title: r.title,
+          description: r.description,
+          keywords: [r.store.name, r.city, r.state, r.sector],
+        },
+        { urgency: urgencyFilter, distance: distNum, tag: tagFilter, term },
       );
     });
-  }, [search, activeSector, statusFilter]);
+  }, [search, activeSector, statusFilter, urgencyFilter, distanceFilter, tagFilter]);
 
   const branchCtx = useUserBranchContext();
   const rankedFiltered = useMemo(() => {
@@ -850,6 +876,18 @@ export default function FeedParceiroPage() {
 
       {/* FEED */}
       <main className="mx-auto max-w-3xl px-4 py-4">
+        <div className="mb-4">
+          <AdFiltersBar
+            role="parceiro"
+            urgency={urgencyFilter}
+            distance={distanceFilter}
+            tag={tagFilter}
+            onUrgencyChange={setUrgencyFilter}
+            onDistanceChange={setDistanceFilter}
+            onTagChange={setTagFilter}
+            tagPlaceholder="#vidro"
+          />
+        </div>
         <div className="mb-4">
           <B2BSuggestionsCard />
         </div>

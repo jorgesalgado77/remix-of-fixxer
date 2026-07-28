@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import FeedPrestadorPage from "@/components/pages/FeedPrestadorPage";
+import { validateAdFilterSearch } from "@/lib/ad-filter-search";
 
 export const Route = createFileRoute("/_authenticated/feed/prestador")({
+  validateSearch: validateAdFilterSearch,
   head: () => ({
     meta: [
       { title: "Feed do Prestador — FIXXER" },

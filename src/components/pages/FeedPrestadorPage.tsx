@@ -36,6 +36,8 @@ import {
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 import { AdMetaBadges, URGENCY_META, type UrgencyTag } from "@/components/AdMetaBadges";
 import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
+import { AdFiltersBar } from "@/components/AdFiltersBar";
+import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
 
 import {
   ArrowLeft,
@@ -1055,9 +1057,14 @@ export default function FeedPrestadorPage() {
 
   const [filter, setFilter] = usePersistedState<"todas" | Subcategory>("fixxer_feed_prestador_filter", "todas");
   const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_prestador_status", "todos");
-  const [urgencyFilter, setUrgencyFilter] = usePersistedState<"todos" | UrgencyTag>("fixxer_feed_prestador_urgency", "todos");
-  const [distanceFilter, setDistanceFilter] = usePersistedState<"todos" | "5" | "15" | "30">("fixxer_feed_prestador_dist", "todos");
-  const [tagFilter, setTagFilter] = usePersistedState<string>("fixxer_feed_prestador_tag", "");
+  const {
+    urgency: urgencyFilter,
+    distance: distanceFilter,
+    tag: tagFilter,
+    setUrgency: setUrgencyFilter,
+    setDistance: setDistanceFilter,
+    setTag: setTagFilter,
+  } = useAdFilterSearchState("/_authenticated/feed/prestador");
   const [detailsFor, setDetailsFor] = useState<JobPost | null>(null);
   const [search, setSearch] = usePersistedState<string>("fixxer_feed_prestador_search", "");
   useEffect(() => {
@@ -1372,69 +1379,17 @@ export default function FeedPrestadorPage() {
             onRetry={handleRefresh}
           />
         )}
-        {/* Filtros extras: urgência, distância, tag (tema laranja do prestador) */}
-        <div className="rounded-2xl bg-[#1A1A1B] border border-white/10 p-3 space-y-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/50 mr-1">Urgência:</span>
-            {(["todos", "urgente", "normal", "encomenda"] as const).map((k) => {
-              const active = urgencyFilter === k;
-              const meta = k === "todos" ? null : URGENCY_META[k];
-              return (
-                <button
-                  key={k}
-                  onClick={() => setUrgencyFilter(k)}
-                  className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-colors"
-                  style={
-                    active && meta
-                      ? { color: meta.color, borderColor: `${meta.color}66`, backgroundColor: meta.bg }
-                      : active
-                      ? { color: "#FF9F0A", borderColor: "#FF9F0A66", backgroundColor: "rgba(255,159,10,0.12)" }
-                      : { color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
-                  }
-                >
-                  {k === "todos" ? "Todas" : meta!.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/50 mr-1">Distância:</span>
-            {(["todos", "5", "15", "30"] as const).map((k) => {
-              const active = distanceFilter === k;
-              return (
-                <button
-                  key={k}
-                  onClick={() => setDistanceFilter(k)}
-                  className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-colors"
-                  style={
-                    active
-                      ? { color: "#FF9F0A", borderColor: "#FF9F0A66", backgroundColor: "rgba(255,159,10,0.12)" }
-                      : { color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }
-                  }
-                >
-                  {k === "todos" ? "Qualquer" : `Até ${k} km`}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Tag:</span>
-            <input
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              placeholder="#montagem"
-              className="flex-1 min-w-0 h-8 px-2.5 rounded-lg bg-black/40 border border-white/10 text-[12px] text-white placeholder-white/30 focus:outline-none focus:border-[#FF9F0A]/50"
-            />
-            {tagFilter && (
-              <button
-                onClick={() => setTagFilter("")}
-                className="text-[10px] text-white/50 hover:text-white uppercase font-bold"
-              >
-                limpar
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Filtros extras: urgência, distância, tag (componente compartilhado, tema laranja) */}
+        <AdFiltersBar
+          role="prestador"
+          urgency={urgencyFilter}
+          distance={distanceFilter}
+          tag={tagFilter}
+          onUrgencyChange={setUrgencyFilter}
+          onDistanceChange={setDistanceFilter}
+          onTagChange={setTagFilter}
+          tagPlaceholder="#montagem"
+        />
         <B2BSuggestionsCard />
         {/* Skeleton de busca */}
         {searching && (
