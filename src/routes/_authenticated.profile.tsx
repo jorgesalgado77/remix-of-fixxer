@@ -1272,7 +1272,7 @@ function ProfilePage() {
                       ) : null}
                       <p id="pix-help" className="text-[10px] text-muted-foreground ml-1">
                         Tipos oficiais: CPF, CNPJ, E-mail, Telefone ou Aleatória (EVP).
-                        Sua chave aparece <b>parcialmente mascarada</b> no perfil público, com botão de copiar seguro.
+                        Sua chave <b>não é exibida em páginas públicas</b> — os pagamentos entre usuários são processados pelo <b>sistema de custódia da plataforma</b>.
                       </p>
                     </div>
                   );
