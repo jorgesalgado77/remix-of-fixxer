@@ -28,6 +28,9 @@ import {
   Settings,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { getCategoryColor } from "@/lib/getCategoryColor";
+import { consumeCoins } from "@/lib/coins";
+
 import {
   categoryFromProfilePath,
   publicProfilePathFor,
@@ -158,15 +161,17 @@ interface ServiceOrder {
 
 interface Review {
   id: string;
+  reviewer_id?: string;
   reviewer_name: string;
   reviewer_city?: string;
-  reviewer_category: "cliente" | "prestador" | "fornecedor";
+  reviewer_category: "cliente" | "prestador" | "fornecedor" | "lojista";
   reviewer_avatar?: string | null;
   rating: number;
   comment: string;
   created_at: string;
   store_reply?: string | null;
 }
+
 
 const getPhotoUrl = (p: any): string => (typeof p === "string" ? p : p?.url ?? "");
 const getPhotoThumb = (p: any): string => (typeof p === "string" ? p : (p?.thumbUrl || p?.url || ""));
@@ -422,7 +427,38 @@ export function LojistaPublicProfilePage() {
             .select("*")
             .eq("lojista_id", lojistaKey)
             .order("created_at", { ascending: false });
-          if (!cancelled && revData) setReviews(revData as Review[]);
+          if (!cancelled && revData) {
+            const reviewerIds = Array.from(
+              new Set((revData as any[]).map((r) => r.reviewer_id).filter(Boolean)),
+            );
+            let profMap = new Map<string, any>();
+            if (reviewerIds.length) {
+              const { data: profs } = await supabaseExternal
+                .from("profiles")
+                .select("id,display_name,full_name,avatar_url,role,city")
+                .in("id", reviewerIds as string[]);
+              (profs || []).forEach((p: any) => profMap.set(p.id, p));
+            }
+            const normRole = (r: string): Review["reviewer_category"] => {
+              const s = String(r || "").toLowerCase();
+              if (s.includes("lojista") || s.includes("loja")) return "lojista";
+              if (s.includes("prestador") || s.includes("servi")) return "prestador";
+              if (s.includes("fornec") || s.includes("parceiro") || s.includes("b2b")) return "fornecedor";
+              return "cliente";
+            };
+            const enriched = (revData as any[]).map((r) => {
+              const p = r.reviewer_id ? profMap.get(r.reviewer_id) : null;
+              return {
+                ...r,
+                reviewer_name: p?.display_name || p?.full_name || r.reviewer_name || "Anônimo",
+                reviewer_avatar: p?.avatar_url ?? r.reviewer_avatar ?? null,
+                reviewer_city: p?.city ?? r.reviewer_city,
+                reviewer_category: p?.role ? normRole(p.role) : (r.reviewer_category || "cliente"),
+              } as Review;
+            });
+            setReviews(enriched);
+          }
+
         }
       } catch (err) {
         if (!cancelled) console.error("Erro ao carregar perfil público:", err);
@@ -820,9 +856,18 @@ export function LojistaPublicProfilePage() {
       toast.error("Escreva um comentário antes de enviar.");
       return;
     }
+    if (isSelf) {
+      toast.error("Você não pode avaliar o seu próprio perfil.");
+      return;
+    }
     setSubmittingReview(true);
     try {
       const { data: { user } } = await supabaseExternal.auth.getUser();
+      if (user?.id && profile?.user_id && user.id === profile.user_id) {
+        toast.error("Você não pode avaliar o seu próprio perfil.");
+        setSubmittingReview(false);
+        return;
+      }
       const payload = {
         lojista_id: storeId,
         reviewer_id: user?.id,
@@ -850,6 +895,40 @@ export function LojistaPublicProfilePage() {
       setSubmittingReview(false);
     }
   };
+
+  const DELETE_REVIEW_COST = 30;
+  const handleDeleteReview = async (review: Review) => {
+    if (!currentUserId || review.reviewer_id !== currentUserId) return;
+    const ok = window.confirm(
+      `Excluir esta avaliação custará ${DELETE_REVIEW_COST} moedas. Deseja continuar?`,
+    );
+    if (!ok) return;
+    try {
+      const spent = await consumeCoins(
+        currentUserId,
+        DELETE_REVIEW_COST,
+        "Exclusão de avaliação publicada",
+        "action_consume",
+        { operation: "delete_review", reference: review.id, idempotencyKey: `del-rev-${review.id}` },
+      );
+      if (!spent.ok) {
+        toast.error("Saldo insuficiente para excluir a avaliação.");
+        return;
+      }
+      const { error } = await supabaseExternal
+        .from("store_reviews")
+        .delete()
+        .eq("id", review.id)
+        .eq("reviewer_id", currentUserId);
+      if (error) throw error;
+      setReviews((prev) => prev.filter((r) => r.id !== review.id));
+      toast.success(`Avaliação excluída (−${DELETE_REVIEW_COST} moedas).`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao excluir avaliação.");
+    }
+  };
+
 
   const openImageLightbox = (url: string, idx: number) => {
     setLightboxImage(url);
@@ -1637,12 +1716,14 @@ export function LojistaPublicProfilePage() {
               <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
                 <Star className="w-4 h-4" /> Avaliações & Depoimentos
               </h2>
-              <Button
-                onClick={() => setShowReviewModal(true)}
-                className="bg-primary text-black font-black uppercase italic text-[10px] h-9 rounded-xl hover:bg-primary/90"
-              >
-                <Send className="w-3 h-3 mr-1.5" /> Adicionar Avaliação
-              </Button>
+              {!isSelf && (
+                <Button
+                  onClick={() => setShowReviewModal(true)}
+                  className="bg-primary text-black font-black uppercase italic text-[10px] h-9 rounded-xl hover:bg-primary/90"
+                >
+                  <Send className="w-3 h-3 mr-1.5" /> Adicionar Avaliação
+                </Button>
+              )}
             </div>
 
             {/* Filtros */}
@@ -1655,9 +1736,16 @@ export function LojistaPublicProfilePage() {
             {filteredReviews.length > 0 ? (
               <div className="space-y-3">
                 {filteredReviews.map((r) => (
-                  <ReviewCard key={r.id} review={r} />
+                  <ReviewCard
+                    key={r.id}
+                    review={r}
+                    canDelete={!!currentUserId && r.reviewer_id === currentUserId}
+                    onDelete={() => handleDeleteReview(r)}
+                    deleteCost={DELETE_REVIEW_COST}
+                  />
                 ))}
               </div>
+
             ) : (
               <EmptyState label="Nenhuma avaliação encontrada com esses filtros." />
             )}
@@ -1873,18 +1961,41 @@ function OrderCard({ order }: { order: ServiceOrder }) {
   );
 }
 
-function ReviewCard({ review }: { review: Review }) {
-  const catMeta = {
-    prestador: { icon: <Wrench className="w-3 h-3" />, label: "Prestador", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
-    fornecedor: { icon: <Truck className="w-3 h-3" />, label: "Parceiro Fornecedor", color: "text-orange-400 bg-orange-400/10 border-orange-400/30" },
-    cliente: { icon: <User className="w-3 h-3" />, label: "Cliente Final", color: "text-primary bg-primary/10 border-primary/30" },
-  }[review.reviewer_category];
+function ReviewCard({
+  review,
+  canDelete = false,
+  onDelete,
+  deleteCost = 30,
+}: {
+  review: Review;
+  canDelete?: boolean;
+  onDelete?: () => void;
+  deleteCost?: number;
+}) {
+  const catInfo: Record<Review["reviewer_category"], { icon: React.ReactNode; label: string }> = {
+    lojista: { icon: <ShieldCheck className="w-3 h-3" />, label: "Lojista" },
+    prestador: { icon: <Wrench className="w-3 h-3" />, label: "Prestador" },
+    fornecedor: { icon: <Truck className="w-3 h-3" />, label: "Fornecedor" },
+    cliente: { icon: <User className="w-3 h-3" />, label: "Cliente Final" },
+  };
+  const cat = catInfo[review.reviewer_category] ?? catInfo.cliente;
+  const color = getCategoryColor(review.reviewer_category);
 
   return (
-    <div className="bg-[#1A1A1B] border border-white/10 rounded-2xl p-5 space-y-3">
+    <div
+      className="bg-[#1A1A1B] border rounded-2xl p-5 space-y-3"
+      style={{ borderColor: `${color.hex}33` }}
+    >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-black border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-          {review.reviewer_avatar ? <img src={review.reviewer_avatar} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-muted-foreground" />}
+        <div
+          className="w-10 h-10 rounded-full bg-black border flex items-center justify-center overflow-hidden shrink-0"
+          style={{ borderColor: `${color.hex}66` }}
+        >
+          {review.reviewer_avatar ? (
+            <img src={review.reviewer_avatar} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+          ) : (
+            <User className="w-5 h-5" style={{ color: color.hex }} />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1892,14 +2003,24 @@ function ReviewCard({ review }: { review: Review }) {
               <p className="text-xs font-black text-white italic">{review.reviewer_name}</p>
               {review.reviewer_city && <p className="text-[9px] font-bold text-muted-foreground uppercase">{review.reviewer_city}</p>}
             </div>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic border ${catMeta.color}`}>
-              {catMeta.icon} {catMeta.label}
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic border"
+              style={{ color: color.hex, borderColor: `${color.hex}4D`, backgroundColor: `${color.hex}1A` }}
+            >
+              {cat.icon} {cat.label}
             </span>
           </div>
           <div className="flex items-center gap-2 mt-1.5">
             <div className="flex">
               {[1, 2, 3, 4, 5].map((n) => (
-                <Star key={n} className={`w-3 h-3 ${n <= Math.round(review.rating) ? "fill-primary text-primary" : "text-white/20"}`} />
+                <Star
+                  key={n}
+                  className="w-3 h-3"
+                  style={{
+                    color: n <= Math.round(review.rating) ? color.hex : "rgba(255,255,255,0.2)",
+                    fill: n <= Math.round(review.rating) ? color.hex : "transparent",
+                  }}
+                />
               ))}
             </div>
             <span className="text-[9px] font-bold text-muted-foreground uppercase">
@@ -1915,9 +2036,21 @@ function ReviewCard({ review }: { review: Review }) {
           <p className="text-[11px] text-white/70">{review.store_reply}</p>
         </div>
       )}
+      {canDelete && onDelete && (
+        <div className="flex justify-end pt-1">
+          <button
+            onClick={onDelete}
+            className="text-[9px] font-black uppercase italic px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition"
+            title={`Excluir esta avaliação custa ${deleteCost} moedas`}
+          >
+            🗑 Excluir avaliação (−{deleteCost} moedas)
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function SpecialtyCard({ title, desc }: { title: string; desc: string }) {
   return (
