@@ -185,6 +185,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [freightVolumes, setFreightVolumes] = useState("");
   const [freightWeight, setFreightWeight] = useState("");
   const [otherServiceText, setOtherServiceText] = useState("");
+  // Novos blocos estratégicos
+  const [urgencyTag, setUrgencyTag] = useState<"urgente" | "normal" | "encomenda">("normal");
+  const [serviceRadiusKm, setServiceRadiusKm] = useState<5 | 15 | 30 | 0>(15); // 0 = toda a região
+  const [tagsInput, setTagsInput] = useState("");
   // Erros inline por campo monetário (destaca borda + mensagem sob o input)
   const [fieldErrors, setFieldErrors] = useState<{
     fixedValue?: string | null;
