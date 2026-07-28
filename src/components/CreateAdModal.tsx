@@ -627,6 +627,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setFreightVolumes("");
     setFreightWeight("");
     setOtherServiceText("");
+    setUrgencyTag("normal");
+    setServiceRadiusKm(15);
+    setTagsInput("");
     filesCacheRef.current.clear();
   };
 
