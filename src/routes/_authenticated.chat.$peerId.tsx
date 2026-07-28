@@ -2246,7 +2246,9 @@ function ConversationPage() {
         selfName="Você"
         selfId={userId ?? ""}
       />
+      <MediaLightbox />
     </div>
+
   );
 
 }
