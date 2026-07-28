@@ -1026,7 +1026,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         >
           <div>
             <h2 className="text-lg font-black uppercase italic text-white tracking-tight">
-              Criar Serviço
+              Criar Oportunidade
             </h2>
             <p
               className="text-[10px] uppercase font-bold tracking-wider"
