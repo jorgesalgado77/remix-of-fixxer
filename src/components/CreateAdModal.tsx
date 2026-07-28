@@ -715,6 +715,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setUrgencyTag("normal");
     setServiceRadiusKm(15);
     setTagsInput("");
+    setValidityPreset(7);
+    setValidityDate(addDaysISO(7));
     filesCacheRef.current.clear();
   };
 
