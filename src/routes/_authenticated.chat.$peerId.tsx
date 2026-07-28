@@ -2540,6 +2540,8 @@ function HeaderActionsMenu(props: {
           {item(archived ? "Desarquivar conversa" : "Arquivar conversa", archived ? ArchiveRestore : Archive, onArchive)}
           <div className="my-1 h-px bg-white/10" />
           {item("Exportar conversa", FileDown, onExport)}
+          <div className="my-1 h-px bg-white/10" />
+          {item("Denunciar usuário", Flag, onReport, true)}
           {item(blocked ? "Desbloquear usuário" : "Bloquear usuário", Ban, onBlock, true)}
         </div>
       )}
