@@ -431,6 +431,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       if (d.urgencyTag) setUrgencyTag(d.urgencyTag);
       if (d.serviceRadiusKm !== undefined) setServiceRadiusKm(d.serviceRadiusKm);
       if (typeof d.tagsInput === "string") setTagsInput(d.tagsInput);
+      if (Array.isArray(d.deliveryModes)) setDeliveryModes(d.deliveryModes.filter((x: unknown) => typeof x === "string"));
       if (d.validityPreset !== undefined) setValidityPreset(d.validityPreset);
       if (typeof d.validityDate === "string" && d.validityDate) {
         // Sanidade: se o rascunho salvo tem data > 15 dias, satura no máximo
