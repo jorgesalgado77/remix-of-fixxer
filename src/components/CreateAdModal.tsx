@@ -904,6 +904,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         freight: (payload as any).freight ?? null,
         files: (payload as any).files,
         category: payload.category,
+        urgency_tag: (payload as any).urgency_tag ?? null,
+        service_radius_km: (payload as any).service_radius_km ?? null,
+        tags: (payload as any).tags ?? [],
         status: "PENDENTE",
       };
       let insertedId: string | null = null;
