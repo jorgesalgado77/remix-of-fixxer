@@ -985,7 +985,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           </div>
         </div>
         <p className="text-white/60 text-xs line-clamp-3">
-          {description || "Descrição do serviço aparecerá aqui..."}
+          {description || "Descrição da oportunidade aparecerá aqui..."}
         </p>
         <div className="flex flex-wrap gap-2 text-[9px] uppercase font-bold text-white/50">
           <span>{rooms} ambiente{rooms > 1 ? "s" : ""}</span>
