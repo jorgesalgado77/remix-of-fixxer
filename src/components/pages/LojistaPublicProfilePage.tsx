@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useLocation, useNavigate } from "@tanstack/react-router";
+import { useParams, useLocation, useNavigate, Link } from "@tanstack/react-router";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 
 import {
@@ -27,6 +27,7 @@ import {
   Copy,
   Check,
   Loader2,
+  Settings,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
@@ -952,6 +953,21 @@ export function LojistaPublicProfilePage() {
                   <Badge icon={<ShieldCheck className="w-3 h-3" />} label="CNPJ Verificado" />
                   <Badge icon={<Clock className="w-3 h-3" />} label={`Ativo há +${yearsActive} ${yearsActive === 1 ? "ano" : "anos"}`} />
                 </div>
+
+                {/* Botão de Configurações — visível SOMENTE ao dono do perfil.
+                    Leva para /profile onde cada usuário só acessa/edita o próprio perfil. */}
+                {isSelf && (
+                  <div className="pt-1">
+                    <Link
+                      to="/profile"
+                      aria-label="Abrir configurações do meu perfil"
+                      className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-primary/15 border border-primary/40 text-primary font-black uppercase italic tracking-widest text-[11px] hover:bg-primary/25 hover:border-primary/70 transition-all"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Configurações do meu perfil
+                    </Link>
+                  </div>
+                )}
 
                 {/* Métricas */}
                 <div className="grid grid-cols-3 gap-2 md:gap-3 pt-2">
