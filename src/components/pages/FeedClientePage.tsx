@@ -967,6 +967,7 @@ export default function FeedClientePage() {
                 onProfile={() => openProfile(vendor)}
                 onOpenLightbox={(index) => setLightbox({ vendor, index })}
                 userCoords={userCoords}
+                currentUserId={userId}
               />
             </div>
           ))}
