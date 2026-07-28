@@ -1298,6 +1298,18 @@ export default function FeedPrestadorPage() {
         toast.error("Contratante sem canal de chat disponível.");
         return;
       }
+      try {
+        const { setAdChatContext } = require("@/lib/ad-chat-context") as typeof import("@/lib/ad-chat-context");
+        setAdChatContext(peerId, {
+          adId: job.id,
+          title: job.title,
+          category: String(job.subcategory),
+          cover: job.media?.[0]?.type === "image" ? job.media[0].url : null,
+          priceLabel: job.value || null,
+          urgency: job.urgency || null,
+          cta: "orcamento",
+        });
+      } catch { /* silencioso */ }
       navigate({ to: "/chat/$peerId", params: { peerId } }).catch(() => {
         navigate({ to: "/chat" }).catch(() => undefined);
       });
