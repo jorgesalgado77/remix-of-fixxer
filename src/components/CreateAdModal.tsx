@@ -933,6 +933,17 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         const n = Number(localStorage.getItem(cKey) || "0") + 1;
         localStorage.setItem(cKey, String(n));
       } catch { /* ignore */ }
+      // Incrementa contador mensal por usuário (usado no resumo de moedas)
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (uid) {
+          const mkey = `fixxer:ads:month:${uid}:${new Date().toISOString().slice(0, 7)}`;
+          const n = Number(localStorage.getItem(mkey) || "0") + 1;
+          localStorage.setItem(mkey, String(n));
+          setFreeAdsUsed(n);
+        }
+      } catch { /* ignore */ }
       // Dissemina para os feeds/dashboards abertos
       try {
         window.dispatchEvent(
