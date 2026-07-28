@@ -1499,6 +1499,13 @@ function PostCardImpl({
             {post.budget}
           </div>
         )}
+        <AdMetaBadges
+          urgency={post.urgency}
+          radiusKm={post.serviceRadiusKm ?? post.radiusKm}
+          tags={post.tags}
+          theme={theme}
+          compact
+        />
       </div>
 
       {/* Mídias */}
