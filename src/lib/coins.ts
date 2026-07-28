@@ -62,6 +62,20 @@ function notify(v: number) {
 
 export function getCachedBalance(): number { return currentBalance; }
 
+/**
+ * Ajusta o saldo em cache local (otimista) sem persistir no backend.
+ * Útil para refletir imediatamente uma operação e permitir rollback via
+ * chamada com delta invertido caso a operação remota falhe.
+ * Retorna o novo saldo.
+ */
+export function adjustCachedBalance(delta: number, userId?: string): number {
+  const next = Math.max(0, currentBalance + delta);
+  const uid = userId ?? currentUserId;
+  if (uid) writeLocalBalance(uid, next);
+  notify(next);
+  return next;
+}
+
 export function subscribeBalance(fn: (v: number) => void): () => void {
   listeners.add(fn);
   fn(currentBalance);
