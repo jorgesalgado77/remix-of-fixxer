@@ -747,9 +747,7 @@ export function LojistaDashboard() {
         </header>
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
-            <div className="hidden md:block mb-6">
-              <ProfileSummaryCard role="lojista" variant="inline" className="max-w-md" />
-            </div>
+
 
             {activeTab === 'dashboard' && <DashboardView rating={rating} getRatingColor={getRatingColor} handleTabChange={handleTabChange} isProfileComplete={isProfileComplete} />}
             {activeTab === 'create' && <CreateServiceView />}
