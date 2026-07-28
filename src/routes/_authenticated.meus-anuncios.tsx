@@ -10,6 +10,8 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { CommercialAdModal, type CommercialAdInitial } from "@/components/CommercialAdModal";
 import { getCategoryTheme } from "@/lib/category-colors";
 import { spendCoinsForAction, costOf } from "@/lib/monetization";
+import { getCachedBalance, subscribeBalance } from "@/lib/coins";
+import { useAdMetricsLive, type AdMetric } from "@/lib/use-ad-metrics-live";
 
 export const Route = createFileRoute("/_authenticated/meus-anuncios")({
   head: () => ({
@@ -164,11 +166,35 @@ function MeusAnunciosPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmBoostId, setConfirmBoostId] = useState<string | null>(null);
+  const [confirmRenewId, setConfirmRenewId] = useState<string | null>(null);
   const [busyBoostId, setBusyBoostId] = useState<string | null>(null);
   const [busyRenewId, setBusyRenewId] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number>(() => getCachedBalance());
 
   const boostCost = costOf("publish_extra") || 20;
   const renewCost = costOf("publish_extra") || 20;
+
+  // ---- Saldo reativo: reflete gastos/ganhos em tempo real nos modais ----
+  useEffect(() => {
+    const off = subscribeBalance((v) => setBalance(v));
+    return () => off();
+  }, []);
+
+  // ---- Métricas ao vivo (views/chats) sem recarregar a página ----
+  const adIds = useMemo(() => ads.map((a) => a.id), [ads]);
+  const handleMetrics = useCallback((metrics: Record<string, AdMetric>) => {
+    setAds((prev) =>
+      prev.map((a) => {
+        const m = metrics[a.id];
+        if (!m) return a;
+        const curV = Number(a.metadata?.views ?? 0);
+        const curC = Number(a.metadata?.chats ?? 0);
+        if (m.views === curV && m.chats === curC) return a;
+        return { ...a, metadata: { ...(a.metadata || {}), views: m.views, chats: m.chats } };
+      }),
+    );
+  }, []);
+  useAdMetricsLive({ adIds, onMetrics: handleMetrics, enabled: !!uid && ads.length > 0 });
 
   const fetchAds = useCallback(async (currentUid: string) => {
     setLoading(true);
