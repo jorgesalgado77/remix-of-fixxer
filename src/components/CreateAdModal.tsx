@@ -931,6 +931,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         urgency_tag: (payload as any).urgency_tag ?? null,
         service_radius_km: (payload as any).service_radius_km ?? null,
         tags: (payload as any).tags ?? [],
+        expires_at: (payload as any).expires_at ?? null,
         status: "PENDENTE",
       };
       let insertedId: string | null = null;
