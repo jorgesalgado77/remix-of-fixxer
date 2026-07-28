@@ -567,6 +567,94 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
   );
 }
 
+// ======================= ACTION COST MODAL (Boost / Renew) =======================
+// Componente unificado que resume saldo atual, custo e saldo após a ação,
+// bloqueia confirmação se o saldo for insuficiente e mostra atalho para o topo.
+function ActionCostModal({
+  onClose, title, description, Icon, accent, cost, balance, busy, busyLabel, confirmLabel, onConfirm,
+}: {
+  onClose: () => void;
+  title: string;
+  description: string;
+  Icon: any;
+  accent: string;
+  cost: number;
+  balance: number;
+  busy: boolean;
+  busyLabel: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+}) {
+  const insufficient = balance < cost;
+  const after = Math.max(0, balance - cost);
+  return (
+    <Modal onClose={onClose}>
+      <div className="flex items-start gap-3">
+        <div
+          className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border"
+          style={{ background: `${accent}15`, borderColor: `${accent}66` }}
+        >
+          <Icon className="w-5 h-5" style={{ color: accent }} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-black uppercase text-white">{title}</h3>
+          <p className="text-[11px] text-white/60 mt-1 leading-relaxed">{description}</p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-2">
+        <Row label="Saldo atual" value={`${balance} moedas`} />
+        <Row label="Custo desta ação" value={`− ${cost} moedas`} color={accent} />
+        <div className="h-px bg-white/10" />
+        <Row
+          label="Saldo após ação"
+          value={insufficient ? "insuficiente" : `${after} moedas`}
+          color={insufficient ? "#FF3B6B" : undefined}
+          bold
+        />
+      </div>
+
+      {insufficient && (
+        <div className="text-[11px] text-[#FF3B6B] leading-snug">
+          Você não tem moedas suficientes. Adquira mais no menu de <b>Moedas</b> e tente novamente.
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="button" disabled={busy}
+          onClick={onClose}
+          className="flex-1 h-10 rounded-xl bg-white/5 border border-white/10 text-white/80 text-[11px] font-bold uppercase disabled:opacity-50"
+        >Cancelar</button>
+        <button
+          type="button" disabled={busy || insufficient} onClick={onConfirm}
+          className="flex-1 h-10 rounded-xl text-black text-[11px] font-black uppercase inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+          style={{ background: accent }}
+        >
+          <Icon className="w-3.5 h-3.5" /> {busy ? busyLabel : confirmLabel}
+        </button>
+      </div>
+
+      <Link
+        to="/meus-anuncios"
+        onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50)}
+        className="block text-center text-[11px] text-white/50 hover:text-white underline underline-offset-2"
+      >
+        Ir para o topo de “Meus Anúncios” após confirmar →
+      </Link>
+    </Modal>
+  );
+}
+
+function Row({ label, value, color, bold }: { label: string; value: string; color?: string; bold?: boolean }) {
+  return (
+    <div className="flex items-center justify-between text-[12px]">
+      <span className="text-white/60">{label}</span>
+      <span className={bold ? "font-black" : "font-bold"} style={{ color: color ?? "#fff" }}>{value}</span>
+    </div>
+  );
+}
+
 // ================================ SECTION HEADER ================================
 
 function SectionHeader({ icon, label, count, color }: { icon: React.ReactNode; label: string; count: number; color: string }) {
