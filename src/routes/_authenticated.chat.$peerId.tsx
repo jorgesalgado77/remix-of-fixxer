@@ -27,6 +27,10 @@ import {
   Settings,
   Camera,
   Film,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+
 } from "lucide-react";
 import { ChatSettingsSheet } from "@/components/ChatSettingsSheet";
 
