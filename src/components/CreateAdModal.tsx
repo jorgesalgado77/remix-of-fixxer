@@ -338,7 +338,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     return {
       v: 2,
       savedAt: new Date().toISOString(),
-      category: defaultCategory,
+      category: effectiveCategory,
       serviceTypes, neighborhood, city, uf,
       rooms, title, startDate, deadline, priority,
       description, notes, techSpecs, otherChecked, otherText,
@@ -696,7 +696,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         : t,
     );
     const base: any = {
-      category: defaultCategory,
+      category: effectiveCategory,
       service_types: finalServiceTypes,
       location: {
         neighborhood: neighborhood.trim(),
@@ -932,7 +932,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
             }
           : null
       }
-      categoryOverride={defaultCategory}
+      categoryOverride={effectiveCategory}
       aspect="video"
       emptyLabel="Sem imagem"
     />
@@ -949,7 +949,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
           className="absolute top-2 right-2 px-2 py-1 rounded-md text-[9px] uppercase font-black italic"
           style={{ ...theme.bgSoft, color: theme.hex }}
         >
-          {CATEGORY_LABEL[defaultCategory]}
+          {CATEGORY_LABEL[effectiveCategory]}
         </div>
       </div>
       <div className="p-4 space-y-2">
@@ -1047,7 +1047,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               className="text-[10px] uppercase font-bold tracking-wider"
               style={{ color: theme.hex }}
             >
-              {CATEGORY_LABEL[defaultCategory]}
+              {CATEGORY_LABEL[effectiveCategory]}
               {userMacro && (
                 <span className="ml-2 text-white/50 normal-case font-semibold tracking-normal">
                   · {userMacro.icon} {userMacro.label}
