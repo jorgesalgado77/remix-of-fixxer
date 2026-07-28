@@ -192,6 +192,18 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [urgencyTag, setUrgencyTag] = useState<"urgente" | "normal" | "encomenda">("normal");
   const [serviceRadiusKm, setServiceRadiusKm] = useState<5 | 15 | 30 | 0>(15); // 0 = toda a região
   const [tagsInput, setTagsInput] = useState("");
+  // Validade / Expiração — máximo 15 dias no feed
+  const MAX_VALIDITY_DAYS = 15;
+  const todayISO = () => new Date().toISOString().slice(0, 10);
+  const addDaysISO = (d: number) => {
+    const base = new Date();
+    base.setHours(23, 59, 59, 999);
+    base.setDate(base.getDate() + d);
+    return base.toISOString().slice(0, 10);
+  };
+  const maxValidityISO = () => addDaysISO(MAX_VALIDITY_DAYS);
+  const [validityPreset, setValidityPreset] = useState<3 | 7 | 10 | 15 | 0>(7); // 0 = customizada
+  const [validityDate, setValidityDate] = useState<string>(() => addDaysISO(7));
   // Erros inline por campo monetário (destaca borda + mensagem sob o input)
   const [fieldErrors, setFieldErrors] = useState<{
     fixedValue?: string | null;
