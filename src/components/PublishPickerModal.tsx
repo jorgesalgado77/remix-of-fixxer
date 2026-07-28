@@ -16,7 +16,7 @@ type PublishKind = "ad" | "request";
 /**
  * Modal "PUBLICAR" — o usuário escolhe entre:
  *  📢 Criar Anúncio         → vendas/promoções (ad_kind: "offer")
- *  📋 Criar Solicitação     → cotação/contratação (ad_kind: "request")
+ *  📋 Criar Oportunidade    → cotação/contratação (ad_kind: "request")
  *
  * Ambas as opções abrem o `CreateAdModal` pré-configurado com o modo escolhido.
  * O consumo de moedas por publicação excedente ocorre dentro do próprio modal
@@ -108,8 +108,8 @@ export function PublishPickerModal({ open, onClose, defaultCategory }: Props) {
                 <ClipboardList className="w-5 h-5 text-[#B084FF]" />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-black uppercase text-white">📋 Criar Solicitação</p>
-                <p className="text-[11px] text-white/60">Cotações e contratação de serviços/fornecedores.</p>
+                <p className="text-[13px] font-black uppercase text-white">📋 Criar Oportunidade</p>
+                <p className="text-[11px] text-white/60">Solicite contratação de serviços, fornecimento de produtos, Orçamentos,</p>
               </div>
             </div>
             <p className="text-[10px] text-white/50 mt-2 flex items-start gap-1.5">
