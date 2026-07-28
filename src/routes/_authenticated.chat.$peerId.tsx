@@ -1645,20 +1645,6 @@ function ConversationPage() {
 
           </div>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={toggleMute}
-              title={muted ? "Ativar som de novas mensagens" : "Silenciar som de novas mensagens"}
-              aria-label={muted ? "Ativar som" : "Silenciar som"}
-              aria-pressed={muted}
-              className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors ${
-                muted
-                  ? "bg-red-500/15 border-red-500/40 text-red-200 hover:bg-red-500/25"
-                  : "bg-white/5 border-white/10 text-white hover:bg-white/10"
-              }`}
-            >
-              {muted ? <BellOff className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-            </button>
             <HeaderActionsMenu
               muted={muted}
               archived={archived}
@@ -1671,6 +1657,7 @@ function ConversationPage() {
               onExport={openExportModal}
             />
           </div>
+
 
 
 
