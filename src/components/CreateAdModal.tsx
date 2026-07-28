@@ -1540,6 +1540,86 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </p>
             </div>
 
+            {/* NOVO — Validade do Anúncio no Feed (máx. 15 dias) */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-wider text-white/70 flex items-center gap-1.5">
+                <CalendarClock className="w-3.5 h-3.5" style={{ color: theme.hex }} />
+                📅 Validade do Anúncio no Feed <span className="text-rose-400">*</span>
+              </Label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[3, 7, 10, 15].map((d) => {
+                  const active = validityPreset === d;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        setValidityPreset(d as 3 | 7 | 10 | 15);
+                        setValidityDate(addDaysISO(d));
+                      }}
+                      className="px-2 py-2 rounded-lg text-[10px] font-black uppercase italic transition-all"
+                      style={{
+                        background: active ? theme.hex : "rgba(255,255,255,0.04)",
+                        color: active ? "#000" : "rgba(255,255,255,0.7)",
+                        border: `1px solid ${active ? theme.hex : "rgba(255,255,255,0.10)"}`,
+                        boxShadow: active ? (theme.glow as any).boxShadow : undefined,
+                      }}
+                    >
+                      {d === 15 ? "15d · Máx" : `${d} Dias`}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={validityDate}
+                  min={todayISO()}
+                  max={maxValidityISO()}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    const today = todayISO();
+                    const max = maxValidityISO();
+                    if (!v) return;
+                    if (v > max) {
+                      toast.error("O tempo máximo de permanência de um anúncio no feed é de 15 dias.");
+                      setValidityDate(max);
+                      setValidityPreset(15);
+                      return;
+                    }
+                    if (v < today) {
+                      setValidityDate(today);
+                      setValidityPreset(0);
+                      return;
+                    }
+                    setValidityDate(v);
+                    setValidityPreset(0);
+                  }}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-xs h-10 focus:outline-none focus:ring-1"
+                  style={{ colorScheme: "dark" }}
+                />
+                <span
+                  className="px-2 py-1 rounded-md text-[10px] font-black uppercase whitespace-nowrap"
+                  style={{ ...theme.bgSoft, color: theme.hex, border: `1px solid ${theme.hex}44` }}
+                >
+                  {(() => {
+                    const diff = Math.max(
+                      0,
+                      Math.round(
+                        (new Date(`${validityDate}T23:59:59`).getTime() - Date.now()) / 86400000,
+                      ),
+                    );
+                    return `Expira em ${diff}d`;
+                  })()}
+                </span>
+              </div>
+              <p className="text-[9px] text-white/40 italic">
+                Após a data escolhida, o anúncio some do feed automaticamente. Máximo permitido: 15 dias.
+              </p>
+            </div>
+
+
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
