@@ -190,6 +190,43 @@ export const ACTIVITY_MATRIX: ActivityMacroCategory[] = [
     ],
   },
   {
+    id: "tecnologia_digital",
+    icon: "💻",
+    label: "Tecnologia & Soluções Digitais",
+    branches: [
+      {
+        label: "Desenvolvimento & Software",
+        subcategories: [
+          "Sites & Landing Pages",
+          "Sistemas Web / SaaS",
+          "Apps Mobile (iOS/Android)",
+          "E-commerce / Integrações",
+          "Automação & Chatbots",
+        ],
+      },
+      {
+        label: "T.I. & Redes",
+        subcategories: [
+          "Suporte Técnico Remoto",
+          "Infra & Servidores",
+          "Redes / Wi-Fi / Cabeamento",
+          "Cloud (AWS/Azure/GCP)",
+          "Cibersegurança",
+        ],
+      },
+      {
+        label: "Impressão 3D & Prototipagem",
+        subcategories: [
+          "Impressão 3D FDM/Resina",
+          "Modelagem 3D / CAD",
+          "Prototipagem Rápida",
+          "Digitalização 3D / Scan",
+        ],
+      },
+      { label: CUSTOM_BRANCH_MARKER },
+    ],
+  },
+  {
     id: "beleza_estetica",
     icon: "💈",
     label: "Beleza, Estética e Bem-Estar",
