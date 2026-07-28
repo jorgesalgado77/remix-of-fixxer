@@ -263,6 +263,16 @@ export default function FeedClientePage() {
   const [sortOpen, setSortOpen] = useState(false);
   const [savedOnly, setSavedOnly] = usePersistedState<boolean>("fixxer_feed_cliente_savedonly", false);
 
+  // Filtros de anúncio (urgência/raio/tag) persistidos na URL — compartilhados entre feeds
+  const {
+    urgency: urgencyFilter,
+    distance: distanceFilter,
+    tag: tagFilter,
+    setUrgency: setUrgencyFilter,
+    setDistance: setDistanceFilter,
+    setTag: setTagFilter,
+  } = useAdFilterSearchState("/_authenticated/feed/cliente");
+
   const [myNeeds, setMyNeeds] = useState<MyNeed[]>([]);
   const [needsOpen, setNeedsOpen] = useState(false);
   const [editingNeed, setEditingNeed] = useState<MyNeed | null>(null);
