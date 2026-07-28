@@ -28,6 +28,9 @@ import {
   Settings,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { getCategoryColor } from "@/lib/getCategoryColor";
+import { consumeCoins } from "@/lib/coins";
+
 import {
   categoryFromProfilePath,
   publicProfilePathFor,
