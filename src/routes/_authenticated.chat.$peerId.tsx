@@ -77,6 +77,7 @@ import {
   setDraftFiles,
   setDraftText,
 } from "@/lib/chat-drafts";
+import { consumeAdChatContext, formatAdContextAsMessage } from "@/lib/ad-chat-context";
 
 const MAX_FILES = 6;
 const MAX_FILE_MB = 15;
@@ -177,7 +178,17 @@ function ConversationPage() {
   const [peerInitials, setPeerInitials] = useState<string>("?");
   const [peerIsFallback, setPeerIsFallback] = useState<boolean>(true);
   const [peerLoading, setPeerLoading] = useState<boolean>(true);
-  const [content, setContent] = useState<string>(() => getDraftText(peerId));
+  const [content, setContent] = useState<string>(() => {
+    const existing = getDraftText(peerId);
+    if (existing && existing.trim().length > 0) return existing;
+    const ctx = consumeAdChatContext(peerId);
+    if (ctx) {
+      const prefill = formatAdContextAsMessage(ctx);
+      try { setDraftText(peerId, prefill); } catch { /* ignore */ }
+      return prefill;
+    }
+    return "";
+  });
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [markingRead, setMarkingRead] = useState(false);

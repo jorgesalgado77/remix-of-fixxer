@@ -1,21 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import {
   Megaphone, Pencil, Trash2, Eye, Plus, RefreshCw, Search, AlertTriangle,
-  ImageOff, Package, Store as StoreIcon,
+  ImageOff, Package, Store as StoreIcon, MoreVertical, Rocket, MessageSquare,
+  Clock, CheckCircle2, RotateCw,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { CommercialAdModal, type CommercialAdInitial } from "@/components/CommercialAdModal";
 import { getCategoryTheme } from "@/lib/category-colors";
+import { spendCoinsForAction, costOf } from "@/lib/monetization";
 
 export const Route = createFileRoute("/_authenticated/meus-anuncios")({
   head: () => ({
     meta: [
       { title: "Meus Anúncios | Fixxer" },
-      { name: "description", content: "Gerencie, edite e exclua seus anúncios comerciais publicados no Feed Fixxer." },
+      { name: "description", content: "Gerencie, edite, impulsione e renove seus anúncios comerciais no Feed Fixxer." },
       { property: "og:title", content: "Meus Anúncios | Fixxer" },
-      { property: "og:description", content: "Central de gerenciamento dos seus anúncios publicados no Feed Fixxer." },
+      { property: "og:description", content: "Central de gerenciamento dos anúncios publicados no Feed Fixxer." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -33,42 +35,45 @@ interface AdRow {
 }
 
 const LOCAL_KEY = "fixxer:commercial_ads:local";
-
-// Tabelas candidatas — tenta em ordem. A primeira que responder sem erro vence.
-// Mantém compatibilidade com schemas legados (feed_posts) e novos (posts/ads).
 const AD_TABLES = ["posts", "ads", "feed_posts"] as const;
 
-// ---- MOCK FALLBACK: anúncios simulados do usuário logado ----
-// Exibidos silenciosamente quando a query real falha OU vem vazia — garante
-// UI 100% funcional no Preview mesmo sem schema/dados no Supabase externo.
+// ---- MOCK FALLBACK ----
 const MOCK_USER_ADS: AdRow[] = [
   {
     id: "mock-ad-bosch-12v",
     title: "Kit Furadeira e Parafusadeira Bosch 12V em Promoção",
-    content: "Kit completo com maleta, 2 baterias, carregador e maleta de brocas. Ideal para marceneiros e prestadores de serviço técnico.",
+    content: "Kit completo com maleta, 2 baterias, carregador e maleta de brocas.",
     category: "lojista",
     created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     metadata: {
       photos: ["https://images.tcdn.com.br/img/img_prod/1058380/kit_furadeira_e_parafusadeira_bosch_12v_go_kit_com_2_baterias_carregador_e_maleta_1223_1_2ba1e5c9c4ae5b8e46bdff09f16b5e56.jpg"],
-      price_from: 450,
-      price_to: 380,
-      stock: 12,
-      ad_kind: "Produto",
-      status: "active",
+      price_from: 450, price_to: 380, stock: 12, ad_kind: "Produto", status: "active",
+      views: 214, chats: 8,
+      expires_at: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
     },
   },
   {
     id: "mock-ad-mdf-cru-15mm",
     title: "Lote B2B de Chapa MDF Cru 15mm - Liquidação de Estoque",
-    content: "Lote fechado com 50 chapas de MDF cru 15mm (2750x1830mm). Entrega em Sorocaba e região metropolitana. Frete negociável.",
+    content: "Lote fechado com 50 chapas de MDF cru 15mm (2750x1830mm).",
     category: "parceiro",
     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     metadata: {
-      photos: [],
-      price_to: 1250,
-      stock: 50,
-      ad_kind: "Lote B2B",
-      status: "active",
+      photos: [], price_to: 1250, stock: 50, ad_kind: "Lote B2B", status: "active",
+      views: 89, chats: 3,
+      expires_at: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  },
+  {
+    id: "mock-ad-expired-tinta",
+    title: "Tinta Acrílica Suvinil Premium 18L",
+    content: "Estoque de fim de temporada. Cores diversas em promoção.",
+    category: "lojista",
+    created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    metadata: {
+      photos: [], price_to: 289, stock: 6, ad_kind: "Produto", status: "active",
+      views: 412, chats: 15,
+      expires_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     },
   },
 ];
@@ -96,6 +101,20 @@ function removeLocalAd(id: string) {
   } catch { /* ignore */ }
 }
 
+function patchLocalAd(id: string, patch: Partial<AdRow> & { metadata?: any }) {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if (!raw) return;
+    const arr = JSON.parse(raw) as any[];
+    const next = arr.map((r) => {
+      if (r.id !== id) return r;
+      const md = { ...(r.metadata || {}), ...(patch.metadata || {}) };
+      return { ...r, ...patch, metadata: md };
+    });
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+  } catch { /* ignore */ }
+}
+
 function fmtBRL(n: number | null | undefined) {
   if (n == null) return "—";
   return Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -107,22 +126,52 @@ function fmtDate(iso?: string | null) {
   catch { return "—"; }
 }
 
+function isExpired(ad: AdRow): boolean {
+  const exp = ad.metadata?.expires_at;
+  if (!exp) return false;
+  try { return new Date(exp).getTime() < Date.now(); } catch { return false; }
+}
+
+function daysUntil(iso?: string | null): number | null {
+  if (!iso) return null;
+  try {
+    const diff = new Date(iso).getTime() - Date.now();
+    return Math.ceil(diff / (24 * 60 * 60 * 1000));
+  } catch { return null; }
+}
+
+async function updateRemoteAd(id: string, uid: string, patch: Record<string, any>): Promise<boolean> {
+  for (const table of AD_TABLES) {
+    try {
+      const { error } = await supabaseExternal
+        .from(table)
+        .update(patch)
+        .eq("id", id)
+        .eq("author_id", uid);
+      if (!error) return true;
+    } catch { /* tenta próxima */ }
+  }
+  return false;
+}
+
 function MeusAnunciosPage() {
   const [uid, setUid] = useState<string | null>(null);
   const [ads, setAds] = useState<AdRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<CommercialAdInitial | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirmBoostId, setConfirmBoostId] = useState<string | null>(null);
+  const [busyBoostId, setBusyBoostId] = useState<string | null>(null);
+  const [busyRenewId, setBusyRenewId] = useState<string | null>(null);
 
-  // Fetch resiliente: tenta várias tabelas candidatas e SEMPRE cai em mock silencioso
-  // (nunca renderiza banner vermelho/amarelo de falha). Preserva anúncios locais.
+  const boostCost = costOf("publish_extra") || 20;
+  const renewCost = costOf("publish_extra") || 20;
+
   const fetchAds = useCallback(async (currentUid: string) => {
     setLoading(true);
-    setError(null);
     let remote: AdRow[] = [];
     let anySucceeded = false;
     for (const table of AD_TABLES) {
@@ -133,7 +182,6 @@ function MeusAnunciosPage() {
           .eq("author_id", currentUid)
           .order("created_at", { ascending: false })
           .limit(120);
-        // Só filtra por type=ad no schema legado feed_posts (evita erro se coluna não existe).
         const { data, error } = table === "feed_posts"
           ? await (q as any).eq("type", "ad")
           : await q;
@@ -148,7 +196,6 @@ function MeusAnunciosPage() {
     try {
       const local = readLocalAds(currentUid).filter((l) => !remote.some((r) => r.id === l.id));
       const merged = [...remote, ...local];
-      // Fallback silencioso: sem dados reais/locais, injeta MOCK para manter UI viva no Preview.
       setAds(merged.length > 0 ? merged : MOCK_USER_ADS);
     } catch {
       setAds(anySucceeded ? remote : MOCK_USER_ADS);
@@ -165,14 +212,12 @@ function MeusAnunciosPage() {
         setUid(currentUid);
         if (currentUid) await fetchAds(currentUid);
         else setLoading(false);
-      } catch (err: any) {
-        setError(err?.message || "Falha ao autenticar.");
+      } catch {
         setLoading(false);
       }
     })();
   }, [fetchAds]);
 
-  // Realtime: quando novos anúncios são criados via modal
   useEffect(() => {
     const handler = () => { if (uid) fetchAds(uid); };
     window.addEventListener("fixxer:ad-created", handler);
@@ -188,30 +233,31 @@ function MeusAnunciosPage() {
     );
   }, [ads, query]);
 
+  const { activeAds, expiredAds } = useMemo(() => {
+    const act: AdRow[] = [], exp: AdRow[] = [];
+    filtered.forEach((a) => (isExpired(a) ? exp.push(a) : act.push(a)));
+    return { activeAds: act, expiredAds: exp };
+  }, [filtered]);
+
   const handleDelete = async () => {
     if (!confirmDeleteId || !uid) return;
     setDeleting(true);
     const isSynthetic = confirmDeleteId.startsWith("local-") || confirmDeleteId.startsWith("mock-");
     try {
       if (!isSynthetic) {
-        // Tenta em todas as tabelas candidatas; ignora erros silenciosamente para mocks/legado.
         for (const table of AD_TABLES) {
           try {
             const { error } = await supabaseExternal
-              .from(table)
-              .delete()
-              .eq("id", confirmDeleteId)
-              .eq("author_id", uid);
+              .from(table).delete().eq("id", confirmDeleteId).eq("author_id", uid);
             if (!error) break;
-          } catch { /* tenta próxima tabela */ }
+          } catch { /* próxima */ }
         }
       }
       removeLocalAd(confirmDeleteId);
       setAds((prev) => prev.filter((a) => a.id !== confirmDeleteId));
       toast.success("Anúncio excluído.");
       setConfirmDeleteId(null);
-    } catch (err: any) {
-      // Mesmo em erro, remove localmente para UX consistente.
+    } catch {
       setAds((prev) => prev.filter((a) => a.id !== confirmDeleteId));
       setConfirmDeleteId(null);
       toast.success("Anúncio removido da lista.");
@@ -230,9 +276,70 @@ function MeusAnunciosPage() {
     });
   };
 
+  const handleBoost = async () => {
+    if (!confirmBoostId || !uid) return;
+    const target = ads.find((a) => a.id === confirmBoostId);
+    if (!target) return;
+    setBusyBoostId(confirmBoostId);
+    try {
+      const res = await spendCoinsForAction(uid, "publish_extra", `boost:${confirmBoostId}`);
+      if (!res.ok) {
+        if (res.reason === "insufficient") {
+          toast.error(`Saldo insuficiente para impulsionar (custa ${boostCost} moedas).`);
+        } else if (res.reason === "disabled") {
+          toast.error("Impulsionar está temporariamente desabilitado.");
+        } else {
+          toast.error(res.error || "Não foi possível impulsionar o anúncio.");
+        }
+        return;
+      }
+      const nowIso = new Date().toISOString();
+      const isSynthetic = confirmBoostId.startsWith("mock-") || confirmBoostId.startsWith("local-");
+      if (!isSynthetic) {
+        await updateRemoteAd(confirmBoostId, uid, { created_at: nowIso });
+      }
+      patchLocalAd(confirmBoostId, { created_at: nowIso, metadata: { boosted_at: nowIso } });
+      setAds((prev) => prev.map((a) => a.id === confirmBoostId
+        ? { ...a, created_at: nowIso, metadata: { ...(a.metadata || {}), boosted_at: nowIso } }
+        : a));
+      toast.success(`🚀 Anúncio impulsionado! (-${boostCost} moedas · Saldo: ${res.balance ?? "?"})`);
+      setConfirmBoostId(null);
+    } finally {
+      setBusyBoostId(null);
+    }
+  };
+
+  const handleRenew = async (ad: AdRow) => {
+    if (!uid) return;
+    setBusyRenewId(ad.id);
+    try {
+      const res = await spendCoinsForAction(uid, "publish_extra", `renew:${ad.id}`);
+      if (!res.ok) {
+        if (res.reason === "insufficient") {
+          toast.error(`Saldo insuficiente para renovar (custa ${renewCost} moedas).`);
+        } else {
+          toast.error(res.error || "Não foi possível renovar o anúncio.");
+        }
+        return;
+      }
+      const newExp = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString();
+      const nowIso = new Date().toISOString();
+      const isSynthetic = ad.id.startsWith("mock-") || ad.id.startsWith("local-");
+      if (!isSynthetic) {
+        await updateRemoteAd(ad.id, uid, { created_at: nowIso });
+      }
+      patchLocalAd(ad.id, { created_at: nowIso, metadata: { expires_at: newExp, renewed_at: nowIso } });
+      setAds((prev) => prev.map((a) => a.id === ad.id
+        ? { ...a, created_at: nowIso, metadata: { ...(a.metadata || {}), expires_at: newExp, renewed_at: nowIso } }
+        : a));
+      toast.success(`🔄 Anúncio renovado por +15 dias! (-${renewCost} moedas)`);
+    } finally {
+      setBusyRenewId(null);
+    }
+  };
+
   return (
     <div className="min-h-dvh bg-[#050506] text-white pb-24">
-      {/* HEADER */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur-md px-4 sm:px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center gap-3 flex-wrap">
           <div className="w-11 h-11 rounded-xl bg-[#00E5FF]/15 border border-[#00E5FF]/30 flex items-center justify-center shrink-0">
@@ -243,7 +350,7 @@ function MeusAnunciosPage() {
               📢 Meus Anúncios
             </h1>
             <p className="text-[11px] text-white/60 mt-0.5 leading-snug">
-              Visualize, edite e exclua seus anúncios comerciais publicados no Feed.
+              Gerencie, impulsione e renove seus anúncios publicados no Feed.
             </p>
           </div>
           <button
@@ -257,7 +364,6 @@ function MeusAnunciosPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-4">
-        {/* BUSCA */}
         <div className="relative">
           <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -274,16 +380,57 @@ function MeusAnunciosPage() {
         ) : filtered.length === 0 ? (
           <EmptyPanel hasQuery={!!query} onCreate={() => setCreating(true)} />
         ) : (
-          <ul className="grid gap-3">
-            {filtered.map((ad) => (
-              <AdCard
-                key={ad.id}
-                ad={ad}
-                onEdit={() => openEdit(ad)}
-                onDelete={() => setConfirmDeleteId(ad.id)}
-              />
-            ))}
-          </ul>
+          <>
+            {activeAds.length > 0 && (
+              <section className="space-y-2">
+                <SectionHeader
+                  icon={<CheckCircle2 className="w-3.5 h-3.5 text-[#39FF88]" />}
+                  label="Ativos"
+                  count={activeAds.length}
+                  color="#39FF88"
+                />
+                <ul className="grid gap-3">
+                  {activeAds.map((ad) => (
+                    <AdCard
+                      key={ad.id}
+                      ad={ad}
+                      boostCost={boostCost}
+                      isBoosting={busyBoostId === ad.id}
+                      onEdit={() => openEdit(ad)}
+                      onDelete={() => setConfirmDeleteId(ad.id)}
+                      onBoost={() => setConfirmBoostId(ad.id)}
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {expiredAds.length > 0 && (
+              <section className="space-y-2 pt-2">
+                <SectionHeader
+                  icon={<Clock className="w-3.5 h-3.5 text-[#FFB020]" />}
+                  label="Expirados"
+                  count={expiredAds.length}
+                  color="#FFB020"
+                />
+                <ul className="grid gap-3">
+                  {expiredAds.map((ad) => (
+                    <AdCard
+                      key={ad.id}
+                      ad={ad}
+                      expired
+                      boostCost={boostCost}
+                      renewCost={renewCost}
+                      isRenewing={busyRenewId === ad.id}
+                      onEdit={() => openEdit(ad)}
+                      onDelete={() => setConfirmDeleteId(ad.id)}
+                      onRenew={() => handleRenew(ad)}
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
+          </>
         )}
 
         <div className="pt-2 flex items-center justify-center">
@@ -297,7 +444,6 @@ function MeusAnunciosPage() {
         </div>
       </main>
 
-      {/* MODAIS */}
       <CommercialAdModal
         open={!!editing}
         onClose={() => setEditing(null)}
@@ -312,57 +458,112 @@ function MeusAnunciosPage() {
         onSaved={() => { if (uid) fetchAds(uid); }}
       />
 
-      {/* CONFIRM DELETE */}
       {confirmDeleteId && (
-        <div
-          className="fixed inset-0 z-[140] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => !deleting && setConfirmDeleteId(null)}
-          role="dialog" aria-modal="true"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm bg-[#0A0A0B] border border-white/10 rounded-3xl p-5 space-y-4"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-xl bg-[#FF3B6B]/15 border border-[#FF3B6B]/40 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-[#FF3B6B]" />
-              </div>
-              <div>
-                <h3 className="text-sm font-black uppercase text-white">Excluir Anúncio?</h3>
-                <p className="text-[11px] text-white/60 mt-1 leading-relaxed">
-                  Essa ação é permanente. O anúncio será removido do Feed imediatamente.
-                  Moedas gastas na publicação não são reembolsadas.
-                </p>
-              </div>
+        <Modal onClose={() => !deleting && setConfirmDeleteId(null)}>
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-[#FF3B6B]/15 border border-[#FF3B6B]/40 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5 text-[#FF3B6B]" />
             </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={() => setConfirmDeleteId(null)}
-                className="flex-1 h-10 rounded-xl bg-white/5 border border-white/10 text-white/80 text-[11px] font-bold uppercase disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={handleDelete}
-                className="flex-1 h-10 rounded-xl bg-[#FF3B6B] text-white text-[11px] font-black uppercase inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> {deleting ? "Excluindo..." : "Excluir"}
-              </button>
+            <div>
+              <h3 className="text-sm font-black uppercase text-white">Excluir Anúncio?</h3>
+              <p className="text-[11px] text-white/60 mt-1 leading-relaxed">
+                Essa ação é permanente. Moedas gastas na publicação não são reembolsadas.
+              </p>
             </div>
           </div>
-        </div>
+          <div className="flex gap-2">
+            <button
+              type="button" disabled={deleting}
+              onClick={() => setConfirmDeleteId(null)}
+              className="flex-1 h-10 rounded-xl bg-white/5 border border-white/10 text-white/80 text-[11px] font-bold uppercase disabled:opacity-50"
+            >Cancelar</button>
+            <button
+              type="button" disabled={deleting} onClick={handleDelete}
+              className="flex-1 h-10 rounded-xl bg-[#FF3B6B] text-white text-[11px] font-black uppercase inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> {deleting ? "Excluindo..." : "Excluir"}
+            </button>
+          </div>
+        </Modal>
       )}
+
+      {confirmBoostId && (
+        <Modal onClose={() => !busyBoostId && setConfirmBoostId(null)}>
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-[#FFB020]/15 border border-[#FFB020]/40 flex items-center justify-center shrink-0">
+              <Rocket className="w-5 h-5 text-[#FFB020]" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase text-white">Impulsionar Anúncio?</h3>
+              <p className="text-[11px] text-white/60 mt-1 leading-relaxed">
+                Seu anúncio volta ao topo do Feed imediatamente. Custo: <b className="text-[#FFB020]">{boostCost} moedas</b>.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button" disabled={!!busyBoostId}
+              onClick={() => setConfirmBoostId(null)}
+              className="flex-1 h-10 rounded-xl bg-white/5 border border-white/10 text-white/80 text-[11px] font-bold uppercase disabled:opacity-50"
+            >Cancelar</button>
+            <button
+              type="button" disabled={!!busyBoostId} onClick={handleBoost}
+              className="flex-1 h-10 rounded-xl bg-[#FFB020] text-black text-[11px] font-black uppercase inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
+            >
+              <Rocket className="w-3.5 h-3.5" /> {busyBoostId ? "Impulsionando..." : `Confirmar (-${boostCost})`}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ================================ MODAL WRAPPER ================================
+
+function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-[140] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose} role="dialog" aria-modal="true"
+    >
+      <div onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm bg-[#0A0A0B] border border-white/10 rounded-3xl p-5 space-y-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ================================ SECTION HEADER ================================
+
+function SectionHeader({ icon, label, count, color }: { icon: React.ReactNode; label: string; count: number; color: string }) {
+  return (
+    <div className="flex items-center gap-2 px-1">
+      {icon}
+      <h2 className="text-[11px] font-black uppercase tracking-wider" style={{ color }}>{label}</h2>
+      <span className="text-[10px] text-white/50">({count})</span>
     </div>
   );
 }
 
 // ================================ CARD ================================
 
-function AdCard({ ad, onEdit, onDelete }: { ad: AdRow; onEdit: () => void; onDelete: () => void; }) {
+function AdCard({
+  ad, expired, boostCost, renewCost, isBoosting, isRenewing,
+  onEdit, onDelete, onBoost, onRenew,
+}: {
+  ad: AdRow;
+  expired?: boolean;
+  boostCost?: number;
+  renewCost?: number;
+  isBoosting?: boolean;
+  isRenewing?: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onBoost?: () => void;
+  onRenew?: () => void;
+}) {
   const m = ad.metadata || {};
   const photos: string[] = Array.isArray(m.photos) ? m.photos : [];
   const cover = photos[0] || null;
@@ -373,9 +574,25 @@ function AdCard({ ad, onEdit, onDelete }: { ad: AdRow; onEdit: () => void; onDel
   const status = (m.status as string) || "active";
   const theme = getCategoryTheme((ad.category as any) || "lojista");
   const editCount = (m.edit_count as number | undefined) || 0;
+  const views = Number(m.views ?? 0);
+  const chats = Number(m.chats ?? 0);
+  const daysLeft = daysUntil(m.expires_at);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const off = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    window.addEventListener("mousedown", off);
+    return () => window.removeEventListener("mousedown", off);
+  }, [menuOpen]);
 
   return (
-    <li className="rounded-2xl border border-white/10 bg-[#0E0E10] overflow-hidden flex flex-col sm:flex-row">
+    <li className={`rounded-2xl border overflow-hidden flex flex-col sm:flex-row ${
+      expired ? "border-[#FFB020]/40 bg-[#FFB020]/5" : "border-white/10 bg-[#0E0E10]"
+    }`}>
       <div className="w-full sm:w-40 h-40 sm:h-auto shrink-0 bg-black/50 relative">
         {cover ? (
           <img src={cover} alt={ad.title || "Anúncio"} loading="lazy" decoding="async"
@@ -390,11 +607,16 @@ function AdCard({ ad, onEdit, onDelete }: { ad: AdRow; onEdit: () => void; onDel
             +{photos.length - 1}
           </div>
         )}
+        {expired && (
+          <div className="absolute top-1.5 left-1.5 bg-[#FFB020] text-black rounded-full px-2 py-0.5 text-[9px] font-black uppercase inline-flex items-center gap-1">
+            <Clock className="w-2.5 h-2.5" /> Expirado
+          </div>
+        )}
       </div>
 
       <div className="flex-1 p-4 flex flex-col gap-2 min-w-0">
         <div className="flex items-start justify-between gap-2 flex-wrap">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 className="text-sm font-black text-white leading-tight line-clamp-2">
               {ad.title || "(sem título)"}
             </h3>
@@ -402,18 +624,77 @@ function AdCard({ ad, onEdit, onDelete }: { ad: AdRow; onEdit: () => void; onDel
               <span>Publicado em {fmtDate(ad.created_at)}</span>
               {editCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/70">
-                  [Editado {editCount}x]
+                  Editado {editCount}x
                 </span>
               )}
               <span className="px-1.5 py-0.5 rounded-full border"
                 style={{
-                  background: status === "active" ? "#39FF8815" : "#FFB02015",
-                  borderColor: status === "active" ? "#39FF8855" : "#FFB02055",
-                  color: status === "active" ? "#39FF88" : "#FFB020",
+                  background: expired ? "#FFB02015" : (status === "active" ? "#39FF8815" : "#FFB02015"),
+                  borderColor: expired ? "#FFB02055" : (status === "active" ? "#39FF8855" : "#FFB02055"),
+                  color: expired ? "#FFB020" : (status === "active" ? "#39FF88" : "#FFB020"),
                 }}>
-                {status === "active" ? "Ativo" : status}
+                {expired ? "Expirado" : (status === "active" ? "Ativo" : status)}
               </span>
+              {!expired && daysLeft != null && daysLeft >= 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/70 inline-flex items-center gap-1">
+                  <Clock className="w-2.5 h-2.5" /> {daysLeft}d restantes
+                </span>
+              )}
             </p>
+          </div>
+
+          {/* Menu ⋮ */}
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              aria-label="Mais opções"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 inline-flex items-center justify-center"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-9 z-20 min-w-[210px] rounded-xl border border-white/10 bg-[#111112] shadow-2xl py-1.5">
+                {!expired && onBoost && (
+                  <button
+                    type="button"
+                    onClick={() => { setMenuOpen(false); onBoost(); }}
+                    disabled={isBoosting}
+                    className="w-full px-3 py-2 text-left text-[12px] font-bold text-white/90 hover:bg-white/5 inline-flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Rocket className="w-3.5 h-3.5 text-[#FFB020]" />
+                    Impulsionar Anúncio
+                    <span className="ml-auto text-[10px] text-[#FFB020] font-black">−{boostCost}🪙</span>
+                  </button>
+                )}
+                {expired && onRenew && (
+                  <button
+                    type="button"
+                    onClick={() => { setMenuOpen(false); onRenew(); }}
+                    disabled={isRenewing}
+                    className="w-full px-3 py-2 text-left text-[12px] font-bold text-white/90 hover:bg-white/5 inline-flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <RotateCw className="w-3.5 h-3.5 text-[#39FF88]" />
+                    Renovar +15 dias
+                    <span className="ml-auto text-[10px] text-[#39FF88] font-black">−{renewCost}🪙</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); onEdit(); }}
+                  className="w-full px-3 py-2 text-left text-[12px] font-bold text-white/90 hover:bg-white/5 inline-flex items-center gap-2"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); onDelete(); }}
+                  className="w-full px-3 py-2 text-left text-[12px] font-bold text-[#FF3B6B] hover:bg-[#FF3B6B]/10 inline-flex items-center gap-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Excluir
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -436,32 +717,53 @@ function AdCard({ ad, onEdit, onDelete }: { ad: AdRow; onEdit: () => void; onDel
           )}
         </div>
 
-        <div className="flex items-center gap-2 pt-2 mt-auto">
+        {/* MÉTRICAS DISCRETAS — visíveis apenas ao dono (esta página é do dono) */}
+        <div className="flex items-center gap-3 text-[10px] text-white/50 pt-1">
+          <span className="inline-flex items-center gap-1">
+            <Eye className="w-3 h-3" /> {views.toLocaleString("pt-BR")} views
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <MessageSquare className="w-3 h-3" /> {chats.toLocaleString("pt-BR")} chats
+          </span>
+          {m.boosted_at && (
+            <span className="inline-flex items-center gap-1 text-[#FFB020]">
+              <Rocket className="w-3 h-3" /> impulsionado
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 pt-2 mt-auto flex-wrap">
           <Link
             to="/feed/lojista"
             className="h-9 px-3 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:text-white text-[11px] font-bold uppercase inline-flex items-center gap-1.5"
           >
             <Eye className="w-3.5 h-3.5" /> Ver no Feed
           </Link>
-          <button
-            type="button" onClick={onEdit}
-            className="h-9 px-3 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:text-white text-[11px] font-bold uppercase inline-flex items-center gap-1.5"
-          >
-            <Pencil className="w-3.5 h-3.5" /> Editar
-          </button>
-          <button
-            type="button" onClick={onDelete}
-            className="h-9 px-3 rounded-lg bg-[#FF3B6B]/10 border border-[#FF3B6B]/40 text-[#FF3B6B] hover:bg-[#FF3B6B]/20 text-[11px] font-bold uppercase inline-flex items-center gap-1.5"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Excluir
-          </button>
+          {expired ? (
+            <button
+              type="button" onClick={onRenew} disabled={isRenewing}
+              className="h-9 px-3 rounded-lg bg-[#39FF88] text-black text-[11px] font-black uppercase inline-flex items-center gap-1.5 disabled:opacity-60"
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${isRenewing ? "animate-spin" : ""}`} />
+              {isRenewing ? "Renovando..." : `Renovar +15d (−${renewCost}🪙)`}
+            </button>
+          ) : (
+            onBoost && (
+              <button
+                type="button" onClick={onBoost} disabled={isBoosting}
+                className="h-9 px-3 rounded-lg bg-[#FFB020]/15 border border-[#FFB020]/40 text-[#FFB020] hover:bg-[#FFB020]/25 text-[11px] font-black uppercase inline-flex items-center gap-1.5 disabled:opacity-60"
+              >
+                <Rocket className="w-3.5 h-3.5" /> {isBoosting ? "..." : `Impulsionar (−${boostCost}🪙)`}
+              </button>
+            )
+          )}
         </div>
       </div>
     </li>
   );
 }
 
-// ================================ SKELETON / EMPTY / ERROR ================================
+// ================================ SKELETON / EMPTY ================================
 
 function SkeletonList() {
   return (
@@ -501,20 +803,6 @@ function EmptyPanel({ hasQuery, onCreate }: { hasQuery: boolean; onCreate: () =>
           <Plus className="w-4 h-4" /> Criar Primeiro Anúncio
         </button>
       )}
-    </div>
-  );
-}
-
-function ErrorPanel({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="rounded-2xl border border-[#FF3B6B]/30 bg-[#FF3B6B]/5 p-6 text-center space-y-3">
-      <AlertTriangle className="w-8 h-8 text-[#FF3B6B] mx-auto" />
-      <h3 className="text-sm font-black uppercase text-white">Falha ao carregar</h3>
-      <p className="text-[11px] text-white/60 max-w-sm mx-auto">{message}</p>
-      <button type="button" onClick={onRetry}
-        className="h-9 px-4 rounded-xl bg-white/5 border border-white/10 text-white text-[11px] font-bold uppercase inline-flex items-center gap-2">
-        <RefreshCw className="w-3.5 h-3.5" /> Tentar novamente
-      </button>
     </div>
   );
 }

@@ -822,7 +822,20 @@ export default function FeedLojistaPage() {
   };
 
   const openChat = (post: FeedPost) => {
-    // Abre a conversa direta com o autor (cria-a on-demand ao enviar a 1ª mensagem)
+    // Abre a conversa direta com o autor. Empacota o card como contexto
+    // (título/mídia/urgência/preço) — o composer prefilla automaticamente.
+    try {
+      const { setAdChatContext } = require("@/lib/ad-chat-context") as typeof import("@/lib/ad-chat-context");
+      setAdChatContext(post.author.id, {
+        adId: post.id,
+        title: post.title,
+        category: String(post.category),
+        cover: post.media?.[0]?.type === "image" ? post.media[0].url : null,
+        priceLabel: post.budget || null,
+        urgency: post.urgency || null,
+        cta: "orcamento",
+      });
+    } catch { /* silencioso */ }
     navigate({ to: "/chat/$peerId", params: { peerId: post.author.id } });
   };
 
