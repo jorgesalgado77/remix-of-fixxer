@@ -2765,6 +2765,25 @@ function MediaLightbox() {
             controls
             autoPlay
             className="max-w-[95vw] max-h-[85vh] bg-black"
+            onLoadedMetadata={(e) => {
+              const v = e.currentTarget;
+              const st = LIGHTBOX_STATE_CACHE.get(media.url);
+              const t = st?.time;
+              if (typeof t === "number" && t > 0 && isFinite(v.duration) && t < v.duration - 0.25) {
+                try { v.currentTime = t; } catch { /* ignore */ }
+              }
+            }}
+            onTimeUpdate={(e) => {
+              // Persistência periódica de progresso para retomada entre navegações.
+              const v = e.currentTarget;
+              const prev = LIGHTBOX_STATE_CACHE.get(media.url) ?? { zoom, x: offset.x, y: offset.y };
+              LIGHTBOX_STATE_CACHE.set(media.url, { ...prev, time: v.currentTime });
+            }}
+            onPause={(e) => {
+              const v = e.currentTarget;
+              const prev = LIGHTBOX_STATE_CACHE.get(media.url) ?? { zoom, x: offset.x, y: offset.y };
+              LIGHTBOX_STATE_CACHE.set(media.url, { ...prev, time: v.currentTime });
+            }}
           />
         )}
       </div>
