@@ -1158,9 +1158,6 @@ export default function FeedPrestadorPage() {
     }
   }, [saved]);
 
-  // Filtro + busca
-  const filtered = useMemo(() => {
-    const term = debouncedSearch.toLowerCase().trim();
   // Filtro + busca (com urgência, raio e tags via helper compartilhado)
   const filtered = useMemo(() => {
     const term = debouncedSearch.toLowerCase().trim();
