@@ -1161,16 +1161,38 @@ export default function FeedPrestadorPage() {
   // Filtro + busca
   const filtered = useMemo(() => {
     const term = debouncedSearch.toLowerCase().trim();
+  // Filtro + busca (com urgência, raio e tags via helper compartilhado)
+  const filtered = useMemo(() => {
+    const term = debouncedSearch.toLowerCase().trim();
     return MOCK_JOBS.filter((job) => {
       const matchesFilter = filter === "todas" || job.subcategory === filter;
       if (!matchesFilter) return false;
       if (statusFilter !== "todos" && getFeedStatus(job.id) !== statusFilter) return false;
-      if (!term) return true;
-      const hay =
-        `${job.title} ${job.description} ${job.contractor.name} ${job.city} ${job.state} ${job.subcategory}`.toLowerCase();
-      return hay.includes(term);
+      // Deriva atributos do anúncio a partir do JobPost (compatibilidade com mocks)
+      const urgency_tag = coerceUrgency(job.urgency) ?? "normal";
+      const service_radius_km =
+        (job as unknown as { service_radius_km?: number }).service_radius_km ??
+        (job.urgency === "critica" ? 5 : job.urgency === "urgente" ? 15 : 30);
+      const tags =
+        (job as unknown as { tags?: string[] }).tags ??
+        [job.subcategory, ...(job.tools ?? []).slice(0, 2)]
+          .map((s) => s.toLowerCase().replace(/\s+/g, "-"))
+          .filter(Boolean);
+      const distance =
+        distanceFilter === "todos" ? ("todos" as const) : (Number(distanceFilter) as number);
+      return matchesAdFilters(
+        {
+          urgency_tag,
+          service_radius_km,
+          tags,
+          title: job.title,
+          description: job.description,
+          keywords: [job.contractor.name, job.city, job.state, job.subcategory],
+        },
+        { urgency: urgencyFilter, distance, tag: tagFilter, term },
+      );
     });
-  }, [debouncedSearch, filter, statusFilter]);
+  }, [debouncedSearch, filter, statusFilter, urgencyFilter, distanceFilter, tagFilter]);
 
   const branchCtx = useUserBranchContext();
   const rankedFiltered = useMemo(() => {
