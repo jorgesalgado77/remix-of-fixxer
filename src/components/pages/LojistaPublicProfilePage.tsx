@@ -1961,18 +1961,41 @@ function OrderCard({ order }: { order: ServiceOrder }) {
   );
 }
 
-function ReviewCard({ review }: { review: Review }) {
-  const catMeta = {
-    prestador: { icon: <Wrench className="w-3 h-3" />, label: "Prestador", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
-    fornecedor: { icon: <Truck className="w-3 h-3" />, label: "Parceiro Fornecedor", color: "text-orange-400 bg-orange-400/10 border-orange-400/30" },
-    cliente: { icon: <User className="w-3 h-3" />, label: "Cliente Final", color: "text-primary bg-primary/10 border-primary/30" },
-  }[review.reviewer_category];
+function ReviewCard({
+  review,
+  canDelete = false,
+  onDelete,
+  deleteCost = 30,
+}: {
+  review: Review;
+  canDelete?: boolean;
+  onDelete?: () => void;
+  deleteCost?: number;
+}) {
+  const catInfo: Record<Review["reviewer_category"], { icon: JSX.Element; label: string }> = {
+    lojista: { icon: <ShieldCheck className="w-3 h-3" />, label: "Lojista" },
+    prestador: { icon: <Wrench className="w-3 h-3" />, label: "Prestador" },
+    fornecedor: { icon: <Truck className="w-3 h-3" />, label: "Fornecedor" },
+    cliente: { icon: <User className="w-3 h-3" />, label: "Cliente Final" },
+  };
+  const cat = catInfo[review.reviewer_category] ?? catInfo.cliente;
+  const color = getCategoryColor(review.reviewer_category);
 
   return (
-    <div className="bg-[#1A1A1B] border border-white/10 rounded-2xl p-5 space-y-3">
+    <div
+      className="bg-[#1A1A1B] border rounded-2xl p-5 space-y-3"
+      style={{ borderColor: `${color.hex}33` }}
+    >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-black border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-          {review.reviewer_avatar ? <img src={review.reviewer_avatar} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-muted-foreground" />}
+        <div
+          className="w-10 h-10 rounded-full bg-black border flex items-center justify-center overflow-hidden shrink-0"
+          style={{ borderColor: `${color.hex}66` }}
+        >
+          {review.reviewer_avatar ? (
+            <img src={review.reviewer_avatar} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+          ) : (
+            <User className="w-5 h-5" style={{ color: color.hex }} />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1980,14 +2003,24 @@ function ReviewCard({ review }: { review: Review }) {
               <p className="text-xs font-black text-white italic">{review.reviewer_name}</p>
               {review.reviewer_city && <p className="text-[9px] font-bold text-muted-foreground uppercase">{review.reviewer_city}</p>}
             </div>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic border ${catMeta.color}`}>
-              {catMeta.icon} {catMeta.label}
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic border"
+              style={{ color: color.hex, borderColor: `${color.hex}4D`, backgroundColor: `${color.hex}1A` }}
+            >
+              {cat.icon} {cat.label}
             </span>
           </div>
           <div className="flex items-center gap-2 mt-1.5">
             <div className="flex">
               {[1, 2, 3, 4, 5].map((n) => (
-                <Star key={n} className={`w-3 h-3 ${n <= Math.round(review.rating) ? "fill-primary text-primary" : "text-white/20"}`} />
+                <Star
+                  key={n}
+                  className="w-3 h-3"
+                  style={{
+                    color: n <= Math.round(review.rating) ? color.hex : "rgba(255,255,255,0.2)",
+                    fill: n <= Math.round(review.rating) ? color.hex : "transparent",
+                  }}
+                />
               ))}
             </div>
             <span className="text-[9px] font-bold text-muted-foreground uppercase">
@@ -2003,9 +2036,21 @@ function ReviewCard({ review }: { review: Review }) {
           <p className="text-[11px] text-white/70">{review.store_reply}</p>
         </div>
       )}
+      {canDelete && onDelete && (
+        <div className="flex justify-end pt-1">
+          <button
+            onClick={onDelete}
+            className="text-[9px] font-black uppercase italic px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition"
+            title={`Excluir esta avaliação custa ${deleteCost} moedas`}
+          >
+            🗑 Excluir avaliação (−{deleteCost} moedas)
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function SpecialtyCard({ title, desc }: { title: string; desc: string }) {
   return (
