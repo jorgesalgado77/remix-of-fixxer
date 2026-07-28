@@ -42,7 +42,7 @@ import { useUserCategory } from "@/lib/current-user";
 import { resolveEffectiveCategory } from "@/lib/create-ad-role";
 import { getCachedBalance, subscribeBalance } from "@/lib/coins";
 import { getActionCost, getPlanConfig, type PlanId } from "@/lib/monetization";
-import { Zap, CalendarDays, Package, Coins, Hash, Radius } from "lucide-react";
+import { Zap, CalendarDays, Package, Coins, Hash, Radius, CalendarClock } from "lucide-react";
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import {
