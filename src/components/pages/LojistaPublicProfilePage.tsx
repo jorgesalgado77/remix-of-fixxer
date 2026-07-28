@@ -899,37 +899,92 @@ export function LojistaPublicProfilePage() {
   };
 
   const DELETE_REVIEW_COST = 30;
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+
   const handleDeleteReview = async (review: Review) => {
     if (!currentUserId || review.reviewer_id !== currentUserId) return;
-    const ok = window.confirm(
-      `Excluir esta avaliação custará ${DELETE_REVIEW_COST} moedas. Deseja continuar?`,
-    );
-    if (!ok) return;
+    if (deletingReviewId) return;
+
+    const confirmed = await confirmCoins({
+      title: "Excluir avaliação",
+      description: (
+        <>
+          Esta ação é <b>irreversível</b> e custa{" "}
+          <b className="text-amber-300">{DELETE_REVIEW_COST} moedas</b> do seu saldo.
+          A verificação de posse e o débito são feitos no servidor.
+        </>
+      ),
+      cost: DELETE_REVIEW_COST,
+      confirmLabel: `Excluir por ${DELETE_REVIEW_COST} moedas`,
+      cancelLabel: "Manter avaliação",
+      variant: "destructive",
+    });
+    if (!confirmed) return;
+
+    setDeletingReviewId(review.id);
+    const loadingToast = toast.loading("Excluindo avaliação…");
     try {
-      const spent = await consumeCoins(
-        currentUserId,
-        DELETE_REVIEW_COST,
-        "Exclusão de avaliação publicada",
-        "action_consume",
-        { operation: "delete_review", reference: review.id, idempotencyKey: `del-rev-${review.id}` },
+      // Caminho preferido: RPC atômica no backend (valida posse + debita + apaga).
+      const { data: rpcData, error: rpcError } = await supabaseExternal.rpc(
+        "delete_own_store_review",
+        { _review_id: review.id, _cost: DELETE_REVIEW_COST },
       );
-      if (!spent.ok) {
-        toast.error("Saldo insuficiente para excluir a avaliação.");
-        return;
+
+      if (rpcError) {
+        const msg = String(rpcError.message || "").toLowerCase();
+        if (msg.includes("insufficient") || msg.includes("saldo")) {
+          toast.error("Saldo insuficiente. Compre moedas e tente novamente.", { id: loadingToast });
+          return;
+        }
+        if (msg.includes("not owner") || msg.includes("permission") || msg.includes("forbidden")) {
+          toast.error("Você não tem permissão para excluir esta avaliação.", { id: loadingToast });
+          return;
+        }
+        if (msg.includes("function") && msg.includes("does not exist")) {
+          // Fallback compatível enquanto a RPC não é aplicada no banco.
+          console.warn("[review-delete] RPC ausente — usando fluxo legado (menos seguro).");
+          const spent = await consumeCoins(
+            currentUserId,
+            DELETE_REVIEW_COST,
+            "Exclusão de avaliação publicada",
+            "action_consume",
+            { operation: "delete_review", reference: review.id, idempotencyKey: `del-rev-${review.id}` },
+          );
+          if (!spent.ok) {
+            toast.error("Saldo insuficiente para excluir a avaliação.", { id: loadingToast });
+            return;
+          }
+          const { error } = await supabaseExternal
+            .from("store_reviews").delete()
+            .eq("id", review.id).eq("reviewer_id", currentUserId);
+          if (error) throw error;
+        } else {
+          throw rpcError;
+        }
       }
-      const { error } = await supabaseExternal
-        .from("store_reviews")
-        .delete()
-        .eq("id", review.id)
-        .eq("reviewer_id", currentUserId);
-      if (error) throw error;
+
       setReviews((prev) => prev.filter((r) => r.id !== review.id));
-      toast.success(`Avaliação excluída (−${DELETE_REVIEW_COST} moedas).`);
+      // Refresh do saldo em tempo real (subscribeBalance notifica os badges).
+      try { await initCoinsForUser(currentUserId); } catch { /* ignore */ }
+
+      const newBalance = (rpcData as any)?.new_balance;
+      toast.success(
+        typeof newBalance === "number"
+          ? `Avaliação excluída. Saldo atual: ${newBalance} moedas.`
+          : `Avaliação excluída (−${DELETE_REVIEW_COST} moedas).`,
+        { id: loadingToast },
+      );
     } catch (err: any) {
-      console.error(err);
-      toast.error("Erro ao excluir avaliação.");
+      console.error("[review-delete]", err);
+      toast.error("Erro ao excluir avaliação.", {
+        id: loadingToast,
+        description: err?.message ?? "Tente novamente em instantes.",
+      });
+    } finally {
+      setDeletingReviewId(null);
     }
   };
+
 
 
   const openImageLightbox = (url: string, idx: number) => {
