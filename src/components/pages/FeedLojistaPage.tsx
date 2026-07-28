@@ -555,6 +555,9 @@ export default function FeedLojistaPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = usePersistedState<"todos" | FeedCategory>("fixxer_feed_lojista_filter", "todos");
   const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_lojista_status", "todos");
+  const [urgencyFilter, setUrgencyFilter] = usePersistedState<"todos" | UrgencyTag>("fixxer_feed_lojista_urgency", "todos");
+  const [distanceFilter, setDistanceFilter] = usePersistedState<"todos" | "5" | "15" | "30">("fixxer_feed_lojista_dist", "todos");
+  const [tagFilter, setTagFilter] = usePersistedState<string>("fixxer_feed_lojista_tag", "");
   const [detailsFor, setDetailsFor] = useState<FeedPost | null>(null);
   const [search, setSearch] = usePersistedState<string>("fixxer_feed_lojista_search", "");
   // Sincroniza com a Barra Universal Superior — único input de busca.
