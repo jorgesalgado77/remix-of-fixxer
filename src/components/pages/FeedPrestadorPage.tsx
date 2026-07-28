@@ -1045,6 +1045,9 @@ export default function FeedPrestadorPage() {
 
   const [filter, setFilter] = usePersistedState<"todas" | Subcategory>("fixxer_feed_prestador_filter", "todas");
   const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_prestador_status", "todos");
+  const [urgencyFilter, setUrgencyFilter] = usePersistedState<"todos" | UrgencyTag>("fixxer_feed_prestador_urgency", "todos");
+  const [distanceFilter, setDistanceFilter] = usePersistedState<"todos" | "5" | "15" | "30">("fixxer_feed_prestador_dist", "todos");
+  const [tagFilter, setTagFilter] = usePersistedState<string>("fixxer_feed_prestador_tag", "");
   const [detailsFor, setDetailsFor] = useState<JobPost | null>(null);
   const [search, setSearch] = usePersistedState<string>("fixxer_feed_prestador_search", "");
   useEffect(() => {
