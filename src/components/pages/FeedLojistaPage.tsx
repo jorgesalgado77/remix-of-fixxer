@@ -674,13 +674,37 @@ export default function FeedLojistaPage() {
 
   const visibleRaw = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    const byCategory = MOCK_POSTS.filter((p) => filter === "todos" || p.category === filter);
+    // Deriva urgência/raio/tags a partir de keywords quando o mock não traz explícito
+    const decorated: FeedPost[] = MOCK_POSTS.map((p) => {
+      const kws = (p.keywords || []).map((k) => k.toLowerCase());
+      const urgency: UrgencyTag =
+        p.urgency ?? (kws.includes("urgente") ? "urgente" : kws.includes("encomenda") ? "encomenda" : "normal");
+      const serviceRadiusKm =
+        p.serviceRadiusKm ?? (p.radiusKm ? Math.min(p.radiusKm, 30) : undefined);
+      const tags = p.tags ?? (p.keywords || []).slice(0, 4);
+      return { ...p, urgency, serviceRadiusKm, tags };
+    });
+    const byCategory = decorated.filter((p) => filter === "todos" || p.category === filter);
     const byStatus =
       statusFilter === "todos"
         ? byCategory
         : byCategory.filter((p) => getFeedStatus(p.id) === statusFilter);
+    const byUrgency =
+      urgencyFilter === "todos" ? byStatus : byStatus.filter((p) => p.urgency === urgencyFilter);
+    const byDistance =
+      distanceFilter === "todos"
+        ? byUrgency
+        : byUrgency.filter((p) => {
+            const max = Number(distanceFilter);
+            const r = p.serviceRadiusKm ?? p.radiusKm ?? 0;
+            return r > 0 && r <= max;
+          });
+    const tagQ = tagFilter.trim().toLowerCase().replace(/^#/, "");
+    const byTag = tagQ
+      ? byDistance.filter((p) => (p.tags || []).some((t) => t.toLowerCase().includes(tagQ)))
+      : byDistance;
     const filtered = q
-      ? byStatus.filter((p) => {
+      ? byTag.filter((p) => {
           const hay = [
             p.title,
             p.description,
@@ -688,18 +712,19 @@ export default function FeedLojistaPage() {
             p.specialty ?? "",
             p.author.name,
             ...(p.keywords || []),
+            ...(p.tags || []),
           ]
             .join(" ")
             .toLowerCase();
           return hay.includes(q);
         })
-      : byStatus;
+      : byTag;
     return [...filtered].sort((a, b) => {
       if (a.category === "cliente" && b.category !== "cliente") return -1;
       if (b.category === "cliente" && a.category !== "cliente") return 1;
       return 0;
     });
-  }, [filter, statusFilter, debouncedSearch]);
+  }, [filter, statusFilter, urgencyFilter, distanceFilter, tagFilter, debouncedSearch]);
 
   const branchCtx = useUserBranchContext();
   const visible = useMemo(() => {
