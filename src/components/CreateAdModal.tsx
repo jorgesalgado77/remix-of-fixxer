@@ -2096,8 +2096,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                   </span>
                 </div>
                 {costSummary.insufficient && (
-                  <p className="text-[10px] text-rose-300 italic">
-                    Saldo insuficiente. Compre moedas ou reduza a urgência para publicar.
+                  <p className="text-[10px] text-rose-300 italic leading-relaxed">
+                    ⚠️ Saldo insuficiente. Necessário <strong>{costSummary.total} moedas</strong>
+                    {" "}(franquia mensal: {costSummary.remainingFree}/{costSummary.freeQuota}). Você tem{" "}
+                    <strong>{coinBalance}</strong> — faltam{" "}
+                    <strong>{Math.max(0, costSummary.total - coinBalance)}</strong>. Compre moedas ou reduza a urgência para publicar.
                   </p>
                 )}
               </div>
