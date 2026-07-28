@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { getCategoryTheme, CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useUserCategory } from "@/lib/current-user";
+import { resolveEffectiveCategory } from "@/lib/create-ad-role";
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import {
@@ -194,21 +195,15 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: null } : prev));
 
   const fileRef = useRef<HTMLInputElement>(null);
-  // Categoria efetiva = do usuário logado (fonte oficial) com fallback para a prop.
+  // Categoria efetiva = do usuário logado, com fallback seguro (nunca inválida).
   const userCategory = useUserCategory();
-  const effectiveCategory: CategoryKey = (userCategory && userCategory !== "admin"
-    ? (userCategory as CategoryKey)
-    : defaultCategory) as CategoryKey;
+  const {
+    category: effectiveCategory,
+    copy,
+    fallbackUsed: roleFallbackUsed,
+    fallbackMessage: roleFallbackMessage,
+  } = resolveEffectiveCategory(userCategory, defaultCategory);
   const theme = getCategoryTheme(effectiveCategory);
-  // Rótulos dinâmicos por categoria (título do modal + botão de publicação)
-  const roleCopy: Record<CategoryKey, { title: string; publish: string }> = {
-    lojista:    { title: "📢 Criar Novo Anúncio Comercial",              publish: "🚀 Publicar Oferta"   },
-    fornecedor: { title: "📢 Criar Novo Anúncio Comercial",              publish: "🚀 Publicar Oferta"   },
-    prestador:  { title: "📢 Anunciar Pacote de Serviço / Mão de Obra",  publish: "🚀 Publicar Serviço"  },
-    cliente:    { title: "📢 Publicar Solicitação de Serviço / Pedido",  publish: "🚀 Publicar Pedido"   },
-    admin:      { title: "📢 Criar Novo Anúncio",                        publish: "🚀 Publicar"          },
-  };
-  const copy = roleCopy[effectiveCategory] ?? roleCopy.lojista;
 
   // Cache de arquivos codificados em base64 (para auto-save leve)
   const filesCacheRef = useRef<Map<string, { name: string; type: string; size: number; kind: UploadItem["kind"]; dataUrl: string }>>(new Map());
@@ -1054,6 +1049,15 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
                 </span>
               )}
             </p>
+            {roleFallbackUsed && (
+              <p
+                role="alert"
+                data-testid="role-fallback-warning"
+                className="mt-1 text-[10px] font-semibold text-amber-300"
+              >
+                ⚠️ {roleFallbackMessage}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
