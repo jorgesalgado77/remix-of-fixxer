@@ -421,6 +421,7 @@ export function LojistaPublicProfilePage() {
             .select("*")
             .eq("lojista_id", lojistaKey)
             .eq("status", "PENDENTE")
+            .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
             .order("created_at", { ascending: false });
           if (!cancelled && osData) setOrders(osData as ServiceOrder[]);
 
