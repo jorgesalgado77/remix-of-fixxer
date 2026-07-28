@@ -158,15 +158,17 @@ interface ServiceOrder {
 
 interface Review {
   id: string;
+  reviewer_id?: string;
   reviewer_name: string;
   reviewer_city?: string;
-  reviewer_category: "cliente" | "prestador" | "fornecedor";
+  reviewer_category: "cliente" | "prestador" | "fornecedor" | "lojista";
   reviewer_avatar?: string | null;
   rating: number;
   comment: string;
   created_at: string;
   store_reply?: string | null;
 }
+
 
 const getPhotoUrl = (p: any): string => (typeof p === "string" ? p : p?.url ?? "");
 const getPhotoThumb = (p: any): string => (typeof p === "string" ? p : (p?.thumbUrl || p?.url || ""));
