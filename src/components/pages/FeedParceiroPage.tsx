@@ -47,6 +47,7 @@ import {
   applyRelevanceFallback,
 } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
+import FeedAdMenu from "@/components/FeedAdMenu";
 import { AdFiltersBar } from "@/components/AdFiltersBar";
 import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
 import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
@@ -946,10 +947,22 @@ export default function FeedParceiroPage() {
                   }}
                 >
                   {_relevance.level !== "none" && (
-                    <div className="absolute right-3 top-3 z-10">
+                    <div className="absolute right-12 top-3 z-10">
                       <RelevanceBadge result={_relevance} compact />
                     </div>
                   )}
+                  <div className="absolute right-3 top-3 z-20">
+                    <FeedAdMenu
+                      ownerId={r.store.id}
+                      currentUserId={userId}
+                      adId={r.id}
+                      ownerName={r.store.name}
+                      onEdit={() => toast(`Abrindo editor de "${r.title}"...`)}
+                      onDelete={() => toast.error(`Excluir "${r.title}"? Confirme em Meus Anúncios.`)}
+                      onTogglePause={() => toast(`Alternando pausa para "${r.title}"...`)}
+                      accent={accent}
+                    />
+                  </div>
                   {/* Cabeçalho */}
                   <div className="flex items-start gap-3 p-4">
                     <Link

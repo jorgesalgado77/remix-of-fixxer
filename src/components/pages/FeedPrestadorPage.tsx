@@ -38,6 +38,7 @@ import { AdMetaBadges, URGENCY_META, type UrgencyTag } from "@/components/AdMeta
 import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
 import { AdFiltersBar } from "@/components/AdFiltersBar";
 import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
+import FeedAdMenu from "@/components/FeedAdMenu";
 
 import {
   ArrowLeft,
@@ -765,6 +766,11 @@ function JobCardImpl({
   unlockCost = 5,
   unlockBusy = false,
   onUnlock,
+  currentUserId,
+  onEdit,
+  onDelete,
+  onTogglePause,
+  isPaused,
 }: {
   job: JobPost;
   saved: boolean;
@@ -778,6 +784,11 @@ function JobCardImpl({
   unlockCost?: number;
   unlockBusy?: boolean;
   onUnlock?: () => void | Promise<void>;
+  currentUserId?: string | null;
+  onEdit?: (job: JobPost) => void;
+  onDelete?: (job: JobPost) => void;
+  onTogglePause?: (job: JobPost) => void;
+  isPaused?: boolean;
 }) {
   const navigate = useNavigate();
   const isClientFinal = job.type === "cliente_final";
@@ -845,9 +856,22 @@ function JobCardImpl({
               </div>
             </div>
           </div>
-          <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest shrink-0">
-            {job.postedAt}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">
+              {job.postedAt}
+            </span>
+            <FeedAdMenu
+              ownerId={job.contractor.id}
+              currentUserId={currentUserId ?? null}
+              adId={job.id}
+              ownerName={job.contractor.name}
+              isPaused={isPaused}
+              onEdit={onEdit ? () => onEdit(job) : undefined}
+              onDelete={onDelete ? () => onDelete(job) : undefined}
+              onTogglePause={onTogglePause ? () => onTogglePause(job) : undefined}
+              accent={cardTheme.hex}
+            />
+          </div>
         </div>
 
         {/* ESPECIFICAÇÕES */}
@@ -1443,6 +1467,10 @@ export default function FeedPrestadorPage() {
                 unlockCost={postUnlock.cost}
                 unlockBusy={postUnlock.busy === job.id}
                 onUnlock={() => { void postUnlock.unlock(job.id); }}
+                currentUserId={postUnlock.userId}
+                onEdit={(j) => toast(`Abrindo editor do anúncio "${j.title}"...`)}
+                onDelete={(j) => toast.error(`Excluir "${j.title}"? Confirme em Meus Anúncios.`)}
+                onTogglePause={(j) => toast(`Alternando pausa para "${j.title}"...`)}
               />
             </div>
             );
