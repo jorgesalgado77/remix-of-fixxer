@@ -225,14 +225,18 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     if (macroValue) n++;
     if (pillValue && pillOptions && pillOptions[0] && pillValue !== pillOptions[0].key) n++;
     if (statusValue && statusValue !== "todos") n++;
+    if (urgencyValue && urgencyValue !== "todos") n++;
+    if (distanceValue && distanceValue !== "todos") n++;
     if (radius !== 25) n++;
     return n;
-  }, [macroValue, pillValue, pillOptions, statusValue, radius]);
+  }, [macroValue, pillValue, pillOptions, statusValue, urgencyValue, distanceValue, radius]);
 
   const resetAll = () => {
     onMacroChange(null);
     if (pillOptions && pillOptions[0] && onPillChange) onPillChange(pillOptions[0].key);
     if (onStatusChange) onStatusChange("todos");
+    if (onUrgencyChange) onUrgencyChange("todos");
+    if (onDistanceChange) onDistanceChange("todos");
     applyRadius(25);
     toast.success("Filtros restaurados", { duration: 1500 });
   };
