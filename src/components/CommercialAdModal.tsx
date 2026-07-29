@@ -897,6 +897,7 @@ function FormStep(p: FormStepProps) {
     payments, togglePayment,
     stock, setStock, delivery, toggleDelivery, description, setDescription,
     videoUrl, videoDuration, onPickVideo, clearVideo, videoRef,
+    tags, setTags, tagInput, setTagInput,
     showErr, markTouched, isEditing,
   } = p;
 
