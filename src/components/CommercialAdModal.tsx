@@ -1194,6 +1194,61 @@ function FormStep(p: FormStepProps) {
         </div>
       </section>
 
+      {/* 8. TAGS */}
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block text-[11px] font-black uppercase tracking-widest text-white/80">
+            Tags de Busca <span className="normal-case font-normal text-white/40">(até 5)</span>
+          </label>
+          <span className="text-[10px] text-white/50">{tags.length}/5</span>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text" value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                const merged = normalizeTagInput([...tags, ...normalizeTagInput(tagInput)].join(" "));
+                setTags(merged);
+                setTagInput("");
+              } else if (e.key === "Backspace" && !tagInput && tags.length) {
+                setTags(tags.slice(0, -1));
+              }
+            }}
+            onBlur={() => {
+              if (!tagInput.trim()) return;
+              const merged = normalizeTagInput([...tags, ...normalizeTagInput(tagInput)].join(" "));
+              setTags(merged);
+              setTagInput("");
+            }}
+            disabled={tags.length >= 5}
+            placeholder={tags.length >= 5 ? "Limite atingido" : "Ex: promob, mdf, oferta"}
+            maxLength={30}
+            className="flex-1 bg-[#111112] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-primary/60 disabled:opacity-50"
+          />
+        </div>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((t) => (
+              <span key={t}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                style={{ color: theme.hex, borderColor: `${theme.hex}55`, backgroundColor: `${theme.hex}18` }}>
+                <Hash className="w-3 h-3" />
+                {t}
+                <button type="button" onClick={() => setTags(tags.filter((x) => x !== t))}
+                  className="ml-0.5 opacity-70 hover:opacity-100" aria-label={`Remover ${t}`}>
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <p className="text-[10px] text-white/40">
+          Pressione <kbd className="px-1 py-0.5 rounded bg-white/10 text-white/70">Enter</kbd> ou vírgula para adicionar. As tags aparecem como pílulas no anúncio.
+        </p>
+      </section>
+
       {/* FRANQUIA */}
       <div className="rounded-2xl border p-3 flex items-start gap-2"
         style={{ background: `${theme.hex}0D`, borderColor: `${theme.hex}33` }}>
