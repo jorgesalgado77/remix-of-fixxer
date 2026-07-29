@@ -57,7 +57,8 @@ interface CommercialAdModalProps {
 
 type AdKind = "promo" | "produto" | "pacote" | "atacado";
 type PaymentMethod = "cartao" | "pix" | "combinar";
-type DeliveryMode = "retirada" | "frete" | "online";
+type DeliveryMode = "domicilio" | "retirada" | "frete" | "online";
+type UrgencyTag = "urgente" | "normal" | "encomenda";
 type Step = "form" | "preview" | "success";
 
 interface AdPhoto {
