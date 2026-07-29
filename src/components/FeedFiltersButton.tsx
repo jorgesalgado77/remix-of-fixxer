@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { SlidersHorizontal, X, MapPin, Sparkles, Flame, RotateCcw } from "lucide-react";
+import { SlidersHorizontal, X, MapPin, Sparkles, Flame, RotateCcw, Flame as FlameIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
 import { getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { FEED_STATUS_COLOR, STATUS_FILTERS, type StatusFilterKey } from "@/lib/feed-status";
 import type { CategoryKey } from "@/lib/category-colors";
+import {
+  AD_DISTANCE_KEYS,
+  AD_URGENCY_KEYS,
+  type AdDistanceKey,
+  type AdUrgencyKey,
+} from "@/lib/ad-filter-search";
+import { URGENCY_META, type UrgencyTag } from "@/components/AdMetaBadges";
 
 /**
  * Botão único que abre um modal (bottom-sheet no mobile) com TODOS os filtros
