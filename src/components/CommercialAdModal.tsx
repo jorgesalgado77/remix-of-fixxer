@@ -91,10 +91,20 @@ const PAYMENTS: { id: PaymentMethod; label: string; icon: string; Icon: typeof C
 ];
 
 const DELIVERY: { id: DeliveryMode; label: string; icon: string; Icon: typeof Store }[] = [
-  { id: "retirada", label: "Retirada na Loja / Local", icon: "🏬", Icon: Store },
-  { id: "frete",    label: "Entrega Própria / Frete",  icon: "🚚", Icon: Truck },
-  { id: "online",   label: "Atendimento On-line",       icon: "🌐", Icon: Globe },
+  { id: "domicilio", label: "À Domicílio",                icon: "🏠", Icon: Home },
+  { id: "retirada",  label: "Retirada na Loja / Local",   icon: "🏬", Icon: Store },
+  { id: "frete",     label: "Entrega Própria / Frete",    icon: "🚚", Icon: Truck },
+  { id: "online",    label: "Atendimento On-line",         icon: "🌐", Icon: Globe },
 ];
+
+const MAX_VALIDITY_DAYS = 15;
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const addDaysISO = (d: number) => {
+  const dt = new Date();
+  dt.setDate(dt.getDate() + d);
+  return dt.toISOString().slice(0, 10);
+};
+const maxValidityISO = () => addDaysISO(MAX_VALIDITY_DAYS);
 
 // =============================================================================
 // VALIDAÇÃO
