@@ -364,6 +364,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       rooms, title, startDate, deadline, priority,
       description, notes, techSpecs, otherChecked, otherText,
       priceType, fixedValue, contractValue, commissionPct,
+      originalValue, installments, installmentsInterestFree,
       freightVolumes, freightWeight, otherServiceText,
       urgencyTag, serviceRadiusKm, tagsInput, deliveryModes,
       validityPreset, validityDate,
