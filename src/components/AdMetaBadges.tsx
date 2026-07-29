@@ -1,4 +1,4 @@
-import { Zap, Calendar, Package, Radius, Hash } from "lucide-react";
+import { Zap, Calendar, Package, Radius, Hash, TagIcon, CreditCard } from "lucide-react";
 import type { CSSProperties } from "react";
 
 export type UrgencyTag = "urgente" | "normal" | "encomenda";
