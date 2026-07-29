@@ -351,12 +351,12 @@ export const CommercialAdModal = memo(function CommercialAdModal({
       const d = {
         v: 3, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
         urgencyTag, serviceRadiusKm, installments, installmentsInterestFree,
-        validityPreset, validityDate, priceMode,
+        validityPreset, validityDate, priceMode, tags,
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
     } catch { /* ignore quota */ }
   }, [isEditing, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
-      urgencyTag, serviceRadiusKm, installments, installmentsInterestFree, validityPreset, validityDate, priceMode]);
+      urgencyTag, serviceRadiusKm, installments, installmentsInterestFree, validityPreset, validityDate, priceMode, tags]);
 
 
   useEffect(() => {
