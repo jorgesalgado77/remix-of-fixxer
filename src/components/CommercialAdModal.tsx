@@ -201,10 +201,62 @@ export const CommercialAdModal = memo(function CommercialAdModal({
   const [touched, setTouched] = useState<Partial<Record<FieldKey, boolean>>>({});
   const [savedId, setSavedId] = useState<string | null>(null);
 
+  // NOVOS CAMPOS ================================================
+  const [urgencyTag, setUrgencyTag] = useState<UrgencyTag>("normal");
+  const [serviceRadiusKm, setServiceRadiusKm] = useState<number>(15);
+  const [installments, setInstallments] = useState<number>(1);
+  const [installmentsInterestFree, setInstallmentsInterestFree] = useState(true);
+  const [validityPreset, setValidityPreset] = useState<3 | 7 | 10 | 15 | 0>(7);
+  const [validityDate, setValidityDate] = useState<string>(() => addDaysISO(7));
+
+  // Saldo + plano p/ Resumo de Custo
+  const [coinBalance, setCoinBalance] = useState<number>(() => getCachedBalance());
+  useEffect(() => subscribeBalance(setCoinBalance), []);
+  const [userPlanId, setUserPlanId] = useState<PlanId>("free");
+  const [freeAdsUsed, setFreeAdsUsed] = useState<number>(0);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: auth } = await supabaseExternal.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return;
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("plan")
+          .eq("id", uid)
+          .maybeSingle();
+        if (cancelled) return;
+        const p = (data?.plan as PlanId) || "free";
+        setUserPlanId(p);
+        const key = `fixxer:ads:month:${uid}:${new Date().toISOString().slice(0, 7)}`;
+        setFreeAdsUsed(Number(localStorage.getItem(key) || "0"));
+      } catch { /* silencioso */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const hydratedRef = useRef(false);
 
   const extraCost = getActionCost("publish_extra")?.coins ?? 20;
+
+  const costSummary = useMemo(() => {
+    const plan = getPlanConfig(userPlanId);
+    const freeQuota = plan?.freeAdsMonthly ?? 0;
+    const remainingFree = Math.max(0, freeQuota - freeAdsUsed);
+    const baseCost = isEditing ? 0 : (remainingFree > 0 ? 0 : extraCost);
+    const urgentCost = urgencyTag === "urgente" && !isEditing
+      ? (getActionCost("urgent_neighborhood")?.coins ?? 15) : 0;
+    const total = baseCost + urgentCost;
+    return {
+      planName: plan?.name ?? "Free",
+      freeQuota, remainingFree, baseCost, urgentCost, total,
+      insufficient: total > coinBalance,
+    };
+  }, [userPlanId, freeAdsUsed, urgencyTag, coinBalance, isEditing, extraCost]);
+
 
   const formState: FormState = { title, priceFrom, priceTo, stock, description, payments, delivery };
   const errors = useMemo(() => validateAll(formState),
