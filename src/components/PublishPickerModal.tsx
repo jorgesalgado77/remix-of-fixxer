@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Megaphone, ClipboardList, X, Info } from "lucide-react";
 import { CreateAdModal } from "@/components/CreateAdModal";
-import { CommercialAdModal } from "@/components/CommercialAdModal";
+
 import type { CategoryKey } from "@/lib/category-colors";
 import { getActionCost } from "@/lib/monetization";
 
