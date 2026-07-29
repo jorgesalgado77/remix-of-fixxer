@@ -36,7 +36,6 @@ import {
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 import { AdMetaBadges, URGENCY_META, type UrgencyTag } from "@/components/AdMetaBadges";
 import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
-import { AdFiltersBar } from "@/components/AdFiltersBar";
 import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
 import FeedAdMenu from "@/components/FeedAdMenu";
 
