@@ -507,6 +507,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         }
       }
 
+      const expiresAtISO = new Date(`${validityDate}T23:59:59`).toISOString();
       const metadata = {
         ...(initialAd?.metadata || {}),
         ad_kind: kind,
@@ -515,6 +516,13 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         payments,
         stock: stock ? Number(stock) : null,
         delivery,
+        home_service: delivery.includes("domicilio"),
+        urgency_tag: urgencyTag,
+        service_radius_km: serviceRadiusKm === 0 ? null : serviceRadiusKm,
+        installments: installments > 1 ? installments : null,
+        installments_interest_free: installments > 1 ? installmentsInterestFree : null,
+        valid_until: validityDate,
+        expires_at: expiresAtISO,
         photos: uploadedUrls,
         status: "active",
         source: "commercial_ad",
