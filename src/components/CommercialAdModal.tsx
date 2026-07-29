@@ -313,6 +313,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
           setVideoUrl(m.video_url);
           setVideoRemote(true);
         }
+        if (Array.isArray(m.tags)) setTags(normalizeTagInput(m.tags.join(" ")));
       } else {
         const raw = localStorage.getItem(DRAFT_KEY);
         if (raw) {
