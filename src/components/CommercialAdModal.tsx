@@ -578,7 +578,14 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         window.dispatchEvent(new CustomEvent("fixxer:ad-created", { detail: { id: finalId, row } }));
       } catch { /* ignore */ }
 
-      if (!isEditing) discardDraft();
+      if (!isEditing) {
+        discardDraft();
+        try {
+          const key = `fixxer:ads:month:${uid}:${new Date().toISOString().slice(0, 7)}`;
+          localStorage.setItem(key, String(freeAdsUsed + 1));
+          setFreeAdsUsed(freeAdsUsed + 1);
+        } catch { /* ignore */ }
+      }
       setSavedId(finalId);
       setStep("success");
       onSaved?.(finalId);
