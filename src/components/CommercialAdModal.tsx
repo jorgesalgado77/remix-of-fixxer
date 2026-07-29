@@ -1185,3 +1185,224 @@ function SuccessStep(props: {
     </div>
   );
 }
+
+// =============================================================================
+// EXTRAS BLOCK — Urgência, Raio, Parcelamento, Validade, Resumo de Custo
+// =============================================================================
+interface ExtrasBlockProps {
+  theme: ReturnType<typeof getCategoryTheme>;
+  urgencyTag: UrgencyTag; setUrgencyTag: (v: UrgencyTag) => void;
+  serviceRadiusKm: number; setServiceRadiusKm: (v: number) => void;
+  installments: number; setInstallments: (v: number) => void;
+  installmentsInterestFree: boolean; setInstallmentsInterestFree: (v: boolean) => void;
+  priceToNum: number;
+  validityPreset: 3 | 7 | 10 | 15 | 0; setValidityPreset: (v: 3 | 7 | 10 | 15 | 0) => void;
+  validityDate: string; setValidityDate: (v: string) => void;
+  costSummary: {
+    planName: string; freeQuota: number; remainingFree: number;
+    baseCost: number; urgentCost: number; total: number; insufficient: boolean;
+  };
+  coinBalance: number;
+  isEditing: boolean;
+}
+
+const URGENCY_OPTS: { id: UrgencyTag; label: string; emoji: string; hint: string }[] = [
+  { id: "urgente",   label: "Urgente",    emoji: "⚡", hint: "Destaque + alerta" },
+  { id: "normal",    label: "Normal",     emoji: "✅", hint: "Publicação padrão" },
+  { id: "encomenda", label: "Encomenda",  emoji: "📦", hint: "Sob demanda" },
+];
+
+const RADIUS_OPTS: { km: number; label: string }[] = [
+  { km: 5, label: "5 km" }, { km: 15, label: "15 km" },
+  { km: 30, label: "30 km" }, { km: 0, label: "Toda região" },
+];
+
+const VALIDITY_OPTS: { d: 3 | 7 | 10 | 15; label: string }[] = [
+  { d: 3, label: "3 dias" }, { d: 7, label: "7 dias" },
+  { d: 10, label: "10 dias" }, { d: 15, label: "15 dias" },
+];
+
+function ExtrasBlock(p: ExtrasBlockProps) {
+  const parcelValue = p.installments > 1 && p.priceToNum > 0
+    ? p.priceToNum / p.installments : 0;
+  const today = todayISO();
+  const max = maxValidityISO();
+
+  const applyPreset = (d: 3 | 7 | 10 | 15) => {
+    p.setValidityPreset(d);
+    p.setValidityDate(addDaysISO(d));
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* URGÊNCIA */}
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="w-4 h-4" style={{ color: p.theme.hex }} />
+          <h4 className="text-[13px] font-black uppercase tracking-tight text-white">
+            Selo de Urgência
+          </h4>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {URGENCY_OPTS.map((opt) => {
+            const active = p.urgencyTag === opt.id;
+            return (
+              <button key={opt.id} type="button" onClick={() => p.setUrgencyTag(opt.id)}
+                className={`h-auto py-2 px-2 rounded-xl border text-[11px] font-bold uppercase tracking-tight transition-all ${
+                  active
+                    ? "border-white/40 text-white"
+                    : "border-white/10 bg-white/[0.02] text-white/60 hover:text-white/90"
+                }`}
+                style={active ? { background: `${p.theme.hex}22`, boxShadow: `0 0 12px ${p.theme.hex}44` } : {}}>
+                <div className="text-base leading-none mb-1">{opt.emoji}</div>
+                <div>{opt.label}</div>
+                <div className="text-[9px] font-medium text-white/50 mt-0.5 normal-case tracking-normal">{opt.hint}</div>
+              </button>
+            );
+          })}
+        </div>
+        {p.urgencyTag === "urgente" && !p.isEditing && (
+          <p className="mt-2 text-[10px] text-[#FFB020] flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" /> +15 moedas para alerta de urgência.
+          </p>
+        )}
+      </section>
+
+      {/* RAIO DE ATENDIMENTO */}
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Radius className="w-4 h-4" style={{ color: p.theme.hex }} />
+          <h4 className="text-[13px] font-black uppercase tracking-tight text-white">
+            Raio de Atendimento
+          </h4>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {RADIUS_OPTS.map((opt) => {
+            const active = p.serviceRadiusKm === opt.km;
+            return (
+              <button key={opt.km} type="button" onClick={() => p.setServiceRadiusKm(opt.km)}
+                className={`h-10 rounded-xl border text-[11px] font-bold transition-all ${
+                  active ? "border-white/40 text-white" : "border-white/10 bg-white/[0.02] text-white/60 hover:text-white/90"
+                }`}
+                style={active ? { background: `${p.theme.hex}22`, boxShadow: `0 0 12px ${p.theme.hex}44` } : {}}>
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* PARCELAMENTO */}
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <CreditCard className="w-4 h-4" style={{ color: p.theme.hex }} />
+          <h4 className="text-[13px] font-black uppercase tracking-tight text-white">
+            Parcelamento (Cartão)
+          </h4>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-[11px] text-white/60 uppercase tracking-tight font-bold">Em até</label>
+          <select value={p.installments}
+            onChange={(e) => p.setInstallments(Number(e.target.value))}
+            className="h-10 px-3 rounded-xl bg-white/5 border border-white/10 text-white text-[12px] font-bold">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n} className="bg-[#0A0A0B]">{n}x</option>
+            ))}
+          </select>
+          {p.installments > 1 && (
+            <label className="inline-flex items-center gap-2 text-[11px] text-white/70 font-medium">
+              <input type="checkbox" checked={p.installmentsInterestFree}
+                onChange={(e) => p.setInstallmentsInterestFree(e.target.checked)}
+                className="w-4 h-4 rounded accent-white" />
+              Sem juros
+            </label>
+          )}
+        </div>
+        {p.installments > 1 && parcelValue > 0 && (
+          <p className="mt-2 text-[11px] text-white/70">
+            {p.installments}x de <strong className="text-white">{fmtBRL(parcelValue)}</strong>{" "}
+            {p.installmentsInterestFree ? "sem juros" : "com juros a combinar"}.
+          </p>
+        )}
+      </section>
+
+      {/* VALIDADE */}
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <CalendarClock className="w-4 h-4" style={{ color: p.theme.hex }} />
+          <h4 className="text-[13px] font-black uppercase tracking-tight text-white">
+            Validade do Anúncio <span className="text-white/40 font-medium normal-case">(máx. 15 dias)</span>
+          </h4>
+        </div>
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          {VALIDITY_OPTS.map((opt) => {
+            const active = p.validityPreset === opt.d;
+            return (
+              <button key={opt.d} type="button" onClick={() => applyPreset(opt.d)}
+                className={`h-10 rounded-xl border text-[11px] font-bold transition-all ${
+                  active ? "border-white/40 text-white" : "border-white/10 bg-white/[0.02] text-white/60 hover:text-white/90"
+                }`}
+                style={active ? { background: `${p.theme.hex}22`, boxShadow: `0 0 12px ${p.theme.hex}44` } : {}}>
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-white/60" />
+          <input type="date" value={p.validityDate} min={today} max={max}
+            onChange={(e) => {
+              const v = e.target.value;
+              const clamped = v > max ? max : v < today ? today : v;
+              p.setValidityDate(clamped);
+              p.setValidityPreset(0);
+            }}
+            className="flex-1 h-10 px-3 rounded-xl bg-white/5 border border-white/10 text-white text-[12px] font-bold" />
+        </div>
+        <p className="mt-2 text-[10px] text-white/50">
+          Expira em <strong className="text-white/80">{new Date(p.validityDate).toLocaleDateString("pt-BR")}</strong>.
+          Ative renovação nas configurações do anúncio.
+        </p>
+      </section>
+
+      {/* RESUMO DE CUSTO */}
+      <section className="rounded-2xl border p-4"
+        style={{
+          borderColor: p.costSummary.insufficient ? "#FF3B6B55" : `${p.theme.hex}55`,
+          background: p.costSummary.insufficient ? "#FF3B6B08" : `${p.theme.hex}08`,
+        }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Coins className="w-4 h-4" style={{ color: p.theme.hex }} />
+          <h4 className="text-[13px] font-black uppercase tracking-tight text-white">
+            Resumo de Custo
+          </h4>
+        </div>
+        <div className="space-y-1.5 text-[12px]">
+          <Row label={`Plano ${p.costSummary.planName}`} value={`${p.costSummary.remainingFree}/${p.costSummary.freeQuota} grátis`} />
+          <Row label="Custo do anúncio" value={p.costSummary.baseCost === 0 ? "Grátis (franquia)" : `${p.costSummary.baseCost} moedas`} />
+          {p.costSummary.urgentCost > 0 && (
+            <Row label="Alerta de urgência" value={`+${p.costSummary.urgentCost} moedas`} />
+          )}
+          <div className="h-px bg-white/10 my-2" />
+          <Row label="Total" value={p.isEditing ? "Edição gratuita" : `${p.costSummary.total} moedas`} bold />
+          <Row label="Seu saldo" value={`${p.coinBalance} moedas`} muted />
+        </div>
+        {!p.isEditing && p.costSummary.insufficient && (
+          <p className="mt-2 text-[11px] text-[#FF3B6B] flex items-center gap-1 font-bold">
+            <AlertCircle className="w-3 h-3" /> Saldo insuficiente para publicar.
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function Row({ label, value, bold, muted }: { label: string; value: string; bold?: boolean; muted?: boolean }) {
+  return (
+    <div className={`flex items-center justify-between ${muted ? "text-white/50" : "text-white/80"}`}>
+      <span>{label}</span>
+      <span className={bold ? "text-white font-black" : "font-bold"}>{value}</span>
+    </div>
+  );
+}
+
