@@ -442,6 +442,10 @@ export const CommercialAdModal = memo(function CommercialAdModal({
       toast.error("Corrija os campos destacados antes de continuar.");
       return;
     }
+    if (!isEditing && costSummary.insufficient) {
+      toast.error(`Saldo insuficiente. Necessário ${costSummary.total} moedas (você tem ${coinBalance}).`);
+      return;
+    }
     setStep("preview");
   };
 
