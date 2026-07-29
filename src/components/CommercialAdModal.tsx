@@ -305,6 +305,11 @@ export const CommercialAdModal = memo(function CommercialAdModal({
           url,
           remote: true,
         })));
+        if (m.price_mode === "from" || m.price_mode === "fixed") setPriceMode(m.price_mode);
+        if (typeof m.video_url === "string" && m.video_url) {
+          setVideoUrl(m.video_url);
+          setVideoRemote(true);
+        }
       } else {
         const raw = localStorage.getItem(DRAFT_KEY);
         if (raw) {
