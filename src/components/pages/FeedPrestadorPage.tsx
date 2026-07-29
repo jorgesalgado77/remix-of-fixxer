@@ -1388,6 +1388,10 @@ export default function FeedPrestadorPage() {
             onPillChange={(k) => setFilter(k as typeof filter)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
+            urgencyValue={urgencyFilter}
+            onUrgencyChange={setUrgencyFilter}
+            distanceValue={distanceFilter}
+            onDistanceChange={setDistanceFilter}
             badgeSlot={<OpportunitiesBadge category="prestador" />}
           />
         </div>
