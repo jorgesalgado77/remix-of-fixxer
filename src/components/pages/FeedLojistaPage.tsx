@@ -37,7 +37,6 @@ import {
   applyRelevanceFallback,
 } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
-import { AdFiltersBar } from "@/components/AdFiltersBar";
 import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
 
 import {
@@ -681,7 +680,7 @@ export default function FeedLojistaPage() {
   }, [saved, savesLoaded]);
 
   const visibleRaw = useMemo(() => {
-    const q = debouncedSearch.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase().replace(/^#/, "");
     // Deriva urgência/raio/tags a partir de keywords quando o mock não traz explícito
     const decorated: FeedPost[] = MOCK_POSTS.map((p) => {
       const kws = (p.keywords || []).map((k) => k.toLowerCase());
@@ -928,6 +927,10 @@ export default function FeedLojistaPage() {
             onPillChange={(k) => setFilter(k as typeof filter)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
+            urgencyValue={urgencyFilter}
+            onUrgencyChange={setUrgencyFilter}
+            distanceValue={distanceKey}
+            onDistanceChange={setDistanceKey}
             badgeSlot={<OpportunitiesBadge category="lojista" />}
           />
         </div>
@@ -975,17 +978,6 @@ export default function FeedLojistaPage() {
         </aside>
 
         <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
-          {/* Filtros extras: urgência, distância, tag (componente compartilhado, tema ciano do lojista) */}
-          <AdFiltersBar
-            role="lojista"
-            urgency={urgencyFilter}
-            distance={distanceKey}
-            tag={tagFilter}
-            onUrgencyChange={setUrgencyFilter}
-            onDistanceChange={setDistanceKey}
-            onTagChange={setTagFilter}
-            tagPlaceholder="#promob"
-          />
           <B2BSuggestionsCard />
           {searching ? (
             <div className="space-y-4" aria-live="polite">

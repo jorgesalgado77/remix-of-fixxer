@@ -48,7 +48,6 @@ import {
 } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 import FeedAdMenu from "@/components/FeedAdMenu";
-import { AdFiltersBar } from "@/components/AdFiltersBar";
 import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
 import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
 
@@ -870,6 +869,10 @@ export default function FeedParceiroPage() {
             onPillChange={(k) => setActiveSector(k as typeof activeSector)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
+            urgencyValue={urgencyFilter}
+            onUrgencyChange={setUrgencyFilter}
+            distanceValue={distanceFilter}
+            onDistanceChange={setDistanceFilter}
             badgeSlot={<OpportunitiesBadge category="fornecedor" />}
           />
         </div>
@@ -877,18 +880,6 @@ export default function FeedParceiroPage() {
 
       {/* FEED */}
       <main className="mx-auto max-w-3xl px-4 py-4">
-        <div className="mb-4">
-          <AdFiltersBar
-            role="parceiro"
-            urgency={urgencyFilter}
-            distance={distanceFilter}
-            tag={tagFilter}
-            onUrgencyChange={setUrgencyFilter}
-            onDistanceChange={setDistanceFilter}
-            onTagChange={setTagFilter}
-            tagPlaceholder="#vidro"
-          />
-        </div>
         <div className="mb-4">
           <B2BSuggestionsCard />
         </div>

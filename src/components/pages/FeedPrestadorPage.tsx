@@ -36,7 +36,6 @@ import {
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 import { AdMetaBadges, URGENCY_META, type UrgencyTag } from "@/components/AdMetaBadges";
 import { matchesAdFilters, coerceUrgency } from "@/lib/ad-filters";
-import { AdFiltersBar } from "@/components/AdFiltersBar";
 import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
 import FeedAdMenu from "@/components/FeedAdMenu";
 
@@ -1388,6 +1387,10 @@ export default function FeedPrestadorPage() {
             onPillChange={(k) => setFilter(k as typeof filter)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
+            urgencyValue={urgencyFilter}
+            onUrgencyChange={setUrgencyFilter}
+            distanceValue={distanceFilter}
+            onDistanceChange={setDistanceFilter}
             badgeSlot={<OpportunitiesBadge category="prestador" />}
           />
         </div>
@@ -1403,17 +1406,6 @@ export default function FeedPrestadorPage() {
             onRetry={handleRefresh}
           />
         )}
-        {/* Filtros extras: urgência, distância, tag (componente compartilhado, tema laranja) */}
-        <AdFiltersBar
-          role="prestador"
-          urgency={urgencyFilter}
-          distance={distanceFilter}
-          tag={tagFilter}
-          onUrgencyChange={setUrgencyFilter}
-          onDistanceChange={setDistanceFilter}
-          onTagChange={setTagFilter}
-          tagPlaceholder="#montagem"
-        />
         <B2BSuggestionsCard />
         {/* Skeleton de busca */}
         {searching && (

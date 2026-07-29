@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { SlidersHorizontal, X, MapPin, Sparkles, Flame, RotateCcw } from "lucide-react";
+import { SlidersHorizontal, X, MapPin, Sparkles, Flame, RotateCcw, Flame as FlameIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
 import { getMacroSearchTerms } from "@/components/MacroBranchChips";
 import { FEED_STATUS_COLOR, STATUS_FILTERS, type StatusFilterKey } from "@/lib/feed-status";
 import type { CategoryKey } from "@/lib/category-colors";
+import {
+  AD_DISTANCE_KEYS,
+  AD_URGENCY_KEYS,
+  type AdDistanceKey,
+  type AdUrgencyKey,
+} from "@/lib/ad-filter-search";
+import { URGENCY_META, type UrgencyTag } from "@/components/AdMetaBadges";
 
 /**
  * Botão único que abre um modal (bottom-sheet no mobile) com TODOS os filtros
@@ -34,6 +41,12 @@ export type FeedFiltersButtonProps = {
   // ------- status -------
   statusValue?: StatusFilterKey;
   onStatusChange?: (key: StatusFilterKey) => void;
+  // ------- urgência (opcional) -------
+  urgencyValue?: AdUrgencyKey;
+  onUrgencyChange?: (key: AdUrgencyKey) => void;
+  // ------- distância "até X km" (opcional; distinta do "Raio de Atuação") -------
+  distanceValue?: AdDistanceKey;
+  onDistanceChange?: (key: AdDistanceKey) => void;
   // ------- raio -------
   onRadiusChange?: (km: number) => void;
   badge?: { icon?: string; text: string };
@@ -107,6 +120,10 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     onPillChange,
     statusValue,
     onStatusChange,
+    urgencyValue,
+    onUrgencyChange,
+    distanceValue,
+    onDistanceChange,
     onRadiusChange,
     badge,
     badgeSlot,
@@ -208,14 +225,18 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
     if (macroValue) n++;
     if (pillValue && pillOptions && pillOptions[0] && pillValue !== pillOptions[0].key) n++;
     if (statusValue && statusValue !== "todos") n++;
+    if (urgencyValue && urgencyValue !== "todos") n++;
+    if (distanceValue && distanceValue !== "todos") n++;
     if (radius !== 25) n++;
     return n;
-  }, [macroValue, pillValue, pillOptions, statusValue, radius]);
+  }, [macroValue, pillValue, pillOptions, statusValue, urgencyValue, distanceValue, radius]);
 
   const resetAll = () => {
     onMacroChange(null);
     if (pillOptions && pillOptions[0] && onPillChange) onPillChange(pillOptions[0].key);
     if (onStatusChange) onStatusChange("todos");
+    if (onUrgencyChange) onUrgencyChange("todos");
+    if (onDistanceChange) onDistanceChange("todos");
     applyRadius(25);
     toast.success("Filtros restaurados", { duration: 1500 });
   };
@@ -478,6 +499,92 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                           }
                         >
                           {s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* URGÊNCIA (opcional) */}
+              {onUrgencyChange && (
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <FlameIcon className="w-3.5 h-3.5" style={{ color: accent }} />
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                      Urgência
+                    </h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {AD_URGENCY_KEYS.map((k) => {
+                      const active = (urgencyValue ?? "todos") === k;
+                      const meta = k === "todos" ? null : URGENCY_META[k as UrgencyTag];
+                      const label = k === "todos" ? "Todas" : meta!.label;
+                      const color = meta?.color ?? accent;
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => onUrgencyChange(k)}
+                          className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide border"
+                          style={
+                            active
+                              ? {
+                                  backgroundColor: color,
+                                  color: "#0A0A0B",
+                                  borderColor: color,
+                                  boxShadow: `0 0 10px ${hexToRgba(color, 0.4)}`,
+                                }
+                              : {
+                                  backgroundColor: "rgba(255,255,255,0.05)",
+                                  color: "rgba(255,255,255,0.7)",
+                                  borderColor: "rgba(255,255,255,0.1)",
+                                }
+                          }
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* DISTÂNCIA "ATÉ X KM" (opcional) */}
+              {onDistanceChange && (
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="w-3.5 h-3.5" style={{ color: accent }} />
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                      Distância
+                    </h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {AD_DISTANCE_KEYS.map((k) => {
+                      const active = (distanceValue ?? "todos") === k;
+                      const label = k === "todos" ? "Qualquer" : `Até ${k} km`;
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => onDistanceChange(k)}
+                          className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide border"
+                          style={
+                            active
+                              ? {
+                                  backgroundColor: accent,
+                                  color: "#0A0A0B",
+                                  borderColor: accent,
+                                  boxShadow: `0 0 10px ${hexToRgba(accent, 0.4)}`,
+                                }
+                              : {
+                                  backgroundColor: "rgba(255,255,255,0.05)",
+                                  color: "rgba(255,255,255,0.7)",
+                                  borderColor: "rgba(255,255,255,0.1)",
+                                }
+                          }
+                        >
+                          {label}
                         </button>
                       );
                     })}
