@@ -979,17 +979,6 @@ export default function FeedLojistaPage() {
         </aside>
 
         <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
-          {/* Filtros extras: urgência, distância, tag (componente compartilhado, tema ciano do lojista) */}
-          <AdFiltersBar
-            role="lojista"
-            urgency={urgencyFilter}
-            distance={distanceKey}
-            tag={tagFilter}
-            onUrgencyChange={setUrgencyFilter}
-            onDistanceChange={setDistanceKey}
-            onTagChange={setTagFilter}
-            tagPlaceholder="#promob"
-          />
           <B2BSuggestionsCard />
           {searching ? (
             <div className="space-y-4" aria-live="polite">
