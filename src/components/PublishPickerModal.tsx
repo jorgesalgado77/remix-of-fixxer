@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Megaphone, ClipboardList, X, Info } from "lucide-react";
 import { CreateAdModal } from "@/components/CreateAdModal";
+import { CommercialAdModal } from "@/components/CommercialAdModal";
 
 import type { CategoryKey } from "@/lib/category-colors";
 import { getActionCost } from "@/lib/monetization";
@@ -15,12 +16,10 @@ type PublishKind = "ad" | "request";
 
 /**
  * Modal "PUBLICAR" — o usuário escolhe entre:
- *  📢 Criar Anúncio         → vendas/promoções (ad_kind: "offer")
- *  📋 Criar Oportunidade    → cotação/contratação (ad_kind: "request")
+ *  📢 Criar Anúncio         → CommercialAdModal (produtos, promoções, pacotes, atacado)
+ *  📋 Criar Oportunidade    → CreateAdModal     (cotação / prestação de serviço)
  *
- * Ambas as opções abrem o `CreateAdModal` pré-configurado com o modo escolhido.
- * O consumo de moedas por publicação excedente ocorre dentro do próprio modal
- * (chave `publish_extra`) e a franquia grátis vem do plano ativo (`freeAdsMonthly`).
+ * São dois fluxos COMPLETAMENTE separados, com modais distintos.
  */
 export function PublishPickerModal({ open, onClose, defaultCategory }: Props) {
   const [kind, setKind] = useState<PublishKind | null>(null);
@@ -33,9 +32,17 @@ export function PublishPickerModal({ open, onClose, defaultCategory }: Props) {
       try { window.sessionStorage.setItem("fixxer_publish_kind", kind); } catch { /* ignore */ }
     }
     const handleClose = () => { setKind(null); onClose(); };
-    // Ambos os fluxos ("ad" e "request") usam o CreateAdModal — este é o modal
-    // padronizado com cores dinâmicas, urgência, raio, Preço De/Por, parcelamento,
-    // pílula "🏠 À Domicílio", validade máx. 15 dias, tags e resumo de custo.
+
+    if (kind === "ad") {
+      return (
+        <CommercialAdModal
+          open
+          onClose={handleClose}
+          defaultCategory={defaultCategory}
+        />
+      );
+    }
+
     return (
       <CreateAdModal
         open
