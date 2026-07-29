@@ -4,13 +4,17 @@ import {
   X, Upload, Trash2, Megaphone, Tag, Package, Wrench, Truck,
   Store, Globe, CreditCard, Zap, Handshake, Rocket, Info, Save,
   Eye, ArrowLeft, CheckCircle2, Pencil, AlertCircle,
+  CalendarDays, CalendarClock, Radius, Coins, Home,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
   getActionCost,
   spendCoinsForAction,
+  getPlanConfig,
+  type PlanId,
 } from "@/lib/monetization";
+import { getCachedBalance, subscribeBalance } from "@/lib/coins";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import {
   maskCurrencyBRL,
