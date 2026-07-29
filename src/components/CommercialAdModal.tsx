@@ -344,14 +344,14 @@ export const CommercialAdModal = memo(function CommercialAdModal({
     if (isEditing) return;
     try {
       const d = {
-        v: 2, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
+        v: 3, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
         urgencyTag, serviceRadiusKm, installments, installmentsInterestFree,
-        validityPreset, validityDate,
+        validityPreset, validityDate, priceMode,
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
     } catch { /* ignore quota */ }
   }, [isEditing, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
-      urgencyTag, serviceRadiusKm, installments, installmentsInterestFree, validityPreset, validityDate]);
+      urgencyTag, serviceRadiusKm, installments, installmentsInterestFree, validityPreset, validityDate, priceMode]);
 
 
   useEffect(() => {
