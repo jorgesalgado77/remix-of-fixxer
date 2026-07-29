@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { SlidersHorizontal, X, MapPin, Sparkles, Flame, RotateCcw, Flame as FlameIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ACTIVITY_MATRIX } from "@/lib/activity-branches";
@@ -332,18 +333,21 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
             )}
       </div>
 
-      {/* MODAL */}
-      {open && (
+      {/* MODAL — renderizado em portal no <body> para escapar de qualquer container/scroll do feed e aparecer inteiro no preview */}
+      {open && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex items-stretch sm:items-center justify-center bg-black/70 backdrop-blur-sm overflow-hidden"
+          className="fixed inset-0 z-[2147483647] flex h-[100dvh] w-screen items-start justify-center bg-black/75 backdrop-blur-sm overflow-hidden sm:items-center"
           onClick={() => setOpen(false)}
           style={{
-            paddingTop: "max(env(safe-area-inset-top), 0.5rem)",
-            paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)",
+            boxSizing: "border-box",
+            paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
+            paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
+            paddingLeft: "8px",
+            paddingRight: "8px",
           }}
         >
           <div
-            className="w-full sm:max-w-lg h-full sm:h-auto sm:max-h-[90dvh] flex flex-col bg-[#0F0F10] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+            className="flex h-full max-h-full min-h-0 w-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0F0F10] shadow-2xl sm:h-auto sm:max-h-[90dvh] sm:max-w-lg"
             onClick={(e) => e.stopPropagation()}
             style={{ boxShadow: `0 0 40px ${hexToRgba(accent, 0.25)}` }}
           >
@@ -373,6 +377,92 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
 
             {/* Conteúdo scrollável */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-6">
+              {/* URGÊNCIA (opcional) — fica no topo para a alteração aparecer imediatamente */}
+              {onUrgencyChange && (
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <FlameIcon className="w-3.5 h-3.5" style={{ color: accent }} />
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                      Urgência
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 min-[420px]:flex min-[420px]:flex-wrap">
+                    {AD_URGENCY_KEYS.map((k) => {
+                      const active = (urgencyValue ?? "todos") === k;
+                      const meta = k === "todos" ? null : URGENCY_META[k as UrgencyTag];
+                      const label = k === "todos" ? "Todas" : meta!.label;
+                      const color = meta?.color ?? accent;
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => onUrgencyChange(k)}
+                          className="min-w-0 rounded-full border px-3 py-2 text-[11px] font-black uppercase tracking-wide"
+                          style={
+                            active
+                              ? {
+                                  backgroundColor: color,
+                                  color: "#0A0A0B",
+                                  borderColor: color,
+                                  boxShadow: `0 0 10px ${hexToRgba(color, 0.4)}`,
+                                }
+                              : {
+                                  backgroundColor: "rgba(255,255,255,0.05)",
+                                  color: "rgba(255,255,255,0.7)",
+                                  borderColor: "rgba(255,255,255,0.1)",
+                                }
+                          }
+                        >
+                          <span className="block truncate">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* DISTÂNCIA "ATÉ X KM" (opcional) — junto da urgência dentro do botão de filtros */}
+              {onDistanceChange && (
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="w-3.5 h-3.5" style={{ color: accent }} />
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                      Distância
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 min-[420px]:flex min-[420px]:flex-wrap">
+                    {AD_DISTANCE_KEYS.map((k) => {
+                      const active = (distanceValue ?? "todos") === k;
+                      const label = k === "todos" ? "Qualquer" : `Até ${k} km`;
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => onDistanceChange(k)}
+                          className="min-w-0 rounded-full border px-3 py-2 text-[11px] font-black uppercase tracking-wide"
+                          style={
+                            active
+                              ? {
+                                  backgroundColor: accent,
+                                  color: "#0A0A0B",
+                                  borderColor: accent,
+                                  boxShadow: `0 0 10px ${hexToRgba(accent, 0.4)}`,
+                                }
+                              : {
+                                  backgroundColor: "rgba(255,255,255,0.05)",
+                                  color: "rgba(255,255,255,0.7)",
+                                  borderColor: "rgba(255,255,255,0.1)",
+                                }
+                          }
+                        >
+                          <span className="block truncate">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
               {/* MACRO-RAMOS */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
@@ -510,92 +600,6 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                 </section>
               )}
 
-              {/* URGÊNCIA (opcional) */}
-              {onUrgencyChange && (
-                <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <FlameIcon className="w-3.5 h-3.5" style={{ color: accent }} />
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                      Urgência
-                    </h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {AD_URGENCY_KEYS.map((k) => {
-                      const active = (urgencyValue ?? "todos") === k;
-                      const meta = k === "todos" ? null : URGENCY_META[k as UrgencyTag];
-                      const label = k === "todos" ? "Todas" : meta!.label;
-                      const color = meta?.color ?? accent;
-                      return (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => onUrgencyChange(k)}
-                          className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide border"
-                          style={
-                            active
-                              ? {
-                                  backgroundColor: color,
-                                  color: "#0A0A0B",
-                                  borderColor: color,
-                                  boxShadow: `0 0 10px ${hexToRgba(color, 0.4)}`,
-                                }
-                              : {
-                                  backgroundColor: "rgba(255,255,255,0.05)",
-                                  color: "rgba(255,255,255,0.7)",
-                                  borderColor: "rgba(255,255,255,0.1)",
-                                }
-                          }
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
-              {/* DISTÂNCIA "ATÉ X KM" (opcional) */}
-              {onDistanceChange && (
-                <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <MapPin className="w-3.5 h-3.5" style={{ color: accent }} />
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                      Distância
-                    </h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {AD_DISTANCE_KEYS.map((k) => {
-                      const active = (distanceValue ?? "todos") === k;
-                      const label = k === "todos" ? "Qualquer" : `Até ${k} km`;
-                      return (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => onDistanceChange(k)}
-                          className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide border"
-                          style={
-                            active
-                              ? {
-                                  backgroundColor: accent,
-                                  color: "#0A0A0B",
-                                  borderColor: accent,
-                                  boxShadow: `0 0 10px ${hexToRgba(accent, 0.4)}`,
-                                }
-                              : {
-                                  backgroundColor: "rgba(255,255,255,0.05)",
-                                  color: "rgba(255,255,255,0.7)",
-                                  borderColor: "rgba(255,255,255,0.1)",
-                                }
-                          }
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
               {/* RAIO */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
@@ -674,7 +678,8 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
