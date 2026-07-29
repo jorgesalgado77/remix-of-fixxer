@@ -1019,6 +1019,32 @@ function FormStep(p: FormStepProps) {
           </div>
         </div>
 
+        {/* PREÇO A PARTIR DE */}
+        <div className="flex items-center gap-2 pt-1">
+          {(["fixed", "from"] as PriceMode[]).map((mode) => {
+            const active = priceMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setPriceMode(mode)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-wider transition-all"
+                style={{
+                  borderColor: active ? theme.hex : "rgba(255,255,255,0.15)",
+                  background: active ? `${theme.hex}18` : "#111112",
+                  color: active ? theme.hex : "rgba(255,255,255,0.7)",
+                }}
+              >
+                {mode === "fixed" ? "💰 Preço Fixo" : "📊 Preço a partir de"}
+              </button>
+            );
+          })}
+          <span className="text-[10px] text-white/40 leading-tight">
+            {priceMode === "from" ? "Será exibido como “A partir de …”" : "Valor exato exibido no card."}
+          </span>
+        </div>
+
+
         <div className="space-y-1.5">
           <span className="text-[10px] font-bold uppercase tracking-wider text-white/60">Formas de Aceite</span>
           <div className="flex flex-wrap gap-2">
