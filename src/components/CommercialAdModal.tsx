@@ -216,6 +216,8 @@ export const CommercialAdModal = memo(function CommercialAdModal({
   const [videoRemote, setVideoRemote] = useState(false);
   const [videoDuration, setVideoDuration] = useState<number>(0);
   const videoRef = useRef<HTMLInputElement>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
 
   // Saldo + plano p/ Resumo de Custo
   const [coinBalance, setCoinBalance] = useState<number>(() => getCachedBalance());
