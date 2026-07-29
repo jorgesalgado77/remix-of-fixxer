@@ -817,6 +817,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       valid_until: validityDate,
       expires_at: new Date(`${validityDate}T23:59:59`).toISOString(),
       price_type: priceType,
+      original_value: parseCurrencyBRL(originalValue) || null,
+      installments: installments > 1 ? installments : null,
+      installments_interest_free: installments > 1 ? installmentsInterestFree : null,
       files: files.map((i, order) => ({
         name: i.file.name,
         size: i.file.size,
