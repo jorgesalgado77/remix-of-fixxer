@@ -417,6 +417,9 @@ export const CommercialAdModal = memo(function CommercialAdModal({
     setPhotos([]); setPriceFrom(""); setPriceTo("");
     setPayments(["pix"]); setStock(""); setDelivery(["retirada"]);
     setDescription(""); setTouched({});
+    setUrgencyTag("normal"); setServiceRadiusKm(15);
+    setInstallments(1); setInstallmentsInterestFree(true);
+    setValidityPreset(7); setValidityDate(addDaysISO(7));
   };
 
   const discardDraft = () => {
