@@ -41,6 +41,12 @@ export type FeedFiltersButtonProps = {
   // ------- status -------
   statusValue?: StatusFilterKey;
   onStatusChange?: (key: StatusFilterKey) => void;
+  // ------- urgência (opcional) -------
+  urgencyValue?: AdUrgencyKey;
+  onUrgencyChange?: (key: AdUrgencyKey) => void;
+  // ------- distância "até X km" (opcional; distinta do "Raio de Atuação") -------
+  distanceValue?: AdDistanceKey;
+  onDistanceChange?: (key: AdDistanceKey) => void;
   // ------- raio -------
   onRadiusChange?: (km: number) => void;
   badge?: { icon?: string; text: string };
