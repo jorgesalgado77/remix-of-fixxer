@@ -1,4 +1,4 @@
-import { Zap, Calendar, Package, Radius, Hash } from "lucide-react";
+import { Zap, Calendar, Package, Radius, Hash, TagIcon, CreditCard } from "lucide-react";
 import type { CSSProperties } from "react";
 
 export type UrgencyTag = "urgente" | "normal" | "encomenda";
@@ -19,18 +19,30 @@ type Theme = {
   hex?: string;
 };
 
+function formatBRL(v: number) {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
+}
+
 export function AdMetaBadges({
   urgency,
   radiusKm,
   tags,
   theme,
   compact = false,
+  priceValue,
+  originalValue,
+  installments,
+  installmentsInterestFree,
 }: {
   urgency?: UrgencyTag | null;
   radiusKm?: number | null;
   tags?: string[] | null;
   theme?: Theme;
   compact?: boolean;
+  priceValue?: number | null;
+  originalValue?: number | null;
+  installments?: number | null;
+  installmentsInterestFree?: boolean | null;
 }) {
   const items: React.ReactNode[] = [];
   if (urgency && URGENCY_META[urgency]) {
@@ -44,6 +56,33 @@ export function AdMetaBadges({
       >
         <Icon className="w-3 h-3" />
         {u.label}
+      </span>,
+    );
+  }
+  if (originalValue && priceValue && originalValue > priceValue) {
+    const pct = Math.round(((originalValue - priceValue) / originalValue) * 100);
+    items.push(
+      <span
+        key="depor"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border"
+        style={{ color: "#00E676", borderColor: "#00E67655", backgroundColor: "rgba(0,230,118,0.12)" }}
+      >
+        <TagIcon className="w-3 h-3" />
+        De {formatBRL(originalValue)} · -{pct}%
+      </span>,
+    );
+  }
+  if (installments && installments > 1 && priceValue) {
+    const parcel = priceValue / installments;
+    items.push(
+      <span
+        key="parc"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border"
+        style={{ color: "#7DE0FF", borderColor: "#7DE0FF55", backgroundColor: "rgba(0,229,255,0.10)" }}
+      >
+        <CreditCard className="w-3 h-3" />
+        {installments}x {formatBRL(parcel)}
+        {installmentsInterestFree ? " s/ juros" : ""}
       </span>,
     );
   }
