@@ -681,6 +681,23 @@ export const CommercialAdModal = memo(function CommercialAdModal({
               isEditing={isEditing}
             />
           )}
+          {step === "form" && (
+            <ExtrasBlock
+              theme={theme}
+              urgencyTag={urgencyTag} setUrgencyTag={setUrgencyTag}
+              serviceRadiusKm={serviceRadiusKm} setServiceRadiusKm={setServiceRadiusKm}
+              installments={installments} setInstallments={setInstallments}
+              installmentsInterestFree={installmentsInterestFree}
+              setInstallmentsInterestFree={setInstallmentsInterestFree}
+              priceToNum={priceToNum}
+              validityPreset={validityPreset} setValidityPreset={setValidityPreset}
+              validityDate={validityDate} setValidityDate={setValidityDate}
+              costSummary={costSummary} coinBalance={coinBalance}
+              isEditing={isEditing}
+            />
+          )}
+          {step === "form" && (
+            <div style={{ display: "none" }}>
           {step === "preview" && (
             <PreviewStep
               theme={theme}
