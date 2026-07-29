@@ -634,26 +634,31 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center gap-2 px-5 py-4 border-t border-white/10">
+            <div className="shrink-0 flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-4 border-t border-white/10 bg-[#0F0F10]">
               <button
                 type="button"
                 onClick={resetAll}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wide text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                className="shrink-0 flex items-center justify-center gap-1.5 h-11 px-3 rounded-xl text-[11px] font-black uppercase tracking-wide text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                aria-label="Restaurar filtros"
+                title="Restaurar"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> Restaurar
+                <RotateCcw className="w-4 h-4" />
+                <span className="hidden sm:inline">Restaurar</span>
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wide text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                className="shrink-0 flex items-center justify-center gap-1.5 h-11 px-3 rounded-xl text-[11px] font-black uppercase tracking-wide text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
                 aria-label="Fechar filtros sem aplicar mudanças"
+                title="Fechar"
               >
-                <X className="w-3.5 h-3.5" /> Fechar
+                <X className="w-4 h-4" />
+                <span className="hidden sm:inline">Fechar</span>
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex-1 rounded-xl py-2.5 text-[11px] font-black uppercase tracking-widest"
+                className="flex-1 min-w-0 h-11 rounded-xl text-[11px] font-black uppercase tracking-widest truncate"
                 style={{
                   backgroundColor: accent,
                   color: "#0A0A0B",
@@ -661,7 +666,7 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                 }}
                 aria-label="Aplicar filtros e voltar ao feed"
               >
-                Aplicar e Ver Feed
+                Aplicar
               </button>
             </div>
           </div>
