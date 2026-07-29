@@ -769,6 +769,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
               description={description} setDescription={setDescription}
               videoUrl={videoUrl} videoDuration={videoDuration}
               onPickVideo={onPickVideo} clearVideo={clearVideo} videoRef={videoRef}
+              tags={tags} setTags={setTags} tagInput={tagInput} setTagInput={setTagInput}
               showErr={showErr} markTouched={markTouched}
               isEditing={isEditing}
             />
