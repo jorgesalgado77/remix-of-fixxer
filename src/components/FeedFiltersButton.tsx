@@ -600,92 +600,6 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
                 </section>
               )}
 
-              {/* URGÊNCIA (opcional) */}
-              {onUrgencyChange && (
-                <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <FlameIcon className="w-3.5 h-3.5" style={{ color: accent }} />
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                      Urgência
-                    </h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {AD_URGENCY_KEYS.map((k) => {
-                      const active = (urgencyValue ?? "todos") === k;
-                      const meta = k === "todos" ? null : URGENCY_META[k as UrgencyTag];
-                      const label = k === "todos" ? "Todas" : meta!.label;
-                      const color = meta?.color ?? accent;
-                      return (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => onUrgencyChange(k)}
-                          className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide border"
-                          style={
-                            active
-                              ? {
-                                  backgroundColor: color,
-                                  color: "#0A0A0B",
-                                  borderColor: color,
-                                  boxShadow: `0 0 10px ${hexToRgba(color, 0.4)}`,
-                                }
-                              : {
-                                  backgroundColor: "rgba(255,255,255,0.05)",
-                                  color: "rgba(255,255,255,0.7)",
-                                  borderColor: "rgba(255,255,255,0.1)",
-                                }
-                          }
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
-              {/* DISTÂNCIA "ATÉ X KM" (opcional) */}
-              {onDistanceChange && (
-                <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <MapPin className="w-3.5 h-3.5" style={{ color: accent }} />
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                      Distância
-                    </h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {AD_DISTANCE_KEYS.map((k) => {
-                      const active = (distanceValue ?? "todos") === k;
-                      const label = k === "todos" ? "Qualquer" : `Até ${k} km`;
-                      return (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => onDistanceChange(k)}
-                          className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide border"
-                          style={
-                            active
-                              ? {
-                                  backgroundColor: accent,
-                                  color: "#0A0A0B",
-                                  borderColor: accent,
-                                  boxShadow: `0 0 10px ${hexToRgba(accent, 0.4)}`,
-                                }
-                              : {
-                                  backgroundColor: "rgba(255,255,255,0.05)",
-                                  color: "rgba(255,255,255,0.7)",
-                                  borderColor: "rgba(255,255,255,0.1)",
-                                }
-                          }
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
               {/* RAIO */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
@@ -764,7 +678,8 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
