@@ -88,7 +88,7 @@ const AD_KINDS: { id: AdKind; label: string; icon: string; color: string; Icon: 
 const PAYMENTS: { id: PaymentMethod; label: string; icon: string; Icon: typeof CreditCard }[] = [
   { id: "cartao",   label: "Cartão de Crédito",     icon: "💳", Icon: CreditCard },
   { id: "pix",      label: "PIX / Dinheiro",        icon: "⚡", Icon: Zap },
-  { id: "combinar", label: "Combinar na Entrega",   icon: "🤝", Icon: Handshake },
+  
 ];
 
 const DELIVERY: { id: DeliveryMode; label: string; icon: string; Icon: typeof Store }[] = [
