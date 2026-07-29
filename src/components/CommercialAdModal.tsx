@@ -468,14 +468,25 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         return;
       }
 
-      // Cobrança de moedas somente em NOVAS publicações (edição não cobra publish_extra)
+      // Cobrança de moedas somente em NOVAS publicações
       if (!isEditing) {
-        const spend = await spendCoinsForAction(uid, "publish_extra", `ad:${Date.now()}`);
-        if (!spend.ok && spend.reason === "insufficient") {
-          setSubmitting(false);
-          return;
+        if (costSummary.baseCost > 0) {
+          const spend = await spendCoinsForAction(uid, "publish_extra", `ad:${Date.now()}`);
+          if (!spend.ok && spend.reason === "insufficient") {
+            setSubmitting(false);
+            return;
+          }
+        }
+        if (costSummary.urgentCost > 0) {
+          const spendUrg = await spendCoinsForAction(uid, "urgent_neighborhood", `ad-urg:${Date.now()}`);
+          if (!spendUrg.ok && spendUrg.reason === "insufficient") {
+            toast.error("Saldo insuficiente para alerta de urgência.");
+            setSubmitting(false);
+            return;
+          }
         }
       }
+
 
       // Upload apenas das fotos NOVAS; preserva remotas
       const uploadedUrls: string[] = [];
