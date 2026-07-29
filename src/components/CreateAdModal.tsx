@@ -180,6 +180,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
   const [fixedValue, setFixedValue] = useState("");
   const [contractValue, setContractValue] = useState("");
   const [commissionPct, setCommissionPct] = useState("");
+  // Preço "De/Por" (promocional) e Parcelamento
+  const [originalValue, setOriginalValue] = useState(""); // preço "De" (opcional)
+  const [installments, setInstallments] = useState<number>(1); // 1..12
+  const [installmentsInterestFree, setInstallmentsInterestFree] = useState(true);
   const [files, setFiles] = useState<UploadItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
