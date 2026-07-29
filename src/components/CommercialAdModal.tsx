@@ -612,6 +612,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         photos: uploadedUrls,
         video_url: finalVideoUrl,
         video_duration: finalVideoUrl ? Math.round(videoDuration) : null,
+        tags: tags.slice(0, 5),
         status: "active",
         source: "commercial_ad",
         ...(isEditing
