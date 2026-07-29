@@ -680,7 +680,7 @@ export default function FeedLojistaPage() {
   }, [saved, savesLoaded]);
 
   const visibleRaw = useMemo(() => {
-    const q = debouncedSearch.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase().replace(/^#/, "");
     // Deriva urgência/raio/tags a partir de keywords quando o mock não traz explícito
     const decorated: FeedPost[] = MOCK_POSTS.map((p) => {
       const kws = (p.keywords || []).map((k) => k.toLowerCase());
