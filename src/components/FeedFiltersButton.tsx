@@ -335,11 +335,15 @@ export function FeedFiltersButton(props: FeedFiltersButtonProps) {
       {/* MODAL */}
       {open && (
         <div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-stretch sm:items-center justify-center bg-black/70 backdrop-blur-sm overflow-hidden"
           onClick={() => setOpen(false)}
+          style={{
+            paddingTop: "max(env(safe-area-inset-top), 0.5rem)",
+            paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)",
+          }}
         >
           <div
-            className="w-full sm:max-w-lg h-[95dvh] sm:h-auto sm:max-h-[90dvh] flex flex-col bg-[#0F0F10] border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+            className="w-full sm:max-w-lg h-full sm:h-auto sm:max-h-[90dvh] flex flex-col bg-[#0F0F10] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             style={{ boxShadow: `0 0 40px ${hexToRgba(accent, 0.25)}` }}
           >
