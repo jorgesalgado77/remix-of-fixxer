@@ -1886,6 +1886,85 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
               </div>
             )}
 
+            {(priceType === "fixo" || priceType === "fixo_comissao") && (
+              <div className="grid md:grid-cols-2 gap-3">
+                {/* Preço "De" (opcional — promoção) */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                    Preço "De" — antes do desconto (opcional)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-white/60 pointer-events-none">R$</span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={originalValue}
+                      onChange={(e) => setOriginalValue(maskCurrencyBRL(e.target.value))}
+                      onKeyDown={currencyKeyDown}
+                      onFocus={currencyFocusSelect}
+                      onBlur={(e) => setOriginalValue(maskCurrencyBRL(e.target.value))}
+                      onPaste={currencyPaste((v) => setOriginalValue(v))}
+                      placeholder="0,00"
+                      className="text-white pl-10 bg-white/5 border-white/10"
+                    />
+                  </div>
+                  {(() => {
+                    const de = parseCurrencyBRL(originalValue);
+                    const por = parseCurrencyBRL(fixedValue);
+                    if (de > 0 && por > 0 && de > por) {
+                      const pct = Math.round(((de - por) / de) * 100);
+                      return (
+                        <p className="text-[11px] font-bold text-emerald-400">
+                          −{pct}% de desconto
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
+                {/* Parcelamento */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-black tracking-wider text-white/70">
+                    Parcelamento
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={installments}
+                      onChange={(e) => setInstallments(Number(e.target.value))}
+                      className="flex-1 h-10 rounded-md bg-white/5 border border-white/10 px-3 text-white text-sm"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n} className="bg-[#0A0A0B]">
+                          {n === 1 ? "À vista (sem parcelamento)" : `${n}x`}
+                        </option>
+                      ))}
+                    </select>
+                    {installments > 1 && (
+                      <label className="flex items-center gap-1.5 text-[11px] font-semibold text-white/80 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={installmentsInterestFree}
+                          onChange={(e) => setInstallmentsInterestFree(e.target.checked)}
+                          className="h-3.5 w-3.5"
+                        />
+                        sem juros
+                      </label>
+                    )}
+                  </div>
+                  {installments > 1 && parseCurrencyBRL(fixedValue) > 0 && (
+                    <p className="text-[11px] font-bold text-white/70">
+                      {installments}x de {formatBRL((parseCurrencyBRL(fixedValue) / installments).toFixed(2).replace(".", ","))}
+                      {installmentsInterestFree ? " sem juros" : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+
+
             {(priceType === "comissao" || priceType === "fixo_comissao") && (
               <div className="grid md:grid-cols-3 gap-3">
                 <div className="space-y-1">
