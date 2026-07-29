@@ -755,10 +755,13 @@ export const CommercialAdModal = memo(function CommercialAdModal({
               photos={photos} addFiles={addFiles} removePhoto={removePhoto} fileRef={fileRef}
               priceFrom={priceFrom} setPriceFrom={setPriceFrom}
               priceTo={priceTo} setPriceTo={setPriceTo}
+              priceMode={priceMode} setPriceMode={setPriceMode}
               payments={payments} togglePayment={togglePayment}
               stock={stock} setStock={setStock}
               delivery={delivery} toggleDelivery={toggleDelivery}
               description={description} setDescription={setDescription}
+              videoUrl={videoUrl} videoDuration={videoDuration}
+              onPickVideo={onPickVideo} clearVideo={clearVideo} videoRef={videoRef}
               showErr={showErr} markTouched={markTouched}
               isEditing={isEditing}
             />
