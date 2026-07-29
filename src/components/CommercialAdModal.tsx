@@ -281,6 +281,17 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         setPayments((m.payments as PaymentMethod[]) || ["pix"]);
         setStock(m.stock != null ? String(m.stock) : "");
         setDelivery((m.delivery as DeliveryMode[]) || ["retirada"]);
+        if (m.urgency_tag) setUrgencyTag(m.urgency_tag as UrgencyTag);
+        if (typeof m.service_radius_km === "number") setServiceRadiusKm(m.service_radius_km);
+        if (typeof m.installments === "number") setInstallments(m.installments);
+        if (typeof m.installments_interest_free === "boolean") setInstallmentsInterestFree(m.installments_interest_free);
+        if (typeof m.valid_until === "string") {
+          const today = todayISO();
+          const max = maxValidityISO();
+          const v = m.valid_until > max ? max : m.valid_until < today ? today : m.valid_until;
+          setValidityDate(v);
+          setValidityPreset(0);
+        }
         const existing = (m.photos as string[] | undefined) || [];
         setPhotos(existing.map((url, i) => ({
           id: `remote-${i}-${url.slice(-12)}`,
@@ -299,6 +310,16 @@ export const CommercialAdModal = memo(function CommercialAdModal({
           setStock(d.stock || "");
           setDelivery(d.delivery || ["retirada"]);
           setDescription(d.description || "");
+          if (d.urgencyTag) setUrgencyTag(d.urgencyTag);
+          if (typeof d.serviceRadiusKm === "number") setServiceRadiusKm(d.serviceRadiusKm);
+          if (typeof d.installments === "number") setInstallments(d.installments);
+          if (typeof d.installmentsInterestFree === "boolean") setInstallmentsInterestFree(d.installmentsInterestFree);
+          if (d.validityPreset !== undefined) setValidityPreset(d.validityPreset);
+          if (typeof d.validityDate === "string" && d.validityDate) {
+            const today = todayISO();
+            const max = maxValidityISO();
+            setValidityDate(d.validityDate > max ? max : d.validityDate < today ? today : d.validityDate);
+          }
         }
       }
     } catch { /* ignore */ }
@@ -309,10 +330,16 @@ export const CommercialAdModal = memo(function CommercialAdModal({
   const writeDraft = useCallback(() => {
     if (isEditing) return;
     try {
-      const d = { v: 1, title, kind, priceFrom, priceTo, payments, stock, delivery, description };
+      const d = {
+        v: 2, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
+        urgencyTag, serviceRadiusKm, installments, installmentsInterestFree,
+        validityPreset, validityDate,
+      };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
     } catch { /* ignore quota */ }
-  }, [isEditing, title, kind, priceFrom, priceTo, payments, stock, delivery, description]);
+  }, [isEditing, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
+      urgencyTag, serviceRadiusKm, installments, installmentsInterestFree, validityPreset, validityDate]);
+
 
   useEffect(() => {
     if (!open || !hydratedRef.current || isEditing) return;
