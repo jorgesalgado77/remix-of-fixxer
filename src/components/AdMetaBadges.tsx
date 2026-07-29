@@ -85,6 +85,7 @@ export function AdMetaBadges({
         {installmentsInterestFree ? " s/ juros" : ""}
       </span>,
     );
+  }
   if (radiusKm && radiusKm > 0) {
     items.push(
       <span
