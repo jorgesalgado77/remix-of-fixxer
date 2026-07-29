@@ -4,8 +4,9 @@ import {
   X, Upload, Trash2, Megaphone, Tag, Package, Wrench, Truck,
   Store, Globe, CreditCard, Zap, Handshake, Rocket, Info, Save,
   Eye, ArrowLeft, CheckCircle2, Pencil, AlertCircle,
-  CalendarDays, CalendarClock, Radius, Coins, Home,
+  CalendarDays, CalendarClock, Radius, Coins, Home, Hash,
 } from "lucide-react";
+import { normalizeTagInput } from "@/components/AdMetaBadges";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
