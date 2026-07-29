@@ -928,6 +928,10 @@ export default function FeedLojistaPage() {
             onPillChange={(k) => setFilter(k as typeof filter)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
+            urgencyValue={urgencyFilter}
+            onUrgencyChange={setUrgencyFilter}
+            distanceValue={distanceKey}
+            onDistanceChange={setDistanceKey}
             badgeSlot={<OpportunitiesBadge category="lojista" />}
           />
         </div>
