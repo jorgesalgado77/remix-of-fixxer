@@ -19,18 +19,30 @@ type Theme = {
   hex?: string;
 };
 
+function formatBRL(v: number) {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
+}
+
 export function AdMetaBadges({
   urgency,
   radiusKm,
   tags,
   theme,
   compact = false,
+  priceValue,
+  originalValue,
+  installments,
+  installmentsInterestFree,
 }: {
   urgency?: UrgencyTag | null;
   radiusKm?: number | null;
   tags?: string[] | null;
   theme?: Theme;
   compact?: boolean;
+  priceValue?: number | null;
+  originalValue?: number | null;
+  installments?: number | null;
+  installmentsInterestFree?: boolean | null;
 }) {
   const items: React.ReactNode[] = [];
   if (urgency && URGENCY_META[urgency]) {
