@@ -4,8 +4,9 @@ import {
   X, Upload, Trash2, Megaphone, Tag, Package, Wrench, Truck,
   Store, Globe, CreditCard, Zap, Handshake, Rocket, Info, Save,
   Eye, ArrowLeft, CheckCircle2, Pencil, AlertCircle,
-  CalendarDays, CalendarClock, Radius, Coins, Home,
+  CalendarDays, CalendarClock, Radius, Coins, Home, Hash,
 } from "lucide-react";
+import { normalizeTagInput } from "@/components/AdMetaBadges";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
@@ -215,6 +216,8 @@ export const CommercialAdModal = memo(function CommercialAdModal({
   const [videoRemote, setVideoRemote] = useState(false);
   const [videoDuration, setVideoDuration] = useState<number>(0);
   const videoRef = useRef<HTMLInputElement>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
 
   // Saldo + plano p/ Resumo de Custo
   const [coinBalance, setCoinBalance] = useState<number>(() => getCachedBalance());
@@ -310,6 +313,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
           setVideoUrl(m.video_url);
           setVideoRemote(true);
         }
+        if (Array.isArray(m.tags)) setTags(normalizeTagInput(m.tags.join(" ")));
       } else {
         const raw = localStorage.getItem(DRAFT_KEY);
         if (raw) {
@@ -333,6 +337,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
             setValidityDate(d.validityDate > max ? max : d.validityDate < today ? today : d.validityDate);
           }
           if (d.priceMode === "from" || d.priceMode === "fixed") setPriceMode(d.priceMode);
+          if (Array.isArray(d.tags)) setTags(normalizeTagInput(d.tags.join(" ")));
         }
       }
     } catch { /* ignore */ }
@@ -346,12 +351,12 @@ export const CommercialAdModal = memo(function CommercialAdModal({
       const d = {
         v: 3, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
         urgencyTag, serviceRadiusKm, installments, installmentsInterestFree,
-        validityPreset, validityDate, priceMode,
+        validityPreset, validityDate, priceMode, tags,
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
     } catch { /* ignore quota */ }
   }, [isEditing, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
-      urgencyTag, serviceRadiusKm, installments, installmentsInterestFree, validityPreset, validityDate, priceMode]);
+      urgencyTag, serviceRadiusKm, installments, installmentsInterestFree, validityPreset, validityDate, priceMode, tags]);
 
 
   useEffect(() => {
@@ -475,6 +480,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
     setInstallments(1); setInstallmentsInterestFree(true);
     setValidityPreset(7); setValidityDate(addDaysISO(7));
     setPriceMode("fixed");
+    setTags([]); setTagInput("");
     clearVideo();
   };
 
@@ -606,6 +612,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         photos: uploadedUrls,
         video_url: finalVideoUrl,
         video_duration: finalVideoUrl ? Math.round(videoDuration) : null,
+        tags: tags.slice(0, 5),
         status: "active",
         source: "commercial_ad",
         ...(isEditing
@@ -762,6 +769,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
               description={description} setDescription={setDescription}
               videoUrl={videoUrl} videoDuration={videoDuration}
               onPickVideo={onPickVideo} clearVideo={clearVideo} videoRef={videoRef}
+              tags={tags} setTags={setTags} tagInput={tagInput} setTagInput={setTagInput}
               showErr={showErr} markTouched={markTouched}
               isEditing={isEditing}
             />
@@ -875,6 +883,8 @@ interface FormStepProps {
   onPickVideo: (f: File | null) => void;
   clearVideo: () => void;
   videoRef: React.RefObject<HTMLInputElement | null>;
+  tags: string[]; setTags: (v: string[]) => void;
+  tagInput: string; setTagInput: (v: string) => void;
   showErr: (f: FieldKey) => string | undefined;
   markTouched: (f: FieldKey) => void;
   isEditing: boolean;
@@ -887,6 +897,7 @@ function FormStep(p: FormStepProps) {
     payments, togglePayment,
     stock, setStock, delivery, toggleDelivery, description, setDescription,
     videoUrl, videoDuration, onPickVideo, clearVideo, videoRef,
+    tags, setTags, tagInput, setTagInput,
     showErr, markTouched, isEditing,
   } = p;
 
@@ -1181,6 +1192,61 @@ function FormStep(p: FormStepProps) {
           <FieldError msg={showErr("description")} />
           <p className="text-[10px] text-white/40 text-right ml-auto">{description.length}/1200 (mín. 20)</p>
         </div>
+      </section>
+
+      {/* 8. TAGS */}
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block text-[11px] font-black uppercase tracking-widest text-white/80">
+            Tags de Busca <span className="normal-case font-normal text-white/40">(até 5)</span>
+          </label>
+          <span className="text-[10px] text-white/50">{tags.length}/5</span>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text" value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                const merged = normalizeTagInput([...tags, ...normalizeTagInput(tagInput)].join(" "));
+                setTags(merged);
+                setTagInput("");
+              } else if (e.key === "Backspace" && !tagInput && tags.length) {
+                setTags(tags.slice(0, -1));
+              }
+            }}
+            onBlur={() => {
+              if (!tagInput.trim()) return;
+              const merged = normalizeTagInput([...tags, ...normalizeTagInput(tagInput)].join(" "));
+              setTags(merged);
+              setTagInput("");
+            }}
+            disabled={tags.length >= 5}
+            placeholder={tags.length >= 5 ? "Limite atingido" : "Ex: promob, mdf, oferta"}
+            maxLength={30}
+            className="flex-1 bg-[#111112] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-primary/60 disabled:opacity-50"
+          />
+        </div>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((t) => (
+              <span key={t}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                style={{ color: theme.hex, borderColor: `${theme.hex}55`, backgroundColor: `${theme.hex}18` }}>
+                <Hash className="w-3 h-3" />
+                {t}
+                <button type="button" onClick={() => setTags(tags.filter((x) => x !== t))}
+                  className="ml-0.5 opacity-70 hover:opacity-100" aria-label={`Remover ${t}`}>
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <p className="text-[10px] text-white/40">
+          Pressione <kbd className="px-1 py-0.5 rounded bg-white/10 text-white/70">Enter</kbd> ou vírgula para adicionar. As tags aparecem como pílulas no anúncio.
+        </p>
       </section>
 
       {/* FRANQUIA */}
