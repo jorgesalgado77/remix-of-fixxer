@@ -1407,17 +1407,6 @@ export default function FeedPrestadorPage() {
             onRetry={handleRefresh}
           />
         )}
-        {/* Filtros extras: urgência, distância, tag (componente compartilhado, tema laranja) */}
-        <AdFiltersBar
-          role="prestador"
-          urgency={urgencyFilter}
-          distance={distanceFilter}
-          tag={tagFilter}
-          onUrgencyChange={setUrgencyFilter}
-          onDistanceChange={setDistanceFilter}
-          onTagChange={setTagFilter}
-          tagPlaceholder="#montagem"
-        />
         <B2BSuggestionsCard />
         {/* Skeleton de busca */}
         {searching && (
