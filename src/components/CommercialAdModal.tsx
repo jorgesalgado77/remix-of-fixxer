@@ -56,9 +56,10 @@ interface CommercialAdModalProps {
 }
 
 type AdKind = "promo" | "produto" | "pacote" | "atacado";
-type PaymentMethod = "cartao" | "pix" | "combinar";
+type PaymentMethod = "cartao" | "pix";
 type DeliveryMode = "domicilio" | "retirada" | "frete" | "online";
 type UrgencyTag = "urgente" | "normal" | "encomenda";
+type PriceMode = "fixed" | "from";
 type Step = "form" | "preview" | "success";
 
 interface AdPhoto {
@@ -87,7 +88,7 @@ const AD_KINDS: { id: AdKind; label: string; icon: string; color: string; Icon: 
 const PAYMENTS: { id: PaymentMethod; label: string; icon: string; Icon: typeof CreditCard }[] = [
   { id: "cartao",   label: "Cartão de Crédito",     icon: "💳", Icon: CreditCard },
   { id: "pix",      label: "PIX / Dinheiro",        icon: "⚡", Icon: Zap },
-  { id: "combinar", label: "Combinar na Entrega",   icon: "🤝", Icon: Handshake },
+  
 ];
 
 const DELIVERY: { id: DeliveryMode; label: string; icon: string; Icon: typeof Store }[] = [
@@ -208,6 +209,12 @@ export const CommercialAdModal = memo(function CommercialAdModal({
   const [installmentsInterestFree, setInstallmentsInterestFree] = useState(true);
   const [validityPreset, setValidityPreset] = useState<3 | 7 | 10 | 15 | 0>(7);
   const [validityDate, setValidityDate] = useState<string>(() => addDaysISO(7));
+  const [priceMode, setPriceMode] = useState<PriceMode>("fixed");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoRemote, setVideoRemote] = useState(false);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const videoRef = useRef<HTMLInputElement>(null);
 
   // Saldo + plano p/ Resumo de Custo
   const [coinBalance, setCoinBalance] = useState<number>(() => getCachedBalance());
@@ -298,6 +305,11 @@ export const CommercialAdModal = memo(function CommercialAdModal({
           url,
           remote: true,
         })));
+        if (m.price_mode === "from" || m.price_mode === "fixed") setPriceMode(m.price_mode);
+        if (typeof m.video_url === "string" && m.video_url) {
+          setVideoUrl(m.video_url);
+          setVideoRemote(true);
+        }
       } else {
         const raw = localStorage.getItem(DRAFT_KEY);
         if (raw) {
@@ -320,6 +332,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
             const max = maxValidityISO();
             setValidityDate(d.validityDate > max ? max : d.validityDate < today ? today : d.validityDate);
           }
+          if (d.priceMode === "from" || d.priceMode === "fixed") setPriceMode(d.priceMode);
         }
       }
     } catch { /* ignore */ }
@@ -331,14 +344,14 @@ export const CommercialAdModal = memo(function CommercialAdModal({
     if (isEditing) return;
     try {
       const d = {
-        v: 2, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
+        v: 3, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
         urgencyTag, serviceRadiusKm, installments, installmentsInterestFree,
-        validityPreset, validityDate,
+        validityPreset, validityDate, priceMode,
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
     } catch { /* ignore quota */ }
   }, [isEditing, title, kind, priceFrom, priceTo, payments, stock, delivery, description,
-      urgencyTag, serviceRadiusKm, installments, installmentsInterestFree, validityPreset, validityDate]);
+      urgencyTag, serviceRadiusKm, installments, installmentsInterestFree, validityPreset, validityDate, priceMode]);
 
 
   useEffect(() => {
@@ -411,6 +424,47 @@ export const CommercialAdModal = memo(function CommercialAdModal({
     setDelivery((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
+  const clearVideo = useCallback(() => {
+    if (videoUrl && !videoRemote) {
+      try { URL.revokeObjectURL(videoUrl); } catch { /* ignore */ }
+    }
+    setVideoFile(null); setVideoUrl(null); setVideoRemote(false); setVideoDuration(0);
+    if (videoRef.current) videoRef.current.value = "";
+  }, [videoUrl, videoRemote]);
+
+  const onPickVideo = useCallback((f: File | null) => {
+    if (!f) return;
+    if (!/^video\//i.test(f.type)) {
+      toast.error("Selecione um arquivo de vídeo.");
+      return;
+    }
+    if (f.size > 60 * 1024 * 1024) {
+      toast.error("Vídeo excede 60MB.");
+      return;
+    }
+    const url = URL.createObjectURL(f);
+    const probe = document.createElement("video");
+    probe.preload = "metadata";
+    probe.src = url;
+    probe.onloadedmetadata = () => {
+      const dur = probe.duration || 0;
+      if (dur > 120.5) {
+        toast.error("Vídeo excede 2 minutos.");
+        URL.revokeObjectURL(url);
+        return;
+      }
+      if (videoUrl && !videoRemote) { try { URL.revokeObjectURL(videoUrl); } catch { /* ignore */ } }
+      setVideoFile(f);
+      setVideoUrl(url);
+      setVideoRemote(false);
+      setVideoDuration(dur);
+    };
+    probe.onerror = () => {
+      toast.error("Não foi possível ler o vídeo.");
+      URL.revokeObjectURL(url);
+    };
+  }, [videoUrl, videoRemote]);
+
   const resetForm = () => {
     setTitle(""); setKind("produto");
     photos.forEach((p) => { if (!p.remote) URL.revokeObjectURL(p.url); });
@@ -420,6 +474,8 @@ export const CommercialAdModal = memo(function CommercialAdModal({
     setUrgencyTag("normal"); setServiceRadiusKm(15);
     setInstallments(1); setInstallmentsInterestFree(true);
     setValidityPreset(7); setValidityDate(addDaysISO(7));
+    setPriceMode("fixed");
+    clearVideo();
   };
 
   const discardDraft = () => {
@@ -507,12 +563,36 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         }
       }
 
+      // Upload de vídeo (novo apenas). Vídeos remotos mantêm URL original.
+      let finalVideoUrl: string | null = videoRemote ? videoUrl : null;
+      if (videoFile && !videoRemote) {
+        try {
+          const ext = (videoFile.name.split(".").pop() || "mp4").toLowerCase();
+          const path = `ads/${uid}/video-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          const { error: vErr } = await supabaseExternal.storage
+            .from("media")
+            .upload(path, videoFile, {
+              cacheControl: "3600",
+              upsert: false,
+              contentType: videoFile.type || "video/mp4",
+            });
+          if (vErr) throw vErr;
+          const { data: vPub } = supabaseExternal.storage.from("media").getPublicUrl(path);
+          finalVideoUrl = vPub?.publicUrl ?? null;
+        } catch (vErr: any) {
+          console.warn("[CommercialAd] upload de vídeo falhou", vErr?.message);
+          toast.warning("Não foi possível enviar o vídeo. O anúncio será publicado sem ele.");
+          finalVideoUrl = null;
+        }
+      }
+
       const expiresAtISO = new Date(`${validityDate}T23:59:59`).toISOString();
       const metadata = {
         ...(initialAd?.metadata || {}),
         ad_kind: kind,
         price_from: priceFromNum || null,
         price_to: priceToNum,
+        price_mode: priceMode,
         payments,
         stock: stock ? Number(stock) : null,
         delivery,
@@ -524,6 +604,8 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         valid_until: validityDate,
         expires_at: expiresAtISO,
         photos: uploadedUrls,
+        video_url: finalVideoUrl,
+        video_duration: finalVideoUrl ? Math.round(videoDuration) : null,
         status: "active",
         source: "commercial_ad",
         ...(isEditing
@@ -673,10 +755,13 @@ export const CommercialAdModal = memo(function CommercialAdModal({
               photos={photos} addFiles={addFiles} removePhoto={removePhoto} fileRef={fileRef}
               priceFrom={priceFrom} setPriceFrom={setPriceFrom}
               priceTo={priceTo} setPriceTo={setPriceTo}
+              priceMode={priceMode} setPriceMode={setPriceMode}
               payments={payments} togglePayment={togglePayment}
               stock={stock} setStock={setStock}
               delivery={delivery} toggleDelivery={toggleDelivery}
               description={description} setDescription={setDescription}
+              videoUrl={videoUrl} videoDuration={videoDuration}
+              onPickVideo={onPickVideo} clearVideo={clearVideo} videoRef={videoRef}
               showErr={showErr} markTouched={markTouched}
               isEditing={isEditing}
             />
@@ -780,10 +865,16 @@ interface FormStepProps {
   removePhoto: (id: string) => void; fileRef: React.RefObject<HTMLInputElement | null>;
   priceFrom: string; setPriceFrom: (v: string) => void;
   priceTo: string; setPriceTo: (v: string) => void;
+  priceMode: PriceMode; setPriceMode: (m: PriceMode) => void;
   payments: PaymentMethod[]; togglePayment: (p: PaymentMethod) => void;
   stock: string; setStock: (v: string) => void;
   delivery: DeliveryMode[]; toggleDelivery: (d: DeliveryMode) => void;
   description: string; setDescription: (v: string) => void;
+  videoUrl: string | null;
+  videoDuration: number;
+  onPickVideo: (f: File | null) => void;
+  clearVideo: () => void;
+  videoRef: React.RefObject<HTMLInputElement | null>;
   showErr: (f: FieldKey) => string | undefined;
   markTouched: (f: FieldKey) => void;
   isEditing: boolean;
@@ -792,8 +883,10 @@ interface FormStepProps {
 function FormStep(p: FormStepProps) {
   const {
     theme, extraCost, title, setTitle, kind, setKind, photos, addFiles, removePhoto, fileRef,
-    priceFrom, setPriceFrom, priceTo, setPriceTo, payments, togglePayment,
+    priceFrom, setPriceFrom, priceTo, setPriceTo, priceMode, setPriceMode,
+    payments, togglePayment,
     stock, setStock, delivery, toggleDelivery, description, setDescription,
+    videoUrl, videoDuration, onPickVideo, clearVideo, videoRef,
     showErr, markTouched, isEditing,
   } = p;
 
@@ -926,6 +1019,32 @@ function FormStep(p: FormStepProps) {
           </div>
         </div>
 
+        {/* PREÇO A PARTIR DE */}
+        <div className="flex items-center gap-2 pt-1">
+          {(["fixed", "from"] as PriceMode[]).map((mode) => {
+            const active = priceMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setPriceMode(mode)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-wider transition-all"
+                style={{
+                  borderColor: active ? theme.hex : "rgba(255,255,255,0.15)",
+                  background: active ? `${theme.hex}18` : "#111112",
+                  color: active ? theme.hex : "rgba(255,255,255,0.7)",
+                }}
+              >
+                {mode === "fixed" ? "💰 Preço Fixo" : "📊 Preço a partir de"}
+              </button>
+            );
+          })}
+          <span className="text-[10px] text-white/40 leading-tight">
+            {priceMode === "from" ? "Será exibido como “A partir de …”" : "Valor exato exibido no card."}
+          </span>
+        </div>
+
+
         <div className="space-y-1.5">
           <span className="text-[10px] font-bold uppercase tracking-wider text-white/60">Formas de Aceite</span>
           <div className="flex flex-wrap gap-2">
@@ -988,6 +1107,61 @@ function FormStep(p: FormStepProps) {
           })}
         </div>
         <FieldError msg={showErr("delivery")} />
+      </section>
+
+      {/* 6.5 VÍDEO DO PRODUTO (opcional) */}
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block text-[11px] font-black uppercase tracking-widest text-white/80">
+            Vídeo do Produto <span className="normal-case font-normal text-white/40">(opcional · até 2 min)</span>
+          </label>
+          {videoUrl && (
+            <button
+              type="button"
+              onClick={clearVideo}
+              className="text-[10px] font-bold uppercase tracking-wider text-white/60 hover:text-red-400 inline-flex items-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" /> Remover
+            </button>
+          )}
+        </div>
+        <input
+          ref={videoRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime,video/*"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0] ?? null;
+            onPickVideo(f);
+            if (videoRef.current) videoRef.current.value = "";
+          }}
+        />
+        {!videoUrl ? (
+          <button
+            type="button"
+            onClick={() => videoRef.current?.click()}
+            className="w-full py-5 rounded-2xl border-2 border-dashed border-white/15 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center gap-2 text-white/60"
+          >
+            <Upload className="w-5 h-5" style={{ color: theme.hex }} />
+            <span className="text-[11px] font-bold uppercase tracking-widest">Enviar Vídeo do Produto</span>
+            <span className="text-[10px] text-white/40">MP4, WebM ou MOV — duração máxima 2 minutos (até 60MB)</span>
+          </button>
+        ) : (
+          <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+            <video
+              src={videoUrl}
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full max-h-72 bg-black"
+            />
+            {videoDuration > 0 && (
+              <div className="px-3 py-1.5 text-[10px] text-white/60 border-t border-white/10">
+                Duração: {Math.floor(videoDuration / 60)}m {Math.round(videoDuration % 60)}s
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* 7. DESCRIÇÃO */}
