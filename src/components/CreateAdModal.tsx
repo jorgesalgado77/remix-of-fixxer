@@ -704,6 +704,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     setFixedValue("");
     setContractValue("");
     setCommissionPct("");
+    setOriginalValue("");
+    setInstallments(1);
+    setInstallmentsInterestFree(true);
     setPriceType("fixo");
     setFreightVolumes("");
     setFreightWeight("");
