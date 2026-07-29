@@ -664,22 +664,16 @@ export default function FeedClientePage() {
               </Link>
             }
             onMacroSearchTerm={(term) => setQuery(term ?? "")}
+            urgencyValue={urgencyFilter}
+            onUrgencyChange={setUrgencyFilter}
+            distanceValue={distanceFilter}
+            onDistanceChange={setDistanceFilter}
             badgeSlot={<OpportunitiesBadge category="cliente" />}
           />
         </div>
       </header>
 
       <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
-        <AdFiltersBar
-          role="cliente"
-          urgency={urgencyFilter}
-          distance={distanceFilter}
-          tag={tagFilter}
-          onUrgencyChange={setUrgencyFilter}
-          onDistanceChange={setDistanceFilter}
-          onTagChange={setTagFilter}
-          tagPlaceholder="#reparo"
-        />
         <B2BSuggestionsCard />
         {/* BANNER PUBLICAR NECESSIDADE */}
         <button
