@@ -870,6 +870,10 @@ export default function FeedParceiroPage() {
             onPillChange={(k) => setActiveSector(k as typeof activeSector)}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
+            urgencyValue={urgencyFilter}
+            onUrgencyChange={setUrgencyFilter}
+            distanceValue={distanceFilter}
+            onDistanceChange={setDistanceFilter}
             badgeSlot={<OpportunitiesBadge category="fornecedor" />}
           />
         </div>
