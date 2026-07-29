@@ -480,6 +480,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
     setInstallments(1); setInstallmentsInterestFree(true);
     setValidityPreset(7); setValidityDate(addDaysISO(7));
     setPriceMode("fixed");
+    setTags([]); setTagInput("");
     clearVideo();
   };
 
