@@ -865,10 +865,16 @@ interface FormStepProps {
   removePhoto: (id: string) => void; fileRef: React.RefObject<HTMLInputElement | null>;
   priceFrom: string; setPriceFrom: (v: string) => void;
   priceTo: string; setPriceTo: (v: string) => void;
+  priceMode: PriceMode; setPriceMode: (m: PriceMode) => void;
   payments: PaymentMethod[]; togglePayment: (p: PaymentMethod) => void;
   stock: string; setStock: (v: string) => void;
   delivery: DeliveryMode[]; toggleDelivery: (d: DeliveryMode) => void;
   description: string; setDescription: (v: string) => void;
+  videoUrl: string | null;
+  videoDuration: number;
+  onPickVideo: (f: File | null) => void;
+  clearVideo: () => void;
+  videoRef: React.RefObject<HTMLInputElement | null>;
   showErr: (f: FieldKey) => string | undefined;
   markTouched: (f: FieldKey) => void;
   isEditing: boolean;
@@ -877,8 +883,10 @@ interface FormStepProps {
 function FormStep(p: FormStepProps) {
   const {
     theme, extraCost, title, setTitle, kind, setKind, photos, addFiles, removePhoto, fileRef,
-    priceFrom, setPriceFrom, priceTo, setPriceTo, payments, togglePayment,
+    priceFrom, setPriceFrom, priceTo, setPriceTo, priceMode, setPriceMode,
+    payments, togglePayment,
     stock, setStock, delivery, toggleDelivery, description, setDescription,
+    videoUrl, videoDuration, onPickVideo, clearVideo, videoRef,
     showErr, markTouched, isEditing,
   } = p;
 
