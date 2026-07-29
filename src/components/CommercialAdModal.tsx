@@ -696,8 +696,6 @@ export const CommercialAdModal = memo(function CommercialAdModal({
               isEditing={isEditing}
             />
           )}
-          {step === "form" && (
-            <div style={{ display: "none" }}>
           {step === "preview" && (
             <PreviewStep
               theme={theme}
