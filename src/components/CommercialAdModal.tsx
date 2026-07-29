@@ -337,6 +337,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
             setValidityDate(d.validityDate > max ? max : d.validityDate < today ? today : d.validityDate);
           }
           if (d.priceMode === "from" || d.priceMode === "fixed") setPriceMode(d.priceMode);
+          if (Array.isArray(d.tags)) setTags(normalizeTagInput(d.tags.join(" ")));
         }
       }
     } catch { /* ignore */ }
