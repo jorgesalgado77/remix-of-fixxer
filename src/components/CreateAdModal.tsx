@@ -430,6 +430,9 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       setFixedValue(d.fixedValue || "");
       setContractValue(d.contractValue || "");
       setCommissionPct(d.commissionPct || "");
+      setOriginalValue(d.originalValue || "");
+      setInstallments(typeof d.installments === "number" ? d.installments : 1);
+      setInstallmentsInterestFree(d.installmentsInterestFree !== false);
       setFreightVolumes(d.freightVolumes || "");
       setFreightWeight(d.freightWeight || "");
       setOtherServiceText(d.otherServiceText || "");
