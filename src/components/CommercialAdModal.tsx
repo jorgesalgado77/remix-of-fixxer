@@ -209,6 +209,12 @@ export const CommercialAdModal = memo(function CommercialAdModal({
   const [installmentsInterestFree, setInstallmentsInterestFree] = useState(true);
   const [validityPreset, setValidityPreset] = useState<3 | 7 | 10 | 15 | 0>(7);
   const [validityDate, setValidityDate] = useState<string>(() => addDaysISO(7));
+  const [priceMode, setPriceMode] = useState<PriceMode>("fixed");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoRemote, setVideoRemote] = useState(false);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const videoRef = useRef<HTMLInputElement>(null);
 
   // Saldo + plano p/ Resumo de Custo
   const [coinBalance, setCoinBalance] = useState<number>(() => getCachedBalance());
