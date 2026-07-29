@@ -563,12 +563,36 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         }
       }
 
+      // Upload de vídeo (novo apenas). Vídeos remotos mantêm URL original.
+      let finalVideoUrl: string | null = videoRemote ? videoUrl : null;
+      if (videoFile && !videoRemote) {
+        try {
+          const ext = (videoFile.name.split(".").pop() || "mp4").toLowerCase();
+          const path = `ads/${uid}/video-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          const { error: vErr } = await supabaseExternal.storage
+            .from("media")
+            .upload(path, videoFile, {
+              cacheControl: "3600",
+              upsert: false,
+              contentType: videoFile.type || "video/mp4",
+            });
+          if (vErr) throw vErr;
+          const { data: vPub } = supabaseExternal.storage.from("media").getPublicUrl(path);
+          finalVideoUrl = vPub?.publicUrl ?? null;
+        } catch (vErr: any) {
+          console.warn("[CommercialAd] upload de vídeo falhou", vErr?.message);
+          toast.warning("Não foi possível enviar o vídeo. O anúncio será publicado sem ele.");
+          finalVideoUrl = null;
+        }
+      }
+
       const expiresAtISO = new Date(`${validityDate}T23:59:59`).toISOString();
       const metadata = {
         ...(initialAd?.metadata || {}),
         ad_kind: kind,
         price_from: priceFromNum || null,
         price_to: priceToNum,
+        price_mode: priceMode,
         payments,
         stock: stock ? Number(stock) : null,
         delivery,
@@ -580,6 +604,8 @@ export const CommercialAdModal = memo(function CommercialAdModal({
         valid_until: validityDate,
         expires_at: expiresAtISO,
         photos: uploadedUrls,
+        video_url: finalVideoUrl,
+        video_duration: finalVideoUrl ? Math.round(videoDuration) : null,
         status: "active",
         source: "commercial_ad",
         ...(isEditing
