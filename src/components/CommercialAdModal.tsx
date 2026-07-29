@@ -883,6 +883,8 @@ interface FormStepProps {
   onPickVideo: (f: File | null) => void;
   clearVideo: () => void;
   videoRef: React.RefObject<HTMLInputElement | null>;
+  tags: string[]; setTags: (v: string[]) => void;
+  tagInput: string; setTagInput: (v: string) => void;
   showErr: (f: FieldKey) => string | undefined;
   markTouched: (f: FieldKey) => void;
   isEditing: boolean;
