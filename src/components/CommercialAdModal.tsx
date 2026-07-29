@@ -1109,6 +1109,61 @@ function FormStep(p: FormStepProps) {
         <FieldError msg={showErr("delivery")} />
       </section>
 
+      {/* 6.5 VÍDEO DO PRODUTO (opcional) */}
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block text-[11px] font-black uppercase tracking-widest text-white/80">
+            Vídeo do Produto <span className="normal-case font-normal text-white/40">(opcional · até 2 min)</span>
+          </label>
+          {videoUrl && (
+            <button
+              type="button"
+              onClick={clearVideo}
+              className="text-[10px] font-bold uppercase tracking-wider text-white/60 hover:text-red-400 inline-flex items-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" /> Remover
+            </button>
+          )}
+        </div>
+        <input
+          ref={videoRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime,video/*"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0] ?? null;
+            onPickVideo(f);
+            if (videoRef.current) videoRef.current.value = "";
+          }}
+        />
+        {!videoUrl ? (
+          <button
+            type="button"
+            onClick={() => videoRef.current?.click()}
+            className="w-full py-5 rounded-2xl border-2 border-dashed border-white/15 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center gap-2 text-white/60"
+          >
+            <Upload className="w-5 h-5" style={{ color: theme.hex }} />
+            <span className="text-[11px] font-bold uppercase tracking-widest">Enviar Vídeo do Produto</span>
+            <span className="text-[10px] text-white/40">MP4, WebM ou MOV — duração máxima 2 minutos (até 60MB)</span>
+          </button>
+        ) : (
+          <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+            <video
+              src={videoUrl}
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full max-h-72 bg-black"
+            />
+            {videoDuration > 0 && (
+              <div className="px-3 py-1.5 text-[10px] text-white/60 border-t border-white/10">
+                Duração: {Math.floor(videoDuration / 60)}m {Math.round(videoDuration % 60)}s
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
       {/* 7. DESCRIÇÃO */}
       <section className="space-y-2">
         <label className="block text-[11px] font-black uppercase tracking-widest text-white/80">
