@@ -265,23 +265,66 @@ function B2BSuggestionsCardInner() {
       window.removeEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
   }, []);
 
-  // Fallback: se não houver sugestões calculadas, usa presets fixos por categoria.
-  const baseList =
-    suggestions.length > 0 ? suggestions : FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador;
-
-  // Ranqueia sugestões pela relevância com o ramo do usuário (usa targetBranch
-  // quando disponível — no fallback estático, o item pode não ter targetBranch,
-  // caso em que fica com level="none" e mantém a ordem original).
+  // Prioridade: parceiros REAIS relacionados ao ramo do usuário; depois
+  // ramos/subcategorias irmãs da(s) macro(s) dele; por último, presets fixos.
   const displaySuggestions = useMemo(() => {
-    const scored = baseList.map((s) => {
-      const rel: RelevanceResult = s.targetBranch
+    const score = (s: B2BSuggestion) => ({
+      s,
+      rel: s.targetBranch
         ? scoreRelevanceDetailed([s.targetBranch], branchCtx)
-        : { level: "none", matchedBranch: null, reason: null };
-      return { s, rel };
+        : ({ level: "none", matchedBranch: null, reason: null } as RelevanceResult),
     });
-    scored.sort((a, b) => relevanceRank(a.rel.level) - relevanceRank(b.rel.level));
-    return scored;
-  }, [baseList, branchCtx]);
+
+    const real = suggestions
+      .filter((s) => !!s.userId)
+      .map(score)
+      .filter((x) => !branchCtx.hasContext || x.rel.level !== "none")
+      .sort((a, b) => relevanceRank(a.rel.level) - relevanceRank(b.rel.level));
+
+    const out = [...real];
+    const seen = new Set(out.map((x) => x.s.title));
+
+    if (out.length < 4) {
+      for (const s of [
+        ...branchFallback(branchCtx),
+        ...suggestions.filter((x) => !x.userId),
+        ...(FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador),
+      ]) {
+        if (out.length >= 4) break;
+        if (seen.has(s.title)) continue;
+        seen.add(s.title);
+        out.push(score(s));
+      }
+    }
+    return out.slice(0, 4);
+  }, [suggestions, branchCtx, category]);
+
+  const openSuggestion = useCallback(
+    (s: B2BSuggestion) => {
+      if (s.userId) {
+        navigate({ to: "/perfil/$userId", params: { userId: s.userId } as any } as any);
+        return;
+      }
+      const term = (s.targetBranch || s.title).trim();
+      if (!term) return;
+      const feed =
+        category === "lojista"
+          ? "/feed/lojista"
+          : category === "fornecedor"
+          ? "/feed/parceiro"
+          : category === "cliente"
+          ? "/feed/cliente"
+          : "/feed/prestador";
+      navigate({ to: feed as any });
+      setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent("fixxer:universal-search", { detail: { query: term } }),
+        );
+      }, 120);
+    },
+    [navigate, category],
+  );
+
 
   // Estado OCULTO: mostra chip discreto para reexibir.
   if (dismissed) {
