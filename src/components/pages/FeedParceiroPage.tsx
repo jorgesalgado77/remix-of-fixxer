@@ -855,7 +855,7 @@ export default function FeedParceiroPage() {
             backSlot={
               <button
                 type="button"
-                onClick={() => navigate({ to: "/dashboard/parceiro" }).catch(() => undefined)}
+                onClick={() => navigate({ to: "/parceiro" as any }).catch(() => undefined)}
                 className="w-10 h-10 rounded-xl border border-white/10 bg-[#1A1A1B] text-white/80 transition hover:border-[#A855F7]/40 hover:text-[#A855F7] flex items-center justify-center shrink-0"
                 aria-label="Voltar para Dashboard do Fornecedor"
               >
