@@ -104,41 +104,58 @@ function RegisterComponent() {
 
       // 2. Auth SignUp - Aumentar tempo de resposta se necessário ou logs
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             full_name: fullName,
-            role: role,
+            role: role === "casual" ? "cliente" : role,
           },
         },
       });
 
       if (authError) {
         console.error("Erro no auth.signUp:", authError);
-        toast.error(`Erro no registro: ${authError.message}`);
+        const raw =
+          (authError as any)?.message ||
+          (authError as any)?.error_description ||
+          (authError as any)?.msg ||
+          "";
+        const low = String(raw).toLowerCase();
+        let friendly = raw || "Não foi possível concluir o cadastro. Tente novamente.";
+        if (low.includes("already registered") || low.includes("user already"))
+          friendly = "Este e-mail já está cadastrado. Faça login ou recupere sua senha.";
+        else if (low.includes("database error"))
+          friendly = "Falha ao criar o perfil no banco de dados. Avise o suporte (erro no gatilho de cadastro).";
+        else if (low.includes("password"))
+          friendly = "Senha inválida: use no mínimo 8 caracteres, 1 maiúscula e 1 especial.";
+        else if (low.includes("invalid") && low.includes("email"))
+          friendly = "E-mail inválido. Verifique e tente novamente.";
+        else if (low.includes("rate limit") || low.includes("too many"))
+          friendly = "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
+        toast.error(friendly);
         return;
       }
+
 
       console.log("Auth OK. ID:", authData.user?.id);
 
       // 3. Verificação de sessão
       if (authData.user) {
-        // Persistir dados de contato coletados no cadastro em ambos os clientes
+        // Persistir dados de contato coletados no cadastro (só é possível com sessão ativa)
         const contactPayload: any = {
           id: authData.user.id,
           full_name: fullName,
-          role: role,
+          role: role === "casual" ? "cliente" : role,
           cnpj_cpf: (role === "lojista" ? cnpj : cpf) || null,
           phone: phone || null,
           whatsapp: cellphone || null,
           contact_email: email || null,
         };
-        try { await supabaseExternal.from('profiles').upsert(contactPayload, { onConflict: 'id' }); } catch (pe) { console.warn("upsert externo:", pe); }
         if (authData.session) {
-          try { await supabase.from('profiles').upsert(contactPayload); } catch (pe) { console.error("Erro no upsert de perfil:", pe); }
+          try { await supabaseExternal.from('profiles').upsert(contactPayload, { onConflict: 'id' }); } catch (pe) { console.warn("upsert perfil:", pe); }
         }
-
 
         // Attach referral (se veio de link /r/:code)
         try {
@@ -150,19 +167,22 @@ function RegisterComponent() {
           console.warn("Erro ao anexar referral:", refErr);
         }
 
-        toast.success("Cadastro realizado!");
-
-        // Não persistimos identidade em localStorage. A sessão Supabase já é a fonte
-        // de verdade; o role será resolvido pelo servidor via user_roles/profiles.
         try { window.dispatchEvent(new Event('fixxer:identity-change')); } catch {}
 
-        // Redirecionamento para a dashboard correta (categoria vinda do próprio form)
+        if (!authData.session) {
+          // Confirmação de e-mail ativada: usuário ainda não está logado.
+          toast.success("Cadastro criado! Confirme seu e-mail para acessar sua conta.");
+          setTimeout(() => { window.location.href = "/auth"; }, 1200);
+          return;
+        }
+
+        toast.success("Cadastro realizado!");
         setTimeout(() => {
           const redirectPath = `/dashboard/${role === 'casual' ? 'cliente' : role}`;
-          console.log("Redirecionando para:", redirectPath);
           window.location.href = redirectPath;
         }, 800);
       }
+
 
     } catch (error: any) {
       console.error("Erro inesperado no cadastro:", error);
