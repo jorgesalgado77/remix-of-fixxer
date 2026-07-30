@@ -464,7 +464,10 @@ export type B2BCandidate = {
   lng?: number | null;
   /** ISO timestamp — usado para priorizar por recência. */
   updatedAt?: string | null;
+  /** id do perfil real (para abrir /perfil/:id ao clicar). */
+  userId?: string | null;
 };
+
 
 export type B2BContext = {
   userLocation?: { lat: number; lng: number } | null;
