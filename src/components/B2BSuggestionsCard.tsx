@@ -163,7 +163,9 @@ function branchFallback(ctx: BranchContext): B2BSuggestion[] {
  * candidatos reais pelo raio de atuação e reordena por recência.
  */
 function B2BSuggestionsCardInner() {
+  const navigate = useNavigate();
   const category = useCurrentCategory();
+
   const preset = PRESETS[category] ?? PRESETS.prestador;
   const branchCtx = useUserBranchContext();
   const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
