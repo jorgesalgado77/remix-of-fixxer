@@ -26,6 +26,8 @@ import {
   Heart,
   Loader2,
   Settings,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCategoryColor } from "@/lib/getCategoryColor";
