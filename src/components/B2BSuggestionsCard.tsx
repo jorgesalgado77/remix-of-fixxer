@@ -179,7 +179,7 @@ function B2BSuggestionsCardInner() {
       radiusKm,
       userLocation: userLocRef.current,
       candidates: candidatesRef.current,
-    }).slice(0, 4);
+    }).slice(0, 24);
     setSuggestions(list);
   }, []);
 
@@ -200,16 +200,15 @@ function B2BSuggestionsCardInner() {
         if (p?.lat != null && p?.lng != null) {
           userLocRef.current = { lat: Number(p.lat), lng: Number(p.lng) };
         }
-        // Candidatos reais: profiles com lat/lng e business_category preenchidos
+        // Candidatos reais: perfis com ramo preenchido (geo é opcional).
         try {
           const { data: cands } = await supabaseExternal
             .from("profiles")
-            .select("id, company_name, full_name, business_category, lat, lng, updated_at")
+            .select("id, display_name, company_name, full_name, business_category, lat, lng, updated_at")
             .not("business_category", "is", null)
-            .not("lat", "is", null)
-            .not("lng", "is", null)
             .neq("id", uid)
-            .limit(80);
+            .order("updated_at", { ascending: false })
+            .limit(120);
           if (!cancelled && Array.isArray(cands)) {
             const flat: B2BCandidate[] = [];
             for (const row of cands as any[]) {
@@ -217,21 +216,30 @@ function B2BSuggestionsCardInner() {
                 .split(",")
                 .map((s: string) => s.trim())
                 .filter(Boolean);
+              const name =
+                row.display_name || row.company_name || row.full_name || "Parceiro FIXXER";
               for (const br of branches) {
                 flat.push({
-                  title: (row.company_name || row.full_name || "Parceiro FIXXER") + " — " + br,
+                  title: `${name} — ${br}`,
                   targetBranch: br,
                   lat: row.lat,
                   lng: row.lng,
                   updatedAt: row.updated_at,
+                  userId: row.id,
                 });
               }
             }
             candidatesRef.current = flat;
           }
         } catch {
-          /* sem candidatos reais — usa fallback estático */
+          /* sem candidatos reais — usa fallback do próprio ramo */
         }
+        if (!cancelled) recompute();
+      } catch {
+        /* silencioso — sem sugestões */
+      }
+    })();
+
         if (!cancelled) recompute();
       } catch {
         /* silencioso — sem sugestões */
