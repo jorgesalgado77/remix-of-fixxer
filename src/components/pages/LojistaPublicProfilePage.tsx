@@ -286,7 +286,7 @@ export function LojistaPublicProfilePage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewCategoryFilter, setReviewCategoryFilter] = useState<string>("Todos");
   const [reviewRatingFilter, setReviewRatingFilter] = useState<string>("Todas");
-  const [reviewDateOrder, setReviewDateOrder] = useState<"desc" | "asc">("desc");
+  const [showReviewFilters, setShowReviewFilters] = useState(false);
 
   // Review modal
   const [showReviewModal, setShowReviewModal] = useState(false);
