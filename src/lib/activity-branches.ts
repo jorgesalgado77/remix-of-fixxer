@@ -508,15 +508,15 @@ export function getB2BSuggestions(
     staticList.map((s) => (s.targetBranch || "").toLowerCase()).filter(Boolean),
   );
   const scored = candidates
-    .filter((c) => !targets.size || targets.has((c.targetBranch || "").toLowerCase()))
     .map((c) => {
       const d = loc && c.lat != null && c.lng != null
         ? haversineKm(loc, { lat: c.lat, lng: c.lng })
         : Number.POSITIVE_INFINITY;
-      return { c, d, t: c.updatedAt ? new Date(c.updatedAt).getTime() : 0 };
+      const inTargets = targets.has((c.targetBranch || "").toLowerCase()) ? 0 : 1;
+      return { c, d, inTargets, t: c.updatedAt ? new Date(c.updatedAt).getTime() : 0 };
     })
-    .filter((x) => (radiusKm ? x.d <= radiusKm : true))
-    .sort((a, b) => (b.t - a.t) || (a.d - b.d));
+    .filter((x) => (radiusKm && Number.isFinite(x.d) ? x.d <= radiusKm : true))
+    .sort((a, b) => (a.inTargets - b.inTargets) || (b.t - a.t) || (a.d - b.d));
 
   const dynList: B2BSuggestion[] = scored.map(({ c, d }) => {
     const base = staticList.find(
@@ -529,8 +529,10 @@ export function getB2BSuggestions(
         ? `≈ ${d.toFixed(1)} km — parceiro ativo`
         : (base?.hint ?? "Parceria B2B sugerida"),
       targetBranch: c.targetBranch,
+      userId: c.userId ?? null,
     };
   });
+
 
   if (dynList.length === 0) return staticList;
   const merged: B2BSuggestion[] = [];
