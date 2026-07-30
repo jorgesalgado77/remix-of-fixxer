@@ -103,8 +103,10 @@ function writeDismissed(cat: CategoryKey, v: boolean) {
   }
 }
 
+import { useNavigate } from "@tanstack/react-router";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
+  ACTIVITY_MATRIX,
   getB2BSuggestions,
   normalizeBranches,
   type B2BCandidate,
@@ -112,7 +114,13 @@ import {
 } from "@/lib/activity-branches";
 import { useCurrentCategory } from "@/lib/user-category";
 import { getCategoryTheme } from "@/lib/category-colors";
-import { scoreRelevanceDetailed, useUserBranchContext, relevanceRank, type RelevanceResult } from "@/lib/branch-relevance";
+import {
+  scoreRelevanceDetailed,
+  useUserBranchContext,
+  relevanceRank,
+  type BranchContext,
+  type RelevanceResult,
+} from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 
 const DEFAULT_RADIUS_KM = 25;
@@ -122,6 +130,32 @@ function readRadius(): number {
   const v = Number(window.localStorage.getItem("fixxer_radius_km"));
   return Number.isFinite(v) && v > 0 ? v : DEFAULT_RADIUS_KM;
 }
+
+/**
+ * Sugestões derivadas do próprio ramo do usuário: ramos e subcategorias
+ * irmãs dentro das macro-categorias em que ele atua. Usado apenas quando
+ * não existem parceiros reais suficientes no raio.
+ */
+function branchFallback(ctx: BranchContext): B2BSuggestion[] {
+  if (ctx.macroIds.size === 0) return [];
+  const out: B2BSuggestion[] = [];
+  for (const macro of ACTIVITY_MATRIX) {
+    if (!ctx.macroIds.has(macro.id)) continue;
+    for (const b of macro.branches) {
+      if (b.label.startsWith("📝")) continue;
+      const key = b.label.trim().toLowerCase();
+      if (ctx.branchKeys.has(key)) continue;
+      out.push({
+        icon: macro.icon,
+        title: b.label,
+        hint: `Buscar parceiros em ${macro.label.split(",")[0]}`,
+        targetBranch: b.label,
+      });
+    }
+  }
+  return out;
+}
+
 
 /**
  * Card compacto que sugere parcerias B2B cruzadas com base nos ramos
