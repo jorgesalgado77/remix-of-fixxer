@@ -104,21 +104,40 @@ function RegisterComponent() {
 
       // 2. Auth SignUp - Aumentar tempo de resposta se necessário ou logs
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             full_name: fullName,
-            role: role,
+            role: role === "casual" ? "cliente" : role,
           },
         },
       });
 
       if (authError) {
         console.error("Erro no auth.signUp:", authError);
-        toast.error(`Erro no registro: ${authError.message}`);
+        const raw =
+          (authError as any)?.message ||
+          (authError as any)?.error_description ||
+          (authError as any)?.msg ||
+          "";
+        const low = String(raw).toLowerCase();
+        let friendly = raw || "Não foi possível concluir o cadastro. Tente novamente.";
+        if (low.includes("already registered") || low.includes("user already"))
+          friendly = "Este e-mail já está cadastrado. Faça login ou recupere sua senha.";
+        else if (low.includes("database error"))
+          friendly = "Falha ao criar o perfil no banco de dados. Avise o suporte (erro no gatilho de cadastro).";
+        else if (low.includes("password"))
+          friendly = "Senha inválida: use no mínimo 8 caracteres, 1 maiúscula e 1 especial.";
+        else if (low.includes("invalid") && low.includes("email"))
+          friendly = "E-mail inválido. Verifique e tente novamente.";
+        else if (low.includes("rate limit") || low.includes("too many"))
+          friendly = "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
+        toast.error(friendly);
         return;
       }
+
 
       console.log("Auth OK. ID:", authData.user?.id);
 
