@@ -394,8 +394,12 @@ function B2BSuggestionsCardInner() {
         {displaySuggestions.map(({ s, rel }) => (
           <button
             key={s.title}
+            type="button"
+            onClick={() => openSuggestion(s)}
+            title={s.userId ? "Abrir perfil do parceiro" : `Buscar: ${s.targetBranch || s.title}`}
             className="w-full text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors"
           >
+
             <span className="text-base shrink-0">{s.icon}</span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
