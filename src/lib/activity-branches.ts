@@ -334,7 +334,10 @@ export type B2BSuggestion = {
   hint: string;
   /** Ramo-alvo sugerido para busca no feed. */
   targetBranch?: string;
+  /** Quando a sugestão vem de um perfil real, o id para abrir /perfil/:id. */
+  userId?: string | null;
 };
+
 
 export const B2B_SUGGESTIONS: Record<string, B2BSuggestion[]> = {
   // Assistência técnica
