@@ -240,11 +240,7 @@ function B2BSuggestionsCardInner() {
       }
     })();
 
-        if (!cancelled) recompute();
-      } catch {
-        /* silencioso — sem sugestões */
-      }
-    })();
+
 
     const onRadiusChange = () => recompute();
     if (typeof window !== "undefined") {
