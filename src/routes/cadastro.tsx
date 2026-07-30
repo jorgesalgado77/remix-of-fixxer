@@ -178,9 +178,17 @@ function RegisterComponent() {
 
         toast.success("Cadastro realizado!");
         setTimeout(() => {
-          const redirectPath = `/dashboard/${role === 'casual' ? 'cliente' : role}`;
-          window.location.href = redirectPath;
+          // Cada categoria tem sua própria rota de painel (não existe /dashboard/:categoria)
+          const dashboardByRole: Record<string, string> = {
+            casual: "/cliente",
+            cliente: "/cliente",
+            lojista: "/lojista",
+            prestador: "/prestador",
+            fornecedor: "/parceiro",
+          };
+          window.location.href = dashboardByRole[role as string] ?? "/dashboard";
         }, 800);
+
       }
 
 
