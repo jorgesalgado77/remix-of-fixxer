@@ -26,6 +26,8 @@ import {
   Heart,
   Loader2,
   Settings,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCategoryColor } from "@/lib/getCategoryColor";
@@ -285,6 +287,7 @@ export function LojistaPublicProfilePage() {
   const [reviewCategoryFilter, setReviewCategoryFilter] = useState<string>("Todos");
   const [reviewRatingFilter, setReviewRatingFilter] = useState<string>("Todas");
   const [reviewDateOrder, setReviewDateOrder] = useState<"desc" | "asc">("desc");
+  const [showReviewFilters, setShowReviewFilters] = useState(false);
 
   // Review modal
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -1829,12 +1832,64 @@ export function LojistaPublicProfilePage() {
               )}
             </div>
 
-            {/* Filtros */}
-            <div className="flex flex-wrap gap-2">
-              <FilterGroup label="Categoria" options={["Todos", "Clientes Finais", "Prestadores", "Parceiros Fornecedores"]} value={reviewCategoryFilter} onChange={setReviewCategoryFilter} />
-              <FilterGroup label="Nota" options={["Todas", "5", "4", "3"]} value={reviewRatingFilter} onChange={setReviewRatingFilter} />
-              <FilterGroup label="Data" options={["Mais Recentes", "Mais Antigas"]} value={reviewDateOrder === "desc" ? "Mais Recentes" : "Mais Antigas"} onChange={(v) => setReviewDateOrder(v === "Mais Recentes" ? "desc" : "asc")} />
-            </div>
+            {/* Filtros — menu expansível (recolhido por padrão) */}
+            {(() => {
+              const activeReviewFilters =
+                (reviewCategoryFilter !== "Todos" ? 1 : 0) +
+                (reviewRatingFilter !== "Todas" ? 1 : 0) +
+                (reviewDateOrder !== "desc" ? 1 : 0);
+              return (
+                <div className="rounded-2xl bg-[#1A1A1B] border border-white/10 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewFilters((v) => !v)}
+                    aria-expanded={showReviewFilters}
+                    className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
+                  >
+                    <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-primary">
+                      <SlidersHorizontal className="w-3.5 h-3.5" /> Filtros das avaliações
+                      {activeReviewFilters > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary text-black text-[9px] font-black">
+                          {activeReviewFilters}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-primary transition-transform ${showReviewFilters ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {showReviewFilters && (
+                    <div className="px-4 pb-4 space-y-3 border-t border-white/10 pt-3">
+                      <div className="flex flex-wrap gap-2">
+                        <FilterGroup label="Categoria" options={["Todos", "Clientes Finais", "Prestadores", "Parceiros Fornecedores"]} value={reviewCategoryFilter} onChange={setReviewCategoryFilter} />
+                        <FilterGroup label="Nota" options={["Todas", "5", "4", "3"]} value={reviewRatingFilter} onChange={setReviewRatingFilter} />
+                        <FilterGroup label="Data" options={["Mais Recentes", "Mais Antigas"]} value={reviewDateOrder === "desc" ? "Mais Recentes" : "Mais Antigas"} onChange={(v) => setReviewDateOrder(v === "Mais Recentes" ? "desc" : "asc")} />
+                      </div>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                          {filteredReviews.length} de {reviews.length} avaliação(ões)
+                        </p>
+                        {activeReviewFilters > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReviewCategoryFilter("Todos");
+                              setReviewRatingFilter("Todas");
+                              setReviewDateOrder("desc");
+                            }}
+                            className="text-[10px] font-black uppercase tracking-widest text-primary hover:opacity-80"
+                          >
+                            Limpar filtros
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
 
             {filteredReviews.length > 0 ? (
               <div className="space-y-3">
