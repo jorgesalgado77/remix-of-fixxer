@@ -103,8 +103,10 @@ function writeDismissed(cat: CategoryKey, v: boolean) {
   }
 }
 
+import { useNavigate } from "@tanstack/react-router";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import {
+  ACTIVITY_MATRIX,
   getB2BSuggestions,
   normalizeBranches,
   type B2BCandidate,
@@ -112,7 +114,13 @@ import {
 } from "@/lib/activity-branches";
 import { useCurrentCategory } from "@/lib/user-category";
 import { getCategoryTheme } from "@/lib/category-colors";
-import { scoreRelevanceDetailed, useUserBranchContext, relevanceRank, type RelevanceResult } from "@/lib/branch-relevance";
+import {
+  scoreRelevanceDetailed,
+  useUserBranchContext,
+  relevanceRank,
+  type BranchContext,
+  type RelevanceResult,
+} from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 
 const DEFAULT_RADIUS_KM = 25;
@@ -124,12 +132,40 @@ function readRadius(): number {
 }
 
 /**
+ * Sugestões derivadas do próprio ramo do usuário: ramos e subcategorias
+ * irmãs dentro das macro-categorias em que ele atua. Usado apenas quando
+ * não existem parceiros reais suficientes no raio.
+ */
+function branchFallback(ctx: BranchContext): B2BSuggestion[] {
+  if (ctx.macroIds.size === 0) return [];
+  const out: B2BSuggestion[] = [];
+  for (const macro of ACTIVITY_MATRIX) {
+    if (!ctx.macroIds.has(macro.id)) continue;
+    for (const b of macro.branches) {
+      if (b.label.startsWith("📝")) continue;
+      const key = b.label.trim().toLowerCase();
+      if (ctx.branchKeys.has(key)) continue;
+      out.push({
+        icon: macro.icon,
+        title: b.label,
+        hint: `Buscar parceiros em ${macro.label.split(",")[0]}`,
+        targetBranch: b.label,
+      });
+    }
+  }
+  return out;
+}
+
+
+/**
  * Card compacto que sugere parcerias B2B cruzadas com base nos ramos
  * salvos no perfil do usuário (incluindo ramos customizados). Filtra
  * candidatos reais pelo raio de atuação e reordena por recência.
  */
 function B2BSuggestionsCardInner() {
+  const navigate = useNavigate();
   const category = useCurrentCategory();
+
   const preset = PRESETS[category] ?? PRESETS.prestador;
   const branchCtx = useUserBranchContext();
   const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
@@ -145,7 +181,7 @@ function B2BSuggestionsCardInner() {
       radiusKm,
       userLocation: userLocRef.current,
       candidates: candidatesRef.current,
-    }).slice(0, 4);
+    }).slice(0, 24);
     setSuggestions(list);
   }, []);
 
@@ -166,16 +202,15 @@ function B2BSuggestionsCardInner() {
         if (p?.lat != null && p?.lng != null) {
           userLocRef.current = { lat: Number(p.lat), lng: Number(p.lng) };
         }
-        // Candidatos reais: profiles com lat/lng e business_category preenchidos
+        // Candidatos reais: perfis com ramo preenchido (geo é opcional).
         try {
           const { data: cands } = await supabaseExternal
             .from("profiles")
-            .select("id, company_name, full_name, business_category, lat, lng, updated_at")
+            .select("id, display_name, company_name, full_name, business_category, lat, lng, updated_at")
             .not("business_category", "is", null)
-            .not("lat", "is", null)
-            .not("lng", "is", null)
             .neq("id", uid)
-            .limit(80);
+            .order("updated_at", { ascending: false })
+            .limit(120);
           if (!cancelled && Array.isArray(cands)) {
             const flat: B2BCandidate[] = [];
             for (const row of cands as any[]) {
@@ -183,26 +218,31 @@ function B2BSuggestionsCardInner() {
                 .split(",")
                 .map((s: string) => s.trim())
                 .filter(Boolean);
+              const name =
+                row.display_name || row.company_name || row.full_name || "Parceiro FIXXER";
               for (const br of branches) {
                 flat.push({
-                  title: (row.company_name || row.full_name || "Parceiro FIXXER") + " — " + br,
+                  title: `${name} — ${br}`,
                   targetBranch: br,
                   lat: row.lat,
                   lng: row.lng,
                   updatedAt: row.updated_at,
+                  userId: row.id,
                 });
               }
             }
             candidatesRef.current = flat;
           }
         } catch {
-          /* sem candidatos reais — usa fallback estático */
+          /* sem candidatos reais — usa fallback do próprio ramo */
         }
         if (!cancelled) recompute();
       } catch {
         /* silencioso — sem sugestões */
       }
     })();
+
+
 
     const onRadiusChange = () => recompute();
     if (typeof window !== "undefined") {
@@ -227,23 +267,66 @@ function B2BSuggestionsCardInner() {
       window.removeEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
   }, []);
 
-  // Fallback: se não houver sugestões calculadas, usa presets fixos por categoria.
-  const baseList =
-    suggestions.length > 0 ? suggestions : FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador;
-
-  // Ranqueia sugestões pela relevância com o ramo do usuário (usa targetBranch
-  // quando disponível — no fallback estático, o item pode não ter targetBranch,
-  // caso em que fica com level="none" e mantém a ordem original).
+  // Prioridade: parceiros REAIS relacionados ao ramo do usuário; depois
+  // ramos/subcategorias irmãs da(s) macro(s) dele; por último, presets fixos.
   const displaySuggestions = useMemo(() => {
-    const scored = baseList.map((s) => {
-      const rel: RelevanceResult = s.targetBranch
+    const score = (s: B2BSuggestion) => ({
+      s,
+      rel: s.targetBranch
         ? scoreRelevanceDetailed([s.targetBranch], branchCtx)
-        : { level: "none", matchedBranch: null, reason: null };
-      return { s, rel };
+        : ({ level: "none", matchedBranch: null, reason: null } as RelevanceResult),
     });
-    scored.sort((a, b) => relevanceRank(a.rel.level) - relevanceRank(b.rel.level));
-    return scored;
-  }, [baseList, branchCtx]);
+
+    const real = suggestions
+      .filter((s) => !!s.userId)
+      .map(score)
+      .filter((x) => !branchCtx.hasContext || x.rel.level !== "none")
+      .sort((a, b) => relevanceRank(a.rel.level) - relevanceRank(b.rel.level));
+
+    const out = [...real];
+    const seen = new Set(out.map((x) => x.s.title));
+
+    if (out.length < 4) {
+      for (const s of [
+        ...branchFallback(branchCtx),
+        ...suggestions.filter((x) => !x.userId),
+        ...(FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador),
+      ]) {
+        if (out.length >= 4) break;
+        if (seen.has(s.title)) continue;
+        seen.add(s.title);
+        out.push(score(s));
+      }
+    }
+    return out.slice(0, 4);
+  }, [suggestions, branchCtx, category]);
+
+  const openSuggestion = useCallback(
+    (s: B2BSuggestion) => {
+      if (s.userId) {
+        navigate({ to: "/perfil/$userId", params: { userId: s.userId } as any } as any);
+        return;
+      }
+      const term = (s.targetBranch || s.title).trim();
+      if (!term) return;
+      const feed =
+        category === "lojista"
+          ? "/feed/lojista"
+          : category === "fornecedor"
+          ? "/feed/parceiro"
+          : category === "cliente"
+          ? "/feed/cliente"
+          : "/feed/prestador";
+      navigate({ to: feed as any });
+      setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent("fixxer:universal-search", { detail: { query: term } }),
+        );
+      }, 120);
+    },
+    [navigate, category],
+  );
+
 
   // Estado OCULTO: mostra chip discreto para reexibir.
   if (dismissed) {
@@ -311,8 +394,12 @@ function B2BSuggestionsCardInner() {
         {displaySuggestions.map(({ s, rel }) => (
           <button
             key={s.title}
+            type="button"
+            onClick={() => openSuggestion(s)}
+            title={s.userId ? "Abrir perfil do parceiro" : `Buscar: ${s.targetBranch || s.title}`}
             className="w-full text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors"
           >
+
             <span className="text-base shrink-0">{s.icon}</span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">

@@ -334,7 +334,10 @@ export type B2BSuggestion = {
   hint: string;
   /** Ramo-alvo sugerido para busca no feed. */
   targetBranch?: string;
+  /** Quando a sugestão vem de um perfil real, o id para abrir /perfil/:id. */
+  userId?: string | null;
 };
+
 
 export const B2B_SUGGESTIONS: Record<string, B2BSuggestion[]> = {
   // Assistência técnica
@@ -461,7 +464,10 @@ export type B2BCandidate = {
   lng?: number | null;
   /** ISO timestamp — usado para priorizar por recência. */
   updatedAt?: string | null;
+  /** id do perfil real (para abrir /perfil/:id ao clicar). */
+  userId?: string | null;
 };
+
 
 export type B2BContext = {
   userLocation?: { lat: number; lng: number } | null;
@@ -502,15 +508,15 @@ export function getB2BSuggestions(
     staticList.map((s) => (s.targetBranch || "").toLowerCase()).filter(Boolean),
   );
   const scored = candidates
-    .filter((c) => !targets.size || targets.has((c.targetBranch || "").toLowerCase()))
     .map((c) => {
       const d = loc && c.lat != null && c.lng != null
         ? haversineKm(loc, { lat: c.lat, lng: c.lng })
         : Number.POSITIVE_INFINITY;
-      return { c, d, t: c.updatedAt ? new Date(c.updatedAt).getTime() : 0 };
+      const inTargets = targets.has((c.targetBranch || "").toLowerCase()) ? 0 : 1;
+      return { c, d, inTargets, t: c.updatedAt ? new Date(c.updatedAt).getTime() : 0 };
     })
-    .filter((x) => (radiusKm ? x.d <= radiusKm : true))
-    .sort((a, b) => (b.t - a.t) || (a.d - b.d));
+    .filter((x) => (radiusKm && Number.isFinite(x.d) ? x.d <= radiusKm : true))
+    .sort((a, b) => (a.inTargets - b.inTargets) || (b.t - a.t) || (a.d - b.d));
 
   const dynList: B2BSuggestion[] = scored.map(({ c, d }) => {
     const base = staticList.find(
@@ -523,8 +529,10 @@ export function getB2BSuggestions(
         ? `≈ ${d.toFixed(1)} km — parceiro ativo`
         : (base?.hint ?? "Parceria B2B sugerida"),
       targetBranch: c.targetBranch,
+      userId: c.userId ?? null,
     };
   });
+
 
   if (dynList.length === 0) return staticList;
   const merged: B2BSuggestion[] = [];
