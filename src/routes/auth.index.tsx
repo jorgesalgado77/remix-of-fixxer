@@ -137,11 +137,12 @@ function LoginComponent() {
         toast.success('Login realizado com sucesso!');
 
         if (isAdmin) window.location.replace('/admin');
-        else if (category === 'cliente') window.location.replace('/dashboard/cliente');
-        else if (category === 'prestador') window.location.replace('/dashboard/prestador');
-        else if (category === 'fornecedor') window.location.replace('/dashboard/parceiro');
-        else if (category === 'lojista') window.location.replace('/dashboard/lojista');
-        else navigate({ to: '/cadastro' as any });
+        else if (category === 'cliente') window.location.replace('/cliente');
+        else if (category === 'prestador') window.location.replace('/prestador');
+        else if (category === 'fornecedor') window.location.replace('/parceiro');
+        else if (category === 'lojista') window.location.replace('/lojista');
+        else window.location.replace('/dashboard');
+
       }
 
     } catch (err: any) {
