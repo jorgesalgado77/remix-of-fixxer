@@ -271,6 +271,18 @@ function RecentStoresCarouselInner() {
              console.debug("[RecentStoresCarousel] Using direct profiles fallback");
           }
         }
+        // FALLBACK FOR PREVIEW: Se ainda vazio, pega qualquer perfil que não seja admin
+        if (rows.length === 0) {
+           const { data: fallbackData } = await supabaseExternal.from('profiles_public').select('*').limit(10);
+           const fallbackRows = (fallbackData || []).map(r => {
+             if (adminIds.has(r.id)) return null;
+             return { ...r, _kind: (r.role === 'fornecedor' ? 'fornecedor' : 'lojista'), _branch: 'Geral' } as Card;
+           }).filter(Boolean);
+           if (fallbackRows.length > 0) {
+             setItems(fallbackRows as Card[]);
+             return;
+           }
+        }
         setItems([]);
       }
       setErrorMsg(null);
