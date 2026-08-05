@@ -177,9 +177,11 @@ function RecentStoresCarouselInner() {
         const currentUserId = session?.user?.id;
 
         // Filtrar Admins e o PRÓPRIO usuário logado
-        const filteredProfiles = profiles.filter((p: any) => 
-          p.role !== 'admin' && p.id !== currentUserId
-        );
+        const filteredProfiles = profiles.filter((p: any) => {
+          const isMe = String(p.id) === String(currentUserId);
+          const isAdmin = String(p.role).toLowerCase() === 'admin' || String(p.user_type).toLowerCase() === 'admin';
+          return !isAdmin && !isMe;
+        });
 
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
