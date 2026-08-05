@@ -105,8 +105,16 @@ function RecentStoresCarouselInner() {
     localStorage.setItem('fixxer_carousel_filter', kindFilter);
   }, [kindFilter]);
 
-  // Capturar localização do usuário logado
+  // Capturar localização do usuário logado (Memoized)
+  const [cachedLocation, setCachedLocation] = useState<{ lat: number; lng: number } | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const saved = localStorage.getItem('fixxer_user_coords_v1');
+    return saved ? JSON.parse(saved) : null;
+  });
+
   useEffect(() => {
+    if (cachedLocation) return; // Já temos a localização em cache
+
     const getUserLocation = async () => {
       try {
         const { data: { session } } = await supabaseExternal.auth.getSession();
@@ -118,7 +126,10 @@ function RecentStoresCarouselInner() {
             .single();
           
           if (profile?.lat && profile?.lng) {
-            setUserCoords({ lat: Number(profile.lat), lng: Number(profile.lng) });
+            const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
+            setUserCoords(coords);
+            setCachedLocation(coords);
+            localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           }
         }
       } catch (err) {
@@ -126,7 +137,12 @@ function RecentStoresCarouselInner() {
       }
     };
     getUserLocation();
-  }, []);
+  }, [cachedLocation]);
+
+  // Usar o cachedLocation se disponível
+  useEffect(() => {
+    if (cachedLocation) setUserCoords(cachedLocation);
+  }, [cachedLocation]);
 
   const fetchList = useCallback(async (isMore = false) => {
     const currentPage = isMore ? page + 1 : 0;
@@ -147,8 +163,9 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, city, state, created_at, lat, lng")
-        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
+        .order('created_at', { ascending: false }); // Mostrar mais recentes primeiro
 
       // Aplicar filtros básicos na query para performance
       if (kindFilter === "lojista") {
@@ -344,6 +361,11 @@ function RecentStoresCarouselInner() {
             ref={scrollerRef} 
             onScroll={handleScroll}
             className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide scroll-smooth touch-pan-x no-scrollbar"
+            style={{ 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none', 
+              WebkitOverflowScrolling: 'touch'
+            }}
           >
 
             {filteredItems.map((p) => {
@@ -453,11 +475,10 @@ function RecentStoresCarouselInner() {
       {/* Barra de Navegação Inferior Horizontal Personalizada */}
       <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden max-w-md mx-auto pointer-events-none">
         <div 
-          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-all duration-75 ease-linear shadow-[0_0_15px_rgba(0,255,136,0.6)]"
+          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-none shadow-[0_0_15px_rgba(0,255,136,0.6)]"
           style={{ 
             width: '30%',
             left: `${Math.max(0, Math.min(70, (scrollProgress / 100) * 70))}%`,
-            transform: 'translateX(0)'
           }}
         />
       </div>
