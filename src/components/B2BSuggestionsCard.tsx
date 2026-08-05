@@ -316,7 +316,7 @@ function B2BSuggestionsCardInner() {
           : category === "cliente"
           ? "/feed/cliente"
           : "/feed/prestador";
-      navigate({ to: feed as any });
+      navigate({ to: feed as any, search: (old: any) => old } as any);
       setTimeout(() => {
         window.dispatchEvent(
           new CustomEvent("fixxer:universal-search", { detail: { query: term } }),
