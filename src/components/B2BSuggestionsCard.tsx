@@ -210,7 +210,7 @@ function B2BSuggestionsCardInner() {
             .not("business_category", "is", null)
             .neq("id", uid)
             .order("updated_at", { ascending: false })
-            .limit(120);
+            .limit(500); // Aumentado o limite para varrer mais usuários reais
           if (!cancelled && Array.isArray(cands)) {
             const flat: B2BCandidate[] = [];
             for (const row of cands as any[]) {
@@ -280,7 +280,6 @@ function B2BSuggestionsCardInner() {
     const real = suggestions
       .filter((s) => !!s.userId)
       .map(score)
-      .filter((x) => !branchCtx.hasContext || x.rel.level !== "none")
       .sort((a, b) => relevanceRank(a.rel.level) - relevanceRank(b.rel.level));
 
     const out = [...real];
