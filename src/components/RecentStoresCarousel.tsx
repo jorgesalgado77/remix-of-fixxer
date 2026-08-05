@@ -149,16 +149,14 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role::text, business_category, city, state, created_at, lat, lng")
-        .not("role", "ilike", "%admin%") // Ocultar admins conforme solicitado
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, city, state, created_at, lat, lng")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
       // Aplicar filtros básicos na query para performance
-      // Nota: Convertendo explicitamente para ::text se necessário, ou removendo o ilike do enum
       if (kindFilter === "lojista") {
-        query = query.filter('role', 'eq', 'lojista');
+        query = query.eq('role', 'lojista');
       } else if (kindFilter === "fornecedor") {
-        query = query.filter('role', 'eq', 'fornecedor');
+        query = query.eq('role', 'fornecedor');
       }
 
       const { data: profiles, error: supabaseError } = await query;
@@ -166,7 +164,10 @@ function RecentStoresCarouselInner() {
       if (supabaseError) throw supabaseError;
 
       if (profiles) {
-        const rows: Card[] = profiles.map(r => {
+        // Filtrar Admins em memória para evitar erros de cast no PostgREST
+        const filteredProfiles = profiles.filter((p: any) => p.role !== 'admin');
+
+        const rows: Card[] = filteredProfiles.map((r: any) => {
           const roleStr = (r.role || "").toLowerCase();
           const kind = roleStr.includes("fornec") ? "fornecedor" : "lojista";
           const dist = (userCoords && r.lat && r.lng) 
