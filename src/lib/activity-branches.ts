@@ -469,7 +469,10 @@ export type B2BCandidate = {
   updatedAt?: string | null;
   /** id do perfil real (para abrir /perfil/:id ao clicar). */
   userId?: string | null;
+  /** URL da imagem de perfil do usuário real. */
+  avatarUrl?: string | null;
 };
+
 
 
 export type B2BContext = {
