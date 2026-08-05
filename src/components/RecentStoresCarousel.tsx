@@ -120,10 +120,11 @@ function RecentStoresCarouselInner() {
           
           if (profile && profile.lat !== null && profile.lng !== null) {
             const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
-            console.log("[RecentStoresCarousel] User Coords Found:", coords);
+            console.log("[RecentStoresCarousel] User Coords Found in View:", coords);
             setUserCoords(coords);
             localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           } else {
+            console.warn("[RecentStoresCarousel] User coordinates not found in profiles_public for ID:", userId);
             const saved = localStorage.getItem('fixxer_user_coords_v1');
             if (saved) setUserCoords(JSON.parse(saved));
           }
