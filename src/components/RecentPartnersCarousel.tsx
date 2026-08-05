@@ -5,7 +5,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
-import { scoreRelevanceDetailed, useUserBranchContext, relevanceRank, type RelevanceResult } from "@/lib/branch-relevance";
+import { scoreRelevanceDetailed, useUserBranchContext, relevanceRank, type RelevanceResult, type BranchContext } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 
@@ -266,19 +266,13 @@ function RecentPartnersCarouselInner() {
   }, [kindFilter]);
 
 
-  const fetchPartners = useCallback(async (): Promise<{ ok: boolean }> => {
+  const fetchPartners = useCallback(async (ctx: BranchContext): Promise<{ ok: boolean }> => {
     // Seleciona APENAS colunas que existem com segurança na tabela `profiles` do
-    // Supabase externo. Qualquer coluna extra faz o PostgREST responder 400 e cai
-    // no fallback silencioso (mock), o que explicava o card mostrando somente
-    // "Jorge Salgado / Carlos Silva" mesmo com prestadores reais cadastrados.
-    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, business_category, custom_branch, preferred_service, job_roles, city, state, created_at";
+    // Supabase externo.
+    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, business_category, custom_branch, preferred_service, job_roles, city, state, created_at, lat, lng";
     try {
       // Bloqueia administradores e o próprio usuário logado do carrossel público.
-      let selfId: string | null = null;
-      try {
-        const { data: auth } = await supabaseExternal.auth.getUser();
-        selfId = auth?.user?.id ?? null;
-      } catch { /* silencioso */ }
+      let selfId = ctx.userId;
 
       const adminIds = new Set<string>();
       try {
@@ -297,9 +291,8 @@ function RecentPartnersCarouselInner() {
         .from("profiles_public")
         .select(SAFE_COLS)
         .not("role", "is", null)
-
         .order("created_at", { ascending: false })
-        .limit(120);
+        .limit(100);
       if (error) throw error;
 
       const rows = ((data as unknown as PartnerRow[]) ?? [])
@@ -321,8 +314,8 @@ function RecentPartnersCarouselInner() {
           };
           return merged;
         })
-        .filter((x): x is PartnerCard => !!x)
-        .slice(0, 30);
+        .filter((x): x is PartnerCard => !!x);
+      
       if (rows.length > 0) {
         setItems(rows);
         writeCache(rows);
@@ -342,14 +335,22 @@ function RecentPartnersCarouselInner() {
 
   useEffect(() => {
     let cancelled = false;
-    // Não pré-populamos com FALLBACK aqui: deixamos o skeleton aparecer durante a 1ª busca
-    // quando não há cache. Se o fetch falhar/vazio, o próprio fetchPartners cai no fallback.
     (async () => {
-      await fetchPartners();
-      if (!cancelled) setLoading(false);
+      if (!branchCtx.userId && items.length === 0) {
+         // Se não tem user ID ainda e não tem nada, espera ou usa cache
+         if (cached) {
+            setItems(cached.items);
+            setLoading(false);
+         }
+      }
+      
+      if (branchCtx.userId) {
+        await fetchPartners(branchCtx);
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
-  }, [fetchPartners, cached]);
+  }, [fetchPartners, branchCtx.userId, cached]);
 
   // Quando a geolocalização do usuário fica disponível, limpamos descartes manuais
   // para que os badges "Sem localização" sejam recriados/reavaliados com o novo contexto.
@@ -361,9 +362,9 @@ function RecentPartnersCarouselInner() {
     if (refreshing) return;
     setRefreshing(true);
     setErrorMsg(null);
-    await fetchPartners();
+    await fetchPartners(branchCtx);
     setTimeout(() => setRefreshing(false), 300);
-  }, [fetchPartners, refreshing]);
+  }, [fetchPartners, refreshing, branchCtx]);
 
   // ---- Ordenação em memória (com coords pré-calculadas para "Mais próximos") ----
   type Enriched = PartnerCard & {

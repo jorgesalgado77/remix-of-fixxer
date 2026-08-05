@@ -235,9 +235,9 @@ export function LojistaDashboard() {
   // Se o usuário logado não for lojista/admin, envia para o painel correto da sua categoria.
   useEffect(() => {
     if (userRole === 'lojista' || userRole === 'admin') return;
-    const target = userRole === 'prestador' ? '/prestador'
-      : userRole === 'fornecedor' ? '/parceiro'
-      : userRole === 'cliente' ? '/cliente'
+    const target = userRole === 'prestador' ? '/feed/prestador'
+      : userRole === 'fornecedor' ? '/feed/parceiro'
+      : userRole === 'cliente' ? '/feed/cliente'
       : null;
     if (target && typeof window !== 'undefined' && window.location.pathname !== target) {
       navigate({ to: target as any, replace: true });

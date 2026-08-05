@@ -48,26 +48,20 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         return null;
       }
 
-      // 2. Tenta obter o usuário completo via rede com retentativa silenciosa
-      const fetchWithRetry = async (retries = 2): Promise<User | null> => {
-        try {
-          const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
-          if (userError) throw userError;
+      // 2. Se temos sessão mas não usuário em cache, tentamos getUser() uma vez
+      // para garantir que o token é válido e obter dados frescos.
+      try {
+        const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
+        if (!userError && user) {
+          cachedUser = user;
           return user;
-        } catch (err) {
-          if (retries > 0) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            return fetchWithRetry(retries - 1);
-          }
-          return null;
         }
-      };
-
-      const user = await fetchWithRetry();
+      } catch (err) {
+        // Silencioso: se falhar por rede, usamos a sessão local abaixo
+      }
       
-      // 3. Se falhar por rede mesmo após retries, usamos a sessão local
-      // Isso evita deslogar o usuário por oscilações temporárias de Wi-Fi/4G.
-      cachedUser = user || session.user;
+      // 3. Fallback para a sessão local (preserva login offline/lento)
+      cachedUser = session.user;
       return cachedUser;
     } catch (e) {
       console.warn("[current-user] Erro crítico ao recuperar identidade:", e);
