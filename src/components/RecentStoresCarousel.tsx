@@ -185,7 +185,7 @@ function RecentStoresCarouselInner() {
 
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
-          const roleStr = (r.role || "").toLowerCase();
+          const roleStr = (r.role || r.user_type || "").toLowerCase();
           const kind = roleStr.includes("fornec") ? "fornecedor" : "lojista";
           
           const dist = (userCoords && r.lat && r.lng) 
@@ -194,13 +194,11 @@ function RecentStoresCarouselInner() {
 
           // Lógica de ramo: prioriza custom_branch e evita "Geral"
           let branch = r.custom_branch || r.business_category || "Não Informado";
-          if (branch.toLowerCase() === "geral" && r.custom_branch) {
-            branch = r.custom_branch;
-          } else if (branch.toLowerCase() === "geral") {
-            branch = "Parceiro FIXXER";
+          
+          // Se for lojista e o ramo for genérico, tentamos extrair algo melhor do custom_branch ou business_category
+          if (branch.toLowerCase() === "geral" || branch.toLowerCase() === "não informado") {
+            branch = r.custom_branch || r.business_category || (kind === "lojista" ? "Loja de Móveis" : "Parceiro FIXXER");
           }
-
-
 
           return {
             id: r.id,
@@ -209,6 +207,7 @@ function RecentStoresCarouselInner() {
             company_name: r.company_name,
             avatar_url: r.avatar_url,
             role: r.role,
+            user_type: r.user_type,
             business_category: r.business_category,
             custom_branch: r.custom_branch || null,
             city: r.city,
