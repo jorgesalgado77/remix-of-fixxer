@@ -384,9 +384,7 @@ function RecentStoresCarouselInner() {
         <div
           ref={scrollerRef}
           className="flex gap-3 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scroll-smooth scrollbar-hide"
-        >
           role="list"
-          className="flex gap-3 pb-2 overflow-x-auto snap-x snap-mandatory scrollbar-none"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
           {sortedItems.map((p) => {
