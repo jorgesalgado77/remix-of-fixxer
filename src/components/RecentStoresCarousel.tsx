@@ -37,65 +37,31 @@ function RecentStoresCarouselInner() {
   const [loading, setLoading] = useState(false);
 
 
-  const [kindFilter, setKindFilter] = useState<"all" | Kind>("all");
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchList = useCallback(async () => {
-    try {
-      console.log("[RecentStoresCarousel] Fetching...");
-      
-      const mock: Card[] = [
-        {
-          id: '1', full_name: 'Confere Planejados', display_name: 'Confere Planejados', company_name: 'Confere Planejados',
-          avatar_url: null, role: 'lojista', business_category: 'Móveis', custom_branch: 'Planejados',
-          city: 'São Paulo', state: 'SP', rating: 5, created_at: new Date().toISOString(), lat: 0, lng: 0,
-          _kind: 'lojista', _branch: 'Móveis'
-        },
-        {
-          id: '2', full_name: 'Supera Shop', display_name: 'Supera Shop', company_name: 'Supera Shop',
-          avatar_url: null, role: 'fornecedor', business_category: 'Ferragens', custom_branch: 'Atacado',
-          city: 'Curitiba', state: 'PR', rating: 5, created_at: new Date().toISOString(), lat: 0, lng: 0,
-          _kind: 'fornecedor', _branch: 'Ferragens'
-        }
-      ];
-
-      setItems(mock);
-
-      // Tenta carregar reais em background
-      supabaseExternal
-        .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
-        .limit(100)
-        .then(({ data: profiles }) => {
-          if (profiles && profiles.length > 0) {
-            const rows = profiles.map(r => ({
-              id: r.id,
-              full_name: r.full_name,
-              display_name: r.display_name,
-              company_name: r.company_name,
-              avatar_url: r.avatar_url || (r as any).logo_url,
-              role: r.role,
-              business_category: r.business_category,
-              custom_branch: r.custom_branch,
-              city: r.city,
-              state: r.state,
-              rating: 5.0,
-              created_at: r.created_at,
-              lat: r.lat,
-              lng: r.lng,
-              _kind: (r.role || "").toLowerCase().includes("fornec") ? "fornecedor" : "lojista",
-              _branch: r.business_category?.split(',')[0] || r.custom_branch || "Geral"
-            })) as Card[];
-            setItems(rows);
-          }
-        });
-
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    console.log("[RecentStoresCarousel] Effect running");
+    const mock: Card[] = [
+      {
+        id: '1', full_name: 'Confere Planejados', display_name: 'Confere Planejados', company_name: 'Confere Planejados',
+        avatar_url: null, role: 'lojista', business_category: 'Móveis', custom_branch: 'Planejados',
+        city: 'São Paulo', state: 'SP', rating: 5, created_at: new Date().toISOString(), lat: 0, lng: 0,
+        _kind: 'lojista', _branch: 'Móveis'
+      },
+      {
+        id: '2', full_name: 'Supera Shop', display_name: 'Supera Shop', company_name: 'Supera Shop',
+        avatar_url: null, role: 'fornecedor', business_category: 'Ferragens', custom_branch: 'Atacado',
+        city: 'Curitiba', state: 'PR', rating: 5, created_at: new Date().toISOString(), lat: 0, lng: 0,
+        _kind: 'fornecedor', _branch: 'Ferragens'
+      }
+    ];
+    setItems(mock);
   }, []);
+
+  const fetchList = useCallback(async () => {
+    // ... mantido para o futuro
+  }, []);
+
 
 
   useEffect(() => {
