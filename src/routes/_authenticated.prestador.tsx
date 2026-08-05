@@ -65,6 +65,8 @@ function PrestadorDashboard() {
 
       <RecentStoresCarousel />
 
+
+
       <MyAppointmentsSection />
 
 
