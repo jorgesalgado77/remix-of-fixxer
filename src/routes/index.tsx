@@ -195,6 +195,14 @@ function Index() {
           </div>
         </div>
       </section>
+      
+      {/* LOJISTAS E FORNECEDORES RECENTES */}
+      <section className="py-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          <RecentStoresCarousel />
+        </div>
+      </section>
+
 
       {/* PARA QUEM É O FIXXER? */}
       <section id="para-quem" className="py-32 px-6 border-t border-white/5">
