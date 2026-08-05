@@ -48,10 +48,7 @@ function RecentStoresCarouselInner() {
   const [error, setError] = useState<string | null>(null);
   
   // Persistência do estado dos filtros
-  const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">(() => {
-    if (typeof window === 'undefined') return "all";
-    return (localStorage.getItem('fixxer_carousel_filter') as any) || "all";
-  });
+  const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">("all");
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [scrollProgress, setScrollProgress] = useState(() => {
@@ -165,14 +162,10 @@ function RecentStoresCarouselInner() {
         .from("profiles_public")
         .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
-        .order('created_at', { ascending: false }); // Mostrar mais recentes primeiro
+        .order('created_at', { ascending: false });
 
-      // Aplicar filtros básicos na query para performance
-      if (kindFilter === "lojista") {
-        query = query.eq('role', 'lojista');
-      } else if (kindFilter === "fornecedor") {
-        query = query.eq('role', 'fornecedor');
-      }
+      // Buscamos todos os perfis (exceto admins que filtramos depois) para permitir filtros instantâneos no front
+      // mas mantemos o limite de range para paginação.
 
       const { data: profiles, error: supabaseError } = await query;
 
@@ -244,22 +237,32 @@ function RecentStoresCarouselInner() {
   }, [userCoords, kindFilter, page, items, userBranchCtx]);
 
   useEffect(() => {
-    // Resetar quando o filtro mudar (exceto no carregamento inicial se já tivermos itens do cache)
-    setPage(0);
-    setHasMore(true);
-    fetchList();
+    // Resetar quando o filtro mudar apenas se não houver itens (forçar recarga inicial)
+    // Se já tivermos itens, o useMemo cuida do filtro visual instantâneo
+    if (items.length === 0) {
+      setPage(0);
+      setHasMore(true);
+      fetchList();
+    }
   }, [kindFilter]);
 
   const filteredItems = useMemo(() => {
-    // Filtro adicional em memória para o "Do meu ramo" se necessário (embora idealmente fizesse via query)
-    if (kindFilter === "branch") {
-      return items.filter(i => {
+    // 1. Filtragem por Tipo (Role)
+    let filtered = items;
+    
+    if (kindFilter === "lojista") {
+      filtered = items.filter(i => i._kind === "lojista");
+    } else if (kindFilter === "fornecedor") {
+      filtered = items.filter(i => i._kind === "fornecedor");
+    } else if (kindFilter === "branch") {
+      filtered = items.filter(i => {
         if (!userBranchCtx.hasContext) return true;
         const relevance = scoreRelevance([i.business_category], userBranchCtx);
         return relevance !== "none";
       });
     }
-    return items;
+
+    return filtered;
   }, [items, kindFilter, userBranchCtx]);
 
 
@@ -319,9 +322,8 @@ function RecentStoresCarouselInner() {
           <button
             onClick={() => {
               setKindFilter("all");
-              localStorage.removeItem('fixxer_carousel_scroll');
               setScrollProgress(0);
-              if (scrollerRef.current) scrollerRef.current.scrollLeft = 0;
+              if (scrollerRef.current) scrollerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
             }}
             className="min-w-[120px] h-9 flex-shrink-0 rounded-full text-[10px] font-black uppercase italic bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 snap-start"
           >
@@ -358,8 +360,12 @@ function RecentStoresCarouselInner() {
         <div className="relative">
           {/* Navegação Horizontal - Botões Desktop */}
           <button 
-            onClick={() => scroll("left")}
-            className="absolute -left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-xl hidden md:flex"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              scroll("left");
+            }}
+            className="absolute -left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#00FF88] text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-xl hidden md:flex hover:scale-110 active:scale-95"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
@@ -367,24 +373,27 @@ function RecentStoresCarouselInner() {
           <div 
             ref={scrollerRef} 
             onScroll={handleScroll}
-            className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide scroll-smooth touch-pan-x no-scrollbar"
+            className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide scroll-smooth touch-pan-x no-scrollbar pr-20"
             style={{ 
               scrollbarWidth: 'none', 
               msOverflowStyle: 'none', 
-              WebkitOverflowScrolling: 'touch'
+              WebkitOverflowScrolling: 'touch',
+              minHeight: '440px'
             }}
           >
 
             {filteredItems.map((p) => {
               const name = p.company_name || p.display_name || p.full_name || "Parceiro";
               return (
-                <button
+                <div
                   key={p.id}
                   onClick={() => openProfile(p)}
-                  className={`w-64 flex-shrink-0 snap-start bg-[#1A1A1E] border-2 rounded-3xl overflow-hidden text-left hover:-translate-y-1 transition-all duration-300 group/card relative ${
+                  role="button"
+                  tabIndex={0}
+                  className={`w-64 flex-shrink-0 snap-start bg-[#1A1A1E] border-2 rounded-3xl overflow-hidden text-left hover:-translate-y-2 transition-all duration-300 group/card relative cursor-pointer outline-none focus:ring-2 focus:ring-[#00FF88]/50 ${
                     p._kind === 'lojista' 
-                      ? 'border-[#00E5FF]/30 hover:border-[#00E5FF] shadow-[0_0_20px_rgba(0,229,255,0.05)]' 
-                      : 'border-[#A855F7]/30 hover:border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.05)]'
+                      ? 'border-[#00E5FF]/20 hover:border-[#00E5FF] shadow-[0_0_20px_rgba(0,229,255,0.05)]' 
+                      : 'border-[#A855F7]/20 hover:border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.05)]'
                   }`}
                 >
                   <div className="h-44 bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative overflow-hidden">
@@ -454,14 +463,14 @@ function RecentStoresCarouselInner() {
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/20">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/20">
                           <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] shadow-[0_0_8px_#00FF88] animate-pulse" />
                           <span className="text-[9px] font-black text-[#00FF88] uppercase italic">Disponível</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
 
               );
             })}
@@ -477,8 +486,12 @@ function RecentStoresCarouselInner() {
 
 
           <button 
-            onClick={() => scroll("right")}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-xl hidden md:flex"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              scroll("right");
+            }}
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#00FF88] text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-xl hidden md:flex hover:scale-110 active:scale-95"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
@@ -486,12 +499,12 @@ function RecentStoresCarouselInner() {
       )}
       
       {/* Barra de Navegação Inferior Horizontal Personalizada */}
-      <div className="mt-8 relative h-1 w-full bg-white/5 rounded-full overflow-hidden max-w-sm mx-auto pointer-events-none">
+      <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden max-w-sm mx-auto pointer-events-none">
         <div 
-          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-none shadow-[0_0_10px_rgba(0,255,136,0.6)]"
+          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(0,255,136,0.6)]"
           style={{ 
-            width: `${Math.max(15, 100 / (Math.max(1, items.length / 2)))}%`,
-            left: `${Math.max(0, Math.min(85, (scrollProgress / 100) * 85))}%`,
+            width: `${Math.max(20, Math.min(100, (3 / Math.max(1, filteredItems.length)) * 100))}%`,
+            left: `${Math.max(0, Math.min(80, (scrollProgress / 100) * 80))}%`,
           }}
         />
       </div>
