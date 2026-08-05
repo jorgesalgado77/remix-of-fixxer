@@ -316,7 +316,7 @@ function B2BSuggestionsCardInner() {
           : category === "cliente"
           ? "/feed/cliente"
           : "/feed/prestador";
-      navigate({ to: feed as any });
+      navigate({ to: feed as any, search: (old: any) => old } as any);
       setTimeout(() => {
         window.dispatchEvent(
           new CustomEvent("fixxer:universal-search", { detail: { query: term } }),
@@ -389,15 +389,15 @@ function B2BSuggestionsCardInner() {
 
       </div>
 
-      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-        <div className="flex gap-2 min-w-max md:grid md:grid-cols-2 lg:grid-cols-3 md:min-w-0 md:gap-1.5">
+      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent snap-x snap-mandatory">
+        <div className="flex gap-2 min-w-max">
           {displaySuggestions.map(({ s, rel }) => (
             <button
               key={s.title}
               type="button"
               onClick={() => openSuggestion(s)}
               title={s.userId ? "Abrir perfil do parceiro" : `Buscar: ${s.targetBranch || s.title}`}
-              className="w-[200px] md:w-full text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors shrink-0"
+              className="w-[240px] md:w-[280px] snap-start text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors shrink-0"
             >
               <span className="text-base shrink-0">{s.icon}</span>
               <div className="min-w-0 flex-1">

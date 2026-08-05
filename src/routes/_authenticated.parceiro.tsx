@@ -47,7 +47,7 @@ function ParceiroDashboard() {
           </div>
         </div>
         <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
-          <Link to="/feed/parceiro" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
+          <Link to="/feed/parceiro" search={{}} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-xs tracking-widest hover:shadow-[0_0_20px_rgba(0,255,135,0.4)] transition-all">
             <TrendingUp className="w-4 h-4" /> Acessar Feed da Categoria
           </Link>
           <ProfileSummaryCard role="parceiro" />

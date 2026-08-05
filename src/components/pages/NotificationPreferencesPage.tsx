@@ -58,7 +58,7 @@ export default function NotificationPreferencesPage() {
       <header className="sticky top-0 z-30 bg-[#0A0A0B]/95 backdrop-blur-md border-b border-white/10 p-4">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <Link
-            to="/profile"
+            to="/profile" search={{}}
             className="w-10 h-10 shrink-0 bg-[#1A1A1B] border border-white/10 rounded-xl flex items-center justify-center text-white/70"
           >
             <ArrowLeft className="w-5 h-5" />

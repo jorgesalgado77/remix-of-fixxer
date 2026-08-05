@@ -518,7 +518,7 @@ export function LojistaDashboard() {
                 <TooltipProvider>
                   <nav className="flex flex-col gap-3">
                       <Link 
-                        to="/feed/lojista" 
+                        to="/feed/lojista" search={{}} 
 
                         onClick={() => setMobileMenuOpen(false)} 
                         className={`flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs shadow-[0_0_15px_rgba(255,255,255,0.05)] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none`}
@@ -585,7 +585,7 @@ export function LojistaDashboard() {
 
         <TooltipProvider>
           <nav className="flex flex-col gap-2">
-              <Link to="/feed/lojista" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider border border-transparent hover:border-white/10 mb-2">
+              <Link to="/feed/lojista" search={{}} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider border border-transparent hover:border-white/10 mb-2">
                   <Search className="w-4 h-4 text-primary" /> Ir para o Feed
               </Link>
 
@@ -1488,8 +1488,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                                                             <div className="text-[8px] font-black uppercase text-muted-foreground italic mb-3">Ações Rápidas</div>
                                                             <div className="flex flex-wrap gap-2 w-full">
                                                                 <Link 
-                                                                    to="/feed/lojista" 
-                                                                    search={{ context: service.id }}
+                                                                    to="/feed/lojista" search={{ q: service.id }}
                                                                     className="flex-1 min-w-[110px] flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2.5 rounded-lg transition-all"
                                                                 >
                                                                     <Info className="w-3 h-3" /> Ver Detalhes
