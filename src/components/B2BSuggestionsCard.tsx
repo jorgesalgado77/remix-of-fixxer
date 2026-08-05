@@ -297,7 +297,7 @@ function B2BSuggestionsCardInner() {
         out.push(score(s));
       }
     }
-    return out.slice(0, 4);
+    return out.slice(0, 12); // Aumentado para permitir rolagem de mais itens
   }, [suggestions, branchCtx, category]);
 
   const openSuggestion = useCallback(
@@ -389,30 +389,31 @@ function B2BSuggestionsCardInner() {
 
       </div>
 
-      <div className="grid gap-1.5">
-        {displaySuggestions.map(({ s, rel }) => (
-          <button
-            key={s.title}
-            type="button"
-            onClick={() => openSuggestion(s)}
-            title={s.userId ? "Abrir perfil do parceiro" : `Buscar: ${s.targetBranch || s.title}`}
-            className="w-full text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors"
-          >
-
-            <span className="text-base shrink-0">{s.icon}</span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <p className="text-[11px] font-bold text-white truncate flex-1">{s.title}</p>
-                <RelevanceBadge result={rel} compact />
+      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <div className="flex gap-2 min-w-max md:grid md:grid-cols-2 lg:grid-cols-3 md:min-w-0 md:gap-1.5">
+          {displaySuggestions.map(({ s, rel }) => (
+            <button
+              key={s.title}
+              type="button"
+              onClick={() => openSuggestion(s)}
+              title={s.userId ? "Abrir perfil do parceiro" : `Buscar: ${s.targetBranch || s.title}`}
+              className="w-[200px] md:w-full text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors shrink-0"
+            >
+              <span className="text-base shrink-0">{s.icon}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[11px] font-bold text-white truncate flex-1">{s.title}</p>
+                  <RelevanceBadge result={rel} compact />
+                </div>
+                <p className="text-[9px] text-white/50 truncate flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5" style={{ color: theme.hex }} />
+                  {s.hint}
+                </p>
               </div>
-              <p className="text-[9px] text-white/50 truncate flex items-center gap-1">
-                <Sparkles className="w-2.5 h-2.5" style={{ color: theme.hex }} />
-                {s.hint}
-              </p>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0" />
-          </button>
-        ))}
+              <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0" />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
