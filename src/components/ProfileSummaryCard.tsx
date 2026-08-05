@@ -193,10 +193,9 @@ export function ProfileSummaryCard({
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               onClick={() => {
-                const url = new URL(window.location.origin + profileHref);
-                url.searchParams.set("focus", "reviews");
-                url.searchParams.set("tab", "avaliacoes");
-                window.location.href = url.toString();
+                // Força o redirecionamento bruto para garantir que os parâmetros sejam processados
+                const targetUrl = profileHref + "?focus=reviews&tab=avaliacoes";
+                window.location.href = targetUrl;
               }}
               className="rounded-lg border border-white/10 bg-black/30 p-2 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all group/rating min-h-[52px] flex flex-col justify-center text-left w-full"
             >
