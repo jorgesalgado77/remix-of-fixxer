@@ -41,6 +41,7 @@ function ClientePortal() {
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-24 md:pl-72 animate-in fade-in duration-500">
       <ProfileSummaryCard role="cliente" variant="sidebar" />
+      <ProfileSummaryCard role="cliente" variant="auto" className="md:hidden" />
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
