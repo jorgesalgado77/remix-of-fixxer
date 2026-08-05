@@ -481,13 +481,17 @@ function RecentStoresCarouselInner() {
                     <div className="pt-1 flex flex-col gap-1.5">
                       <div className="flex items-center gap-1.5 text-[10px] text-white/50 font-bold uppercase tracking-tight">
                         <MapPin className="w-3 h-3 text-red-500" />
-                        <span className="truncate">
+                        <span className="truncate max-w-[80px]">
                           {p.city || "S/L"}, {p.state || "BR"}
                         </span>
-                        {p._distance !== undefined && (
-                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic">
+                        {p._distance !== undefined ? (
+                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic animate-pulse">
                             <Navigation className="w-2.5 h-2.5 rotate-45" />
                             {p._distance.toFixed(1)} KM
+                          </span>
+                        ) : (
+                          <span className="ml-auto text-white/20 text-[8px] italic uppercase tracking-tighter">
+                            Distância Indisp.
                           </span>
                         )}
                       </div>
