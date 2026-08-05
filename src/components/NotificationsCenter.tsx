@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bell, X, UserCheck, UserX, MessageCircle, Loader2 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 
@@ -24,6 +25,42 @@ export function NotificationsCenter() {
   const [loading, setLoading] = useState(false);
   const [uid, setUid] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  const [coords, setCoords] = useState({ top: 0, left: 0, right: 0 });
+
+  const updateCoords = () => {
+    if (open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const isMobile = window.innerWidth < 640;
+      
+      if (isMobile) {
+        setCoords({
+          top: rect.bottom + window.scrollY,
+          left: 10,
+          right: 10
+        });
+      } else {
+        setCoords({
+          top: rect.bottom + window.scrollY,
+          left: 0, // not used on desktop
+          right: window.innerWidth - rect.right,
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    updateCoords();
+    window.addEventListener('resize', updateCoords);
+    return () => window.removeEventListener('resize', updateCoords);
+  }, [open]);
 
   const unread = items.filter((n) => !n.read).length;
 
@@ -79,7 +116,9 @@ export function NotificationsCenter() {
   useEffect(() => {
     if (!open) return;
     const onClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
+      if (panelRef.current && panelRef.current.contains(e.target as Node)) return;
+      if (triggerRef.current && triggerRef.current.contains(e.target as Node)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -102,8 +141,9 @@ export function NotificationsCenter() {
   };
 
   return (
-    <div ref={panelRef} className="relative">
+    <div className="relative">
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         className="relative w-9 h-9 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center hover:bg-primary/30 text-primary shadow-[0_0_10px_rgba(0,255,135,0.2)] active:scale-95 transition-all"
         aria-label="Central de notificações"
@@ -121,11 +161,18 @@ export function NotificationsCenter() {
         )}
       </button>
 
-      {open && (
+      {open && mounted && createPortal((
         <div
+          ref={panelRef}
           role="dialog"
           aria-label="Notificações"
-          className="absolute right-0 top-full mt-2 w-[300px] sm:w-[320px] max-h-[60vh] sm:max-h-[70vh] overflow-hidden rounded-2xl bg-[#0a0a0b] backdrop-blur-2xl border border-white/15 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.9)] z-[205] flex flex-col"
+          style={{ 
+            top: `${coords.top + 8}px`, 
+            right: coords.left === 10 ? '10px' : `${coords.right}px`,
+            left: coords.left === 10 ? '10px' : 'auto',
+            width: coords.left === 10 ? 'calc(100vw - 20px)' : '320px'
+          }}
+          className="fixed max-h-[60vh] sm:max-h-[70vh] overflow-hidden rounded-2xl bg-[#0a0a0b]/95 backdrop-blur-2xl border border-white/15 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.9)] z-[205] flex flex-col animate-in fade-in zoom-in duration-200"
         >
           <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
             <span className="text-[11px] font-black uppercase italic tracking-widest">Notificações</span>
@@ -178,7 +225,7 @@ export function NotificationsCenter() {
             ))}
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

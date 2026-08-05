@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Crown } from "lucide-react";
 import { PlanDetailsModal } from "@/components/PlanDetailsModal";
 import type { PlanId } from "@/lib/monetization";
@@ -20,6 +21,12 @@ export function PlanBadge({ planId, renewsAt, className }: Props) {
   const key = (planId || "free").toString().toLowerCase();
   const style = PLAN_STYLE[key] || PLAN_STYLE.free;
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   return (
     <>
@@ -37,12 +44,13 @@ export function PlanBadge({ planId, renewsAt, className }: Props) {
         <span className="text-[10px] font-black uppercase tracking-widest">Plano {style.label}</span>
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <PlanDetailsModal
           currentPlan={key as PlanId}
           renewsAt={renewsAt ?? null}
           onClose={() => setOpen(false)}
-        />
+        />,
+        document.body
       )}
     </>
   );
