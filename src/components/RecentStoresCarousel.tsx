@@ -237,7 +237,10 @@ function RecentStoresCarouselInner() {
             kind = "fornecedor";
           }
 
-          if (!kind) return null;
+          if (!kind) {
+            console.debug("[RecentStoresCarousel] User filtered out (no kind):", r.id, r.role);
+            return null;
+          }
 
           const avatar = safeStr((r as any).avatar_url) || safeStr((r as any).logo_url);
           return { 
