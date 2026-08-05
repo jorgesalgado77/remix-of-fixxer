@@ -3404,11 +3404,31 @@ function SortableItem({ id, isVideo, onRemove, isSelected, onToggleSelect }: { i
 }
 
 
-function MetricCard({ label, value, icon, color, subValue, bgColor, onClick }: any) {
+function MetricCard({ 
+    label, 
+    value, 
+    icon, 
+    color, 
+    subValue, 
+    bgColor = "bg-white/5", 
+    onClick, 
+    ariaLabel 
+}: { 
+    label: string; 
+    value: string; 
+    icon: React.ReactNode; 
+    color: string; 
+    subValue?: React.ReactNode; 
+    bgColor?: string; 
+    onClick?: () => void; 
+    ariaLabel?: string;
+}) {
     return (
         <button 
+            type="button"
             onClick={onClick}
-            className={`text-left bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl space-y-1 md:space-y-2 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between ${bgColor || 'bg-white/5'} hover:scale-[1.02] active:scale-[0.98]`}
+            aria-label={ariaLabel || label}
+            className={`text-left border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl space-y-1 md:space-y-2 relative overflow-hidden group hover:border-primary/40 transition-all flex flex-col justify-between ${bgColor} hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-black`}
         >
             <div>
                 <div className={`${color} opacity-80 mb-1 md:mb-2 group-hover:scale-110 transition-transform`}>{icon}</div>
