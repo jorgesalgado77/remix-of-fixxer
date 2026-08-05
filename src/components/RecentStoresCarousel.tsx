@@ -178,8 +178,9 @@ function RecentStoresCarouselInner() {
 
         // Filtrar Admins e o PRÓPRIO usuário logado
         const filteredProfiles = profiles.filter((p: any) => 
-          p.role !== 'admin' && p.id !== currentUserId
+          p.role !== 'admin'
         );
+
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
           const roleStr = (r.role || "").toLowerCase();
@@ -189,8 +190,15 @@ function RecentStoresCarouselInner() {
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
 
-          // Se for fornecedor e tiver business_category como 'Geral', tenta usar custom_branch
-          const branch = r.custom_branch || r.business_category || "Geral";
+          // Lógica de ramo: prioriza custom_branch e evita "Geral"
+          let branch = r.custom_branch || r.business_category || "Não Informado";
+          if (branch.toLowerCase() === "geral" && r.custom_branch) {
+            branch = r.custom_branch;
+          } else if (branch.toLowerCase() === "geral") {
+            branch = "Parceiro FIXXER";
+          }
+
+
 
           return {
             id: r.id,
