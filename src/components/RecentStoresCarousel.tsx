@@ -110,23 +110,28 @@ function RecentStoresCarouselInner() {
   });
 
   useEffect(() => {
-    if (cachedLocation) return; // Já temos a localização em cache
-
     const getUserLocation = async () => {
       try {
         const { data: { session } } = await supabaseExternal.auth.getSession();
         if (session?.user) {
-          const { data: profile } = await supabaseExternal
-            .from("profiles_public")
-            .select("lat, lng")
-            .eq("id", session.user.id)
-            .single();
+          // Guardamos o ID do usuário logado para evitar que ele apareça no carrossel
+          const userId = session.user.id;
           
-          if (profile?.lat && profile?.lng) {
-            const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
-            setUserCoords(coords);
-            setCachedLocation(coords);
-            localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
+          if (!cachedLocation) {
+            const { data: profile } = await supabaseExternal
+              .from("profiles_public")
+              .select("lat, lng")
+              .eq("id", userId)
+              .single();
+            
+            if (profile?.lat && profile?.lng) {
+              const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
+              setUserCoords(coords);
+              setCachedLocation(coords);
+              localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
+            }
+          } else {
+            setUserCoords(cachedLocation);
           }
         }
       } catch (err) {
@@ -134,11 +139,6 @@ function RecentStoresCarouselInner() {
       }
     };
     getUserLocation();
-  }, [cachedLocation]);
-
-  // Usar o cachedLocation se disponível
-  useEffect(() => {
-    if (cachedLocation) setUserCoords(cachedLocation);
   }, [cachedLocation]);
 
   const fetchList = useCallback(async (isMore = false) => {
@@ -172,8 +172,14 @@ function RecentStoresCarouselInner() {
       if (supabaseError) throw supabaseError;
 
       if (profiles) {
-        // Filtrar Admins em memória para evitar erros de cast no PostgREST
-        const filteredProfiles = profiles.filter((p: any) => p.role !== 'admin');
+        // Recuperar o ID do usuário atual do Supabase (para filtrar o próprio card)
+        const { data: { session } } = await supabaseExternal.auth.getSession();
+        const currentUserId = session?.user?.id;
+
+        // Filtrar Admins e o PRÓPRIO usuário logado
+        const filteredProfiles = profiles.filter((p: any) => 
+          p.role !== 'admin' && p.id !== currentUserId
+        );
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
           const roleStr = (r.role || "").toLowerCase();
@@ -217,11 +223,11 @@ function RecentStoresCarouselInner() {
           ? [...uniqueItems].sort((a, b) => (a._distance || 9999) - (b._distance || 9999))
           : uniqueItems;
 
+        // Persistência em cache de memória (opcional) e estado
         setItems(sorted);
         setPage(currentPage);
         setHasMore(rows.length === PAGE_SIZE);
 
-        // Salvar no cache
         if (!isMore) {
           cacheRef.current[cacheKey] = { data: sorted, timestamp: Date.now() };
         }
@@ -237,14 +243,14 @@ function RecentStoresCarouselInner() {
   }, [userCoords, kindFilter, page, items, userBranchCtx]);
 
   useEffect(() => {
-    // Resetar quando o filtro mudar apenas se não houver itens (forçar recarga inicial)
-    // Se já tivermos itens, o useMemo cuida do filtro visual instantâneo
+    // Resetar quando o filtro mudar apenas se não houver itens OU se o filtro mudar para algo não cacheado
+    // Mantemos os itens se eles já existirem para evitar "sumiço" ao voltar de rotas
     if (items.length === 0) {
       setPage(0);
       setHasMore(true);
       fetchList();
     }
-  }, [kindFilter]);
+  }, [kindFilter, items.length]);
 
   const filteredItems = useMemo(() => {
     // 1. Filtragem por Tipo (Role)
