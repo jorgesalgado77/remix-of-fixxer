@@ -110,23 +110,28 @@ function RecentStoresCarouselInner() {
   });
 
   useEffect(() => {
-    if (cachedLocation) return; // Já temos a localização em cache
-
     const getUserLocation = async () => {
       try {
         const { data: { session } } = await supabaseExternal.auth.getSession();
         if (session?.user) {
-          const { data: profile } = await supabaseExternal
-            .from("profiles_public")
-            .select("lat, lng")
-            .eq("id", session.user.id)
-            .single();
+          // Guardamos o ID do usuário logado para evitar que ele apareça no carrossel
+          const userId = session.user.id;
           
-          if (profile?.lat && profile?.lng) {
-            const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
-            setUserCoords(coords);
-            setCachedLocation(coords);
-            localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
+          if (!cachedLocation) {
+            const { data: profile } = await supabaseExternal
+              .from("profiles_public")
+              .select("lat, lng")
+              .eq("id", userId)
+              .single();
+            
+            if (profile?.lat && profile?.lng) {
+              const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
+              setUserCoords(coords);
+              setCachedLocation(coords);
+              localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
+            }
+          } else {
+            setUserCoords(cachedLocation);
           }
         }
       } catch (err) {
@@ -134,11 +139,6 @@ function RecentStoresCarouselInner() {
       }
     };
     getUserLocation();
-  }, [cachedLocation]);
-
-  // Usar o cachedLocation se disponível
-  useEffect(() => {
-    if (cachedLocation) setUserCoords(cachedLocation);
   }, [cachedLocation]);
 
   const fetchList = useCallback(async (isMore = false) => {
