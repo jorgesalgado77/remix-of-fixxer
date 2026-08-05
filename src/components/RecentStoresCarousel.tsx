@@ -351,13 +351,18 @@ function RecentStoresCarouselInner() {
       )}
       
       {/* Barra de Navegação Inferior Horizontal Personalizada */}
-      <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+      <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden max-w-md mx-auto">
         <div 
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-          style={{ width: '20%' }}
+          className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500/20 via-[#00FF88] to-emerald-500/20 rounded-full transition-all duration-200 shadow-[0_0_10px_rgba(0,255,136,0.5)]"
+          style={{ 
+            width: `${Math.max(10, scrollProgress)}%`, 
+            left: `${scrollProgress * 0.9}%`,
+            transform: 'translateX(0)'
+          }}
         />
       </div>
     </section>
+
 
   );
 }
