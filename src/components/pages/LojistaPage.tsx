@@ -1270,7 +1270,11 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                     icon={<Briefcase />} 
                     color="text-blue-400" 
                     bgColor="bg-blue-400/5"
-                    onClick={() => handleTabChange('dashboard')}
+                    ariaLabel={`Serviços Criados: ${realStats.created + createdBoost}`}
+                    onClick={() => {
+                        toast.info("Filtrando serviços criados...");
+                        handleTabChange('dashboard');
+                    }}
                 />
                 <MetricCard 
                     label="Serviços Pendentes" 
@@ -1278,9 +1282,13 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                     icon={<Clock />} 
                     color="text-orange-400" 
                     bgColor="bg-orange-400/5"
+                    ariaLabel={`Serviços Pendentes: ${realStats.pending}`}
                     onClick={() => {
+                        toast.info("Filtrando serviços pendentes...");
                         handleTabChange('dashboard');
-                        setStatusFilter('Pendente');
+                        if (typeof (window as any).setStatusFilter === 'function') {
+                            (window as any).setStatusFilter('Pendente');
+                        }
                     }}
                     subValue={
                         <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
@@ -1309,9 +1317,13 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                     icon={<ShieldCheck />} 
                     color="text-primary" 
                     bgColor="bg-primary/5"
+                    ariaLabel={`Serviços Concluídos: ${realStats.completed}`}
                     onClick={() => {
+                        toast.info("Filtrando serviços concluídos...");
                         handleTabChange('dashboard');
-                        setStatusFilter('Concluído');
+                        if (typeof (window as any).setStatusFilter === 'function') {
+                            (window as any).setStatusFilter('Concluído');
+                        }
                     }}
                 />
                 <MetricCard 
@@ -1320,7 +1332,11 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                     icon={<DollarSign />} 
                     color="text-emerald-400"
                     bgColor="bg-emerald-400/5"
-                    onClick={() => handleTabChange('dashboard')}
+                    ariaLabel="Saldo do Período: R$ 0,00"
+                    onClick={() => {
+                        toast.info("Abrindo extrato financeiro...");
+                        setShowExtractModal(true);
+                    }}
                     subValue={
                         <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
                             <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ 0,00</span></span>
