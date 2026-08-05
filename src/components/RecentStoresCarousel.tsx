@@ -231,58 +231,79 @@ function RecentStoresCarouselInner() {
                 <button
                   key={p.id}
                   onClick={() => openProfile(p)}
-                  className="w-56 flex-shrink-0 snap-start bg-[#1A1A1E] border border-white/5 rounded-2xl overflow-hidden text-left hover:border-primary/50 hover:-translate-y-1 transition-all duration-300 group/card"
+                  className={`w-64 flex-shrink-0 snap-start bg-[#1A1A1E] border-2 rounded-3xl overflow-hidden text-left hover:-translate-y-1 transition-all duration-300 group/card relative ${
+                    p._kind === 'lojista' 
+                      ? 'border-[#00E5FF]/30 hover:border-[#00E5FF] shadow-[0_0_20px_rgba(0,229,255,0.05)]' 
+                      : 'border-[#A855F7]/30 hover:border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.05)]'
+                  }`}
                 >
-                  <div className="h-36 bg-white/5 flex items-center justify-center relative overflow-hidden">
+                  <div className="h-44 bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative overflow-hidden">
+                    {/* Badge Rating Superior */}
+                    <div className="absolute top-4 right-4 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 z-20">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                      <span className="text-[10px] font-black text-white italic">{(p.rating || 5.0).toFixed(1)}</span>
+                    </div>
+
                     {p.avatar_url ? (
-                      <img 
-                        src={p.avatar_url} 
-                        alt={name} 
-                        className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-500" 
-                      />
+                      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover/card:scale-110 ${
+                        p._kind === 'lojista' ? 'border-[#00E5FF]' : 'border-[#A855F7]'
+                      }`}>
+                        <img 
+                          src={p.avatar_url} 
+                          alt={name} 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 to-white/[0.02]">
-                        <UserCircle2 className="w-16 h-16 text-white/10" />
+                      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center bg-white/5 transition-all duration-500 group-hover/card:scale-110 ${
+                        p._kind === 'lojista' ? 'border-[#00E5FF]' : 'border-[#A855F7]'
+                      }`}>
+                        <UserCircle2 className={`w-16 h-16 ${p._kind === 'lojista' ? 'text-[#00E5FF]/40' : 'text-[#A855F7]/40'}`} />
                       </div>
                     )}
                     
-                    <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter italic z-10 ${p._kind === 'lojista' ? 'bg-[#00E5FF] text-black shadow-[0_0_15px_rgba(0,229,255,0.3)]' : 'bg-[#A855F7] text-white shadow-[0_0_15px_rgba(168,85,247,0.3)]'}`}>
-                      {p._kind}
+                    {/* Badge Categoria Flutuante */}
+                    <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter italic z-10 flex items-center gap-1.5 shadow-lg border border-white/10 ${
+                      p._kind === 'lojista' ? 'bg-[#00E5FF] text-black' : 'bg-[#A855F7] text-white'
+                    }`}>
+                      {p._kind === 'lojista' ? (
+                        <>
+                          <Navigation className="w-3 h-3 rotate-45" /> LOJISTA
+                        </>
+                      ) : (
+                        <>
+                          <Puzzle className="w-3 h-3" /> FORNECEDOR B2B
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  <div className="p-4 space-y-2">
-                    <h4 className="font-black text-white text-[13px] leading-tight uppercase tracking-tight italic line-clamp-1">{name}</h4>
+                  <div className="p-5 space-y-3 bg-gradient-to-b from-black/40 to-black/60">
+                    <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-1">{name}</h4>
                     
                     <div className="flex flex-wrap gap-1.5 items-center">
-                      <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold text-primary uppercase tracking-widest">
+                      <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest ${
+                        p._kind === 'lojista' ? 'text-[#00E5FF]' : 'text-[#A855F7]'
+                      }`}>
+                        {p._kind === 'lojista' ? <Navigation className="w-3 h-3" /> : <Puzzle className="w-3 h-3" />}
                         {p._branch}
                       </span>
                     </div>
 
-                    <div className="pt-1 flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
-                        <MapPin className="w-3 h-3 text-primary" />
+                    <div className="pt-1 flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5 text-[10px] text-white/40 font-bold uppercase tracking-tight">
+                        <MapPin className="w-3 h-3 text-red-500" />
                         <span className="truncate">{p.city || "S/L"}, {p.state || "BR"}</span>
                       </div>
                       
-                      {p._distance !== undefined && (
-                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-black italic uppercase tracking-tighter">
-                          <Navigation className="w-3 h-3" />
-                          {p._distance < 1 ? "Menos de 1 km" : `${p._distance.toFixed(1)} km de você`}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-2 flex items-center justify-between border-t border-white/5 mt-2">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3 h-3 text-amber-500 fill-current" />
-                        <span className="text-[10px] font-black text-white">{(p.rating || 5.0).toFixed(1)}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-[#00FF88] shadow-[0_0_8px_#00FF88] animate-pulse" />
+                        <span className="text-[10px] font-black text-[#00FF88] uppercase italic">Disponível</span>
                       </div>
-                      <span className="text-[8px] font-bold text-muted-foreground uppercase">Ver Perfil</span>
                     </div>
                   </div>
                 </button>
+
               );
             })}
           </div>
