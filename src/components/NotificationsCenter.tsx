@@ -122,8 +122,9 @@ export function NotificationsCenter() {
   };
 
   return (
-    <div ref={panelRef} className="relative">
-      <button
+    <div>
+      <div className="relative">
+        <button
         ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         className="relative w-9 h-9 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center hover:bg-primary/30 text-primary shadow-[0_0_10px_rgba(0,255,135,0.2)] active:scale-95 transition-all"
@@ -140,7 +141,7 @@ export function NotificationsCenter() {
             {unread > 99 ? "99+" : unread}
           </span>
         )}
-      </button>
+      </div>
 
       {open && mounted && createPortal((
         <div
