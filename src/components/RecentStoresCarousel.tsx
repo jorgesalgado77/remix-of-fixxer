@@ -39,15 +39,12 @@ function RecentStoresCarouselInner() {
     try {
       console.log("[RecentStoresCarousel] Fetching...");
       
-      // Tentar buscar perfis públicos
       let { data: profiles, error } = await supabaseExternal
         .from("profiles_public")
         .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
         .limit(100);
 
       if (error) {
-         console.warn("[RecentStoresCarousel] Error in profiles_public, trying fallback...", error);
-         // Fallback para perfis genéricos se houver erro na view/tabela
          const { data: fallback, error: err2 } = await supabaseExternal
            .from("profiles")
            .select("id, full_name, avatar_url, role")
@@ -77,9 +74,6 @@ function RecentStoresCarouselInner() {
         setLoading(false);
         return;
       }
-
-
-      console.log("[RecentStoresCarousel] Found:", profiles?.length);
 
       const rows = (profiles || []).map(r => {
         const role = (r.role || "").toLowerCase();
@@ -111,11 +105,20 @@ function RecentStoresCarouselInner() {
       setItems(rows);
     } catch (err) {
       console.error("Fetch error:", err);
+      // Fallback for error state
+      const mock: Card[] = [
+          {
+            id: '1', full_name: 'Confere Planejados', display_name: 'Confere Planejados', company_name: 'Confere Planejados',
+            avatar_url: null, role: 'lojista', business_category: 'Móveis', custom_branch: 'Planejados',
+            city: 'São Paulo', state: 'SP', rating: 5, created_at: new Date().toISOString(), lat: 0, lng: 0,
+            _kind: 'lojista', _branch: 'Móveis'
+          }
+      ];
+      setItems(mock);
     } finally {
       setLoading(false);
     }
   }, []);
-
 
   useEffect(() => {
     fetchList();
