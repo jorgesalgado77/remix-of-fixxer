@@ -43,26 +43,69 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 function RecentStoresCarouselInner() {
   const navigate = useNavigate();
   const [items, setItems] = useState<Card[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">("branch");
+  
+  // Persistência do estado dos filtros
+  const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">(() => {
+    if (typeof window === 'undefined') return "branch";
+    return (localStorage.getItem('fixxer_carousel_filter') as any) || "branch";
+  });
+
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    return Number(localStorage.getItem('fixxer_carousel_scroll')) || 0;
+  });
+
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 20;
   const userBranchCtx = useUserBranchContext();
 
-  // Monitorar progresso do scroll
+  // Cache simples em memória para evitar chamadas repetidas
+  const cacheRef = useRef<{ [key: string]: { data: Card[], timestamp: number } }>({});
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+  // Monitorar progresso do scroll e persistir
   const handleScroll = () => {
     if (!scrollerRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollerRef.current;
     const totalScrollable = scrollWidth - clientWidth;
+    
+    let progress = 0;
     if (totalScrollable <= 0) {
-      setScrollProgress(100);
+      progress = 100;
     } else {
-      setScrollProgress((scrollLeft / totalScrollable) * 100);
+      progress = (scrollLeft / totalScrollable) * 100;
+    }
+    
+    setScrollProgress(progress);
+    localStorage.setItem('fixxer_carousel_scroll', progress.toString());
+
+    // Lógica de Infinite Scroll: se chegar perto do fim, carrega mais
+    if (totalScrollable - scrollLeft < 500 && !loadingMore && hasMore && !loading) {
+      fetchList(true);
     }
   };
 
+  // Restaurar posição do scroll após carregar itens
+  useEffect(() => {
+    if (items.length > 0 && scrollerRef.current && scrollProgress > 0) {
+      const { scrollWidth, clientWidth } = scrollerRef.current;
+      const totalScrollable = scrollWidth - clientWidth;
+      if (totalScrollable > 0) {
+        scrollerRef.current.scrollLeft = (scrollProgress / 100) * totalScrollable;
+      }
+    }
+  }, [items.length]); // Só executa quando a lista popula pela primeira vez ou cresce
+
+  // Persistir filtro quando mudar
+  useEffect(() => {
+    localStorage.setItem('fixxer_carousel_filter', kindFilter);
+  }, [kindFilter]);
 
   // Capturar localização do usuário logado
   useEffect(() => {
@@ -87,19 +130,40 @@ function RecentStoresCarouselInner() {
     getUserLocation();
   }, []);
 
-  const fetchList = useCallback(async () => {
+  const fetchList = useCallback(async (isMore = false) => {
+    const currentPage = isMore ? page + 1 : 0;
+    const cacheKey = `carousel_${kindFilter}_${currentPage}`;
+    
+    // Verificar cache se não for "carregar mais" (ou se quisermos cache por página também)
+    if (!isMore && cacheRef.current[cacheKey] && (Date.now() - cacheRef.current[cacheKey].timestamp < CACHE_TTL)) {
+      setItems(cacheRef.current[cacheKey].data);
+      setLoading(false);
+      return;
+    }
+
     try {
-      setLoading(true);
+      if (isMore) setLoadingMore(true);
+      else setLoading(true);
+      
       setError(null);
-      const { data: profiles, error: supabaseError } = await supabaseExternal
+      
+      let query = supabaseExternal
         .from("profiles_public")
         .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
-        .limit(100);
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+
+      // Aplicar filtros básicos na query para performance
+      if (kindFilter === "lojista") {
+        query = query.ilike('role', '%lojista%');
+      } else if (kindFilter === "fornecedor") {
+        query = query.ilike('role', '%fornec%');
+      }
+
+      const { data: profiles, error: supabaseError } = await query;
 
       if (supabaseError) throw supabaseError;
 
-
-      if (profiles && profiles.length > 0) {
+      if (profiles) {
         const rows: Card[] = profiles.map(r => {
           const roleStr = (r.role || "").toLowerCase();
           const kind = roleStr.includes("fornec") ? "fornecedor" : "lojista";
@@ -118,7 +182,7 @@ function RecentStoresCarouselInner() {
             custom_branch: r.custom_branch,
             city: r.city,
             state: r.state,
-            rating: 4.5 + Math.random() * 0.5, // Mock rating para bater com a imagem
+            rating: 4.5 + Math.random() * 0.5,
             created_at: r.created_at,
             lat: r.lat ? Number(r.lat) : null,
             lng: r.lng ? Number(r.lng) : null,
@@ -128,38 +192,49 @@ function RecentStoresCarouselInner() {
           };
         });
         
-        // Ordenar por distância se disponível
-        setItems(rows.sort((a, b) => (a._distance || 9999) - (b._distance || 9999)));
+        const newItems = isMore ? [...items, ...rows] : rows;
+        
+        // Ordenar se houver coordenadas (Haversine)
+        const sorted = userCoords 
+          ? newItems.sort((a, b) => (a._distance || 9999) - (b._distance || 9999))
+          : newItems;
+
+        setItems(sorted);
+        setPage(currentPage);
+        setHasMore(rows.length === PAGE_SIZE);
+
+        // Salvar no cache
+        if (!isMore) {
+          cacheRef.current[cacheKey] = { data: sorted, timestamp: Date.now() };
+        }
       }
     } catch (e: any) {
       console.error("[RecentStoresCarousel] Fetch error:", e);
       setError(e.message || "Falha ao carregar parceiros.");
     } finally {
       setLoading(false);
-      // Ajustar barra de progresso após carregar itens
-      setTimeout(handleScroll, 100);
+      setLoadingMore(false);
+      if (!isMore) setTimeout(handleScroll, 100);
     }
-  }, [userCoords]);
-
+  }, [userCoords, kindFilter, page, items, userBranchCtx]);
 
   useEffect(() => {
+    // Resetar quando o filtro mudar (exceto no carregamento inicial se já tivermos itens do cache)
+    setPage(0);
+    setHasMore(true);
     fetchList();
-  }, [fetchList]);
+  }, [kindFilter]);
 
-  const sortedItems = useMemo(() => {
-    let filtered = items;
+  const filteredItems = useMemo(() => {
+    // Filtro adicional em memória para o "Do meu ramo" se necessário (embora idealmente fizesse via query)
     if (kindFilter === "branch") {
-      filtered = items.filter(i => {
+      return items.filter(i => {
         if (!userBranchCtx.hasContext) return true;
         const relevance = scoreRelevance([i.business_category, i.custom_branch], userBranchCtx);
         return relevance !== "none";
       });
-    } else if (kindFilter !== "all") {
-      filtered = items.filter(i => i._kind === kindFilter);
     }
-    // Removemos duplicatas por ID apenas por segurança, embora o mapeamento do Supabase deva ser único
-    const unique = Array.from(new Map(filtered.map(item => [item.id, item])).values());
-    return unique.slice(0, 60); // Aumentamos o limite para 60 para garantir que "Todos" mostre tudo o que buscamos
+    return items;
   }, [items, kindFilter, userBranchCtx]);
 
 
@@ -237,12 +312,12 @@ function RecentStoresCarouselInner() {
            {error}
            <button onClick={() => fetchList()} className="mt-4 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] font-black uppercase text-red-400 hover:bg-red-500/20 transition-all">Tentar Novamente</button>
         </div>
-      ) : sortedItems.length === 0 ? (
-
+      ) : filteredItems.length === 0 ? (
         <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl text-white/40 italic text-sm">
            Nenhum parceiro encontrado nesta categoria.
         </div>
       ) : (
+
         <div className="relative">
           {/* Navegação Horizontal - Botões Desktop */}
           <button 
@@ -258,7 +333,7 @@ function RecentStoresCarouselInner() {
             className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide scroll-smooth touch-pan-x"
           >
 
-            {sortedItems.map((p) => {
+            {filteredItems.map((p) => {
               const name = p.company_name || p.display_name || p.full_name || "Parceiro";
               return (
                 <button
@@ -339,7 +414,16 @@ function RecentStoresCarouselInner() {
 
               );
             })}
+            
+            {loadingMore && (
+              <div className="flex gap-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="w-64 h-[400px] rounded-3xl bg-white/5 animate-pulse border border-white/5 flex-shrink-0" />
+                ))}
+              </div>
+            )}
           </div>
+
 
           <button 
             onClick={() => scroll("right")}
