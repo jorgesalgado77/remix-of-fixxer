@@ -870,6 +870,8 @@ function ProfilePage() {
           mergedFresh = { ...savedExtras, ...fresh };
         }
         mergedFresh = normalizeMasks(mergedFresh);
+        if (typeof savedPixKey === 'string') mergedFresh.pix_key = savedPixKey;
+        if (typeof savedPixType === 'string') mergedFresh.pix_key_type = savedPixType;
         setProfile(mergedFresh);
         lastSavedSnapshotRef.current = JSON.stringify(mergedFresh);
         setLastSavedAt(Date.now());
