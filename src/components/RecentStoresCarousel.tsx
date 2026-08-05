@@ -160,7 +160,7 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, user_type, business_category, custom_branch, city, state, created_at, lat, lng")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
         .order('created_at', { ascending: false });
 
