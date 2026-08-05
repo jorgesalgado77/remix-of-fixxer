@@ -17,8 +17,6 @@ export const supabaseExternal = createClient(
       detectSessionInUrl: true,
       storageKey: 'fixxer-auth-token-v1',
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      // Garante que o refresh ocorra com antecedência para evitar expiração durante quedas de rede
-      lockRefreshSession: true,
     },
     global: {
       headers: { 'x-application-name': 'fixxer-hub' },
