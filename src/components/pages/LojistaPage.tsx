@@ -515,7 +515,7 @@ export function LojistaDashboard() {
 
         <TooltipProvider>
           <nav className="flex flex-col gap-2">
-              <Link to="/feed/lojista" search={{}} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider border border-transparent hover:border-white/10 mb-2">
+              <Link to="/feed/lojista" search={{ urgency: 'todos', distance: 'todos', tag: '' }} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider border border-transparent hover:border-white/10 mb-2">
                   <Search className="w-4 h-4 text-primary" /> Ir para o Feed
               </Link>
 
