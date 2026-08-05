@@ -414,7 +414,10 @@ function RecentStoresCarouselInner() {
                     <div className="pt-1 flex flex-col gap-1.5">
                       <div className="flex items-center gap-1.5 text-[10px] text-white/40 font-bold uppercase tracking-tight">
                         <MapPin className="w-3 h-3 text-red-500" />
-                        <span className="truncate">{p.city || "S/L"}, {p.state || "BR"}</span>
+                        <span className="truncate">
+                          {p.city || "S/L"}, {p.state || "BR"} 
+                          {p._distance !== undefined && ` • ${p._distance.toFixed(1)} KM`}
+                        </span>
                       </div>
                       
                       <div className="flex items-center gap-2">
