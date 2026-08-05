@@ -112,24 +112,18 @@ function RecentStoresCarouselInner() {
         if (session?.user) {
           const userId = session.user.id;
           
-          // Sempre buscamos o perfil do usuário logado para garantir coordenadas frescas
-          // e o ID correto para filtragem
           const { data: profile, error } = await supabaseExternal
             .from("profiles")
             .select("lat, lng")
             .eq("id", userId)
             .maybeSingle();
           
-          if (error) {
-            console.warn("[RecentStoresCarousel] Erro ao buscar coordenadas do usuário:", error);
-          }
-          
           if (profile?.lat && profile?.lng) {
             const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
+            console.log("[RecentStoresCarousel] User Coords Found:", coords);
             setUserCoords(coords);
             localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           } else {
-            // Se não tiver no banco, tenta o cache
             const saved = localStorage.getItem('fixxer_user_coords_v1');
             if (saved) setUserCoords(JSON.parse(saved));
           }
