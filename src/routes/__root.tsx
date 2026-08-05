@@ -222,7 +222,7 @@ function RootComponent() {
         </GlobalErrorBoundary>
         {!hideBar && (
           <>
-            <div className="fixed top-3 right-3 z-[110]">
+            <div className="fixed top-3 left-3 z-[110] md:left-auto md:right-3">
               <NotificationsCenter />
             </div>
             <GlobalActionBar />
