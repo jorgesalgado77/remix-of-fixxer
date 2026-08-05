@@ -303,6 +303,22 @@ export function LojistaPublicProfilePage() {
   const [oppUf, setOppUf] = useState<string>("Todas");
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const focus = searchParams.get("focus");
+    const tab = searchParams.get("tab");
+    
+    if (tab === "avaliacoes" || focus === "reviews") {
+      setActiveTab("avaliacoes");
+      if (focus === "reviews") {
+        setTimeout(() => {
+          const el = document.getElementById("avaliacoes-section");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+        }, 500);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     const panelNavigationInProgress = () => {
