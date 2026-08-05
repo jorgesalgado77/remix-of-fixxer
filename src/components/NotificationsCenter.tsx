@@ -142,7 +142,7 @@ export function NotificationsCenter() {
         )}
       </button>
 
-      {open && mounted && createPortal(
+      {open && mounted && createPortal((
         <div
           ref={panelRef}
           role="dialog"
