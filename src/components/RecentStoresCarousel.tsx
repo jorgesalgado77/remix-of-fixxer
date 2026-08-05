@@ -185,7 +185,7 @@ function RecentStoresCarouselInner() {
       // 2) Perfis reais — via View pública `profiles_public` (bypassa RLS restrito de `profiles`).
       const { data, error } = await supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, user_type, business_category, custom_branch, city, state, created_at")
+        .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at")
         .order("created_at", { ascending: false })
         .limit(300);
 
@@ -194,7 +194,7 @@ function RecentStoresCarouselInner() {
         throw error;
       }
 
-      const rows: Card[] = ((data as unknown as (Row & { user_type?: string | null })[]) ?? [])
+      const rows: Card[] = ((data as any[]) ?? [])
         .map((r) => {
           const rid = String(r.id);
           // Bloqueia administradores e o próprio usuário logado.
@@ -202,7 +202,8 @@ function RecentStoresCarouselInner() {
           if (selfId && rid === selfId) return null;
 
           const roleStr = (r.role || "").toLowerCase();
-          const typeStr = ((r as any).user_type || "").toLowerCase();
+          // Removemos a verificação de user_type que está causando erro de coluna inexistente
+
           let kind: Kind | null = null;
 
           // Prioridade 1: Tabelas especializadas (Vínculo Forte)
@@ -211,10 +212,9 @@ function RecentStoresCarouselInner() {
           } else if (supplierIds.has(rid)) {
             kind = "fornecedor";
           } 
-          // Prioridade 2: Mapeamento textual via role/user_type (Fallback)
+          // Prioridade 2: Mapeamento textual via role (Fallback)
           else if (
             roleStr.includes("lojista") || roleStr.includes("store") || 
-            typeStr.includes("lojista") || typeStr.includes("store") ||
             roleStr.includes("comércio") || roleStr.includes("shop")
           ) {
             kind = "lojista";
@@ -222,8 +222,7 @@ function RecentStoresCarouselInner() {
           else if (
             roleStr.includes("fornec") || roleStr.includes("supplier") || 
             roleStr.includes("b2b") || roleStr.includes("parceiro") || 
-            roleStr.includes("distribuidor") || typeStr.includes("fornec") || 
-            typeStr.includes("supplier")
+            roleStr.includes("distribuidor")
           ) {
             kind = "fornecedor";
           }
