@@ -799,6 +799,8 @@ function ProfilePage() {
       // valida auth.uid() no servidor.
       const pixKeyToSave = typeof payload.pix_key === 'string' ? payload.pix_key : null;
       const pixTypeToSave = typeof payload.pix_key_type === 'string' ? payload.pix_key_type : null;
+      const savedPixKey = payload.pix_key;
+      const savedPixType = payload.pix_key_type;
       delete payload.pix_key;
       delete payload.pix_key_type;
       if (pixKeyToSave !== null || pixTypeToSave !== null) {
@@ -933,6 +935,13 @@ function ProfilePage() {
     profile?.about_bio,
     profile?.default_radius,
     profile?.activity_branch,
+    profile?.preferred_service,
+    profile?.job_roles,
+    profile?.offerings,
+    profile?.offerings_notes,
+    profile?.vehicle_type,
+    profile?.vehicle_description,
+    profile?.specialties,
     profile?.custom_sections,
   ]);
 
