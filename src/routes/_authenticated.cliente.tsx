@@ -63,7 +63,7 @@ function ClientePortal() {
             </Link>
             <TabButton active={activeTab === 'contratacoes'} onClick={() => setActiveTab('contratacoes')} label="Contratações" icon={<ShieldCheck className="w-3 h-3" />} />
           </div>
-          <ProfileSummaryCard role="cliente" />
+          {/* Notificações agora estão integradas no ProfileSummaryCard */}
           <PanelActions role="cliente" />
         </div>
       </header>
