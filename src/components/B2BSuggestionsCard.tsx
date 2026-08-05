@@ -171,6 +171,8 @@ function B2BSuggestionsCardInner() {
   const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
   const [dismissed, setDismissed] = useState<boolean>(() => readDismissed(category));
   const theme = getCategoryTheme(category);
+  const scrollbarColor = theme.hex; // Cor da barra de rolagem baseada no tema da categoria
+
   const branchesRef = useRef<string[]>([]);
   const userLocRef = useRef<{ lat: number; lng: number } | null>(null);
   const candidatesRef = useRef<B2BCandidate[]>([]);
@@ -206,7 +208,8 @@ function B2BSuggestionsCardInner() {
         try {
           const { data: cands } = await supabaseExternal
             .from("profiles")
-            .select("id, display_name, company_name, full_name, business_category, lat, lng, updated_at")
+            .select("id, display_name, company_name, full_name, business_category, avatar_url, logo_url, lat, lng, updated_at")
+
             .not("business_category", "is", null)
             .neq("id", uid)
             .order("updated_at", { ascending: false })
@@ -220,6 +223,7 @@ function B2BSuggestionsCardInner() {
                 .filter(Boolean);
               const name =
                 row.display_name || row.company_name || row.full_name || "Parceiro FIXXER";
+              const avatar = row.avatar_url || row.logo_url;
               for (const br of branches) {
                 flat.push({
                   title: `${name} — ${br}`,
@@ -228,6 +232,7 @@ function B2BSuggestionsCardInner() {
                   lng: row.lng,
                   updatedAt: row.updated_at,
                   userId: row.id,
+                  avatarUrl: avatar,
                 });
               }
             }
@@ -380,7 +385,13 @@ function B2BSuggestionsCardInner() {
 
       </div>
 
-      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent snap-x snap-mandatory flex">
+      <div 
+        className="overflow-x-auto pb-4 scrollbar-thin snap-x snap-mandatory flex"
+        style={{
+          scrollbarColor: `${scrollbarColor}66 transparent`,
+        }}
+      >
+
         <div className="flex gap-2 min-w-max">
           {displaySuggestions.map(({ s, rel }) => (
             <button
@@ -388,9 +399,16 @@ function B2BSuggestionsCardInner() {
               type="button"
               onClick={() => openSuggestion(s)}
               title={s.userId ? "Abrir perfil do parceiro" : `Buscar: ${s.targetBranch || s.title}`}
-              className="w-[240px] md:w-[280px] snap-start text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors shrink-0"
+              className="w-[240px] md:w-[280px] snap-start text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors shrink-0 group/card"
             >
-              <span className="text-base shrink-0">{s.icon}</span>
+              <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 flex items-center justify-center shrink-0 group-hover/card:border-primary/30 transition-colors">
+                {s.avatarUrl ? (
+                  <img src={s.avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-lg">{s.icon}</span>
+                )}
+              </div>
+
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <p className="text-[11px] font-bold text-white truncate flex-1">{s.title}</p>

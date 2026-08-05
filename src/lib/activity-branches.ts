@@ -336,7 +336,10 @@ export type B2BSuggestion = {
   targetBranch?: string;
   /** Quando a sugestão vem de um perfil real, o id para abrir /perfil/:id. */
   userId?: string | null;
+  /** URL da imagem de perfil do usuário real. */
+  avatarUrl?: string | null;
 };
+
 
 
 export const B2B_SUGGESTIONS: Record<string, B2BSuggestion[]> = {
@@ -466,7 +469,10 @@ export type B2BCandidate = {
   updatedAt?: string | null;
   /** id do perfil real (para abrir /perfil/:id ao clicar). */
   userId?: string | null;
+  /** URL da imagem de perfil do usuário real. */
+  avatarUrl?: string | null;
 };
+
 
 
 export type B2BContext = {
