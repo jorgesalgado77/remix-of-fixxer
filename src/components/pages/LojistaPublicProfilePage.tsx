@@ -329,16 +329,18 @@ export function LojistaPublicProfilePage() {
       // Execução imediata e pooling
       if (!scrollToSection()) {
         const interval = setInterval(() => {
+          // Re-garante a aba ativa caso algo a tenha resetado durante o mount
+          setActiveTab("avaliacoes");
           if (scrollToSection()) {
             clearInterval(interval);
           }
-        }, 100);
+        }, 50); // Pooling mais frequente (50ms)
         
         // Timeout maior para garantir que o conteúdo carregado via Supabase apareça
-        setTimeout(() => clearInterval(interval), 3000);
+        setTimeout(() => clearInterval(interval), 4000);
       }
     }
-  }, [location.search, storeId]);
+  }, [location.search, storeId, loading]); // Adicionado loading como dependência para re-disparar quando os dados chegarem
 
   useEffect(() => {
     let cancelled = false;
