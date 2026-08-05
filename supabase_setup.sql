@@ -168,8 +168,9 @@ SET user_type = 'Admin', role = 'admin', lat = -23.50, lng = -47.45
 WHERE email = 'jorgericardosalgado@gmail.com';
 
 -- 7. VIEWS PÚBLICAS (profiles_public)
--- Recriação da view para garantir que a coluna preferred_service exista
-DROP VIEW IF EXISTS public.profiles_public;
+-- Recriação da view usando CASCADE para tratar dependências como search_profiles_public
+DROP VIEW IF EXISTS public.profiles_public CASCADE;
+
 CREATE OR REPLACE VIEW public.profiles_public AS
 SELECT 
     id, 
@@ -190,6 +191,9 @@ SELECT
 FROM public.profiles;
 
 GRANT SELECT ON public.profiles_public TO anon, authenticated;
+
+-- OBS: Ao usar CASCADE, a função search_profiles_public precisará ser recriada 
+-- se ela utilizava profiles_public%ROWTYPE ou dependia da estrutura antiga.
 
 -- TRIGGER PARA GARANTIR DADOS MÍNIMOS EM NOVOS CADASTROS
 CREATE OR REPLACE FUNCTION public.handle_new_profile_defaults()
