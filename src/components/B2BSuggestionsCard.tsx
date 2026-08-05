@@ -297,7 +297,7 @@ function B2BSuggestionsCardInner() {
         out.push(score(s));
       }
     }
-    return out.slice(0, 4);
+    return out.slice(0, 12); // Aumentado para permitir rolagem de mais itens
   }, [suggestions, branchCtx, category]);
 
   const openSuggestion = useCallback(
