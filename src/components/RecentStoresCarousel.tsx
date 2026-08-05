@@ -28,24 +28,6 @@ type Card = Row & { _kind: Kind; _branch: string | null };
 const LOJISTA_COLOR = CATEGORY_COLORS.lojista;
 const FORNECEDOR_COLOR = CATEGORY_COLORS.fornecedor;
 
-
-const KIND_META: Record<Kind, { emoji: string; label: string; color: string; borderStyle: React.CSSProperties; gradient: string }> = {
-  lojista: {
-    emoji: "🏬",
-    label: "Lojista",
-    color: LOJISTA_COLOR,
-    borderStyle: { borderColor: LOJISTA_COLOR },
-    gradient: `linear-gradient(to top, ${LOJISTA_COLOR}40, ${LOJISTA_COLOR}18, transparent)`,
-  },
-  fornecedor: {
-    emoji: "🏭",
-    label: "Fornecedor B2B",
-    color: FORNECEDOR_COLOR,
-    borderStyle: { borderColor: FORNECEDOR_COLOR },
-    gradient: `linear-gradient(to top, ${FORNECEDOR_COLOR}40, ${FORNECEDOR_COLOR}18, transparent)`,
-  },
-};
-
 function RecentStoresCarouselInner() {
   const navigate = useNavigate();
   const [items, setItems] = useState<Card[]>([]);
@@ -55,14 +37,14 @@ function RecentStoresCarouselInner() {
 
   const fetchList = useCallback(async () => {
     try {
-      console.debug("[RecentStoresCarousel] Fetching...");
+      console.log("[RecentStoresCarousel] Fetching...");
       const { data: profiles, error } = await supabaseExternal
         .from("profiles_public")
         .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
         .limit(100);
 
       if (error) throw error;
-      console.debug("[RecentStoresCarousel] Raw profiles:", profiles?.length);
+      console.log("[RecentStoresCarousel] Found:", profiles?.length);
 
       const rows = (profiles || []).map(r => {
         const role = (r.role || "").toLowerCase();
@@ -71,7 +53,6 @@ function RecentStoresCarouselInner() {
           kind = "fornecedor";
         }
         
-        // Simplificar para teste: aceitar quase todos
         return {
           id: r.id,
           full_name: r.full_name,
@@ -92,7 +73,7 @@ function RecentStoresCarouselInner() {
         } as Card;
       }) as Card[];
 
-      console.debug("[RecentStoresCarousel] Processed rows:", rows.length);
+      console.log("[RecentStoresCarousel] setItems with:", rows.length);
       setItems(rows);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -100,7 +81,6 @@ function RecentStoresCarouselInner() {
       setLoading(false);
     }
   }, []);
-
 
   useEffect(() => {
     fetchList();
@@ -117,7 +97,7 @@ function RecentStoresCarouselInner() {
     navigate({ to: `/perfil/${p.id}` as any });
   };
 
-  if (loading) return <div className="p-10 text-center text-white">Carregando parceiros...</div>;
+  if (loading) return <div className="p-10 text-center text-white font-black italic uppercase animate-pulse">Carregando parceiros...</div>;
 
   return (
     <section aria-label="Lojistas e fornecedores recentes" className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6">
@@ -161,7 +141,7 @@ function RecentStoresCarouselInner() {
                   </div>
                 </div>
                 <div className="p-3">
-                  <p className="font-black text-white text-xs truncate uppercase tracking-tighter italic block w-full">{name}</p>
+                  <p className="font-black text-white text-[11px] truncate uppercase tracking-tighter italic block w-full">{name}</p>
                   <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-primary" /> {p.city || "Brasil"}
                   </p>
@@ -169,7 +149,6 @@ function RecentStoresCarouselInner() {
               </button>
             );
           })}
-
         </div>
       )}
     </section>
