@@ -155,7 +155,7 @@ export function ProfileSummaryCard({
       className={`${wrapperVariantClass} ${className}`.trim()}
     >
       <div className="relative isolate group">
-        <div className="absolute top-4 right-4 z-[50]">
+        <div className="absolute top-4 right-4 z-[40]">
           <NotificationsCenter />
         </div>
         
