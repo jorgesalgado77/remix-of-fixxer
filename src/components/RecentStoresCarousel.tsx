@@ -116,8 +116,16 @@ function RecentStoresCarouselInner() {
 
   // Ao detectar contexto de ramo do usuário, defaulta "🎯 Do meu ramo".
   useEffect(() => {
-    if (!userTouchedFilter && branchCtx.hasContext && kindFilter === "all") setKindFilter("mine");
-  }, [branchCtx.hasContext, userTouchedFilter, kindFilter]);
+    // Forçamos "all" inicialmente se não houver contexto ou se quisermos garantir visibilidade
+    if (forceInitialAll) {
+       setKindFilter("all");
+       setForceInitialAll(false);
+       return;
+    }
+    if (!userTouchedFilter && branchCtx.hasContext && kindFilter === "all") {
+      setKindFilter("mine");
+    }
+  }, [branchCtx.hasContext, userTouchedFilter, kindFilter, forceInitialAll]);
 
   // Ramo principal para exibição textual — derivado do contexto compartilhado.
   const myBranch = branchCtx.branches[0] ?? null;
