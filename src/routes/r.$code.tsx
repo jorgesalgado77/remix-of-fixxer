@@ -20,7 +20,7 @@ function ReferralCapture() {
   useEffect(() => {
     captureReferralCode(code);
     const t = setTimeout(() => {
-      navigate({ to: "/cadastro" });
+      navigate({ to: "/cadastro", search: (old) => old } as any);
     }, 800);
     return () => clearTimeout(t);
   }, [code, navigate]);
