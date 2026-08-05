@@ -149,7 +149,7 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
       // Aplicar filtros básicos na query para performance
@@ -176,7 +176,7 @@ function RecentStoresCarouselInner() {
             full_name: r.full_name,
             display_name: r.display_name,
             company_name: r.company_name,
-            avatar_url: r.avatar_url || (r as any).logo_url,
+            avatar_url: r.avatar_url,
             role: r.role,
             business_category: r.business_category,
             custom_branch: r.custom_branch,
@@ -262,38 +262,38 @@ function RecentStoresCarouselInner() {
           Conecte-se com lojistas e fornecedores B2B na sua região — priorizando lojistas de <span className="text-white font-bold">{userBranchCtx.branches[0] || "Seu Ramo"}</span>.
         </p>
         
-        <div className="flex items-center gap-3 mt-6 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex items-center gap-3 mt-6 overflow-x-auto pb-4 scrollbar-hide snap-x no-scrollbar">
           <button
             onClick={() => setKindFilter("branch")}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${kindFilter === "branch" ? 'bg-[#00FF88] text-black border-[#00FF88]' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
+            className={`min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "branch" ? 'bg-[#00FF88] text-black border-[#00FF88]' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
           >
             <span className="text-sm">🎯</span> Do meu ramo
           </button>
 
           <button
             onClick={() => setKindFilter("all")}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${kindFilter === "all" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
+            className={`min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "all" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
           >
             <div className="w-2 h-2 rounded-full bg-emerald-400" /> Todos
           </button>
 
           <button
             onClick={() => setKindFilter("lojista")}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${kindFilter === "lojista" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
+            className={`min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "lojista" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
           >
             <span className="text-sm">🏬</span> Lojistas
           </button>
 
           <button
             onClick={() => setKindFilter("fornecedor")}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${kindFilter === "fornecedor" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
+            className={`min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "fornecedor" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
           >
             <span className="text-sm">🏭</span> Fornecedores
           </button>
 
           <button
             onClick={() => fetchList()}
-            className="px-4 py-2 rounded-full text-xs font-bold bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 flex items-center gap-2"
+            className="min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 snap-start"
           >
             <span>🔄</span> Atualizar
           </button>
