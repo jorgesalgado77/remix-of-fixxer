@@ -18,6 +18,8 @@ import {
   Menu,
   X
 } from "lucide-react";
+import { RecentStoresCarousel } from "@/components/RecentStoresCarousel";
+
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { useState } from "react";
 
