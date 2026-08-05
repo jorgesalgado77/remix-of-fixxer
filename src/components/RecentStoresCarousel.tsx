@@ -385,9 +385,11 @@ function RecentStoresCarouselInner() {
             {filteredItems.map((p) => {
               const name = p.company_name || p.display_name || p.full_name || "Parceiro";
               return (
-                <button
+                <div
                   key={p.id}
                   onClick={() => openProfile(p)}
+                  role="button"
+                  tabIndex={0}
                   className={`w-64 flex-shrink-0 snap-start bg-[#1A1A1E] border-2 rounded-3xl overflow-hidden text-left hover:-translate-y-2 transition-all duration-300 group/card relative cursor-pointer ${
                     p._kind === 'lojista' 
                       ? 'border-[#00E5FF]/20 hover:border-[#00E5FF] shadow-[0_0_20px_rgba(0,229,255,0.05)]' 
