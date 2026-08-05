@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Star, User, SlidersHorizontal, ChevronDown, Filter, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCategoryColor } from "@/lib/getCategoryColor";
@@ -45,10 +46,16 @@ export function ReviewsModal({ isOpen, onClose, reviews, displayName }: ReviewsM
     return result;
   }, [reviews, ratingFilter, sortOrder]);
 
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
+  if (!isOpen || !mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
       <div 
         className="relative bg-[#0F0F10] border border-white/10 w-full max-w-2xl max-h-[85vh] rounded-[2rem] flex flex-col shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -168,7 +175,8 @@ export function ReviewsModal({ isOpen, onClose, reviews, displayName }: ReviewsM
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
