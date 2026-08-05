@@ -172,7 +172,7 @@ export function NotificationsCenter() {
             left: coords.left === 10 ? '10px' : 'auto',
             width: coords.left === 10 ? 'calc(100vw - 20px)' : '320px'
           }}
-          className="fixed max-h-[60vh] sm:max-h-[70vh] overflow-hidden rounded-2xl bg-[#0a0a0b]/95 backdrop-blur-2xl border border-white/15 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.9)] z-[205] flex flex-col animate-in fade-in zoom-in duration-200"
+          className="fixed max-h-[60vh] sm:max-h-[70vh] overflow-hidden rounded-2xl bg-[#0a0a0b]/95 backdrop-blur-2xl border border-white/15 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.9)] z-[9998] flex flex-col animate-in fade-in zoom-in duration-200"
         >
           <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
             <span className="text-[11px] font-black uppercase italic tracking-widest">Notificações</span>

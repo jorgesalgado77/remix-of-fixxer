@@ -48,7 +48,7 @@ export function ReviewsModal({ isOpen, onClose, reviews, displayName }: ReviewsM
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
       <div 
         className="relative bg-[#0F0F10] border border-white/10 w-full max-w-2xl max-h-[85vh] rounded-[2rem] flex flex-col shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
