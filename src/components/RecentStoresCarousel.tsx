@@ -207,7 +207,7 @@ function RecentStoresCarouselInner() {
         .map((r) => {
           const rid = String(r.id);
           // Bloqueia administradores e o próprio usuário logado.
-          if (adminIds.has(rid)) return null;
+          // COMENTADO PARA TESTE: if (adminIds.has(rid)) return null;
           if (selfId && rid === selfId) return null;
 
           const roleStr = (r.role || "").toLowerCase();
