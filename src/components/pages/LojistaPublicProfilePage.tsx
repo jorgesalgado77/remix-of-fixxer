@@ -305,28 +305,38 @@ export function LojistaPublicProfilePage() {
   useEffect(() => {
     // Tenta capturar parâmetros tanto do location.search quanto da URL bruta para maior robustez
     const searchParams = new URLSearchParams(window.location.search);
-    const focus = searchParams.get("focus") || (params as any)?.focus;
-    const tab = searchParams.get("tab") || (params as any)?.tab;
+    const focus = searchParams.get("focus");
+    const tab = searchParams.get("tab");
     
     if (tab === "avaliacoes" || focus === "reviews") {
-      console.log("[Profile] Redirecionando para aba de avaliações via URL params");
+      console.log("[Profile] Redirecionando para aba de avaliações via URL params", { focus, tab });
+      
+      // Força a aba ANTES de qualquer coisa
       setActiveTab("avaliacoes");
       
-      // Scroll imediato usando múltiplos mecanismos de detecção
+      // Scroll com retry agressivo
       const scrollToSection = () => {
         const el = document.getElementById("avaliacoes-section");
         if (el) {
+          console.log("[Profile] Elemento encontrado, scrollando...");
           el.scrollIntoView({ behavior: "smooth", block: "start" });
           return true;
         }
         return false;
       };
 
+      // Execução imediata
       if (!scrollToSection()) {
+        console.log("[Profile] Elemento não encontrado no mount, iniciando pooling...");
+        // Pooling curto para quando o componente está renderizando abas
         const interval = setInterval(() => {
-          if (scrollToSection()) clearInterval(interval);
-        }, 100);
-        setTimeout(() => clearInterval(interval), 3000);
+          if (scrollToSection()) {
+            clearInterval(interval);
+          }
+        }, 50); // 50ms é mais responsivo que 100ms
+        
+        // Timeout de segurança
+        setTimeout(() => clearInterval(interval), 2000);
       }
     }
   }, [location.search, storeId]);
