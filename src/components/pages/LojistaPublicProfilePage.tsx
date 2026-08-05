@@ -1254,7 +1254,7 @@ export function LojistaPublicProfilePage() {
                       Posicionado abaixo do Favoritar, com cor de destaque para chamar atenção. */}
                   {isSelf && (
                     <Link
-                      to="/profile" search={{}}
+                      to="/profile" search={{ focus: "" } as any}
                       aria-label="Abrir configurações do meu perfil"
                       className="w-full md:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-amber-500 border-2 border-amber-600 text-black font-black uppercase italic tracking-widest text-xs md:text-sm hover:bg-amber-400 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                       style={{ boxShadow: "0 0 20px rgba(245, 158, 11, 0.45)" }}
