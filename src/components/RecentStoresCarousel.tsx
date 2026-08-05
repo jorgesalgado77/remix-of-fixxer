@@ -42,7 +42,7 @@ function RecentStoresCarouselInner() {
 
 
   useEffect(() => {
-    console.log("[RecentStoresCarousel] Effect running");
+    console.log("[RecentStoresCarousel] Immediate effect running");
     const mock: Card[] = [
       {
         id: '1', full_name: 'Confere Planejados', display_name: 'Confere Planejados', company_name: 'Confere Planejados',
@@ -58,11 +58,43 @@ function RecentStoresCarouselInner() {
       }
     ];
     setItems(mock);
+    setLoading(false);
   }, []);
 
   const fetchList = useCallback(async () => {
-    // ... mantido para o futuro
+    try {
+      console.log("[RecentStoresCarousel] Fetching background...");
+      const { data: profiles } = await supabaseExternal
+        .from("profiles_public")
+        .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
+        .limit(100);
+
+      if (profiles && profiles.length > 0) {
+        const rows = profiles.map(r => ({
+          id: r.id,
+          full_name: r.full_name,
+          display_name: r.display_name,
+          company_name: r.company_name,
+          avatar_url: r.avatar_url || (r as any).logo_url,
+          role: r.role,
+          business_category: r.business_category,
+          custom_branch: r.custom_branch,
+          city: r.city,
+          state: r.state,
+          rating: 5.0,
+          created_at: r.created_at,
+          lat: r.lat,
+          lng: r.lng,
+          _kind: (r.role || "").toLowerCase().includes("fornec") ? "fornecedor" : "lojista",
+          _branch: r.business_category?.split(',')[0] || r.custom_branch || "Geral"
+        })) as Card[];
+        setItems(rows);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
+
 
 
 
