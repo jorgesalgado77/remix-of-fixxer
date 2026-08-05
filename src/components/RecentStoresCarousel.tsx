@@ -212,10 +212,9 @@ function RecentStoresCarouselInner() {
           } else if (supplierIds.has(rid)) {
             kind = "fornecedor";
           } 
-          // Prioridade 2: Mapeamento textual via role/user_type (Fallback)
+          // Prioridade 2: Mapeamento textual via role (Fallback)
           else if (
             roleStr.includes("lojista") || roleStr.includes("store") || 
-            typeStr.includes("lojista") || typeStr.includes("store") ||
             roleStr.includes("comércio") || roleStr.includes("shop")
           ) {
             kind = "lojista";
@@ -223,8 +222,7 @@ function RecentStoresCarouselInner() {
           else if (
             roleStr.includes("fornec") || roleStr.includes("supplier") || 
             roleStr.includes("b2b") || roleStr.includes("parceiro") || 
-            roleStr.includes("distribuidor") || typeStr.includes("fornec") || 
-            typeStr.includes("supplier")
+            roleStr.includes("distribuidor")
           ) {
             kind = "fornecedor";
           }
