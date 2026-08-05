@@ -113,7 +113,7 @@ function RecentStoresCarouselInner() {
           const userId = session.user.id;
           
           const { data: profile, error } = await supabaseExternal
-            .from("profiles")
+            .from("profiles_public")
             .select("lat, lng, city, state")
             .eq("id", userId)
             .maybeSingle();
