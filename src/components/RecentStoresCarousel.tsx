@@ -58,8 +58,7 @@ function RecentStoresCarouselInner() {
       }
 
       if (!profiles || profiles.length === 0) {
-        console.log("[RecentStoresCarousel] No data returned from Supabase.");
-        // Mock data apenas para garantir que a UI não fique vazia se o banco estiver realmente sem dados
+        console.log("[RecentStoresCarousel] No data returned from Supabase, setting mock.");
         const mock: Card[] = [
           {
             id: '1', full_name: 'Confere Planejados', display_name: 'Confere Planejados', company_name: 'Confere Planejados',
@@ -75,8 +74,10 @@ function RecentStoresCarouselInner() {
           }
         ];
         setItems(mock);
+        setLoading(false);
         return;
       }
+
 
       console.log("[RecentStoresCarousel] Found:", profiles?.length);
 
