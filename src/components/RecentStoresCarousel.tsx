@@ -322,9 +322,8 @@ function RecentStoresCarouselInner() {
           <button
             onClick={() => {
               setKindFilter("all");
-              localStorage.removeItem('fixxer_carousel_scroll');
               setScrollProgress(0);
-              if (scrollerRef.current) scrollerRef.current.scrollLeft = 0;
+              if (scrollerRef.current) scrollerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
             }}
             className="min-w-[120px] h-9 flex-shrink-0 rounded-full text-[10px] font-black uppercase italic bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 snap-start"
           >
