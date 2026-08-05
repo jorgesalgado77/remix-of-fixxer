@@ -144,7 +144,7 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
         return;
       }
       if (roles.length + 1 > quota && balance < EXTRA_COST) {
-        setInlineWarn(`Seu plano ${planId.toUpperCase()} inclui apenas ${quota} cargo(s). Cada extra custa ${EXTRA_COST} 🪙 e você tem ${balance} 🪙.`);
+        setInlineWarn(`Seu plano ${(planId || 'free').toUpperCase()} inclui apenas ${quota} cargo(s). Cada extra custa ${EXTRA_COST} 🪙 e você tem ${balance} 🪙.`);
       }
       const paid = await chargeExtraIfNeeded(roles.length + 1);
       if (!paid) return;
@@ -246,7 +246,7 @@ export function PreferredServicePicker({ profile, setProfile, accent = "hsl(var(
                 Cargos em <span style={{ color: accent }}>{primaryPreferred}</span>
               </h4>
               <p className="text-[11px] text-white/50 mt-1 break-words">
-                Plano <b>{planId.toUpperCase()}</b> inclui <b>{quota}</b> cargo(s). Extras custam{" "}
+                Plano <b>{(planId || 'free').toUpperCase()}</b> inclui <b>{quota}</b> cargo(s). Extras custam{" "}
                 <b className="text-amber-300">{EXTRA_COST} 🪙</b> cada (até {MAX_ROLES} no total).
                 Saldo atual: <b className="text-amber-300">{balance} 🪙</b>. O <b>1º da lista</b> é o preferencial (destacado).
               </p>

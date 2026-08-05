@@ -119,7 +119,7 @@ export function OfferingsPicker({
     }
     const nextLen = selected.length + 1;
     if (nextLen > quota && balance < EXTRA_COST) {
-      setInlineWarn(`Seu plano ${planId.toUpperCase()} inclui apenas ${quota} oferta(s). Cada extra custa ${EXTRA_COST} 🪙 e você tem ${balance} 🪙.`);
+      setInlineWarn(`Seu plano ${(planId || 'free').toUpperCase()} inclui apenas ${quota} oferta(s). Cada extra custa ${EXTRA_COST} 🪙 e você tem ${balance} 🪙.`);
     }
     const paid = await chargeExtraIfNeeded(nextLen);
     if (!paid) return;
@@ -153,7 +153,7 @@ export function OfferingsPicker({
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h4 className="text-sm font-black uppercase tracking-tighter text-white">🎁 Oferece</h4>
         <span className="text-[10px] font-bold text-muted-foreground">
-          {selected.length}/{MAX_SELECTED} • Plano {planId.toUpperCase()} inclui {quota} • Saldo: <b className="text-amber-300">{balance} 🪙</b>
+          {selected.length}/{MAX_SELECTED} • Plano {(planId || 'free').toUpperCase()} inclui {quota} • Saldo: <b className="text-amber-300">{balance} 🪙</b>
         </span>
       </div>
 
