@@ -216,7 +216,7 @@ export function ProfileSummaryCard({
                   </span>
                 )}
               </div>
-            </Link>
+            </button>
 
             <div
               className="rounded-lg border border-white/10 bg-black/30 p-2 flex flex-col min-h-[52px] justify-center"
