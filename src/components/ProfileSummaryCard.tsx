@@ -87,9 +87,20 @@ export function ProfileSummaryCard({
     let cancelled = false;
     (async () => {
       try {
-        const { data: userData } = await supabaseExternal.auth.getUser();
-        const uid = userData.user?.id;
+        // 1. Obtém sessão rápida primeiro
+        const { data: sessData } = await supabaseExternal.auth.getSession();
+        const uid = sessData.session?.user?.id;
         if (!uid) return;
+
+        // Tenta ler cache local para renderização instantânea
+        const cacheKey = `fixxer_profile_lite_${uid}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached && !cancelled) {
+          setProfile(JSON.parse(cached));
+          setLoading(false);
+        }
+
+        // 2. Busca dados frescos
         const { data } = await supabaseExternal
           .from("profiles")
           .select(
@@ -97,7 +108,12 @@ export function ProfileSummaryCard({
           )
           .eq("id", uid)
           .maybeSingle();
-        if (!cancelled && data) setProfile(data as ProfileLite);
+        
+        if (!cancelled && data) {
+          const prof = data as ProfileLite;
+          setProfile(prof);
+          localStorage.setItem(cacheKey, JSON.stringify(prof));
+        }
 
         try {
           const { data: reviews } = await supabaseExternal
@@ -114,18 +130,12 @@ export function ProfileSummaryCard({
               setRating({ avg, count: nums.length });
             }
           }
-        } catch {
-          /* reviews indisponível — ignora */
-        }
-      } catch {
-        /* ignore */
-      } finally {
+        } catch { /* reviews indisponível */ }
+      } catch { /* ignore */ } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   const name = displayNameOf(profile);
