@@ -125,7 +125,7 @@ export function NotificationsCenter() {
         <div
           role="dialog"
           aria-label="Notificações"
-          className="absolute right-0 top-full mt-2 w-[300px] sm:w-[320px] max-h-[60vh] sm:max-h-[70vh] overflow-hidden rounded-2xl bg-[#0a0a0b] backdrop-blur-2xl border border-white/15 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.9)] z-[200] flex flex-col"
+          className="absolute right-0 top-full mt-2 w-[300px] sm:w-[320px] max-h-[60vh] sm:max-h-[70vh] overflow-hidden rounded-2xl bg-[#0a0a0b] backdrop-blur-2xl border border-white/15 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.9)] z-[205] flex flex-col"
         >
           <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
             <span className="text-[11px] font-black uppercase italic tracking-widest">Notificações</span>
