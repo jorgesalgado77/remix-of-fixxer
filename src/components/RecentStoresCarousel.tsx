@@ -22,6 +22,7 @@ type Row = {
   created_at: string | null;
   lat: number | null;
   lng: number | null;
+  user_type: string | null;
 };
 
 type Kind = "lojista" | "fornecedor";
