@@ -496,7 +496,8 @@ function RecentStoresCarouselInner() {
                           {p.city || "S/L"}, {p.state || "BR"}
                         </span>
                         {p._distance !== undefined && (
-                          <span className="ml-auto text-[#00FF88] font-black italic">
+                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic">
+                            <Navigation className="w-2.5 h-2.5 rotate-45" />
                             {p._distance.toFixed(1)} KM
                           </span>
                         )}
