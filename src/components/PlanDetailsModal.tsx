@@ -54,9 +54,9 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
   const monthlyEquivalent = billing === "yearly" && targetCfg ? targetCfg.priceYearlyBRL / 12 : null;
 
   return (
-    <div className="fixed inset-0 z-[105] bg-black/95 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[210] bg-black/95 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div
-        className="w-full sm:max-w-3xl bg-[#0a0a0b] border border-white/10 sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col relative"
+        className="w-full sm:max-w-3xl bg-[#0a0a0b] border border-white/10 sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col relative isolate"
         style={{ maxHeight: "calc(100dvh - 20px)", height: "auto" }}
         onClick={(e) => e.stopPropagation()}
       >
