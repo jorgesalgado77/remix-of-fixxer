@@ -179,7 +179,7 @@ function RecentStoresCarouselInner() {
             avatar_url: r.avatar_url,
             role: r.role,
             business_category: r.business_category,
-            custom_branch: r.custom_branch,
+            custom_branch: (r as any).custom_branch || null,
             city: r.city,
             state: r.state,
             rating: 4.5 + Math.random() * 0.5,
