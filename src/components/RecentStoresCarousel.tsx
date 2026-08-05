@@ -162,14 +162,12 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, user_type, business_category, custom_branch, city, state, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
         .order('created_at', { ascending: false });
 
-      // Buscamos todos os perfis (exceto admins que filtramos depois) para permitir filtros instantâneos no front
-      // mas mantemos o limite de range para paginação.
-
       const { data: profiles, error: supabaseError } = await query;
+
 
       if (supabaseError) throw supabaseError;
 
@@ -181,14 +179,18 @@ function RecentStoresCarouselInner() {
         // Filtrar Admins e o PRÓPRIO usuário logado
         const filteredProfiles = profiles.filter((p: any) => {
           const isMe = String(p.id) === String(currentUserId);
-          const isAdmin = String(p.role).toLowerCase() === 'admin' || String(p.user_type).toLowerCase() === 'admin';
+          // Usamos apenas role para admin, já que user_type pode ser a coluna faltante
+          const roleStr = String(p.role || "").toLowerCase();
+          const isAdmin = roleStr === 'admin';
           return !isAdmin && !isMe;
         });
 
 
+
         const rows: Card[] = filteredProfiles.map((r: any) => {
-          const roleStr = (r.role || r.user_type || "").toLowerCase();
-          const kind = roleStr.includes("fornec") ? "fornecedor" : "lojista";
+          const roleStr = (r.role || "").toLowerCase();
+          const kind = roleStr.includes("fornec") || roleStr.includes("parceiro") ? "fornecedor" : "lojista";
+
           
           const dist = (userCoords && r.lat && r.lng) 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
@@ -209,7 +211,8 @@ function RecentStoresCarouselInner() {
             company_name: r.company_name,
             avatar_url: r.avatar_url,
             role: r.role,
-            user_type: r.user_type,
+            user_type: r.role, // Fallback para manter compatibilidade com o tipo Card
+
             business_category: r.business_category,
             custom_branch: r.custom_branch || null,
             city: r.city,
