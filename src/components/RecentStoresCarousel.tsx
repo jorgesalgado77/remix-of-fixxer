@@ -31,7 +31,8 @@ const FORNECEDOR_COLOR = CATEGORY_COLORS.fornecedor;
 function RecentStoresCarouselInner() {
   const navigate = useNavigate();
   const [items, setItems] = useState<Card[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // FORÇAR FALSE
+
   const [kindFilter, setKindFilter] = useState<"all" | Kind>("all");
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
