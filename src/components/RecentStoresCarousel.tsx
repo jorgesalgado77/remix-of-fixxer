@@ -413,8 +413,8 @@ function RecentStoresCarouselInner() {
                     )}
                     
                     {/* Badge Categoria Flutuante */}
-                    <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter italic z-10 flex items-center gap-1.5 shadow-lg border border-white/10 ${
-                      p._kind === 'lojista' ? 'bg-[#00E5FF] text-black' : 'bg-[#A855F7] text-white'
+                    <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter italic z-10 flex items-center gap-1.5 shadow-xl border border-white/20 ${
+                      p._kind === 'lojista' ? 'bg-[#00E5FF] text-black' : 'bg-[#A855F7] text-white shadow-[#A855F7]/20'
                     }`}>
                       {p._kind === 'lojista' ? (
                         <>
