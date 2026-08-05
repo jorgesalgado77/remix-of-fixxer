@@ -214,10 +214,8 @@ export function ProfileSummaryCard({
               </div>
             </Link>
 
-            <Link
-              to="/configuracoes"
-              search={{ focus: "plan" }}
-              className="rounded-lg border border-white/10 bg-black/30 p-2 flex flex-col hover:border-primary/40 hover:bg-primary/5 transition-all group/plan min-h-[52px] justify-center"
+            <div
+              className="rounded-lg border border-white/10 bg-black/30 p-2 flex flex-col min-h-[52px] justify-center"
             >
               <div className="text-[8px] font-black text-white/50 uppercase tracking-widest group-hover/plan:text-primary/70 transition-colors">
                 Plano
@@ -229,7 +227,7 @@ export function ProfileSummaryCard({
                   className="!px-2 !py-0.5 !text-[9px]"
                 />
               </div>
-            </Link>
+            </div>
           </div>
 
           {isGold ? (
