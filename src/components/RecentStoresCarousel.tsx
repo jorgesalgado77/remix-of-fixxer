@@ -178,7 +178,7 @@ function RecentStoresCarouselInner() {
 
         // Filtrar Admins e o PRÓPRIO usuário logado
         const filteredProfiles = profiles.filter((p: any) => 
-          p.role !== 'admin'
+          p.role !== 'admin' && p.id !== currentUserId
         );
 
 
@@ -412,9 +412,20 @@ function RecentStoresCarouselInner() {
                 >
                   <div className="h-44 bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative overflow-hidden">
                     {/* Badge Rating Superior */}
-                    <div className="absolute top-4 right-4 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 z-20">
-                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                      <span className="text-[10px] font-black text-white italic">{(p.rating || 5.0).toFixed(1)}</span>
+                    <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
+                      <div className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 shadow-lg">
+                        <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                        <span className="text-[10px] font-black text-white italic">{(p.rating || 5.0).toFixed(1)}</span>
+                      </div>
+                      
+                      {p._distance !== undefined && (
+                        <div className="px-2 py-0.5 rounded-full bg-[#00FF88]/20 backdrop-blur-md border border-[#00FF88]/30 flex items-center gap-1 shadow-lg animate-in fade-in zoom-in duration-300">
+                          <Navigation className="w-2.5 h-2.5 text-[#00FF88]" />
+                          <span className="text-[9px] font-black text-[#00FF88] italic">
+                            {p._distance < 1 ? `${(p._distance * 1000).toFixed(0)}m` : `${p._distance.toFixed(1)}km`}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {p.avatar_url ? (
