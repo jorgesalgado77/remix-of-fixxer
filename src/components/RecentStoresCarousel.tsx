@@ -185,9 +185,13 @@ function RecentStoresCarouselInner() {
         const rows: Card[] = filteredProfiles.map((r: any) => {
           const roleStr = (r.role || "").toLowerCase();
           const kind = roleStr.includes("fornec") ? "fornecedor" : "lojista";
+          
           const dist = (userCoords && r.lat && r.lng) 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
+
+          // Se for fornecedor e tiver business_category como 'Geral', tenta usar custom_branch
+          const branch = r.custom_branch || r.business_category || "Geral";
 
           return {
             id: r.id,
@@ -197,7 +201,7 @@ function RecentStoresCarouselInner() {
             avatar_url: r.avatar_url,
             role: r.role,
             business_category: r.business_category,
-            custom_branch: (r as any).custom_branch || null,
+            custom_branch: r.custom_branch || null,
             city: r.city,
             state: r.state,
             rating: 4.5 + Math.random() * 0.5,
@@ -205,17 +209,20 @@ function RecentStoresCarouselInner() {
             lat: r.lat ? Number(r.lat) : null,
             lng: r.lng ? Number(r.lng) : null,
             _kind: kind as Kind,
-            _branch: r.business_category || r.custom_branch || "Geral",
+            _branch: branch,
             _distance: dist
           };
         });
         
         const newItems = isMore ? [...items, ...rows] : rows;
         
-        // Ordenar se houver coordenadas (Haversine)
+        // Remove duplicates by ID
+        const uniqueItems = Array.from(new Map(newItems.map(item => [item.id, item])).values());
+        
+        // Ordenar por distância se disponível, senão por data
         const sorted = userCoords 
-          ? newItems.sort((a, b) => (a._distance || 9999) - (b._distance || 9999))
-          : newItems;
+          ? [...uniqueItems].sort((a, b) => (a._distance || 9999) - (b._distance || 9999))
+          : uniqueItems;
 
         setItems(sorted);
         setPage(currentPage);
