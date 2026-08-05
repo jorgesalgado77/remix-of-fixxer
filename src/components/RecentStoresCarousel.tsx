@@ -305,6 +305,8 @@ function RecentStoresCarouselInner() {
       ? items
       : items.filter((p) => p._kind === kindFilter);
 
+    console.debug("[RecentStoresCarousel] items before score:", byKind.length, "filter:", kindFilter);
+
     const scored: Scored[] = byKind.map((p) => ({
       ...p,
       _relevance: scoreRelevanceDetailed(
