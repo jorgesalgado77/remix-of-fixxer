@@ -75,19 +75,17 @@ function RecentStoresCarouselInner() {
     const { scrollLeft, scrollWidth, clientWidth } = scrollerRef.current;
     const totalScrollable = scrollWidth - clientWidth;
     
-    let progress = 0;
-    if (totalScrollable <= 0) {
-      progress = 100;
+    if (totalScrollable > 0) {
+      const progress = (scrollLeft / totalScrollable) * 100;
+      setScrollProgress(progress);
+      localStorage.setItem('fixxer_carousel_scroll', progress.toString());
+      
+      // Infinite Scroll: se chegar perto do fim, carrega mais
+      if (totalScrollable - scrollLeft < 500 && !loadingMore && hasMore && !loading) {
+        fetchList(true);
+      }
     } else {
-      progress = (scrollLeft / totalScrollable) * 100;
-    }
-    
-    setScrollProgress(progress);
-    localStorage.setItem('fixxer_carousel_scroll', progress.toString());
-
-    // Lógica de Infinite Scroll: se chegar perto do fim, carrega mais
-    if (totalScrollable - scrollLeft < 500 && !loadingMore && hasMore && !loading) {
-      fetchList(true);
+      setScrollProgress(0);
     }
   };
 
