@@ -164,8 +164,9 @@ function RecentStoresCarouselInner() {
                   </div>
                 </div>
                 <div className="p-3">
-                  <p className="font-black text-white text-[11px] truncate uppercase tracking-tighter italic block w-full data-card-title">{name}</p>
+                  <p className="font-black text-white text-[11px] truncate uppercase tracking-tighter italic block w-full" data-card-title="true">{name}</p>
                   <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+
 
                     <MapPin className="w-3 h-3 text-primary" /> {p.city || "Brasil"}
                   </p>
