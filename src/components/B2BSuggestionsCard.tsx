@@ -280,7 +280,6 @@ function B2BSuggestionsCardInner() {
     const real = suggestions
       .filter((s) => !!s.userId)
       .map(score)
-      .filter((x) => !branchCtx.hasContext || x.rel.level !== "none")
       .sort((a, b) => relevanceRank(a.rel.level) - relevanceRank(b.rel.level));
 
     const out = [...real];
