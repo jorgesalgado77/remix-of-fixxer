@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bell, X, UserCheck, UserX, MessageCircle, Loader2 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 
@@ -24,6 +25,25 @@ export function NotificationsCenter() {
   const [loading, setLoading] = useState(false);
   const [uid, setUid] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  const [coords, setCoords] = useState({ top: 0, right: 0 });
+
+  useEffect(() => {
+    if (open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [open]);
 
   const unread = items.filter((n) => !n.read).length;
 
@@ -104,6 +124,7 @@ export function NotificationsCenter() {
   return (
     <div ref={panelRef} className="relative">
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         className="relative w-9 h-9 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center hover:bg-primary/30 text-primary shadow-[0_0_10px_rgba(0,255,135,0.2)] active:scale-95 transition-all"
         aria-label="Central de notificações"
@@ -121,11 +142,13 @@ export function NotificationsCenter() {
         )}
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <div
+          ref={panelRef}
           role="dialog"
           aria-label="Notificações"
-          className="absolute right-0 top-full mt-2 w-[300px] sm:w-[320px] max-h-[60vh] sm:max-h-[70vh] overflow-hidden rounded-2xl bg-[#0a0a0b] backdrop-blur-2xl border border-white/15 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.9)] z-[205] flex flex-col"
+          style={{ top: `${coords.top + 8}px`, right: `${coords.right}px` }}
+          className="fixed w-[300px] sm:w-[320px] max-h-[60vh] sm:max-h-[70vh] overflow-hidden rounded-2xl bg-[#0a0a0b] backdrop-blur-2xl border border-white/15 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.9)] z-[205] flex flex-col animate-in fade-in zoom-in duration-200"
         >
           <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
             <span className="text-[11px] font-black uppercase italic tracking-widest">Notificações</span>
@@ -178,7 +201,7 @@ export function NotificationsCenter() {
             ))}
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }
