@@ -303,44 +303,30 @@ export function LojistaPublicProfilePage() {
   const [oppUf, setOppUf] = useState<string>("Todas");
 
   useEffect(() => {
-    // Captura parâmetros tanto do location.search quanto da URL bruta para maior robustez
     const searchParams = new URLSearchParams(window.location.search);
     const focus = searchParams.get("focus");
     const tab = searchParams.get("tab");
     
-    // Se o parâmetro indicar avaliações, força a aba e o scroll
     if (tab === "avaliacoes" || focus === "reviews") {
-      console.log("[Profile] Detectado parâmetro de avaliações via URL", { focus, tab });
-      
-      // Força a aba IMEDIATAMENTE (estado síncrono do componente)
       setActiveTab("avaliacoes");
       
-      // Scroll com pooling agressivo
       const scrollToSection = () => {
         const el = document.getElementById("avaliacoes-section");
         if (el) {
-          console.log("[Profile] Seção de avaliações encontrada, executando scroll...");
           el.scrollIntoView({ behavior: "smooth", block: "start" });
           return true;
         }
         return false;
       };
 
-      // Execução imediata e pooling
       if (!scrollToSection()) {
         const interval = setInterval(() => {
-          // Re-garante a aba ativa caso algo a tenha resetado durante o mount
-          setActiveTab("avaliacoes");
-          if (scrollToSection()) {
-            clearInterval(interval);
-          }
-        }, 50); // Pooling mais frequente (50ms)
-        
-        // Timeout maior para garantir que o conteúdo carregado via Supabase apareça
-        setTimeout(() => clearInterval(interval), 4000);
+          if (scrollToSection()) clearInterval(interval);
+        }, 100);
+        setTimeout(() => clearInterval(interval), 3000);
       }
     }
-  }, [location.search, storeId, loading]); // Adicionado loading como dependência para re-disparar quando os dados chegarem
+  }, [location.search, storeId]);
 
   useEffect(() => {
     let cancelled = false;
