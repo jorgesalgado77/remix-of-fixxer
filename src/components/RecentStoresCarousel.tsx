@@ -351,6 +351,15 @@ function RecentStoresCarouselInner() {
 
   const showSkeleton = loading && items.length === 0;
   const showEmpty = !loading && sortedItems.length === 0;
+  
+  console.debug("[RecentStoresCarousel] RENDER STATE:", {
+    loading,
+    items: items.length,
+    sortedItems: sortedItems.length,
+    showSkeleton,
+    showEmpty,
+    kindFilter
+  });
 
   return (
     <section
