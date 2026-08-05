@@ -124,6 +124,9 @@ function RecentStoresCarouselInner() {
     fetchList();
   }, [fetchList]);
 
+  console.log("[RecentStoresCarousel] State:", { loading, itemsCount: items.length });
+
+
   const sortedItems = useMemo(() => {
     if (kindFilter === "all") return items;
     return items.filter(i => i._kind === kindFilter);
