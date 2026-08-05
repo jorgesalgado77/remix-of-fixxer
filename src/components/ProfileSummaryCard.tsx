@@ -134,7 +134,7 @@ export function ProfileSummaryCard({
 
   const profileHref = profile?.id ? `/perfil/${profile.id}` : "/configuracoes";
   // Força o reload completo ao clicar na reputação para garantir que o useEffect da página de perfil dispare sem problemas de estado do router
-  const reputationUrl = profile?.id ? `${profileHref}?focus=reviews&tab=avaliacoes` : "/configuracoes";
+  const reputationUrl = profile?.id ? `${profileHref}?focus=reviews&tab=avaliacoes&t=${Date.now()}` : "/configuracoes";
 
   const wrapperVariantClass =
     variant === "sidebar"
