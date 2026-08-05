@@ -254,8 +254,10 @@ function RecentStoresCarouselInner() {
           
           <div 
             ref={scrollerRef} 
-            className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide scroll-smooth"
+            onScroll={handleScroll}
+            className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide scroll-smooth touch-pan-x"
           >
+
             {sortedItems.map((p) => {
               const name = p.company_name || p.display_name || p.full_name || "Parceiro";
               return (
