@@ -490,12 +490,12 @@ function RecentStoresCarouselInner() {
       )}
       
       {/* Barra de Navegação Inferior Horizontal Personalizada */}
-      <div className="mt-8 relative h-1 w-full bg-white/5 rounded-full overflow-hidden max-w-sm mx-auto pointer-events-none">
+      <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden max-w-sm mx-auto pointer-events-none">
         <div 
-          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-none shadow-[0_0_10px_rgba(0,255,136,0.6)]"
+          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(0,255,136,0.6)]"
           style={{ 
-            width: `${Math.max(15, 100 / (Math.max(1, items.length / 2)))}%`,
-            left: `${Math.max(0, Math.min(85, (scrollProgress / 100) * 85))}%`,
+            width: `${Math.max(20, Math.min(100, (3 / Math.max(1, filteredItems.length)) * 100))}%`,
+            left: `${Math.max(0, Math.min(80, (scrollProgress / 100) * 80))}%`,
           }}
         />
       </div>
