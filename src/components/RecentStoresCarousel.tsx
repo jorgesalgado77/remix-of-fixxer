@@ -432,10 +432,10 @@ function RecentStoresCarouselInner() {
                     <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-1">{name}</h4>
                     
                     <div className="flex flex-wrap gap-1.5 items-center">
-                      <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest ${
+                      <span className={`flex items-center gap-1.5 text-[11px] font-black uppercase tracking-tight ${
                         p._kind === 'lojista' ? 'text-[#00E5FF]' : 'text-[#A855F7]'
                       }`}>
-                        {p._kind === 'lojista' ? <Navigation className="w-3 h-3" /> : <Puzzle className="w-3 h-3" />}
+                        <Puzzle className="w-3.5 h-3.5" />
                         {p._branch}
                       </span>
                     </div>
