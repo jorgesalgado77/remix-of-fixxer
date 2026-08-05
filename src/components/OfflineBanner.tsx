@@ -103,8 +103,12 @@ export function OfflineBanner() {
     };
     window.addEventListener("offline", goOffline);
     window.addEventListener("online", goOnline);
-    // Estado inicial: se o navegador diz offline, confirma com ping antes.
-    if (!navigator.onLine) confirmAndSetOffline();
+    // Estado inicial: se o navegador diz offline, confirma com ping antes de assustar o usuário.
+    if (!navigator.onLine) {
+        pingBackend().then(ok => {
+            if (!ok) confirmAndSetOffline();
+        });
+    }
     return () => {
       window.removeEventListener("offline", goOffline);
       window.removeEventListener("online", goOnline);
