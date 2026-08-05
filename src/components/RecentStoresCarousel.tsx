@@ -23,7 +23,7 @@ type Row = {
   created_at: string | null;
   lat: number | null;
   lng: number | null;
-  user_type: string | null;
+  user_type?: string | null;
 };
 
 type Kind = "lojista" | "fornecedor";
@@ -189,7 +189,7 @@ function RecentStoresCarouselInner() {
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
           // Priorizamos custom_branch, depois business_category.
-          const branch = r.custom_branch || r.business_category || (r.role === 'lojista' ? "Lojista" : r.role === 'fornecedor' ? "Fornecedor" : "Não Informado");
+          const branch = r.custom_branch || r.business_category || (roleStr.includes('admin') ? "Administrador" : roleStr.includes('fornec') ? "Fornecedor" : roleStr.includes('lojist') ? "Lojista" : "Geral");
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
@@ -205,10 +205,9 @@ function RecentStoresCarouselInner() {
             company_name: r.company_name,
             avatar_url: r.avatar_url,
             role: r.role,
-            user_type: r.role,
             business_category: r.business_category,
-            custom_branch: r.custom_branch || null,
-            preferred_service: r.preferred_service || null,
+            custom_branch: r.custom_branch,
+            preferred_service: r.preferred_service,
             city: r.city,
             state: r.state,
             rating: 4.5 + Math.random() * 0.5,
@@ -496,14 +495,10 @@ function RecentStoresCarouselInner() {
                             <Navigation className="w-2.5 h-2.5 rotate-45" />
                             {p._distance.toFixed(1)} KM
                           </span>
-                        ) : userCoords ? (
+                        ) : (
                           <span className="ml-auto text-amber-500/60 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
                             <Navigation className="w-2.5 h-2.5 opacity-50" />
-                            S/ Coordenadas
-                          </span>
-                        ) : (
-                          <span className="ml-auto text-white/20 text-[8px] italic uppercase tracking-tighter">
-                            Localização off
+                            {userCoords ? "S/ Coordenadas" : "Localização off"}
                           </span>
                         )}
                       </div>
