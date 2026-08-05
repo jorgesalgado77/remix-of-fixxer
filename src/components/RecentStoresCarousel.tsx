@@ -187,10 +187,11 @@ function RecentStoresCarouselInner() {
           const kind = roleStr.includes("fornec") || roleStr.includes("parceiro") ? "fornecedor" : "lojista";
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
-          // Priorizamos custom_branch para o ramo e preferred_service para a segunda linha
+          // Priorizamos custom_branch, depois business_category.
           const branch = r.custom_branch || r.business_category || "Não Informado";
           
-          const dist = (userCoords && r.lat && r.lng) 
+          // Debugging distance: Log inputs for calculation
+          const dist = (userCoords && r.lat !== null && r.lng !== null) 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
 
@@ -202,7 +203,6 @@ function RecentStoresCarouselInner() {
             avatar_url: r.avatar_url,
             role: r.role,
             user_type: r.role,
-
             business_category: r.business_category,
             custom_branch: r.custom_branch || null,
             preferred_service: r.preferred_service || null,
@@ -210,8 +210,8 @@ function RecentStoresCarouselInner() {
             state: r.state,
             rating: 4.5 + Math.random() * 0.5,
             created_at: r.created_at,
-            lat: r.lat ? Number(r.lat) : null,
-            lng: r.lng ? Number(r.lng) : null,
+            lat: r.lat !== null ? Number(r.lat) : null,
+            lng: r.lng !== null ? Number(r.lng) : null,
             _kind: kind as Kind,
             _branch: branch,
             _distance: dist
