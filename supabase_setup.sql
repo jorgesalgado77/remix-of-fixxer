@@ -164,5 +164,29 @@ ON CONFLICT DO NOTHING;
 
 -- Garante que o Admin Master tenha o tipo correto no perfil se ele já existir
 UPDATE public.profiles 
-SET user_type = 'Admin' 
+SET user_type = 'Admin', role = 'admin', lat = -23.50, lng = -47.45
 WHERE email = 'jorgericardosalgado@gmail.com';
+
+-- TRIGGER PARA GARANTIR DADOS MÍNIMOS EM NOVOS CADASTROS
+CREATE OR REPLACE FUNCTION public.handle_new_profile_defaults()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Se for lojista e não tiver ramo, define um padrão para evitar erros de carrossel
+    IF NEW.business_category IS NULL THEN
+        NEW.business_category := 'Geral';
+    END IF;
+    
+    -- Se não tiver localização, define uma base para que apareça no mapa/carrossel
+    IF NEW.lat IS NULL OR NEW.lng IS NULL THEN
+        NEW.lat := -23.5015;
+        NEW.lng := -47.4526;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS tr_new_profile_defaults ON public.profiles;
+CREATE TRIGGER tr_new_profile_defaults
+    BEFORE INSERT ON public.profiles
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_profile_defaults();
