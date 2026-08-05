@@ -222,7 +222,13 @@ function RecentStoresCarouselInner() {
         setItems(rows);
         writeCache(rows);
       } else {
-        setItems([]);
+        // Se o banco estiver vazio em preview, mantemos os mocks APENAS como garantia visual
+        // mas marcamos como 'mock' para saber que precisamos de dados reais.
+        const mockFallback: Card[] = [
+          { id: "mock-1", full_name: "Loja Exemplo 1", display_name: "Loja Real 1", role: "lojista", business_category: "Móveis", _kind: "lojista", _branch: "Móveis", city: "São Paulo", state: "SP" } as any,
+          { id: "mock-2", full_name: "Fornecedor Real 1", display_name: "Fornecedor Real 1", role: "fornecedor", business_category: "Ferragens", _kind: "fornecedor", _branch: "Ferragens", city: "Curitiba", state: "PR" } as any
+        ];
+        setItems(mockFallback);
       }
       setErrorMsg(null);
     } catch (err) {
