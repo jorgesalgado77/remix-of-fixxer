@@ -18,10 +18,10 @@ function DashboardRedirect() {
       if (await isCurrentUserAdmin()) { navigate({ to: '/admin' as any }); return; }
 
       const cat = await getCurrentCategory();
-      if (cat === 'lojista') navigate({ to: '/lojista' as any });
-      else if (cat === 'fornecedor') navigate({ to: '/parceiro' as any });
-      else if (cat === 'cliente') navigate({ to: '/cliente' as any });
-      else navigate({ to: '/prestador' as any });
+      if (cat === 'lojista') navigate({ to: '/feed/lojista' as any });
+      else if (cat === 'fornecedor') navigate({ to: '/feed/parceiro' as any });
+      else if (cat === 'cliente') navigate({ to: '/feed/cliente' as any });
+      else navigate({ to: '/feed/prestador' as any });
     })();
   }, [navigate]);
 
