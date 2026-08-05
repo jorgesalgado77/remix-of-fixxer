@@ -121,11 +121,11 @@ function RecentStoresCarouselInner() {
 
 
   return (
-    <section aria-label="Lojistas e fornecedores recentes" className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6">
+    <section aria-label="Lojistas e fornecedores recentes" className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6 relative z-[1]">
       <header className="mb-4">
         <h3 className="font-black italic uppercase text-white text-base">🏬 Parceiros FIXXER</h3>
-        <p className="text-[10px] text-white">Debug: {items.length} itens totais, {sortedItems.length} filtrados</p>
         <div className="mt-2 flex gap-2">
+
           {["all", "lojista", "fornecedor"].map(k => (
             <button
               key={k}
