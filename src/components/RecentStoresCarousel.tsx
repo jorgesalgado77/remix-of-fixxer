@@ -65,12 +65,14 @@ function RecentStoresCarouselInner() {
 
   const fetchList = useCallback(async () => {
     try {
+      console.debug("[RecentStoresCarousel] Fetching...");
       const { data: profiles, error } = await supabaseExternal
         .from("profiles_public")
         .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
         .limit(100);
 
       if (error) throw error;
+      console.debug("[RecentStoresCarousel] Raw profiles:", profiles?.length);
 
       const rows = (profiles || []).map(r => {
         const role = (r.role || "").toLowerCase();
@@ -79,8 +81,7 @@ function RecentStoresCarouselInner() {
           kind = "fornecedor";
         }
         
-        if (role === 'admin' && profiles.length > 5) return null;
-
+        // Simplificar para teste: aceitar quase todos
         return {
           id: r.id,
           full_name: r.full_name,
@@ -99,8 +100,9 @@ function RecentStoresCarouselInner() {
           _kind: kind,
           _branch: r.business_category?.split(',')[0] || r.custom_branch || "Geral"
         } as Card;
-      }).filter(Boolean) as Card[];
+      }) as Card[];
 
+      console.debug("[RecentStoresCarousel] Processed rows:", rows.length);
       setItems(rows);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -108,6 +110,7 @@ function RecentStoresCarouselInner() {
       setLoading(false);
     }
   }, []);
+
 
   useEffect(() => {
     fetchList();
