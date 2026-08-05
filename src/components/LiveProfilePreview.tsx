@@ -13,6 +13,8 @@ interface Props {
   companyName?: string | null;
   fullName?: string | null;
   displayName?: string | null;
+  preferredService?: string | null;
+  jobRoles?: string | null;
   accentHex?: string;
   /** 💼 Formatos de contratação aceitos (work_modes) */
   workModes?: string[] | null;
@@ -39,6 +41,8 @@ export function LiveProfilePreview({
   companyName,
   fullName,
   displayName,
+  preferredService,
+  jobRoles,
   accentHex,
   workModes,
   offerings,
@@ -59,6 +63,20 @@ export function LiveProfilePreview({
   const shownDisplayName = (displayName || "").trim();
   const shownCompany = (companyName || fullName || "Seu Perfil").trim();
   const accent = accentHex || "#00FF87";
+
+  const preferredServices = useMemo(() => {
+    return String(preferredService ?? "")
+      .split("||")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, [preferredService]);
+
+  const rolesList = useMemo(() => {
+    return String(jobRoles ?? "")
+      .split("||")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, [jobRoles]);
 
   const workModesList = Array.isArray(workModes) ? workModes.filter(Boolean) : [];
   const offeringsList = Array.isArray(offerings) ? offerings.filter(Boolean) : [];
@@ -119,11 +137,16 @@ export function LiveProfilePreview({
         >
           {shownCompany}
         </div>
+        {preferredServices.length > 0 && (
+          <div className="text-[10px] text-primary font-bold uppercase tracking-tight mt-1 truncate">
+            {preferredServices.join(" • ")}
+          </div>
+        )}
       </div>
 
 
       {/* 🎁 Oferece (prévia ao vivo) */}
-      {hasOferece && (
+      {(hasOferece || rolesList.length > 0) && (
         <div className="space-y-3 rounded-2xl border border-white/10 bg-black/25 p-3">
           <div className="flex items-center gap-2">
             <Gift className="w-3.5 h-3.5" style={{ color: accent }} />
@@ -131,6 +154,30 @@ export function LiveProfilePreview({
               🎁 Oferece
             </h4>
           </div>
+
+          {rolesList.length > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-white/40">
+                <Briefcase className="w-3 h-3" /> Cargos / Atuação
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {rolesList.map((r, i) => (
+                  <span
+                    key={`${r}-${i}`}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase italic border"
+                    style={{
+                      borderColor: i === 0 ? accent : `${accent}33`,
+                      color: i === 0 ? "#fff" : accent,
+                      background: i === 0 ? `${accent}44` : `${accent}08`,
+                    }}
+                  >
+                    {i === 0 && <Star className="w-2.5 h-2.5 inline mr-1 fill-current" />}
+                    {r}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {workModesList.length > 0 && (
             <div className="space-y-1.5">
