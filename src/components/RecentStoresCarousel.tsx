@@ -320,6 +320,7 @@ function RecentStoresCarouselInner() {
     let base = scored;
     if (kindFilter === "mine" && branchCtx.hasContext) {
       const strict = scored.filter((p) => p._relevance.level !== "none");
+      console.debug("[RecentStoresCarousel] strict filter:", strict.length);
       base = strict.length >= 1 ? strict : scored;
     }
 
