@@ -89,7 +89,12 @@ export function OfflineBanner() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const goOffline = () => confirmAndSetOffline();
+    const goOffline = async () => {
+      // Ignora o evento se o navegador reportar offline mas o ping ainda funcionar
+      // (Alguns navegadores disparam 'offline' erroneamente em transições de rede rápidas)
+      const ok = await pingBackend();
+      if (!ok) confirmAndSetOffline();
+    };
     const goOnline = () => {
       clearDebounce();
       setOnline(true);
