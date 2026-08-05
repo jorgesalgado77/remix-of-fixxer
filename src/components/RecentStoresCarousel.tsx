@@ -485,8 +485,12 @@ function RecentStoresCarouselInner() {
 
 
           <button 
-            onClick={() => scroll("right")}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-xl hidden md:flex"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              scroll("right");
+            }}
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#00FF88] text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-xl hidden md:flex hover:scale-110 active:scale-95"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
