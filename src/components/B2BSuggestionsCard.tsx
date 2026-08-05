@@ -389,8 +389,8 @@ function B2BSuggestionsCardInner() {
 
       </div>
 
-      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-        <div className="flex gap-2 min-w-max md:grid md:grid-cols-2 lg:grid-cols-3 md:min-w-0 md:gap-1.5">
+      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent snap-x snap-mandatory">
+        <div className="flex gap-2 min-w-max">
           {displaySuggestions.map(({ s, rel }) => (
             <button
               key={s.title}
