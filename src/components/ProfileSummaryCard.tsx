@@ -148,12 +148,12 @@ export function ProfileSummaryCard({
       aria-label="Resumo do meu perfil"
       className={`${wrapperVariantClass} ${className}`.trim()}
     >
-      <div className="relative group">
-        <div className="absolute top-4 right-4 z-20 pointer-events-auto">
+      <div className="relative">
+        <div className="absolute top-4 right-4 z-20">
           <NotificationsCenter />
         </div>
         
-        <div className="block rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.6)]">
+        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.6)]">
           <Link
             to={profileHref}
             className="flex items-start gap-3 hover:opacity-80 transition-opacity"
