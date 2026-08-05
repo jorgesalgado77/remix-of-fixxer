@@ -188,7 +188,7 @@ function RecentStoresCarouselInner() {
             lat: r.lat ? Number(r.lat) : null,
             lng: r.lng ? Number(r.lng) : null,
             _kind: kind as Kind,
-            _branch: r.business_category?.split(',')[0] || "Geral",
+            _branch: r.business_category || r.custom_branch || "Geral",
             _distance: dist
           };
         });
@@ -313,13 +313,13 @@ function RecentStoresCarouselInner() {
         </div>
       </header>
 
-      {loading ? (
+      {loading && items.length === 0 ? (
         <div className="flex gap-4 overflow-hidden py-2">
           {[1,2,3,4,5].map(i => (
             <div key={i} className="w-64 h-[400px] rounded-3xl bg-white/5 animate-pulse border border-white/5 flex-shrink-0" />
           ))}
         </div>
-      ) : error ? (
+      ) : error && items.length === 0 ? (
         <div className="p-12 text-center border border-dashed border-red-500/20 rounded-3xl bg-red-500/5 text-red-400 italic text-sm">
            <p className="font-bold mb-2 uppercase tracking-tighter">Erro de Conexão</p>
            {error}
@@ -450,10 +450,10 @@ function RecentStoresCarouselInner() {
       {/* Barra de Navegação Inferior Horizontal Personalizada */}
       <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden max-w-md mx-auto pointer-events-none">
         <div 
-          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-all duration-150 ease-out shadow-[0_0_15px_rgba(0,255,136,0.6)]"
+          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-all duration-75 ease-linear shadow-[0_0_15px_rgba(0,255,136,0.6)]"
           style={{ 
             width: '30%',
-            left: `${Math.min(70, scrollProgress * 0.7)}%`,
+            left: `${Math.max(0, Math.min(70, (scrollProgress / 100) * 70))}%`,
             transform: 'translateX(0)'
           }}
         />
