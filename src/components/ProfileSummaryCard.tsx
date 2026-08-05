@@ -133,6 +133,8 @@ export function ProfileSummaryCard({
   const location = [city, state].filter(Boolean).join(" / ");
 
   const profileHref = profile?.id ? `/perfil/${profile.id}` : "/configuracoes";
+  // Força o reload completo ao clicar na reputação para garantir que o useEffect da página de perfil dispare sem problemas de estado do router
+  const reputationUrl = profile?.id ? `${profileHref}?focus=reviews&tab=avaliacoes` : "/configuracoes";
 
   const wrapperVariantClass =
     variant === "sidebar"
@@ -193,9 +195,8 @@ export function ProfileSummaryCard({
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               onClick={() => {
-                // Redirecionamento completo para limpar estado e garantir que useEffect da página de perfil dispare
-                const targetUrl = profileHref + "?focus=reviews&tab=avaliacoes";
-                window.location.assign(targetUrl);
+                // Redirecionamento forçado para garantir o scroll automático
+                window.location.href = reputationUrl;
               }}
               className="rounded-lg border border-white/10 bg-black/30 p-2 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all group/rating min-h-[52px] flex flex-col justify-center text-left w-full"
             >
