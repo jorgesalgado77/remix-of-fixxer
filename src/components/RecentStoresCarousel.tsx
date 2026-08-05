@@ -179,9 +179,12 @@ function RecentStoresCarouselInner() {
         // Filtrar Admins e o PRÓPRIO usuário logado
         const filteredProfiles = profiles.filter((p: any) => {
           const isMe = String(p.id) === String(currentUserId);
-          const isAdmin = String(p.role).toLowerCase() === 'admin' || String(p.user_type).toLowerCase() === 'admin';
+          // Usamos apenas role para admin, já que user_type pode ser a coluna faltante
+          const roleStr = String(p.role || "").toLowerCase();
+          const isAdmin = roleStr === 'admin';
           return !isAdmin && !isMe;
         });
+
 
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
