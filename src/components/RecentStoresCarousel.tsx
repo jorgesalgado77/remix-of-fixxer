@@ -48,10 +48,7 @@ function RecentStoresCarouselInner() {
   const [error, setError] = useState<string | null>(null);
   
   // Persistência do estado dos filtros
-  const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">(() => {
-    if (typeof window === 'undefined') return "all";
-    return (localStorage.getItem('fixxer_carousel_filter') as any) || "all";
-  });
+  const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">("all");
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [scrollProgress, setScrollProgress] = useState(() => {
