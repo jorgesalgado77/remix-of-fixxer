@@ -15,7 +15,7 @@ export const supabaseExternal = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storageKey: 'fixxer-auth-token-v1', // Chave única para evitar conflitos de cache
+      storageKey: 'fixxer-auth-token-v1',
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
     global: {

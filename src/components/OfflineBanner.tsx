@@ -89,7 +89,12 @@ export function OfflineBanner() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const goOffline = () => confirmAndSetOffline();
+    const goOffline = async () => {
+      // Ignora o evento se o navegador reportar offline mas o ping ainda funcionar
+      // (Alguns navegadores disparam 'offline' erroneamente em transições de rede rápidas)
+      const ok = await pingBackend();
+      if (!ok) confirmAndSetOffline();
+    };
     const goOnline = () => {
       clearDebounce();
       setOnline(true);
@@ -98,8 +103,12 @@ export function OfflineBanner() {
     };
     window.addEventListener("offline", goOffline);
     window.addEventListener("online", goOnline);
-    // Estado inicial: se o navegador diz offline, confirma com ping antes.
-    if (!navigator.onLine) confirmAndSetOffline();
+    // Estado inicial: se o navegador diz offline, confirma com ping antes de assustar o usuário.
+    if (!navigator.onLine) {
+        pingBackend().then(ok => {
+            if (!ok) confirmAndSetOffline();
+        });
+    }
     return () => {
       window.removeEventListener("offline", goOffline);
       window.removeEventListener("online", goOnline);
