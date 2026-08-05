@@ -470,7 +470,7 @@ function RecentStoresCarouselInner() {
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
 
               );
             })}
