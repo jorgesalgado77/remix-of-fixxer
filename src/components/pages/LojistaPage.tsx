@@ -421,8 +421,6 @@ export function LojistaDashboard() {
             <div className="relative mr-2">
                 {/* Notificações agora estão integradas no ProfileSummaryCard */}
             </div>
-
-            </div>
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-white">
                 <Menu className="w-6 h-6" />
             </button>
