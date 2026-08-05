@@ -309,14 +309,19 @@ export function LojistaPublicProfilePage() {
     
     if (tab === "avaliacoes" || focus === "reviews") {
       setActiveTab("avaliacoes");
-      if (focus === "reviews") {
+      // Scroll imediato
+      const el = document.getElementById("avaliacoes-section");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        // Fallback se o elemento ainda não montou
         setTimeout(() => {
-          const el = document.getElementById("avaliacoes-section");
-          if (el) el.scrollIntoView({ behavior: "smooth" });
-        }, 500);
+          const elRetry = document.getElementById("avaliacoes-section");
+          if (elRetry) elRetry.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 300);
       }
     }
-  }, []);
+  }, [location.search]);
 
   useEffect(() => {
     let cancelled = false;
