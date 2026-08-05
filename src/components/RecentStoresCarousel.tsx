@@ -44,10 +44,25 @@ function RecentStoresCarouselInner() {
   const navigate = useNavigate();
   const [items, setItems] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">("branch");
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const userBranchCtx = useUserBranchContext();
+
+  // Monitorar progresso do scroll
+  const handleScroll = () => {
+    if (!scrollerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollerRef.current;
+    const totalScrollable = scrollWidth - clientWidth;
+    if (totalScrollable <= 0) {
+      setScrollProgress(100);
+    } else {
+      setScrollProgress((scrollLeft / totalScrollable) * 100);
+    }
+  };
+
 
   // Capturar localização do usuário logado
   useEffect(() => {
@@ -75,12 +90,14 @@ function RecentStoresCarouselInner() {
   const fetchList = useCallback(async () => {
     try {
       setLoading(true);
-      const { data: profiles, error } = await supabaseExternal
+      setError(null);
+      const { data: profiles, error: supabaseError } = await supabaseExternal
         .from("profiles_public")
         .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
-        .limit(60);
+        .limit(100);
 
-      if (error) throw error;
+      if (supabaseError) throw supabaseError;
+
 
       if (profiles && profiles.length > 0) {
         const rows: Card[] = profiles.map(r => {
@@ -114,12 +131,16 @@ function RecentStoresCarouselInner() {
         // Ordenar por distância se disponível
         setItems(rows.sort((a, b) => (a._distance || 9999) - (b._distance || 9999)));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("[RecentStoresCarousel] Fetch error:", e);
+      setError(e.message || "Falha ao carregar parceiros.");
     } finally {
       setLoading(false);
+      // Ajustar barra de progresso após carregar itens
+      setTimeout(handleScroll, 100);
     }
   }, [userCoords]);
+
 
   useEffect(() => {
     fetchList();
@@ -136,8 +157,11 @@ function RecentStoresCarouselInner() {
     } else if (kindFilter !== "all") {
       filtered = items.filter(i => i._kind === kindFilter);
     }
-    return filtered.slice(0, 25); 
+    // Removemos duplicatas por ID apenas por segurança, embora o mapeamento do Supabase deva ser único
+    const unique = Array.from(new Map(filtered.map(item => [item.id, item])).values());
+    return unique.slice(0, 60); // Aumentamos o limite para 60 para garantir que "Todos" mostre tudo o que buscamos
   }, [items, kindFilter, userBranchCtx]);
+
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollerRef.current) return;
@@ -203,11 +227,18 @@ function RecentStoresCarouselInner() {
 
       {loading ? (
         <div className="flex gap-4 overflow-hidden py-2">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="w-56 h-72 rounded-2xl bg-white/5 animate-pulse border border-white/5 flex-shrink-0" />
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="w-64 h-[400px] rounded-3xl bg-white/5 animate-pulse border border-white/5 flex-shrink-0" />
           ))}
         </div>
+      ) : error ? (
+        <div className="p-12 text-center border border-dashed border-red-500/20 rounded-3xl bg-red-500/5 text-red-400 italic text-sm">
+           <p className="font-bold mb-2 uppercase tracking-tighter">Erro de Conexão</p>
+           {error}
+           <button onClick={() => fetchList()} className="mt-4 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] font-black uppercase text-red-400 hover:bg-red-500/20 transition-all">Tentar Novamente</button>
+        </div>
       ) : sortedItems.length === 0 ? (
+
         <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl text-white/40 italic text-sm">
            Nenhum parceiro encontrado nesta categoria.
         </div>
@@ -223,8 +254,10 @@ function RecentStoresCarouselInner() {
           
           <div 
             ref={scrollerRef} 
-            className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide scroll-smooth"
+            onScroll={handleScroll}
+            className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide scroll-smooth touch-pan-x"
           >
+
             {sortedItems.map((p) => {
               const name = p.company_name || p.display_name || p.full_name || "Parceiro";
               return (
@@ -318,13 +351,18 @@ function RecentStoresCarouselInner() {
       )}
       
       {/* Barra de Navegação Inferior Horizontal Personalizada */}
-      <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+      <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden max-w-md mx-auto">
         <div 
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-          style={{ width: '20%' }}
+          className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500/20 via-[#00FF88] to-emerald-500/20 rounded-full transition-all duration-200 shadow-[0_0_10px_rgba(0,255,136,0.5)]"
+          style={{ 
+            width: `${Math.max(10, scrollProgress)}%`, 
+            left: `${scrollProgress * 0.9}%`,
+            transform: 'translateX(0)'
+          }}
         />
       </div>
     </section>
+
 
   );
 }
