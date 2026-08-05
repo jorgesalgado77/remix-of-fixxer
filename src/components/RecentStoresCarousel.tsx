@@ -149,15 +149,16 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, city, state, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role::text, business_category, city, state, created_at, lat, lng")
         .not("role", "ilike", "%admin%") // Ocultar admins conforme solicitado
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
       // Aplicar filtros básicos na query para performance
+      // Nota: Convertendo explicitamente para ::text se necessário, ou removendo o ilike do enum
       if (kindFilter === "lojista") {
-        query = query.ilike('role', '%lojista%').not("role", "ilike", "%admin%");
+        query = query.filter('role', 'eq', 'lojista');
       } else if (kindFilter === "fornecedor") {
-        query = query.ilike('role', '%fornec%').not("role", "ilike", "%admin%");
+        query = query.filter('role', 'eq', 'fornecedor');
       }
 
       const { data: profiles, error: supabaseError } = await query;
