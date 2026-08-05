@@ -5,7 +5,6 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { primePublicProfileCategory } from "@/lib/public-profile-category";
 
-console.log("CAROUSEL MODULE LOADED");
 
 
 type Row = {
