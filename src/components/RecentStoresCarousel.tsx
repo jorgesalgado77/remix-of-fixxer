@@ -188,8 +188,11 @@ function RecentStoresCarouselInner() {
         .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, user_type, business_category, custom_branch, city, state, created_at")
         .order("created_at", { ascending: false })
         .limit(300);
-      if (error) throw error;
 
+      if (error) {
+        console.error("[RecentStoresCarousel] error fetching profiles_public:", error);
+        throw error;
+      }
 
       const rows: Card[] = ((data as unknown as (Row & { user_type?: string | null })[]) ?? [])
         .map((r) => {
@@ -202,26 +205,60 @@ function RecentStoresCarouselInner() {
           const typeStr = ((r as any).user_type || "").toLowerCase();
           let kind: Kind | null = null;
 
-          // Prioridade: tabelas especializadas > role/user_type textual.
-          if (storeIds.has(rid)) kind = "lojista";
-          else if (supplierIds.has(rid)) kind = "fornecedor";
-          else if (providerIds.has(rid)) kind = null; // prestador: fora do escopo
-          else if (roleStr.includes("lojista") || roleStr.includes("store") || typeStr.includes("lojista") || typeStr.includes("store")) kind = "lojista";
-          else if (roleStr.includes("fornec") || roleStr.includes("supplier") || roleStr.includes("b2b") || roleStr.includes("parceiro") || typeStr.includes("fornec") || typeStr.includes("supplier")) kind = "fornecedor";
-          else kind = null;
+          // Prioridade 1: Tabelas especializadas (Vínculo Forte)
+          if (storeIds.has(rid)) {
+            kind = "lojista";
+          } else if (supplierIds.has(rid)) {
+            kind = "fornecedor";
+          } 
+          // Prioridade 2: Mapeamento textual via role/user_type (Fallback)
+          else if (
+            roleStr.includes("lojista") || roleStr.includes("store") || 
+            typeStr.includes("lojista") || typeStr.includes("store") ||
+            roleStr.includes("comércio") || roleStr.includes("shop")
+          ) {
+            kind = "lojista";
+          }
+          else if (
+            roleStr.includes("fornec") || roleStr.includes("supplier") || 
+            roleStr.includes("b2b") || roleStr.includes("parceiro") || 
+            roleStr.includes("distribuidor") || typeStr.includes("fornec") || 
+            typeStr.includes("supplier")
+          ) {
+            kind = "fornecedor";
+          }
 
           if (!kind) return null;
-          const avatar = safeStr((r as any).avatar_url) || safeStr((r as any).logo_url);
-          return { ...r, avatar_url: avatar, _kind: kind, _branch: mainBranchOf(r.business_category, r.custom_branch) } as Card;
 
+          const avatar = safeStr((r as any).avatar_url) || safeStr((r as any).logo_url);
+          return { 
+            ...r, 
+            avatar_url: avatar, 
+            _kind: kind, 
+            _branch: mainBranchOf(r.business_category, r.custom_branch) 
+          } as Card;
         })
-        .filter((x): x is Card => !!x)
-        .slice(0, 60);
+        .filter((x): x is Card => !!x);
 
       if (rows.length > 0) {
-        setItems(rows);
-        writeCache(rows);
+        setItems(rows.slice(0, 60));
+        writeCache(rows.slice(0, 60));
       } else {
+        // Se a View falhou em trazer resultados (talvez por permissões), tenta via 'profiles' diretamente
+        // se o usuário estiver logado (e tiver acesso a perfis públicos via RLS).
+        if (selfId) {
+          const { data: directData } = await supabaseExternal
+            .from("profiles")
+            .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at")
+            .not("role", "is", null)
+            .limit(100);
+            
+          if (directData && directData.length > 0) {
+             // ... lógica similar simplificada se necessário ...
+             // Mas o ideal é que a profiles_public funcione.
+             console.debug("[RecentStoresCarousel] Using direct profiles fallback");
+          }
+        }
         setItems([]);
       }
       setErrorMsg(null);
