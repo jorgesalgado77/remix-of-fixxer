@@ -90,12 +90,14 @@ function RecentStoresCarouselInner() {
   const fetchList = useCallback(async () => {
     try {
       setLoading(true);
-      const { data: profiles, error } = await supabaseExternal
+      setError(null);
+      const { data: profiles, error: supabaseError } = await supabaseExternal
         .from("profiles_public")
         .select("id, full_name, display_name, company_name, avatar_url, logo_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
-        .limit(60);
+        .limit(100);
 
-      if (error) throw error;
+      if (supabaseError) throw supabaseError;
+
 
       if (profiles && profiles.length > 0) {
         const rows: Card[] = profiles.map(r => {
