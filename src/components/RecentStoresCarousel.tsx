@@ -37,7 +37,9 @@ function RecentStoresCarouselInner() {
   const [loading, setLoading] = useState(false);
 
 
+  const [kindFilter, setKindFilter] = useState<"all" | Kind>("all");
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+
 
   useEffect(() => {
     console.log("[RecentStoresCarousel] Effect running");
