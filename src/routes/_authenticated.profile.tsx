@@ -799,6 +799,8 @@ function ProfilePage() {
       // valida auth.uid() no servidor.
       const pixKeyToSave = typeof payload.pix_key === 'string' ? payload.pix_key : null;
       const pixTypeToSave = typeof payload.pix_key_type === 'string' ? payload.pix_key_type : null;
+      const savedPixKey = payload.pix_key;
+      const savedPixType = payload.pix_key_type;
       delete payload.pix_key;
       delete payload.pix_key_type;
       if (pixKeyToSave !== null || pixTypeToSave !== null) {
@@ -868,6 +870,8 @@ function ProfilePage() {
           mergedFresh = { ...savedExtras, ...fresh };
         }
         mergedFresh = normalizeMasks(mergedFresh);
+        if (typeof savedPixKey === 'string') mergedFresh.pix_key = savedPixKey;
+        if (typeof savedPixType === 'string') mergedFresh.pix_key_type = savedPixType;
         setProfile(mergedFresh);
         lastSavedSnapshotRef.current = JSON.stringify(mergedFresh);
         setLastSavedAt(Date.now());
@@ -933,6 +937,13 @@ function ProfilePage() {
     profile?.about_bio,
     profile?.default_radius,
     profile?.activity_branch,
+    profile?.preferred_service,
+    profile?.job_roles,
+    profile?.offerings,
+    profile?.offerings_notes,
+    profile?.vehicle_type,
+    profile?.vehicle_description,
+    profile?.specialties,
     profile?.custom_sections,
   ]);
 
@@ -1931,6 +1942,21 @@ function ProfilePage() {
                   </div>
                 </div>
               )}
+              {/* SEÇÃO OFERECE & VEÍCULO */}
+              <section className="pt-8 border-t border-white/5">
+                <OfferingsPicker
+                  selected={Array.isArray(profile?.offerings) ? profile.offerings : parseCsvList(profile?.offerings)}
+                  onChange={(next) => setProfile({ ...profile, offerings: next })}
+                  planId={profile?.plan_id}
+                  vehicleType={profile?.vehicle_type}
+                  vehicleDescription={profile?.vehicle_description}
+                  onVehicleTypeChange={(v) => setProfile({ ...profile, vehicle_type: v })}
+                  onVehicleDescriptionChange={(v) => setProfile({ ...profile, vehicle_description: v })}
+                  observations={profile?.offerings_notes}
+                  onObservationsChange={(v) => setProfile({ ...profile, offerings_notes: v })}
+                />
+              </section>
+
               {/* MATRIZ MULTI-SETORIAL DE RAMOS DE ATIVIDADE */}
               {(profile?.role === 'fornecedor' || profile?.role === 'prestador' || profile?.role === 'lojista') && (
                 <div className="pt-8 space-y-6">
@@ -1960,7 +1986,6 @@ function ProfilePage() {
                       userId={profile?.id}
                     />
                   </div>
-
                 </div>
               )}
 
