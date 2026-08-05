@@ -162,14 +162,10 @@ function RecentStoresCarouselInner() {
         .from("profiles_public")
         .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
-        .order('created_at', { ascending: false }); // Mostrar mais recentes primeiro
+        .order('created_at', { ascending: false });
 
-      // Aplicar filtros básicos na query para performance
-      if (kindFilter === "lojista") {
-        query = query.eq('role', 'lojista');
-      } else if (kindFilter === "fornecedor") {
-        query = query.eq('role', 'fornecedor');
-      }
+      // Buscamos todos os perfis (exceto admins que filtramos depois) para permitir filtros instantâneos no front
+      // mas mantemos o limite de range para paginação.
 
       const { data: profiles, error: supabaseError } = await query;
 
