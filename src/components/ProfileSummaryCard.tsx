@@ -193,7 +193,7 @@ export function ProfileSummaryCard({
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Link
               to={profileHref}
-              search={{ focus: "reviews", tab: "avaliacoes" }}
+              search={{ focus: "reviews" } as any}
               className="rounded-lg border border-white/10 bg-black/30 p-2 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all group/rating min-h-[52px] flex flex-col justify-center text-left w-full"
             >
               <div className="text-[8px] font-black text-white/50 uppercase tracking-widest group-hover/rating:text-emerald-400/70 transition-colors">
