@@ -141,7 +141,8 @@ export function NotificationsCenter() {
             {unread > 99 ? "99+" : unread}
           </span>
         )}
-      </div>
+      </button>
+    </div>
 
       {open && mounted && createPortal((
         <div
