@@ -303,40 +303,39 @@ export function LojistaPublicProfilePage() {
   const [oppUf, setOppUf] = useState<string>("Todas");
 
   useEffect(() => {
-    // Tenta capturar parâmetros tanto do location.search quanto da URL bruta para maior robustez
+    // Captura parâmetros tanto do location.search quanto da URL bruta para maior robustez
     const searchParams = new URLSearchParams(window.location.search);
     const focus = searchParams.get("focus");
     const tab = searchParams.get("tab");
     
+    // Se o parâmetro indicar avaliações, força a aba e o scroll
     if (tab === "avaliacoes" || focus === "reviews") {
-      console.log("[Profile] Redirecionando para aba de avaliações via URL params", { focus, tab });
+      console.log("[Profile] Detectado parâmetro de avaliações via URL", { focus, tab });
       
-      // Força a aba ANTES de qualquer coisa
+      // Força a aba IMEDIATAMENTE (estado síncrono do componente)
       setActiveTab("avaliacoes");
       
-      // Scroll com retry agressivo
+      // Scroll com pooling agressivo
       const scrollToSection = () => {
         const el = document.getElementById("avaliacoes-section");
         if (el) {
-          console.log("[Profile] Elemento encontrado, scrollando...");
+          console.log("[Profile] Seção de avaliações encontrada, executando scroll...");
           el.scrollIntoView({ behavior: "smooth", block: "start" });
           return true;
         }
         return false;
       };
 
-      // Execução imediata
+      // Execução imediata e pooling
       if (!scrollToSection()) {
-        console.log("[Profile] Elemento não encontrado no mount, iniciando pooling...");
-        // Pooling curto para quando o componente está renderizando abas
         const interval = setInterval(() => {
           if (scrollToSection()) {
             clearInterval(interval);
           }
-        }, 50); // 50ms é mais responsivo que 100ms
+        }, 100);
         
-        // Timeout de segurança
-        setTimeout(() => clearInterval(interval), 2000);
+        // Timeout maior para garantir que o conteúdo carregado via Supabase apareça
+        setTimeout(() => clearInterval(interval), 3000);
       }
     }
   }, [location.search, storeId]);
