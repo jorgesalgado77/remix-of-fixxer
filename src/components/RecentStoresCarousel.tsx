@@ -227,11 +227,18 @@ function RecentStoresCarouselInner() {
 
       {loading ? (
         <div className="flex gap-4 overflow-hidden py-2">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="w-56 h-72 rounded-2xl bg-white/5 animate-pulse border border-white/5 flex-shrink-0" />
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="w-64 h-[400px] rounded-3xl bg-white/5 animate-pulse border border-white/5 flex-shrink-0" />
           ))}
         </div>
+      ) : error ? (
+        <div className="p-12 text-center border border-dashed border-red-500/20 rounded-3xl bg-red-500/5 text-red-400 italic text-sm">
+           <p className="font-bold mb-2 uppercase tracking-tighter">Erro de Conexão</p>
+           {error}
+           <button onClick={() => fetchList()} className="mt-4 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] font-black uppercase text-red-400 hover:bg-red-500/20 transition-all">Tentar Novamente</button>
+        </div>
       ) : sortedItems.length === 0 ? (
+
         <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl text-white/40 italic text-sm">
            Nenhum parceiro encontrado nesta categoria.
         </div>
