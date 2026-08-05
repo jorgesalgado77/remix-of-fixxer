@@ -102,12 +102,6 @@ function RecentStoresCarouselInner() {
     localStorage.setItem('fixxer_carousel_filter', kindFilter);
   }, [kindFilter]);
 
-  // Capturar localização do usuário logado (Memoized)
-  const [cachedLocation, setCachedLocation] = useState<{ lat: number; lng: number } | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const saved = localStorage.getItem('fixxer_user_coords_v1');
-    return saved ? JSON.parse(saved) : null;
-  });
 
   useEffect(() => {
     const getUserLocation = async () => {
