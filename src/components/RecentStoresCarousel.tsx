@@ -36,18 +36,6 @@ function safeStr(v: unknown): string | null {
   return !s || s === "null" || s === "undefined" ? null : s;
 }
 
-function isValidImageUrl(u: string | null | undefined): u is string {
-  if (!u) return false;
-  const s = String(u).trim();
-  return /^(https?:\/\/|data:image\/|blob:)/i.test(s);
-}
-
-function normalizeUf(uf: string | null): string | null {
-  if (!uf) return null;
-  const s = uf.trim().toUpperCase();
-  return /^[A-Z]{2}$/.test(s) ? s : null;
-}
-
 const LOJISTA_COLOR = CATEGORY_COLORS.lojista;
 const FORNECEDOR_COLOR = CATEGORY_COLORS.fornecedor;
 
@@ -70,12 +58,9 @@ const KIND_META: Record<Kind, { emoji: string; label: string; color: string; bor
 
 function RecentStoresCarouselInner() {
   const navigate = useNavigate();
-  const userCoords = useUserCoords();
-  const branchCtx = useUserBranchContext();
   const [items, setItems] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [kindFilter, setKindFilter] = useState<"all" | "mine" | Kind>("all");
+  const [kindFilter, setKindFilter] = useState<"all" | Kind>("all");
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   const fetchList = useCallback(async () => {
@@ -94,12 +79,23 @@ function RecentStoresCarouselInner() {
           kind = "fornecedor";
         }
         
-        // Se for admin e não tiver outro role, pula
         if (role === 'admin' && profiles.length > 5) return null;
 
         return {
-          ...r,
+          id: r.id,
+          full_name: r.full_name,
+          display_name: r.display_name,
+          company_name: r.company_name,
           avatar_url: r.avatar_url || r.logo_url,
+          role: r.role,
+          business_category: r.business_category,
+          custom_branch: r.custom_branch,
+          city: r.city,
+          state: r.state,
+          rating: 5.0,
+          created_at: r.created_at,
+          lat: r.lat,
+          lng: r.lng,
           _kind: kind,
           _branch: r.business_category?.split(',')[0] || r.custom_branch || "Geral"
         } as Card;
@@ -118,12 +114,8 @@ function RecentStoresCarouselInner() {
   }, [fetchList]);
 
   const sortedItems = useMemo(() => {
-    let filtered = items;
-    if (kindFilter !== "all" && kindFilter !== "mine") {
-      filtered = items.filter(i => i._kind === kindFilter);
-    }
-    // Simplificando ordenação para garantir exibição
-    return filtered;
+    if (kindFilter === "all") return items;
+    return items.filter(i => i._kind === kindFilter);
   }, [items, kindFilter]);
 
   const openProfile = (p: Card) => {
@@ -132,18 +124,18 @@ function RecentStoresCarouselInner() {
     navigate({ to: `/perfil/${p.id}` as any });
   };
 
-  if (loading) return <div className="p-10 text-center text-white">Carregando parceiros reais...</div>;
+  if (loading) return <div className="p-10 text-center text-white">Carregando parceiros...</div>;
 
   return (
     <section aria-label="Lojistas e fornecedores recentes" className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6">
       <header className="mb-4">
-        <h3 className="font-black italic uppercase text-white text-base">🏬 Parceiros Disponíveis</h3>
+        <h3 className="font-black italic uppercase text-white text-base">🏬 Parceiros FIXXER</h3>
         <div className="mt-2 flex gap-2">
           {["all", "lojista", "fornecedor"].map(k => (
             <button
               key={k}
               onClick={() => setKindFilter(k as any)}
-              className={`px-3 py-1 rounded-full text-xs font-bold border ${kindFilter === k ? 'bg-primary text-black border-primary' : 'bg-white/5 text-white border-white/10'}`}
+              className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${kindFilter === k ? 'bg-primary text-black border-primary' : 'bg-white/5 text-white border-white/10 hover:bg-white/10'}`}
             >
               {k === 'all' ? 'Todos' : k.charAt(0).toUpperCase() + k.slice(1)}
             </button>
@@ -153,18 +145,17 @@ function RecentStoresCarouselInner() {
 
       {sortedItems.length === 0 ? (
         <div className="p-10 text-center border border-dashed border-white/10 rounded-2xl text-white/40">
-           Nenhum parceiro encontrado no momento.
+           Nenhum parceiro disponível nesta categoria.
         </div>
       ) : (
-        <div ref={scrollerRef} className="flex gap-4 overflow-x-auto pb-4 snap-x">
+        <div ref={scrollerRef} className="flex gap-4 overflow-x-auto pb-4 snap-x scrollbar-hide">
           {sortedItems.map((p) => {
-            const meta = KIND_META[p._kind];
             const name = p.company_name || p.display_name || p.full_name || "Parceiro";
             return (
               <button
                 key={p.id}
                 onClick={() => openProfile(p)}
-                className="w-48 flex-shrink-0 snap-start bg-black/40 border border-white/10 rounded-2xl overflow-hidden text-left hover:border-primary/50 transition-all"
+                className="w-48 flex-shrink-0 snap-start bg-black/40 border border-white/10 rounded-2xl overflow-hidden text-left hover:border-primary/50 hover:-translate-y-1 transition-all"
               >
                 <div className="h-32 bg-white/5 flex items-center justify-center relative">
                   {p.avatar_url ? (
@@ -172,14 +163,14 @@ function RecentStoresCarouselInner() {
                   ) : (
                     <UserCircle2 className="w-12 h-12 text-white/20" />
                   )}
-                  <div className="absolute top-2 right-2 bg-black/60 px-2 py-0.5 rounded text-[10px] text-primary font-bold uppercase">
+                  <div className={`absolute top-2 right-2 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter ${p._kind === 'lojista' ? 'bg-[#00E5FF] text-black' : 'bg-[#A855F7] text-white'}`}>
                     {p._kind}
                   </div>
                 </div>
                 <div className="p-3">
-                  <p className="font-bold text-white text-sm truncate">{name}</p>
+                  <p className="font-black text-white text-xs truncate uppercase tracking-tighter italic">{name}</p>
                   <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> {p.city || "Brasil"}
+                    <MapPin className="w-3 h-3 text-primary" /> {p.city || "Brasil"}
                   </p>
                 </div>
               </button>
