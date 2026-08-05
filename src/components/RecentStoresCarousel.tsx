@@ -124,6 +124,7 @@ function RecentStoresCarouselInner() {
     <section aria-label="Lojistas e fornecedores recentes" className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6">
       <header className="mb-4">
         <h3 className="font-black italic uppercase text-white text-base">🏬 Parceiros FIXXER</h3>
+        <p className="text-[10px] text-white">Debug: {items.length} itens totais, {sortedItems.length} filtrados</p>
         <div className="mt-2 flex gap-2">
           {["all", "lojista", "fornecedor"].map(k => (
             <button
@@ -139,9 +140,10 @@ function RecentStoresCarouselInner() {
 
       {sortedItems.length === 0 ? (
         <div className="p-10 text-center border border-dashed border-white/10 rounded-2xl text-white/40">
-           Nenhum parceiro disponível nesta categoria.
+           Nenhum parceiro disponível na categoria "{kindFilter}".
         </div>
       ) : (
+
         <div ref={scrollerRef} className="flex gap-4 overflow-x-auto pb-4 snap-x scrollbar-hide">
           {sortedItems.map((p) => {
             const name = p.company_name || p.display_name || p.full_name || "Parceiro";
