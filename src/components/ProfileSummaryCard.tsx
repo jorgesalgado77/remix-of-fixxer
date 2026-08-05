@@ -150,8 +150,11 @@ export function ProfileSummaryCard({
       <Link
         to={profileHref}
         aria-label="Abrir meu perfil público"
-        className="block rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.6)] hover:border-primary/40 transition-all"
+        className="block relative rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.6)] hover:border-primary/40 transition-all"
       >
+        <div className="absolute top-4 right-4 z-20 pointer-events-auto">
+          <NotificationsCenter />
+        </div>
         <div className="flex items-start gap-3">
           <div className="relative shrink-0">
             <div className="w-14 h-14 rounded-full border-2 border-primary/50 overflow-hidden bg-white/5 flex items-center justify-center">
