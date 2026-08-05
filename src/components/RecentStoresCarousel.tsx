@@ -203,6 +203,7 @@ function RecentStoresCarouselInner() {
         throw error;
       }
 
+      console.debug("[RecentStoresCarousel] profiles_public rows:", data?.length);
       const rows: Card[] = ((data as any[]) ?? [])
         .map((r) => {
           const rid = String(r.id);
