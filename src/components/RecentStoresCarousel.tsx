@@ -302,10 +302,11 @@ function RecentStoresCarouselInner() {
     }));
 
     // Fallback inteligente: precisa de pelo menos 3 relevantes p/ ativar o filtro estrito.
+    // Se não houver itens suficientes no ramo, mostramos "Todos" (scored) ordenados por relevância.
     let base = scored;
     if (kindFilter === "mine" && branchCtx.hasContext) {
       const strict = scored.filter((p) => p._relevance.level !== "none");
-      base = strict.length >= 3 ? strict : scored;
+      base = strict.length >= 1 ? strict : scored;
     }
 
     return [...base].sort((a, b) => {
