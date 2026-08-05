@@ -447,7 +447,8 @@ export function LojistaDashboard() {
                 <TooltipProvider>
                   <nav className="flex flex-col gap-3">
                       <Link 
-                        to="/feed/lojista" search={{}} 
+                        to="/feed/lojista" search={{ urgency: 'todos', distance: 'todos', tag: '' }} 
+
 
                         onClick={() => setMobileMenuOpen(false)} 
                         className={`flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic text-xs shadow-[0_0_15px_rgba(255,255,255,0.05)] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none`}
