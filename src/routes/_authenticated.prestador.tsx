@@ -63,7 +63,10 @@ function PrestadorDashboard() {
 
       <CoinBalancePlanCard />
 
-      <RecentStoresCarousel />
+      <div className="bg-red-500/20 p-4 rounded-xl border border-red-500/50">
+        <RecentStoresCarousel />
+      </div>
+
 
       <MyAppointmentsSection />
 
