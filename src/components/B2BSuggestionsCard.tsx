@@ -256,17 +256,6 @@ function B2BSuggestionsCardInner() {
     };
   }, [recompute]);
 
-  // Sincroniza estado quando outra instância/aba altera a visibilidade.
-  useEffect(() => {
-    const onVis = (e: Event) => {
-      const d = (e as CustomEvent).detail as { dismissed?: boolean } | undefined;
-      if (typeof d?.dismissed === "boolean") setDismissed(d.dismissed);
-    };
-    window.addEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
-    return () =>
-      window.removeEventListener("fixxer:b2b-suggestions-visibility", onVis as EventListener);
-  }, []);
-
   // Prioridade: parceiros REAIS relacionados ao ramo do usuário; depois
   // ramos/subcategorias irmãs da(s) macro(s) dele; por último, presets fixos.
   const displaySuggestions = useMemo(() => {
@@ -283,21 +272,23 @@ function B2BSuggestionsCardInner() {
       .sort((a, b) => relevanceRank(a.rel.level) - relevanceRank(b.rel.level));
 
     const out = [...real];
-    const seen = new Set(out.map((x) => x.s.title));
+    const seenTitles = new Set(out.map((x) => x.s.title.toLowerCase()));
 
-    if (out.length < 4) {
-      for (const s of [
-        ...branchFallback(branchCtx),
-        ...suggestions.filter((x) => !x.userId),
-        ...(FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador),
-      ]) {
-        if (out.length >= 4) break;
-        if (seen.has(s.title)) continue;
-        seen.add(s.title);
-        out.push(score(s));
-      }
+    const fallbackItems = [
+      ...branchFallback(branchCtx),
+      ...suggestions.filter((x) => !x.userId),
+      ...(FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador),
+    ];
+
+    for (const s of fallbackItems) {
+      if (out.length >= 12) break;
+      const titleLower = s.title.toLowerCase();
+      if (seenTitles.has(titleLower)) continue;
+      seenTitles.add(titleLower);
+      out.push(score(s));
     }
-    return out.slice(0, 12); // Aumentado para permitir rolagem de mais itens
+    
+    return out;
   }, [suggestions, branchCtx, category]);
 
   const openSuggestion = useCallback(
@@ -389,11 +380,11 @@ function B2BSuggestionsCardInner() {
 
       </div>
 
-      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent snap-x snap-mandatory">
+      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent snap-x snap-mandatory flex">
         <div className="flex gap-2 min-w-max">
           {displaySuggestions.map(({ s, rel }) => (
             <button
-              key={s.title}
+              key={s.userId ? `real-${s.userId}` : `static-${s.title}`}
               type="button"
               onClick={() => openSuggestion(s)}
               title={s.userId ? "Abrir perfil do parceiro" : `Buscar: ${s.targetBranch || s.title}`}
