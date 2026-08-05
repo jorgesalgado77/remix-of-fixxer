@@ -188,7 +188,7 @@ function RecentStoresCarouselInner() {
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
           // Priorizamos custom_branch, depois business_category.
-          const branch = r.custom_branch || r.business_category || "Não Informado";
+          const branch = r.custom_branch || r.business_category || (r.role === 'lojista' ? "Lojista" : r.role === 'fornecedor' ? "Fornecedor" : "Não Informado");
           
           // Debugging distance: Log inputs for calculation
           const dist = (userCoords && r.lat !== null && r.lng !== null) 
