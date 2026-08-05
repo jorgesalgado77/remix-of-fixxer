@@ -115,7 +115,7 @@ function RecentStoresCarouselInner() {
           // Sempre buscamos o perfil do usuário logado para garantir coordenadas frescas
           // e o ID correto para filtragem
           const { data: profile, error } = await supabaseExternal
-            .from("profiles_public")
+            .from("profiles")
             .select("lat, lng")
             .eq("id", userId)
             .maybeSingle();
