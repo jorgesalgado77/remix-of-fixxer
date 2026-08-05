@@ -178,7 +178,7 @@ function B2BSuggestionsCardInner() {
   const recompute = useCallback(() => {
     const radiusKm = readRadius();
     const list = getB2BSuggestions(branchesRef.current, {
-      radiusKm,
+      radiusKm: null, // Remove filtro de raio rigoroso para garantir que parceiros reais apareçam mesmo distantes
       userLocation: userLocRef.current,
       candidates: candidatesRef.current,
     }).slice(0, 24);
