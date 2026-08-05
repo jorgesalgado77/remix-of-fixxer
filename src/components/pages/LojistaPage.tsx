@@ -1016,6 +1016,40 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
         return () => { cancelled = true; };
     }, []);
 
+    const [realStats, setRealStats] = useState({ created: 0, pending: 0, completed: 0 });
+    const [loadingStats, setLoadingStats] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const { data: { user } } = await supabaseExternal.auth.getUser();
+                if (!user) return;
+
+                const { data: ads, error } = await supabaseExternal
+                    .from('ads')
+                    .select('status')
+                    .eq('user_id', user.id);
+
+                if (error) throw error;
+
+                const stats = (ads || []).reduce((acc: any, ad: any) => {
+                    acc.created++;
+                    if (ad.status === 'active' || ad.status === 'pending') acc.pending++;
+                    if (ad.status === 'completed' || ad.status === 'closed') acc.completed++;
+                    return acc;
+                }, { created: 0, pending: 0, completed: 0 });
+
+                setRealStats(stats);
+            } catch (err) {
+                console.error('Erro ao buscar estatísticas reais:', err);
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
     const activePlan = monetization.plans.find((p) => p.id === planId) || monetization.plans[0];
     const nextRenewalLabel = renewsAt
         ? new Date(renewsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
