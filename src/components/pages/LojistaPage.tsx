@@ -1016,6 +1016,40 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
         return () => { cancelled = true; };
     }, []);
 
+    const [realStats, setRealStats] = useState({ created: 0, pending: 0, completed: 0 });
+    const [loadingStats, setLoadingStats] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const { data: { user } } = await supabaseExternal.auth.getUser();
+                if (!user) return;
+
+                const { data: ads, error } = await supabaseExternal
+                    .from('ads')
+                    .select('status')
+                    .eq('user_id', user.id);
+
+                if (error) throw error;
+
+                const stats = (ads || []).reduce((acc: any, ad: any) => {
+                    acc.created++;
+                    if (ad.status === 'active' || ad.status === 'pending') acc.pending++;
+                    if (ad.status === 'completed' || ad.status === 'closed') acc.completed++;
+                    return acc;
+                }, { created: 0, pending: 0, completed: 0 });
+
+                setRealStats(stats);
+            } catch (err) {
+                console.error('Erro ao buscar estatísticas reais:', err);
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
     const activePlan = monetization.plans.find((p) => p.id === planId) || monetization.plans[0];
     const nextRenewalLabel = renewsAt
         ? new Date(renewsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
@@ -1230,47 +1264,78 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                     </div>
                 </div>
                 {/* ─────────────────────────────────────────────────── */}
-                <MetricCard label="Serviços Criados" value={(12 * multiplier + createdBoost).toString()} icon={<Briefcase />} color="text-blue-400" />
+                <MetricCard 
+                    label="Serviços Criados" 
+                    value={loadingStats ? "..." : (realStats.created + createdBoost).toString()} 
+                    icon={<Briefcase />} 
+                    color="text-blue-400" 
+                    bgColor="bg-blue-400/5"
+                    onClick={() => handleTabChange('dashboard')}
+                />
                 <MetricCard 
                     label="Serviços Pendentes" 
-                    value={(5 * multiplier).toString()} 
+                    value={loadingStats ? "..." : realStats.pending.toString()} 
                     icon={<Clock />} 
                     color="text-orange-400" 
+                    bgColor="bg-orange-400/5"
+                    onClick={() => {
+                        handleTabChange('dashboard');
+                        setStatusFilter('Pendente');
+                    }}
                     subValue={
                         <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
                             <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
                                 <span className="text-muted-foreground">Aguardando:</span>
-                                <span className="text-white">{(2 * multiplier)}</span>
+                                <span className="text-white">{loadingStats ? "..." : realStats.pending}</span>
                             </div>
                             <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
                                 <span className="text-muted-foreground">Em andamento:</span>
-                                <span className="text-white">{(2 * multiplier)}</span>
+                                <span className="text-white">0</span>
                             </div>
                             <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
                                 <span className="text-muted-foreground">Atrasado:</span>
-                                <span className="text-red-500">{(1 * multiplier)}</span>
+                                <span className="text-red-500">0</span>
                             </div>
                             <div className="mt-1 flex items-center gap-1 text-[7px] font-black italic uppercase">
-                                <span className="text-green-400">↑ 12%</span>
+                                <span className="text-green-400">↑ 0%</span>
                                 <span className="text-muted-foreground/50">vs. semana ant.</span>
                             </div>
                         </div>
                     }
                 />
-                <MetricCard label="Concluídos" value={(7 * multiplier).toString()} icon={<ShieldCheck />} color="text-primary" />
+                <MetricCard 
+                    label="Concluídos" 
+                    value={loadingStats ? "..." : realStats.completed.toString()} 
+                    icon={<ShieldCheck />} 
+                    color="text-primary" 
+                    bgColor="bg-primary/5"
+                    onClick={() => {
+                        handleTabChange('dashboard');
+                        setStatusFilter('Concluído');
+                    }}
+                />
                 <MetricCard 
                     label="Saldo do Período" 
-                    value={`R$ ${(15.2 * multiplier).toFixed(1)}k`} 
+                    value={`R$ 0,00`} 
                     icon={<DollarSign />} 
                     color="text-emerald-400"
+                    bgColor="bg-emerald-400/5"
+                    onClick={() => handleTabChange('dashboard')}
                     subValue={
                         <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
-                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ {(12.1 * multiplier).toFixed(1)}k</span></span>
-                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Comissões: <span className="text-white">R$ {(3.1 * multiplier).toFixed(1)}k</span></span>
+                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ 0,00</span></span>
+                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Comissões: <span className="text-white">R$ 0,00</span></span>
                         </div>
                     }
                 />
-                <MetricCard label="Reputação" value={`${rating.toFixed(1)} ⭐`} icon={<Star />} color={getRatingColor(rating)} />
+                <MetricCard 
+                    label="Reputação" 
+                    value={`${rating.toFixed(1)} ⭐`} 
+                    icon={<Star />} 
+                    color={getRatingColor(rating)} 
+                    bgColor="bg-amber-400/5"
+                    onClick={() => handleTabChange('reviews')}
+                />
             </div>
 
             {/* Visual Edit Probe Element */}
@@ -3323,9 +3388,12 @@ function SortableItem({ id, isVideo, onRemove, isSelected, onToggleSelect }: { i
 }
 
 
-function MetricCard({ label, value, icon, color, subValue }: any) {
+function MetricCard({ label, value, icon, color, subValue, bgColor, onClick }: any) {
     return (
-        <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl space-y-1 md:space-y-2 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between">
+        <button 
+            onClick={onClick}
+            className={`text-left bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl space-y-1 md:space-y-2 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between ${bgColor || 'bg-white/5'} hover:scale-[1.02] active:scale-[0.98]`}
+        >
             <div>
                 <div className={`${color} opacity-80 mb-1 md:mb-2 group-hover:scale-110 transition-transform`}>{icon}</div>
                 <div className="text-[9px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider">{label}</div>
@@ -3333,7 +3401,7 @@ function MetricCard({ label, value, icon, color, subValue }: any) {
             </div>
             {subValue}
             <div className={`absolute top-0 right-0 w-12 h-12 ${color} opacity-[0.03] -mr-6 -mt-6 rounded-full`} />
-        </div>
+        </button>
     )
 }
 
