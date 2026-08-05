@@ -75,19 +75,17 @@ function RecentStoresCarouselInner() {
     const { scrollLeft, scrollWidth, clientWidth } = scrollerRef.current;
     const totalScrollable = scrollWidth - clientWidth;
     
-    let progress = 0;
-    if (totalScrollable <= 0) {
-      progress = 100;
+    if (totalScrollable > 0) {
+      const progress = (scrollLeft / totalScrollable) * 100;
+      setScrollProgress(progress);
+      localStorage.setItem('fixxer_carousel_scroll', progress.toString());
+      
+      // Infinite Scroll: se chegar perto do fim, carrega mais
+      if (totalScrollable - scrollLeft < 500 && !loadingMore && hasMore && !loading) {
+        fetchList(true);
+      }
     } else {
-      progress = (scrollLeft / totalScrollable) * 100;
-    }
-    
-    setScrollProgress(progress);
-    localStorage.setItem('fixxer_carousel_scroll', progress.toString());
-
-    // Lógica de Infinite Scroll: se chegar perto do fim, carrega mais
-    if (totalScrollable - scrollLeft < 500 && !loadingMore && hasMore && !loading) {
-      fetchList(true);
+      setScrollProgress(0);
     }
   };
 
@@ -450,12 +448,12 @@ function RecentStoresCarouselInner() {
       )}
       
       {/* Barra de Navegação Inferior Horizontal Personalizada */}
-      <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden max-w-md mx-auto">
+      <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden max-w-md mx-auto pointer-events-none">
         <div 
-          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-all duration-100 shadow-[0_0_10px_rgba(0,255,136,0.5)]"
+          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-all duration-150 ease-out shadow-[0_0_15px_rgba(0,255,136,0.6)]"
           style={{ 
-            width: '30%', // Representa o tamanho do "thumb"
-            left: `${scrollProgress * 0.7}%`, // Mapeia 0-100 do progresso para o trilho
+            width: '30%',
+            left: `${Math.min(70, scrollProgress * 0.7)}%`,
             transform: 'translateX(0)'
           }}
         />
