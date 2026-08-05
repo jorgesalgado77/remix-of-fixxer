@@ -131,12 +131,16 @@ function RecentStoresCarouselInner() {
         // Ordenar por distância se disponível
         setItems(rows.sort((a, b) => (a._distance || 9999) - (b._distance || 9999)));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("[RecentStoresCarousel] Fetch error:", e);
+      setError(e.message || "Falha ao carregar parceiros.");
     } finally {
       setLoading(false);
+      // Ajustar barra de progresso após carregar itens
+      setTimeout(handleScroll, 100);
     }
   }, [userCoords]);
+
 
   useEffect(() => {
     fetchList();
