@@ -172,8 +172,14 @@ function RecentStoresCarouselInner() {
       if (supabaseError) throw supabaseError;
 
       if (profiles) {
-        // Filtrar Admins em memória para evitar erros de cast no PostgREST
-        const filteredProfiles = profiles.filter((p: any) => p.role !== 'admin');
+        // Recuperar o ID do usuário atual do Supabase (para filtrar o próprio card)
+        const { data: { session } } = await supabaseExternal.auth.getSession();
+        const currentUserId = session?.user?.id;
+
+        // Filtrar Admins e o PRÓPRIO usuário logado
+        const filteredProfiles = profiles.filter((p: any) => 
+          p.role !== 'admin' && p.id !== currentUserId
+        );
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
           const roleStr = (r.role || "").toLowerCase();
@@ -217,11 +223,11 @@ function RecentStoresCarouselInner() {
           ? [...uniqueItems].sort((a, b) => (a._distance || 9999) - (b._distance || 9999))
           : uniqueItems;
 
+        // Persistência em cache de memória (opcional) e estado
         setItems(sorted);
         setPage(currentPage);
         setHasMore(rows.length === PAGE_SIZE);
 
-        // Salvar no cache
         if (!isMore) {
           cacheRef.current[cacheKey] = { data: sorted, timestamp: Date.now() };
         }
