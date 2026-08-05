@@ -419,19 +419,8 @@ export function LojistaDashboard() {
         </div>
         <div className="flex items-center gap-2">
             <div className="relative mr-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className={`relative rounded-xl border border-white/5 hover:bg-white/5 text-muted-foreground hover:text-white transition-all ${showNotifications ? 'bg-white/10 text-white' : ''}`}
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-[#050505]">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Button>
+                {/* Notificações agora estão integradas no ProfileSummaryCard */}
+            </div>
 
                 {showNotifications && (
                   <div className="fixed top-16 right-4 w-[calc(100vw-2rem)] md:absolute md:top-auto md:right-0 md:mt-3 md:w-80 bg-[#1A1A1B] border border-white/10 rounded-2xl shadow-2xl z-[70] animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
