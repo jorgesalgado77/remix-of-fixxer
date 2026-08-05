@@ -44,10 +44,25 @@ function RecentStoresCarouselInner() {
   const navigate = useNavigate();
   const [items, setItems] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">("branch");
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const userBranchCtx = useUserBranchContext();
+
+  // Monitorar progresso do scroll
+  const handleScroll = () => {
+    if (!scrollerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollerRef.current;
+    const totalScrollable = scrollWidth - clientWidth;
+    if (totalScrollable <= 0) {
+      setScrollProgress(100);
+    } else {
+      setScrollProgress((scrollLeft / totalScrollable) * 100);
+    }
+  };
+
 
   // Capturar localização do usuário logado
   useEffect(() => {
