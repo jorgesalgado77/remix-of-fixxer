@@ -185,9 +185,13 @@ function RecentStoresCarouselInner() {
         const rows: Card[] = filteredProfiles.map((r: any) => {
           const roleStr = (r.role || "").toLowerCase();
           const kind = roleStr.includes("fornec") ? "fornecedor" : "lojista";
+          
           const dist = (userCoords && r.lat && r.lng) 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
+
+          // Se for fornecedor e tiver business_category como 'Geral', tenta usar custom_branch
+          const branch = r.custom_branch || r.business_category || "Geral";
 
           return {
             id: r.id,
@@ -197,7 +201,7 @@ function RecentStoresCarouselInner() {
             avatar_url: r.avatar_url,
             role: r.role,
             business_category: r.business_category,
-            custom_branch: (r as any).custom_branch || null,
+            custom_branch: r.custom_branch || null,
             city: r.city,
             state: r.state,
             rating: 4.5 + Math.random() * 0.5,
@@ -205,17 +209,20 @@ function RecentStoresCarouselInner() {
             lat: r.lat ? Number(r.lat) : null,
             lng: r.lng ? Number(r.lng) : null,
             _kind: kind as Kind,
-            _branch: r.business_category || r.custom_branch || "Geral",
+            _branch: branch,
             _distance: dist
           };
         });
         
         const newItems = isMore ? [...items, ...rows] : rows;
         
-        // Ordenar se houver coordenadas (Haversine)
+        // Remove duplicates by ID
+        const uniqueItems = Array.from(new Map(newItems.map(item => [item.id, item])).values());
+        
+        // Ordenar por distância se disponível, senão por data
         const sorted = userCoords 
-          ? newItems.sort((a, b) => (a._distance || 9999) - (b._distance || 9999))
-          : newItems;
+          ? [...uniqueItems].sort((a, b) => (a._distance || 9999) - (b._distance || 9999))
+          : uniqueItems;
 
         setItems(sorted);
         setPage(currentPage);
@@ -406,8 +413,8 @@ function RecentStoresCarouselInner() {
                     )}
                     
                     {/* Badge Categoria Flutuante */}
-                    <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter italic z-10 flex items-center gap-1.5 shadow-lg border border-white/10 ${
-                      p._kind === 'lojista' ? 'bg-[#00E5FF] text-black' : 'bg-[#A855F7] text-white'
+                    <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter italic z-10 flex items-center gap-1.5 shadow-xl border border-white/20 ${
+                      p._kind === 'lojista' ? 'bg-[#00E5FF] text-black' : 'bg-[#A855F7] text-white shadow-[#A855F7]/20'
                     }`}>
                       {p._kind === 'lojista' ? (
                         <>
@@ -425,26 +432,32 @@ function RecentStoresCarouselInner() {
                     <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-1">{name}</h4>
                     
                     <div className="flex flex-wrap gap-1.5 items-center">
-                      <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest ${
+                      <span className={`flex items-center gap-1.5 text-[11px] font-black uppercase tracking-tight ${
                         p._kind === 'lojista' ? 'text-[#00E5FF]' : 'text-[#A855F7]'
                       }`}>
-                        {p._kind === 'lojista' ? <Navigation className="w-3 h-3" /> : <Puzzle className="w-3 h-3" />}
+                        <Puzzle className="w-3.5 h-3.5" />
                         {p._branch}
                       </span>
                     </div>
 
                     <div className="pt-1 flex flex-col gap-1.5">
-                      <div className="flex items-center gap-1.5 text-[10px] text-white/40 font-bold uppercase tracking-tight">
+                      <div className="flex items-center gap-1.5 text-[10px] text-white/50 font-bold uppercase tracking-tight">
                         <MapPin className="w-3 h-3 text-red-500" />
                         <span className="truncate">
-                          {p.city || "S/L"}, {p.state || "BR"} 
-                          {p._distance !== undefined && ` • ${p._distance.toFixed(1)} KM`}
+                          {p.city || "S/L"}, {p.state || "BR"}
                         </span>
+                        {p._distance !== undefined && (
+                          <span className="ml-auto text-[#00FF88] font-black italic">
+                            {p._distance.toFixed(1)} KM
+                          </span>
+                        )}
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-[#00FF88] shadow-[0_0_8px_#00FF88] animate-pulse" />
-                        <span className="text-[10px] font-black text-[#00FF88] uppercase italic">Disponível</span>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/20">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] shadow-[0_0_8px_#00FF88] animate-pulse" />
+                          <span className="text-[9px] font-black text-[#00FF88] uppercase italic">Disponível</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -473,12 +486,12 @@ function RecentStoresCarouselInner() {
       )}
       
       {/* Barra de Navegação Inferior Horizontal Personalizada */}
-      <div className="mt-8 relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden max-w-md mx-auto pointer-events-none">
+      <div className="mt-8 relative h-1 w-full bg-white/5 rounded-full overflow-hidden max-w-sm mx-auto pointer-events-none">
         <div 
-          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-none shadow-[0_0_15px_rgba(0,255,136,0.6)]"
+          className="absolute top-0 h-full bg-[#00FF88] rounded-full transition-none shadow-[0_0_10px_rgba(0,255,136,0.6)]"
           style={{ 
-            width: '30%',
-            left: `${Math.max(0, Math.min(70, (scrollProgress / 100) * 70))}%`,
+            width: `${Math.max(15, 100 / (Math.max(1, items.length / 2)))}%`,
+            left: `${Math.max(0, Math.min(85, (scrollProgress / 100) * 85))}%`,
           }}
         />
       </div>
