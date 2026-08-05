@@ -1230,12 +1230,24 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                     </div>
                 </div>
                 {/* ─────────────────────────────────────────────────── */}
-                <MetricCard label="Serviços Criados" value={(12 * multiplier + createdBoost).toString()} icon={<Briefcase />} color="text-blue-400" />
+                <MetricCard 
+                    label="Serviços Criados" 
+                    value={(12 * multiplier + createdBoost).toString()} 
+                    icon={<Briefcase />} 
+                    color="text-blue-400" 
+                    bgColor="bg-blue-400/5"
+                    onClick={() => handleTabChange('dashboard')}
+                />
                 <MetricCard 
                     label="Serviços Pendentes" 
                     value={(5 * multiplier).toString()} 
                     icon={<Clock />} 
                     color="text-orange-400" 
+                    bgColor="bg-orange-400/5"
+                    onClick={() => {
+                        handleTabChange('dashboard');
+                        setStatusFilter('Pendente');
+                    }}
                     subValue={
                         <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
                             <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
@@ -1257,12 +1269,24 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                         </div>
                     }
                 />
-                <MetricCard label="Concluídos" value={(7 * multiplier).toString()} icon={<ShieldCheck />} color="text-primary" />
+                <MetricCard 
+                    label="Concluídos" 
+                    value={(7 * multiplier).toString()} 
+                    icon={<ShieldCheck />} 
+                    color="text-primary" 
+                    bgColor="bg-primary/5"
+                    onClick={() => {
+                        handleTabChange('dashboard');
+                        setStatusFilter('Concluído');
+                    }}
+                />
                 <MetricCard 
                     label="Saldo do Período" 
                     value={`R$ ${(15.2 * multiplier).toFixed(1)}k`} 
                     icon={<DollarSign />} 
                     color="text-emerald-400"
+                    bgColor="bg-emerald-400/5"
+                    onClick={() => handleTabChange('dashboard')}
                     subValue={
                         <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
                             <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ {(12.1 * multiplier).toFixed(1)}k</span></span>
@@ -1270,7 +1294,14 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                         </div>
                     }
                 />
-                <MetricCard label="Reputação" value={`${rating.toFixed(1)} ⭐`} icon={<Star />} color={getRatingColor(rating)} />
+                <MetricCard 
+                    label="Reputação" 
+                    value={`${rating.toFixed(1)} ⭐`} 
+                    icon={<Star />} 
+                    color={getRatingColor(rating)} 
+                    bgColor="bg-amber-400/5"
+                    onClick={() => handleTabChange('reviews')}
+                />
             </div>
 
             {/* Visual Edit Probe Element */}
@@ -3323,9 +3354,12 @@ function SortableItem({ id, isVideo, onRemove, isSelected, onToggleSelect }: { i
 }
 
 
-function MetricCard({ label, value, icon, color, subValue }: any) {
+function MetricCard({ label, value, icon, color, subValue, bgColor, onClick }: any) {
     return (
-        <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl space-y-1 md:space-y-2 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between">
+        <button 
+            onClick={onClick}
+            className={`text-left bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl space-y-1 md:space-y-2 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between ${bgColor || 'bg-white/5'} hover:scale-[1.02] active:scale-[0.98]`}
+        >
             <div>
                 <div className={`${color} opacity-80 mb-1 md:mb-2 group-hover:scale-110 transition-transform`}>{icon}</div>
                 <div className="text-[9px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider">{label}</div>
@@ -3333,7 +3367,7 @@ function MetricCard({ label, value, icon, color, subValue }: any) {
             </div>
             {subValue}
             <div className={`absolute top-0 right-0 w-12 h-12 ${color} opacity-[0.03] -mr-6 -mt-6 rounded-full`} />
-        </div>
+        </button>
     )
 }
 
