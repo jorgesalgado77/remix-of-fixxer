@@ -49,8 +49,8 @@ function RecentStoresCarouselInner() {
   
   // Persistência do estado dos filtros
   const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">(() => {
-    if (typeof window === 'undefined') return "branch";
-    return (localStorage.getItem('fixxer_carousel_filter') as any) || "branch";
+    if (typeof window === 'undefined') return "all";
+    return (localStorage.getItem('fixxer_carousel_filter') as any) || "all";
   });
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -149,7 +149,7 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, city, state, created_at, lat, lng")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
       // Aplicar filtros básicos na query para performance
@@ -187,7 +187,7 @@ function RecentStoresCarouselInner() {
             lat: r.lat ? Number(r.lat) : null,
             lng: r.lng ? Number(r.lng) : null,
             _kind: kind as Kind,
-            _branch: r.business_category?.split(',')[0] || r.custom_branch || "Geral",
+            _branch: r.business_category?.split(',')[0] || "Geral",
             _distance: dist
           };
         });
@@ -230,7 +230,7 @@ function RecentStoresCarouselInner() {
     if (kindFilter === "branch") {
       return items.filter(i => {
         if (!userBranchCtx.hasContext) return true;
-        const relevance = scoreRelevance([i.business_category, i.custom_branch], userBranchCtx);
+        const relevance = scoreRelevance([i.business_category], userBranchCtx);
         return relevance !== "none";
       });
     }
@@ -264,36 +264,48 @@ function RecentStoresCarouselInner() {
         
         <div className="flex items-center gap-3 mt-6 overflow-x-auto pb-4 scrollbar-hide snap-x no-scrollbar">
           <button
-            onClick={() => setKindFilter("branch")}
-            className={`min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "branch" ? 'bg-[#00FF88] text-black border-[#00FF88]' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
+            onClick={() => setKindFilter("all")}
+            className={`min-w-[120px] h-9 flex-shrink-0 rounded-full text-[10px] font-black uppercase italic transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "all" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
           >
-            <span className="text-sm">🎯</span> Do meu ramo
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Todos
           </button>
 
           <button
-            onClick={() => setKindFilter("all")}
-            className={`min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "all" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
+            onClick={() => setKindFilter("branch")}
+            className={`min-w-[120px] h-9 flex-shrink-0 rounded-full text-[10px] font-black uppercase italic transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "branch" ? 'bg-[#00FF88] text-black border-[#00FF88]' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
           >
-            <div className="w-2 h-2 rounded-full bg-emerald-400" /> Todos
+            <span className="text-xs">🎯</span> Do meu ramo
           </button>
 
           <button
             onClick={() => setKindFilter("lojista")}
-            className={`min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "lojista" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
+            className={`min-w-[120px] h-9 flex-shrink-0 rounded-full text-[10px] font-black uppercase italic transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "lojista" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
           >
-            <span className="text-sm">🏬</span> Lojistas
+            <span className="text-xs">🏬</span> Lojistas
           </button>
 
           <button
             onClick={() => setKindFilter("fornecedor")}
-            className={`min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "fornecedor" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
+            className={`min-w-[120px] h-9 flex-shrink-0 rounded-full text-[10px] font-black uppercase italic transition-all flex items-center justify-center gap-2 border snap-start ${kindFilter === "fornecedor" ? 'bg-white/20 text-white border-white/30' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
           >
-            <span className="text-sm">🏭</span> Fornecedores
+            <span className="text-xs">🏭</span> Fornecedores
+          </button>
+
+          <button
+            onClick={() => {
+              setKindFilter("all");
+              localStorage.removeItem('fixxer_carousel_scroll');
+              setScrollProgress(0);
+              if (scrollerRef.current) scrollerRef.current.scrollLeft = 0;
+            }}
+            className="min-w-[120px] h-9 flex-shrink-0 rounded-full text-[10px] font-black uppercase italic bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 snap-start"
+          >
+            <span>🧹</span> Limpar
           </button>
 
           <button
             onClick={() => fetchList()}
-            className="min-w-[140px] h-12 flex-shrink-0 rounded-full text-xs font-bold bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 snap-start"
+            className="min-w-[120px] h-9 flex-shrink-0 rounded-full text-[10px] font-black uppercase italic bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 snap-start"
           >
             <span>🔄</span> Atualizar
           </button>
