@@ -1833,7 +1833,7 @@ export function LojistaPublicProfilePage() {
 
 
         {activeTab === "avaliacoes" && (
-          <section className="space-y-4">
+          <section id="avaliacoes-section" className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
                 <Star className="w-4 h-4" /> Avaliações & Depoimentos
