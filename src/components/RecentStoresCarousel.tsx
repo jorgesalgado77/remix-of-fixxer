@@ -237,10 +237,13 @@ function RecentStoresCarouselInner() {
   }, [userCoords, kindFilter, page, items, userBranchCtx]);
 
   useEffect(() => {
-    // Resetar quando o filtro mudar (exceto no carregamento inicial se já tivermos itens do cache)
-    setPage(0);
-    setHasMore(true);
-    fetchList();
+    // Resetar quando o filtro mudar apenas se não houver itens (forçar recarga inicial)
+    // Se já tivermos itens, o useMemo cuida do filtro visual instantâneo
+    if (items.length === 0) {
+      setPage(0);
+      setHasMore(true);
+      fetchList();
+    }
   }, [kindFilter]);
 
   const filteredItems = useMemo(() => {
