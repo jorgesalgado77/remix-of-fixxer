@@ -22,6 +22,7 @@ type Row = {
   created_at: string | null;
   lat: number | null;
   lng: number | null;
+  user_type: string | null;
 };
 
 type Kind = "lojista" | "fornecedor";
@@ -102,36 +103,34 @@ function RecentStoresCarouselInner() {
     localStorage.setItem('fixxer_carousel_filter', kindFilter);
   }, [kindFilter]);
 
-  // Capturar localização do usuário logado (Memoized)
-  const [cachedLocation, setCachedLocation] = useState<{ lat: number; lng: number } | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const saved = localStorage.getItem('fixxer_user_coords_v1');
-    return saved ? JSON.parse(saved) : null;
-  });
 
   useEffect(() => {
     const getUserLocation = async () => {
       try {
         const { data: { session } } = await supabaseExternal.auth.getSession();
         if (session?.user) {
-          // Guardamos o ID do usuário logado para evitar que ele apareça no carrossel
           const userId = session.user.id;
           
-          if (!cachedLocation) {
-            const { data: profile } = await supabaseExternal
-              .from("profiles_public")
-              .select("lat, lng")
-              .eq("id", userId)
-              .single();
-            
-            if (profile?.lat && profile?.lng) {
-              const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
-              setUserCoords(coords);
-              setCachedLocation(coords);
-              localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
-            }
+          // Sempre buscamos o perfil do usuário logado para garantir coordenadas frescas
+          // e o ID correto para filtragem
+          const { data: profile, error } = await supabaseExternal
+            .from("profiles_public")
+            .select("lat, lng")
+            .eq("id", userId)
+            .maybeSingle();
+          
+          if (error) {
+            console.warn("[RecentStoresCarousel] Erro ao buscar coordenadas do usuário:", error);
+          }
+          
+          if (profile?.lat && profile?.lng) {
+            const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
+            setUserCoords(coords);
+            localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           } else {
-            setUserCoords(cachedLocation);
+            // Se não tiver no banco, tenta o cache
+            const saved = localStorage.getItem('fixxer_user_coords_v1');
+            if (saved) setUserCoords(JSON.parse(saved));
           }
         }
       } catch (err) {
@@ -139,7 +138,7 @@ function RecentStoresCarouselInner() {
       }
     };
     getUserLocation();
-  }, [cachedLocation]);
+  }, []);
 
   const fetchList = useCallback(async (isMore = false) => {
     const currentPage = isMore ? page + 1 : 0;
@@ -153,6 +152,9 @@ function RecentStoresCarouselInner() {
     }
 
     try {
+      // Limpar cache ao forçar atualização manual
+      if (!isMore) cacheRef.current = {};
+
       if (isMore) setLoadingMore(true);
       else setLoading(true);
       
@@ -160,7 +162,7 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, user_type, business_category, custom_branch, city, state, created_at, lat, lng")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
         .order('created_at', { ascending: false });
 
@@ -177,13 +179,15 @@ function RecentStoresCarouselInner() {
         const currentUserId = session?.user?.id;
 
         // Filtrar Admins e o PRÓPRIO usuário logado
-        const filteredProfiles = profiles.filter((p: any) => 
-          p.role !== 'admin' && p.id !== currentUserId
-        );
+        const filteredProfiles = profiles.filter((p: any) => {
+          const isMe = String(p.id) === String(currentUserId);
+          const isAdmin = String(p.role).toLowerCase() === 'admin' || String(p.user_type).toLowerCase() === 'admin';
+          return !isAdmin && !isMe;
+        });
 
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
-          const roleStr = (r.role || "").toLowerCase();
+          const roleStr = (r.role || r.user_type || "").toLowerCase();
           const kind = roleStr.includes("fornec") ? "fornecedor" : "lojista";
           
           const dist = (userCoords && r.lat && r.lng) 
@@ -192,13 +196,11 @@ function RecentStoresCarouselInner() {
 
           // Lógica de ramo: prioriza custom_branch e evita "Geral"
           let branch = r.custom_branch || r.business_category || "Não Informado";
-          if (branch.toLowerCase() === "geral" && r.custom_branch) {
-            branch = r.custom_branch;
-          } else if (branch.toLowerCase() === "geral") {
-            branch = "Parceiro FIXXER";
+          
+          // Se for lojista e o ramo for genérico, tentamos extrair algo melhor do custom_branch ou business_category
+          if (branch.toLowerCase() === "geral" || branch.toLowerCase() === "não informado") {
+            branch = r.custom_branch || r.business_category || (kind === "lojista" ? "Loja de Móveis" : "Parceiro FIXXER");
           }
-
-
 
           return {
             id: r.id,
@@ -207,6 +209,7 @@ function RecentStoresCarouselInner() {
             company_name: r.company_name,
             avatar_url: r.avatar_url,
             role: r.role,
+            user_type: r.user_type,
             business_category: r.business_category,
             custom_branch: r.custom_branch || null,
             city: r.city,
