@@ -689,7 +689,7 @@ export const CommercialAdModal = memo(function CommercialAdModal({
   const handleGoToFeed = () => {
     onClose();
     resetForm();
-    setTimeout(() => navigate({ to: "/feed/lojista" }).catch(() => {}), 60);
+    setTimeout(() => navigate({ to: "/feed/lojista", search: (old: any) => old } as any).catch(() => {}), 60);
   };
 
   const handleEditAgain = () => {
