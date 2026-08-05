@@ -114,11 +114,11 @@ function RecentStoresCarouselInner() {
           
           const { data: profile, error } = await supabaseExternal
             .from("profiles")
-            .select("lat, lng")
+            .select("lat, lng, city, state")
             .eq("id", userId)
             .maybeSingle();
           
-          if (profile?.lat && profile?.lng) {
+          if (profile && profile.lat !== null && profile.lng !== null) {
             const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
             console.log("[RecentStoresCarousel] User Coords Found:", coords);
             setUserCoords(coords);
@@ -187,10 +187,11 @@ function RecentStoresCarouselInner() {
           const kind = roleStr.includes("fornec") || roleStr.includes("parceiro") ? "fornecedor" : "lojista";
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
-          // Priorizamos custom_branch para o ramo e preferred_service para a segunda linha
+          // Priorizamos custom_branch, depois business_category.
           const branch = r.custom_branch || r.business_category || "Não Informado";
           
-          const dist = (userCoords && r.lat && r.lng) 
+          // Debugging distance: Log inputs for calculation
+          const dist = (userCoords && r.lat !== null && r.lng !== null) 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
 
@@ -202,7 +203,6 @@ function RecentStoresCarouselInner() {
             avatar_url: r.avatar_url,
             role: r.role,
             user_type: r.role,
-
             business_category: r.business_category,
             custom_branch: r.custom_branch || null,
             preferred_service: r.preferred_service || null,
@@ -210,8 +210,8 @@ function RecentStoresCarouselInner() {
             state: r.state,
             rating: 4.5 + Math.random() * 0.5,
             created_at: r.created_at,
-            lat: r.lat ? Number(r.lat) : null,
-            lng: r.lng ? Number(r.lng) : null,
+            lat: r.lat !== null ? Number(r.lat) : null,
+            lng: r.lng !== null ? Number(r.lng) : null,
             _kind: kind as Kind,
             _branch: branch,
             _distance: dist
@@ -481,13 +481,17 @@ function RecentStoresCarouselInner() {
                     <div className="pt-1 flex flex-col gap-1.5">
                       <div className="flex items-center gap-1.5 text-[10px] text-white/50 font-bold uppercase tracking-tight">
                         <MapPin className="w-3 h-3 text-red-500" />
-                        <span className="truncate">
+                        <span className="truncate max-w-[80px]">
                           {p.city || "S/L"}, {p.state || "BR"}
                         </span>
-                        {p._distance !== undefined && (
-                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic">
+                        {p._distance !== undefined ? (
+                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic animate-pulse">
                             <Navigation className="w-2.5 h-2.5 rotate-45" />
                             {p._distance.toFixed(1)} KM
+                          </span>
+                        ) : (
+                          <span className="ml-auto text-white/20 text-[8px] italic uppercase tracking-tighter">
+                            Distância Indisp.
                           </span>
                         )}
                       </div>
