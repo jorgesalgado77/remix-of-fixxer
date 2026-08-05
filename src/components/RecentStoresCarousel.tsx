@@ -496,9 +496,14 @@ function RecentStoresCarouselInner() {
                             <Navigation className="w-2.5 h-2.5 rotate-45" />
                             {p._distance.toFixed(1)} KM
                           </span>
+                        ) : userCoords ? (
+                          <span className="ml-auto text-amber-500/60 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
+                            <Navigation className="w-2.5 h-2.5 opacity-50" />
+                            S/ Coordenadas
+                          </span>
                         ) : (
                           <span className="ml-auto text-white/20 text-[8px] italic uppercase tracking-tighter">
-                            Distância Indisp.
+                            Localização off
                           </span>
                         )}
                       </div>
