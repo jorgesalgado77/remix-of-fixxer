@@ -113,17 +113,18 @@ function RecentStoresCarouselInner() {
           const userId = session.user.id;
           
           const { data: profile, error } = await supabaseExternal
-            .from("profiles")
+            .from("profiles_public")
             .select("lat, lng, city, state")
             .eq("id", userId)
             .maybeSingle();
           
           if (profile && profile.lat !== null && profile.lng !== null) {
             const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
-            console.log("[RecentStoresCarousel] User Coords Found:", coords);
+            console.log("[RecentStoresCarousel] User Coords Found in View:", coords);
             setUserCoords(coords);
             localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           } else {
+            console.warn("[RecentStoresCarousel] User coordinates not found in profiles_public for ID:", userId);
             const saved = localStorage.getItem('fixxer_user_coords_v1');
             if (saved) setUserCoords(JSON.parse(saved));
           }
@@ -188,10 +189,12 @@ function RecentStoresCarouselInner() {
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
           // Priorizamos custom_branch, depois business_category.
-          const branch = r.custom_branch || r.business_category || "Não Informado";
+          const branch = r.custom_branch || r.business_category || (r.role === 'lojista' ? "Lojista" : r.role === 'fornecedor' ? "Fornecedor" : "Não Informado");
           
           // Debugging distance: Log inputs for calculation
-          const dist = (userCoords && r.lat !== null && r.lng !== null) 
+          // Considera 0 como valor válido se vier do banco, mas evita nulos
+          const hasCoords = r.lat !== null && r.lng !== null && userCoords && userCoords.lat !== null && userCoords.lng !== null;
+          const dist = hasCoords 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
 
@@ -225,7 +228,11 @@ function RecentStoresCarouselInner() {
         
         // Ordenar por distância se disponível, senão por data
         const sorted = userCoords 
-          ? [...uniqueItems].sort((a, b) => (a._distance || 9999) - (b._distance || 9999))
+          ? [...uniqueItems].sort((a, b) => {
+              if (a._distance === undefined) return 1;
+              if (b._distance === undefined) return -1;
+              return a._distance - b._distance;
+            })
           : uniqueItems;
 
         // Persistência em cache de memória (opcional) e estado
@@ -489,9 +496,14 @@ function RecentStoresCarouselInner() {
                             <Navigation className="w-2.5 h-2.5 rotate-45" />
                             {p._distance.toFixed(1)} KM
                           </span>
+                        ) : userCoords ? (
+                          <span className="ml-auto text-amber-500/60 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
+                            <Navigation className="w-2.5 h-2.5 opacity-50" />
+                            S/ Coordenadas
+                          </span>
                         ) : (
                           <span className="ml-auto text-white/20 text-[8px] italic uppercase tracking-tighter">
-                            Distância Indisp.
+                            Localização off
                           </span>
                         )}
                       </div>
