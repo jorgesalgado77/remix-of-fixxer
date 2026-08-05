@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Star, MapPin, UserCircle2, RefreshCw, Store, AlertTriangle } from "lucide-react";
+import { Star, MapPin, UserCircle2, RefreshCw, Store, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
@@ -302,8 +302,31 @@ function RecentStoresCarouselInner() {
   return (
     <section
       aria-label="Lojistas e fornecedores recentes"
-      className="bg-[#1A1A1B] border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden"
+      className="bg-[#1A1A1B] border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden group/container"
     >
+      <div className="absolute inset-y-0 left-2 z-10 flex items-center pointer-events-none opacity-0 group-hover/container:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            scrollerRef.current?.scrollBy({ left: -300, behavior: "smooth" });
+          }}
+          className="pointer-events-auto w-10 h-10 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-all shadow-xl backdrop-blur-sm"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="absolute inset-y-0 right-2 z-10 flex items-center pointer-events-none opacity-0 group-hover/container:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            scrollerRef.current?.scrollBy({ left: 300, behavior: "smooth" });
+          }}
+          className="pointer-events-auto w-10 h-10 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-all shadow-xl backdrop-blur-sm"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+      </div>
       <header className="mb-3 md:mb-4 w-full block">
         <h3 className="w-full block font-black italic uppercase text-white text-sm md:text-base tracking-wide leading-tight">
           🏬 Lojistas e Fornecedores Recentes
