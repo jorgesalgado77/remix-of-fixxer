@@ -40,10 +40,28 @@ export async function getCurrentUser(force = false): Promise<User | null> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      const { data } = await supabaseExternal.auth.getUser();
-      cachedUser = data.user ?? null;
+      // Tenta obter a sessão primeiro (mais rápido, geralmente do storage)
+      const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
+      
+      if (sessionError || !session) {
+        cachedUser = null;
+        return null;
+      }
+
+      // Se temos sessão, mas o usuário não está em cache, pegamos o usuário completo
+      const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
+      
+      if (userError || !user) {
+        // Se getUser falhou mas temos sessão válida, pode ser um erro temporário de rede
+        // Retornamos o usuário da sessão como fallback para evitar "deslogamento" falso
+        cachedUser = session.user;
+      } else {
+        cachedUser = user;
+      }
+      
       return cachedUser;
-    } catch {
+    } catch (e) {
+      console.warn("[current-user] Erro ao recuperar identidade:", e);
       cachedUser = null;
       return null;
     } finally {

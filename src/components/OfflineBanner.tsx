@@ -19,8 +19,8 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
  *     reaparece em transições de rota.
  */
 
-const OFFLINE_DEBOUNCE_MS = 4000;
-const PING_TIMEOUT_MS = 6000;
+const OFFLINE_DEBOUNCE_MS = 8000; // Aumentado para 8s para evitar falsos positivos em oscilações rápidas
+const PING_TIMEOUT_MS = 10000; // Aumentado para 10s para conexões lentas (3G/4G)
 
 async function pingBackend(): Promise<boolean> {
   // getSession é local (não faz round-trip). Usamos uma leitura leve
