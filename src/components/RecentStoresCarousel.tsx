@@ -211,7 +211,8 @@ function RecentStoresCarouselInner() {
             company_name: r.company_name,
             avatar_url: r.avatar_url,
             role: r.role,
-            user_type: r.user_type,
+            user_type: r.role, // Fallback para manter compatibilidade com o tipo Card
+
             business_category: r.business_category,
             custom_branch: r.custom_branch || null,
             city: r.city,
