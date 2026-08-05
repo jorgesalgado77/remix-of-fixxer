@@ -1266,7 +1266,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 {/* ─────────────────────────────────────────────────── */}
                 <MetricCard 
                     label="Serviços Criados" 
-                    value={(12 * multiplier + createdBoost).toString()} 
+                    value={loadingStats ? "..." : (realStats.created + createdBoost).toString()} 
                     icon={<Briefcase />} 
                     color="text-blue-400" 
                     bgColor="bg-blue-400/5"
@@ -1274,7 +1274,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 />
                 <MetricCard 
                     label="Serviços Pendentes" 
-                    value={(5 * multiplier).toString()} 
+                    value={loadingStats ? "..." : realStats.pending.toString()} 
                     icon={<Clock />} 
                     color="text-orange-400" 
                     bgColor="bg-orange-400/5"
@@ -1286,18 +1286,18 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                         <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
                             <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
                                 <span className="text-muted-foreground">Aguardando:</span>
-                                <span className="text-white">{(2 * multiplier)}</span>
+                                <span className="text-white">{loadingStats ? "..." : realStats.pending}</span>
                             </div>
                             <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
                                 <span className="text-muted-foreground">Em andamento:</span>
-                                <span className="text-white">{(2 * multiplier)}</span>
+                                <span className="text-white">0</span>
                             </div>
                             <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
                                 <span className="text-muted-foreground">Atrasado:</span>
-                                <span className="text-red-500">{(1 * multiplier)}</span>
+                                <span className="text-red-500">0</span>
                             </div>
                             <div className="mt-1 flex items-center gap-1 text-[7px] font-black italic uppercase">
-                                <span className="text-green-400">↑ 12%</span>
+                                <span className="text-green-400">↑ 0%</span>
                                 <span className="text-muted-foreground/50">vs. semana ant.</span>
                             </div>
                         </div>
@@ -1305,7 +1305,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 />
                 <MetricCard 
                     label="Concluídos" 
-                    value={(7 * multiplier).toString()} 
+                    value={loadingStats ? "..." : realStats.completed.toString()} 
                     icon={<ShieldCheck />} 
                     color="text-primary" 
                     bgColor="bg-primary/5"
@@ -1316,15 +1316,15 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 />
                 <MetricCard 
                     label="Saldo do Período" 
-                    value={`R$ ${(15.2 * multiplier).toFixed(1)}k`} 
+                    value={`R$ 0,00`} 
                     icon={<DollarSign />} 
                     color="text-emerald-400"
                     bgColor="bg-emerald-400/5"
                     onClick={() => handleTabChange('dashboard')}
                     subValue={
                         <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
-                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ {(12.1 * multiplier).toFixed(1)}k</span></span>
-                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Comissões: <span className="text-white">R$ {(3.1 * multiplier).toFixed(1)}k</span></span>
+                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ 0,00</span></span>
+                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Comissões: <span className="text-white">R$ 0,00</span></span>
                         </div>
                     }
                 />
