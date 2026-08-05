@@ -136,8 +136,11 @@ function RecentStoresCarouselInner() {
     } else if (kindFilter !== "all") {
       filtered = items.filter(i => i._kind === kindFilter);
     }
-    return filtered.slice(0, 25); 
+    // Removemos duplicatas por ID apenas por segurança, embora o mapeamento do Supabase deva ser único
+    const unique = Array.from(new Map(filtered.map(item => [item.id, item])).values());
+    return unique.slice(0, 60); // Aumentamos o limite para 60 para garantir que "Todos" mostre tudo o que buscamos
   }, [items, kindFilter, userBranchCtx]);
+
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollerRef.current) return;
