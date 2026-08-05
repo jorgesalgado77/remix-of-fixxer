@@ -1,6 +1,24 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, ChevronRight, Handshake, EyeOff, Eye, Store, Users, Wrench } from "lucide-react";
-import type { CategoryKey } from "@/lib/category-colors";
+import { Sparkles, Handshake, EyeOff, Eye, Store, Users, Wrench, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+import { 
+  getB2BSuggestions, 
+  normalizeBranches, 
+  haversineKm,
+  type B2BCandidate, 
+  type B2BSuggestion 
+} from "@/lib/activity-branches";
+import { useCurrentCategory } from "@/lib/user-category";
+import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
+import { 
+  scoreRelevanceDetailed, 
+  useUserBranchContext, 
+  relevanceRank, 
+  type RelevanceResult 
+} from "@/lib/branch-relevance";
+import { RelevanceBadge } from "@/components/RelevanceBadge";
+import { Button } from "@/components/ui/button";
 
 const DISMISS_KEY_BASE = "fixxer_b2b_suggestions_dismissed_v1";
 
@@ -13,65 +31,35 @@ type Preset = {
 
 const PRESETS: Record<CategoryKey, Preset> = {
   prestador: {
-    title: "Rede de Afiliados B2B",
-    subtitle: "Parcerias sugeridas para o seu ramo",
+    title: "LOJISTAS E FORNECEDORES RECENTES",
+    subtitle: "Conecte-se com lojistas e fornecedores B2B na sua região",
     reshowLabel: "Mostrar Sugestões de Afiliados",
     Icon: Handshake,
   },
   lojista: {
-    title: "Rede de Fornecedores & Parceiros",
-    subtitle: "Parceiros B2B sugeridos para sua loja",
+    title: "PARCEIROS & PRESTADORES RECENTES",
+    subtitle: "Conecte-se com parceiros B2B e prestadores na sua região",
     reshowLabel: "Mostrar Sugestões de Parceiros",
     Icon: Store,
   },
   fornecedor: {
-    title: "Rede de Revendas & Lojistas",
-    subtitle: "Lojistas parceiros sugeridos para você",
+    title: "REDES DE REVENDA & LOJISTAS",
+    subtitle: "Lojistas parceiros sugeridos para o seu ramo",
     reshowLabel: "Mostrar Sugestões de Revendas",
     Icon: Handshake,
   },
   cliente: {
-    title: "Serviços Recomendados",
+    title: "SERVIÇOS RECOMENDADOS",
     subtitle: "Prestadores e lojas próximos ao seu perfil",
     reshowLabel: "Mostrar Serviços Recomendados",
     Icon: Wrench,
   },
   admin: {
-    title: "Rede de Afiliados B2B",
+    title: "REDE GLOBAL FIXXER",
     subtitle: "Parcerias sugeridas na plataforma",
     reshowLabel: "Mostrar Sugestões",
     Icon: Users,
   },
-};
-
-const FALLBACK_SUGGESTIONS: Record<CategoryKey, B2BSuggestion[]> = {
-  lojista: [
-    { title: "Fornecedores de Peças & Acessórios", hint: "Amplie seu catálogo com parceiros B2B", icon: "🔧" },
-    { title: "Prestadores de Instalação", hint: "Ofereça serviço completo aos clientes", icon: "🛠️" },
-    { title: "Logística & Entrega", hint: "Parceiros para agilizar suas entregas", icon: "🚚" },
-    { title: "Marketing & Divulgação", hint: "Aumente a visibilidade da sua loja", icon: "📣" },
-  ],
-  prestador: [
-    { title: "Lojistas do seu Ramo", hint: "Encontre lojas que precisam do seu serviço", icon: "🏬" },
-    { title: "Fornecedores de Insumos", hint: "Materiais e ferramentas com desconto B2B", icon: "📦" },
-    { title: "Parcerias entre Prestadores", hint: "Complete serviços com outros profissionais", icon: "🤝" },
-    { title: "Clientes Corporativos", hint: "Contratos recorrentes na sua região", icon: "🏢" },
-  ],
-  fornecedor: [
-    { title: "Lojistas Revendedores", hint: "Amplie sua rede de distribuição", icon: "🏬" },
-    { title: "Prestadores Parceiros", hint: "Ofereça produtos + serviço", icon: "🛠️" },
-    { title: "Distribuidores Regionais", hint: "Cobertura ampliada na sua área", icon: "🚚" },
-    { title: "Clientes Corporativos", hint: "Vendas em escala B2B", icon: "🏢" },
-  ],
-  cliente: [
-    { title: "Prestadores Próximos", hint: "Profissionais avaliados na sua região", icon: "🛠️" },
-    { title: "Lojas Recomendadas", hint: "Produtos e serviços da sua área", icon: "🏬" },
-    { title: "Serviços Emergenciais", hint: "Atendimento rápido quando precisar", icon: "⚡" },
-    { title: "Ofertas & Promoções", hint: "Descontos exclusivos para você", icon: "🎁" },
-  ],
-  admin: [
-    { title: "Sugestões da Plataforma", hint: "Parceiros em destaque no FIXXER", icon: "✨" },
-  ],
 };
 
 function keyFor(cat: CategoryKey) {
@@ -81,10 +69,8 @@ function keyFor(cat: CategoryKey) {
 function readDismissed(cat: CategoryKey): boolean {
   if (typeof window === "undefined") return true;
   try {
-    // Padrão: RECOLHIDO. Só considera expandido quando o usuário
-    // clicou explicitamente em "Mostrar Sugestões" (grava "0").
     const raw = window.localStorage.getItem(keyFor(cat));
-    if (raw === null) return true;
+    if (raw === null) return false; // Default para expandido agora
     return raw !== "0";
   } catch {
     return true;
@@ -93,249 +79,136 @@ function readDismissed(cat: CategoryKey): boolean {
 
 function writeDismissed(cat: CategoryKey, v: boolean) {
   try {
-    // "1" = oculto, "0" = usuário expandiu explicitamente (persiste entre sessões).
     window.localStorage.setItem(keyFor(cat), v ? "1" : "0");
-    window.dispatchEvent(
-      new CustomEvent("fixxer:b2b-suggestions-visibility", { detail: { dismissed: v, category: cat } }),
-    );
-  } catch {
-    /* noop */
-  }
+  } catch { /* noop */ }
 }
 
-import { useNavigate } from "@tanstack/react-router";
-import { supabaseExternal } from "@/lib/supabaseExternal";
-import {
-  ACTIVITY_MATRIX,
-  getB2BSuggestions,
-  normalizeBranches,
-  type B2BCandidate,
-  type B2BSuggestion,
-} from "@/lib/activity-branches";
-import { useCurrentCategory } from "@/lib/user-category";
-import { getCategoryTheme } from "@/lib/category-colors";
-import {
-  scoreRelevanceDetailed,
-  useUserBranchContext,
-  relevanceRank,
-  type BranchContext,
-  type RelevanceResult,
-} from "@/lib/branch-relevance";
-import { RelevanceBadge } from "@/components/RelevanceBadge";
-
-const DEFAULT_RADIUS_KM = 25;
-
-function readRadius(): number {
-  if (typeof window === "undefined") return DEFAULT_RADIUS_KM;
-  const v = Number(window.localStorage.getItem("fixxer_radius_km"));
-  return Number.isFinite(v) && v > 0 ? v : DEFAULT_RADIUS_KM;
-}
-
-/**
- * Sugestões derivadas do próprio ramo do usuário: ramos e subcategorias
- * irmãs dentro das macro-categorias em que ele atua. Usado apenas quando
- * não existem parceiros reais suficientes no raio.
- */
-function branchFallback(ctx: BranchContext): B2BSuggestion[] {
-  if (ctx.macroIds.size === 0) return [];
-  const out: B2BSuggestion[] = [];
-  for (const macro of ACTIVITY_MATRIX) {
-    if (!ctx.macroIds.has(macro.id)) continue;
-    for (const b of macro.branches) {
-      if (b.label.startsWith("📝")) continue;
-      const key = b.label.trim().toLowerCase();
-      if (ctx.branchKeys.has(key)) continue;
-      out.push({
-        icon: macro.icon,
-        title: b.label,
-        hint: `Buscar parceiros em ${macro.label.split(",")[0]}`,
-        targetBranch: b.label,
-      });
-    }
-  }
-  return out;
-}
-
-
-/**
- * Card compacto que sugere parcerias B2B cruzadas com base nos ramos
- * salvos no perfil do usuário (incluindo ramos customizados). Filtra
- * candidatos reais pelo raio de atuação e reordena por recência.
- */
 function B2BSuggestionsCardInner() {
   const navigate = useNavigate();
   const category = useCurrentCategory();
-
-  const preset = PRESETS[category] ?? PRESETS.prestador;
   const branchCtx = useUserBranchContext();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
   const [suggestions, setSuggestions] = useState<B2BSuggestion[]>([]);
   const [dismissed, setDismissed] = useState<boolean>(() => readDismissed(category));
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
   const theme = getCategoryTheme(category);
-  const scrollbarColor = theme.hex; // Cor da barra de rolagem baseada no tema da categoria
+  const preset = PRESETS[category] || PRESETS.prestador;
 
-  const branchesRef = useRef<string[]>([]);
-  const userLocRef = useRef<{ lat: number; lng: number } | null>(null);
-  const candidatesRef = useRef<B2BCandidate[]>([]);
-
-  const recompute = useCallback(() => {
-    const radiusKm = readRadius();
-    const list = getB2BSuggestions(branchesRef.current, {
-      radiusKm: null, // Remove filtro de raio rigoroso para garantir que parceiros reais apareçam mesmo distantes
-      userLocation: userLocRef.current,
-      candidates: candidatesRef.current,
-    }).slice(0, 24);
-    setSuggestions(list);
+  const handleScroll = useCallback(() => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+    }
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: auth } = await supabaseExternal.auth.getUser();
-        const uid = auth?.user?.id;
-        if (!uid) return;
-        const { data: p } = await supabaseExternal
-          .from("profiles")
-          .select("business_category, custom_branch, lat, lng, service_radius_km")
-          .eq("id", uid)
-          .maybeSingle();
-        if (cancelled) return;
-        branchesRef.current = normalizeBranches(p ?? undefined);
-        if (p?.lat != null && p?.lng != null) {
-          userLocRef.current = { lat: Number(p.lat), lng: Number(p.lng) };
-        }
-        // Candidatos reais: perfis com ramo preenchido (geo é opcional).
-        try {
-          const { data: cands } = await supabaseExternal
-            .from("profiles")
-            .select("id, display_name, company_name, full_name, business_category, avatar_url, logo_url, lat, lng, updated_at")
-
-            .not("business_category", "is", null)
-            .neq("id", uid)
-            .order("updated_at", { ascending: false })
-            .limit(500); // Aumentado o limite para varrer mais usuários reais
-          if (!cancelled && Array.isArray(cands)) {
-            const flat: B2BCandidate[] = [];
-            for (const row of cands as any[]) {
-              const branches = String(row.business_category ?? "")
-                .split(",")
-                .map((s: string) => s.trim())
-                .filter(Boolean);
-              const name =
-                row.display_name || row.company_name || row.full_name || "Parceiro FIXXER";
-              const avatar = row.avatar_url || row.logo_url;
-              for (const br of branches) {
-                flat.push({
-                  title: `${name} — ${br}`,
-                  targetBranch: br,
-                  lat: row.lat,
-                  lng: row.lng,
-                  updatedAt: row.updated_at,
-                  userId: row.id,
-                  avatarUrl: avatar,
-                });
-              }
-            }
-            candidatesRef.current = flat;
-          }
-        } catch {
-          /* sem candidatos reais — usa fallback do próprio ramo */
-        }
-        if (!cancelled) recompute();
-      } catch {
-        /* silencioso — sem sugestões */
-      }
-    })();
-
-
-
-    const onRadiusChange = () => recompute();
-    if (typeof window !== "undefined") {
-      window.addEventListener("fixxer:radius-change", onRadiusChange);
+    const el = scrollRef.current;
+    if (el) {
+      el.addEventListener("scroll", handleScroll);
+      handleScroll();
+      // Observer para mudanças de conteúdo (carregamento das fotos)
+      const observer = new ResizeObserver(handleScroll);
+      observer.observe(el);
+      return () => {
+        el.removeEventListener("scroll", handleScroll);
+        observer.disconnect();
+      };
     }
-    return () => {
-      cancelled = true;
-      if (typeof window !== "undefined") {
-        window.removeEventListener("fixxer:radius-change", onRadiusChange);
-      }
-    };
-  }, [recompute]);
+  }, [suggestions, handleScroll]);
 
-  // Prioridade: parceiros REAIS relacionados ao ramo do usuário; depois
-  // ramos/subcategorias irmãs da(s) macro(s) dele; por último, presets fixos.
-  const displaySuggestions = useMemo(() => {
-    const score = (s: B2BSuggestion) => ({
-      s,
-      rel: s.targetBranch
-        ? scoreRelevanceDetailed([s.targetBranch], branchCtx)
-        : ({ level: "none", matchedBranch: null, reason: null } as RelevanceResult),
-    });
-
-    const real = suggestions
-      .filter((s) => !!s.userId)
-      .map(score)
-      .sort((a, b) => relevanceRank(a.rel.level) - relevanceRank(b.rel.level));
-
-    const out = [...real];
-    const seenTitles = new Set(out.map((x) => x.s.title.toLowerCase()));
-
-    const fallbackItems = [
-      ...branchFallback(branchCtx),
-      ...suggestions.filter((x) => !x.userId),
-      ...(FALLBACK_SUGGESTIONS[category] ?? FALLBACK_SUGGESTIONS.prestador),
-    ];
-
-    for (const s of fallbackItems) {
-      if (out.length >= 12) break;
-      const titleLower = s.title.toLowerCase();
-      if (seenTitles.has(titleLower)) continue;
-      seenTitles.add(titleLower);
-      out.push(score(s));
+  const scroll = (dir: "left" | "right") => {
+    if (scrollRef.current) {
+      const amount = scrollRef.current.clientWidth * 0.8;
+      scrollRef.current.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
     }
-    
-    return out;
-  }, [suggestions, branchCtx, category]);
+  };
 
-  const openSuggestion = useCallback(
-    (s: B2BSuggestion) => {
-      if (s.userId) {
-        navigate({ to: "/perfil/$userId", params: { userId: s.userId } as any } as any);
-        return;
+  const loadRealData = useCallback(async () => {
+    try {
+      const { data: auth } = await supabaseExternal.auth.getUser();
+      const uid = auth?.user?.id;
+      if (!uid) return;
+
+      const { data: userProfile } = await supabaseExternal
+        .from("profiles")
+        .select("lat, lng, business_category, custom_branch")
+        .eq("id", uid)
+        .maybeSingle();
+
+      const userBranches = normalizeBranches(userProfile);
+      const userLoc = userProfile?.lat != null ? { lat: userProfile.lat, lng: userProfile.lng } : null;
+
+      // Busca usuários REAIS que NÃO sejam o logado
+      const { data: cands, error } = await supabaseExternal
+        .from("profiles")
+        .select(`
+          id, 
+          display_name, 
+          company_name, 
+          full_name, 
+          business_category, 
+          custom_branch,
+          avatar_url, 
+          logo_url, 
+          lat, 
+          lng, 
+          city,
+          state,
+          updated_at
+        `)
+        .neq("id", uid)
+        .not("business_category", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+
+      if (cands) {
+        const list: B2BSuggestion[] = cands.map((c: any) => {
+          const branches = normalizeBranches(c);
+          const name = c.display_name || c.company_name || c.full_name || "Membro FIXXER";
+          const dist = userLoc && c.lat != null ? haversineKm(userLoc, { lat: c.lat, lng: c.lng }) : null;
+          
+          return {
+            userId: c.id,
+            title: name,
+            icon: "👤",
+            avatarUrl: c.avatar_url || c.logo_url,
+            hint: `${branches[0] || "Profissional"} • ${c.city || "Região"}`,
+            targetBranch: branches[0],
+            _relevance: scoreRelevanceDetailed(branches, branchCtx),
+            _dist: dist
+          } as any;
+        });
+
+        // Ordena por relevância e depois por distância
+        const sorted = list.sort((a: any, b: any) => {
+          const rankA = relevanceRank(a._relevance.level);
+          const rankB = relevanceRank(b._relevance.level);
+          if (rankA !== rankB) return rankA - rankB;
+          return (a._dist ?? 9999) - (b._dist ?? 9999);
+        });
+
+        setSuggestions(sorted.slice(0, 25));
       }
-      const term = (s.targetBranch || s.title).trim();
-      if (!term) return;
-      const feed =
-        category === "lojista"
-          ? "/feed/lojista"
-          : category === "fornecedor"
-          ? "/feed/parceiro"
-          : category === "cliente"
-          ? "/feed/cliente"
-          : "/feed/prestador";
-      navigate({ to: feed as any, search: (old: any) => old } as any);
-      setTimeout(() => {
-        window.dispatchEvent(
-          new CustomEvent("fixxer:universal-search", { detail: { query: term } }),
-        );
-      }, 120);
-    },
-    [navigate, category],
-  );
+    } catch (err) {
+      console.error("Erro ao carregar sugestões B2B reais:", err);
+    }
+  }, [branchCtx]);
 
+  useEffect(() => {
+    loadRealData();
+  }, [loadRealData]);
 
-  // Estado OCULTO: mostra chip discreto para reexibir.
   if (dismissed) {
-    const PresetIcon = preset.Icon;
     return (
       <button
-        type="button"
-        onClick={() => {
-          setDismissed(false);
-          writeDismissed(category, false);
-        }}
+        onClick={() => { setDismissed(false); writeDismissed(category, false); }}
         className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors"
-        aria-label={preset.reshowLabel}
-        title={preset.reshowLabel}
       >
         <Eye className="w-3.5 h-3.5" style={{ color: theme.hex }} />
         {preset.reshowLabel}
@@ -343,85 +216,115 @@ function B2BSuggestionsCardInner() {
     );
   }
 
-  const PresetIcon = preset.Icon;
-
   return (
     <div
-      className="rounded-2xl p-3 space-y-2 border"
+      className="rounded-2xl p-4 space-y-4 border relative group/container"
       style={{
         borderColor: `${theme.hex}33`,
         background: `linear-gradient(135deg, ${theme.hex}0F, transparent 70%)`,
       }}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
             style={{ backgroundColor: `${theme.hex}22`, color: theme.hex }}
           >
-            <PresetIcon className="w-4 h-4" />
+            <preset.Icon className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-tight truncate">
+            <h3 className="text-[12px] font-black uppercase tracking-tight text-white/90">
               {preset.title}
-            </p>
-            <p className="text-[9px] text-white/50 truncate">
+            </h3>
+            <p className="text-[9px] text-white/40 uppercase font-bold tracking-wider">
               {preset.subtitle}
             </p>
           </div>
         </div>
         <button
-          onClick={() => {
-            setDismissed(true);
-            writeDismissed(category, true);
-          }}
-          className="flex items-center gap-1 text-[9px] font-black uppercase text-white/40 hover:text-white/70 shrink-0"
-          aria-label="Ocultar sugestões (pode reexibir depois)"
-          title="Ocultar — você pode reexibir a qualquer momento"
+          onClick={() => { setDismissed(true); writeDismissed(category, true); }}
+          className="p-2 rounded-lg hover:bg-white/5 text-white/30 hover:text-white/60 transition-colors"
+          title="Ocultar esta seção"
         >
-          <EyeOff className="w-3 h-3" />
-          Ocultar
+          <EyeOff className="w-3.5 h-3.5" />
         </button>
-
       </div>
 
-      <div 
-        className="overflow-x-auto pb-4 scrollbar-thin snap-x snap-mandatory flex"
-        style={{
-          scrollbarColor: `${scrollbarColor}66 transparent`,
-        }}
-      >
+      <div className="relative">
+        {/* Navegação Horizontal */}
+        {canScrollLeft && (
+          <button 
+            onClick={() => scroll("left")}
+            className="absolute left-[-12px] top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-primary/50 transition-all shadow-xl backdrop-blur-md"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+        
+        {canScrollRight && (
+          <button 
+            onClick={() => scroll("right")}
+            className="absolute right-[-12px] top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-primary/50 transition-all shadow-xl backdrop-blur-md"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        )}
 
-        <div className="flex gap-2 min-w-max">
-          {displaySuggestions.map(({ s, rel }) => (
-            <button
-              key={s.userId ? `real-${s.userId}` : `static-${s.title}`}
-              type="button"
-              onClick={() => openSuggestion(s)}
-              title={s.userId ? "Abrir perfil do parceiro" : `Buscar: ${s.targetBranch || s.title}`}
-              className="w-[240px] md:w-[280px] snap-start text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors shrink-0 group/card"
-            >
-              <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 flex items-center justify-center shrink-0 group-hover/card:border-primary/30 transition-colors">
-                {s.avatarUrl ? (
-                  <img src={s.avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-lg">{s.icon}</span>
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-[11px] font-bold text-white truncate flex-1">{s.title}</p>
-                  <RelevanceBadge result={rel} compact />
+        <div 
+          ref={scrollRef}
+          className="flex gap-3 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scroll-smooth no-scrollbar"
+        >
+          {suggestions.length > 0 ? (
+            suggestions.map((s: any) => (
+              <div 
+                key={s.userId}
+                onClick={() => navigate({ to: "/perfil/$userId", params: { userId: s.userId } } as any)}
+                className="w-[260px] flex-shrink-0 snap-start bg-[#141415] border border-white/5 rounded-2xl overflow-hidden hover:border-primary/30 hover:bg-white/[0.04] transition-all cursor-pointer group/card shadow-xl"
+              >
+                <div className="aspect-[16/9] relative overflow-hidden bg-black/40">
+                  {s.avatarUrl ? (
+                    <img src={s.avatarUrl} alt={s.title} className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-500" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/10">
+                      <Users className="w-12 h-12" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2">
+                    <RelevanceBadge result={s._relevance} compact />
+                  </div>
+                  {s._dist !== null && (
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-white/80 uppercase">
+                      {s._dist < 1 ? "< 1 km" : `${Math.round(s._dist)} km`}
+                    </div>
+                  )}
                 </div>
-                <p className="text-[9px] text-white/50 truncate flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5" style={{ color: theme.hex }} />
-                  {s.hint}
-                </p>
+
+                <div className="p-3">
+                  <h4 className="text-[11px] font-black text-white uppercase truncate mb-0.5">
+                    {s.title}
+                  </h4>
+                  <div className="flex items-center gap-1.5 text-[9px] text-white/40 font-bold uppercase truncate">
+                    <MapPin className="w-2.5 h-2.5 text-primary" />
+                    {s.hint}
+                  </div>
+                  
+                  <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded-md bg-primary/10 text-[8px] font-black text-primary uppercase tracking-wider">
+                      Disponível
+                    </span>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] font-black text-white/40 group-hover/card:text-primary transition-colors">
+                      Ver Perfil
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0" />
-            </button>
-          ))}
+            ))
+          ) : (
+            <div className="w-full py-10 flex flex-col items-center justify-center text-center opacity-30">
+              <Sparkles className="w-8 h-8 mb-2" />
+              <p className="text-[10px] font-black uppercase italic tracking-widest">Buscando novos parceiros reais...</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -429,5 +332,3 @@ function B2BSuggestionsCardInner() {
 }
 
 export const B2BSuggestionsCard = memo(B2BSuggestionsCardInner);
-
-
