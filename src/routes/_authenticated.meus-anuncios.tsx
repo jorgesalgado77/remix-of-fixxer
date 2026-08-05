@@ -854,7 +854,7 @@ function AdCard({
 
         <div className="flex items-center gap-2 pt-2 mt-auto flex-wrap">
           <Link
-            to="/feed/lojista" search={{}}
+            to="/feed/lojista" search={{ urgency: 'todos', distance: 'todos', tag: '' }}
             className="h-9 px-3 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:text-white text-[11px] font-bold uppercase inline-flex items-center gap-1.5"
           >
             <Eye className="w-3.5 h-3.5" /> Ver no Feed
