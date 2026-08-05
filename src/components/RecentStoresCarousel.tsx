@@ -112,24 +112,18 @@ function RecentStoresCarouselInner() {
         if (session?.user) {
           const userId = session.user.id;
           
-          // Sempre buscamos o perfil do usuário logado para garantir coordenadas frescas
-          // e o ID correto para filtragem
           const { data: profile, error } = await supabaseExternal
-            .from("profiles_public")
+            .from("profiles")
             .select("lat, lng")
             .eq("id", userId)
             .maybeSingle();
           
-          if (error) {
-            console.warn("[RecentStoresCarousel] Erro ao buscar coordenadas do usuário:", error);
-          }
-          
           if (profile?.lat && profile?.lng) {
             const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
+            console.log("[RecentStoresCarousel] User Coords Found:", coords);
             setUserCoords(coords);
             localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           } else {
-            // Se não tiver no banco, tenta o cache
             const saved = localStorage.getItem('fixxer_user_coords_v1');
             if (saved) setUserCoords(JSON.parse(saved));
           }
@@ -192,18 +186,13 @@ function RecentStoresCarouselInner() {
           const roleStr = (r.role || "").toLowerCase();
           const kind = roleStr.includes("fornec") || roleStr.includes("parceiro") ? "fornecedor" : "lojista";
 
+          // Corrigindo a exibição do ramo e dos serviços preferenciais
+          // Priorizamos custom_branch para o ramo e preferred_service para a segunda linha
+          const branch = r.custom_branch || r.business_category || "Não Informado";
           
           const dist = (userCoords && r.lat && r.lng) 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
-
-          // Lógica de ramo: prioriza custom_branch e evita "Geral"
-          let branch = r.custom_branch || r.business_category || "Não Informado";
-          
-          // Se for lojista e o ramo for genérico, tentamos extrair algo melhor do custom_branch ou business_category
-          if (branch.toLowerCase() === "geral" || branch.toLowerCase() === "não informado") {
-            branch = r.custom_branch || r.business_category || (kind === "lojista" ? "Loja de Móveis" : "Parceiro FIXXER");
-          }
 
           return {
             id: r.id,
@@ -212,7 +201,7 @@ function RecentStoresCarouselInner() {
             company_name: r.company_name,
             avatar_url: r.avatar_url,
             role: r.role,
-            user_type: r.role, // Fallback para manter compatibilidade com o tipo Card
+            user_type: r.role,
 
             business_category: r.business_category,
             custom_branch: r.custom_branch || null,
@@ -496,7 +485,8 @@ function RecentStoresCarouselInner() {
                           {p.city || "S/L"}, {p.state || "BR"}
                         </span>
                         {p._distance !== undefined && (
-                          <span className="ml-auto text-[#00FF88] font-black italic">
+                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic">
+                            <Navigation className="w-2.5 h-2.5 rotate-45" />
                             {p._distance.toFixed(1)} KM
                           </span>
                         )}
