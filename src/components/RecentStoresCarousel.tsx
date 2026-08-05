@@ -178,8 +178,9 @@ function RecentStoresCarouselInner() {
 
         // Filtrar Admins e o PRÓPRIO usuário logado
         const filteredProfiles = profiles.filter((p: any) => 
-          p.role !== 'admin' && p.id !== currentUserId
+          p.role !== 'admin'
         );
+
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
           const roleStr = (r.role || "").toLowerCase();
