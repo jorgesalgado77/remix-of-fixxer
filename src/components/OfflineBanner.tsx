@@ -61,13 +61,22 @@ export function OfflineBanner() {
   };
 
   const confirmAndSetOffline = useCallback(() => {
+    // Se o navegador já diz que está online, não fazemos nada.
+    if (typeof navigator !== "undefined" && navigator.onLine) {
+      clearDebounce();
+      setOnline(true);
+      return;
+    }
+
     clearDebounce();
     debounceRef.current = window.setTimeout(async () => {
-      // Se o navegador voltou a reportar online nesse meio-tempo, aborta.
+      // Re-checa navigator.onLine após o debounce longo
       if (typeof navigator !== "undefined" && navigator.onLine) {
-        const ok = await pingBackend();
-        if (ok) { setOnline(true); return; }
+        setOnline(true);
+        return;
       }
+
+      // Se navigator diz offline, fazemos UM ping final para ter certeza absoluta
       const ok = await pingBackend();
       if (ok) {
         setOnline(true);
