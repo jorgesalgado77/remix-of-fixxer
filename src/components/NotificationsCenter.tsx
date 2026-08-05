@@ -105,7 +105,7 @@ export function NotificationsCenter() {
     <div ref={panelRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10"
+        className="relative w-9 h-9 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center hover:bg-primary/30 text-primary shadow-[0_0_10px_rgba(0,255,135,0.2)] active:scale-95 transition-all"
         aria-label="Central de notificações"
         aria-expanded={open}
         title="Notificações"
