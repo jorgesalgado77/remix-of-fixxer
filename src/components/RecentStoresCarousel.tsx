@@ -114,24 +114,28 @@ function RecentStoresCarouselInner() {
       try {
         const { data: { session } } = await supabaseExternal.auth.getSession();
         if (session?.user) {
-          // Guardamos o ID do usuário logado para evitar que ele apareça no carrossel
           const userId = session.user.id;
           
-          if (!cachedLocation) {
-            const { data: profile } = await supabaseExternal
-              .from("profiles_public")
-              .select("lat, lng")
-              .eq("id", userId)
-              .single();
-            
-            if (profile?.lat && profile?.lng) {
-              const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
-              setUserCoords(coords);
-              setCachedLocation(coords);
-              localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
-            }
+          // Sempre buscamos o perfil do usuário logado para garantir coordenadas frescas
+          // e o ID correto para filtragem
+          const { data: profile, error } = await supabaseExternal
+            .from("profiles_public")
+            .select("lat, lng")
+            .eq("id", userId)
+            .maybeSingle();
+          
+          if (error) {
+            console.warn("[RecentStoresCarousel] Erro ao buscar coordenadas do usuário:", error);
+          }
+          
+          if (profile?.lat && profile?.lng) {
+            const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
+            setUserCoords(coords);
+            localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           } else {
-            setUserCoords(cachedLocation);
+            // Se não tiver no banco, tenta o cache
+            const saved = localStorage.getItem('fixxer_user_coords_v1');
+            if (saved) setUserCoords(JSON.parse(saved));
           }
         }
       } catch (err) {
@@ -139,7 +143,7 @@ function RecentStoresCarouselInner() {
       }
     };
     getUserLocation();
-  }, [cachedLocation]);
+  }, []);
 
   const fetchList = useCallback(async (isMore = false) => {
     const currentPage = isMore ? page + 1 : 0;
