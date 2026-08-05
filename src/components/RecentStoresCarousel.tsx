@@ -2,13 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Star, MapPin, UserCircle2, RefreshCw, Store, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
-import { useUserCoords } from "@/lib/geo-distance";
-import { haversineKm } from "@/lib/activity-branches";
-import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { primePublicProfileCategory, type PublicProfileCategory } from "@/lib/public-profile-category";
-import { scoreRelevanceDetailed, useUserBranchContext, relevanceRank, type RelevanceResult } from "@/lib/branch-relevance";
-import { RelevanceBadge } from "@/components/RelevanceBadge";
+import { primePublicProfileCategory } from "@/lib/public-profile-category";
 
 type Row = {
   id: string;
@@ -30,14 +25,9 @@ type Row = {
 type Kind = "lojista" | "fornecedor";
 type Card = Row & { _kind: Kind; _branch: string | null };
 
-function safeStr(v: unknown): string | null {
-  if (v == null) return null;
-  const s = String(v).trim();
-  return !s || s === "null" || s === "undefined" ? null : s;
-}
-
 const LOJISTA_COLOR = CATEGORY_COLORS.lojista;
 const FORNECEDOR_COLOR = CATEGORY_COLORS.fornecedor;
+
 
 const KIND_META: Record<Kind, { emoji: string; label: string; color: string; borderStyle: React.CSSProperties; gradient: string }> = {
   lojista: {
