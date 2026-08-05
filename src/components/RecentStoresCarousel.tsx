@@ -152,6 +152,9 @@ function RecentStoresCarouselInner() {
     }
 
     try {
+      // Limpar cache ao forçar atualização manual
+      if (!isMore) cacheRef.current = {};
+
       if (isMore) setLoadingMore(true);
       else setLoading(true);
       
