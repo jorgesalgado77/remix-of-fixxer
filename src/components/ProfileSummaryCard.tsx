@@ -148,8 +148,8 @@ export function ProfileSummaryCard({
       aria-label="Resumo do meu perfil"
       className={`${wrapperVariantClass} ${className}`.trim()}
     >
-      <div className="relative isolate">
-        <div className="absolute top-4 right-4 z-30">
+      <div className="relative isolate group">
+        <div className="absolute top-4 right-4 z-[40]">
           <NotificationsCenter />
         </div>
         

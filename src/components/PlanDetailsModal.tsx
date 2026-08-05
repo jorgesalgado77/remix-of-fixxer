@@ -54,10 +54,10 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
   const monthlyEquivalent = billing === "yearly" && targetCfg ? targetCfg.priceYearlyBRL / 12 : null;
 
   return (
-    <div className="fixed inset-0 z-[105] bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[105] bg-black/95 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div
-        className="w-full sm:max-w-3xl bg-[#141416] border border-white/10 sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col relative"
-        style={{ maxHeight: "100dvh", height: "auto" }}
+        className="w-full sm:max-w-3xl bg-[#0a0a0b] border border-white/10 sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col relative"
+        style={{ maxHeight: "calc(100dvh - 20px)", height: "auto" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 border-b border-white/10 flex items-center justify-between bg-gradient-to-br from-amber-500/10 to-transparent">
@@ -154,7 +154,7 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
           )}
         </div>
 
-        <div className="p-4 border-t border-white/10 bg-[#0f0f11] sticky bottom-0 z-20">
+        <div className="p-4 sm:p-5 border-t border-white/10 bg-[#0a0a0b] sticky bottom-0 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
           <button
             onClick={handleUpgrade}
             disabled={processing || !targetCfg || targetCfg.id === currentPlan}
