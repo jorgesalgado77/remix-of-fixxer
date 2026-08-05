@@ -361,6 +361,11 @@ function RecentStoresCarouselInner() {
             ref={scrollerRef} 
             onScroll={handleScroll}
             className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide scroll-smooth touch-pan-x no-scrollbar"
+            style={{ 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none', 
+              WebkitOverflowScrolling: 'touch'
+            }}
           >
 
             {filteredItems.map((p) => {
