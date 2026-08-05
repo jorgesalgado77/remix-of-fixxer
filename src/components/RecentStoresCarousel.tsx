@@ -114,11 +114,11 @@ function RecentStoresCarouselInner() {
           
           const { data: profile, error } = await supabaseExternal
             .from("profiles")
-            .select("lat, lng")
+            .select("lat, lng, city, state")
             .eq("id", userId)
             .maybeSingle();
           
-          if (profile?.lat && profile?.lng) {
+          if (profile && profile.lat !== null && profile.lng !== null) {
             const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
             console.log("[RecentStoresCarousel] User Coords Found:", coords);
             setUserCoords(coords);
