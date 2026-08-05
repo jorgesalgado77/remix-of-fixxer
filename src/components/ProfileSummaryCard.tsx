@@ -151,13 +151,17 @@ export function ProfileSummaryCard({
         <div className="absolute top-4 right-4 z-20 pointer-events-auto">
           <NotificationsCenter />
         </div>
+        <div
+          aria-label="Meu perfil"
+          className="block rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.6)]"
+        >
+
         <Link
           to={profileHref}
-          aria-label="Abrir meu perfil público"
-          className="block rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.6)] hover:border-primary/40 transition-all"
+          className="flex items-start gap-3 hover:opacity-80 transition-opacity"
         >
-        <div className="flex items-start gap-3">
           <div className="relative shrink-0">
+
             <div className="w-14 h-14 rounded-full border-2 border-primary/50 overflow-hidden bg-white/5 flex items-center justify-center">
               {avatar ? (
                 <img
@@ -187,7 +191,8 @@ export function ProfileSummaryCard({
               </div>
             )}
           </div>
-        </div>
+        </Link>
+
 
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Link
@@ -228,7 +233,8 @@ export function ProfileSummaryCard({
                 className="!px-2 !py-0.5 !text-[9px]"
               />
             </div>
-          </Link>
+        </div>
+
         </div>
 
         {isGold ? (
