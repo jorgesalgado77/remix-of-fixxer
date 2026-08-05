@@ -504,18 +504,27 @@ export function getB2BSuggestions(
 
   if (!candidates || candidates.length === 0) return staticList;
 
+  // 1) Descobre os ramos-alvo ideais (baseados no dicionário estático de parcerias do ramo do usuário)
   const targets = new Set(
     staticList.map((s) => (s.targetBranch || "").toLowerCase()).filter(Boolean),
   );
+
   const scored = candidates
     .map((c) => {
       const d = loc && c.lat != null && c.lng != null
         ? haversineKm(loc, { lat: c.lat, lng: c.lng })
         : Number.POSITIVE_INFINITY;
+
+      // Ranking:
+      // - 0: Match exato de ramo-alvo (procurado pelo usuário)
+      // - 1: Qualquer outro parceiro real (para não sumir do feed se não houver match de dicionário)
       const inTargets = targets.has((c.targetBranch || "").toLowerCase()) ? 0 : 1;
+
       return { c, d, inTargets, t: c.updatedAt ? new Date(c.updatedAt).getTime() : 0 };
     })
+    // Filtro de raio opcional (se radiusKm for nulo, mostra todos)
     .filter((x) => (radiusKm && Number.isFinite(x.d) ? x.d <= radiusKm : true))
+    // Priorização: Match de dicionário -> Data de atualização (mais recentes) -> Distância
     .sort((a, b) => (a.inTargets - b.inTargets) || (b.t - a.t) || (a.d - b.d));
 
   const dynList: B2BSuggestion[] = scored.map(({ c, d }) => {
@@ -533,15 +542,25 @@ export function getB2BSuggestions(
     };
   });
 
-
-  if (dynList.length === 0) return staticList;
+  // Se temos parceiros reais, eles SEMPRE vêm primeiro.
+  // O staticList só entra como preenchimento se tivermos poucos resultados reais.
   const merged: B2BSuggestion[] = [];
   const seenT = new Set<string>();
-  for (const s of [...dynList, ...staticList]) {
+
+  // Adiciona reais primeiro
+  for (const s of dynList) {
     if (seenT.has(s.title)) continue;
     seenT.add(s.title);
     merged.push(s);
   }
+
+  // Adiciona estáticos apenas se necessário para preencher
+  for (const s of staticList) {
+    if (seenT.has(s.title)) continue;
+    seenT.add(s.title);
+    merged.push(s);
+  }
+
   return merged;
 }
 
