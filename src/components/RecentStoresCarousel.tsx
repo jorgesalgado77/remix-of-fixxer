@@ -500,10 +500,6 @@ function RecentStoresCarouselInner() {
                             <Navigation className="w-2.5 h-2.5 opacity-50" />
                             {userCoords ? "S/ Coordenadas" : "Localização off"}
                           </span>
-                        ) : (
-                          <span className="ml-auto text-white/20 text-[8px] italic uppercase tracking-tighter">
-                            Localização off
-                          </span>
                         )}
                       </div>
                       
