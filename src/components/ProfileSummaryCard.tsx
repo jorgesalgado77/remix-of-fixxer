@@ -190,8 +190,12 @@ export function ProfileSummaryCard({
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-white/10 bg-black/30 p-2">
-            <div className="text-[8px] font-black text-white/50 uppercase tracking-widest">
+          <Link
+            to={profileHref}
+            search={{ focus: "reviews" }}
+            className="rounded-lg border border-white/10 bg-black/30 p-2 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all group/rating"
+          >
+            <div className="text-[8px] font-black text-white/50 uppercase tracking-widest group-hover/rating:text-emerald-400/70 transition-colors">
               Reputação
             </div>
             <div className="mt-0.5 flex items-center gap-1 text-xs font-black text-white">
@@ -207,9 +211,14 @@ export function ProfileSummaryCard({
                 </span>
               )}
             </div>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-black/30 p-2 flex flex-col">
-            <div className="text-[8px] font-black text-white/50 uppercase tracking-widest">
+          </Link>
+
+          <Link
+            to="/configuracoes"
+            search={{ focus: "plan" }}
+            className="rounded-lg border border-white/10 bg-black/30 p-2 flex flex-col hover:border-primary/40 hover:bg-primary/5 transition-all group/plan"
+          >
+            <div className="text-[8px] font-black text-white/50 uppercase tracking-widest group-hover/plan:text-primary/70 transition-colors">
               Plano
             </div>
             <div className="mt-0.5">
@@ -219,7 +228,7 @@ export function ProfileSummaryCard({
                 className="!px-2 !py-0.5 !text-[9px]"
               />
             </div>
-          </div>
+          </Link>
         </div>
 
         {isGold ? (
