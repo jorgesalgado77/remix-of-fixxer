@@ -7,7 +7,8 @@ import {
   normalizeBranches, 
   haversineKm,
   type B2BCandidate, 
-  type B2BSuggestion 
+  type B2BSuggestion,
+  B2B_SUGGESTIONS
 } from "@/lib/activity-branches";
 import { useCurrentCategory } from "@/lib/user-category";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
@@ -93,6 +94,7 @@ function B2BSuggestionsCardInner() {
   const [dismissed, setDismissed] = useState<boolean>(() => readDismissed(category));
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const theme = getCategoryTheme(category);
   const preset = PRESETS[category] || PRESETS.prestador;
@@ -129,9 +131,13 @@ function B2BSuggestionsCardInner() {
 
   const loadRealData = useCallback(async () => {
     try {
+      setIsLoading(true);
       const { data: auth } = await supabaseExternal.auth.getUser();
       const uid = auth?.user?.id;
-      if (!uid) return;
+      if (!uid) {
+        setIsLoading(false);
+        return;
+      }
 
       const { data: userProfile } = await supabaseExternal
         .from("profiles")
@@ -139,7 +145,6 @@ function B2BSuggestionsCardInner() {
         .eq("id", uid)
         .maybeSingle();
 
-      const userBranches = normalizeBranches(userProfile);
       const userLoc = userProfile?.lat != null ? { lat: userProfile.lat, lng: userProfile.lng } : null;
 
       // Busca usuários REAIS que NÃO sejam o logado
@@ -197,6 +202,8 @@ function B2BSuggestionsCardInner() {
       }
     } catch (err) {
       console.error("Erro ao carregar sugestões B2B reais:", err);
+    } finally {
+      setIsLoading(false);
     }
   }, [branchCtx]);
 
@@ -272,9 +279,13 @@ function B2BSuggestionsCardInner() {
 
         <div 
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scroll-smooth no-scrollbar"
+          className="flex gap-3 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scroll-smooth scrollbar-hide"
         >
-          {suggestions.length > 0 ? (
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="w-[260px] flex-shrink-0 animate-pulse bg-white/5 border border-white/5 rounded-2xl h-[220px]" />
+            ))
+          ) : suggestions.length > 0 ? (
             suggestions.map((s: any) => (
               <div 
                 key={s.userId}
