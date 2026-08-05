@@ -167,6 +167,30 @@ UPDATE public.profiles
 SET user_type = 'Admin', role = 'admin', lat = -23.50, lng = -47.45
 WHERE email = 'jorgericardosalgado@gmail.com';
 
+-- 7. VIEWS PÚBLICAS (profiles_public)
+-- Recriação da view para garantir que a coluna preferred_service exista
+DROP VIEW IF EXISTS public.profiles_public;
+CREATE OR REPLACE VIEW public.profiles_public AS
+SELECT 
+    id, 
+    full_name, 
+    display_name, 
+    company_name, 
+    avatar_url, 
+    logo_url, 
+    role, 
+    business_category, 
+    custom_branch, 
+    preferred_service,
+    city, 
+    state, 
+    lat, 
+    lng, 
+    created_at
+FROM public.profiles;
+
+GRANT SELECT ON public.profiles_public TO anon, authenticated;
+
 -- TRIGGER PARA GARANTIR DADOS MÍNIMOS EM NOVOS CADASTROS
 CREATE OR REPLACE FUNCTION public.handle_new_profile_defaults()
 RETURNS TRIGGER AS $$
