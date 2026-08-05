@@ -191,7 +191,9 @@ function RecentStoresCarouselInner() {
           const branch = r.custom_branch || r.business_category || (r.role === 'lojista' ? "Lojista" : r.role === 'fornecedor' ? "Fornecedor" : "Não Informado");
           
           // Debugging distance: Log inputs for calculation
-          const dist = (userCoords && r.lat !== null && r.lng !== null) 
+          // Considera 0 como valor válido se vier do banco, mas evita nulos
+          const hasCoords = r.lat !== null && r.lng !== null && userCoords && userCoords.lat !== null && userCoords.lng !== null;
+          const dist = hasCoords 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
 
