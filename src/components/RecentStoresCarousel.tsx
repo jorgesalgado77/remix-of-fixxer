@@ -135,7 +135,10 @@ function RecentStoresCarouselInner() {
     navigate({ to: `/perfil/${p.id}` as any });
   };
 
+  console.log("[RecentStoresCarousel] Rendering. Items:", items.length, "Loading:", loading);
+
   if (loading) return <div className="p-10 text-center text-white font-black italic uppercase animate-pulse">Carregando parceiros...</div>;
+
 
   return (
     <section aria-label="Lojistas e fornecedores recentes" className="bg-[#1A1A1B] border border-white/10 rounded-3xl p-6">
