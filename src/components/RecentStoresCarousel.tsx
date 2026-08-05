@@ -194,7 +194,7 @@ function RecentStoresCarouselInner() {
         throw error;
       }
 
-      const rows: Card[] = ((data as unknown as (Row & { user_type?: string | null })[]) ?? [])
+      const rows: Card[] = ((data as any[]) ?? [])
         .map((r) => {
           const rid = String(r.id);
           // Bloqueia administradores e o próprio usuário logado.
@@ -202,7 +202,8 @@ function RecentStoresCarouselInner() {
           if (selfId && rid === selfId) return null;
 
           const roleStr = (r.role || "").toLowerCase();
-          const typeStr = ((r as any).user_type || "").toLowerCase();
+          // Removemos a verificação de user_type que está causando erro de coluna inexistente
+
           let kind: Kind | null = null;
 
           // Prioridade 1: Tabelas especializadas (Vínculo Forte)
