@@ -227,7 +227,11 @@ function RecentStoresCarouselInner() {
         
         // Ordenar por distância se disponível, senão por data
         const sorted = userCoords 
-          ? [...uniqueItems].sort((a, b) => (a._distance || 9999) - (b._distance || 9999))
+          ? [...uniqueItems].sort((a, b) => {
+              if (a._distance === undefined) return 1;
+              if (b._distance === undefined) return -1;
+              return a._distance - b._distance;
+            })
           : uniqueItems;
 
         // Persistência em cache de memória (opcional) e estado
