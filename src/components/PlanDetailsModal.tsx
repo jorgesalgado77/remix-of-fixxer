@@ -56,8 +56,8 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[105] bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
-        className="w-full sm:max-w-3xl bg-[#141416] border border-white/10 sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
-        style={{ maxHeight: "100dvh", height: "min(100dvh, 820px)" }}
+        className="w-full sm:max-w-3xl bg-[#141416] border border-white/10 sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col relative"
+        style={{ maxHeight: "100dvh", height: "auto" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 border-b border-white/10 flex items-center justify-between bg-gradient-to-br from-amber-500/10 to-transparent">
@@ -75,7 +75,7 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-none p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto scrollbar-none p-5 pb-8 space-y-6">
           {/* Resumo atual */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10">
@@ -154,7 +154,7 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
           )}
         </div>
 
-        <div className="p-4 border-t border-white/10 bg-[#0f0f11]">
+        <div className="p-4 border-t border-white/10 bg-[#0f0f11] sticky bottom-0 z-20">
           <button
             onClick={handleUpgrade}
             disabled={processing || !targetCfg || targetCfg.id === currentPlan}

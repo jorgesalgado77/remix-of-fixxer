@@ -148,12 +148,12 @@ export function ProfileSummaryCard({
       aria-label="Resumo do meu perfil"
       className={`${wrapperVariantClass} ${className}`.trim()}
     >
-      <div className="relative group">
-        <div className="absolute top-4 right-4 z-20 pointer-events-auto">
+      <div className="relative isolate">
+        <div className="absolute top-4 right-4 z-30">
           <NotificationsCenter />
         </div>
         
-        <div className="block rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.6)]">
+        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.6)]">
           <Link
             to={profileHref}
             className="flex items-start gap-3 hover:opacity-80 transition-opacity"
@@ -194,7 +194,7 @@ export function ProfileSummaryCard({
             <Link
               to={profileHref}
               search={{ focus: "reviews" }}
-              className="rounded-lg border border-white/10 bg-black/30 p-2 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all group/rating"
+              className="rounded-lg border border-white/10 bg-black/30 p-2 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all group/rating min-h-[52px] flex flex-col justify-center"
             >
               <div className="text-[8px] font-black text-white/50 uppercase tracking-widest group-hover/rating:text-emerald-400/70 transition-colors">
                 Reputação
@@ -217,7 +217,7 @@ export function ProfileSummaryCard({
             <Link
               to="/configuracoes"
               search={{ focus: "plan" }}
-              className="rounded-lg border border-white/10 bg-black/30 p-2 flex flex-col hover:border-primary/40 hover:bg-primary/5 transition-all group/plan"
+              className="rounded-lg border border-white/10 bg-black/30 p-2 flex flex-col hover:border-primary/40 hover:bg-primary/5 transition-all group/plan min-h-[52px] justify-center"
             >
               <div className="text-[8px] font-black text-white/50 uppercase tracking-widest group-hover/plan:text-primary/70 transition-colors">
                 Plano
