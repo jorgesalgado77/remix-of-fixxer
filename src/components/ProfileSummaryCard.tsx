@@ -12,7 +12,8 @@
  */
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { MapPin, ShieldCheck, Star, User as UserIcon } from "lucide-react";
+import { Bell, MapPin, ShieldCheck, Star, User as UserIcon } from "lucide-react";
+import { NotificationsCenter } from "@/components/NotificationsCenter";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { PlanBadge } from "@/components/PlanBadge";
 import { GoldMedalBadge } from "@/components/GoldMedalBadge";
