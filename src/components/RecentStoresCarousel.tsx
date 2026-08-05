@@ -188,8 +188,9 @@ function RecentStoresCarouselInner() {
 
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
-          const roleStr = (r.role || r.user_type || "").toLowerCase();
-          const kind = roleStr.includes("fornec") ? "fornecedor" : "lojista";
+          const roleStr = (r.role || "").toLowerCase();
+          const kind = roleStr.includes("fornec") || roleStr.includes("parceiro") ? "fornecedor" : "lojista";
+
           
           const dist = (userCoords && r.lat && r.lng) 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
