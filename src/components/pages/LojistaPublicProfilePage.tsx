@@ -303,21 +303,33 @@ export function LojistaPublicProfilePage() {
   const [oppUf, setOppUf] = useState<string>("Todas");
 
   useEffect(() => {
+    // Tenta capturar parâmetros tanto do location.search quanto da URL bruta para maior robustez
     const searchParams = new URLSearchParams(window.location.search);
-    const focus = searchParams.get("focus");
-    const tab = searchParams.get("tab");
+    const focus = searchParams.get("focus") || (params as any)?.focus;
+    const tab = searchParams.get("tab") || (params as any)?.tab;
     
     if (tab === "avaliacoes" || focus === "reviews") {
+      console.log("[Profile] Redirecionando para aba de avaliações via URL params");
       setActiveTab("avaliacoes");
-      // Scroll imediato usando setTimeout para garantir que o elemento foi montado após setActiveTab
-      setTimeout(() => {
+      
+      // Scroll imediato usando múltiplos mecanismos de detecção
+      const scrollToSection = () => {
         const el = document.getElementById("avaliacoes-section");
         if (el) {
           el.scrollIntoView({ behavior: "smooth", block: "start" });
+          return true;
         }
-      }, 500);
+        return false;
+      };
+
+      if (!scrollToSection()) {
+        const interval = setInterval(() => {
+          if (scrollToSection()) clearInterval(interval);
+        }, 100);
+        setTimeout(() => clearInterval(interval), 3000);
+      }
     }
-  }, [location.search]);
+  }, [location.search, storeId]);
 
   useEffect(() => {
     let cancelled = false;
