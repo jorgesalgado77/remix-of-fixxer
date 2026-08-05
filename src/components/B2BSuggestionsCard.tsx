@@ -397,7 +397,7 @@ function B2BSuggestionsCardInner() {
               type="button"
               onClick={() => openSuggestion(s)}
               title={s.userId ? "Abrir perfil do parceiro" : `Buscar: ${s.targetBranch || s.title}`}
-              className="w-[200px] md:w-full text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors shrink-0"
+              className="w-[240px] md:w-[280px] snap-start text-left bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] rounded-xl px-2.5 py-2 flex items-center gap-2 transition-colors shrink-0"
             >
               <span className="text-base shrink-0">{s.icon}</span>
               <div className="min-w-0 flex-1">
