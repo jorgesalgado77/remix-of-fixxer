@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { MapPin, ShieldCheck, Star, User as UserIcon } from "lucide-react";
 import { NotificationsCenter } from "@/components/NotificationsCenter";
+import { ReviewsModal, type Review } from "@/components/ReviewsModal";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { PlanBadge } from "@/components/PlanBadge";
 import { GoldMedalBadge } from "@/components/GoldMedalBadge";
@@ -78,6 +79,8 @@ export function ProfileSummaryCard({
 }) {
   const [profile, setProfile] = useState<ProfileLite | null>(null);
   const [rating, setRating] = useState<{ avg: number; count: number } | null>(null);
+  const [allReviews, setAllReviews] = useState<Review[]>([]);
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -99,9 +102,10 @@ export function ProfileSummaryCard({
         try {
           const { data: reviews } = await supabaseExternal
             .from("reviews")
-            .select("rating")
+            .select("*")
             .eq("reviewed_user_id", uid);
           if (!cancelled && Array.isArray(reviews) && reviews.length > 0) {
+            setAllReviews(reviews as Review[]);
             const nums = reviews
               .map((r: any) => Number(r?.rating))
               .filter((n) => Number.isFinite(n));
@@ -195,8 +199,7 @@ export function ProfileSummaryCard({
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               onClick={() => {
-                // Redirecionamento forçado para garantir o scroll automático
-                window.location.href = reputationUrl;
+                setShowReviewsModal(true);
               }}
               className="rounded-lg border border-white/10 bg-black/30 p-2 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all group/rating min-h-[52px] flex flex-col justify-center text-left w-full"
             >
@@ -247,6 +250,14 @@ export function ProfileSummaryCard({
             </div>
           )}
         </div>
+
+        {/* Modal de Avaliações Independente */}
+        <ReviewsModal 
+          isOpen={showReviewsModal}
+          onClose={() => setShowReviewsModal(false)}
+          reviews={allReviews}
+          displayName={name}
+        />
       </div>
     </aside>
   );
