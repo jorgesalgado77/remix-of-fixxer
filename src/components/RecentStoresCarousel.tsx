@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Star, MapPin, UserCircle2, RefreshCw, Store, AlertTriangle } from "lucide-react";
+import { Star, MapPin, UserCircle2, RefreshCw, Store, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
@@ -84,13 +84,7 @@ const KIND_META: Record<Kind, { emoji: string; label: string; color: string; bor
 
 // Fallback diverso — cobre múltiplos ramos p/ que a filtragem "Do meu ramo"
 // tenha demonstração visível em previews de qualquer perfil.
-const FALLBACK: Card[] = [
-  { id: "mock-loja-alpha", full_name: "Móveis Alpha", display_name: "Móveis Alpha", company_name: "Móveis Alpha Ltda", avatar_url: null, role: "lojista", business_category: "Móveis Planejados", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Móveis Planejados" },
-  { id: "mock-loja-barbearia", full_name: "Barbearia Central", display_name: "Barbearia Central", company_name: null, avatar_url: null, role: "lojista", business_category: "Barbearia", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.8, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Barbearia" },
-  { id: "mock-loja-salao", full_name: "Salão Beleza Pura", display_name: "Salão Beleza Pura", company_name: null, avatar_url: null, role: "lojista", business_category: "Salão de Beleza & Cabelo", custom_branch: null, city: "Votorantim", state: "SP", rating: 4.9, created_at: null, lat: null, lng: null, _kind: "lojista", _branch: "Salão de Beleza & Cabelo" },
-  { id: "mock-fornec-cosmetico", full_name: "Cosméticos Delta", display_name: "Cosméticos Delta", company_name: "Delta Beauty Ltda", avatar_url: null, role: "fornecedor", business_category: "Estética Facial / Corporal", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.7, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Estética Facial / Corporal" },
-  { id: "mock-fornec-gama", full_name: "Distribuidora Gama", display_name: "Distribuidora Gama", company_name: "Gama Suprimentos Ltda", avatar_url: null, role: "fornecedor", business_category: "Marmoraria", custom_branch: null, city: "Sorocaba", state: "SP", rating: 4.7, created_at: null, lat: null, lng: null, _kind: "fornecedor", _branch: "Marmoraria" },
-];
+const FALLBACK: Card[] = [];
 
 function readCache(): Card[] | null {
   if (typeof window === "undefined") return null;
@@ -225,13 +219,10 @@ function RecentStoresCarouselInner() {
         .slice(0, 60);
 
       if (rows.length > 0) {
-        const merged = rows.length < 2
-          ? [...rows, ...FALLBACK.filter((f) => !rows.some((r) => r.id === f.id))]
-          : rows;
-        setItems(merged);
-        writeCache(merged);
+        setItems(rows);
+        writeCache(rows);
       } else {
-        setItems(FALLBACK);
+        setItems([]);
       }
       setErrorMsg(null);
     } catch (err) {
@@ -311,8 +302,31 @@ function RecentStoresCarouselInner() {
   return (
     <section
       aria-label="Lojistas e fornecedores recentes"
-      className="bg-[#1A1A1B] border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden"
+      className="bg-[#1A1A1B] border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden group/container"
     >
+      <div className="absolute inset-y-0 left-2 z-10 flex items-center pointer-events-none opacity-0 group-hover/container:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            scrollerRef.current?.scrollBy({ left: -300, behavior: "smooth" });
+          }}
+          className="pointer-events-auto w-10 h-10 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-all shadow-xl backdrop-blur-sm"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="absolute inset-y-0 right-2 z-10 flex items-center pointer-events-none opacity-0 group-hover/container:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            scrollerRef.current?.scrollBy({ left: 300, behavior: "smooth" });
+          }}
+          className="pointer-events-auto w-10 h-10 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white hover:bg-black/80 transition-all shadow-xl backdrop-blur-sm"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+      </div>
       <header className="mb-3 md:mb-4 w-full block">
         <h3 className="w-full block font-black italic uppercase text-white text-sm md:text-base tracking-wide leading-tight">
           🏬 Lojistas e Fornecedores Recentes
@@ -392,8 +406,8 @@ function RecentStoresCarouselInner() {
       ) : (
         <div
           ref={scrollerRef}
+          className="flex gap-3 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scroll-smooth scrollbar-hide"
           role="list"
-          className="flex gap-3 pb-2 overflow-x-auto snap-x snap-mandatory scrollbar-none"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
           {sortedItems.map((p) => {
