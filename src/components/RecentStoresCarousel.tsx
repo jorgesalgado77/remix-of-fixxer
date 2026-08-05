@@ -110,6 +110,7 @@ function RecentStoresCarouselInner() {
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<"all" | "mine" | Kind>("all");
+  const [forceInitialAll, setForceInitialAll] = useState(true);
   const [userTouchedFilter, setUserTouchedFilter] = useState(false);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
