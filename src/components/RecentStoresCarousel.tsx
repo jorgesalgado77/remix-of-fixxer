@@ -461,7 +461,7 @@ function RecentStoresCarouselInner() {
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/20">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/20">
                           <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] shadow-[0_0_8px_#00FF88] animate-pulse" />
                           <span className="text-[9px] font-black text-[#00FF88] uppercase italic">Disponível</span>
                         </div>
