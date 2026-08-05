@@ -160,7 +160,7 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, city, state, created_at, lat, lng, specialty")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
         .order('created_at', { ascending: false });
 
@@ -189,8 +189,14 @@ function RecentStoresCarouselInner() {
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
 
-          // Se for fornecedor e tiver business_category como 'Geral', tenta usar custom_branch
-          const branch = r.custom_branch || r.business_category || "Geral";
+          // Lógica de ramo: prioriza custom_branch (especialidade/subcategoria) e evita "Geral"
+          let branch = r.custom_branch || r.specialty || r.business_category || "Não Informado";
+          if (branch.toLowerCase() === "geral" && (r.specialty || r.custom_branch)) {
+            branch = r.custom_branch || r.specialty || "Não Informado";
+          } else if (branch.toLowerCase() === "geral") {
+            branch = "Parceiro FIXXER";
+          }
+
 
           return {
             id: r.id,
