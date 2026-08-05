@@ -54,7 +54,7 @@ function PrestadorDashboard() {
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Controle de Agendas, O.S. e Reputação</p>
           </div>
         </div>
-        <ProfileSummaryCard role="prestador" />
+        {/* Notifications handled inside ProfileSummaryCard sidebar */}
         <PanelActions role="prestador" />
       </header>
 
