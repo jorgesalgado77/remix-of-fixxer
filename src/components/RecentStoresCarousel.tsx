@@ -80,20 +80,32 @@ function RecentStoresCarouselInner() {
       if (error) throw error;
 
       if (profiles && profiles.length > 0) {
-        const rows = profiles.map(r => {
+        const rows: Card[] = profiles.map(r => {
           const kind = (r.role || "").toLowerCase().includes("fornec") ? "fornecedor" : "lojista";
           const dist = (userCoords && r.lat && r.lng) 
             ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
             : undefined;
 
           return {
-            ...r,
+            id: r.id,
+            full_name: r.full_name,
+            display_name: r.display_name,
+            company_name: r.company_name,
             avatar_url: r.avatar_url || (r as any).logo_url,
+            role: r.role,
+            business_category: r.business_category,
+            custom_branch: r.custom_branch,
+            city: r.city,
+            state: r.state,
+            rating: 5.0, // Default rating if null
+            created_at: r.created_at,
+            lat: r.lat ? Number(r.lat) : null,
+            lng: r.lng ? Number(r.lng) : null,
             _kind: kind as Kind,
             _branch: r.business_category?.split(',')[0] || r.custom_branch || "Geral",
             _distance: dist
           };
-        }) as Card[];
+        });
         
         // Ordenar por distância se disponível
         setItems(rows.sort((a, b) => (a._distance || 9999) - (b._distance || 9999)));
