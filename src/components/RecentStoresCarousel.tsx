@@ -248,15 +248,22 @@ function RecentStoresCarouselInner() {
   }, [kindFilter]);
 
   const filteredItems = useMemo(() => {
-    // Filtro adicional em memória para o "Do meu ramo" se necessário (embora idealmente fizesse via query)
-    if (kindFilter === "branch") {
-      return items.filter(i => {
+    // 1. Filtragem por Tipo (Role)
+    let filtered = items;
+    
+    if (kindFilter === "lojista") {
+      filtered = items.filter(i => i._kind === "lojista");
+    } else if (kindFilter === "fornecedor") {
+      filtered = items.filter(i => i._kind === "fornecedor");
+    } else if (kindFilter === "branch") {
+      filtered = items.filter(i => {
         if (!userBranchCtx.hasContext) return true;
         const relevance = scoreRelevance([i.business_category], userBranchCtx);
         return relevance !== "none";
       });
     }
-    return items;
+
+    return filtered;
   }, [items, kindFilter, userBranchCtx]);
 
 
