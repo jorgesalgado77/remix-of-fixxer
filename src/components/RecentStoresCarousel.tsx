@@ -195,17 +195,20 @@ function RecentStoresCarouselInner() {
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
           // Priorizamos custom_branch, depois business_category.
-          // Se for Lojista e não tiver ramo, usamos "Lojista Geral" etc para evitar confusão com o título do card
-          let branch = r.custom_branch || r.business_category;
-          if (!branch) {
-            branch = isLojista ? "Lojista" : isFornecedor ? "Fornecedor" : "Parceiro";
-          }
+          // Se ambos forem nulos, usamos um fallback descritivo baseado no role.
+          const branch = r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Parceiro");
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
-          const hasCoords = r.lat !== null && r.lng !== null && userCoords && userCoords.lat !== null && userCoords.lng !== null;
+          // Note: profile_public view might return lat/lng as strings or numbers depending on the driver
+          const rLat = r.lat !== null ? Number(r.lat) : null;
+          const rLng = r.lng !== null ? Number(r.lng) : null;
+          const uLat = userCoords?.lat !== null ? Number(userCoords?.lat) : null;
+          const uLng = userCoords?.lng !== null ? Number(userCoords?.lng) : null;
+
+          const hasCoords = rLat !== null && rLng !== null && uLat !== null && uLng !== null && !isNaN(rLat) && !isNaN(uLat);
           const dist = hasCoords 
-            ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
+            ? calculateDistance(uLat!, uLng!, rLat!, rLng!) 
             : undefined;
 
           return {
@@ -405,7 +408,7 @@ function RecentStoresCarouselInner() {
               scrollbarWidth: 'none', 
               msOverflowStyle: 'none', 
               WebkitOverflowScrolling: 'touch',
-              minHeight: '480px'
+              minHeight: '380px'
             }}
           >
 
@@ -423,7 +426,7 @@ function RecentStoresCarouselInner() {
                       : 'border-[#A855F7]/20 hover:border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.05)]'
                   }`}
                 >
-                  <div className="h-44 bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative overflow-hidden">
+                  <div className="h-32 bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative overflow-hidden">
                     {/* Badge Rating Superior */}
                     <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
                       <div className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 shadow-lg">
@@ -442,7 +445,7 @@ function RecentStoresCarouselInner() {
                     </div>
 
                     {p.avatar_url ? (
-                      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover/card:scale-110 ${
+                      <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover/card:scale-110 ${
                         p._kind === 'lojista' ? 'border-[#00E5FF]' : 'border-[#A855F7]'
                       }`}>
                         <img 
@@ -452,7 +455,7 @@ function RecentStoresCarouselInner() {
                         />
                       </div>
                     ) : (
-                      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center bg-white/5 transition-all duration-500 group-hover/card:scale-110 ${
+                      <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center bg-white/5 transition-all duration-500 group-hover/card:scale-110 ${
                         p._kind === 'lojista' ? 'border-[#00E5FF]' : 'border-[#A855F7]'
                       }`}>
                         <UserCircle2 className={`w-16 h-16 ${p._kind === 'lojista' ? 'text-[#00E5FF]/40' : 'text-[#A855F7]/40'}`} />
@@ -475,15 +478,15 @@ function RecentStoresCarouselInner() {
                     </div>
                   </div>
 
-                  <div className="p-5 flex-1 flex flex-col space-y-3 bg-gradient-to-b from-black/40 to-black/60">
+                  <div className="p-4 flex-1 flex flex-col space-y-2 bg-gradient-to-b from-black/40 to-black/60">
                     <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-2">{name}</h4>
                     
                     <div className="flex flex-col gap-1.5 flex-1">
                       <div className="flex flex-wrap gap-1.5 items-center">
-                        <span className={`flex items-start gap-1.5 text-[11px] font-black uppercase tracking-tight ${
+                        <span className={`flex items-start gap-1.5 text-[10px] font-black uppercase tracking-tight ${
                           p._kind === 'lojista' ? 'text-[#00E5FF]' : 'text-[#A855F7]'
                         }`}>
-                          <Puzzle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <Puzzle className="w-3 h-3 mt-0.5 shrink-0" />
                           <span className="leading-tight">{p._branch}</span>
                         </span>
                       </div>
