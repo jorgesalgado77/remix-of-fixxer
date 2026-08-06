@@ -250,8 +250,8 @@ function RecentStoresCarouselInner() {
           // Debugging distance: Log inputs for calculation
           const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : 0;
           const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : 0;
-          const uLat = userCoords?.lat !== null && userCoords?.lat !== undefined ? Number(userCoords?.lat) : 0;
-          const uLng = userCoords?.lng !== null && userCoords?.lng !== undefined ? Number(userCoords?.lng) : 0;
+          const uLat = (userCoords?.lat !== null && userCoords?.lat !== undefined) ? Number(userCoords?.lat) : 0;
+          const uLng = (userCoords?.lng !== null && userCoords?.lng !== undefined) ? Number(userCoords?.lng) : 0;
 
           // Validação rigorosa: aceita valores reais de coordenadas (não zero)
           const dist = getHaversineDistance(uLat, uLng, rLat, rLng) ?? undefined;
@@ -328,12 +328,10 @@ function RecentStoresCarouselInner() {
   useEffect(() => {
     // Resetar quando o filtro mudar apenas se não houver itens OU se o filtro mudar para algo não cacheado
     // Mantemos os itens se eles já existirem para evitar "sumiço" ao voltar de rotas
-    if (items.length === 0) {
-      setPage(0);
-      setHasMore(true);
-      fetchList();
-    }
-  }, [kindFilter, items.length]);
+    setPage(0);
+    setHasMore(true);
+    fetchList();
+  }, [kindFilter, userCoords]); // Recalcula se as coordenadas do usuário mudarem (geocodificação terminou)
 
   const filteredItems = useMemo(() => {
     let filtered = items;
