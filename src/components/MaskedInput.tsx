@@ -45,9 +45,19 @@ const applyMask = (mask: string, val: string) => {
   return applyCnpjCpfMask(val);
 };
 
-export const MaskedInput = ({ value, onChange, mask, placeholder, ...props }: any) => {
+export const MaskedInput = ({ value, onChange, onComplete, mask, placeholder, ...props }: any) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(applyMask(mask, e.target.value));
+    const rawValue = e.target.value;
+    const masked = applyMask(mask, rawValue);
+    onChange(masked);
+    
+    if (onComplete) {
+      const cleanValue = masked.replace(/\D/g, '');
+      const expectedLength = mask === 'cep' ? 8 : mask === 'cnpj' ? 14 : mask === 'cpf' ? 11 : 0;
+      if (expectedLength > 0 && cleanValue.length === expectedLength) {
+        onComplete(masked);
+      }
+    }
   };
   // Normaliza o valor exibido (corrige dados legados salvos com máscara antiga)
   const display = value ? applyMask(mask, String(value)) : '';
