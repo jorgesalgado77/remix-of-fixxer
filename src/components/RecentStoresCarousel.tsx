@@ -408,7 +408,7 @@ function RecentStoresCarouselInner() {
               scrollbarWidth: 'none', 
               msOverflowStyle: 'none', 
               WebkitOverflowScrolling: 'touch',
-              minHeight: '380px'
+              minHeight: '440px'
             }}
           >
 
