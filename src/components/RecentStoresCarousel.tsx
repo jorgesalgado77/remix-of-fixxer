@@ -465,21 +465,22 @@ function RecentStoresCarouselInner() {
                     </div>
                   </div>
 
-                  <div className="p-5 space-y-3 bg-gradient-to-b from-black/40 to-black/60">
-                    <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-1">{name}</h4>
+                  <div className="p-5 flex-1 flex flex-col space-y-3 bg-gradient-to-b from-black/40 to-black/60">
+                    <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-2">{name}</h4>
                     
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 flex-1">
                       <div className="flex flex-wrap gap-1.5 items-center">
-                        <span className={`flex items-center gap-1.5 text-[11px] font-black uppercase tracking-tight ${
+                        <span className={`flex items-start gap-1.5 text-[11px] font-black uppercase tracking-tight ${
                           p._kind === 'lojista' ? 'text-[#00E5FF]' : 'text-[#A855F7]'
                         }`}>
-                          <Puzzle className="w-3.5 h-3.5" />
-                          {p._branch}
+                          <Puzzle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <span className="leading-tight">{p._branch}</span>
                         </span>
                       </div>
                       {p.preferred_service && (
-                        <div className="flex items-center gap-1.5 text-[9px] text-white/40 font-bold uppercase italic leading-none">
-                          <span className="truncate">{p.preferred_service}</span>
+                        <div className="flex items-start gap-1.5 text-[9px] text-white/40 font-bold uppercase italic leading-tight">
+                          <Star className="w-2.5 h-2.5 mt-0.5 shrink-0 opacity-40" />
+                          <span>{p.preferred_service}</span>
                         </div>
                       )}
                     </div>
