@@ -44,6 +44,7 @@ function RecentStoresCarouselInner() {
   const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">("all");
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [radiusFilter, setRadiusFilter] = useState<number>(0); // 0 = Sem limite
   const [scrollProgress, setScrollProgress] = useState(() => {
     if (typeof window === 'undefined') return 0;
     return Number(localStorage.getItem('fixxer_carousel_scroll')) || 0;
@@ -299,9 +300,9 @@ function RecentStoresCarouselInner() {
         // Ordenar por distância se disponível, senão por data
         const sorted = userCoords 
           ? [...uniqueItems].sort((a, b) => {
-              if (a._distance === undefined) return 1;
-              if (b._distance === undefined) return -1;
-              return a._distance - b._distance;
+              const distA = a._distance ?? Infinity;
+              const distB = b._distance ?? Infinity;
+              return distA - distB;
             })
           : uniqueItems;
 
@@ -335,23 +336,28 @@ function RecentStoresCarouselInner() {
   }, [kindFilter, items.length]);
 
   const filteredItems = useMemo(() => {
-    // 1. Filtragem por Tipo (Role)
     let filtered = items;
     
+    // 1. Filtragem por Tipo (Role)
     if (kindFilter === "lojista") {
-      filtered = items.filter(i => i._kind === "lojista");
+      filtered = filtered.filter(i => i._kind === "lojista");
     } else if (kindFilter === "fornecedor") {
-      filtered = items.filter(i => i._kind === "fornecedor");
+      filtered = filtered.filter(i => i._kind === "fornecedor");
     } else if (kindFilter === "branch") {
-      filtered = items.filter(i => {
+      filtered = filtered.filter(i => {
         if (!userBranchCtx.hasContext) return true;
         const relevance = scoreRelevance([i.business_category], userBranchCtx);
         return relevance !== "none";
       });
     }
 
+    // 2. Filtragem por Raio (Distância)
+    if (radiusFilter > 0) {
+      filtered = filtered.filter(i => i._distance !== undefined && i._distance <= radiusFilter);
+    }
+
     return filtered;
-  }, [items, kindFilter, userBranchCtx]);
+  }, [items, kindFilter, radiusFilter, userBranchCtx]);
 
 
   const scroll = (direction: "left" | "right") => {
@@ -407,9 +413,26 @@ function RecentStoresCarouselInner() {
             <span className="text-xs">🏭</span> Fornecedores
           </button>
 
+          <div className="flex items-center gap-2 border-l border-white/10 pl-3">
+            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest whitespace-nowrap">Raio (KM):</span>
+            <select
+              value={radiusFilter}
+              onChange={(e) => setRadiusFilter(Number(e.target.value))}
+              className="h-9 bg-white/5 text-white/80 border border-white/10 rounded-full px-3 text-[10px] font-black outline-none focus:border-[#00FF88]/50 transition-all cursor-pointer"
+            >
+              <option value={0}>Todos</option>
+              <option value={10}>10 KM</option>
+              <option value={25}>25 KM</option>
+              <option value={50}>50 KM</option>
+              <option value={100}>100 KM</option>
+              <option value={200}>200 KM</option>
+            </select>
+          </div>
+
           <button
             onClick={() => {
               setKindFilter("all");
+              setRadiusFilter(0);
               setScrollProgress(0);
               if (scrollerRef.current) scrollerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
             }}
