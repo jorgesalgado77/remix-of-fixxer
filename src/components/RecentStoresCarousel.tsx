@@ -422,7 +422,7 @@ function RecentStoresCarouselInner() {
                       : 'border-[#A855F7]/20 hover:border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.05)]'
                   }`}
                 >
-                  <div className="h-44 bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative overflow-hidden">
+                  <div className="h-32 bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative overflow-hidden">
                     {/* Badge Rating Superior */}
                     <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
                       <div className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 shadow-lg">
