@@ -189,7 +189,7 @@ function RecentStoresCarouselInner() {
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
           // Priorizamos custom_branch, depois business_category.
-          const branch = r.custom_branch || r.business_category || (roleStr.includes('admin') ? "Administrador" : roleStr.includes('fornec') ? "Fornecedor" : roleStr.includes('lojist') ? "Lojista" : "Geral");
+          const branch = r.custom_branch || r.business_category || (roleStr.includes('fornec') ? "Fornecedor" : roleStr.includes('lojist') ? "Lojista" : "Geral");
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
