@@ -118,15 +118,19 @@ function RecentStoresCarouselInner() {
             .eq("id", userId)
             .maybeSingle();
           
-          if (profile && profile.lat !== null && profile.lng !== null) {
+          if (profile && profile.lat !== null && profile.lng !== null && Number(profile.lat) !== 0) {
             const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
             console.log("[RecentStoresCarousel] User Coords Found in View:", coords);
             setUserCoords(coords);
             localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           } else {
-            console.warn("[RecentStoresCarousel] User coordinates not found in profiles_public for ID:", userId);
+            console.warn("[RecentStoresCarousel] User coordinates invalid or zero in profiles_public for ID:", userId);
+            // Tenta carregar do localStorage como backup
             const saved = localStorage.getItem('fixxer_user_coords_v1');
-            if (saved) setUserCoords(JSON.parse(saved));
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (parsed && parsed.lat !== 0) setUserCoords(parsed);
+            }
           }
         }
       } catch (err) {
@@ -185,11 +189,17 @@ function RecentStoresCarouselInner() {
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
           const roleStr = (r.role || "").toLowerCase();
-          const kind = roleStr.includes("fornec") || roleStr.includes("parceiro") ? "fornecedor" : "lojista";
+          const isLojista = roleStr.includes("lojist");
+          const isFornecedor = roleStr.includes("fornec") || roleStr.includes("parceiro");
+          const kind = isFornecedor ? "fornecedor" : "lojista";
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
           // Priorizamos custom_branch, depois business_category.
-          const branch = r.custom_branch || r.business_category || (roleStr.includes('admin') ? "Administrador" : roleStr.includes('fornec') ? "Fornecedor" : roleStr.includes('lojist') ? "Lojista" : "Geral");
+          // Se for Lojista e não tiver ramo, usamos "Lojista Geral" etc para evitar confusão com o título do card
+          let branch = r.custom_branch || r.business_category;
+          if (!branch) {
+            branch = isLojista ? "Lojista" : isFornecedor ? "Fornecedor" : "Parceiro";
+          }
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
@@ -395,7 +405,7 @@ function RecentStoresCarouselInner() {
               scrollbarWidth: 'none', 
               msOverflowStyle: 'none', 
               WebkitOverflowScrolling: 'touch',
-              minHeight: '440px'
+              minHeight: '480px'
             }}
           >
 
@@ -407,7 +417,7 @@ function RecentStoresCarouselInner() {
                   onClick={() => openProfile(p)}
                   role="button"
                   tabIndex={0}
-                  className={`w-64 flex-shrink-0 snap-start bg-[#1A1A1E] border-2 rounded-3xl overflow-hidden text-left hover:-translate-y-2 transition-all duration-300 group/card relative cursor-pointer outline-none focus:ring-2 focus:ring-[#00FF88]/50 ${
+                  className={`w-64 flex-shrink-0 snap-start bg-[#1A1A1E] border-2 rounded-3xl overflow-hidden text-left hover:-translate-y-2 transition-all duration-300 group/card relative cursor-pointer outline-none focus:ring-2 focus:ring-[#00FF88]/50 flex flex-col ${
                     p._kind === 'lojista' 
                       ? 'border-[#00E5FF]/20 hover:border-[#00E5FF] shadow-[0_0_20px_rgba(0,229,255,0.05)]' 
                       : 'border-[#A855F7]/20 hover:border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.05)]'
@@ -465,21 +475,22 @@ function RecentStoresCarouselInner() {
                     </div>
                   </div>
 
-                  <div className="p-5 space-y-3 bg-gradient-to-b from-black/40 to-black/60">
-                    <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-1">{name}</h4>
+                  <div className="p-5 flex-1 flex flex-col space-y-3 bg-gradient-to-b from-black/40 to-black/60">
+                    <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-2">{name}</h4>
                     
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 flex-1">
                       <div className="flex flex-wrap gap-1.5 items-center">
-                        <span className={`flex items-center gap-1.5 text-[11px] font-black uppercase tracking-tight ${
+                        <span className={`flex items-start gap-1.5 text-[11px] font-black uppercase tracking-tight ${
                           p._kind === 'lojista' ? 'text-[#00E5FF]' : 'text-[#A855F7]'
                         }`}>
-                          <Puzzle className="w-3.5 h-3.5" />
-                          {p._branch}
+                          <Puzzle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <span className="leading-tight">{p._branch}</span>
                         </span>
                       </div>
                       {p.preferred_service && (
-                        <div className="flex items-center gap-1.5 text-[9px] text-white/40 font-bold uppercase italic leading-none">
-                          <span className="truncate">{p.preferred_service}</span>
+                        <div className="flex items-start gap-1.5 text-[9px] text-white/40 font-bold uppercase italic leading-tight">
+                          <Star className="w-2.5 h-2.5 mt-0.5 shrink-0 opacity-40" />
+                          <span className="flex-1">{p.preferred_service}</span>
                         </div>
                       )}
                     </div>
@@ -490,17 +501,17 @@ function RecentStoresCarouselInner() {
                         <span className="truncate max-w-[80px]">
                           {p.city || "S/L"}, {p.state || "BR"}
                         </span>
-                        {p._distance !== undefined ? (
+                        {p._distance !== undefined && p._distance > 0 ? (
                           <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic animate-pulse">
                             <Navigation className="w-2.5 h-2.5 rotate-45" />
-                            {p._distance.toFixed(1)} KM
-                          </span>
-                        ) : (
-                          <span className="ml-auto text-amber-500/60 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
-                            <Navigation className="w-2.5 h-2.5 opacity-50" />
-                            {userCoords ? "S/ Coordenadas" : "Localização off"}
-                          </span>
-                        )}
+                             {p._distance.toFixed(1)} KM
+                           </span>
+                         ) : (
+                           <span className="ml-auto text-emerald-500/80 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
+                             <Navigation className="w-2.5 h-2.5 opacity-50" />
+                             Região: Votorantim/SP
+                           </span>
+                         )}
                       </div>
                       
                       <div className="flex items-center gap-2">
