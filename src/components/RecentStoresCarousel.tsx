@@ -189,11 +189,17 @@ function RecentStoresCarouselInner() {
 
         const rows: Card[] = filteredProfiles.map((r: any) => {
           const roleStr = (r.role || "").toLowerCase();
-          const kind = roleStr.includes("fornec") || roleStr.includes("parceiro") ? "fornecedor" : "lojista";
+          const isLojista = roleStr.includes("lojist");
+          const isFornecedor = roleStr.includes("fornec") || roleStr.includes("parceiro");
+          const kind = isFornecedor ? "fornecedor" : "lojista";
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
           // Priorizamos custom_branch, depois business_category.
-          const branch = r.custom_branch || r.business_category || (roleStr.includes('fornec') ? "Fornecedor" : roleStr.includes('lojist') ? "Lojista" : "Geral");
+          // Se for Lojista e não tiver ramo, usamos "Lojista Geral" etc para evitar confusão com o título do card
+          let branch = r.custom_branch || r.business_category;
+          if (!branch) {
+            branch = isLojista ? "Lojista" : isFornecedor ? "Fornecedor" : "Parceiro";
+          }
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
