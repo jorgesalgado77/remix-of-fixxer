@@ -50,11 +50,7 @@ function RecentStoresCarouselInner() {
     return Number(localStorage.getItem('fixxer_carousel_scroll')) || 0;
   });
 
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; address?: string } | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const saved = localStorage.getItem('fixxer_user_coords_v1');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; address?: string } | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 20;
@@ -100,6 +96,13 @@ function RecentStoresCarouselInner() {
     localStorage.setItem('fixxer_carousel_filter', kindFilter);
   }, [kindFilter]);
 
+  // Carrega coordenadas em cache somente após a hidratação (evita mismatch de SSR)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('fixxer_user_coords_v1');
+      if (saved) setUserCoords(JSON.parse(saved));
+    } catch { /* noop */ }
+  }, []);
 
   useEffect(() => {
     const getUserLocation = async () => {
@@ -330,13 +333,15 @@ function RecentStoresCarouselInner() {
     }
   }, [userCoords, kindFilter, page, items, userBranchCtx]);
 
+  // Busca inicial + refetch quando o filtro ou as coordenadas do usuário mudam.
+  // Depende de valores primitivos para evitar loops causados por novas referências de objeto.
+  const coordsKey = userCoords ? `${userCoords.lat},${userCoords.lng}` : "none";
   useEffect(() => {
-    // Resetar quando o filtro mudar apenas se não houver itens OU se o filtro mudar para algo não cacheado
-    // Mantemos os itens se eles já existirem para evitar "sumiço" ao voltar de rotas
     setPage(0);
     setHasMore(true);
     fetchList();
-  }, [kindFilter, userCoords]); // Recalcula se as coordenadas do usuário mudarem (geocodificação terminou)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kindFilter, coordsKey]);
 
   const filteredItems = useMemo(() => {
     let filtered = [...items];
