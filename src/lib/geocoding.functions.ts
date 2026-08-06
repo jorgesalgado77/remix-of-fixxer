@@ -74,30 +74,48 @@ export const geocodeAddress = createServerFn({ method: "GET" })
 
       const results = await response.json();
       if (results && results.length > 0) {
-        const geoData = {
-          lat: parseFloat(results[0].lat),
-          lng: parseFloat(results[0].lon),
-          display_name: results[0].display_name
-        };
-        // Guardar no cache
-        geoCache.set(cacheKey, geoData);
-        return geoData;
+        const lat = parseFloat(results[0].lat);
+        const lng = parseFloat(results[0].lon);
+        
+        if (isValidCoordinate(lat, lng)) {
+          const geoData = {
+            lat,
+            lng,
+            display_name: results[0].display_name
+          };
+          // Guardar no cache
+          geoCache.set(cacheKey, geoData);
+          return geoData;
+        }
       }
 
       // Se falhou com endereço completo, tenta apenas com Cidade/Estado como fallback
-      if (data.cep && (data.city || data.state)) {
+      // Fallback disparado se houver algo além de apenas cidade/estado (ex: CEP ou rua) 
+      // ou se a primeira busca exata falhou.
+      if ((data.cep || data.street) && (data.city || data.state)) {
         console.log("[Geocoding] Retrying with city/state fallback...");
         const fallbackQuery = [data.city, data.state, "Brasil"].filter(Boolean).join(", ");
+        
+        // Verifica cache do fallback primeiro
+        const fbCacheKey = fallbackQuery.toLowerCase().trim();
+        if (geoCache.has(fbCacheKey)) return geoCache.get(fbCacheKey);
+
         url.searchParams.set("q", fallbackQuery);
         const fbRes = await fetch(url.toString(), { headers: { "User-Agent": "FixxerHub-App/1.0" } });
         if (fbRes.ok) {
-          const fbResults = await fbRes.json();
+          const fbResults = await fbRes.ok ? await fbRes.json() : [];
           if (fbResults && fbResults.length > 0) {
-             return {
-              lat: parseFloat(fbResults[0].lat),
-              lng: parseFloat(fbResults[0].lon),
-              display_name: fbResults[0].display_name
-            };
+            const lat = parseFloat(fbResults[0].lat);
+            const lng = parseFloat(fbResults[0].lon);
+            if (isValidCoordinate(lat, lng)) {
+              const fbData = {
+                lat,
+                lng,
+                display_name: fbResults[0].display_name
+              };
+              geoCache.set(fbCacheKey, fbData);
+              return fbData;
+            }
           }
         }
       }
