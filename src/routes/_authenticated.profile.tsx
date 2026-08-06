@@ -52,7 +52,7 @@ import { saveDraft, loadDraft, clearDraft, markPending, pickDraftPatch } from "@
 import { detectPixKeyType, validatePixKey, PIX_KEY_TYPE_LABELS, type PixKeyType } from "@/lib/pix-key";
 import { uploadProfileDocument, resolveDocumentUrl, deleteProfileDocument } from "@/lib/profile-documents";
 import { RecommendationPreferences } from "@/components/RecommendationPreferences";
-import { geocodeAddress } from "@/lib/geocoding.functions";
+import { geocodeAddress, isValidCoordinate } from "@/lib/geocoding.functions";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -868,7 +868,7 @@ function ProfilePage() {
                 cep: profile.cep || undefined,
               }
             });
-            if (geo && geo.lat && geo.lng) {
+            if (geo && isValidCoordinate(geo.lat, geo.lng)) {
               console.log("[Background Geocoding] Sucesso:", geo);
               await supabaseExternal.from('profiles').update({ lat: geo.lat, lng: geo.lng }).eq('id', profile.id);
               setProfile((prev: any) => ({ ...prev, lat: geo.lat, lng: geo.lng }));
@@ -1029,8 +1029,8 @@ function ProfilePage() {
           neighborhood: data.bairro || prev?.neighborhood || '',
           city: data.localidade || prev?.city || '',
           state: data.uf || prev?.state || '',
-          lat: geo?.lat || prev?.lat || null,
-          lng: geo?.lng || prev?.lng || null,
+          lat: isValidCoordinate(geo?.lat, geo?.lng) ? geo!.lat : prev?.lat || null,
+          lng: isValidCoordinate(geo?.lat, geo?.lng) ? geo!.lng : prev?.lng || null,
         }));
         
         toast.success(geo ? "Endereço e coordenadas localizados!" : "Endereço preenchido via CEP!", { id: toastId });
@@ -1072,7 +1072,7 @@ function ProfilePage() {
           }
         });
         
-        if (geo && (geo.lat !== profile.lat || geo.lng !== profile.lng)) {
+        if (geo && isValidCoordinate(geo.lat, geo.lng) && (geo.lat !== profile.lat || geo.lng !== profile.lng)) {
           setProfile((prev: any) => ({ ...prev, lat: geo.lat, lng: geo.lng }));
         }
       } catch (e) {
@@ -1492,7 +1492,10 @@ function ProfilePage() {
                         type="number"
                         step="any"
                         value={profile?.lat ?? ''} 
-                        onChange={e => setProfile({...profile, lat: e.target.value ? Number(e.target.value) : null})}
+                        onChange={e => {
+                          const val = e.target.value ? Number(e.target.value) : null;
+                          setProfile({...profile, lat: val});
+                        }}
                         placeholder="Ex: -23.1234"
                         className="w-full bg-primary/5 border border-primary/20 focus:border-primary p-4 rounded-2xl outline-none font-mono text-xs text-primary"
                       />
@@ -1505,7 +1508,10 @@ function ProfilePage() {
                         type="number"
                         step="any"
                         value={profile?.lng ?? ''} 
-                        onChange={e => setProfile({...profile, lng: e.target.value ? Number(e.target.value) : null})}
+                        onChange={e => {
+                          const val = e.target.value ? Number(e.target.value) : null;
+                          setProfile({...profile, lng: val});
+                        }}
                         placeholder="Ex: -47.1234"
                         className="w-full bg-primary/5 border border-primary/20 focus:border-primary p-4 rounded-2xl outline-none font-mono text-xs text-primary"
                       />
