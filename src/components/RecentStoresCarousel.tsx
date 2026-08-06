@@ -193,10 +193,10 @@ function RecentStoresCarouselInner() {
           const isFornecedor = roleStr.includes("fornec") || roleStr.includes("parceiro");
           const kind = isFornecedor ? "fornecedor" : "lojista";
 
-          // Corrigindo a exibição do ramo e dos serviços preferenciais
-          // Priorizamos custom_branch, depois business_category.
-          // Se ambos forem nulos, usamos um fallback descritivo baseado no role.
-          const branch = r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Parceiro");
+          // Corrigindo a exibição do ramo: PRIORIDADE TOTAL para dados do banco
+          // Se custom_branch ou business_category existirem, usá-los.
+          // Fallback apenas se NADA existir no banco.
+          const branch = r.custom_branch || r.business_category || (isLojista ? "Ramo Lojista" : isFornecedor ? "Fornecedor B2B" : "Atividade Profissional");
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
@@ -206,7 +206,10 @@ function RecentStoresCarouselInner() {
           const uLat = userCoords?.lat !== null ? Number(userCoords?.lat) : null;
           const uLng = userCoords?.lng !== null ? Number(userCoords?.lng) : null;
 
-          const hasCoords = rLat !== null && rLng !== null && uLat !== null && uLng !== null && !isNaN(rLat) && !isNaN(uLat);
+          const hasCoords = rLat !== null && rLng !== null && uLat !== null && uLng !== null && 
+                            !isNaN(rLat) && !isNaN(rLng) && !isNaN(uLat) && !isNaN(uLng) &&
+                            rLat !== 0 && uLat !== 0;
+          
           const dist = hasCoords 
             ? calculateDistance(uLat!, uLng!, rLat!, rLng!) 
             : undefined;
@@ -408,7 +411,7 @@ function RecentStoresCarouselInner() {
               scrollbarWidth: 'none', 
               msOverflowStyle: 'none', 
               WebkitOverflowScrolling: 'touch',
-              minHeight: '380px'
+              minHeight: '440px'
             }}
           >
 
@@ -426,7 +429,7 @@ function RecentStoresCarouselInner() {
                       : 'border-[#A855F7]/20 hover:border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.05)]'
                   }`}
                 >
-                  <div className="h-32 bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative overflow-hidden">
+                  <div className="h-40 bg-gradient-to-b from-white/[0.05] to-transparent flex items-center justify-center relative overflow-hidden shrink-0">
                     {/* Badge Rating Superior */}
                     <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
                       <div className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 shadow-lg">
@@ -445,7 +448,7 @@ function RecentStoresCarouselInner() {
                     </div>
 
                     {p.avatar_url ? (
-                      <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover/card:scale-110 ${
+                      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover/card:scale-110 shadow-2xl ${
                         p._kind === 'lojista' ? 'border-[#00E5FF]' : 'border-[#A855F7]'
                       }`}>
                         <img 
@@ -455,16 +458,16 @@ function RecentStoresCarouselInner() {
                         />
                       </div>
                     ) : (
-                      <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center bg-white/5 transition-all duration-500 group-hover/card:scale-110 ${
+                      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center bg-white/5 transition-all duration-500 group-hover/card:scale-110 shadow-2xl ${
                         p._kind === 'lojista' ? 'border-[#00E5FF]' : 'border-[#A855F7]'
                       }`}>
-                        <UserCircle2 className={`w-16 h-16 ${p._kind === 'lojista' ? 'text-[#00E5FF]/40' : 'text-[#A855F7]/40'}`} />
+                        <UserCircle2 className={`w-20 h-20 ${p._kind === 'lojista' ? 'text-[#00E5FF]/40' : 'text-[#A855F7]/40'}`} />
                       </div>
                     )}
                     
                     {/* Badge Categoria Flutuante */}
-                    <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter italic z-10 flex items-center gap-1.5 shadow-xl border border-white/20 ${
-                      p._kind === 'lojista' ? 'bg-[#00E5FF] text-black' : 'bg-[#A855F7] text-white shadow-[#A855F7]/20'
+                    <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter italic z-10 flex items-center gap-1.5 shadow-2xl border border-white/20 transition-transform group-hover/card:scale-105 ${
+                      p._kind === 'lojista' ? 'bg-[#00E5FF] text-black shadow-[#00E5FF]/20' : 'bg-[#A855F7] text-white shadow-[#A855F7]/20'
                     }`}>
                       {p._kind === 'lojista' ? (
                         <>
@@ -478,22 +481,22 @@ function RecentStoresCarouselInner() {
                     </div>
                   </div>
 
-                  <div className="p-4 flex-1 flex flex-col space-y-2 bg-gradient-to-b from-black/40 to-black/60">
+                  <div className="p-5 flex-1 flex flex-col space-y-3 bg-gradient-to-b from-black/60 to-black/80">
                     <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-2">{name}</h4>
                     
                     <div className="flex flex-col gap-1.5 flex-1">
                       <div className="flex flex-wrap gap-1.5 items-center">
-                        <span className={`flex items-start gap-1.5 text-[10px] font-black uppercase tracking-tight ${
+                        <span className={`flex items-start gap-1.5 text-[11px] font-black uppercase tracking-tight ${
                           p._kind === 'lojista' ? 'text-[#00E5FF]' : 'text-[#A855F7]'
                         }`}>
-                          <Puzzle className="w-3 h-3 mt-0.5 shrink-0" />
-                          <span className="leading-tight">{p._branch}</span>
+                          <Puzzle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <span className="leading-tight line-clamp-2">{p._branch}</span>
                         </span>
                       </div>
                       {p.preferred_service && (
-                        <div className="flex items-start gap-1.5 text-[9px] text-white/40 font-bold uppercase italic leading-tight">
-                          <Star className="w-2.5 h-2.5 mt-0.5 shrink-0 opacity-40" />
-                          <span className="flex-1">{p.preferred_service}</span>
+                        <div className="flex items-start gap-1.5 text-[10px] text-white/50 font-medium uppercase italic leading-tight">
+                          <Star className="w-3 h-3 mt-0.5 shrink-0 text-amber-500/60" />
+                          <span className="flex-1 line-clamp-2">{p.preferred_service}</span>
                         </div>
                       )}
                     </div>
@@ -504,15 +507,15 @@ function RecentStoresCarouselInner() {
                         <span className="truncate max-w-[80px]">
                           {p.city || "S/L"}, {p.state || "BR"}
                         </span>
-                        {p._distance !== undefined && p._distance > 0 ? (
-                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic animate-pulse">
+                        {p._distance !== undefined && !isNaN(p._distance) ? (
+                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic">
                             <Navigation className="w-2.5 h-2.5 rotate-45" />
                              {p._distance.toFixed(1)} KM
                            </span>
                          ) : (
-                           <span className="ml-auto text-emerald-500/80 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
-                             <Navigation className="w-2.5 h-2.5 opacity-50" />
-                             Região: Votorantim/SP
+                           <span className="ml-auto text-white/20 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
+                             <Navigation className="w-2.5 h-2.5 opacity-30" />
+                             Distância N/D
                            </span>
                          )}
                       </div>
