@@ -112,12 +112,25 @@ function RecentStoresCarouselInner() {
         if (session?.user) {
           const userId = session.user.id;
           
-          // Busca RIGOROSA dos dados de endereço salvos no banco de dados
+          // Busca segura dos dados de endereço. Se falhar por colunas ausentes, usa o básico.
           const { data: profile, error } = await supabaseExternal
             .from("profiles_public")
-            .select("id, lat, lng, city, state, street, neighborhood, number, cep")
+            .select("id, lat, lng, city, state") // Mantemos o básico garantido primeiro
             .eq("id", userId)
             .maybeSingle();
+          
+          // Tenta pegar campos extras se existirem (segunda tentativa silenciosa)
+          let extraFields: any = {};
+          try {
+            const { data: extras } = await supabaseExternal
+              .from("profiles_public")
+              .select("street, neighborhood, number, cep")
+              .eq("id", userId)
+              .maybeSingle();
+            if (extras) extraFields = extras;
+          } catch (e) {
+            console.warn("[RecentStoresCarousel] Colunas de endereço detalhado ainda não existem na view.");
+          }
           
           if (profile) {
             console.log("[RecentStoresCarousel] Localização do seu perfil no banco:", { 
