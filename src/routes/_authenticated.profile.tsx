@@ -1043,6 +1043,46 @@ function ProfilePage() {
     }
   };
 
+  // 🌍 Geocodificação debounced para campos de endereço manuais
+  useEffect(() => {
+    if (loading || profileId || !profile?.id) return;
+    
+    // Compara com o snapshot salvo para ver se houve mudança nos campos de endereço
+    const lastSaved = lastSavedSnapshotRef.current ? JSON.parse(lastSavedSnapshotRef.current) : {};
+    const hasAddressFieldChanged = 
+      profile.street !== lastSaved.street || 
+      profile.number !== lastSaved.number ||
+      profile.neighborhood !== lastSaved.neighborhood ||
+      profile.city !== lastSaved.city || 
+      profile.state !== lastSaved.state;
+
+    if (!hasAddressFieldChanged) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        console.log("[Address Geocoding] Sincronizando coordenadas...");
+        const geo = await geocodeAddress({
+          data: {
+            street: profile.street || undefined,
+            number: profile.number || undefined,
+            neighborhood: profile.neighborhood || undefined,
+            city: profile.city || undefined,
+            state: profile.state || undefined,
+            cep: profile.cep || undefined,
+          }
+        });
+        
+        if (geo && (geo.lat !== profile.lat || geo.lng !== profile.lng)) {
+          setProfile((prev: any) => ({ ...prev, lat: geo.lat, lng: geo.lng }));
+        }
+      } catch (e) {
+        console.warn("[Address Geocoding] Erro silencioso:", e);
+      }
+    }, 2000); // 2 segundos após parar de digitar
+
+    return () => clearTimeout(timer);
+  }, [profile.street, profile.number, profile.neighborhood, profile.city, profile.state, loading, profileId]);
+
   // ⚠️ Hooks SEMPRE antes de qualquer early return, para manter a ordem estável
   // entre renders (evita "Rendered more hooks than during the previous render").
   const theme = useMemo(() => getCategoryTheme(roleToCategory(profile?.role)), [profile?.role]);
@@ -1391,7 +1431,11 @@ function ProfilePage() {
                       value={profile?.cep || ''}
                       onChange={(val: string) => {
                         setProfile({ ...profile, cep: val });
-                        if (val.replace(/\D/g, '').length === 8) handleCepLookup(val);
+                      }}
+                      onComplete={(val: string) => {
+                        if (val.replace(/\D/g, '').length === 8) {
+                          handleCepLookup(val);
+                        }
                       }}
                       placeholder="00000-000"
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
