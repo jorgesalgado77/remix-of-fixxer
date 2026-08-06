@@ -195,11 +195,10 @@ function RecentStoresCarouselInner() {
 
           // Corrigindo a exibição do ramo e dos serviços preferenciais
           // Priorizamos custom_branch, depois business_category.
-          // Se for Lojista e não tiver ramo, usamos "Lojista Geral" etc para evitar confusão com o título do card
-          let branch = r.custom_branch || r.business_category;
-          if (!branch) {
-            branch = isLojista ? "Lojista" : isFornecedor ? "Fornecedor" : "Parceiro";
-          }
+          // O usuário reclamou que aparece "Lojista/Fornecedor" onde deve ser o ramo.
+          // Isso acontece porque a lógica de fallback estava usando isLojista ? "Lojista" : "Fornecedor".
+          // Vamos usar o business_category bruto se custom_branch for nulo, e só então um fallback genérico.
+          const branch = r.custom_branch || r.business_category || (isLojista ? "Lojista Geral" : isFornecedor ? "Fornecedor Geral" : "Parceiro");
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
