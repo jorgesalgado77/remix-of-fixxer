@@ -257,10 +257,9 @@ function RecentStoresCarouselInner() {
 
           if (r.id.includes("debug") || (r.display_name && r.display_name.includes("ANDREIA"))) {
             console.log(`[RecentStoresCarousel] Dist Check for ${r.display_name}:`, { 
-              hasCoords, 
+              dist,
               rLat, rLng, 
               uLat, uLng, 
-              dist,
               uAddress: userCoords?.address,
               rAddress: `${r.street || ""}, ${r.number || ""}, ${r.neighborhood || ""}, ${r.city || ""}, ${r.state || ""} - CEP ${r.cep || ""}`.trim()
             });
