@@ -7,7 +7,7 @@ export const syncAllUsersCoordinates = createServerFn({ method: "POST" })
     console.log("[MassGeocoding] Iniciando varredura de usuários...");
     
     const { data: users, error } = await supabaseExternal
-      .from('profiles')
+      .from('profiles_public')
       .select('id, street, number, neighborhood, city, state, cep, lat, lng');
 
     if (error) {
