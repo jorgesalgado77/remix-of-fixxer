@@ -58,7 +58,7 @@ function RecentStoresCarouselInner() {
     return Number(localStorage.getItem('fixxer_carousel_scroll')) || 0;
   });
 
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; address?: string } | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 20;
@@ -115,20 +115,25 @@ function RecentStoresCarouselInner() {
           // Busca RIGOROSA dos dados de endereço salvos no banco de dados
           const { data: profile, error } = await supabaseExternal
             .from("profiles_public")
-            .select("id, lat, lng, city, state")
+            .select("id, lat, lng, city, state, street, neighborhood, number, cep")
             .eq("id", userId)
             .maybeSingle();
           
           if (profile) {
-            console.log("[RecentStoresCarousel] Localização do seu perfil no banco:", { lat: profile.lat, lng: profile.lng, city: profile.city });
+            console.log("[RecentStoresCarousel] Localização do seu perfil no banco:", { 
+              lat: profile.lat, 
+              lng: profile.lng, 
+              city: profile.city,
+              street: profile.street,
+              cep: profile.cep
+            });
             
-            if (profile.lat !== null && profile.lng !== null && Math.abs(Number(profile.lat)) > 0.0001) {
-              const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
-              setUserCoords(coords);
-            } else {
-              console.warn("[RecentStoresCarousel] Você (ID:", userId, ") tem coordenadas zeradas ou nulas no banco.");
-              setUserCoords(null);
-            }
+            const coords = { 
+              lat: Number(profile.lat || 0), 
+              lng: Number(profile.lng || 0),
+              address: `${profile.street || ""}, ${profile.number || ""}, ${profile.neighborhood || ""}, ${profile.city || ""}, ${profile.state || ""} - CEP ${profile.cep || ""}`.trim()
+            };
+            setUserCoords(coords);
           }
         }
       } catch (err) {
@@ -160,7 +165,7 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng, activity_branch")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, street, neighborhood, number, cep, created_at, lat, lng, activity_branch")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
         .order('created_at', { ascending: false });
 

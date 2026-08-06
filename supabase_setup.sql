@@ -53,6 +53,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     total_reviews INT DEFAULT 0,
     city TEXT,
     state TEXT,
+    street TEXT,
+    neighborhood TEXT,
+    number TEXT,
+    cep TEXT,
+    lat NUMERIC,
+    lng NUMERIC,
     portfolio_urls TEXT[] DEFAULT '{}',
     status TEXT DEFAULT 'Ativo',
     document_type TEXT,
@@ -68,6 +74,12 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS rating NUMERIC DEFAULT 5.0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS total_reviews INT DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS city TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS state TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS street TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS neighborhood TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS number TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS cep TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS lat NUMERIC;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS lng NUMERIC;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS portfolio_urls TEXT[] DEFAULT '{}';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Ativo';
 
@@ -185,6 +197,10 @@ SELECT
     preferred_service,
     city, 
     state, 
+    street,
+    neighborhood,
+    number,
+    cep,
     lat, 
     lng, 
     activity_branch,
