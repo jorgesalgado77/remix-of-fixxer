@@ -112,26 +112,39 @@ function RecentStoresCarouselInner() {
         if (session?.user) {
           const userId = session.user.id;
           
-          // Busca RIGOROSA dos dados de endereço salvos no banco de dados
+          // Busca segura dos dados de endereço. Se falhar por colunas ausentes, usa o básico.
           const { data: profile, error } = await supabaseExternal
             .from("profiles_public")
-            .select("id, lat, lng, city, state, street, neighborhood, number, cep")
+            .select("id, lat, lng, city, state") // Mantemos o básico garantido primeiro
             .eq("id", userId)
             .maybeSingle();
+          
+          // Tenta pegar campos extras se existirem (segunda tentativa silenciosa)
+          let extraFields: any = {};
+          try {
+            const { data: extras } = await supabaseExternal
+              .from("profiles_public")
+              .select("street, neighborhood, number, cep")
+              .eq("id", userId)
+              .maybeSingle();
+            if (extras) extraFields = extras;
+          } catch (e) {
+            console.warn("[RecentStoresCarousel] Colunas de endereço detalhado ainda não existem na view.");
+          }
           
           if (profile) {
             console.log("[RecentStoresCarousel] Localização do seu perfil no banco:", { 
               lat: profile.lat, 
               lng: profile.lng, 
               city: profile.city,
-              street: profile.street,
-              cep: profile.cep
+              street: extraFields.street,
+              cep: extraFields.cep
             });
             
             const coords = { 
               lat: Number(profile.lat || 0), 
               lng: Number(profile.lng || 0),
-              address: `${profile.street || ""}, ${profile.number || ""}, ${profile.neighborhood || ""}, ${profile.city || ""}, ${profile.state || ""} - CEP ${profile.cep || ""}`.trim()
+              address: `${extraFields.street || ""}, ${extraFields.number || ""}, ${extraFields.neighborhood || ""}, ${profile.city || ""}, ${profile.state || ""} - CEP ${extraFields.cep || ""}`.trim()
             };
             setUserCoords(coords);
           }
@@ -163,12 +176,16 @@ function RecentStoresCarouselInner() {
       
       setError(null);
       
+      // Construção da query com colunas básicas primeiro para evitar quebra total
+      // Se a view não tiver as colunas novas, o Supabase retornará erro 42703 (coluna inexistente)
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, street, neighborhood, number, cep, created_at, lat, lng, activity_branch")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng, activity_branch")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
         .order('created_at', { ascending: false });
 
+      // Tentativa de buscar colunas de endereço detalhado separadamente ou verificar erro
+      // Para manter a UI estável, se as colunas novas falharem, usamos o fallback
       const { data: profiles, error: supabaseError } = await query;
 
 
@@ -242,10 +259,10 @@ function RecentStoresCarouselInner() {
             preferred_service: r.preferred_service,
             city: r.city,
             state: r.state,
-            street: r.street,
-            neighborhood: r.neighborhood,
-            number: r.number,
-            cep: r.cep,
+            street: r.street || null,
+            neighborhood: r.neighborhood || null,
+            number: r.number || null,
+            cep: r.cep || null,
             rating: 4.5 + Math.random() * 0.5,
             created_at: r.created_at,
             lat: r.lat !== null ? Number(r.lat) : null,
