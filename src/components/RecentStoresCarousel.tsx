@@ -504,15 +504,15 @@ function RecentStoresCarouselInner() {
                         <span className="truncate max-w-[80px]">
                           {p.city || "S/L"}, {p.state || "BR"}
                         </span>
-                        {p._distance !== undefined && p._distance > 0 ? (
-                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic animate-pulse">
+                        {p._distance !== undefined && !isNaN(p._distance) ? (
+                          <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic">
                             <Navigation className="w-2.5 h-2.5 rotate-45" />
                              {p._distance.toFixed(1)} KM
                            </span>
                          ) : (
-                           <span className="ml-auto text-emerald-500/80 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
-                             <Navigation className="w-2.5 h-2.5 opacity-50" />
-                             Região: Votorantim/SP
+                           <span className="ml-auto text-white/20 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
+                             <Navigation className="w-2.5 h-2.5 opacity-30" />
+                             Distância N/D
                            </span>
                          )}
                       </div>
