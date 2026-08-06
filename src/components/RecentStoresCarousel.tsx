@@ -96,6 +96,13 @@ function RecentStoresCarouselInner() {
     localStorage.setItem('fixxer_carousel_filter', kindFilter);
   }, [kindFilter]);
 
+  // Carrega coordenadas em cache somente após a hidratação (evita mismatch de SSR)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('fixxer_user_coords_v1');
+      if (saved) setUserCoords(JSON.parse(saved));
+    } catch { /* noop */ }
+  }, []);
 
   useEffect(() => {
     const getUserLocation = async () => {
