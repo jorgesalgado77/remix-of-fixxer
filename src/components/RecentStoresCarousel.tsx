@@ -333,13 +333,15 @@ function RecentStoresCarouselInner() {
     }
   }, [userCoords, kindFilter, page, items, userBranchCtx]);
 
+  // Busca inicial + refetch quando o filtro ou as coordenadas do usuário mudam.
+  // Depende de valores primitivos para evitar loops causados por novas referências de objeto.
+  const coordsKey = userCoords ? `${userCoords.lat},${userCoords.lng}` : "none";
   useEffect(() => {
-    // Resetar quando o filtro mudar apenas se não houver itens OU se o filtro mudar para algo não cacheado
-    // Mantemos os itens se eles já existirem para evitar "sumiço" ao voltar de rotas
     setPage(0);
     setHasMore(true);
     fetchList();
-  }, [kindFilter, userCoords]); // Recalcula se as coordenadas do usuário mudarem (geocodificação terminou)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kindFilter, coordsKey]);
 
   const filteredItems = useMemo(() => {
     let filtered = [...items];
