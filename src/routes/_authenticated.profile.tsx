@@ -1397,11 +1397,21 @@ function ProfilePage() {
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                     />
                   </div>
-                  <div className="md:col-span-2 space-y-2">
+                  <div className="md:col-span-1 space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Número</label>
+                    <input 
+                      value={profile?.number || ''} 
+                      onChange={e => setProfile({...profile, number: e.target.value})}
+                      placeholder="123"
+                      className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
+                    />
+                  </div>
+                  <div className="md:col-span-1 space-y-2">
                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Logradouro</label>
                     <input 
                       value={profile?.street || ''} 
                       onChange={e => setProfile({...profile, street: e.target.value})}
+                      placeholder="Rua..."
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
                     />
                   </div>
