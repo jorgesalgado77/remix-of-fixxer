@@ -115,17 +115,20 @@ function RecentStoresCarouselInner() {
           // Busca RIGOROSA dos dados de endereço salvos no banco de dados
           const { data: profile, error } = await supabaseExternal
             .from("profiles_public")
-            .select("lat, lng, city, state")
+            .select("id, lat, lng, city, state")
             .eq("id", userId)
             .maybeSingle();
           
-          if (profile && profile.lat !== null && profile.lng !== null && Number(profile.lat) !== 0) {
-            const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
-            console.log("[RecentStoresCarousel] Localização do usuário vinda do BANCO:", coords);
-            setUserCoords(coords);
-          } else {
-            console.warn("[RecentStoresCarousel] Usuário logado sem coordenadas no perfil (banco):", userId);
-            setUserCoords(null);
+          if (profile) {
+            console.log("[RecentStoresCarousel] Localização do seu perfil no banco:", { lat: profile.lat, lng: profile.lng, city: profile.city });
+            
+            if (profile.lat !== null && profile.lng !== null && Math.abs(Number(profile.lat)) > 0.0001) {
+              const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
+              setUserCoords(coords);
+            } else {
+              console.warn("[RecentStoresCarousel] Você (ID:", userId, ") tem coordenadas zeradas ou nulas no banco.");
+              setUserCoords(null);
+            }
           }
         }
       } catch (err) {
