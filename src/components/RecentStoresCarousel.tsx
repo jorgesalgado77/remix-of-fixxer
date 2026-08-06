@@ -124,34 +124,49 @@ function RecentStoresCarouselInner() {
             let currentLat = profile.lat ? Number(profile.lat) : 0;
             let currentLng = profile.lng ? Number(profile.lng) : 0;
 
-            // Rotina de Geocodificação Automática
-            if ((!currentLat || !currentLng || (Math.abs(currentLat) < 0.001)) && (profile.cep || profile.city)) {
-              console.log("[Geocoding] Iniciando preenchimento automático para:", profile.id);
-              try {
-                const geo = await geocodeAddress({
-                  data: {
-                    street: profile.street || undefined,
-                    number: profile.number || undefined,
-                    neighborhood: profile.neighborhood || undefined,
-                    city: profile.city || undefined,
-                    state: profile.state || undefined,
-                    cep: profile.cep || undefined,
+            // Rotina de Geocodificação Automática com Cache e Validação
+            const needsGeo = (!currentLat || !currentLng || (Math.abs(currentLat) < 0.001)) && (profile.cep || profile.city);
+            
+            if (needsGeo) {
+              const geoCacheKey = `fixxer_geo_cache_${userId}_${profile.cep || profile.city}`;
+              const cached = localStorage.getItem(geoCacheKey);
+              
+              if (cached) {
+                const parsed = JSON.parse(cached);
+                currentLat = parsed.lat;
+                currentLng = parsed.lng;
+              } else {
+                console.log("[Geocoding] Iniciando preenchimento automático para:", profile.id);
+                try {
+                  const geo = await geocodeAddress({
+                    data: {
+                      street: profile.street || undefined,
+                      number: profile.number || undefined,
+                      neighborhood: profile.neighborhood || undefined,
+                      city: profile.city || undefined,
+                      state: profile.state || undefined,
+                      cep: profile.cep || undefined,
+                    }
+                  });
+
+                  if (geo && geo.lat && geo.lng) {
+                    console.log("[Geocoding] Coordenadas encontradas:", geo);
+                    currentLat = geo.lat;
+                    currentLng = geo.lng;
+
+                    // Persistir no banco de dados para evitar re-processamento
+                    await supabaseExternal
+                      .from("profiles")
+                      .update({ lat: geo.lat, lng: geo.lng })
+                      .eq("id", userId);
+                    
+                    // Cache local para evitar chamadas durante a sessão se o banco demorar a refletir
+                    localStorage.setItem(geoCacheKey, JSON.stringify({ lat: geo.lat, lng: geo.lng }));
                   }
-                });
-
-                if (geo && geo.lat && geo.lng) {
-                  console.log("[Geocoding] Coordenadas encontradas:", geo);
-                  currentLat = geo.lat;
-                  currentLng = geo.lng;
-
-                  // Persistir no banco de dados para evitar re-processamento
-                  await supabaseExternal
-                    .from("profiles")
-                    .update({ lat: geo.lat, lng: geo.lng })
-                    .eq("id", userId);
+                } catch (geoErr) {
+                  console.error("[Geocoding] Falha na rotina automática:", geoErr);
+                  // Não faz nada, mantém lat/lng zero para não quebrar a UI
                 }
-              } catch (geoErr) {
-                console.error("[Geocoding] Falha na rotina automática:", geoErr);
               }
             }
 
