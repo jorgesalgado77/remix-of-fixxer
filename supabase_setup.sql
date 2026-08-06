@@ -168,10 +168,10 @@ SET user_type = 'Admin', role = 'admin', lat = -23.50, lng = -47.45
 WHERE email = 'jorgericardosalgado@gmail.com';
 
 -- 7. VIEWS PÚBLICAS (profiles_public)
--- Recriação da view usando CASCADE para tratar dependências como search_profiles_public
+-- Recriação da view usando DROP CASCADE para evitar erros de alteração de estrutura
 DROP VIEW IF EXISTS public.profiles_public CASCADE;
 
-CREATE OR REPLACE VIEW public.profiles_public AS
+CREATE VIEW public.profiles_public AS
 SELECT 
     id, 
     full_name, 
