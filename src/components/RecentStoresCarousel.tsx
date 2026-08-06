@@ -339,7 +339,18 @@ function RecentStoresCarouselInner() {
   }, [kindFilter, userCoords]); // Recalcula se as coordenadas do usuário mudarem (geocodificação terminou)
 
   const filteredItems = useMemo(() => {
-    let filtered = items;
+    let filtered = [...items];
+    
+    // 0. Ordenação Global por Distância (Garante que mesmo após filtros, o mais próximo venha primeiro)
+    if (userCoords) {
+      filtered.sort((a, b) => {
+        const distA = a._distance ?? Infinity;
+        const distB = b._distance ?? Infinity;
+        return distA - distB;
+      });
+    }
+    
+    // 1. Filtragem por Tipo (Role)
     
     // 1. Filtragem por Tipo (Role)
     if (kindFilter === "lojista") {
