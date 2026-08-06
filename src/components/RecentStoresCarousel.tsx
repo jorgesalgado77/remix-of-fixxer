@@ -6,6 +6,7 @@ import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { primePublicProfileCategory } from "@/lib/public-profile-category";
 import { useUserBranchContext, scoreRelevance } from "@/lib/branch-relevance";
 import { geocodeAddress } from "@/lib/geocoding.functions";
+import { getHaversineDistance } from "@/lib/haversine-helper";
 
 
 type Row = {
@@ -30,19 +31,7 @@ type Row = {
 type Kind = "lojista" | "fornecedor";
 type Card = Row & { _kind: Kind; _branch: string | null; _distance?: number };
 
-// Helper para cálculo Haversine (Distância entre coordenadas)
-export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return NaN;
-  const R = 6371; // Raio da Terra em km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+// A lógica de cálculo Haversine foi movida para @/lib/haversine-helper.ts para uso global.
 
 function RecentStoresCarouselInner() {
   const navigate = useNavigate();
@@ -264,11 +253,7 @@ function RecentStoresCarouselInner() {
           const uLng = userCoords?.lng !== null && userCoords?.lng !== undefined ? Number(userCoords?.lng) : 0;
 
           // Validação rigorosa: aceita valores reais de coordenadas (não zero)
-          const hasCoords = Math.abs(rLat) > 0.0001 && Math.abs(uLat) > 0.0001 && Math.abs(rLng) > 0.0001 && Math.abs(uLng) > 0.0001;
-          
-          const dist = hasCoords 
-            ? calculateDistance(uLat, uLng, rLat, rLng) 
-            : undefined;
+          const dist = getHaversineDistance(uLat, uLng, rLat, rLng) ?? undefined;
 
           if (r.id.includes("debug") || (r.display_name && r.display_name.includes("ANDREIA"))) {
             console.log(`[RecentStoresCarousel] Dist Check for ${r.display_name}:`, { 

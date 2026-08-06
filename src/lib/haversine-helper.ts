@@ -1,9 +1,20 @@
-import { calculateDistance } from "./RecentStoresCarousel";
-
 /**
- * Utilitário global para cálculo de distância entre usuários.
+ * Utilitário global para cálculo de distância entre coordenadas (Haversine).
  * Centraliza a lógica para garantir consistência em toda a plataforma.
  */
+function calculateDistanceInternal(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return NaN;
+  const R = 6371; // Raio da Terra em km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export const getHaversineDistance = (
   lat1: number | string | null | undefined,
   lng1: number | string | null | undefined,
@@ -22,6 +33,6 @@ export const getHaversineDistance = (
   // Ignora coordenadas (0,0) que costumam indicar erro de geocodificação
   if (Math.abs(l1) < 0.0001 || Math.abs(l2) < 0.0001) return null;
 
-  const distance = calculateDistance(l1, n1, l2, n2);
+  const distance = calculateDistanceInternal(l1, n1, l2, n2);
   return isNaN(distance) ? null : distance;
 };
