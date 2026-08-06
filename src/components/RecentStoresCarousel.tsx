@@ -195,20 +195,24 @@ function RecentStoresCarouselInner() {
           const branch = r.activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
           
           // Debugging distance: Log inputs for calculation
-          // Considera 0 como valor válido se vier do banco, mas evita nulos
-          // Note: profile_public view might return lat/lng as strings or numbers depending on the driver
-          const rLat = r.lat !== null ? Number(r.lat) : null;
-          const rLng = r.lng !== null ? Number(r.lng) : null;
-          const uLat = userCoords?.lat !== null ? Number(userCoords?.lat) : null;
-          const uLng = userCoords?.lng !== null ? Number(userCoords?.lng) : null;
+          // Note: profile_public view might return lat/lng as strings or numbers
+          const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : null;
+          const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : null;
+          const uLat = userCoords?.lat !== null && userCoords?.lat !== undefined ? Number(userCoords?.lat) : null;
+          const uLng = userCoords?.lng !== null && userCoords?.lng !== undefined ? Number(userCoords?.lng) : null;
 
+          // Validação rigorosa: aceita valores negativos (hemisfério sul/oeste) e garante que não são 0 absoluto
           const hasCoords = rLat !== null && rLng !== null && uLat !== null && uLng !== null && 
                             !isNaN(rLat) && !isNaN(rLng) && !isNaN(uLat) && !isNaN(uLng) &&
-                            Math.abs(rLat) > 0.1 && Math.abs(uLat) > 0.1; // Garante que não é 0.0
+                            Math.abs(rLat) > 0.0001 && Math.abs(uLat) > 0.0001;
           
           const dist = hasCoords 
             ? calculateDistance(uLat!, uLng!, rLat!, rLng!) 
             : undefined;
+
+          if (r.id.includes("debug") || (r.display_name && r.display_name.includes("ANDREIA"))) {
+            console.log(`[RecentStoresCarousel] Dist Check for ${r.display_name}:`, { hasCoords, rLat, rLng, uLat, uLng, dist });
+          }
 
           return {
             id: r.id,
