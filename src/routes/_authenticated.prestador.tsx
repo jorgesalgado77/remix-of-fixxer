@@ -1,4 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useProviderStats } from "@/hooks/use-provider-stats";
+import { StatDetailsModal, type StatListItem } from "@/components/StatDetailsModal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import {
   Briefcase,
@@ -70,13 +73,8 @@ function PrestadorDashboard() {
       <MyAppointmentsSection />
 
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <ProviderStatsGrid />
 
-        <StatCard icon={<Briefcase className="w-5 h-5" />} label="Ativos" value="3" color="text-blue-400" />
-        <StatCard icon={<CheckCircle2 className="w-5 h-5" />} label="Concluídos" value="128" color="text-primary" />
-        <StatCard icon={<Star className="w-5 h-5" />} label="Rating" value="4.9" color="text-amber-400" />
-        <StatCard icon={<DollarSign className="w-5 h-5" />} label="Saldo" value="R$ 2.4k" color="text-emerald-400" />
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className={`lg:col-span-2 space-y-6`}>
@@ -143,16 +141,126 @@ function PrestadorDashboard() {
   );
 }
 
-function StatCard({ icon, label, value, color }: any) {
+const BRL = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const fmtDate = (d?: string | null) =>
+  d ? new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+function ProviderStatsGrid() {
+  const stats = useProviderStats();
+  const [openKey, setOpenKey] = useState<null | "ativos" | "concluidos" | "rating" | "saldo">(null);
+
+  const orderItems = (list: typeof stats.activeOrders): StatListItem[] =>
+    list.map((o) => ({
+      id: o.id,
+      title: o.title?.trim() || `O.S. ${String(o.id).slice(0, 8)}`,
+      subtitle: o.status ? `Status: ${o.status}` : undefined,
+      meta: fmtDate(o.created_at),
+      right: typeof o.price === "number" ? BRL(o.price) : undefined,
+    }));
+
+  const reviewItems: StatListItem[] = stats.reviews.map((r) => ({
+    id: r.id,
+    title: `${Number(r.rating ?? 0).toFixed(1)} ★`,
+    subtitle: r.comment?.trim() || "Sem comentário",
+    meta: fmtDate(r.created_at),
+  }));
+
+  const txItems: StatListItem[] = stats.transactions.map((t) => ({
+    id: t.id,
+    title: t.reason?.trim() || t.source?.trim() || "Movimentação",
+    subtitle: t.source ? `Origem: ${t.source}` : undefined,
+    meta: fmtDate(t.created_at),
+    right: typeof t.amount === "number" ? `${t.amount > 0 ? "+" : ""}${t.amount}` : undefined,
+  }));
+
+  const dash = "—";
+
   return (
-    <div className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col gap-1 relative overflow-hidden">
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          icon={<Briefcase className="w-5 h-5" />}
+          label="Ativos"
+          value={stats.loading ? dash : String(stats.activeOrders.length)}
+          color="text-blue-400"
+          onClick={() => setOpenKey("ativos")}
+        />
+        <StatCard
+          icon={<CheckCircle2 className="w-5 h-5" />}
+          label="Concluídos"
+          value={stats.loading ? dash : String(stats.doneOrders.length)}
+          color="text-primary"
+          onClick={() => setOpenKey("concluidos")}
+        />
+        <StatCard
+          icon={<Star className="w-5 h-5" />}
+          label="Rating"
+          value={stats.loading ? dash : stats.ratingAvg !== null ? stats.ratingAvg.toFixed(1) : "0.0"}
+          color="text-amber-400"
+          onClick={() => setOpenKey("rating")}
+        />
+        <StatCard
+          icon={<DollarSign className="w-5 h-5" />}
+          label="Saldo"
+          value={stats.loading ? dash : `${stats.balance} FXC`}
+          color="text-emerald-400"
+          onClick={() => setOpenKey("saldo")}
+        />
+      </div>
+
+      <StatDetailsModal
+        open={openKey === "ativos"}
+        onOpenChange={(v) => !v && setOpenKey(null)}
+        title="Trabalhos ativos"
+        emptyLabel="Nenhum trabalho ativo no momento."
+        loading={stats.loading}
+        items={orderItems(stats.activeOrders)}
+      />
+      <StatDetailsModal
+        open={openKey === "concluidos"}
+        onOpenChange={(v) => !v && setOpenKey(null)}
+        title="Trabalhos concluídos"
+        emptyLabel="Nenhum trabalho concluído ainda."
+        loading={stats.loading}
+        items={orderItems(stats.doneOrders)}
+      />
+      <StatDetailsModal
+        open={openKey === "rating"}
+        onOpenChange={(v) => !v && setOpenKey(null)}
+        title="Minhas avaliações"
+        emptyLabel="Você ainda não recebeu avaliações."
+        loading={stats.loading}
+        items={reviewItems}
+      />
+      <StatDetailsModal
+        open={openKey === "saldo"}
+        onOpenChange={(v) => !v && setOpenKey(null)}
+        title="Extrato de moedas"
+        emptyLabel="Nenhuma movimentação registrada."
+        loading={stats.loading}
+        items={txItems}
+      />
+    </>
+  );
+}
+
+function StatCard({ icon, label, value, color, onClick }: any) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col gap-1 relative overflow-hidden hover:border-primary/30 transition-all"
+    >
       <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center ${color} mb-2`}>{icon}</div>
       <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{label}</span>
       <span className="text-xl font-black text-white italic">{value}</span>
       <div className={`absolute -right-2 -bottom-2 opacity-5 ${color} scale-150`}>{icon}</div>
-    </div>
+    </button>
   );
 }
+
 
 function JobCard({ id, client, category, value, status }: any) {
   return (
