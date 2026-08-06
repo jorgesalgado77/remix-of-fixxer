@@ -112,6 +112,7 @@ function RecentStoresCarouselInner() {
         if (session?.user) {
           const userId = session.user.id;
           
+          // Busca RIGOROSA dos dados de endereço salvos no banco de dados
           const { data: profile, error } = await supabaseExternal
             .from("profiles_public")
             .select("lat, lng, city, state")
@@ -120,21 +121,15 @@ function RecentStoresCarouselInner() {
           
           if (profile && profile.lat !== null && profile.lng !== null && Number(profile.lat) !== 0) {
             const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
-            console.log("[RecentStoresCarousel] User Coords Found in View:", coords);
+            console.log("[RecentStoresCarousel] Localização do usuário vinda do BANCO:", coords);
             setUserCoords(coords);
-            localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           } else {
-            console.warn("[RecentStoresCarousel] User coordinates invalid or zero in profiles_public for ID:", userId);
-            // Tenta carregar do localStorage como backup
-            const saved = localStorage.getItem('fixxer_user_coords_v1');
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (parsed && parsed.lat !== 0) setUserCoords(parsed);
-            }
+            console.warn("[RecentStoresCarousel] Usuário logado sem coordenadas no perfil (banco):", userId);
+            setUserCoords(null);
           }
         }
       } catch (err) {
-        console.error("Location fetch error:", err);
+        console.error("Erro ao buscar endereço do perfil:", err);
       }
     };
     getUserLocation();
