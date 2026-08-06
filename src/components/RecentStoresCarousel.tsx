@@ -118,15 +118,19 @@ function RecentStoresCarouselInner() {
             .eq("id", userId)
             .maybeSingle();
           
-          if (profile && profile.lat !== null && profile.lng !== null) {
+          if (profile && profile.lat !== null && profile.lng !== null && Number(profile.lat) !== 0) {
             const coords = { lat: Number(profile.lat), lng: Number(profile.lng) };
             console.log("[RecentStoresCarousel] User Coords Found in View:", coords);
             setUserCoords(coords);
             localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           } else {
-            console.warn("[RecentStoresCarousel] User coordinates not found in profiles_public for ID:", userId);
+            console.warn("[RecentStoresCarousel] User coordinates invalid or zero in profiles_public for ID:", userId);
+            // Tenta carregar do localStorage como backup
             const saved = localStorage.getItem('fixxer_user_coords_v1');
-            if (saved) setUserCoords(JSON.parse(saved));
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (parsed && parsed.lat !== 0) setUserCoords(parsed);
+            }
           }
         }
       } catch (err) {
