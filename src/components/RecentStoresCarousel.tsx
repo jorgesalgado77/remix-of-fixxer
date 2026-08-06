@@ -5,6 +5,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { primePublicProfileCategory } from "@/lib/public-profile-category";
 import { useUserBranchContext, scoreRelevance } from "@/lib/branch-relevance";
+import { geocodeAddress } from "@/lib/geocoding.functions";
 
 
 type Row = {
@@ -114,12 +115,46 @@ function RecentStoresCarouselInner() {
           
           // Busca RIGOROSA e COMPLETA dos dados de endereço.
           const { data: profile, error } = await supabaseExternal
-            .from("profiles_public")
+            .from("profiles")
             .select("id, lat, lng, city, state, street, neighborhood, number, cep")
             .eq("id", userId)
             .maybeSingle();
           
           if (profile) {
+            let currentLat = profile.lat ? Number(profile.lat) : 0;
+            let currentLng = profile.lng ? Number(profile.lng) : 0;
+
+            // Rotina de Geocodificação Automática
+            if ((!currentLat || !currentLng || (Math.abs(currentLat) < 0.001)) && (profile.cep || profile.city)) {
+              console.log("[Geocoding] Iniciando preenchimento automático para:", profile.id);
+              try {
+                const geo = await geocodeAddress({
+                  data: {
+                    street: profile.street || undefined,
+                    number: profile.number || undefined,
+                    neighborhood: profile.neighborhood || undefined,
+                    city: profile.city || undefined,
+                    state: profile.state || undefined,
+                    cep: profile.cep || undefined,
+                  }
+                });
+
+                if (geo && geo.lat && geo.lng) {
+                  console.log("[Geocoding] Coordenadas encontradas:", geo);
+                  currentLat = geo.lat;
+                  currentLng = geo.lng;
+
+                  // Persistir no banco de dados para evitar re-processamento
+                  await supabaseExternal
+                    .from("profiles")
+                    .update({ lat: geo.lat, lng: geo.lng })
+                    .eq("id", userId);
+                }
+              } catch (geoErr) {
+                console.error("[Geocoding] Falha na rotina automática:", geoErr);
+              }
+            }
+
             const addressParts = [
               profile.street,
               profile.number,
@@ -129,8 +164,8 @@ function RecentStoresCarouselInner() {
             ].filter(Boolean);
 
             const coords = { 
-              lat: Number(profile.lat || 0), 
-              lng: Number(profile.lng || 0),
+              lat: currentLat, 
+              lng: currentLng,
               address: addressParts.join(", ") + (profile.cep ? ` - CEP ${profile.cep}` : "")
             };
             setUserCoords(coords);
