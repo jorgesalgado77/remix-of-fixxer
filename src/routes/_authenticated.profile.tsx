@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
-import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
+import { Loader2, Camera, MapPin, Save, User, Star, BadgeCheck, Upload, Trash2, Plus, Search, Building, Briefcase, FileText, File, FileSpreadsheet, Play, X, ChevronLeft, ChevronRight, MessageSquare, ExternalLink, Navigation } from "lucide-react";
 import { compressImage } from "@/utils/image-compression";
 import { MaskedInput, applyCepMask } from "@/components/MaskedInput";
 import {
@@ -1003,13 +1003,25 @@ function ProfilePage() {
   const handleCepLookup = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
-    // Mantém o CEP mascarado no formato 00000-000 (não sobrescreve com dígitos puros)
     const maskedCep = `${cleanCep.slice(0, 5)}-${cleanCep.slice(5)}`;
 
+    const toastId = toast.loading("Buscando endereço...");
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       const data = await response.json();
+      
       if (!data.erro) {
+        // Busca geocodificação imediatamente após o CEP para ter coordenadas precisas
+        const geo = await geocodeAddress({
+          data: {
+            street: data.logradouro,
+            neighborhood: data.bairro,
+            city: data.localidade,
+            state: data.uf,
+            cep: maskedCep
+          }
+        });
+
         setProfile((prev: any) => ({
           ...prev,
           cep: maskedCep,
@@ -1017,11 +1029,17 @@ function ProfilePage() {
           neighborhood: data.bairro || prev?.neighborhood || '',
           city: data.localidade || prev?.city || '',
           state: data.uf || prev?.state || '',
+          lat: geo?.lat || prev?.lat || null,
+          lng: geo?.lng || prev?.lng || null,
         }));
-        toast.success("Endereço preenchido via CEP!");
+        
+        toast.success(geo ? "Endereço e coordenadas localizados!" : "Endereço preenchido via CEP!", { id: toastId });
+      } else {
+        toast.error("CEP não encontrado.", { id: toastId });
       }
     } catch (e) {
       console.error("Erro CEP:", e);
+      toast.error("Erro ao buscar CEP.", { id: toastId });
     }
   };
 
@@ -1379,11 +1397,21 @@ function ProfilePage() {
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                     />
                   </div>
-                  <div className="md:col-span-2 space-y-2">
+                  <div className="md:col-span-1 space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Número</label>
+                    <input 
+                      value={profile?.number || ''} 
+                      onChange={e => setProfile({...profile, number: e.target.value})}
+                      placeholder="123"
+                      className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
+                    />
+                  </div>
+                  <div className="md:col-span-1 space-y-2">
                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Logradouro</label>
                     <input 
                       value={profile?.street || ''} 
                       onChange={e => setProfile({...profile, street: e.target.value})}
+                      placeholder="Rua..."
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none"
                     />
                   </div>
@@ -1410,6 +1438,34 @@ function ProfilePage() {
                       onChange={e => setProfile({...profile, state: e.target.value})}
                       className="w-full bg-white/5 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 p-4 rounded-2xl transition-all outline-none font-mono"
                     />
+                  </div>
+                  <div className="md:col-span-3 grid grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1 flex items-center gap-1">
+                        <Navigation className="w-3 h-3" /> Latitude (Gerada p/ GPS)
+                      </label>
+                      <input 
+                        type="number"
+                        step="any"
+                        value={profile?.lat ?? ''} 
+                        onChange={e => setProfile({...profile, lat: e.target.value ? Number(e.target.value) : null})}
+                        placeholder="Ex: -23.1234"
+                        className="w-full bg-primary/5 border border-primary/20 focus:border-primary p-4 rounded-2xl outline-none font-mono text-xs text-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1 flex items-center gap-1">
+                        <Navigation className="w-3 h-3" /> Longitude (Gerada p/ GPS)
+                      </label>
+                      <input 
+                        type="number"
+                        step="any"
+                        value={profile?.lng ?? ''} 
+                        onChange={e => setProfile({...profile, lng: e.target.value ? Number(e.target.value) : null})}
+                        placeholder="Ex: -47.1234"
+                        className="w-full bg-primary/5 border border-primary/20 focus:border-primary p-4 rounded-2xl outline-none font-mono text-xs text-primary"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
