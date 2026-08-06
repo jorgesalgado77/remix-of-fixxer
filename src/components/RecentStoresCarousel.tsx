@@ -112,11 +112,11 @@ function RecentStoresCarouselInner() {
             .maybeSingle();
           
           if (profile) {
-            let currentLat = profile.lat ? Number(profile.lat) : 0;
-            let currentLng = profile.lng ? Number(profile.lng) : 0;
+            let currentLat = (profile.lat !== null && profile.lat !== undefined) ? Number(profile.lat) : 0;
+            let currentLng = (profile.lng !== null && profile.lng !== undefined) ? Number(profile.lng) : 0;
 
             // Rotina de Geocodificação Automática com Cache e Validação
-            const needsGeo = (!currentLat || !currentLng || (Math.abs(currentLat) < 0.001)) && (profile.cep || profile.city);
+            const needsGeo = (!currentLat || !currentLng || (Math.abs(currentLat) < 0.000001)) && (profile.cep || profile.city);
             
             if (needsGeo) {
               const geoCacheKey = `fixxer_geo_cache_${userId}_${profile.cep || profile.city}`;

@@ -26,13 +26,20 @@ export const getHaversineDistance = (
   const l2 = typeof lat2 === 'string' ? parseFloat(lat2) : (lat2 as number);
   const n2 = typeof lng2 === 'string' ? parseFloat(lng2) : (lng2 as number);
 
-  if (!l1 || !n1 || !l2 || !n2 || isNaN(l1) || isNaN(n1) || isNaN(l2) || isNaN(n2)) {
+  // Validação rigorosa de coordenadas (faixa real GPS)
+  const isValid = (lat: number, lng: number) => {
+    return !isNaN(lat) && !isNaN(lng) && 
+           lat >= -90 && lat <= 90 && 
+           lng >= -180 && lng <= 180 &&
+           (lat !== 0 || lng !== 0); // Ignora (0,0) literal
+  };
+
+  if (!isValid(l1, n1) || !isValid(l2, n2)) {
     return null;
   }
 
-  // Ignora coordenadas (0,0) que costumam indicar erro de geocodificação
-  if (Math.abs(l1) < 0.0001 || Math.abs(l2) < 0.0001) return null;
-
   const distance = calculateDistanceInternal(l1, n1, l2, n2);
+  
+  // Se a distância for suspeita (ex: 0.0 exatamente), pode ser erro de input, mas Haversine aceita
   return isNaN(distance) ? null : distance;
 };
