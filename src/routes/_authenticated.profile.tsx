@@ -52,6 +52,7 @@ import { saveDraft, loadDraft, clearDraft, markPending, pickDraftPatch } from "@
 import { detectPixKeyType, validatePixKey, PIX_KEY_TYPE_LABELS, type PixKeyType } from "@/lib/pix-key";
 import { uploadProfileDocument, resolveDocumentUrl, deleteProfileDocument } from "@/lib/profile-documents";
 import { RecommendationPreferences } from "@/components/RecommendationPreferences";
+import { geocodeAddress } from "@/lib/geocoding.functions";
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
