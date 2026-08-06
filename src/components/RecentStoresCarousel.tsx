@@ -441,7 +441,7 @@ function RecentStoresCarouselInner() {
                     </div>
 
                     {p.avatar_url ? (
-                      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover/card:scale-110 ${
+                      <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover/card:scale-110 ${
                         p._kind === 'lojista' ? 'border-[#00E5FF]' : 'border-[#A855F7]'
                       }`}>
                         <img 
