@@ -1,4 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useProviderStats } from "@/hooks/use-provider-stats";
+import { StatDetailsModal, type StatListItem } from "@/components/StatDetailsModal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import {
   Briefcase,
