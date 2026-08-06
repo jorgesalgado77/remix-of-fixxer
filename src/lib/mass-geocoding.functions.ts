@@ -43,7 +43,15 @@ export const syncAllUsersCoordinates = createServerFn({ method: "POST" })
       try {
         const geo = await geocodeAddress({ data: address });
         
-        if (geo && (geo.lat !== user.lat || geo.lng !== user.lng)) {
+        // Log para debug local
+        console.log(`[MassGeocoding] Tentando geocodificar user ${user.id}:`, address);
+        
+        if (geo) {
+          // Se as coordenadas mudaram ou se o usuário não tinha coordenadas (lat/lng null)
+          const isChanged = geo.lat !== user.lat || geo.lng !== user.lng;
+          const isNew = user.lat === null || user.lng === null;
+          
+          if (isChanged || isNew) {
           const { error: updateError } = await supabaseExternal
             .from('profiles')
             .update({
