@@ -845,6 +845,40 @@ function ProfilePage() {
         break;
       }
 
+      // TAREFA: Geocodificação em background se campos de endereço mudaram
+      const lastSaved = lastSavedSnapshotRef.current ? JSON.parse(lastSavedSnapshotRef.current) : {};
+      const addressChanged = 
+        profile.street !== lastSaved.street || 
+        profile.city !== lastSaved.city || 
+        profile.state !== lastSaved.state || 
+        profile.cep !== lastSaved.cep || 
+        profile.number !== lastSaved.number;
+
+      if (!lastError && addressChanged) {
+        console.log("[Background Geocoding] Detectada mudança de endereço, agendando...");
+        (async () => {
+          try {
+            const geo = await geocodeAddress({
+              data: {
+                street: profile.street || undefined,
+                number: profile.number || undefined,
+                neighborhood: profile.neighborhood || undefined,
+                city: profile.city || undefined,
+                state: profile.state || undefined,
+                cep: profile.cep || undefined,
+              }
+            });
+            if (geo && geo.lat && geo.lng) {
+              console.log("[Background Geocoding] Sucesso:", geo);
+              await supabaseExternal.from('profiles').update({ lat: geo.lat, lng: geo.lng }).eq('id', profile.id);
+              setProfile((prev: any) => ({ ...prev, lat: geo.lat, lng: geo.lng }));
+            }
+          } catch (e) {
+            console.error("[Background Geocoding] Erro silencioso:", e);
+          }
+        })();
+      }
+
       if (lastError) {
         if (!profileId && profile?.id) markPending(profile.id, true);
         if (!silent) {
