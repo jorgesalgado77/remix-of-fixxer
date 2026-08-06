@@ -6,6 +6,7 @@ import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { primePublicProfileCategory } from "@/lib/public-profile-category";
 import { useUserBranchContext, scoreRelevance } from "@/lib/branch-relevance";
 import { geocodeAddress } from "@/lib/geocoding.functions";
+import { getHaversineDistance } from "@/lib/haversine-helper";
 
 
 type Row = {
@@ -30,18 +31,7 @@ type Row = {
 type Kind = "lojista" | "fornecedor";
 type Card = Row & { _kind: Kind; _branch: string | null; _distance?: number };
 
-// Helper para cálculo Haversine (Distância entre coordenadas)
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371; // Raio da Terra em km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+// A lógica de cálculo Haversine foi movida para @/lib/haversine-helper.ts para uso global.
 
 function RecentStoresCarouselInner() {
   const navigate = useNavigate();
@@ -257,28 +247,19 @@ function RecentStoresCarouselInner() {
           const branch = r.activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
           
           // Debugging distance: Log inputs for calculation
-          // Note: profile_public view might return lat/lng as strings or numbers
-          const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : null;
-          const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : null;
-          const uLat = userCoords?.lat !== null && userCoords?.lat !== undefined ? Number(userCoords?.lat) : null;
-          const uLng = userCoords?.lng !== null && userCoords?.lng !== undefined ? Number(userCoords?.lng) : null;
+          const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : 0;
+          const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : 0;
+          const uLat = userCoords?.lat !== null && userCoords?.lat !== undefined ? Number(userCoords?.lat) : 0;
+          const uLng = userCoords?.lng !== null && userCoords?.lng !== undefined ? Number(userCoords?.lng) : 0;
 
-          // Validação rigorosa: aceita valores reais de coordenadas
-          const rValid = rLat !== null && !isNaN(rLat) && Math.abs(rLat) > 0.0001;
-          const uValid = uLat !== null && !isNaN(uLat) && Math.abs(uLat) > 0.0001;
-          
-          const hasCoords = rValid && uValid && rLng !== null && uLng !== null;
-          
-          const dist = hasCoords 
-            ? calculateDistance(uLat!, uLng!, rLat!, rLng!) 
-            : undefined;
+          // Validação rigorosa: aceita valores reais de coordenadas (não zero)
+          const dist = getHaversineDistance(uLat, uLng, rLat, rLng) ?? undefined;
 
           if (r.id.includes("debug") || (r.display_name && r.display_name.includes("ANDREIA"))) {
             console.log(`[RecentStoresCarousel] Dist Check for ${r.display_name}:`, { 
-              hasCoords, 
+              dist,
               rLat, rLng, 
               uLat, uLng, 
-              dist,
               uAddress: userCoords?.address,
               rAddress: `${r.street || ""}, ${r.number || ""}, ${r.neighborhood || ""}, ${r.city || ""}, ${r.state || ""} - CEP ${r.cep || ""}`.trim()
             });
