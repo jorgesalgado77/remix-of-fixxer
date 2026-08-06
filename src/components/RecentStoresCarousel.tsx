@@ -162,7 +162,7 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng, activity_branch")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
         .order('created_at', { ascending: false });
 
@@ -193,10 +193,11 @@ function RecentStoresCarouselInner() {
           const isFornecedor = roleStr.includes("fornec") || roleStr.includes("parceiro");
           const kind = isFornecedor ? "fornecedor" : "lojista";
 
-          // Corrigindo a exibição do ramo: PRIORIDADE TOTAL para dados do banco
-          // Se custom_branch ou business_category existirem, usá-los.
-          // Fallback apenas se NADA existir no banco.
-          const branch = r.custom_branch || r.business_category || (isLojista ? "Ramo Lojista" : isFornecedor ? "Fornecedor B2B" : "Atividade Profissional");
+          // Prioridade total para o Ramo de Atividade Real (Banco de Dados)
+          // 1. activity_branch (valor do Picker oficial)
+          // 2. custom_branch (valor manual)
+          // 3. business_category (categoria legada)
+          const branch = r.activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
