@@ -451,7 +451,7 @@ function RecentStoresCarouselInner() {
                         />
                       </div>
                     ) : (
-                      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center bg-white/5 transition-all duration-500 group-hover/card:scale-110 ${
+                      <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center bg-white/5 transition-all duration-500 group-hover/card:scale-110 ${
                         p._kind === 'lojista' ? 'border-[#00E5FF]' : 'border-[#A855F7]'
                       }`}>
                         <UserCircle2 className={`w-16 h-16 ${p._kind === 'lojista' ? 'text-[#00E5FF]/40' : 'text-[#A855F7]/40'}`} />
