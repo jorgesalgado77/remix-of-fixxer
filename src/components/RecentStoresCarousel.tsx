@@ -407,7 +407,7 @@ function RecentStoresCarouselInner() {
                   onClick={() => openProfile(p)}
                   role="button"
                   tabIndex={0}
-                  className={`w-64 flex-shrink-0 snap-start bg-[#1A1A1E] border-2 rounded-3xl overflow-hidden text-left hover:-translate-y-2 transition-all duration-300 group/card relative cursor-pointer outline-none focus:ring-2 focus:ring-[#00FF88]/50 ${
+                  className={`w-64 flex-shrink-0 snap-start bg-[#1A1A1E] border-2 rounded-3xl overflow-hidden text-left hover:-translate-y-2 transition-all duration-300 group/card relative cursor-pointer outline-none focus:ring-2 focus:ring-[#00FF88]/50 flex flex-col ${
                     p._kind === 'lojista' 
                       ? 'border-[#00E5FF]/20 hover:border-[#00E5FF] shadow-[0_0_20px_rgba(0,229,255,0.05)]' 
                       : 'border-[#A855F7]/20 hover:border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.05)]'
