@@ -474,7 +474,7 @@ function RecentStoresCarouselInner() {
                     </div>
                   </div>
 
-                  <div className="p-5 flex-1 flex flex-col space-y-3 bg-gradient-to-b from-black/40 to-black/60">
+                  <div className="p-4 flex-1 flex flex-col space-y-2 bg-gradient-to-b from-black/40 to-black/60">
                     <h4 className="font-black text-white text-base leading-tight uppercase tracking-tight italic line-clamp-2">{name}</h4>
                     
                     <div className="flex flex-col gap-1.5 flex-1">
