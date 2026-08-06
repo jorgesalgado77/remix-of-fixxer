@@ -202,9 +202,15 @@ function RecentStoresCarouselInner() {
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
-          const hasCoords = r.lat !== null && r.lng !== null && userCoords && userCoords.lat !== null && userCoords.lng !== null;
+          // Note: profile_public view might return lat/lng as strings or numbers depending on the driver
+          const rLat = r.lat !== null ? Number(r.lat) : null;
+          const rLng = r.lng !== null ? Number(r.lng) : null;
+          const uLat = userCoords?.lat !== null ? Number(userCoords?.lat) : null;
+          const uLng = userCoords?.lng !== null ? Number(userCoords?.lng) : null;
+
+          const hasCoords = rLat !== null && rLng !== null && uLat !== null && uLng !== null && !isNaN(rLat) && !isNaN(uLat);
           const dist = hasCoords 
-            ? calculateDistance(userCoords.lat, userCoords.lng, Number(r.lat), Number(r.lng)) 
+            ? calculateDistance(uLat!, uLng!, rLat!, rLng!) 
             : undefined;
 
           return {
