@@ -206,7 +206,10 @@ function RecentStoresCarouselInner() {
           const uLat = userCoords?.lat !== null ? Number(userCoords?.lat) : null;
           const uLng = userCoords?.lng !== null ? Number(userCoords?.lng) : null;
 
-          const hasCoords = rLat !== null && rLng !== null && uLat !== null && uLng !== null && !isNaN(rLat) && !isNaN(uLat);
+          const hasCoords = rLat !== null && rLng !== null && uLat !== null && uLng !== null && 
+                            !isNaN(rLat) && !isNaN(rLng) && !isNaN(uLat) && !isNaN(uLng) &&
+                            rLat !== 0 && uLat !== 0;
+          
           const dist = hasCoords 
             ? calculateDistance(uLat!, uLng!, rLat!, rLng!) 
             : undefined;
