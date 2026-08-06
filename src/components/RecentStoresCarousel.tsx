@@ -498,14 +498,14 @@ function RecentStoresCarouselInner() {
                         {p._distance !== undefined && p._distance > 0 ? (
                           <span className="ml-auto flex items-center gap-1 text-[#00FF88] font-black italic animate-pulse">
                             <Navigation className="w-2.5 h-2.5 rotate-45" />
-                            {p._distance.toFixed(1)} KM
-                          </span>
-                        ) : (
-                          <span className="ml-auto text-amber-500/60 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
-                            <Navigation className="w-2.5 h-2.5 opacity-50" />
-                            {userCoords ? "S/ Coordenadas" : "Localização off"}
-                          </span>
-                        )}
+                             {p._distance.toFixed(1)} KM
+                           </span>
+                         ) : (
+                           <span className="ml-auto text-emerald-500/80 text-[8px] italic uppercase tracking-tighter flex items-center gap-1">
+                             <Navigation className="w-2.5 h-2.5 opacity-50" />
+                             Região: Votorantim/SP
+                           </span>
+                         )}
                       </div>
                       
                       <div className="flex items-center gap-2">
