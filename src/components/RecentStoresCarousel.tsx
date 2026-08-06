@@ -491,9 +491,9 @@ function RecentStoresCarouselInner() {
                         </span>
                       </div>
                       {p.preferred_service && (
-                        <div className="flex items-start gap-1.5 text-[9px] text-white/40 font-bold uppercase italic leading-tight">
-                          <Star className="w-2.5 h-2.5 mt-0.5 shrink-0 opacity-40" />
-                          <span className="flex-1">{p.preferred_service}</span>
+                        <div className="flex items-start gap-1.5 text-[10px] text-white/50 font-medium uppercase italic leading-tight">
+                          <Star className="w-3 h-3 mt-0.5 shrink-0 text-amber-500/60" />
+                          <span className="flex-1 line-clamp-2">{p.preferred_service}</span>
                         </div>
                       )}
                     </div>
