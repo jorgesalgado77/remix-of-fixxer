@@ -31,7 +31,8 @@ type Kind = "lojista" | "fornecedor";
 type Card = Row & { _kind: Kind; _branch: string | null; _distance?: number };
 
 // Helper para cálculo Haversine (Distância entre coordenadas)
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return NaN;
   const R = 6371; // Raio da Terra em km
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
@@ -257,20 +258,16 @@ function RecentStoresCarouselInner() {
           const branch = r.activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
           
           // Debugging distance: Log inputs for calculation
-          // Note: profile_public view might return lat/lng as strings or numbers
-          const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : null;
-          const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : null;
-          const uLat = userCoords?.lat !== null && userCoords?.lat !== undefined ? Number(userCoords?.lat) : null;
-          const uLng = userCoords?.lng !== null && userCoords?.lng !== undefined ? Number(userCoords?.lng) : null;
+          const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : 0;
+          const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : 0;
+          const uLat = userCoords?.lat !== null && userCoords?.lat !== undefined ? Number(userCoords?.lat) : 0;
+          const uLng = userCoords?.lng !== null && userCoords?.lng !== undefined ? Number(userCoords?.lng) : 0;
 
-          // Validação rigorosa: aceita valores reais de coordenadas
-          const rValid = rLat !== null && !isNaN(rLat) && Math.abs(rLat) > 0.0001;
-          const uValid = uLat !== null && !isNaN(uLat) && Math.abs(uLat) > 0.0001;
-          
-          const hasCoords = rValid && uValid && rLng !== null && uLng !== null;
+          // Validação rigorosa: aceita valores reais de coordenadas (não zero)
+          const hasCoords = Math.abs(rLat) > 0.0001 && Math.abs(uLat) > 0.0001 && Math.abs(rLng) > 0.0001 && Math.abs(uLng) > 0.0001;
           
           const dist = hasCoords 
-            ? calculateDistance(uLat!, uLng!, rLat!, rLng!) 
+            ? calculateDistance(uLat, uLng, rLat, rLng) 
             : undefined;
 
           if (r.id.includes("debug") || (r.display_name && r.display_name.includes("ANDREIA"))) {
