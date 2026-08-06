@@ -193,10 +193,9 @@ function RecentStoresCarouselInner() {
           const isFornecedor = roleStr.includes("fornec") || roleStr.includes("parceiro");
           const kind = isFornecedor ? "fornecedor" : "lojista";
 
-          // Corrigindo a exibição do ramo: PRIORIDADE TOTAL para dados do banco
-          // Se custom_branch ou business_category existirem, usá-los.
-          // Fallback apenas se NADA existir no banco.
-          const branch = r.custom_branch || r.business_category || (isLojista ? "Ramo Lojista" : isFornecedor ? "Fornecedor B2B" : "Atividade Profissional");
+          // Prioridade total para o Ramo de Atividade Real (Banco de Dados)
+          // Se custom_branch ou business_category existirem, usá-los obrigatoriamente.
+          const branch = r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
