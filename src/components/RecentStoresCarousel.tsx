@@ -50,7 +50,11 @@ function RecentStoresCarouselInner() {
     return Number(localStorage.getItem('fixxer_carousel_scroll')) || 0;
   });
 
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; address?: string } | null>(null);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; address?: string } | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const saved = localStorage.getItem('fixxer_user_coords_v1');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 20;
@@ -175,6 +179,7 @@ function RecentStoresCarouselInner() {
               address: addressParts.join(", ") + (profile.cep ? ` - CEP ${profile.cep}` : "")
             };
             setUserCoords(coords);
+            localStorage.setItem('fixxer_user_coords_v1', JSON.stringify(coords));
           }
         }
       } catch (err) {
