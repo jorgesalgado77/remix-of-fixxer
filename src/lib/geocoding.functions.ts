@@ -6,6 +6,13 @@ const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 // Cache em memória no servidor para evitar chamadas repetidas ao Nominatim no mesmo processo
 const geoCache = new Map<string, { lat: number, lng: number, display_name: string }>();
 
+export const isValidCoordinate = (lat: number | null | undefined, lng: number | null | undefined) => {
+  if (lat === null || lat === undefined || lng === null || lng === undefined) return false;
+  // Brasil está aproximadamente entre Lat: 5N a 33S e Lng: 35W a 74W
+  // Uma faixa segura global para evitar coordenadas inválidas
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && (lat !== 0 || lng !== 0);
+};
+
 export const geocodeAddress = createServerFn({ method: "GET" })
   .inputValidator((data) => 
     z.object({
