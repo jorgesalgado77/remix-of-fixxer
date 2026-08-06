@@ -162,7 +162,7 @@ function RecentStoresCarouselInner() {
       
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng, activity_branch")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
         .order('created_at', { ascending: false });
 
@@ -194,9 +194,10 @@ function RecentStoresCarouselInner() {
           const kind = isFornecedor ? "fornecedor" : "lojista";
 
           // Prioridade total para o Ramo de Atividade Real (Banco de Dados)
-          // 1. custom_branch (valor manual)
-          // 2. business_category (categoria legada)
-          const branch = r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
+          // 1. activity_branch (valor do Picker oficial)
+          // 2. custom_branch (valor manual)
+          // 3. business_category (categoria legada)
+          const branch = r.activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
           
           // Debugging distance: Log inputs for calculation
           // Considera 0 como valor válido se vier do banco, mas evita nulos
