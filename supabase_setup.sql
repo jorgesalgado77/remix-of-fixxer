@@ -187,6 +187,7 @@ SELECT
     state, 
     lat, 
     lng, 
+    activity_branch,
     created_at
 FROM public.profiles;
 
