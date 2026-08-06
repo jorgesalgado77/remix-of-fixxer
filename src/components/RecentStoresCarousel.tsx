@@ -137,14 +137,14 @@ function RecentStoresCarouselInner() {
               lat: profile.lat, 
               lng: profile.lng, 
               city: profile.city,
-              street: profile.street,
-              cep: profile.cep
+              street: extraFields.street,
+              cep: extraFields.cep
             });
             
             const coords = { 
               lat: Number(profile.lat || 0), 
               lng: Number(profile.lng || 0),
-              address: `${profile.street || ""}, ${profile.number || ""}, ${profile.neighborhood || ""}, ${profile.city || ""}, ${profile.state || ""} - CEP ${profile.cep || ""}`.trim()
+              address: `${extraFields.street || ""}, ${extraFields.number || ""}, ${extraFields.neighborhood || ""}, ${profile.city || ""}, ${profile.state || ""} - CEP ${extraFields.cep || ""}`.trim()
             };
             setUserCoords(coords);
           }
