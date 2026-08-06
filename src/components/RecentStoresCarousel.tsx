@@ -486,11 +486,11 @@ function RecentStoresCarouselInner() {
                     
                     <div className="flex flex-col gap-1.5 flex-1">
                       <div className="flex flex-wrap gap-1.5 items-center">
-                        <span className={`flex items-start gap-1.5 text-[10px] font-black uppercase tracking-tight ${
+                        <span className={`flex items-start gap-1.5 text-[11px] font-black uppercase tracking-tight ${
                           p._kind === 'lojista' ? 'text-[#00E5FF]' : 'text-[#A855F7]'
                         }`}>
-                          <Puzzle className="w-3 h-3 mt-0.5 shrink-0" />
-                          <span className="leading-tight">{p._branch}</span>
+                          <Puzzle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <span className="leading-tight line-clamp-2">{p._branch}</span>
                         </span>
                       </div>
                       {p.preferred_service && (
