@@ -3,8 +3,33 @@ import { z } from "zod";
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 
-// Cache em memória no servidor para evitar chamadas repetidas ao Nominatim no mesmo processo
+// Cache persistente em memória no servidor para evitar chamadas repetidas ao Nominatim
+// Em produção, isso escala melhor com um Redis, mas para o ambiente atual, o Map global atende bem.
 const geoCache = new Map<string, { lat: number, lng: number, display_name: string }>();
+
+// Cache no cliente via localStorage (opcional, mas bom para performance do browser)
+const CLIENT_GEO_CACHE_KEY = "fixxer_geo_cache_v1";
+
+const getClientCache = () => {
+  if (typeof window === "undefined") return {};
+  try {
+    const cached = localStorage.getItem(CLIENT_GEO_CACHE_KEY);
+    return cached ? JSON.parse(cached) : {};
+  } catch {
+    return {};
+  }
+};
+
+const setClientCache = (key: string, value: any) => {
+  if (typeof window === "undefined") return;
+  try {
+    const cache = getClientCache();
+    cache[key] = value;
+    localStorage.setItem(CLIENT_GEO_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore storage errors (e.g. quota full)
+  }
+};
 
 export const isValidCoordinate = (lat: number | null | undefined, lng: number | null | undefined) => {
   if (lat === null || lat === undefined || lng === null || lng === undefined) return false;
@@ -44,11 +69,18 @@ export const geocodeAddress = createServerFn({ method: "GET" })
 
       if (!query || query.length < 3) return null;
 
-      // Verificar Cache
+      // Verificar Cache (Servidor e Cliente)
       const cacheKey = query.toLowerCase().trim();
+      
+      // 1. Memória Servidor
       if (geoCache.has(cacheKey)) {
-        console.log("[Geocoding] Serving from cache:", cacheKey);
         return geoCache.get(cacheKey);
+      }
+
+      // 2. LocalStorage (se no cliente)
+      const clientCached = getClientCache()[cacheKey];
+      if (clientCached) {
+        return clientCached;
       }
 
       console.log("[Geocoding] Calling Nominatim for:", query);
@@ -85,6 +117,7 @@ export const geocodeAddress = createServerFn({ method: "GET" })
           };
           // Guardar no cache
           geoCache.set(cacheKey, geoData);
+          setClientCache(cacheKey, geoData);
           return geoData;
         }
       }
@@ -114,6 +147,7 @@ export const geocodeAddress = createServerFn({ method: "GET" })
                 display_name: fbResults[0].display_name
               };
               geoCache.set(fbCacheKey, fbData);
+              setClientCache(fbCacheKey, fbData);
               return fbData;
             }
           }
