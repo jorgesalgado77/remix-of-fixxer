@@ -315,7 +315,13 @@ export function LojistaDashboard() {
       { id: 3, title: 'Avaliação Recebida', message: 'Carlos Silva deixou uma avaliação de 5 estrelas.', type: 'review_received', os_id: '2488', time: '2 horas atrás', read: true },
     ]);
 
-    return () => window.removeEventListener('change-tab', handleTabChangeEvent);
+    const handlePixModalEvent = () => setShowPixModal(true);
+    window.addEventListener('fixxer:open-pix-modal', handlePixModalEvent);
+
+    return () => {
+      window.removeEventListener('change-tab', handleTabChangeEvent);
+      window.removeEventListener('fixxer:open-pix-modal', handlePixModalEvent);
+    };
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;

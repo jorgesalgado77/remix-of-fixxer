@@ -127,6 +127,22 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
         <Settings className="w-5 h-5" aria-hidden="true" />
       </IconLink>
 
+      <button
+        onClick={() => {
+          try {
+            // Tenta abrir o modal de PIX se estiver no dashboard, ou notifica
+            window.dispatchEvent(new CustomEvent('fixxer:open-pix-modal'));
+          } catch (err) {
+            toast.error("Funcionalidade disponível no seu painel principal.");
+          }
+        }}
+        title="Receber via PIX — Gere cobranças instantâneas e gerencie seus recebimentos"
+        aria-label="Receber via PIX"
+        className="flex items-center justify-center h-11 w-11 rounded-xl bg-emerald-500 border border-emerald-400 text-black hover:bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all active:scale-95"
+      >
+        <Zap className="w-5 h-5" aria-hidden="true" />
+      </button>
+
       {showAvailability && <AvailabilityToggle role={role} />}
     </div>
   );
