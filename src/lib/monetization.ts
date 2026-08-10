@@ -43,6 +43,7 @@ export interface CoinPack {
 export interface MonetizationConfig {
   version: number;
   updatedAt: string;
+  pixPlatformFeePercent: number; // Nova configuração de taxa
   plans: PlanConfig[];
   actions: ActionCost[];
   coinPacks: CoinPack[];
