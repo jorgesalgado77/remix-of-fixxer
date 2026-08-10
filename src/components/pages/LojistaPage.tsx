@@ -3352,6 +3352,15 @@ function ProfileView({
                     </div>
                 </div>
             )}
+            {/* Modal PIX */}
+            {showPixModal && (
+              <PixManagerModal 
+                open={showPixModal}
+                onClose={() => setShowPixModal(false)}
+                profile={profileSummary}
+                stats={providerStats}
+              />
+            )}
         </div>
     );
 }
