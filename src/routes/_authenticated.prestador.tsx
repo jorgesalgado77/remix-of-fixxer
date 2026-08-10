@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useProviderStats } from "@/hooks/use-provider-stats";
 import { StatDetailsModal, type StatListItem } from "@/components/StatDetailsModal";
+import { PixManagerModal } from "@/components/PixManagerModal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import {
   Briefcase,
@@ -17,6 +18,7 @@ import {
   PlusCircle,
   Camera,
   Hammer,
+  QrCode,
 } from "lucide-react";
 
 import { EscrowBadge } from "@/components/EscrowBadge";
