@@ -34,6 +34,11 @@ export type ProviderStats = {
   ratingAvg: number | null;
   transactions: StatTx[];
   balance: number;
+  balanceReservations: number;
+  balanceProducts: number;
+  balanceServices: number;
+  period: string;
+  setPeriod: (p: string) => void;
   reload: () => void;
 };
 
