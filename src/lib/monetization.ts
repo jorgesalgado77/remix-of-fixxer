@@ -107,6 +107,7 @@ function mergeWithDefaults(partial: Partial<MonetizationConfig> | null): Monetiz
   return {
     version: partial.version ?? DEFAULT_MONETIZATION.version,
     updatedAt: partial.updatedAt ?? DEFAULT_MONETIZATION.updatedAt,
+    pixPlatformFeePercent: partial.pixPlatformFeePercent ?? DEFAULT_MONETIZATION.pixPlatformFeePercent,
     plans: partial.plans?.length ? partial.plans as PlanConfig[] : DEFAULT_MONETIZATION.plans,
     actions: partial.actions?.length ? partial.actions as ActionCost[] : DEFAULT_MONETIZATION.actions,
     coinPacks: partial.coinPacks?.length ? partial.coinPacks as CoinPack[] : DEFAULT_MONETIZATION.coinPacks,
