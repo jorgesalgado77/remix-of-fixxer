@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS public.reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     author_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     target_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    reviewed_user_id UUID GENERATED ALWAYS AS (target_id) STORED, -- Alias para compatibilidade legada
     os_id UUID REFERENCES public.orders_of_service(id) ON DELETE SET NULL,
     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
     comment TEXT,
