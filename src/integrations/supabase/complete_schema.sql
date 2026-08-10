@@ -141,7 +141,7 @@ DO $$
 DECLARE
     r RECORD;
 BEGIN
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('subscription_plans', 'plan_features', 'profiles', 'user_roles', 'admin_config', 'access_logs', 'brand_flags')) LOOP
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('subscription_plans', 'plan_features', 'profiles', 'user_roles', 'admin_config', 'access_logs', 'brand_flags', 'service_orders', 'proposals', 'reviews', 'feed_posts', 'notifications', 'user_coins', 'coin_transactions')) LOOP
         EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' ENABLE ROW LEVEL SECURITY';
     END LOOP;
 END $$;
@@ -295,7 +295,8 @@ BEGIN
 
 END $$;
 
--- 9. TABELAS DE NEGÓCIO (O.S., PROPOSTAS, CHAT)
+-- 9. TABELAS DE NEGÓCIO (CONSOLIDADAS - PROMPT 04)
+
 -- VIEW PÚBLICA RESTRITA (Evita exposição de endereço completo)
 CREATE OR REPLACE VIEW public.profiles_public AS
 SELECT 
@@ -308,36 +309,76 @@ WHERE role IN ('prestador', 'fornecedor', 'lojista');
 
 GRANT SELECT ON public.profiles_public TO authenticated, anon;
 
-
-CREATE TABLE IF NOT EXISTS public.orders_of_service (
+-- Tabela Canônica de Ordens/Anúncios
+CREATE TABLE IF NOT EXISTS public.service_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    lojista_id UUID REFERENCES public.profiles(id),
+    owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT,
-    status TEXT NOT NULL DEFAULT 'pendente', -- pendente, projetista, medidor, conferente, fretista, montador, supervisor, concluida
-    contract_value DECIMAL(12, 2),
-    is_contract_verified BOOLEAN DEFAULT FALSE,
-    current_professional_id UUID REFERENCES public.profiles(id),
+    status TEXT NOT NULL DEFAULT 'ativo', -- ativo, pendente, em_execucao, concluido, cancelado
+    price NUMERIC(12, 2),
+    category TEXT,
+    city TEXT,
+    state TEXT,
+    image_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Compatibilidade com orders_of_service
+    lojista_id UUID REFERENCES public.profiles(id),
+    current_professional_id UUID REFERENCES public.profiles(id)
 );
+
+-- Migração Silenciosa (Data Migration)
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'orders_of_service') THEN
+        INSERT INTO public.service_orders (id, owner_id, lojista_id, title, description, status, price, created_at)
+        SELECT id, lojista_id, lojista_id, title, description, status, contract_value, created_at
+        FROM public.orders_of_service
+        ON CONFLICT (id) DO NOTHING;
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.proposals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    os_id UUID REFERENCES public.orders_of_service(id) ON DELETE CASCADE,
+    os_id UUID REFERENCES public.service_orders(id) ON DELETE CASCADE,
     prestador_id UUID REFERENCES public.profiles(id),
     value DECIMAL(12, 2) NOT NULL,
     status TEXT NOT NULL DEFAULT 'pendente', -- pendente, aceita, recusada, contraproposta
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Tabela Canônica de Avaliações
+CREATE TABLE IF NOT EXISTS public.reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    author_id UUID REFERENCES public.profiles(id),
+    target_id UUID REFERENCES public.profiles(id),
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Compatibilidade
+    reviewed_user_id UUID REFERENCES public.profiles(id)
+);
+
+-- Migração de store_reviews
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'store_reviews') THEN
+        INSERT INTO public.reviews (author_id, target_id, rating, comment, created_at)
+        SELECT author_id, lojista_id, rating, comment, created_at
+        FROM public.store_reviews
+        ON CONFLICT DO NOTHING;
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS public.os_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    os_id UUID REFERENCES public.orders_of_service(id) ON DELETE CASCADE,
+    os_id UUID REFERENCES public.service_orders(id) ON DELETE CASCADE,
     sender_id UUID REFERENCES public.profiles(id),
     content TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
 
 CREATE TABLE IF NOT EXISTS public.lead_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -393,20 +434,22 @@ GRANT ALL ON public.feed_posts TO service_role;
 
 -- 10. ADICIONAIS DE SEGURANÇA (ORDERS, PROPOSALS, DISPUTES, COINS)
 
--- ORDERS_OF_SERVICE
-ALTER TABLE public.orders_of_service ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Orders Participant Access" ON public.orders_of_service
+-- SERVICE_ORDERS (Canônica)
+ALTER TABLE public.service_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Orders Participant Access" ON public.service_orders
 FOR SELECT TO authenticated
-USING (auth.uid() = lojista_id OR auth.uid() = current_professional_id OR public.has_role(auth.uid(), 'admin'));
+USING (auth.uid() = owner_id OR auth.uid() = lojista_id OR auth.uid() = current_professional_id OR public.has_role(auth.uid(), 'admin'));
 
-CREATE POLICY "Lojista Manage Orders" ON public.orders_of_service
+CREATE POLICY "Owner Manage Orders" ON public.service_orders
 FOR ALL TO authenticated
-USING (auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'))
-WITH CHECK (auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'));
+USING (auth.uid() = owner_id OR auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'))
+WITH CHECK (auth.uid() = owner_id OR auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'));
 
 -- PROPOSALS
 ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Proposals Participant Access" ON public.proposals
+FOR SELECT TO authenticated
+
 FOR SELECT TO authenticated
 USING (
     auth.uid() = prestador_id OR 
@@ -418,6 +461,12 @@ CREATE POLICY "Prestador Manage Proposals" ON public.proposals
 FOR ALL TO authenticated
 USING (auth.uid() = prestador_id OR public.has_role(auth.uid(), 'admin'))
 WITH CHECK (auth.uid() = prestador_id OR public.has_role(auth.uid(), 'admin'));
+
+-- REVIEWS (Segurança)
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public Read Reviews" ON public.reviews FOR SELECT TO authenticated, anon USING (true);
+CREATE POLICY "Users Create Own Reviews" ON public.reviews FOR INSERT TO authenticated WITH CHECK (auth.uid() = author_id);
+CREATE POLICY "Authors Manage Own Reviews" ON public.reviews FOR ALL TO authenticated USING (auth.uid() = author_id OR public.has_role(auth.uid(), 'admin')) WITH CHECK (auth.uid() = author_id OR public.has_role(auth.uid(), 'admin'));
 
 -- COINS (Segurança Financeira)
 CREATE TABLE IF NOT EXISTS public.user_coins (
@@ -443,6 +492,7 @@ FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 LEFT JOIN public.user_roles r ON u.id = r.user_id
 WHERE u.email = 'REDACTED_EMAIL';
+
 
 
 
