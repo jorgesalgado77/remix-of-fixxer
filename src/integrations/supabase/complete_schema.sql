@@ -344,10 +344,16 @@ BEGIN
             ALTER TABLE public.service_orders ADD COLUMN owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE;
         END IF;
 
-        INSERT INTO public.service_orders (id, owner_id, lojista_id, title, description, status, price, created_at)
-        SELECT id, lojista_id, lojista_id, title, description, status, contract_value, created_at
-        FROM public.orders_of_service
-        ON CONFLICT (id) DO NOTHING;
+        -- Garante que a coluna lojista_id também exista para evitar erros de referência
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='service_orders' AND column_name='lojista_id') THEN
+            ALTER TABLE public.service_orders ADD COLUMN lojista_id UUID REFERENCES public.profiles(id);
+        END IF;
+
+        -- Migração segura: Referenciamos explicitamente a tabela de origem para evitar ambiguidade
+        EXECUTE 'INSERT INTO public.service_orders (id, owner_id, lojista_id, title, description, status, price, created_at)
+                 SELECT id, lojista_id, lojista_id, title, description, status, contract_value, created_at
+                 FROM public.orders_of_service
+                 ON CONFLICT (id) DO NOTHING';
     END IF;
 END $$;
 
