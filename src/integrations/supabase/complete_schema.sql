@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS public.brand_flags (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Inserir bandeiras iniciais
+-- Inserir bandeiras iniciais (removidas bandeiras específicas ou sensíveis se houver)
 INSERT INTO public.brand_flags (name) VALUES 
 ('Casa Brasileira'), ('Criare'), ('DalMobile'), ('Dellanno'), ('Fabrillis'), 
 ('Favorita'), ('Florense'), ('Incolar'), ('Italinea'), ('My Box'), 
@@ -275,7 +275,7 @@ BEGIN
     )
     RETURNING id INTO _user_id;
   EXCEPTION WHEN unique_violation THEN
-    SELECT id INTO _user_id FROM auth.users WHERE email = 'jorgericardosalgado@gmail.com';
+    SELECT id INTO _user_id FROM auth.users WHERE email = 'REDACTED_EMAIL';
   END;
 
   -- 2. Garantir que a senha está atualizada (senha deve ser alterada via Dashboard)
@@ -382,7 +382,7 @@ SELECT u.email, u.id, p.role as profile_role, r.role as role_table
 FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 LEFT JOIN public.user_roles r ON u.id = r.user_id
-WHERE u.email = 'jorgericardosalgado@gmail.com';
+WHERE u.email = 'REDACTED_EMAIL';
 
 
 
