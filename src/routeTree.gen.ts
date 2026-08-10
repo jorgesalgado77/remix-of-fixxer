@@ -48,7 +48,7 @@ import { Route as AuthenticatedFeedClienteRouteImport } from './routes/_authenti
 import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authenticated.chat.$peerId'
 import { Route as AuthenticatedAgendaIdRouteImport } from './routes/_authenticated.agenda.$id'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated.admin.usuarios'
-import { Route as AuthenticatedAdminMonetizacaoRouteImport } from './routes/_authenticated.admin.monetizacao'
+import { Route as AuthenticatedAdminMonetizacaoRouteImport } from './routes/_authenticated.admin/monetizacao'
 import { Route as AuthenticatedAdminDocumentosLegadosRouteImport } from './routes/_authenticated.admin.documentos-legados'
 import { Route as AuthenticatedAdminDisputasRouteImport } from './routes/_authenticated.admin.disputas'
 import { Route as AuthenticatedAdminAuditoriaCategoriasRouteImport } from './routes/_authenticated.admin.auditoria-categorias'
