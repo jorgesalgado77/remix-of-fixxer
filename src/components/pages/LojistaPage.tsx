@@ -1173,6 +1173,13 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Barra de ações rápida com QrCode integrado para todos */}
+            <div className="flex items-center justify-between">
+                <div className="flex-1">
+                    <PanelActions role={userRole} />
+                </div>
+            </div>
+
             {/* Filtros Globais - Agora Responsivos */}
             <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
