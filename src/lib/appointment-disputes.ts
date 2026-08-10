@@ -206,22 +206,42 @@ export async function resolveDispute(payload: {
   admin_notes: string;
   refund_amount?: number | null;
 }): Promise<AppointmentDispute> {
-  const { data: auth } = await supabaseExternal.auth.getUser();
-  if (!auth.user) throw new Error("Não autenticado.");
-  if (payload.admin_notes.trim().length < 5) throw new Error("Registre o parecer (mín. 5 caracteres).");
+  // Se for uma decisão final (approved/rejected), usar RPC segura que trata escrow
+  if (payload.status === "approved" || payload.status === "rejected") {
+    const decision = payload.status === "approved" ? "approve" : "reject";
+    const { data: rpcData, error: rpcErr } = await supabaseExternal.rpc("admin_resolve_dispute", {
+      _dispute_id: payload.id,
+      _decision: decision,
+      _admin_notes: payload.admin_notes,
+      _refund_amount: payload.refund_amount ?? null
+    });
 
+    if (rpcErr) throw rpcErr;
+    if (rpcData && !rpcData.ok) throw new Error(rpcData.error || "Erro ao resolver disputa via RPC.");
+  } else {
+    // Apenas atualização de status intermediário
+    const { data: auth } = await supabaseExternal.auth.getUser();
+    if (!auth.user) throw new Error("Não autenticado.");
+    
+    const { error } = await supabaseExternal
+      .from("appointment_disputes")
+      .update({
+        status: payload.status,
+        admin_notes: payload.admin_notes.trim(),
+        resolved_at: payload.status === "under_review" ? null : new Date().toISOString(),
+        resolved_by: auth.user.id,
+      })
+      .eq("id", payload.id);
+    if (error) throw error;
+  }
+
+  // Buscar objeto atualizado para retornar
   const { data, error } = await supabaseExternal
     .from("appointment_disputes")
-    .update({
-      status: payload.status,
-      admin_notes: payload.admin_notes.trim(),
-      refund_amount: payload.refund_amount ?? null,
-      resolved_at: payload.status === "under_review" ? null : new Date().toISOString(),
-      resolved_by: auth.user.id,
-    })
+    .select("*")
     .eq("id", payload.id)
-    .select()
     .single();
+  
   if (error) throw error;
 
   // Notifica autor (trigger no banco também insere; este push é redundância best-effort)

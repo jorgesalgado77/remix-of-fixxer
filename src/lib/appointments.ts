@@ -291,33 +291,32 @@ export async function fetchAppointmentEvents(id: string): Promise<AppointmentEve
 
 export async function checkIn(id: string, photos: string[] = []): Promise<void> {
   const coords = await getCurrentCoords();
-  const { data: apt } = await supabaseExternal
-    .from("appointments")
-    .select("proposer_id, invitee_id, checkin_photos")
-    .eq("id", id)
-    .maybeSingle();
+  
+  // Usar a nova RPC segura
+  const { data, error } = await supabaseExternal.rpc("safe_check_in", {
+    _appointment_id: id,
+    _lat: coords?.lat ?? null,
+    _lng: coords?.lng ?? null,
+    _photos: photos,
+  });
 
-  const update: Record<string, any> = {
-    status: "checked_in",
-    checkin_at: new Date().toISOString(),
-    checkin_lat: coords?.lat ?? null,
-    checkin_lng: coords?.lng ?? null,
-  };
-  if (photos.length > 0) update.checkin_photos = photos;
-
-  const { error } = await supabaseExternal
-    .from("appointments")
-    .update(update)
-    .eq("id", id);
   if (error) throw error;
+  if (data && !data.ok) throw new Error(data.error || "Erro no check-in.");
 
-  // Push à contraparte
-  const { data: userData } = await supabaseExternal.auth.getUser();
-  const currentUid = userData.user?.id ?? null;
-  const target =
-    apt && currentUid && apt.proposer_id === currentUid ? apt.invitee_id : apt?.proposer_id;
-  if (target) {
-    try {
+  // Push à contraparte (best-effort)
+  try {
+    const { data: apt } = await supabaseExternal
+      .from("appointments")
+      .select("proposer_id, invitee_id")
+      .eq("id", id)
+      .maybeSingle();
+
+    const { data: userData } = await supabaseExternal.auth.getUser();
+    const currentUid = userData.user?.id ?? null;
+    const target =
+      apt && currentUid && apt.proposer_id === currentUid ? apt.invitee_id : apt?.proposer_id;
+      
+    if (target) {
       const { sendPushToUser } = await import("./push-client");
       void sendPushToUser({
         userId: target,
@@ -326,44 +325,40 @@ export async function checkIn(id: string, photos: string[] = []): Promise<void> 
         url: "/agenda",
         tag: `appt-checkin-${id}`,
       });
-    } catch { /* ignore */ }
-  }
+    }
+  } catch { /* ignore */ }
 }
 
 export async function checkOut(id: string, photos: string[] = []): Promise<void> {
-  const { data: apt } = await supabaseExternal
-    .from("appointments")
-    .select("proposer_id, invitee_id, type, deposit_amount")
-    .eq("id", id)
-    .maybeSingle();
+  // Usar a nova RPC segura que já trata escrow
+  const { data, error } = await supabaseExternal.rpc("safe_check_out", {
+    _appointment_id: id,
+    _photos: photos,
+  });
 
-  const { error } = await supabaseExternal
-    .from("appointments")
-    .update({
-      status: "completed",
-      checkout_at: new Date().toISOString(),
-      checkout_photos: photos,
-    })
-    .eq("id", id);
   if (error) throw error;
-
-  // Liberação de custódia server-side (RPC verifica autorização)
-  const escrowResult = await releaseEscrowForAppointment(id);
+  if (data && !data.ok) throw new Error(data.error || "Erro no check-out.");
 
   // Evento local (compat)
   if (typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent("fixxer:escrow-release-request", {
-        detail: { appointment_id: id, released: escrowResult.released },
+        detail: { appointment_id: id, released: !!data.escrow_released },
       }),
     );
   }
 
-  // Push ao proponente (best-effort)
-  if (apt?.proposer_id) {
-    try {
+  // Push à contraparte (best-effort)
+  try {
+    const { data: apt } = await supabaseExternal
+      .from("appointments")
+      .select("proposer_id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (apt?.proposer_id) {
       const { sendPushToUser } = await import("./push-client");
-      const body = escrowResult.released
+      const body = data.escrow_released
         ? "Check-out registrado. Custódia liberada para o prestador."
         : "Check-out registrado. Nenhum sinal em custódia para liberar.";
       void sendPushToUser({
@@ -373,8 +368,8 @@ export async function checkOut(id: string, photos: string[] = []): Promise<void>
         url: "/agenda",
         tag: `appt-completed-${id}`,
       });
-    } catch { /* ignore */ }
-  }
+    }
+  } catch { /* ignore */ }
 }
 
 /**
