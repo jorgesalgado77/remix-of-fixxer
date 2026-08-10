@@ -287,12 +287,26 @@ function RecentPartnersCarouselInner() {
         }
       } catch { /* opcional */ }
 
-      const { data, error } = await supabaseExternal
+      let { data, error } = await supabaseExternal
         .from("profiles_public")
         .select(SAFE_COLS)
         .not("role", "is", null)
         .order("created_at", { ascending: false })
         .limit(100);
+      
+      if (error && (error.code === '42703' || error.message.includes('does not exist'))) {
+        console.warn("[RecentPartnersCarousel] Colunas ausentes na view, tentando fallback seguro...");
+        const FALLBACK_COLS = "id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng";
+        const fallbackRes = await supabaseExternal
+          .from("profiles_public")
+          .select(FALLBACK_COLS)
+          .not("role", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(100);
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+      }
+      
       if (error) throw error;
 
       const rows = ((data as unknown as PartnerRow[]) ?? [])
