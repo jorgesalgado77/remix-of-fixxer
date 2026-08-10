@@ -55,25 +55,26 @@ export function StatDetailsModal({
                   className="flex flex-col gap-2 p-3 rounded-2xl bg-white/5 border border-white/5"
                 >
                   <div className="flex items-start justify-between gap-3 w-full">
-                    <span className="block text-[11px] font-black text-white italic truncate">
-                      {it.title}
-                    </span>
-                    {it.subtitle ? (
-                      <span className="block text-[10px] text-muted-foreground truncate">
-                        {it.subtitle}
+                    <div className="min-w-0">
+                      <span className="block text-[11px] font-black text-white italic truncate">
+                        {it.title}
+                      </span>
+                      {it.subtitle ? (
+                        <span className="block text-[10px] text-muted-foreground truncate">
+                          {it.subtitle}
+                        </span>
+                      ) : null}
+                      {it.meta ? (
+                        <span className="block text-[8px] text-muted-foreground uppercase font-bold tracking-widest mt-1">
+                          {it.meta}
+                        </span>
+                      ) : null}
+                    </div>
+                    {it.right ? (
+                      <span className="text-[10px] font-black text-primary whitespace-nowrap">
+                        {it.right}
                       </span>
                     ) : null}
-                    {it.meta ? (
-                      <span className="block text-[8px] text-muted-foreground uppercase font-bold tracking-widest mt-1">
-                        {it.meta}
-                      </span>
-                    ) : null}
-                  </div>
-                  {it.right ? (
-                    <span className="text-[10px] font-black text-primary whitespace-nowrap">
-                      {it.right}
-                    </span>
-                  ) : null}
                   </div>
 
                   {it.amount_gross !== undefined && (
