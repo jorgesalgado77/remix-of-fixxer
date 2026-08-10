@@ -29,21 +29,36 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
   const [platformFee, setPlatformFee] = useState(15);
   const [error, setError] = useState<string | null>(null);
 
+  // Cache para configurações de taxas para evitar requisições repetidas no mesmo ciclo de vida do componente
+  const [cachedPlatformFee, setCachedPlatformFee] = useState<number | null>(null);
+
   useEffect(() => {
     if (open) {
-      setLoading(true);
-      setError(null);
-      fetchMonetizationConfig()
-        .then(cfg => {
-          setPlatformFee(cfg.pixPlatformFeePercent);
-        })
-        .catch(err => {
-          console.error("[PixManagerModal] Erro ao carregar configurações:", err);
-          setError("Não foi possível carregar as configurações de taxas. Tente novamente.");
-        })
-        .finally(() => setLoading(false));
+      toast.info("Abrindo gerenciador de recebimentos...");
+      
+      // Só busca se não tiver no cache local
+      if (cachedPlatformFee === null) {
+        setLoading(true);
+        setError(null);
+        fetchMonetizationConfig()
+          .then(cfg => {
+            setPlatformFee(cfg.pixPlatformFeePercent);
+            setCachedPlatformFee(cfg.pixPlatformFeePercent);
+          })
+          .catch(err => {
+            console.error("[PixManagerModal] Erro ao carregar configurações:", err);
+            const errorMsg = "Não foi possível carregar as configurações de taxas. Verifique sua conexão ou credenciais.";
+            setError(errorMsg);
+            toast.error("Erro ao buscar dados", {
+              description: "Código: ERR_PIX_CFG_01. Tente reconectar ou verifique suas credenciais de rede.",
+            });
+          })
+          .finally(() => setLoading(false));
+      } else {
+        setPlatformFee(cachedPlatformFee);
+      }
     }
-  }, [open]);
+  }, [open, cachedPlatformFee]);
 
   const pixKey = profile?.pix_key || "financeiro@fixxer.com.br";
 
@@ -109,7 +124,11 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
                     setError(null);
                     fetchMonetizationConfig()
                       .then(cfg => setPlatformFee(cfg.pixPlatformFeePercent))
-                      .catch(() => setError("Falha ao tentar reconectar. Verifique sua rede."))
+                      .catch(() => {
+                        const msg = "Falha ao tentar reconectar. Verifique sua rede e credenciais (ERR_PIX_RETRY).";
+                        setError(msg);
+                        toast.error("Falha na reconexão", { description: msg });
+                      })
                       .finally(() => setLoading(false));
                   }}
                   className="h-auto p-0 text-[9px] font-black uppercase tracking-widest text-emerald-400 mt-2 hover:text-emerald-300"
@@ -193,7 +212,10 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
               )}
 
               <Button 
-                onClick={() => setGenerated(true)}
+                onClick={() => {
+                  setGenerated(true);
+                  toast.success("Cobrança gerada com sucesso!");
+                }}
                 disabled={!amount || Number(amount) <= 0}
                 className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase italic tracking-tighter text-lg rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] active:scale-95 transition-all"
               >
