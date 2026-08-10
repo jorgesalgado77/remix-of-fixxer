@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useProviderStats } from "@/hooks/use-provider-stats";
 import { StatDetailsModal, type StatListItem } from "@/components/StatDetailsModal";
+import { PixManagerModal } from "@/components/PixManagerModal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import {
   Briefcase,
@@ -17,6 +18,7 @@ import {
   PlusCircle,
   Camera,
   Hammer,
+  QrCode,
 } from "lucide-react";
 
 import { EscrowBadge } from "@/components/EscrowBadge";
@@ -150,9 +152,18 @@ const fmtDate = (d?: string | null) =>
 function ProviderStatsGrid() {
   const stats = useProviderStats();
   const [openKey, setOpenKey] = useState<null | "ativos" | "concluidos" | "rating" | "saldo">(null);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [period, setPeriod] = useState("30");
+
+  const filterByPeriod = (items: any[]) => {
+    const now = new Date();
+    const days = parseInt(period);
+    const limit = new Date(now.setDate(now.getDate() - days));
+    return items.filter(it => new Date(it.created_at) >= limit);
+  };
 
   const orderItems = (list: typeof stats.activeOrders): StatListItem[] =>
-    list.map((o) => ({
+    filterByPeriod(list).map((o) => ({
       id: o.id,
       title: o.title?.trim() || `O.S. ${String(o.id).slice(0, 8)}`,
       subtitle: o.status ? `Status: ${o.status}` : undefined,
@@ -160,14 +171,14 @@ function ProviderStatsGrid() {
       right: typeof o.price === "number" ? BRL(o.price) : undefined,
     }));
 
-  const reviewItems: StatListItem[] = stats.reviews.map((r) => ({
+  const reviewItems: StatListItem[] = filterByPeriod(stats.reviews).map((r) => ({
     id: r.id,
     title: `${Number(r.rating ?? 0).toFixed(1)} ★`,
     subtitle: r.comment?.trim() || "Sem comentário",
     meta: fmtDate(r.created_at),
   }));
 
-  const txItems: StatListItem[] = stats.transactions.map((t) => ({
+  const txItems: StatListItem[] = filterByPeriod(stats.transactions).map((t) => ({
     id: t.id,
     title: t.reason?.trim() || t.source?.trim() || "Movimentação",
     subtitle: t.source ? `Origem: ${t.source}` : undefined,
@@ -179,18 +190,43 @@ function ProviderStatsGrid() {
 
   return (
     <>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+        <p className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em] italic">Métricas e Desempenho</p>
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+          {[
+            { label: 'Hoje', val: '1' },
+            { label: '7 dias', val: '7' },
+            { label: '15 dias', val: '15' },
+            { label: '30 dias', val: '30' },
+            { label: '90 dias', val: '90' }
+          ].map(p => (
+            <button
+              key={p.val}
+              onClick={() => setPeriod(p.val)}
+              className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+                period === p.val 
+                  ? 'bg-primary text-black border-primary' 
+                  : 'bg-white/5 border-white/5 text-white/50 hover:bg-white/10'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           icon={<Briefcase className="w-5 h-5" />}
           label="Ativos"
-          value={stats.loading ? dash : String(stats.activeOrders.length)}
+          value={stats.loading ? dash : String(filterByPeriod(stats.activeOrders).length)}
           color="text-blue-400"
           onClick={() => setOpenKey("ativos")}
         />
         <StatCard
           icon={<CheckCircle2 className="w-5 h-5" />}
           label="Concluídos"
-          value={stats.loading ? dash : String(stats.doneOrders.length)}
+          value={stats.loading ? dash : String(filterByPeriod(stats.doneOrders).length)}
           color="text-primary"
           onClick={() => setOpenKey("concluidos")}
         />
@@ -203,11 +239,20 @@ function ProviderStatsGrid() {
         />
         <StatCard
           icon={<DollarSign className="w-5 h-5" />}
-          label="Saldo"
-          value={stats.loading ? dash : `${stats.balance} FXC`}
+          label="Saldo PIX"
+          value={stats.loading ? dash : BRL(stats.balance * 10)} 
           color="text-emerald-400"
           onClick={() => setOpenKey("saldo")}
         />
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <button 
+          onClick={() => setShowPixModal(true)}
+          className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black text-emerald-400 uppercase tracking-widest hover:bg-emerald-500/20 transition-all flex items-center gap-2"
+        >
+          <QrCode className="w-4 h-4" /> Receber PIX
+        </button>
       </div>
 
       <StatDetailsModal
@@ -242,9 +287,24 @@ function ProviderStatsGrid() {
         loading={stats.loading}
         items={txItems}
       />
+
+      {showPixModal && (
+        <PixManagerModal 
+          open={showPixModal} 
+          onClose={() => setShowPixModal(false)} 
+          profile={{ pix_key: 'fixxer@pix.com.br' }} 
+          stats={{
+            balance: stats.balance,
+            balanceReservations: stats.balanceReservations,
+            balanceProducts: stats.balanceProducts,
+            balanceServices: stats.balanceServices
+          }}
+        />
+      )}
     </>
   );
 }
+
 
 function StatCard({ icon, label, value, color, onClick }: any) {
   return (
