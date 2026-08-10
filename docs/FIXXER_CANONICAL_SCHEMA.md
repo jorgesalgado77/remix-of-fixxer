@@ -2,60 +2,52 @@
 
 ## ERD Textual e Fluxo de Dados
 **USUÁRIO** (`auth.users`) -> **ROLE** (`user_roles`) -> **PERFIL ÚNICO** (`profiles`)
-**LOJISTA** -> **PUBLICA** (`service_orders`) -> **PRESTADOR** -> **PROPOSTA** (`proposals`) -> **ACEITE** -> **EXECUÇÃO** -> **CONCLUSÃO** -> **AVALIAÇÃO** (`reviews`)
+**DEMANDA/ANÚNCIO** -> **PUBLICA** (`service_orders`) -> **PROFISSIONAL** -> **PROPOSTA** (`proposals`) -> **ACEITE** -> **EXECUÇÃO** -> **CONCLUSÃO** -> **AVALIAÇÃO** (`reviews`)
 
 ---
 
-## 1. Tabelas Oficiais
+## 1. Tabelas Oficiais e Consolidadas
 
 ### 1.1 Identidade e Autorização
-- **`user_roles`**: Fonte de verdade para RBAC (admin, lojista, prestador, fornecedor, cliente).
-- **`profiles`**: Perfil unificado. Contém dados básicos (nome, avatar) e específicos via colunas opcionais (especialidade, cnpj).
-  - *Migração*: Substitui `store_profiles`, `provider_profiles`, `profiles_lojista`.
-- **`admin_config`**: Lista de e-mails administrativos autorizados.
+- **`profiles`** (Mestre): Perfil unificado. Contém geolocalização (`lat`, `lng`), disponibilidade e dados de negócio.
+  - *Consolida*: `store_profiles`, `provider_profiles`, `profiles_lojista`.
+- **`user_roles`**: Fonte de verdade para RBAC (`admin`, `lojista`, `prestador`, `fornecedor`).
+- **`admin_config`**: Lista branca de e-mails administrativos.
 
-### 1.2 Negócio (Operacional)
-- **`service_orders`**: Tabela canônica para demandas, anúncios e ordens de serviço.
-  - *Migração*: Consolida `orders_of_service` e `service_orders`.
-- **`proposals`**: Propostas enviadas para `service_orders`.
-- **`feed_posts`**: Postagens sociais e anúncios destacados no feed.
+### 1.2 Operacional e Negócio
+- **`service_orders`**: Tabela canônica para Ordens de Serviço, Demandas e Anúncios.
+  - *Consolida*: `orders_of_service`.
+  - *Campos*: `owner_id`, `status` (ativo, em_execucao, concluido), `price`, `category`.
+- **`proposals`**: Propostas financeiras e técnicas para `service_orders`.
+- **`appointments`**: Agendamentos vinculados a serviços.
 
-### 1.3 Monetização e Financeiro
-- **`user_coins`**: Saldo consolidado de moedas (escrow/ledger).
-- **`coin_transactions`**: Histórico de débitos, créditos e estornos.
-- **`system_settings`**: Configurações globais (taxas, preços, features).
+### 1.3 Monetização
+- **`user_coins`**: Saldo em moedas do usuário.
+- **`coin_transactions`**: Ledger de transações (auditável).
+- **`wallets`**: Controle de saques e depósitos (Escrow).
 
-### 1.4 Engajamento e Avaliação
-- **`reviews`**: Avaliações unificadas (Rating + Karma).
-  - *Migração*: Substitui `store_reviews`.
-- **`notifications`**: Sistema único de alertas (Realtime).
-- **`favorites`**: Relacionamento N:N entre usuários e perfis favoritos.
-
----
-
-## 2. Relacionamentos e Constraints
-- `profiles.id` -> `auth.users.id` (1:1, CASCADE).
-- `user_roles.user_id` -> `auth.users.id` (N:1).
-- `service_orders.owner_id` -> `profiles.id`.
-- `proposals.os_id` -> `service_orders.id` (CASCADE).
-- `reviews.target_id` -> `profiles.id`.
+### 1.4 Comunicação e Engajamento
+- **`reviews`**: Avaliações de 1 a 5 estrelas com comentários.
+  - *Consolida*: `store_reviews`.
+- **`notifications`**: Alertas realtime unificados.
+- **`messages`** / **`os_messages`**: Chat contextualizado.
 
 ---
 
-## 3. Segurança (RLS)
-- **`profiles`**: Dono atualiza; Todos leem (limitado via View `profiles_public`).
-- **`user_coins`**: Apenas leitura pelo dono. Escrita apenas via RPC (Admin).
-- **`service_orders`**: Público lê ativos; Dono gerencia.
+## 2. Segurança e RLS
+- **`profiles_public`** (View): Única forma de acesso a perfis de terceiros. Omete dados sensíveis (documentos, endereços completos).
+- **RLS Policy "Participant Access"**: Garante que apenas o dono ou o profissional aceito veja detalhes financeiros de uma ordem.
 
 ---
 
-## 4. RPCs Críticas
-- `consume_coins(user_id, amount, reason)`: Débito atômico.
-- `release_escrow(os_id)`: Liberação de pagamento pós-serviço.
-- `search_profiles_public(...)`: Busca otimizada case-insensitive.
+## 3. Storage e Mídia
+- **`documents-private`**: Buckets protegidos para CNH/CNPJ (Signed URLs).
+- **`media-public`**: Portfólio, avatares e banners.
 
 ---
 
-## 5. Storage
-- `documents-private`: Documentos sensíveis (Signed URLs).
-- `media-public`: Avatares, banners e imagens de portfólio.
+## 4. Auditoria de Migração (Baseline 2026-08-10)
+- [x] `orders_of_service` -> `service_orders` (Migrado)
+- [x] `store_reviews` -> `reviews` (Migrado)
+- [x] Perfis consolidados em tabela única.
+- [x] Notificações unificadas.
