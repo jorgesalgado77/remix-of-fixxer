@@ -156,19 +156,18 @@ BEGIN
     END LOOP;
 END $$;
 
--- Recriação das políticas
-CREATE POLICY "Public Read Plans" ON public.subscription_plans FOR SELECT TO authenticated USING (true);
+-- Recriação das políticas com endurecimento de segurança (Prompt 03)
+CREATE POLICY "Public Read Plans" ON public.subscription_plans FOR SELECT TO authenticated, anon USING (true);
 CREATE POLICY "Admin Manage Plans" ON public.subscription_plans FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 
-CREATE POLICY "Public Read Features" ON public.plan_features FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Public Read Features" ON public.plan_features FOR SELECT TO authenticated, anon USING (true);
 CREATE POLICY "Admin Manage Features" ON public.plan_features FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 
-CREATE POLICY "Users View Own Profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
-CREATE POLICY "Users Update Own Profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
-CREATE POLICY "Admins View All Profiles" ON public.profiles FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Admins Update All Profiles" ON public.profiles FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'admin'));
+-- PROFILES: Dono atualiza, Admin vê tudo, Público vê apenas via View profiles_public (Grant select restrito)
+CREATE POLICY "Users View Own Profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id OR public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Users Update Own Profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id OR public.has_role(auth.uid(), 'admin')) WITH CHECK (auth.uid() = id OR public.has_role(auth.uid(), 'admin'));
 
-CREATE POLICY "Users View Own Roles" ON public.user_roles FOR SELECT TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Users View Own Roles" ON public.user_roles FOR SELECT TO authenticated USING (auth.uid() = user_id OR public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins Manage All Roles" ON public.user_roles FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 
 CREATE POLICY "Admins Manage Config" ON public.admin_config FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin'));
@@ -177,9 +176,10 @@ CREATE POLICY "Read Config" ON public.admin_config FOR SELECT TO authenticated U
 CREATE POLICY "Admin Access Logs" ON public.access_logs FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "System Insert Logs" ON public.access_logs FOR INSERT TO authenticated, anon WITH CHECK (true);
 
-CREATE POLICY "Public Read Brands" ON public.brand_flags FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Public Read Brands" ON public.brand_flags FOR SELECT TO authenticated, anon USING (true);
 CREATE POLICY "Users Add Brands" ON public.brand_flags FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "Admin Manage Brands" ON public.brand_flags FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin'));
+
 
 -- 5. GRANTS
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
@@ -296,6 +296,19 @@ BEGIN
 END $$;
 
 -- 9. TABELAS DE NEGÓCIO (O.S., PROPOSTAS, CHAT)
+-- VIEW PÚBLICA RESTRITA (Evita exposição de endereço completo)
+CREATE OR REPLACE VIEW public.profiles_public AS
+SELECT 
+    id, full_name, role, company_name, avatar_url, banner_url,
+    business_category, specialty, karma_score,
+    city, state, neighborhood, lat, lng,
+    has_vehicle, vehicle_type, available_for_transport
+FROM public.profiles
+WHERE role IN ('prestador', 'fornecedor', 'lojista');
+
+GRANT SELECT ON public.profiles_public TO authenticated, anon;
+
+
 CREATE TABLE IF NOT EXISTS public.orders_of_service (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     lojista_id UUID REFERENCES public.profiles(id),
@@ -371,18 +384,66 @@ CREATE TABLE IF NOT EXISTS public.feed_posts (
 -- RLS para feed_posts
 ALTER TABLE public.feed_posts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public View Active Feed" ON public.feed_posts FOR SELECT TO authenticated USING (status = 'Ativo');
-CREATE POLICY "Users Manage Own Feed" ON public.feed_posts FOR ALL TO authenticated USING (auth.uid() = user_id OR public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Public View Active Feed" ON public.feed_posts FOR SELECT TO authenticated, anon USING (status = 'Ativo');
+CREATE POLICY "Users Manage Own Feed" ON public.feed_posts FOR ALL TO authenticated USING (auth.uid() = user_id OR public.has_role(auth.uid(), 'admin')) WITH CHECK (auth.uid() = user_id OR public.has_role(auth.uid(), 'admin'));
+
 
 GRANT ALL ON public.feed_posts TO authenticated;
 GRANT ALL ON public.feed_posts TO service_role;
 
--- 10. SCRIPT DE DIAGNÓSTICO
+-- 10. ADICIONAIS DE SEGURANÇA (ORDERS, PROPOSALS, DISPUTES, COINS)
+
+-- ORDERS_OF_SERVICE
+ALTER TABLE public.orders_of_service ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Orders Participant Access" ON public.orders_of_service
+FOR SELECT TO authenticated
+USING (auth.uid() = lojista_id OR auth.uid() = current_professional_id OR public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Lojista Manage Orders" ON public.orders_of_service
+FOR ALL TO authenticated
+USING (auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'))
+WITH CHECK (auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'));
+
+-- PROPOSALS
+ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Proposals Participant Access" ON public.proposals
+FOR SELECT TO authenticated
+USING (
+    auth.uid() = prestador_id OR 
+    EXISTS (SELECT 1 FROM public.orders_of_service os WHERE os.id = os_id AND os.lojista_id = auth.uid()) OR
+    public.has_role(auth.uid(), 'admin')
+);
+
+CREATE POLICY "Prestador Manage Proposals" ON public.proposals
+FOR ALL TO authenticated
+USING (auth.uid() = prestador_id OR public.has_role(auth.uid(), 'admin'))
+WITH CHECK (auth.uid() = prestador_id OR public.has_role(auth.uid(), 'admin'));
+
+-- COINS (Segurança Financeira)
+CREATE TABLE IF NOT EXISTS public.user_coins (
+    user_id UUID REFERENCES public.profiles(id) PRIMARY KEY,
+    balance NUMERIC(12, 2) DEFAULT 0.00,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE public.user_coins ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users View Own Balance" ON public.user_coins
+FOR SELECT TO authenticated
+USING (auth.uid() = user_id OR public.has_role(auth.uid(), 'admin'));
+
+-- Impede alteração manual do saldo via cliente
+CREATE POLICY "No Manual Balance Update" ON public.user_coins
+FOR UPDATE TO authenticated
+USING (public.has_role(auth.uid(), 'admin'))
+WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- 11. SCRIPT DE DIAGNÓSTICO
 SELECT u.email, u.id, p.role as profile_role, r.role as role_table
 FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 LEFT JOIN public.user_roles r ON u.id = r.user_id
 WHERE u.email = 'REDACTED_EMAIL';
+
 
 
 
