@@ -328,7 +328,7 @@ function RecentPartnersCarouselInner() {
             activity_branch: branch,
             uf: r.state ?? null,
             _kind: kind,
-          };
+          } as PartnerCard;
           return merged;
         })
         .filter((x): x is PartnerCard => !!x);
