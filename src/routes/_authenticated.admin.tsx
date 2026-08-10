@@ -96,11 +96,11 @@ export function AdminDashboardComponent() {
             Usuários
           </Link>
           <Link
-            to={"/admin/monetizacao" as any}
+            to="/admin/monetizacao"
             className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 font-black uppercase italic text-xs tracking-widest hover:bg-emerald-500/25 transition-all"
           >
             <DollarSign className="w-4 h-4" />
-            Monetização
+            Taxas e Monetização
           </Link>
           <button 
             onClick={() => {
