@@ -848,7 +848,10 @@ export default function FeedLojistaPage() {
     navigate({ to: "/chat/$peerId", params: { peerId: post.author.id } });
   };
 
+  const { transitionStatus } = useOSWorkflow();
+
   const submitProposal = async () => {
+    if (!proposalFor) return;
     const err = assertCurrencyIntegrity("Valor da proposta", proposalValue, {
       required: true,
       min: 0.01,
@@ -860,31 +863,66 @@ export default function FeedLojistaPage() {
     }
     const n = parseCurrencyBRL(proposalValue);
     const target = proposalFor;
-    toast.success("Proposta enviada!", {
-      description: `${target?.author.name} receberá sua oferta de R$ ${n.toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-      })}.`,
-    });
-    // Dispara push ao autor da O.S. (best-effort; ignora falha se sem sub)
-    if (target?.author?.id) {
-      try {
-        const { sendPushToUser } = await import("@/lib/push-client");
-        void sendPushToUser({
-          userId: target.author.id,
-          title: "💰 Nova proposta recebida",
-          body: `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} — ${target.title}`,
-          url: "/dashboard",
-          tag: `proposal-${target.id}`,
-        });
-      } catch {
-        /* ignore */
+
+    try {
+      const { data: auth } = await supabaseExternal.auth.getUser();
+      const uid = auth?.user?.id;
+      if (!uid) {
+        toast.error("Você precisa estar logado para enviar uma proposta.");
+        return;
       }
+
+      const { data: proposal, error } = await supabaseExternal
+        .from("proposals")
+        .insert({
+          os_id: target.id,
+          prestador_id: uid,
+          value: n,
+          notes: proposalMsg,
+          status: "pendente",
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      // Ao enviar a primeira proposta, a OS entra em RECEBENDO_PROPOSTAS
+      transitionStatus({ 
+        osId: target.id, 
+        newStatus: "RECEBENDO_PROPOSTAS", 
+        notes: "Nova proposta recebida via Feed" 
+      });
+
+      toast.success("Proposta enviada!", {
+        description: `${target?.author.name} receberá sua oferta de R$ ${n.toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+        })}.`,
+      });
+
+      // Dispara push ao autor da O.S. (best-effort)
+      if (target?.author?.id) {
+        try {
+          const { sendPushToUser } = await import("@/lib/push-client");
+          void sendPushToUser({
+            userId: target.author.id,
+            title: "💰 Nova proposta recebida",
+            body: `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} — ${target.title}`,
+            url: "/dashboard",
+            tag: `proposal-${target.id}`,
+          });
+        } catch { /* ignore */ }
+      }
+    } catch (err: any) {
+      console.error("[FeedLojista] Erro ao enviar proposta:", err);
+      toast.error("Falha ao enviar proposta.");
     }
+
     setProposalFor(null);
     setProposalValue("");
     setProposalMsg("");
     setProposalError(null);
   };
+
 
   const submitReport = () => {
     toast.success("Denúncia registrada", {
