@@ -338,21 +338,22 @@ CREATE TABLE IF NOT EXISTS public.service_orders (
 -- Migração Silenciosa (Data Migration)
 DO $$ 
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'orders_of_service') THEN
-        -- Primeiro garante que a coluna owner_id existe na service_orders (deve existir pelo CREATE TABLE acima, mas reforçamos)
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'orders_of_service' AND schemaname = 'public') THEN
+        -- Primeiro garante que a coluna owner_id existe na service_orders
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='service_orders' AND column_name='owner_id') THEN
             ALTER TABLE public.service_orders ADD COLUMN owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE;
         END IF;
 
-        -- Garante que a coluna lojista_id também exista para evitar erros de referência
+        -- Garante que a coluna lojista_id também exista
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='service_orders' AND column_name='lojista_id') THEN
             ALTER TABLE public.service_orders ADD COLUMN lojista_id UUID REFERENCES public.profiles(id);
         END IF;
 
-        -- Migração segura: Referenciamos explicitamente a tabela de origem para evitar ambiguidade
+        -- Migração segura usando colunas qualificadas da tabela de origem
+        -- Nota: Usamos EXECUTE para evitar problemas de parsing se a tabela orders_of_service não existir no momento da compilação do bloco
         EXECUTE 'INSERT INTO public.service_orders (id, owner_id, lojista_id, title, description, status, price, created_at)
-                 SELECT id, lojista_id, lojista_id, title, description, status, contract_value, created_at
-                 FROM public.orders_of_service
+                 SELECT o.id, o.lojista_id, o.lojista_id, o.title, o.description, o.status, o.contract_value, o.created_at
+                 FROM public.orders_of_service o
                  ON CONFLICT (id) DO NOTHING';
     END IF;
 END $$;
