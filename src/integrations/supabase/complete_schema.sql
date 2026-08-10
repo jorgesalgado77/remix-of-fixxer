@@ -295,7 +295,8 @@ BEGIN
 
 END $$;
 
--- 9. TABELAS DE NEGÓCIO (O.S., PROPOSTAS, CHAT)
+-- 9. TABELAS DE NEGÓCIO (CONSOLIDADAS - PROMPT 04)
+
 -- VIEW PÚBLICA RESTRITA (Evita exposição de endereço completo)
 CREATE OR REPLACE VIEW public.profiles_public AS
 SELECT 
@@ -308,26 +309,45 @@ WHERE role IN ('prestador', 'fornecedor', 'lojista');
 
 GRANT SELECT ON public.profiles_public TO authenticated, anon;
 
-
-CREATE TABLE IF NOT EXISTS public.orders_of_service (
+-- Tabela Canônica de Ordens/Anúncios
+CREATE TABLE IF NOT EXISTS public.service_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    lojista_id UUID REFERENCES public.profiles(id),
+    owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT,
-    status TEXT NOT NULL DEFAULT 'pendente', -- pendente, projetista, medidor, conferente, fretista, montador, supervisor, concluida
-    contract_value DECIMAL(12, 2),
-    is_contract_verified BOOLEAN DEFAULT FALSE,
-    current_professional_id UUID REFERENCES public.profiles(id),
+    status TEXT NOT NULL DEFAULT 'ativo', -- ativo, pendente, em_execucao, concluido, cancelado
+    price NUMERIC(12, 2),
+    category TEXT,
+    city TEXT,
+    state TEXT,
+    image_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Compatibilidade com orders_of_service
+    lojista_id UUID REFERENCES public.profiles(id),
+    current_professional_id UUID REFERENCES public.profiles(id)
 );
+
+-- Migração Silenciosa (Data Migration)
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'orders_of_service') THEN
+        INSERT INTO public.service_orders (id, owner_id, lojista_id, title, description, status, price, created_at)
+        SELECT id, lojista_id, lojista_id, title, description, status, contract_value, created_at
+        FROM public.orders_of_service
+        ON CONFLICT (id) DO NOTHING;
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.proposals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    os_id UUID REFERENCES public.orders_of_service(id) ON DELETE CASCADE,
+    os_id UUID REFERENCES public.service_orders(id) ON DELETE CASCADE,
     prestador_id UUID REFERENCES public.profiles(id),
     value DECIMAL(12, 2) NOT NULL,
     status TEXT NOT NULL DEFAULT 'pendente', -- pendente, aceita, recusada, contraproposta
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
