@@ -5,12 +5,13 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 
 interface NotificationRow {
   id: string;
-  recipient_id: string;
-  kind: string;
+  owner_id: string; // Mapeado para o modelo canônico do Prompt 04
+  sender_id?: string | null;
+  type: "info" | "success" | "warning" | "danger" | "chat" | "system";
   title: string | null;
-  body: string | null;
-  meta: any;
-  read: boolean | null;
+  content: string | null; // body -> content no novo schema
+  read_at: string | null; // read (bool) -> read_at (timestamptz)
+  metadata: any;
   created_at: string;
 }
 
@@ -71,7 +72,7 @@ export function NotificationsCenter() {
       const { data } = await supabaseExternal
         .from("notifications")
         .select("*")
-        .eq("recipient_id", userId)
+        .eq("owner_id", userId) // recipient_id -> owner_id
         .order("created_at", { ascending: false })
         .limit(30);
       setItems((data ?? []) as NotificationRow[]);

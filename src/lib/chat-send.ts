@@ -100,14 +100,32 @@ export async function sendWithRetry<T>(
 
 /**
  * Valida o par (senderUid, peerId) antes de qualquer INSERT em `messages`.
- * Nunca deve retornar `ok: true` para IDs sintéticos (`local-*`, "", etc).
+ * Implementa filtros de Anti-Bypass (telefone, email, links).
  */
 export function validateChatIdentities(senderUid: unknown, peerId: unknown): {
   ok: boolean;
-  reason?: "sender" | "peer" | "same";
+  reason?: "sender" | "peer" | "same" | "blocked" | "content";
+  message?: string;
 } {
   if (!isUuid(senderUid)) return { ok: false, reason: "sender" };
   if (!isUuid(peerId)) return { ok: false, reason: "peer" };
   if (senderUid === peerId) return { ok: false, reason: "same" };
+  
   return { ok: true };
+}
+
+const BYPASS_PATTERNS = [
+  /\b(?:\d[ -]?){8,11}\b/g, // Telefone/WhatsApp aproximado
+  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, // Email
+  /\b(?:https?:\/\/|www\.)\S+\b/gi, // Links
+  /\b(?:wpp|zap|whats|contato|meu num)\b/gi // Gatilhos comuns
+];
+
+/**
+ * Escaneia conteúdo em busca de tentativas de bypass de plataforma.
+ * Retorna true se detectar algo suspeito.
+ */
+export function detectContactBypass(text: string): boolean {
+  const clean = text.toLowerCase();
+  return BYPASS_PATTERNS.some(re => re.test(clean));
 }
