@@ -1176,7 +1176,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
             {/* Barra de ações rápida com QrCode integrado para todos */}
             <div className="flex items-center justify-between">
                 <div className="flex-1">
-                    <PanelActions role={userRole} />
+                    <PanelActions role={(userRole === 'admin' ? 'lojista' : userRole) as any} />
                 </div>
             </div>
 
