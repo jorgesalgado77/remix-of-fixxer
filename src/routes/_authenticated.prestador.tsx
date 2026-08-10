@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useProviderStats } from "@/hooks/use-provider-stats";
 import { StatDetailsModal, type StatListItem } from "@/components/StatDetailsModal";
 import { PixManagerModal } from "@/components/PixManagerModal";
@@ -19,6 +19,7 @@ import {
   Camera,
   Hammer,
   QrCode,
+  TrendingDown,
 } from "lucide-react";
 
 import { EscrowBadge } from "@/components/EscrowBadge";
@@ -178,13 +179,24 @@ function ProviderStatsGrid() {
     meta: fmtDate(r.created_at),
   }));
 
-  const txItems: StatListItem[] = filterByPeriod(stats.transactions).map((t) => ({
-    id: t.id,
-    title: t.reason?.trim() || t.source?.trim() || "Movimentação",
-    subtitle: t.source ? `Origem: ${t.source}` : undefined,
-    meta: fmtDate(t.created_at),
-    right: typeof t.amount === "number" ? `${t.amount > 0 ? "+" : ""}${t.amount}` : undefined,
-  }));
+  const txItems: StatListItem[] = filterByPeriod(stats.transactions).map((t) => {
+    const amount = t.amount ?? 0;
+    const isCredit = amount > 0;
+    const gross = Math.abs(amount);
+    const fee = gross * 0.15;
+    const net = gross - fee;
+
+    return {
+      id: t.id,
+      title: t.reason?.trim() || t.source?.trim() || "Movimentação",
+      subtitle: t.source ? `Origem: ${t.source}` : undefined,
+      meta: fmtDate(t.created_at),
+      right: isCredit ? BRL(amount) : `${amount}`,
+      amount_gross: isCredit ? gross : undefined,
+      amount_fee: isCredit ? fee : undefined,
+      amount_net: isCredit ? net : undefined,
+    };
+  });
 
   const dash = "—";
 
@@ -243,6 +255,8 @@ function ProviderStatsGrid() {
           value={stats.loading ? dash : BRL(stats.balance * 10)} 
           color="text-emerald-400"
           onClick={() => setOpenKey("saldo")}
+          showChart
+          chartData={filterByPeriod(stats.transactions).map(t => t.amount ?? 0).reverse()}
         />
       </div>
 
@@ -306,16 +320,40 @@ function ProviderStatsGrid() {
 }
 
 
-function StatCard({ icon, label, value, color, onClick }: any) {
+function StatCard({ icon, label, value, color, onClick, showChart, chartData }: any) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="text-left bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col gap-1 relative overflow-hidden hover:border-primary/30 transition-all"
+      className="text-left bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col gap-1 relative overflow-hidden hover:border-primary/30 transition-all group"
     >
-      <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center ${color} mb-2`}>{icon}</div>
+      <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center ${color} mb-2 group-hover:scale-110 transition-transform`}>{icon}</div>
       <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{label}</span>
       <span className="text-xl font-black text-white italic">{value}</span>
+      
+      {showChart && chartData && chartData.length > 1 && (
+        <div className="absolute right-2 bottom-2 w-16 h-8 opacity-40 group-hover:opacity-100 transition-opacity">
+          <svg viewBox={`0 0 ${chartData.length - 1} 10`} className="w-full h-full overflow-visible">
+            <polyline
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={color}
+              points={chartData
+                .map((v: number, i: number) => {
+                  const max = Math.max(...chartData, 1);
+                  const min = Math.min(...chartData, 0);
+                  const y = max === min ? 5 : 10 - ((v - min) / (max - min)) * 10;
+                  return `${i},${y}`;
+                })
+                .join(" ")}
+            />
+          </svg>
+        </div>
+      )}
+
       <div className={`absolute -right-2 -bottom-2 opacity-5 ${color} scale-150`}>{icon}</div>
     </button>
   );

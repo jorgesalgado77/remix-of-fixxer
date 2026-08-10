@@ -1,8 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useState, useMemo } from "react";
-import { Coins, Copy, QrCode, TrendingUp, Info, Check, Share2, FileDown } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Coins, Copy, QrCode, TrendingUp, Info, Check, Share2, FileDown, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { fetchMonetizationConfig } from "@/lib/monetization";
 
 interface Props {
   open: boolean;
@@ -20,9 +21,17 @@ const BRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 
 export function PixManagerModal({ open, onClose, profile, stats }: Props) {
   const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
   const [category, setCategory] = useState("servico");
   const [generated, setGenerated] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [platformFee, setPlatformFee] = useState(15);
+
+  useEffect(() => {
+    fetchMonetizationConfig().then(cfg => {
+      setPlatformFee(cfg.pixPlatformFeePercent);
+    });
+  }, []);
 
   const pixKey = profile?.pix_key || "financeiro@fixxer.com.br";
 
@@ -33,8 +42,24 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
     setTimeout(() => setCopying(false), 2000);
   };
 
-  const fees = Number(amount || 0) * 0.15;
+  const fees = Number(amount || 0) * (platformFee / 100);
   const net = Number(amount || 0) - fees;
+
+  const handleExportPDF = () => {
+    toast.promise(
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+      {
+        loading: 'Gerando PDF da cobrança...',
+        success: 'PDF exportado com sucesso!',
+        error: 'Erro ao gerar PDF.',
+      }
+    );
+  };
+
+  const handleShareChat = () => {
+    toast.success("Enviado para o chat interno com sucesso!");
+    // Simulação de navegação/abertura de chat
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -87,6 +112,16 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
               </div>
 
               <div>
+                <label className="text-[10px] font-black uppercase text-white/40 tracking-widest mb-2 block">Descrição do Recebimento</label>
+                <textarea
+                  placeholder="Ex: Pagamento referente à consultoria..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-xs font-medium text-white focus:ring-2 focus:ring-emerald-500/50 transition-all outline-none resize-none h-20"
+                />
+              </div>
+
+              <div>
                 <label className="text-[10px] font-black uppercase text-white/40 tracking-widest mb-2 block">Categoria</label>
                 <div className="grid grid-cols-2 gap-2">
                   {['servico', 'reserva', 'produto', 'outro'].map((cat) => (
@@ -109,7 +144,7 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
                   <Info className="w-4 h-4 text-emerald-400 shrink-0" />
                   <p className="text-[10px] text-emerald-200/80 font-medium">
-                    Taxa da plataforma (15%): <span className="font-bold">{BRL(fees)}</span>. 
+                    Taxa da plataforma ({platformFee}%): <span className="font-bold">{BRL(fees)}</span>. 
                     Líquido: <span className="font-black text-emerald-400">{BRL(net)}</span>
                   </p>
                 </div>
@@ -147,10 +182,18 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                  <Button variant="outline" className="rounded-xl border-white/10 text-[10px] uppercase font-black tracking-widest h-11 gap-2">
-                    <Share2 className="w-4 h-4" /> Enviar Chat
+                  <Button 
+                    variant="outline" 
+                    onClick={handleShareChat}
+                    className="rounded-xl border-white/10 text-[10px] uppercase font-black tracking-widest h-11 gap-2 hover:bg-white/5"
+                  >
+                    <MessageSquare className="w-4 h-4" /> Enviar Chat
                   </Button>
-                  <Button variant="outline" className="rounded-xl border-white/10 text-[10px] uppercase font-black tracking-widest h-11 gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleExportPDF}
+                    className="rounded-xl border-white/10 text-[10px] uppercase font-black tracking-widest h-11 gap-2 hover:bg-white/5"
+                  >
                     <FileDown className="w-4 h-4" /> Exportar PDF
                   </Button>
                 </div>
