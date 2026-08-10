@@ -150,6 +150,7 @@ const fmtDate = (d?: string | null) =>
 function ProviderStatsGrid() {
   const stats = useProviderStats();
   const [openKey, setOpenKey] = useState<null | "ativos" | "concluidos" | "rating" | "saldo">(null);
+  const [showPixModal, setShowPixModal] = useState(false);
 
   const orderItems = (list: typeof stats.activeOrders): StatListItem[] =>
     list.map((o) => ({
@@ -203,11 +204,20 @@ function ProviderStatsGrid() {
         />
         <StatCard
           icon={<DollarSign className="w-5 h-5" />}
-          label="Saldo"
-          value={stats.loading ? dash : `${stats.balance} FXC`}
+          label="Saldo PIX"
+          value={stats.loading ? dash : BRL(stats.balance * 10)} // Exemplo de escala
           color="text-emerald-400"
           onClick={() => setOpenKey("saldo")}
         />
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <button 
+          onClick={() => setShowPixModal(true)}
+          className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black text-emerald-400 uppercase tracking-widest hover:bg-emerald-500/20 transition-all flex items-center gap-2"
+        >
+          <QrCode className="w-4 h-4" /> Receber PIX
+        </button>
       </div>
 
       <StatDetailsModal
@@ -242,9 +252,18 @@ function ProviderStatsGrid() {
         loading={stats.loading}
         items={txItems}
       />
+
+      {showPixModal && (
+        <PixManagerModal 
+          open={showPixModal} 
+          onClose={() => setShowPixModal(false)} 
+          profile={{ pix_key: 'fixxer@pix.com.br' }} 
+        />
+      )}
     </>
   );
 }
+
 
 function StatCard({ icon, label, value, color, onClick }: any) {
   return (
