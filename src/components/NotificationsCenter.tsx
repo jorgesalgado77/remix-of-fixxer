@@ -5,12 +5,13 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 
 interface NotificationRow {
   id: string;
-  recipient_id: string;
-  kind: string;
+  owner_id: string; // Mapeado para o modelo canônico do Prompt 04
+  sender_id?: string | null;
+  type: "info" | "success" | "warning" | "danger" | "chat" | "system";
   title: string | null;
-  body: string | null;
-  meta: any;
-  read: boolean | null;
+  content: string | null; // body -> content no novo schema
+  read_at: string | null; // read (bool) -> read_at (timestamptz)
+  metadata: any;
   created_at: string;
 }
 
@@ -62,7 +63,7 @@ export function NotificationsCenter() {
     return () => window.removeEventListener('resize', updateCoords);
   }, [open]);
 
-  const unread = items.filter((n) => !n.read).length;
+  const unread = items.filter((n) => !n.read_at).length;
 
   const load = async (userId: string | null) => {
     if (!userId) { setItems([]); return; }
@@ -71,7 +72,7 @@ export function NotificationsCenter() {
       const { data } = await supabaseExternal
         .from("notifications")
         .select("*")
-        .eq("recipient_id", userId)
+        .eq("owner_id", userId) // recipient_id -> owner_id
         .order("created_at", { ascending: false })
         .limit(30);
       setItems((data ?? []) as NotificationRow[]);
@@ -99,7 +100,7 @@ export function NotificationsCenter() {
           .channel(`notif:${userId}`)
           .on(
             "postgres_changes",
-            { event: "*", schema: "public", table: "notifications", filter: `recipient_id=eq.${userId}` },
+            { event: "*", schema: "public", table: "notifications", filter: `owner_id=eq.${userId}` }, // recipient_id -> owner_id
             () => load(userId),
           )
           .subscribe();
@@ -126,11 +127,12 @@ export function NotificationsCenter() {
 
   const markAllRead = async () => {
     if (!uid) return;
-    const ids = items.filter((n) => !n.read).map((n) => n.id);
+    const ids = items.filter((n) => !n.read_at).map((n) => n.id);
     if (ids.length === 0) return;
-    setItems((prev) => prev.map((n) => (ids.includes(n.id) ? { ...n, read: true } : n)));
+    const now = new Date().toISOString();
+    setItems((prev) => prev.map((n) => (ids.includes(n.id) ? { ...n, read_at: now } : n)));
     try {
-      await supabaseExternal.from("notifications").update({ read: true }).in("id", ids);
+      await supabaseExternal.from("notifications").update({ read_at: now }).in("id", ids);
     } catch { /* ignore */ }
   };
 
@@ -177,7 +179,7 @@ export function NotificationsCenter() {
           <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
             <span className="text-[11px] font-black uppercase italic tracking-widest">Notificações</span>
             <div className="flex items-center gap-2">
-              {unread > 0 && (
+              {unread > 0 && ( // read -> read_at logic above handles this
                 <button
                   onClick={markAllRead}
                   className="text-[10px] font-bold uppercase text-primary hover:underline"
@@ -208,19 +210,19 @@ export function NotificationsCenter() {
             {items.map((n) => (
               <div
                 key={n.id}
-                className={`flex items-start gap-2 px-3 py-2 border-b border-white/5 ${!n.read ? "bg-primary/5" : ""}`}
+                className={`flex items-start gap-2 px-3 py-2 border-b border-white/5 ${!n.read_at ? "bg-primary/5" : ""}`}
               >
-                <div className="mt-0.5">{iconFor(n.kind)}</div>
+                <div className="mt-0.5">{iconFor(n.type)}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-bold truncate">{n.title ?? "Notificação"}</p>
-                  {n.body && (
-                    <p className="text-[11px] text-muted-foreground leading-snug">{n.body}</p>
+                  {n.content && (
+                    <p className="text-[11px] text-muted-foreground leading-snug">{n.content}</p>
                   )}
                   <p className="text-[9px] uppercase tracking-widest text-muted-foreground/70 mt-0.5">
                     {new Date(n.created_at).toLocaleString("pt-BR")}
                   </p>
                 </div>
-                {!n.read && <span className="w-2 h-2 rounded-full bg-primary mt-1.5" aria-label="Não lida" />}
+                {!n.read_at && <span className="w-2 h-2 rounded-full bg-primary mt-1.5" aria-label="Não lida" />}
               </div>
             ))}
           </div>

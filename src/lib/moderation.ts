@@ -49,6 +49,10 @@ function writeBlocks(map: Record<string, { blockedAt: string; note?: string }>) 
   }
 }
 
+/**
+ * Verifica se um usuário está bloqueado.
+ * Prioriza cache local para UX, mas a validação final é backend via RLS.
+ */
 export function isUserBlocked(targetUserId: string | null | undefined): boolean {
   if (!targetUserId) return false;
   return !!readBlocks()[targetUserId];
