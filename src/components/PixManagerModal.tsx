@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState, useMemo, useEffect } from "react";
-import { Coins, Copy, QrCode, TrendingUp, Info, Check, Share2, FileDown, MessageSquare } from "lucide-react";
+import { Coins, Copy, QrCode, TrendingUp, Info, Check, Share2, FileDown, MessageSquare, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { fetchMonetizationConfig } from "@/lib/monetization";
@@ -27,12 +27,23 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
   const [generated, setGenerated] = useState(false);
   const [copying, setCopying] = useState(false);
   const [platformFee, setPlatformFee] = useState(15);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchMonetizationConfig().then(cfg => {
-      setPlatformFee(cfg.pixPlatformFeePercent);
-    });
-  }, []);
+    if (open) {
+      setLoading(true);
+      setError(null);
+      fetchMonetizationConfig()
+        .then(cfg => {
+          setPlatformFee(cfg.pixPlatformFeePercent);
+        })
+        .catch(err => {
+          console.error("[PixManagerModal] Erro ao carregar configurações:", err);
+          setError("Não foi possível carregar as configurações de taxas. Tente novamente.");
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [open]);
 
   const pixKey = profile?.pix_key || "financeiro@fixxer.com.br";
 
@@ -77,7 +88,37 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
           </DialogHeader>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-none">
+        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-none relative">
+          {loading && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-300">
+              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-3" />
+              <p className="text-sm font-bold text-white uppercase italic tracking-tight">Carregando carteira...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
+              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-bold text-red-200 uppercase tracking-tight mb-1">Erro de Conexão</p>
+                <p className="text-[10px] text-red-200/60 leading-relaxed">{error}</p>
+                <Button 
+                  variant="link" 
+                  onClick={() => {
+                    setLoading(true);
+                    setError(null);
+                    fetchMonetizationConfig()
+                      .then(cfg => setPlatformFee(cfg.pixPlatformFeePercent))
+                      .catch(() => setError("Falha ao tentar reconectar. Verifique sua rede."))
+                      .finally(() => setLoading(false));
+                  }}
+                  className="h-auto p-0 text-[9px] font-black uppercase tracking-widest text-emerald-400 mt-2 hover:text-emerald-300"
+                >
+                  Tentar Novamente
+                </Button>
+              </div>
+            </div>
+          )}
           {/* Seção de Saldos */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">

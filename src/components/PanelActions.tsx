@@ -128,23 +128,26 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
         <Settings className="w-5 h-5" aria-hidden="true" />
       </IconLink>
 
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log("[PanelActions] Disparando fixxer:open-pix-modal");
-          window.dispatchEvent(new CustomEvent('fixxer:open-pix-modal', { 
-            bubbles: true, 
-            composed: true 
-          }));
-        }}
-        title="Receber via PIX — Gere QR Codes de cobrança para seus clientes e acompanhe seus recebimentos em tempo real"
-        aria-label="Receber via PIX"
-        className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all active:scale-95 z-20"
-      >
-        <QrCode className="w-5 h-5" aria-hidden="true" />
-      </button>
+      {role !== "cliente" && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("[PanelActions] Disparando fixxer:open-pix-modal");
+            window.dispatchEvent(new CustomEvent('fixxer:open-pix-modal', { 
+              bubbles: true, 
+              composed: true 
+            }));
+          }}
+          title="Receber via PIX — Gere QR Codes de cobrança para seus clientes e acompanhe seus recebimentos em tempo real"
+          aria-label="Receber via PIX — Gerar QR Code para recebimento instantâneo"
+          className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all active:scale-95 z-20"
+        >
+          <QrCode className="w-5 h-5" aria-hidden="true" />
+          <span className="sr-only">Receber via PIX</span>
+        </button>
+      )}
 
       {showAvailability && <AvailabilityToggle role={role} />}
     </div>
