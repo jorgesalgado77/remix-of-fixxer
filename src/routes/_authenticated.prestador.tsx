@@ -171,14 +171,14 @@ function ProviderStatsGrid() {
       right: typeof o.price === "number" ? BRL(o.price) : undefined,
     }));
 
-  const reviewItems: StatListItem[] = stats.reviews.map((r) => ({
+  const reviewItems: StatListItem[] = filterByPeriod(stats.reviews).map((r) => ({
     id: r.id,
     title: `${Number(r.rating ?? 0).toFixed(1)} ★`,
     subtitle: r.comment?.trim() || "Sem comentário",
     meta: fmtDate(r.created_at),
   }));
 
-  const txItems: StatListItem[] = stats.transactions.map((t) => ({
+  const txItems: StatListItem[] = filterByPeriod(stats.transactions).map((t) => ({
     id: t.id,
     title: t.reason?.trim() || t.source?.trim() || "Movimentação",
     subtitle: t.source ? `Origem: ${t.source}` : undefined,
