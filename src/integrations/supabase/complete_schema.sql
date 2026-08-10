@@ -104,7 +104,13 @@ ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS receive_off_hours_notifications BOOLEAN DEFAULT FALSE,
     ADD COLUMN IF NOT EXISTS contact_email TEXT,
     ADD COLUMN IF NOT EXISTS responsible_name TEXT,
-    ADD COLUMN IF NOT EXISTS testimonials JSONB DEFAULT '[]'::jsonb;
+    ADD COLUMN IF NOT EXISTS testimonials JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS display_name TEXT,
+    ADD COLUMN IF NOT EXISTS custom_branch TEXT,
+    ADD COLUMN IF NOT EXISTS service_radius_km INTEGER,
+    ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS lat NUMERIC,
+    ADD COLUMN IF NOT EXISTS lng NUMERIC;
 
 CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -303,7 +309,8 @@ SELECT
     id, full_name, role, company_name, avatar_url, banner_url,
     business_category, specialty, karma_score,
     city, state, neighborhood, lat, lng,
-    has_vehicle, vehicle_type, available_for_transport
+    has_vehicle, vehicle_type, available_for_transport,
+    display_name, custom_branch, service_radius_km, is_online
 FROM public.profiles
 WHERE role IN ('prestador', 'fornecedor', 'lojista');
 
