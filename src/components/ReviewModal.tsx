@@ -72,12 +72,16 @@ export function ReviewModal({ isOpen, onClose, targetId, targetName, userRole, o
       const { error } = await supabase
         .from('reviews')
         .insert({
-          order_id: orderId,
           reviewer_id: user.id,
           target_id: targetId,
+          order_id: orderId || null,
           rating: rating,
           comment: comment,
-          metrics: getMetrics()
+          metrics: { 
+            labels: getMetrics(),
+            user_role: userRole,
+            platform: 'web'
+          }
         });
 
       if (error) throw error;
