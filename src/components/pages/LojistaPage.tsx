@@ -56,6 +56,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
 const CreateAdModal = lazy(() => import("@/components/CreateAdModal").then(m => ({ default: m.CreateAdModal })));
+const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m => ({ default: m.PixManagerModal })));
 import { CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
 import {
   evaluateProfileCompleteness,
@@ -979,7 +980,8 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
     );
 }
 
-function DashboardView({ rating, getRatingColor, handleTabChange, isProfileComplete }: { rating: number; getRatingColor: (val: number) => string; handleTabChange: (tab: string) => void; isProfileComplete: boolean }) {
+function DashboardView({ rating, getRatingColor, handleTabChange, isProfileComplete, profileSummary, showPixModal, setShowPixModal }: { rating: number; getRatingColor: (val: number) => string; handleTabChange: (tab: string) => void; isProfileComplete: boolean; profileSummary: any; showPixModal: boolean; setShowPixModal: (v: boolean) => void }) {
+    const providerStats = useProviderStats();
     const [filter, setFilter] = useState('Hoje');
     const [statusFilter, setStatusFilter] = useState('Todos');
     const [searchTerm, setSearchTerm] = useState('');
@@ -3354,12 +3356,14 @@ function ProfileView({
             )}
             {/* Modal PIX */}
             {showPixModal && (
-              <PixManagerModal 
-                open={showPixModal}
-                onClose={() => setShowPixModal(false)}
-                profile={profileSummary}
-                stats={providerStats}
-              />
+              <Suspense fallback={null}>
+                <PixManagerModal 
+                  open={showPixModal}
+                  onClose={() => setShowPixModal(false)}
+                  profile={profileSummary}
+                  stats={providerStats}
+                />
+              </Suspense>
             )}
         </div>
     );
