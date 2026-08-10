@@ -190,18 +190,43 @@ function ProviderStatsGrid() {
 
   return (
     <>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+        <p className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em] italic">Métricas e Desempenho</p>
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+          {[
+            { label: 'Hoje', val: '1' },
+            { label: '7 dias', val: '7' },
+            { label: '15 dias', val: '15' },
+            { label: '30 dias', val: '30' },
+            { label: '90 dias', val: '90' }
+          ].map(p => (
+            <button
+              key={p.val}
+              onClick={() => setPeriod(p.val)}
+              className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+                period === p.val 
+                  ? 'bg-primary text-black border-primary' 
+                  : 'bg-white/5 border-white/5 text-white/50 hover:bg-white/10'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           icon={<Briefcase className="w-5 h-5" />}
           label="Ativos"
-          value={stats.loading ? dash : String(stats.activeOrders.length)}
+          value={stats.loading ? dash : String(filterByPeriod(stats.activeOrders).length)}
           color="text-blue-400"
           onClick={() => setOpenKey("ativos")}
         />
         <StatCard
           icon={<CheckCircle2 className="w-5 h-5" />}
           label="Concluídos"
-          value={stats.loading ? dash : String(stats.doneOrders.length)}
+          value={stats.loading ? dash : String(filterByPeriod(stats.doneOrders).length)}
           color="text-primary"
           onClick={() => setOpenKey("concluidos")}
         />
@@ -215,7 +240,7 @@ function ProviderStatsGrid() {
         <StatCard
           icon={<DollarSign className="w-5 h-5" />}
           label="Saldo PIX"
-          value={stats.loading ? dash : BRL(stats.balance * 10)} // Exemplo de escala
+          value={stats.loading ? dash : BRL(stats.balance * 10)} 
           color="text-emerald-400"
           onClick={() => setOpenKey("saldo")}
         />
