@@ -1,3 +1,4 @@
+import { useProviderStats } from "@/hooks/use-provider-stats";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { 
@@ -687,7 +688,17 @@ export function LojistaDashboard() {
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
 
 
-            {activeTab === 'dashboard' && <DashboardView rating={rating} getRatingColor={getRatingColor} handleTabChange={handleTabChange} isProfileComplete={isProfileComplete} />}
+            {activeTab === 'dashboard' && (
+              <DashboardView 
+                rating={rating} 
+                getRatingColor={getRatingColor} 
+                handleTabChange={handleTabChange} 
+                isProfileComplete={isProfileComplete}
+                profileSummary={profileSummary}
+                showPixModal={showPixModal}
+                setShowPixModal={setShowPixModal}
+              />
+            )}
             {activeTab === 'create' && <CreateServiceView />}
             {activeTab === 'profile' && (
                 <ProfileView 
