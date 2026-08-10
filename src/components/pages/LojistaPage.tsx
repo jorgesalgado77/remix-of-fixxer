@@ -48,7 +48,8 @@ import {
   Rocket,
   Receipt,
   Crown,
-  Megaphone
+  Megaphone,
+  TrendingUp
 } from "lucide-react";
 
 import jsPDF from 'jspdf';
