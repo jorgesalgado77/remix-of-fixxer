@@ -86,14 +86,23 @@ export function useProviderStats(): ProviderStats {
         } catch { /* tabela indisponível */ }
 
         try {
-          const { data } = await supabaseExternal
+          const { data, error } = await supabaseExternal
             .from("reviews")
             .select("*")
-            .eq("reviewed_user_id", uid)
+            .eq("target_id", uid)
             .order("created_at", { ascending: false })
             .limit(200);
-          if (!cancelled && Array.isArray(data)) setReviews(data as StatReview[]);
-        } catch { /* ignore */ }
+          
+          if (error) {
+            console.warn("useProviderStats: reviews table access error:", error.message);
+            // Se a tabela não existir, mantemos reviews vazio em vez de estourar erro
+            if (!cancelled) setReviews([]);
+          } else if (!cancelled && Array.isArray(data)) {
+            setReviews(data as StatReview[]);
+          }
+        } catch (e) {
+          console.error("useProviderStats: failed to fetch reviews", e);
+        }
 
         try {
           const { data } = await supabaseExternal
