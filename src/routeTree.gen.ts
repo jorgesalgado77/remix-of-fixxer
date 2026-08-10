@@ -48,7 +48,7 @@ import { Route as AuthenticatedFeedClienteRouteImport } from './routes/_authenti
 import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authenticated.chat.$peerId'
 import { Route as AuthenticatedAgendaIdRouteImport } from './routes/_authenticated.agenda.$id'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated.admin.usuarios'
-import { Route as AuthenticatedAdminMonetizacaoRouteImport } from './routes/_authenticated.admin.monetizacao'
+import { Route as AuthenticatedAdminMonetizacaoRouteImport } from './routes/_authenticated.admin/monetizacao'
 import { Route as AuthenticatedAdminDocumentosLegadosRouteImport } from './routes/_authenticated.admin.documentos-legados'
 import { Route as AuthenticatedAdminDisputasRouteImport } from './routes/_authenticated.admin.disputas'
 import { Route as AuthenticatedAdminAuditoriaCategoriasRouteImport } from './routes/_authenticated.admin.auditoria-categorias'
@@ -1058,3 +1058,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
