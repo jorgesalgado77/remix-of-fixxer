@@ -177,7 +177,7 @@ ON CONFLICT DO NOTHING;
 -- Garante que o Admin Master tenha o tipo correto no perfil se ele já existir
 UPDATE public.profiles 
 SET user_type = 'Admin', role = 'admin', lat = -23.50, lng = -47.45
-WHERE email = 'jorgericardosalgado@gmail.com';
+WHERE email = 'REDACTED_EMAIL';
 
 -- 7. VIEWS PÚBLICAS (profiles_public)
 -- Recriação da view usando DROP CASCADE para evitar erros de alteração de estrutura
