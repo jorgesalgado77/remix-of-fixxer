@@ -62,6 +62,7 @@ export interface MonetizationAuditEntry {
 export const DEFAULT_MONETIZATION: MonetizationConfig = {
   version: 1,
   updatedAt: new Date(0).toISOString(),
+  pixPlatformFeePercent: 15,
   plans: [
     { id: "free",     name: "Free",     enabled: true, priceMonthlyBRL: 0,     priceYearlyBRL: 0,      coinsMonthly: 0,   freeAdsMonthly: 0  },
     { id: "basico",   name: "Básico",   enabled: true, priceMonthlyBRL: 19.90, priceYearlyBRL: 191.04, coinsMonthly: 200, freeAdsMonthly: 2  },
