@@ -44,6 +44,7 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
           .then(cfg => {
             setPlatformFee(cfg.pixPlatformFeePercent);
             setCachedPlatformFee(cfg.pixPlatformFeePercent);
+            toast.success("Configurações de taxas sincronizadas.");
           })
           .catch(err => {
             console.error("[PixManagerModal] Erro ao carregar configurações:", err);
