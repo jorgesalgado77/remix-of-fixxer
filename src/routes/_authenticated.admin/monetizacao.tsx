@@ -159,9 +159,9 @@ function AdminMonetizacaoPage() {
             </div>
           </div>
         )}
-        {tab === "planos" && <PlansEditor plans={cfg.plans} onChange={(plans) => update({ plans })} />}
-        {tab === "acoes" && <ActionsEditor actions={cfg.actions} onChange={(actions) => update({ actions })} />}
-        {tab === "pacotes" && <PacksEditor packs={cfg.coinPacks} onChange={(coinPacks) => update({ coinPacks })} />}
+        {tab === "planos" && <PlansEditor plans={cfg.plans} onChange={(plans: PlanConfig[]) => update({ plans })} />}
+        {tab === "acoes" && <ActionsEditor actions={cfg.actions} onChange={(actions: ActionCost[]) => update({ actions })} />}
+        {tab === "pacotes" && <PacksEditor packs={cfg.coinPacks} onChange={(coinPacks: CoinPack[]) => update({ coinPacks })} />}
         {tab === "historico" && <HistoryTab />}
         {tab === "backup" && <BackupTab cfg={cfg} onImport={applyImported} />}
       </main>
