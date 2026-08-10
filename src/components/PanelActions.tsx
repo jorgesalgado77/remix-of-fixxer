@@ -10,6 +10,7 @@ import {
   UserCircle2,
   Heart,
   PlusCircle,
+  QrCode,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -136,11 +137,11 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
             toast.error("Funcionalidade disponível no seu painel principal.");
           }
         }}
-        title="Receber via PIX — Gere cobranças instantâneas e gerencie seus recebimentos"
+        title="Receber via PIX — Gere QR Codes de cobrança para seus clientes e acompanhe seus recebimentos em tempo real"
         aria-label="Receber via PIX"
-        className="flex items-center justify-center h-11 w-11 rounded-xl bg-emerald-500 border border-emerald-400 text-black hover:bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all active:scale-95"
+        className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all active:scale-95"
       >
-        <Zap className="w-5 h-5" aria-hidden="true" />
+        <QrCode className="w-5 h-5" aria-hidden="true" />
       </button>
 
       {showAvailability && <AvailabilityToggle role={role} />}
