@@ -263,30 +263,14 @@ function RecentStoresCarouselInner() {
           const isFornecedor = roleStr.includes("fornec") || roleStr.includes("parceiro");
           const kind = isFornecedor ? "fornecedor" : "lojista";
 
-          // Prioridade total para o Ramo de Atividade Real (Banco de Dados)
-          // 1. activity_branch (valor do Picker oficial)
-          // 2. custom_branch (valor manual)
-          // 3. business_category (categoria legada)
           const branch = r.activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
           
-          // Debugging distance: Log inputs for calculation
           const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : 0;
           const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : 0;
           const uLat = (userCoords?.lat !== null && userCoords?.lat !== undefined) ? Number(userCoords?.lat) : 0;
           const uLng = (userCoords?.lng !== null && userCoords?.lng !== undefined) ? Number(userCoords?.lng) : 0;
 
-          // Validação rigorosa: aceita valores reais de coordenadas (não zero)
           const dist = getHaversineDistance(uLat, uLng, rLat, rLng) ?? undefined;
-
-          if (r.id.includes("debug") || (r.display_name && r.display_name.includes("ANDREIA"))) {
-            console.log(`[RecentStoresCarousel] Dist Check for ${r.display_name}:`, { 
-              dist,
-              rLat, rLng, 
-              uLat, uLng, 
-              uAddress: userCoords?.address,
-              rAddress: `${r.street || ""}, ${r.number || ""}, ${r.neighborhood || ""}, ${r.city || ""}, ${r.state || ""} - CEP ${r.cep || ""}`.trim()
-            });
-          }
 
           return {
             id: r.id,
@@ -311,7 +295,7 @@ function RecentStoresCarouselInner() {
             _kind: kind as Kind,
             _branch: branch,
             _distance: dist
-          };
+          } as Card;
         });
         
         const newItems = isMore ? [...items, ...rows] : rows;
