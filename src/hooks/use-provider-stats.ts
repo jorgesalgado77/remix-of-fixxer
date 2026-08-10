@@ -82,8 +82,15 @@ export function useProviderStats(): ProviderStats {
             .or(`owner_id.eq.${uid},invitee_id.eq.${uid},provider_id.eq.${uid}`)
             .order("created_at", { ascending: false })
             .limit(200);
-          if (!cancelled && Array.isArray(data)) setOrders(data as StatOrder[]);
-        } catch { /* tabela indisponível */ }
+          if (!cancelled && Array.isArray(data)) {
+            setOrders(data as StatOrder[]);
+          } else if (!cancelled) {
+            setOrders([]); // Estado vazio caso não venha nada ou falhe
+          }
+        } catch (e) {
+          console.error("useProviderStats: failed to fetch orders", e);
+          if (!cancelled) setOrders([]);
+        }
 
         try {
           const { data, error } = await supabaseExternal
@@ -95,35 +102,57 @@ export function useProviderStats(): ProviderStats {
           
           if (error) {
             console.warn("useProviderStats: reviews table access error:", error.message);
-            // Se a tabela não existir, mantemos reviews vazio em vez de estourar erro
             if (!cancelled) setReviews([]);
           } else if (!cancelled && Array.isArray(data)) {
             setReviews(data as StatReview[]);
+          } else if (!cancelled) {
+            setReviews([]);
           }
         } catch (e) {
           console.error("useProviderStats: failed to fetch reviews", e);
+          if (!cancelled) setReviews([]);
         }
 
         try {
-          const { data } = await supabaseExternal
+          const { data, error } = await supabaseExternal
             .from("user_coins")
             .select("balance")
             .eq("user_id", uid)
             .maybeSingle();
-          if (!cancelled && data && typeof (data as any).balance === "number") {
+          
+          if (error) {
+            console.warn("useProviderStats: user_coins access error:", error.message);
+            if (!cancelled) setBalance(0);
+          } else if (!cancelled && data && typeof (data as any).balance === "number") {
             setBalance((data as any).balance as number);
+          } else if (!cancelled) {
+            setBalance(0);
           }
-        } catch { /* ignore */ }
+        } catch (e) {
+          console.error("useProviderStats: balance fetch failed", e);
+          if (!cancelled) setBalance(0);
+        }
 
         try {
-          const { data } = await supabaseExternal
+          const { data, error } = await supabaseExternal
             .from("coin_transactions")
             .select("*")
             .eq("user_id", uid)
             .order("created_at", { ascending: false })
             .limit(100);
-          if (!cancelled && Array.isArray(data)) setTransactions(data as StatTx[]);
-        } catch { /* ignore */ }
+          
+          if (error) {
+            console.warn("useProviderStats: transactions access error:", error.message);
+            if (!cancelled) setTransactions([]);
+          } else if (!cancelled && Array.isArray(data)) {
+            setTransactions(data as StatTx[]);
+          } else if (!cancelled) {
+            setTransactions([]);
+          }
+        } catch (e) {
+          console.error("useProviderStats: failed to fetch transactions", e);
+          if (!cancelled) setTransactions([]);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
