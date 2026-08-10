@@ -38,6 +38,8 @@ import {
 } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 import { useAdFilterSearchState } from "@/lib/use-ad-filter-search";
+import { useOSWorkflow } from "@/hooks/use-os-workflow";
+
 
 import {
   ArrowLeft,
@@ -1627,11 +1629,18 @@ function PostCardImpl({
               <MessageSquare className="w-4 h-4" /> {isClient ? "Chat Direto" : "Chat"}
             </button>
             <button
-              onClick={onPropose}
+              onClick={() => {
+                if (post.author.isMine) {
+                  toast.error("Você não pode enviar proposta para seu próprio anúncio");
+                  return;
+                }
+                onPropose();
+              }}
               className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
             >
               <Send className="w-4 h-4" style={theme.color} /> Enviar Proposta
             </button>
+
           </>
         )}
         <button
