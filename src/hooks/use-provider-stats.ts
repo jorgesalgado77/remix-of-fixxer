@@ -59,6 +59,7 @@ export function useProviderStats(): ProviderStats {
   const [reviews, setReviews] = useState<StatReview[]>([]);
   const [transactions, setTransactions] = useState<StatTx[]>([]);
   const [balance, setBalance] = useState(0);
+  const [period, setPeriod] = useState("30");
   const [tick, setTick] = useState(0);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
@@ -111,7 +112,7 @@ export function useProviderStats(): ProviderStats {
             .select("*")
             .eq("user_id", uid)
             .order("created_at", { ascending: false })
-            .limit(50);
+            .limit(100);
           if (!cancelled && Array.isArray(data)) setTransactions(data as StatTx[]);
         } catch { /* ignore */ }
       } finally {
@@ -126,6 +127,11 @@ export function useProviderStats(): ProviderStats {
   const nums = reviews.map((r) => Number(r?.rating)).filter((n) => Number.isFinite(n));
   const ratingAvg = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null;
 
+  // Mock de saldos categorizados (em moedas, escala 10x p/ visualização)
+  const balanceReservations = balance * 0.3;
+  const balanceProducts = balance * 0.2;
+  const balanceServices = balance * 0.5;
+
   return {
     loading,
     userId,
@@ -135,6 +141,11 @@ export function useProviderStats(): ProviderStats {
     ratingAvg,
     transactions,
     balance,
+    balanceReservations,
+    balanceProducts,
+    balanceServices,
+    period,
+    setPeriod,
     reload,
   };
 }
