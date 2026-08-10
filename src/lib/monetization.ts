@@ -43,6 +43,7 @@ export interface CoinPack {
 export interface MonetizationConfig {
   version: number;
   updatedAt: string;
+  pixPlatformFeePercent: number; // Nova configuração de taxa
   plans: PlanConfig[];
   actions: ActionCost[];
   coinPacks: CoinPack[];
@@ -61,6 +62,7 @@ export interface MonetizationAuditEntry {
 export const DEFAULT_MONETIZATION: MonetizationConfig = {
   version: 1,
   updatedAt: new Date(0).toISOString(),
+  pixPlatformFeePercent: 15,
   plans: [
     { id: "free",     name: "Free",     enabled: true, priceMonthlyBRL: 0,     priceYearlyBRL: 0,      coinsMonthly: 0,   freeAdsMonthly: 0  },
     { id: "basico",   name: "Básico",   enabled: true, priceMonthlyBRL: 19.90, priceYearlyBRL: 191.04, coinsMonthly: 200, freeAdsMonthly: 2  },
@@ -105,6 +107,7 @@ function mergeWithDefaults(partial: Partial<MonetizationConfig> | null): Monetiz
   return {
     version: partial.version ?? DEFAULT_MONETIZATION.version,
     updatedAt: partial.updatedAt ?? DEFAULT_MONETIZATION.updatedAt,
+    pixPlatformFeePercent: partial.pixPlatformFeePercent ?? DEFAULT_MONETIZATION.pixPlatformFeePercent,
     plans: partial.plans?.length ? partial.plans as PlanConfig[] : DEFAULT_MONETIZATION.plans,
     actions: partial.actions?.length ? partial.actions as ActionCost[] : DEFAULT_MONETIZATION.actions,
     coinPacks: partial.coinPacks?.length ? partial.coinPacks as CoinPack[] : DEFAULT_MONETIZATION.coinPacks,
