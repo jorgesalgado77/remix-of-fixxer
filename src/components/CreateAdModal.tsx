@@ -945,7 +945,8 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       if (error) throw error;
 
       if (data?.id) {
-        transitionStatus({ osId: data.id, newStatus: "PUBLICADA", notes: "Publicação inicial" });
+        // Envolve o payload no objeto 'data' esperado pelo middleware do TanStack Start
+        transitionStatus({ data: { osId: data.id, newStatus: "PUBLICADA", notes: "Publicação inicial" } });
       }
 
       toast.success("Serviço publicado com sucesso!");

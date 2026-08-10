@@ -887,10 +887,13 @@ export default function FeedLojistaPage() {
       if (error) throw error;
 
       // Ao enviar a primeira proposta, a OS entra em RECEBENDO_PROPOSTAS
+      // Envolve o payload no objeto 'data' esperado pelo middleware do TanStack Start
       transitionStatus({ 
-        osId: target.id, 
-        newStatus: "RECEBENDO_PROPOSTAS", 
-        notes: "Nova proposta recebida via Feed" 
+        data: {
+          osId: target.id, 
+          newStatus: "RECEBENDO_PROPOSTAS", 
+          notes: "Nova proposta recebida via Feed"
+        }
       });
 
       toast.success("Proposta enviada!", {
