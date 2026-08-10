@@ -394,7 +394,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
             .from("profiles")
             .select("*")
             .or(
-              "email.ilike.jorgericardosalgado@gmail.com,full_name.ilike.%jorge%salgado%,display_name.ilike.%jorge%salgado%",
+              "full_name.ilike.%jorge%salgado%,display_name.ilike.%jorge%salgado%",
             )
             .limit(1);
           jorgeReal = jd?.[0] ?? null;
@@ -444,7 +444,7 @@ export const UniversalSearchPanel = memo(function UniversalSearchPanel(props: {
             .from("profiles")
             .select("*")
             .or(
-              "email.ilike.jorgericardosalgado@gmail.com,full_name.ilike.%jorge%salgado%,display_name.ilike.%jorge%salgado%",
+              "full_name.ilike.%jorge%salgado%,display_name.ilike.%jorge%salgado%",
             )
             .limit(1);
           jorgeReal = jd?.[0] ?? null;

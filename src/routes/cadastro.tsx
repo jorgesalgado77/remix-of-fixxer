@@ -624,15 +624,11 @@ DECLARE
     target_plan_id UUID;
 BEGIN
     -- Determinar a role com fallback seguro
-    IF new.email = 'jorgericardosalgado@gmail.com' THEN
-        default_role := 'admin';
-    ELSE
-        BEGIN
-            default_role := (new.raw_user_meta_data->>'role')::public.app_role;
-        EXCEPTION WHEN OTHERS THEN
-            default_role := 'lojista';
-        END;
-    END IF;
+    BEGIN
+        default_role := (new.raw_user_meta_data->>'role')::public.app_role;
+    EXCEPTION WHEN OTHERS THEN
+        default_role := 'lojista';
+    END;
 
     -- Buscar o plano padrão (gratuito) para a categoria
     SELECT id INTO target_plan_id 

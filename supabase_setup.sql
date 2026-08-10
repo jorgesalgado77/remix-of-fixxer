@@ -127,7 +127,7 @@ CREATE OR REPLACE FUNCTION public.is_admin_master()
 RETURNS boolean AS $$
 BEGIN
   RETURN (
-    auth.jwt() ->> 'email' = 'jorgericardosalgado@gmail.com' OR 
+    (public.has_role(auth.uid(), 'admin')) OR 
     EXISTS (
         SELECT 1 FROM public.profiles 
         WHERE id = auth.uid() AND user_type = 'Admin'
@@ -177,7 +177,7 @@ ON CONFLICT DO NOTHING;
 -- Garante que o Admin Master tenha o tipo correto no perfil se ele já existir
 UPDATE public.profiles 
 SET user_type = 'Admin', role = 'admin', lat = -23.50, lng = -47.45
-WHERE email = 'jorgericardosalgado@gmail.com';
+WHERE email = 'REDACTED_EMAIL';
 
 -- 7. VIEWS PÚBLICAS (profiles_public)
 -- Recriação da view usando DROP CASCADE para evitar erros de alteração de estrutura

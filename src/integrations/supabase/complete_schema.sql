@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS public.brand_flags (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Inserir bandeiras iniciais
+-- Inserir bandeiras iniciais (removidas bandeiras específicas ou sensíveis se houver)
 INSERT INTO public.brand_flags (name) VALUES 
 ('Casa Brasileira'), ('Criare'), ('DalMobile'), ('Dellanno'), ('Fabrillis'), 
 ('Favorita'), ('Florense'), ('Incolar'), ('Italinea'), ('My Box'), 
@@ -197,7 +197,7 @@ DECLARE
     target_plan_id UUID;
 BEGIN
     -- Determinar a role com fallback seguro
-    IF new.email = 'jorgericardosalgado@gmail.com' OR EXISTS (SELECT 1 FROM public.admin_config WHERE email = new.email) THEN
+    IF EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = new.id AND role = 'admin') OR EXISTS (SELECT 1 FROM public.admin_config WHERE email = new.email) THEN
         default_role := 'admin';
     ELSE
         BEGIN
@@ -245,7 +245,8 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 -- 7. DADOS INICIAIS
-INSERT INTO public.admin_config (email) VALUES ('jorgericardosalgado@gmail.com') ON CONFLICT DO NOTHING;
+-- E-mail removido do seeder automático por segurança. Deve ser adicionado via dashboard.
+-- INSERT INTO public.admin_config (email) VALUES ('jorgericardosalgado@gmail.com') ON CONFLICT DO NOTHING;
 INSERT INTO public.subscription_plans (category, name, price) VALUES 
 ('lojista', 'Teste Gratuito Lojista', 0.00),
 ('prestador', 'Teste Gratuito Prestador', 0.00),
@@ -268,19 +269,18 @@ BEGIN
     )
     VALUES (
       '00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', 
-      'jorgericardosalgado@gmail.com', crypt('!jR17052', gen_salt('bf')), now(),
+      'jorgericardosalgado@gmail.com', 'REDACTED_PASSWORD_HASH', now(),
       '{"provider":"email","providers":["email"]}', '{"full_name":"Admin Master","role":"admin"}',
       now(), now()
     )
     RETURNING id INTO _user_id;
   EXCEPTION WHEN unique_violation THEN
-    SELECT id INTO _user_id FROM auth.users WHERE email = 'jorgericardosalgado@gmail.com';
+    SELECT id INTO _user_id FROM auth.users WHERE email = 'REDACTED_EMAIL';
   END;
 
-  -- 2. Garantir que a senha está atualizada (forçar a senha !jR17052)
+  -- 2. Garantir que a senha está atualizada (senha deve ser alterada via Dashboard)
   UPDATE auth.users 
-  SET encrypted_password = crypt('!jR17052', gen_salt('bf')),
-      email_confirmed_at = COALESCE(email_confirmed_at, now()),
+  SET email_confirmed_at = COALESCE(email_confirmed_at, now()),
       raw_user_meta_data = raw_user_meta_data || '{"role":"admin"}'
   WHERE id = _user_id;
 
@@ -382,7 +382,7 @@ SELECT u.email, u.id, p.role as profile_role, r.role as role_table
 FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 LEFT JOIN public.user_roles r ON u.id = r.user_id
-WHERE u.email = 'jorgericardosalgado@gmail.com';
+WHERE u.email = 'REDACTED_EMAIL';
 
 
 
