@@ -434,20 +434,22 @@ GRANT ALL ON public.feed_posts TO service_role;
 
 -- 10. ADICIONAIS DE SEGURANÇA (ORDERS, PROPOSALS, DISPUTES, COINS)
 
--- ORDERS_OF_SERVICE
-ALTER TABLE public.orders_of_service ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Orders Participant Access" ON public.orders_of_service
+-- SERVICE_ORDERS (Canônica)
+ALTER TABLE public.service_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Orders Participant Access" ON public.service_orders
 FOR SELECT TO authenticated
-USING (auth.uid() = lojista_id OR auth.uid() = current_professional_id OR public.has_role(auth.uid(), 'admin'));
+USING (auth.uid() = owner_id OR auth.uid() = lojista_id OR auth.uid() = current_professional_id OR public.has_role(auth.uid(), 'admin'));
 
-CREATE POLICY "Lojista Manage Orders" ON public.orders_of_service
+CREATE POLICY "Owner Manage Orders" ON public.service_orders
 FOR ALL TO authenticated
-USING (auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'))
-WITH CHECK (auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'));
+USING (auth.uid() = owner_id OR auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'))
+WITH CHECK (auth.uid() = owner_id OR auth.uid() = lojista_id OR public.has_role(auth.uid(), 'admin'));
 
 -- PROPOSALS
 ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Proposals Participant Access" ON public.proposals
+FOR SELECT TO authenticated
+
 FOR SELECT TO authenticated
 USING (
     auth.uid() = prestador_id OR 
