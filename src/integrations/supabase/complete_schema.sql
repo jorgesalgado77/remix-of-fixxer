@@ -462,6 +462,12 @@ FOR ALL TO authenticated
 USING (auth.uid() = prestador_id OR public.has_role(auth.uid(), 'admin'))
 WITH CHECK (auth.uid() = prestador_id OR public.has_role(auth.uid(), 'admin'));
 
+-- REVIEWS (Segurança)
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public Read Reviews" ON public.reviews FOR SELECT TO authenticated, anon USING (true);
+CREATE POLICY "Users Create Own Reviews" ON public.reviews FOR INSERT TO authenticated WITH CHECK (auth.uid() = author_id);
+CREATE POLICY "Authors Manage Own Reviews" ON public.reviews FOR ALL TO authenticated USING (auth.uid() = author_id OR public.has_role(auth.uid(), 'admin')) WITH CHECK (auth.uid() = author_id OR public.has_role(auth.uid(), 'admin'));
+
 -- COINS (Segurança Financeira)
 CREATE TABLE IF NOT EXISTS public.user_coins (
     user_id UUID REFERENCES public.profiles(id) PRIMARY KEY,
@@ -486,6 +492,7 @@ FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 LEFT JOIN public.user_roles r ON u.id = r.user_id
 WHERE u.email = 'REDACTED_EMAIL';
+
 
 
 
