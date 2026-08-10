@@ -260,6 +260,12 @@ function ProviderStatsGrid() {
           open={showPixModal} 
           onClose={() => setShowPixModal(false)} 
           profile={{ pix_key: 'fixxer@pix.com.br' }} 
+          stats={{
+            balance: stats.balance,
+            balanceReservations: stats.balanceReservations,
+            balanceProducts: stats.balanceProducts,
+            balanceServices: stats.balanceServices
+          }}
         />
       )}
     </>
