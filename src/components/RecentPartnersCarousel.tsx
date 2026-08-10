@@ -287,12 +287,15 @@ function RecentPartnersCarouselInner() {
         }
       } catch { /* opcional */ }
 
-      let { data, error } = await supabaseExternal
+      let fetchRes = await supabaseExternal
         .from("profiles_public")
         .select(SAFE_COLS)
         .not("role", "is", null)
         .order("created_at", { ascending: false })
         .limit(100);
+      
+      let data = fetchRes.data as any[] | null;
+      let error = fetchRes.error;
       
       if (error && (error.code === '42703' || error.message.includes('does not exist'))) {
         console.warn("[RecentPartnersCarousel] Colunas ausentes na view, tentando fallback seguro...");
@@ -303,13 +306,13 @@ function RecentPartnersCarouselInner() {
           .not("role", "is", null)
           .order("created_at", { ascending: false })
           .limit(100);
-        data = fallbackRes.data;
+        data = fallbackRes.data as any[] | null;
         error = fallbackRes.error;
       }
       
       if (error) throw error;
 
-      const rows = ((data as unknown as PartnerRow[]) ?? [])
+      const rows = (data ?? [])
         .map((r) => {
           const rid = String(r.id);
           if (adminIds.has(rid)) return null;
