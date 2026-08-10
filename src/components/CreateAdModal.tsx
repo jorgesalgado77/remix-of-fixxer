@@ -860,7 +860,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Validação por campo (destaca inline + escolhe primeira mensagem para o toast)
+    // Validação por campo
     const needFixed = priceType === "fixo" || priceType === "fixo_comissao";
     const needContract = priceType === "comissao" || priceType === "fixo_comissao";
     const needPct = priceType === "comissao" || priceType === "fixo_comissao";
@@ -882,7 +882,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       commissionPct: pctErr,
     };
     setFieldErrors(nextErrors);
-    // Foca no primeiro campo com erro para acessibilidade
+    
     const firstMoneyErr = fixedErr || contractErr || pctErr;
     if (firstMoneyErr) {
       toast.error(firstMoneyErr);
@@ -897,12 +897,14 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       toast.error(`Saldo insuficiente: precisa de ${costSummary.total} moedas.`);
       return;
     }
+
     setSubmitting(true);
     try {
       const payload = buildPayload();
       const { data: sessionData } = await supabaseExternal.auth.getSession();
-      const uid = sessionData?.session?.user?.id ?? null;
-      const row: any = {
+      const uid = sessionData?.session?.user?.id;
+      
+      const row = {
         owner_id: uid,
         lojista_id: uid,
         title: payload.title,
@@ -939,11 +941,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         .insert(row)
         .select("id")
         .single();
-      
+
       if (error) throw error;
 
       if (data?.id) {
-        transitionStatus({ osId: data.id, newStatus: "PUBLICADA", notes: "Publicação inicial do anúncio" });
+        transitionStatus({ osId: data.id, newStatus: "PUBLICADA", notes: "Publicação inicial" });
       }
 
       toast.success("Serviço publicado com sucesso!");
@@ -951,38 +953,13 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       resetForm();
       onClose();
     } catch (dbErr: any) {
-      console.error("[CreateAdModal] Erro ao publicar:", dbErr);
+      console.error("[CreateAdModal] Erro:", dbErr);
       toast.error("Falha ao publicar serviço.");
     } finally {
       setSubmitting(false);
     }
   };
 
-        if (uid) {
-          const mkey = `fixxer:ads:month:${uid}:${new Date().toISOString().slice(0, 7)}`;
-          const n = Number(localStorage.getItem(mkey) || "0") + 1;
-          localStorage.setItem(mkey, String(n));
-          setFreeAdsUsed(n);
-        }
-      } catch { /* ignore */ }
-      // Dissemina para os feeds/dashboards abertos
-      try {
-        window.dispatchEvent(
-          new CustomEvent("fixxer:os-created", {
-            detail: { id: insertedId, row, payload, authorName: authorProfile.name, authorLogo: authorProfile.logoUrl },
-          }),
-        );
-      } catch { /* ignore */ }
-      toast.success("Oportunidade publicada com sucesso e disponível no feed!");
-      discardDraft();
-      resetForm();
-      onClose();
-    } catch (err: any) {
-      toast.error(err?.message || "Falha ao publicar oportunidade.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   // ---------- Fullscreen viewer ----------
   const openViewer = (index: number) => setViewer({ index, zoom: 1 });
