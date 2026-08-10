@@ -222,7 +222,9 @@ function RecentStoresCarouselInner() {
 
       // Tentativa de buscar colunas de endereço detalhado separadamente ou verificar erro
       // Para manter a UI estável, se as colunas novas falharem, tentamos um fallback de campos seguros
-      let { data: profiles, error: supabaseError } = await query;
+      let fetchResult = await query;
+      let profiles = fetchResult.data as any[] | null;
+      let supabaseError = fetchResult.error;
 
       if (supabaseError && (supabaseError.code === '42703' || supabaseError.message.includes('does not exist'))) {
         console.warn("[RecentStoresCarousel] Colunas ausentes na view, tentando fallback seguro...");
@@ -233,10 +235,9 @@ function RecentStoresCarouselInner() {
           .order('created_at', { ascending: false });
         
         const fallbackResult = await fallbackQuery;
-        profiles = fallbackResult.data;
+        profiles = fallbackResult.data as any[] | null;
         supabaseError = fallbackResult.error;
       }
-
 
       if (supabaseError) throw supabaseError;
 
