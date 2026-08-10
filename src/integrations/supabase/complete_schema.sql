@@ -141,7 +141,7 @@ DO $$
 DECLARE
     r RECORD;
 BEGIN
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('subscription_plans', 'plan_features', 'profiles', 'user_roles', 'admin_config', 'access_logs', 'brand_flags')) LOOP
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('subscription_plans', 'plan_features', 'profiles', 'user_roles', 'admin_config', 'access_logs', 'brand_flags', 'service_orders', 'proposals', 'reviews', 'feed_posts', 'notifications', 'user_coins', 'coin_transactions')) LOOP
         EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' ENABLE ROW LEVEL SECURITY';
     END LOOP;
 END $$;
