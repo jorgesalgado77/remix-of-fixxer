@@ -106,7 +106,6 @@ function AuthenticatedLayout() {
   const showAdminPanel = pathname.startsWith('/admin');
 
 
-  const currentCategory = useCurrentCategory();
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col" style={getCategoryCssVars(currentCategory)}>
