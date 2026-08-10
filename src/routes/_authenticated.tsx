@@ -24,6 +24,7 @@ function AuthenticatedLayout() {
   const { user, loading: userLoading } = useCurrentUser();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const currentCategory = useCurrentCategory();
 
   const email = user?.email ?? '';
 
