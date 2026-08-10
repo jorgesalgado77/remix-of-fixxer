@@ -24,6 +24,7 @@ function AuthenticatedLayout() {
   const { user, loading: userLoading } = useCurrentUser();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const currentCategory = useCurrentCategory();
 
   const email = user?.email ?? '';
 
@@ -35,14 +36,43 @@ function AuthenticatedLayout() {
     }
   }, [user, userLoading, navigate]);
 
+  // SEGURANÇA DE ROTA: Validação de privilégios baseada na URL visitada vs Role real.
   useEffect(() => {
     if (adminLoading || userLoading) return;
     if (!user) return;
-    if (!isAdmin && pathname.startsWith('/admin')) {
+
+    const isPathAdmin = pathname.startsWith('/admin');
+    const isPathLojista = pathname.startsWith('/lojista') || pathname.startsWith('/dashboard/lojista');
+    const isPathPrestador = pathname.startsWith('/prestador') || pathname.startsWith('/dashboard/prestador');
+    const isPathFornecedor = pathname.startsWith('/parceiro');
+    const isPathCliente = pathname.startsWith('/cliente');
+
+    // 1. Bloqueio Admin
+    if (isPathAdmin && !isAdmin) {
       toast.error("Acesso restrito ao Administrador Master.");
       navigate({ to: "/feed" as any });
+      return;
     }
-  }, [user, isAdmin, adminLoading, userLoading, pathname, navigate]);
+
+    // 2. Bloqueios de Segmentação (Cross-Role Prevention)
+    // Se o usuário tentar acessar um painel que não é o dele, redirecionamos para o feed/home.
+    // O Administrador Master tem passe livre para auditoria.
+    if (!isAdmin) {
+      if (isPathLojista && currentCategory !== 'lojista') {
+        toast.error("Acesso restrito a Lojistas.");
+        navigate({ to: "/feed" as any });
+      } else if (isPathPrestador && currentCategory !== 'prestador') {
+        toast.error("Acesso restrito a Prestadores.");
+        navigate({ to: "/feed" as any });
+      } else if (isPathFornecedor && currentCategory !== 'fornecedor') {
+        toast.error("Acesso restrito a Fornecedores.");
+        navigate({ to: "/feed" as any });
+      } else if (isPathCliente && currentCategory !== 'cliente') {
+        toast.error("Acesso restrito a Clientes.");
+        navigate({ to: "/feed" as any });
+      }
+    }
+  }, [user, isAdmin, currentCategory, adminLoading, userLoading, pathname, navigate]);
 
   useEffect(() => {
     // Notificações Realtime para mudança de status
@@ -76,7 +106,6 @@ function AuthenticatedLayout() {
   const showAdminPanel = pathname.startsWith('/admin');
 
 
-  const currentCategory = useCurrentCategory();
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col" style={getCategoryCssVars(currentCategory)}>
@@ -188,8 +217,7 @@ function AuthenticatedLayout() {
                   O sistema ignorou erros de roteamento e carregou a dashboard do administrador diretamente.
                 </p>
               </div>
-              <div id="ts-visual-edit-probe-3f4bcf95f12749b9" className="hidden">corrija o preview</div>
-              <div id="ts-visual-edit-probe-37f3add416c04ced" className="hidden">ao acessar a dashboard do lojista nada aparece, fica a mensagem NOT FOUND, corrija</div>
+              <div id="ts-visual-edit-probe-3f4bcf95f12749b9" className="hidden">LEIA OS RELATÓRIOS:\n\ndocs/FIXXER_CORE_BASELINE_AUDIT.md\n\ndocs/PROMPT_01_AUDIT.md\n\nOBJETIVO:\n\nConsolidar autenticação, papéis e autorização sem criar uma arquitetura paralela.\n\nPRIMEIRO:\n\nVerifique o banco real e descubra:\n\n- enum de roles realmente ativo;\n\n- roles existentes;\n\n- user_roles;\n\n- policies;\n\n- has_role();\n\n- requireAdmin();\n\n- referências antigas a:\n\n  fornecedor\n\n  parceiro\n\n  prestador\n\n  lojista\n\n  cliente\n\n  casual\n\n  admin\n\nNÃO CRIE UM NOVO ENUM ANTES DE VERIFICAR O EXISTENTE.\n\nDEFINA UM MODELO CANÔNICO DE IDENTIDADE:\n\nUSUÁRIO → ROLE PRINCIPAL → PERFIL ESPECIALIZADO\n\nExemplo conceitual:\n\nauth.users\n\n   ↓\n\nprofiles\n\n   ↓\n\nuser_roles\n\n   ↓\n\nrole principal\n\n   ↓\n\nperfil especializado existente quando aplicável\n\nPRESERVAR COMPATIBILIDADE COM:\n\n- lojista\n\n- prestador\n\n- fornecedor/parceiro\n\n- cliente\n\n- admin\n\nIMPLEMENTAR:\n\n1. Uma única fonte confiável para autorização.\n\n2. Compatibilidade com dados existentes.\n\n3. Migration segura para valores legados.\n\n4. Nenhuma verificação de role apenas no frontend.\n\n5. Rotas protegidas no frontend E no backend.\n\n6. Admin Master validado por role real.\n\n7. Nenhum email hardcoded para autorização.\n\nREVISE:\n\n- login;\n\n- cadastro;\n\n- onboarding;\n\n- redirects;\n\n- guards;\n\n- páginas por role;\n\n- APIs;\n\n- RPCs;\n\n- RLS;\n\n- painel administrativo.\n\nAUDITORIA OBRIGATÓRIA:\n\nTeste conceitualmente e, quando possível, execute:\n\nANÔNIMO:\n\n- não acessa dados privados.\n\nLOJISTA:\n\n- acessa apenas seus dados privados e dados públicos permitidos.\n\nPRESTADOR:\n\n- idem.\n\nFORNECEDOR/PARCEIRO:\n\n- idem.\n\nCLIENTE:\n\n- idem.\n\nADMIN:\n\n- acessa apenas o necessário para administração.\n\nTESTE TAMBÉM:\n\n- tentativa de trocar role pelo frontend;\n\n- tentativa de alterar user_id de outro usuário;\n\n- acesso direto à rota Admin;\n\n- manipulação de localStorage;\n\n- atualização de perfil de terceiros.\n\nCRIE:\n\ndocs/PROMPT_02_AUDIT.md\n\nNão prossiga deixando inconsistências silenciosas entre roles antigas e novas.</div>
             </div>
           </div>
         ) : (
