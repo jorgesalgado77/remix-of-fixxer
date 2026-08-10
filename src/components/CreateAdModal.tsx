@@ -42,7 +42,9 @@ import { useUserCategory } from "@/lib/current-user";
 import { resolveEffectiveCategory } from "@/lib/create-ad-role";
 import { getCachedBalance, subscribeBalance } from "@/lib/coins";
 import { getActionCost, getPlanConfig, type PlanId } from "@/lib/monetization";
-import { Zap, CalendarDays, Package, Coins, Hash, Radius, CalendarClock } from "lucide-react";
+import { Zap, CalendarDays, Package, Coins, Hash, Radius, CalendarClock, Loader2 } from "lucide-react";
+import { useOSWorkflow } from "@/hooks/use-os-workflow";
+
 import { Star, MapPin } from "lucide-react";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import { normalizeAdTags, formatTagLabel } from "@/lib/ad-filters";
@@ -854,9 +856,11 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     };
   };
 
+  const { transitionStatus } = useOSWorkflow();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Validação por campo (destaca inline + escolhe primeira mensagem para o toast)
+    // Validação por campo
     const needFixed = priceType === "fixo" || priceType === "fixo_comissao";
     const needContract = priceType === "comissao" || priceType === "fixo_comissao";
     const needPct = priceType === "comissao" || priceType === "fixo_comissao";
@@ -878,17 +882,10 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       commissionPct: pctErr,
     };
     setFieldErrors(nextErrors);
-    // Foca no primeiro campo com erro para acessibilidade
+    
     const firstMoneyErr = fixedErr || contractErr || pctErr;
     if (firstMoneyErr) {
       toast.error(firstMoneyErr);
-      requestAnimationFrame(() => {
-        const el = document.querySelector<HTMLElement>(
-          '[data-currency-error="true"], [data-field-error="true"]',
-        );
-        el?.focus?.();
-        el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
-      });
       return;
     }
     const err = validate();
@@ -897,29 +894,18 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
       return;
     }
     if (costSummary.insufficient) {
-      const faltam = Math.max(0, costSummary.total - coinBalance);
-      toast.error(
-        `Saldo insuficiente: precisa de ${costSummary.total} moedas (você tem ${coinBalance}). Faltam ${faltam}.`,
-      );
+      toast.error(`Saldo insuficiente: precisa de ${costSummary.total} moedas.`);
       return;
     }
+
     setSubmitting(true);
     try {
       const payload = buildPayload();
-      // Sanidade final: todo campo monetário no payload deve ser número finito ≥ 0
-      const moneyFields = ["fixed_value", "contract_value", "commission_value", "total_value"] as const;
-      for (const f of moneyFields) {
-        const v = (payload as any)[f];
-        if (v !== undefined && v !== null && (!Number.isFinite(v) || v < 0)) {
-          toast.error(`Campo monetário inválido (${f}). Revise os valores.`);
-          setSubmitting(false);
-          return;
-        }
-      }
-      // Sessão atual do lojista
       const { data: sessionData } = await supabaseExternal.auth.getSession();
-      const uid = sessionData?.session?.user?.id ?? null;
-      const row: any = {
+      const uid = sessionData?.session?.user?.id;
+      
+      const row = {
+        owner_id: uid,
         lojista_id: uid,
         title: payload.title,
         description: payload.description,
@@ -934,6 +920,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         notes: payload.notes,
         tech_specs: (payload as any).tech_specs,
         price_type: payload.price_type,
+        price: (payload as any).fixed_value || (payload as any).total_value || 0,
         fixed_value: (payload as any).fixed_value ?? null,
         contract_value: (payload as any).contract_value ?? null,
         commission_percent: (payload as any).commission_percent ?? null,
@@ -946,61 +933,34 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         service_radius_km: (payload as any).service_radius_km ?? null,
         tags: (payload as any).tags ?? [],
         expires_at: (payload as any).expires_at ?? null,
-        status: "PENDENTE",
+        status: "CRIADA",
       };
-      let insertedId: string | null = null;
-      try {
-        const { data, error } = await supabaseExternal
-          .from("service_orders")
-          .insert(row)
-          .select("id")
-          .single();
-        if (error) throw error;
-        insertedId = data?.id ?? null;
-      } catch (dbErr: any) {
-        // Fallback: persiste em localStorage para não perder o dado quando a tabela não existir
-        console.warn("[CreateAdModal] Falha ao gravar em service_orders — usando fallback local.", dbErr?.message);
-        const key = "fixxer:service_orders:local";
-        const prev = JSON.parse(localStorage.getItem(key) || "[]");
-        insertedId = `local-${Date.now()}`;
-        prev.unshift({ id: insertedId, created_at: new Date().toISOString(), ...row });
-        localStorage.setItem(key, JSON.stringify(prev.slice(0, 100)));
+
+      const { data, error } = await supabaseExternal
+        .from("service_orders")
+        .insert(row)
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      if (data?.id) {
+        // Envolve o payload no objeto 'data' esperado pelo middleware do TanStack Start
+        transitionStatus({ data: { osId: data.id, newStatus: "PUBLICADA", notes: "Publicação inicial" } });
       }
-      // Incrementa contador local (métricas)
-      try {
-        const cKey = "fixxer:os:created:count";
-        const n = Number(localStorage.getItem(cKey) || "0") + 1;
-        localStorage.setItem(cKey, String(n));
-      } catch { /* ignore */ }
-      // Incrementa contador mensal por usuário (usado no resumo de moedas)
-      try {
-        const { data: auth } = await supabaseExternal.auth.getUser();
-        const uid = auth?.user?.id;
-        if (uid) {
-          const mkey = `fixxer:ads:month:${uid}:${new Date().toISOString().slice(0, 7)}`;
-          const n = Number(localStorage.getItem(mkey) || "0") + 1;
-          localStorage.setItem(mkey, String(n));
-          setFreeAdsUsed(n);
-        }
-      } catch { /* ignore */ }
-      // Dissemina para os feeds/dashboards abertos
-      try {
-        window.dispatchEvent(
-          new CustomEvent("fixxer:os-created", {
-            detail: { id: insertedId, row, payload, authorName: authorProfile.name, authorLogo: authorProfile.logoUrl },
-          }),
-        );
-      } catch { /* ignore */ }
-      toast.success("Oportunidade publicada com sucesso e disponível no feed!");
+
+      toast.success("Serviço publicado com sucesso!");
       discardDraft();
       resetForm();
       onClose();
-    } catch (err: any) {
-      toast.error(err?.message || "Falha ao publicar oportunidade.");
+    } catch (dbErr: any) {
+      console.error("[CreateAdModal] Erro:", dbErr);
+      toast.error("Falha ao publicar serviço.");
     } finally {
       setSubmitting(false);
     }
   };
+
 
   // ---------- Fullscreen viewer ----------
   const openViewer = (index: number) => setViewer({ index, zoom: 1 });
