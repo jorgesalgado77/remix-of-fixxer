@@ -349,12 +349,27 @@ BEGIN
             ALTER TABLE public.service_orders ADD COLUMN lojista_id UUID REFERENCES public.profiles(id);
         END IF;
 
-        -- Migração segura usando colunas qualificadas da tabela de origem
-        -- Nota: Usamos EXECUTE para evitar problemas de parsing se a tabela orders_of_service não existir no momento da compilação do bloco
-        EXECUTE 'INSERT INTO public.service_orders (id, owner_id, lojista_id, title, description, status, price, created_at)
-                 SELECT o.id, o.lojista_id, o.lojista_id, o.title, o.description, o.status, o.contract_value, o.created_at
-                 FROM public.orders_of_service o
-                 ON CONFLICT (id) DO NOTHING';
+        -- Migração segura verificando a existência das colunas na tabela de origem (orders_of_service)
+        -- Usamos um bloco anônimo interno para checar as colunas antes do EXECUTE
+        DECLARE
+            v_source_lojista_id_exists boolean;
+            v_source_contract_value_exists boolean;
+        BEGIN
+            SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders_of_service' AND column_name='lojista_id') INTO v_source_lojista_id_exists;
+            SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders_of_service' AND column_name='contract_value') INTO v_source_contract_value_exists;
+
+            IF v_source_lojista_id_exists AND v_source_contract_value_exists THEN
+                EXECUTE 'INSERT INTO public.service_orders (id, owner_id, lojista_id, title, description, status, price, created_at)
+                         SELECT o.id, o.lojista_id, o.lojista_id, o.title, o.description, o.status, o.contract_value, o.created_at
+                         FROM public.orders_of_service o
+                         ON CONFLICT (id) DO NOTHING';
+            ELSIF v_source_lojista_id_exists THEN
+                EXECUTE 'INSERT INTO public.service_orders (id, owner_id, lojista_id, title, description, status, created_at)
+                         SELECT o.id, o.lojista_id, o.lojista_id, o.title, o.description, o.status, o.created_at
+                         FROM public.orders_of_service o
+                         ON CONFLICT (id) DO NOTHING';
+            END IF;
+        END;
     END IF;
 END $$;
 
