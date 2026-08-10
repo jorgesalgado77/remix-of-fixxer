@@ -996,7 +996,7 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
     );
 }
 
-function DashboardView({ rating, getRatingColor, handleTabChange, isProfileComplete, profileSummary, showPixModal, setShowPixModal }: { rating: number; getRatingColor: (val: number) => string; handleTabChange: (tab: string) => void; isProfileComplete: boolean; profileSummary: any; showPixModal: boolean; setShowPixModal: (v: boolean) => void }) {
+function DashboardView({ rating, getRatingColor, handleTabChange, isProfileComplete, profileSummary, showPixModal, setShowPixModal, userRole }: { rating: number; getRatingColor: (val: number) => string; handleTabChange: (tab: string) => void; isProfileComplete: boolean; profileSummary: any; showPixModal: boolean; setShowPixModal: (v: boolean) => void; userRole: CategoryKey }) {
     const providerStats = useProviderStats();
     const [filter, setFilter] = useState('Hoje');
     const [statusFilter, setStatusFilter] = useState('Todos');
