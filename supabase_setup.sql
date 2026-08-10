@@ -127,7 +127,7 @@ CREATE OR REPLACE FUNCTION public.is_admin_master()
 RETURNS boolean AS $$
 BEGIN
   RETURN (
-    auth.jwt() ->> 'email' = 'jorgericardosalgado@gmail.com' OR 
+    (public.has_role(auth.uid(), 'admin')) OR 
     EXISTS (
         SELECT 1 FROM public.profiles 
         WHERE id = auth.uid() AND user_type = 'Admin'
