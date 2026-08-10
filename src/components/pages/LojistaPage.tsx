@@ -319,7 +319,10 @@ export function LojistaDashboard() {
       { id: 3, title: 'Avaliação Recebida', message: 'Carlos Silva deixou uma avaliação de 5 estrelas.', type: 'review_received', os_id: '2488', time: '2 horas atrás', read: true },
     ]);
 
-    const handlePixModalEvent = () => setShowPixModal(true);
+    const handlePixModalEvent = (e: any) => {
+      console.log("[LojistaDashboard] Evento fixxer:open-pix-modal recebido", e);
+      setShowPixModal(true);
+    };
     window.addEventListener('fixxer:open-pix-modal', handlePixModalEvent);
 
     return () => {
@@ -698,6 +701,7 @@ export function LojistaDashboard() {
                 profileSummary={profileSummary}
                 showPixModal={showPixModal}
                 setShowPixModal={setShowPixModal}
+                userRole={userRole}
               />
             )}
             {activeTab === 'create' && <CreateServiceView />}
@@ -992,7 +996,7 @@ function NavButtonWithTooltip({ icon, label, active, onClick, disabled }: any) {
     );
 }
 
-function DashboardView({ rating, getRatingColor, handleTabChange, isProfileComplete, profileSummary, showPixModal, setShowPixModal }: { rating: number; getRatingColor: (val: number) => string; handleTabChange: (tab: string) => void; isProfileComplete: boolean; profileSummary: any; showPixModal: boolean; setShowPixModal: (v: boolean) => void }) {
+function DashboardView({ rating, getRatingColor, handleTabChange, isProfileComplete, profileSummary, showPixModal, setShowPixModal, userRole }: { rating: number; getRatingColor: (val: number) => string; handleTabChange: (tab: string) => void; isProfileComplete: boolean; profileSummary: any; showPixModal: boolean; setShowPixModal: (v: boolean) => void; userRole: CategoryKey }) {
     const providerStats = useProviderStats();
     const [filter, setFilter] = useState('Hoje');
     const [statusFilter, setStatusFilter] = useState('Todos');
@@ -1169,6 +1173,13 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Barra de ações rápida com QrCode integrado para todos */}
+            <div className="flex items-center justify-between">
+                <div className="flex-1">
+                    <PanelActions role={(userRole === 'admin' ? 'lojista' : userRole) as any} />
+                </div>
+            </div>
+
             {/* Filtros Globais - Agora Responsivos */}
             <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

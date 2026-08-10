@@ -129,17 +129,19 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
       </IconLink>
 
       <button
-        onClick={() => {
-          try {
-            // Tenta abrir o modal de PIX se estiver no dashboard, ou notifica
-            window.dispatchEvent(new CustomEvent('fixxer:open-pix-modal'));
-          } catch (err) {
-            toast.error("Funcionalidade disponível no seu painel principal.");
-          }
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log("[PanelActions] Disparando fixxer:open-pix-modal");
+          window.dispatchEvent(new CustomEvent('fixxer:open-pix-modal', { 
+            bubbles: true, 
+            composed: true 
+          }));
         }}
         title="Receber via PIX — Gere QR Codes de cobrança para seus clientes e acompanhe seus recebimentos em tempo real"
         aria-label="Receber via PIX"
-        className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all active:scale-95"
+        className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all active:scale-95 z-20"
       >
         <QrCode className="w-5 h-5" aria-hidden="true" />
       </button>
