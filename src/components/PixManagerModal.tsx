@@ -20,6 +20,7 @@ interface Props {
 const BRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function PixManagerModal({ open, onClose, profile, stats }: Props) {
+  const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("servico");
@@ -159,6 +160,18 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
               </Button>
             </div>
           </div>
+
+          {!generated && !loading && (
+            <div className="p-8 border-2 border-dashed border-white/5 rounded-[24px] flex flex-col items-center justify-center text-center space-y-3 bg-white/[0.01]">
+              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                <QrCode className="w-6 h-6 text-white/20" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white/80">Nenhum recebimento pendente</p>
+                <p className="text-[10px] text-white/40 max-w-[240px] mx-auto">Insira um valor e gere uma cobrança acima para começar a receber via PIX.</p>
+              </div>
+            </div>
+          )}
 
           {generated && (
             <div className="p-6 rounded-[24px] bg-emerald-500/5 border border-emerald-500/20 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">

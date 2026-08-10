@@ -48,7 +48,8 @@ import {
   Rocket,
   Receipt,
   Crown,
-  Megaphone
+  Megaphone,
+  TrendingUp
 } from "lucide-react";
 
 import jsPDF from 'jspdf';
@@ -1348,7 +1349,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 />
                 <MetricCard 
                     label="Saldo do Período" 
-                    value={`R$ 0,00`} 
+                    value={loadingStats ? "..." : `R$ 0,00`} 
                     icon={<DollarSign />} 
                     color="text-emerald-400"
                     bgColor="bg-emerald-400/5"
@@ -1361,6 +1362,15 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                         <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
                             <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ 0,00</span></span>
                             <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Comissões: <span className="text-white">R$ 0,00</span></span>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowExtractModal(true);
+                                }}
+                                className="mt-1 text-[7px] font-black text-emerald-400 hover:text-emerald-300 uppercase italic flex items-center gap-1 transition-colors"
+                            >
+                                Ver Extrato Detalhado <TrendingUp className="w-2 h-2" />
+                            </button>
                         </div>
                     }
                 />
