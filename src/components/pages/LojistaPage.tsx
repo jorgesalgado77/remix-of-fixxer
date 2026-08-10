@@ -319,7 +319,10 @@ export function LojistaDashboard() {
       { id: 3, title: 'Avaliação Recebida', message: 'Carlos Silva deixou uma avaliação de 5 estrelas.', type: 'review_received', os_id: '2488', time: '2 horas atrás', read: true },
     ]);
 
-    const handlePixModalEvent = () => setShowPixModal(true);
+    const handlePixModalEvent = (e: any) => {
+      console.log("[LojistaDashboard] Evento fixxer:open-pix-modal recebido", e);
+      setShowPixModal(true);
+    };
     window.addEventListener('fixxer:open-pix-modal', handlePixModalEvent);
 
     return () => {
@@ -698,6 +701,7 @@ export function LojistaDashboard() {
                 profileSummary={profileSummary}
                 showPixModal={showPixModal}
                 setShowPixModal={setShowPixModal}
+                userRole={userRole}
               />
             )}
             {activeTab === 'create' && <CreateServiceView />}
