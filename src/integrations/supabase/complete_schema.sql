@@ -348,16 +348,37 @@ CREATE TABLE IF NOT EXISTS public.proposals (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Tabela Canônica de Avaliações
+CREATE TABLE IF NOT EXISTS public.reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    author_id UUID REFERENCES public.profiles(id),
+    target_id UUID REFERENCES public.profiles(id),
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Compatibilidade
+    reviewed_user_id UUID REFERENCES public.profiles(id)
 );
+
+-- Migração de store_reviews
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'store_reviews') THEN
+        INSERT INTO public.reviews (author_id, target_id, rating, comment, created_at)
+        SELECT author_id, lojista_id, rating, comment, created_at
+        FROM public.store_reviews
+        ON CONFLICT DO NOTHING;
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.os_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    os_id UUID REFERENCES public.orders_of_service(id) ON DELETE CASCADE,
+    os_id UUID REFERENCES public.service_orders(id) ON DELETE CASCADE,
     sender_id UUID REFERENCES public.profiles(id),
     content TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
 
 CREATE TABLE IF NOT EXISTS public.lead_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
