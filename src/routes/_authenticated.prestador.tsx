@@ -153,9 +153,17 @@ function ProviderStatsGrid() {
   const stats = useProviderStats();
   const [openKey, setOpenKey] = useState<null | "ativos" | "concluidos" | "rating" | "saldo">(null);
   const [showPixModal, setShowPixModal] = useState(false);
+  const [period, setPeriod] = useState("30");
+
+  const filterByPeriod = (items: any[]) => {
+    const now = new Date();
+    const days = parseInt(period);
+    const limit = new Date(now.setDate(now.getDate() - days));
+    return items.filter(it => new Date(it.created_at) >= limit);
+  };
 
   const orderItems = (list: typeof stats.activeOrders): StatListItem[] =>
-    list.map((o) => ({
+    filterByPeriod(list).map((o) => ({
       id: o.id,
       title: o.title?.trim() || `O.S. ${String(o.id).slice(0, 8)}`,
       subtitle: o.status ? `Status: ${o.status}` : undefined,
