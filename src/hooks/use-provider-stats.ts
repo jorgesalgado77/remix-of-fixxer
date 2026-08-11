@@ -111,6 +111,7 @@ export function useProviderStats(): ProviderStats {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(null);
       try {
         const { data: sess } = await supabaseExternal.auth.getSession();
         const uid = sess.session?.user?.id ?? null;
@@ -196,6 +197,9 @@ export function useProviderStats(): ProviderStats {
           console.error("useProviderStats: failed to fetch transactions", e);
           if (!cancelled) setTransactions([]);
         }
+      } catch (e: any) {
+        console.error("useProviderStats: fatal", e);
+        if (!cancelled) setError(e?.message ?? "Falha ao carregar dados financeiros.");
       } finally {
         if (!cancelled) setLoading(false);
       }
