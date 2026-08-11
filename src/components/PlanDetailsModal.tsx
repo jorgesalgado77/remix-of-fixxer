@@ -53,7 +53,7 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
           user_id: user.id,
           event_type: 'plan_upgrade',
           status: 'pending',
-          description: \`Iniciada tentativa de upgrade para o plano \${targetCfg.name} (\${billing})\`,
+          description: `Iniciada tentativa de upgrade para o plano ${targetCfg.name} (${billing})`,
           metadata: {
             plan_id: targetCfg.id,
             billing_cycle: billing,
