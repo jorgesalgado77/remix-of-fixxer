@@ -86,11 +86,9 @@ export async function resolveIdentity(
         break;
       }
     }
-
   }
 
   const base = effectiveProfile || {};
-
 
   // 2. Resolver Categoria Principal (Aproveita a lógica existente)
   const mainCategory = await resolvePublicProfileCategory(userId, {
@@ -120,7 +118,7 @@ export async function resolveIdentity(
   const timeSinceActive = identity.lastActiveAt ? Date.now() - new Date(identity.lastActiveAt).getTime() : Infinity;
   const activityLabel = timeSinceActive < 5 * 60 * 1000 ? "Online" : 
                        timeSinceActive < 60 * 60 * 1000 ? "Ativo recentemente" : 
-                       identity.lastActiveAt ? \`Visto em \${new Date(identity.lastActiveAt).toLocaleDateString("pt-BR")}\` :
+                       identity.lastActiveAt ? `Visto em ${new Date(identity.lastActiveAt).toLocaleDateString("pt-BR")}` :
                        "Ativo na plataforma";
 
   // 5. Construir Apresentação
