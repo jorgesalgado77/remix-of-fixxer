@@ -12,7 +12,8 @@ export async function uploadWithProgress(
   file: File,
   onProgress?: (p: UploadProgress) => void,
   signal?: AbortSignal,
-): Promise<{ path: string; publicUrl: string }> {
+  isPrivate: boolean = false,
+): Promise<{ path: string; url: string }> {
   // 1) Gera URL assinada de upload
   const { data: signed, error } = await supabaseExternal.storage
     .from(bucket)
@@ -39,6 +40,11 @@ export async function uploadWithProgress(
     xhr.send(file);
   });
 
+  if (isPrivate) {
+    const { data: signed } = await supabaseExternal.storage.from(bucket).createSignedUrl(path, 3600);
+    return { path, url: signed?.signedUrl ?? "" };
+  }
+
   const { data } = supabaseExternal.storage.from(bucket).getPublicUrl(path);
-  return { path, publicUrl: data.publicUrl };
+  return { path, url: data.publicUrl };
 }
