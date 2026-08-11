@@ -60,7 +60,7 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { Button } from "@/components/ui/button";
 const CreateAdModal = lazy(() => import("@/components/CreateAdModal").then(m => ({ default: m.CreateAdModal })));
-const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m => ({ default: m.PixManagerModal })));
+
 import { CATEGORY_LABEL, type CategoryKey } from "@/lib/category-colors";
 import {
   evaluateProfileCompleteness,
@@ -1569,17 +1569,8 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                                                         <div className="w-full p-3 rounded-xl bg-white/5 border border-white/5">
                                                             <div className="text-[8px] font-black uppercase text-muted-foreground italic mb-3">Ações Rápidas</div>
                                                             <div className="flex flex-wrap gap-2 w-full">
-                                                                {/* Modal PIX interno ao DashboardView para acesso aos estados locais */}
-                                                                {showPixModal && (
-                                                                  <Suspense fallback={null}>
-                                                                    <PixManagerModal 
-                                                                      open={showPixModal}
-                                                                      onClose={() => setShowPixModal(false)}
-                                                                      profile={profileSummary}
-                                                                      stats={providerStats}
-                                                                    />
-                                                                  </Suspense>
-                                                                )}
+                                                                {/* O modal de PIX agora é gerenciado globalmente no layout AuthenticatedLayout */}
+
                                                                 <Link 
                                                                     to="/feed/lojista" search={{ urgency: 'todos', distance: 'todos', tag: '' }}
                                                                     className="flex-1 min-w-[110px] flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white text-[9px] font-bold uppercase italic border border-white/10 px-3 py-2.5 rounded-lg transition-all"

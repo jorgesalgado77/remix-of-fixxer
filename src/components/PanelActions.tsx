@@ -142,7 +142,7 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
           }}
           title="Receber via PIX — Gere QR Codes de cobrança para seus clientes e acompanhe seus recebimentos em tempo real"
           aria-label="Receber via PIX — Gerar QR Code para recebimento instantâneo"
-          className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all active:scale-95 z-20"
+          className="flex items-center justify-center h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all active:scale-95 z-20"
         >
           <QrCode className="w-5 h-5" aria-hidden="true" />
           <span className="sr-only">Receber via PIX</span>
