@@ -29,6 +29,22 @@ vi.mock("@/lib/supabaseExternal", () => ({
   },
 }));
 
+// Mock do resolver de categoria para evitar interferência de lógica de rede/cache real nos testes de peer profile
+vi.mock("@/lib/public-profile-category", async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  return {
+    ...actual,
+    resolvePublicProfileCategory: vi.fn(async (userId: string, options?: any) => {
+      // Lógica simplificada para o mock de teste baseada no estado global injetado
+      if (state.store && (state.store.user_id === userId || userId === "u1")) return "lojista";
+      if (state.provider && (state.provider.user_id === userId || userId === "u2")) return "prestador";
+      if (options?.profile?.role === "fornecedor" || (state.profiles?.role === "fornecedor" && userId === "u3")) return "fornecedor";
+      if (options?.profile?.role === "cliente" || (state.profiles?.role === "cliente" && userId === "u4")) return "cliente";
+      return null;
+    }),
+  };
+});
+
 import { resolvePeerProfile, clearPeerCache } from "@/lib/chat-peer-profile";
 
 beforeEach(() => {
@@ -37,6 +53,7 @@ beforeEach(() => {
   state.provider = null;
   state.store = null;
   clearPeerCache();
+  vi.clearAllMocks();
 });
 
 describe("resolvePeerCategory (tag do peer)", () => {
