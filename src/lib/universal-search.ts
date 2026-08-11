@@ -109,6 +109,9 @@ const SYNONYM_GROUPS: string[][] = [
   ["garcom", "garconete", "atendente", "atendimento"],
   ["carreteiro", "caminhoneiro", "carreta", "caminhao", "guincho"],
   ["soldador", "soldagem", "solda"],
+  ["parceiro", "fornecedor", "b2b", "supplier", "distribuidor", "atacado"],
+  ["prestador", "servico", "tecnico", "profissional", "autonomo", "freelance"],
+  ["lojista", "loja", "comercio", "estabelecimento", "venda", "balcao"],
 ];
 const SYNONYMS: Record<string, string[]> = (() => {
   const map: Record<string, string[]> = {};

@@ -1,6 +1,7 @@
 // ============================================================
-// FIXXER — Matriz Multi-Setorial de Ramos de Atividade
-// Fonte única de verdade para cadastro, perfis, feeds e afiliados
+// FIXXER — Matriz Canônica de Categorias e Ramos (v1.0.0)
+// Fonte única de verdade para Identidade, Atividade e Competência.
+// Sincronizado com docs/PROMPT_10_CATEGORIES_AUDIT.md
 // ============================================================
 
 export type ActivityBranch = {
@@ -298,10 +299,14 @@ export const ACTIVITY_MATRIX: ActivityMacroCategory[] = [
   },
 ];
 
-/** Retorna todos os labels (ramos + subcategorias) como lista plana para busca. */
+/** 
+ * Retorna todos os labels (ramos + subcategorias) como lista plana para busca.
+ * Agora inclui stems e metadados para o Match Engine.
+ */
 export function flattenBranches(): string[] {
   const out: string[] = [];
   for (const cat of ACTIVITY_MATRIX) {
+    out.push(cat.label);
     for (const b of cat.branches) {
       out.push(b.label);
       if (b.subcategories) out.push(...b.subcategories);
@@ -498,8 +503,9 @@ export function getB2BSuggestions(
     const list = B2B_SUGGESTIONS[key];
     if (!list) continue;
     for (const s of list) {
-      if (seen.has(s.title)) continue;
-      seen.add(s.title);
+      const uniqueKey = `${s.title}-${s.targetBranch}`;
+      if (seen.has(uniqueKey)) continue;
+      seen.add(uniqueKey);
       staticList.push(s);
     }
   }
