@@ -62,11 +62,11 @@ function ParceiroDashboard() {
       <MyAppointmentsSection />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-        <StatCard icon={<Users className="w-5 h-5" />} label="Leads" value="24" color="text-blue-400" />
-        <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Vistas" value="1.2k" color="text-[#00FF87]" />
-        <StatCard icon={<Package className="w-5 h-5" />} label="Produtos" value="12" color="text-emerald-400" />
-        <StatCard icon={<DollarSign className="w-5 h-5" />} label="Vendas" value="R$ 8.4k" color="text-amber-400" />
+        {/* Valores reais virão de hooks de métricas em turnos futuros */}
+        <StatCard icon={<Users className="w-5 h-5" />} label="Leads" value="0" color="text-blue-400" />
+        <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Vistas" value="0" color="text-[#00FF87]" />
+        <StatCard icon={<Package className="w-5 h-5" />} label="Produtos" value="0" color="text-emerald-400" />
+        <StatCard icon={<DollarSign className="w-5 h-5" />} label="Vendas" value="R$ 0,00" color="text-amber-400" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -75,31 +75,46 @@ function ParceiroDashboard() {
             <h2 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
               <Package className="w-5 h-5 text-primary" /> Minha Vitrine Ativa
             </h2>
-            <button className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Ver Todos</button>
+            <Link to="/feed/parceiro" search={{ urgency: 'todos', distance: 'todos', tag: '' }} className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Ver Feed B2B</Link>
           </div>
-          <div className="space-y-4">
-            <ProductRow name="Cuba de Granito Premium" price="R$ 450,00" views={142} leads={8} />
-            <ProductRow name="Kit Iluminação LED" price="R$ 120,00" views={89} leads={3} />
-            <ProductRow name="Massa Plástica Industrial" price="R$ 35,00" views={245} leads={12} />
+          <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+              <Package className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white uppercase tracking-tighter">Sua vitrine está vazia</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Publique produtos para aparecer no feed dos lojistas</p>
+            </div>
+            <button 
+              onClick={() => {
+                const event = new CustomEvent('fixxer:open-create-ad', { detail: { category: 'fornecedor' } });
+                window.dispatchEvent(event);
+              }}
+              className="px-6 py-2 rounded-xl bg-primary text-black font-black uppercase text-[10px] tracking-widest"
+            >
+              Criar Primeiro Anúncio
+            </button>
           </div>
         </div>
+
 
         <div className="space-y-6">
           <div className={`${glassClass} border border-white/5 rounded-3xl p-6`}>
             <h2 className="text-sm font-black text-white uppercase italic mb-4 flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-blue-400" /> Mensagens Recentes
             </h2>
-            <div className="space-y-4">
-              <MessageItem user="Loja Móveis Design" time="5 min atrás" text="Gostaria de saber sobre o prazo de entrega do granito..." />
-              <MessageItem user="Carlos Montador" time="1h atrás" text="Você tem a massa plástica na cor cinza?" />
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <MessageSquare className="w-8 h-8 text-muted-foreground/30 mb-2" />
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Nenhuma conversa ativa</p>
             </div>
           </div>
           <div className={`${glassClass} border border-white/5 rounded-3xl p-6 bg-gradient-to-br from-[#00FF87]/5 to-transparent`}>
              <h2 className="text-sm font-black text-white uppercase italic mb-2">Selo de Verificado</h2>
              <p className="text-[10px] text-muted-foreground font-medium mb-4">Aumente sua credibilidade enviando seus documentos comerciais.</p>
-             <button className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all">Enviar Documentação</button>
+             <Link to="/profile" search={{}} className="block w-full py-3 rounded-xl bg-white/5 border border-white/10 text-center text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all">Configurar Perfil</Link>
           </div>
         </div>
+
       </div>
     </div>
   );
