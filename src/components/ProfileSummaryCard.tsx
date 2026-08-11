@@ -96,11 +96,13 @@ export function ProfileSummaryCard({
         
         if (!cancelled && resolved) {
           // Mapeia de CanonicalIdentity (Identity Service) para o formato interno do Card
+          // Fonte única: resolved.identity (que já resolve de profiles)
           const prof: ProfileLite = {
             id: resolved.identity.id,
             display_name: resolved.identity.displayName,
             full_name: resolved.identity.fullName,
             avatar_url: resolved.identity.avatarUrl,
+            // Mantém city/state das especializações (dados técnicos, não de identidade visual)
             city: (resolved.specializations as any)?.store?.city || (resolved.specializations as any)?.provider?.city || null,
             state: (resolved.specializations as any)?.store?.state || (resolved.specializations as any)?.provider?.state || null,
           };
