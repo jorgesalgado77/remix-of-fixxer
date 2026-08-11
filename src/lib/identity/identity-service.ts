@@ -51,9 +51,15 @@ export async function resolveIdentity(
   console.log(`[IdentityService] Resolvendo para ${userId} (refresh: ${!!options?.refresh})`);
 
   if (!options?.refresh) {
+    const stored = getStoredIdentities();
+    if (stored[userId]) {
+      console.log(`[IdentityService] Cache LocalStorage HIT para ${userId}`);
+      return stored[userId];
+    }
+
     const cached = IDENTITY_CACHE.get(userId);
     if (cached && Date.now() - cached.at < TTL_MS) {
-      console.log(`[IdentityService] Cache HIT para ${userId} (${(performance.now() - start).toFixed(2)}ms)`);
+      console.log(`[IdentityService] Cache Memory HIT para ${userId} (${(performance.now() - start).toFixed(2)}ms)`);
       return cached.value;
     }
   }
