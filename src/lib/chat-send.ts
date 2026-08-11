@@ -105,7 +105,7 @@ export async function sendWithRetry<T>(
 
 /**
  * Valida o par (senderUid, peerId) antes de qualquer INSERT em `messages`.
- * Implementa filtros de Anti-Bypass (telefone, email, links).
+ * Implementa filtros de Anti-Bypass (telefone, email, links) e verificação de bloqueio.
  */
 export function validateChatIdentities(senderUid: unknown, peerId: unknown): {
   ok: boolean;
@@ -115,6 +115,16 @@ export function validateChatIdentities(senderUid: unknown, peerId: unknown): {
   if (!isUuid(senderUid)) return { ok: false, reason: "sender" };
   if (!isUuid(peerId)) return { ok: false, reason: "peer" };
   if (senderUid === peerId) return { ok: false, reason: "same" };
+
+  // Verificação de bloqueio via lib/moderation (usa cache local + remote effort)
+  const { isUserBlocked } = require("./moderation");
+  if (isUserBlocked(peerId)) {
+    return { 
+      ok: false, 
+      reason: "blocked", 
+      message: "Você não pode enviar mensagens para este usuário porque ele está bloqueado ou bloqueou você." 
+    };
+  }
   
   return { ok: true };
 }

@@ -1017,6 +1017,8 @@ function ConversationPage() {
         bounceToAuth(navigate, peerId, "Não conseguimos identificar seu usuário.");
       } else if (identity.reason === "peer") {
         toast.error("Conversa inválida", { description: "Identificador do contato inválido." });
+      } else if (identity.reason === "blocked") {
+        toast.error("Acesso restrito", { description: identity.message || "Você não pode enviar mensagens para este usuário." });
       } else {
         toast.error("Você não pode enviar mensagens para si mesmo.");
       }
