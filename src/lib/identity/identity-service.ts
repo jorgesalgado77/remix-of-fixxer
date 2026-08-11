@@ -34,7 +34,9 @@ export async function resolveIdentity(
     .select(`
       *,
       user_roles (role),
-      store_profiles (company_name, logo_url)
+      store_profiles (company_name, logo_url, city, state),
+      provider_profiles (city, state),
+      supplier_profiles (city, state)
     `)
     .eq("id", userId)
     .maybeSingle();
