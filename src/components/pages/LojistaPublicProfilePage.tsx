@@ -128,6 +128,7 @@ function mapProfileRowToStore(p: any): StoreProfile {
       .filter(Boolean),
     activity_branch: merged.activity_branch || merged.main_activity || merged.activity_branch_id,
     preferred_services: Array.isArray(merged.preferred_services) ? merged.preferred_services : [],
+    karma_score: merged.karma_score,
     offerings: Array.isArray(merged.offerings)
       ? merged.offerings
       : typeof merged.offerings === 'string' && merged.offerings.length
@@ -211,6 +212,7 @@ export function LojistaPublicProfilePage() {
     () => (params?.id ? peekPublicProfileCategory(String(params.id)) : null) ?? routeCategory,
   );
   const category: CategoryKey = resolvedCategory;
+  const role = category; // Alias para compatibilidade com ROLE_ICON/LABEL no futuro se necessário
   const theme = useMemo(() => getCategoryTheme(category), [category]);
   const themeStyle = {
     ["--primary" as any]: theme.hex,
@@ -682,9 +684,10 @@ export function LojistaPublicProfilePage() {
 
 
   const avgRating = useMemo(() => {
-    if (reviews.length === 0) return 5.0;
+    if (profile?.karma_score && profile.karma_score > 0) return profile.karma_score / 10;
+    if (reviews.length === 0) return 0.0;
     return reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
-  }, [reviews]);
+  }, [reviews, profile?.karma_score]);
 
   const yearsActive = useMemo(() => {
     if (!profile?.created_at) return 0;
@@ -1102,7 +1105,8 @@ export function LojistaPublicProfilePage() {
                     </h1>
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
-                        🏪 Lojista
+                        <span aria-hidden="true">{role === 'lojista' ? "🏪" : role === 'prestador' ? "🛠️" : role === 'fornecedor' ? "🚚" : "👤"}</span>
+                        {role === 'lojista' ? "LOJISTA" : role === 'prestador' ? "PRESTADOR" : role === 'fornecedor' ? "PARCEIRO" : "CLIENTE"}
                       </span>
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-red-500" />
@@ -1128,7 +1132,7 @@ export function LojistaPublicProfilePage() {
                     <div className="flex items-center gap-3 flex-wrap">
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
                         <Star className="w-4 h-4 fill-primary text-primary" />
-                        <span className="text-sm font-black text-primary italic">{avgRating.toFixed(1)}</span>
+                        <span className="text-sm font-black text-primary italic">{avgRating > 0 ? avgRating.toFixed(1) : "s/av."}</span>
                         <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
                       </div>
                       {profile?.plan_id && profile.plan_id !== 'free' && (
@@ -1158,9 +1162,9 @@ export function LojistaPublicProfilePage() {
                     suffix="Serviços" 
                   />
                   <MetricCard 
-                    label="Satisfação" 
-                    value={reviews.length > 0 ? `${Math.round((reviews.filter(r => r.rating >= 4).length / reviews.length) * 100)}%` : "100%"} 
-                    suffix="Positivo" 
+                    label="Reputação" 
+                    value={profile?.karma_score && profile.karma_score > 0 ? (profile.karma_score / 10).toFixed(1) : "0.0"} 
+                    suffix={profile?.karma_score && profile.karma_score > 0 ? `(${profile.karma_score.toFixed(0)} pts)` : "Real"} 
                   />
                   <MetricCard 
                     label="Tempo Resposta" 
@@ -1536,7 +1540,7 @@ export function LojistaPublicProfilePage() {
 
 
             {/* Galeria de Fotos */}
-            <section className="space-y-4">
+            <section className="space-y-4" id="galeria-section">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
                   <Filter className="w-4 h-4" /> Galeria de Fotos

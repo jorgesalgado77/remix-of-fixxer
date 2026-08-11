@@ -133,7 +133,11 @@ export function clearPublicProfileCategoryCache(userId?: string) {
 
 async function computePublicProfileCategory(
   userId: string,
-  options?: { profile?: any; routeHint?: PublicProfileCategory | null },
+  options?: { 
+    profile?: any; 
+    routeHint?: PublicProfileCategory | null;
+    specialized?: { store?: any; provider?: any; supplier?: any };
+  },
 ): Promise<PublicProfileCategory> {
   // 1) profiles.role autoritativo: se o cadastro atual em `profiles` já
   //    resolve uma categoria canônica (ex.: role="prestador"), ela vence
@@ -147,7 +151,13 @@ async function computePublicProfileCategory(
     if (category) return category;
   }
 
-  // 2) Fallback: tabelas especializadas quando profiles não resolve.
+  // 2) Tabelas especializadas (prioridade sobre Hint)
+  // Se já temos as linhas carregadas (via IdentityService), usa elas para evitar queries extras
+  if (options?.specialized?.provider) return "prestador";
+  if (options?.specialized?.supplier) return "fornecedor";
+  if (options?.specialized?.store) return "lojista";
+
+  // Se não temos, faz a verificação manual
   const specialized: Array<{ table: string; category: PublicProfileCategory }> = [
     { table: "provider_profiles", category: "prestador" },
     { table: "supplier_profiles", category: "fornecedor" },
@@ -164,7 +174,12 @@ async function computePublicProfileCategory(
 
 export async function resolvePublicProfileCategory(
   userId: string,
-  options?: { profile?: any; routeHint?: PublicProfileCategory | null; refresh?: boolean },
+  options?: { 
+    profile?: any; 
+    routeHint?: PublicProfileCategory | null; 
+    refresh?: boolean;
+    specialized?: { store?: any; provider?: any; supplier?: any };
+  },
 ): Promise<PublicProfileCategory> {
   if (!userId) return options?.routeHint ?? "cliente";
 
