@@ -8,6 +8,8 @@ import { haversineKm } from "@/lib/activity-branches";
 import { scoreRelevanceDetailed, useUserBranchContext, relevanceRank, type RelevanceResult, type BranchContext } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
+import { CarouselErrorFallback, CarouselLoadingFallback } from "./CarouselFallback";
+import { dataMonitor } from "@/lib/monitoring";
 
 /**
  * Seção "Prestadores e Parceiros Recentes" — carrossel horizontal.
@@ -339,10 +341,10 @@ function RecentPartnersCarouselInner() {
       }
       setErrorMsg(null);
       return { ok: true };
-    } catch (err: unknown) {
-      if (typeof console !== "undefined") console.debug("[RecentPartnersCarousel] fallback silencioso:", err);
+    } catch (err: any) {
+      dataMonitor.logError("RecentPartnersCarousel", err, { branchCtx, kindFilter });
       setItems((prev) => (prev.length > 0 ? prev : FALLBACK_PARTNERS));
-      setErrorMsg(null);
+      setErrorMsg(err?.message || "Erro inesperado.");
       return { ok: false };
     }
   }, []);
@@ -538,6 +540,25 @@ function RecentPartnersCarouselInner() {
 
   const showSkeleton = loading && items.length === 0;
   const showBlockingError = !!errorMsg && sortedItems.length === 0;
+
+  if (loading && items.length === 0) {
+    return (
+      <div className="w-full bg-[#121214]/80 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
+        <h3 className="text-white/40 uppercase font-black italic tracking-widest text-[10px] mb-4">PRESTADORES E PARCEIROS RECENTES</h3>
+        <CarouselLoadingFallback />
+      </div>
+    );
+  }
+
+  if (errorMsg && items.length === 0) {
+    return (
+      <CarouselErrorFallback 
+        title="PRESTADORES E PARCEIROS RECENTES"
+        error={errorMsg}
+        onRetry={handleRefresh}
+      />
+    );
+  }
 
   return (
     <section
