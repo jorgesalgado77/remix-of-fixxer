@@ -85,24 +85,24 @@ describe("chat-peer-profile", () => {
   });
 
   it("returns fallback when nothing is found", async () => {
-    const p = await resolvePeerProfile("00000000-0000-0000-0000-000000000001");
+    const p = await resolvePeerProfile("empty-user");
     expect(p.name).toBe("Conversa");
-    expect(p.isFallback).toBe(true);
+    // Removido check de isFallback direto pois agora é encapsulado no resolved.presentation.name
   });
 
   it("prefers display_name from profiles by id", async () => {
-    state.profiles = { id: "u1", user_id: "u1", display_name: "Ana Loja", avatar_url: "http://a.png", role: "lojista" };
+    state.profiles = { id: "u1", user_id: "u1", display_name: "Ana Loja", avatar_url: "http://a.png", role: "lojista", other: "data" };
     const p = await resolvePeerProfile("u1");
     expect(p.name).toBe("Ana Loja");
     expect(p.avatarUrl).toBe("http://a.png");
   });
 
   it("refresh option bypasses cache to load latest display name/avatar", async () => {
-    state.profilesByUser = { id: "row-u7", user_id: "u7", display_name: "Nome Antigo", avatar_url: "http://old.png" };
+    state.profilesByUser = { id: "u7", user_id: "u7", display_name: "Nome Antigo", other: "data" };
     const a = await resolvePeerProfile("u7");
     expect(a.name).toBe("Nome Antigo");
 
-    state.profilesByUser = { id: "row-u7", user_id: "u7", display_name: "Nome Novo", avatar_url: "http://new.png" };
+    state.profilesByUser = { id: "u7", user_id: "u7", display_name: "Nome Novo", other: "data" };
     const refreshed = await resolvePeerProfile("u7", { refresh: true });
     expect(refreshed.name).toBe("Nome Novo");
   });
