@@ -111,7 +111,7 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => stats?.reload?.()} 
+                onClick={handleReload} 
                 disabled={isLoadingStats || loading}
                 className="h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-emerald-400 transition-all active:scale-90"
                 title="Recarregar saldos"
@@ -125,7 +125,7 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
         <div className="p-6 space-y-6 overflow-y-auto scrollbar-none relative flex-1">
           {/* Filtros de Período */}
           <div className="space-y-4">
-            <Tabs value={stats?.period || "30"} onValueChange={(v) => stats?.setPeriod?.(v)} className="w-full">
+            <Tabs value={stats?.period || "30"} onValueChange={handlePeriodChange} className="w-full">
               <TabsList className="grid w-full grid-cols-4 bg-white/5 p-1 rounded-xl">
                 {['7', '15', '30', 'custom'].map((p) => (
                   <TabsTrigger key={p} value={p} className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-white/10 transition-all">
