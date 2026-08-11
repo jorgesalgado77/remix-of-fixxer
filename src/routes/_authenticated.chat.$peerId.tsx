@@ -956,14 +956,14 @@ function ConversationPage() {
     try {
       const ext = file.name.split(".").pop() || "bin";
       const path = `chat/${userId}/${peerId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { publicUrl } = await uploadWithRetry("media", path, file, {
+      const { url } = await uploadWithRetry("media", path, file, {
         onEvent: (ev) => {
           if (ev.kind === "progress") { setUploadPct(ev.percent); onProgress?.(ev.percent); }
           else if (ev.kind === "waiting-online") toast.message("Aguardando conexão para enviar o anexo…");
           else if (ev.kind === "retry") toast.message(`Reenviando anexo (tentativa ${ev.attempt + 1})…`);
         },
       });
-      return { url: publicUrl, type: file.type || "application/octet-stream", name: file.name };
+      return { url: url, type: file.type || "application/octet-stream", name: file.name };
     } catch (e: any) {
       toast.error("Falha no upload do anexo", { description: e?.message });
       return null;
