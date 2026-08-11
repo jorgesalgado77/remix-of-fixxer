@@ -127,7 +127,7 @@ export function ProfileSummaryCard({
   }, []);
 
 
-  const name = profile?.display_name || profile?.full_name || profile?.company_name || "Meu perfil";
+  const name = profile?.display_name || profile?.company_name || profile?.full_name || "Meu perfil";
   const avatar = profile?.avatar_url || profile?.logo_url || null;
   const planId = (profile?.plan_id || "free").toLowerCase();
   const isGold = planId === "pro" || planId === "premium";
