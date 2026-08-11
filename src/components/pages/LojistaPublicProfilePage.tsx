@@ -1124,30 +1124,30 @@ export function LojistaPublicProfilePage() {
 
                 return (
                   <div className="flex flex-col gap-5 mt-4">
+                    {/* Reputação */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
+                        <Star className="w-4 h-4 fill-primary text-primary" />
+                        <span className="text-sm font-black text-primary italic">{avgRating.toFixed(1)}</span>
+                        <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
+                      </div>
+                      {profile?.plan_id && profile.plan_id !== 'free' && (
+                        <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
+                          <Award className="w-3 h-3" /> Selo Ouro FIXXER
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Badges */}
+                    <div className="flex flex-wrap gap-2">
+                      {profile?.is_verified && (
+                        <Badge icon={<ShieldCheck className="w-3 h-3" />} label="CNPJ Verificado" />
+                      )}
+                      <Badge icon={<Clock className="w-3 h-3" />} label={yearsActiveLabel} />
+                    </div>
                   </div>
                 );
               })()}
-
-              <div className="hidden">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
-                    <Star className="w-4 h-4 fill-primary text-primary" />
-                    <span className="text-sm font-black text-primary italic">{avgRating.toFixed(1)}</span>
-                    <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
-                  </div>
-                  {profile?.plan_id && profile.plan_id !== 'free' && (
-                    <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
-                      <Award className="w-3 h-3" /> Selo Ouro FIXXER
-                    </span>
-                  )}
-                </div>
-
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2">
-                  {profile?.is_verified && (
-                    <Badge icon={<ShieldCheck className="w-3 h-3" />} label="CNPJ Verificado" />
-                  )}
-                  <Badge icon={<Clock className="w-3 h-3" />} label={yearsActiveLabel} />
-                </div>
 
 
                 {/* Métricas reais */}
