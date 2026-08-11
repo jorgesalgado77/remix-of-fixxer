@@ -38,7 +38,9 @@ export type ProviderStats = {
   balanceProducts: number;
   balanceServices: number;
   period: string;
+  customRange: { start: string; end: string } | null;
   setPeriod: (p: string) => void;
+  setCustomRange: (range: { start: string; end: string } | null) => void;
   reload: () => void;
 };
 
@@ -59,8 +61,38 @@ export function useProviderStats(): ProviderStats {
   const [reviews, setReviews] = useState<StatReview[]>([]);
   const [transactions, setTransactions] = useState<StatTx[]>([]);
   const [balance, setBalance] = useState(0);
-  const [period, setPeriod] = useState("30");
+  const [period, setPeriodState] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("fixxer_pix_period") || "30";
+    }
+    return "30";
+  });
+  const [customRange, setCustomRangeState] = useState<{ start: string; end: string } | null>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("fixxer_pix_custom_range");
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
   const [tick, setTick] = useState(0);
+
+  const setPeriod = useCallback((p: string) => {
+    setPeriodState(p);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("fixxer_pix_period", p);
+    }
+  }, []);
+
+  const setCustomRange = useCallback((range: { start: string; end: string } | null) => {
+    setCustomRangeState(range);
+    if (typeof window !== "undefined") {
+      if (range) {
+        localStorage.setItem("fixxer_pix_custom_range", JSON.stringify(range));
+      } else {
+        localStorage.removeItem("fixxer_pix_custom_range");
+      }
+    }
+  }, []);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
@@ -160,21 +192,54 @@ export function useProviderStats(): ProviderStats {
     return () => { cancelled = true; };
   }, [tick]);
 
-  const activeOrders = orders.filter((o) => !isDone(o.status) && !isCanceled(o.status));
-  const doneOrders = orders.filter((o) => isDone(o.status));
+  // Filtro de data robusto
+  const filterByPeriod = <T extends { created_at: string | null }>(items: T[]) => {
+    if (!items.length) return [];
+    
+    let startDate: Date | null = null;
+    let endDate: Date = new Date();
+
+    if (period === "custom" && customRange?.start) {
+      startDate = new Date(customRange.start);
+      if (customRange.end) {
+        endDate = new Date(customRange.end);
+        // Garantir que a data final cubra o dia inteiro
+        endDate.setHours(23, 59, 59, 999);
+      }
+    } else if (period !== "custom") {
+      const days = parseInt(period);
+      if (!isNaN(days)) {
+        startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+      }
+    }
+
+    if (!startDate) return items;
+
+    return items.filter(item => {
+      if (!item.created_at) return false;
+      const date = new Date(item.created_at);
+      return date >= startDate! && date <= endDate;
+    });
+  };
+
+  const filteredOrders = filterByPeriod(orders);
+  const filteredTx = filterByPeriod(transactions);
+
+  const activeOrders = filteredOrders.filter((o) => !isDone(o.status) && !isCanceled(o.status));
+  const doneOrders = filteredOrders.filter((o) => isDone(o.status));
   const nums = reviews.map((r) => Number(r?.rating)).filter((n) => Number.isFinite(n));
   const ratingAvg = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null;
 
-  // Saldos reais baseados no período selecionado e tipo de transação/ordem
-  const balanceReservations = orders
+  const balanceReservations = filteredOrders
     .filter(o => o.status?.toLowerCase().includes("reserva") && isDone(o.status))
     .reduce((acc, o) => acc + (o.price || 0), 0);
     
-  const balanceProducts = transactions
+  const balanceProducts = filteredTx
     .filter(tx => tx.source === "purchase_pack" || tx.reason?.toLowerCase().includes("produto"))
     .reduce((acc, tx) => acc + (tx.amount || 0), 0);
     
-  const balanceServices = orders
+  const balanceServices = filteredOrders
     .filter(o => !o.status?.toLowerCase().includes("reserva") && isDone(o.status))
     .reduce((acc, o) => acc + (o.price || 0), 0);
 
@@ -191,7 +256,9 @@ export function useProviderStats(): ProviderStats {
     balanceProducts,
     balanceServices,
     period,
+    customRange,
     setPeriod,
+    setCustomRange,
     reload,
   };
 }

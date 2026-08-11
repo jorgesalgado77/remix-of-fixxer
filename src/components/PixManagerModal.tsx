@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
-import { Coins, Copy, QrCode, TrendingUp, Info, Check, Share2, FileDown, MessageSquare, Loader2, AlertTriangle, X, Settings } from "lucide-react";
+import { Coins, Copy, QrCode, TrendingUp, Info, Check, Share2, FileDown, MessageSquare, Loader2, AlertTriangle, X, Settings, RefreshCw, Calendar, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +21,6 @@ const BRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats }: Props) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [period, setPeriod] = useState("30");
   const [generated, setGenerated] = useState(false);
   const [copying, setCopying] = useState(false);
   const [platformFee, setPlatformFee] = useState(15);
@@ -53,23 +52,79 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
               <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
                 <QrCode className="w-5 h-5 text-emerald-400" />
               </div>
-              <DialogTitle className="text-xl font-black text-white tracking-tight uppercase italic">Receber via PIX</DialogTitle>
+              <DialogTitle className="text-xl font-black text-white tracking-tight uppercase italic flex items-center gap-2">
+                Receber via PIX
+                {(isLoadingStats || loading) && <Loader2 className="w-4 h-4 animate-spin text-emerald-400/50" />}
+              </DialogTitle>
             </div>
-            <p className="text-xs text-white/50 font-medium">Gere cobranças instantâneas e gerencie seus recebimentos.</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-white/50 font-medium">Gere cobranças instantâneas e gerencie seus recebimentos.</p>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => stats?.reload?.()} 
+                disabled={isLoadingStats || loading}
+                className="h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-emerald-400 transition-all active:scale-90"
+                title="Recarregar saldos"
+              >
+                <RefreshCw className={`w-4 h-4 ${(isLoadingStats || loading) ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
           </DialogHeader>
         </div>
 
         <div className="p-6 space-y-6 overflow-y-auto scrollbar-none relative flex-1">
           {/* Filtros de Período */}
-          <Tabs value={period} onValueChange={setPeriod} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-white/5 p-1 rounded-xl">
-              {['7', '15', '30', 'custom'].map((p) => (
-                <TabsTrigger key={p} value={p} className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-white/10">
-                  {p === 'custom' ? '...' : `${p}d`}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div className="space-y-4">
+            <Tabs value={stats?.period || "30"} onValueChange={(v) => stats?.setPeriod?.(v)} className="w-full">
+              <TabsList className="grid w-full grid-cols-4 bg-white/5 p-1 rounded-xl">
+                {['7', '15', '30', 'custom'].map((p) => (
+                  <TabsTrigger key={p} value={p} className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-white/10 transition-all">
+                    {p === 'custom' ? <Calendar className="w-3 h-3" /> : `${p}d`}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            {stats?.period === "custom" && (
+              <div className="flex items-center gap-2 animate-in slide-in-from-top-2 duration-300">
+                <div className="flex-1 space-y-1">
+                  <p className="text-[8px] font-black uppercase text-white/30 tracking-widest px-1">Início</p>
+                  <input 
+                    type="date" 
+                    value={stats?.customRange?.start || ''}
+                    onChange={(e) => stats?.setCustomRange?.({ ...stats.customRange, start: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors [color-scheme:dark]"
+                  />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-[8px] font-black uppercase text-white/30 tracking-widest px-1">Fim</p>
+                  <input 
+                    type="date" 
+                    value={stats?.customRange?.end || ''}
+                    onChange={(e) => stats?.setCustomRange?.({ ...stats.customRange, end: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors [color-scheme:dark]"
+                  />
+                </div>
+                <div className="pt-4">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => {
+                      if (stats?.customRange?.start && stats?.customRange?.end && new Date(stats.customRange.start) > new Date(stats.customRange.end)) {
+                        toast.error("Data inicial não pode ser maior que a final");
+                        return;
+                      }
+                      stats?.reload?.();
+                    }}
+                    className="h-9 w-9 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg"
+                  >
+                    <Search className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Saldos Reais */}
           {isLoadingStats || loading ? (
@@ -78,18 +133,26 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
              </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-                <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">Reservas</p>
-                <p className="text-lg font-black text-white">{BRL(stats?.balanceReservations || 0)}</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-                <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">Info Produtos</p>
-                <p className="text-lg font-black text-white">{BRL(stats?.balanceProducts || 0)}</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-                <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">Serviços</p>
-                <p className="text-lg font-black text-white">{BRL(stats?.balanceServices || 0)}</p>
-              </div>
+              {[
+                { label: "Reservas", value: stats?.balanceReservations, icon: TrendingUp },
+                { label: "Info Produtos", value: stats?.balanceProducts, icon: Coins },
+                { label: "Serviços", value: stats?.balanceServices, icon: DollarSign }
+              ].map((item, idx) => (
+                <div key={idx} className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 group hover:bg-white/[0.05] transition-all">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-black uppercase text-white/40 tracking-widest">{item.label}</p>
+                    <item.icon className="w-3 h-3 text-white/20 group-hover:text-emerald-400/50 transition-colors" />
+                  </div>
+                  {item.value === 0 && !isLoadingStats ? (
+                    <div className="space-y-0.5">
+                      <p className="text-lg font-black text-white/20 tracking-tighter">{BRL(0)}</p>
+                      <p className="text-[8px] font-medium text-white/20 italic">Sem transações</p>
+                    </div>
+                  ) : (
+                    <p className="text-lg font-black text-white tracking-tighter">{BRL(item.value || 0)}</p>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
