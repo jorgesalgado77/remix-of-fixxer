@@ -1536,7 +1536,7 @@ export function LojistaPublicProfilePage() {
 
 
             {/* Galeria de Fotos */}
-            <section className="space-y-4">
+            <section className="space-y-4" id="galeria-section">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-sm font-black uppercase italic text-primary flex items-center gap-2">
                   <Filter className="w-4 h-4" /> Galeria de Fotos

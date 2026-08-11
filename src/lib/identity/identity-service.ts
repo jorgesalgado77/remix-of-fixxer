@@ -84,7 +84,8 @@ export async function resolveIdentity(
 
   const mainCategory = await resolvePublicProfileCategory(userId, {
     profile: baseProfile,
-    refresh: options?.refresh
+    refresh: options?.refresh,
+    specialized: { store, provider, supplier }
   });
 
   // 2. Resolver Categoria Principal
