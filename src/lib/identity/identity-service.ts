@@ -71,7 +71,7 @@ export async function resolveIdentity(
     .eq("id", userId)
     .maybeSingle();
 
-  console.log(`[IdentityService] Fetch direto para ${userId}:`, { baseProfile, profileError });
+  
 
   if (profileError) {
     console.error(`[IdentityService] Erro ao buscar perfis para ${userId}:`, profileError);
