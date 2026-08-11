@@ -156,7 +156,7 @@ export default function FeedLojistaPage() {
     return () => window.removeEventListener("fixxer:universal-search", h as EventListener);
   }, [setSearch]);
   const [debouncedSearch, setDebouncedSearch] = useState(search);
-  const [searching, setSearching] = useState(false);
+  
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [savesLoaded, setSavesLoaded] = useState(false);
   const [savesRemote, setSavesRemote] = useState(false);
