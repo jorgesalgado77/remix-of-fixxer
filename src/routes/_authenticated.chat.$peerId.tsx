@@ -984,8 +984,12 @@ function ConversationPage() {
       return;
     }
     if (c.kind === "rls") {
-      toast.error("Sem permissão para enviar", {
-        description: "Faça login novamente ou verifique se o contato ainda existe.",
+      toast.error("Mensagem não enviada", { 
+        description: c.message,
+        action: {
+          label: "Saber mais",
+          onClick: () => window.open('https://fixxer.app/ajuda/bloqueios', '_blank')
+        }
       });
       return;
     }
