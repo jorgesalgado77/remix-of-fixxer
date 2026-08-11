@@ -130,86 +130,118 @@ function B2BSuggestionsCardInner() {
   };
 
   const loadRealData = useCallback(async () => {
+    const cacheKey = `fixxer_b2b_suggestions_cache_${category}`;
+    const CACHE_TTL = 10 * 60 * 1000;
+
+    // Hidratação imediata pelo cache (evita seção vazia / piscando ao navegar)
+    let hadCache = false;
     try {
-      setIsLoading(true);
+      const raw = window.localStorage.getItem(cacheKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { items: B2BSuggestion[]; ts: number };
+        if (parsed?.items?.length) {
+          setSuggestions(parsed.items);
+          setIsLoading(false);
+          hadCache = true;
+          if (Date.now() - parsed.ts < CACHE_TTL) return;
+        }
+      }
+    } catch { /* noop */ }
+
+    try {
+      if (!hadCache) setIsLoading(true);
+
       const { data: auth } = await supabaseExternal.auth.getUser();
-      const uid = auth?.user?.id;
-      if (!uid) {
-        setIsLoading(false);
-        return;
+      const uid = auth?.user?.id ?? null;
+
+      let userLoc: { lat: number; lng: number } | null = null;
+      if (uid) {
+        const { data: userProfile } = await supabaseExternal
+          .from("profiles")
+          .select("lat, lng")
+          .eq("id", uid)
+          .maybeSingle();
+        if (userProfile?.lat != null) userLoc = { lat: Number(userProfile.lat), lng: Number(userProfile.lng) };
       }
 
-      const { data: userProfile } = await supabaseExternal
-        .from("profiles")
-        .select("lat, lng, business_category, custom_branch")
-        .eq("id", uid)
-        .maybeSingle();
-
-      const userLoc = userProfile?.lat != null ? { lat: userProfile.lat, lng: userProfile.lng } : null;
-
-      // Busca usuários REAIS que NÃO sejam o logado
+      // Perfis públicos reais (view segura). Sem exigir business_category,
+      // pois muitos perfis usam custom_branch / preferred_service.
       const { data: cands, error } = await supabaseExternal
-        .from("profiles")
-        .select(`
-          id, 
-          display_name, 
-          company_name, 
-          full_name, 
-          business_category, 
-          custom_branch,
-          avatar_url, 
-          logo_url, 
-          lat, 
-          lng, 
-          city,
-          state,
-          updated_at
-        `)
-        .neq("id", uid)
-        .not("business_category", "is", null)
-        .order("updated_at", { ascending: false })
+        .from("profiles_public")
+        .select(
+          "id, display_name, company_name, full_name, business_category, activity_branch, custom_branch, preferred_service, avatar_url, logo_url, lat, lng, city, state, role, user_type, created_at"
+        )
+        .order("created_at", { ascending: false })
         .limit(100);
 
       if (error) throw error;
 
-      if (cands) {
-        const list: B2BSuggestion[] = cands.map((c: any) => {
+      // Alvos por categoria do usuário logado.
+      const targetsByCategory: Record<string, string[]> = {
+        prestador: ["lojist", "fornec", "parceiro", "b2b"],
+        lojista: ["prestador", "fornec", "parceiro", "b2b"],
+        fornecedor: ["lojist", "prestador"],
+        cliente: ["prestador", "lojist"],
+        admin: [],
+      };
+      const targets = targetsByCategory[category] ?? [];
+
+      const list: B2BSuggestion[] = ((cands as any[]) ?? [])
+        .filter((c) => {
+          if (uid && String(c.id) === String(uid)) return false;
+          const role = `${c.role || ""} ${c.user_type || ""}`.toLowerCase();
+          if (role.includes("admin")) return false;
+          if (!targets.length) return true;
+          return targets.some((t) => role.includes(t));
+        })
+        .map((c: any) => {
           const branches = normalizeBranches(c);
           const name = c.display_name || c.company_name || c.full_name || "Membro FIXXER";
-          const dist = userLoc && c.lat != null ? haversineKm(userLoc, { lat: c.lat, lng: c.lng }) : null;
-          
+          const dist = userLoc && c.lat != null ? haversineKm(userLoc, { lat: Number(c.lat), lng: Number(c.lng) }) : null;
+
           return {
             userId: c.id,
             title: name,
             icon: "👤",
             avatarUrl: c.avatar_url || c.logo_url,
-            hint: `${branches[0] || "Profissional"} • ${c.city || "Região"}`,
+            hint: `${branches[0] || c.activity_branch || c.preferred_service || "Profissional"} • ${c.city || "Região"}`,
             targetBranch: branches[0],
             _relevance: scoreRelevanceDetailed(branches, branchCtx),
-            _dist: dist
+            _dist: dist,
           } as any;
         });
 
-        // Ordena por relevância e depois por distância
-        const sorted = list.sort((a: any, b: any) => {
-          const rankA = relevanceRank(a._relevance.level);
-          const rankB = relevanceRank(b._relevance.level);
-          if (rankA !== rankB) return rankA - rankB;
-          return (a._dist ?? 9999) - (b._dist ?? 9999);
-        });
+      const sorted = list.sort((a: any, b: any) => {
+        const rankA = relevanceRank(a._relevance.level);
+        const rankB = relevanceRank(b._relevance.level);
+        if (rankA !== rankB) return rankA - rankB;
+        return (a._dist ?? 9999) - (b._dist ?? 9999);
+      });
 
-        setSuggestions(sorted.slice(0, 25));
+      const finalList = sorted.slice(0, 25);
+      if (finalList.length > 0 || !hadCache) setSuggestions(finalList);
+      if (finalList.length > 0) {
+        try {
+          window.localStorage.setItem(cacheKey, JSON.stringify({ items: finalList, ts: Date.now() }));
+        } catch { /* noop */ }
       }
     } catch (err) {
       console.error("Erro ao carregar sugestões B2B reais:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [branchCtx]);
+  }, [branchCtx, category]);
 
+  const didLoad = useRef(false);
   useEffect(() => {
+    // Evita recarregamentos desnecessários a cada re-render do contexto de ramos.
+    const key = `${category}`;
+    if (didLoad.current === (key as any)) return;
+    (didLoad as any).current = key;
     loadRealData();
-  }, [loadRealData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
 
   if (dismissed) {
     return (
