@@ -97,9 +97,9 @@ export async function resolveIdentity(
   const identity: CanonicalIdentity = {
     id: userId,
     // Prioridade absoluta: profiles -> fallback genérico. Especializadas NUNCA definem nome/avatar.
-    displayName: baseProfile?.display_name || baseProfile?.full_name || baseProfile?.company_name || (hasData ? "Usuário" : "Conversa"),
+    displayName: baseProfile?.display_name || baseProfile?.full_name || baseProfile?.company_name || (baseProfile?.store_profiles as any)?.company_name || (hasData ? "Usuário" : "Conversa"),
     fullName: baseProfile?.full_name || null,
-    avatarUrl: baseProfile?.avatar_url || baseProfile?.logo_url || null,
+    avatarUrl: baseProfile?.avatar_url || baseProfile?.logo_url || (baseProfile?.store_profiles as any)?.logo_url || null,
     bio: baseProfile?.bio || baseProfile?.about_bio || null,
     isOfficial: !!baseProfile?.is_official,
     isVerified: !!baseProfile?.is_verified,
