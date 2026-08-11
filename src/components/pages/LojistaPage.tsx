@@ -598,103 +598,103 @@ export function LojistaDashboard() {
             title={activeTab === 'dashboard' ? undefined : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
             subtitle={activeTab === 'dashboard' ? undefined : ""}
             hideSidebarCard
-          />
-           <div className="flex items-center gap-4">
-              <div className="relative">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className={`relative rounded-xl border border-white/5 hover:bg-white/5 text-muted-foreground hover:text-white transition-all ${showNotifications ? 'bg-white/10 text-white' : ''}`}
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-[#050505]">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Button>
+            actions={
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className={`relative rounded-xl border border-white/5 hover:bg-white/5 text-muted-foreground hover:text-white transition-all ${showNotifications ? 'bg-white/10 text-white' : ''}`}
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-[#050505]">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Button>
 
-                {showNotifications && (
-                  <div className="absolute right-0 mt-3 w-80 bg-[#1A1A1B] border border-white/10 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
-                    <div className="p-4 border-b border-white/5 flex flex-col gap-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-[10px] font-black text-white uppercase italic">Notificações</h4>
-                        <div className="flex gap-2">
-                          <button onClick={markAllAsRead} className="text-[8px] font-bold text-primary uppercase hover:underline">Lidas</button>
-                          <button onClick={clearNotifications} className="text-[8px] font-bold text-red-400 uppercase hover:underline">Limpar</button>
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-3 w-80 bg-[#1A1A1B] border border-white/10 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
+                      <div className="p-4 border-b border-white/5 flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-[10px] font-black text-white uppercase italic">Notificações</h4>
+                          <div className="flex gap-2">
+                            <button onClick={markAllAsRead} className="text-[8px] font-bold text-primary uppercase hover:underline">Lidas</button>
+                            <button onClick={clearNotifications} className="text-[8px] font-bold text-red-400 uppercase hover:underline">Limpar</button>
+                          </div>
+                        </div>
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                          <Input 
+                              placeholder="FILTRAR POR ID DA O.S..." 
+                              value={notificationFilter}
+                              onChange={(e) => setNotificationFilter(e.target.value)}
+                              className="h-7 bg-black/40 border-white/10 text-[8px] pl-7 uppercase font-black italic"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                          <span className="text-[8px] font-black text-muted-foreground uppercase italic">Alerta de Status</span>
+                          <button 
+                              onClick={() => setNotificationSettings(s => ({...s, status_change: !s.status_change}))}
+                              className={`w-8 h-4 rounded-full transition-all relative ${notificationSettings.status_change ? 'bg-primary' : 'bg-white/10'}`}
+                          >
+                              <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${notificationSettings.status_change ? 'right-0.5' : 'left-0.5'}`} />
+                          </button>
                         </div>
                       </div>
-                      <div className="relative">
-                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-                        <Input 
-                            placeholder="FILTRAR POR ID DA O.S..." 
-                            value={notificationFilter}
-                            onChange={(e) => setNotificationFilter(e.target.value)}
-                            className="h-7 bg-black/40 border-white/10 text-[8px] pl-7 uppercase font-black italic"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between border-t border-white/5 pt-2">
-                        <span className="text-[8px] font-black text-muted-foreground uppercase italic">Alerta de Status</span>
-                        <button 
-                            onClick={() => setNotificationSettings(s => ({...s, status_change: !s.status_change}))}
-                            className={`w-8 h-4 rounded-full transition-all relative ${notificationSettings.status_change ? 'bg-primary' : 'bg-white/10'}`}
-                        >
-                            <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${notificationSettings.status_change ? 'right-0.5' : 'left-0.5'}`} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
-                      {notifications.filter(n => {
-                          const matchesFilter = !notificationFilter || n.os_id?.includes(notificationFilter);
-                          const matchesSettings = notificationSettings[n.type as keyof typeof notificationSettings];
-                          return matchesFilter && matchesSettings;
-                      }).length > 0 ? (
-                        notifications.filter(n => {
+                      <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+                        {notifications.filter(n => {
                             const matchesFilter = !notificationFilter || n.os_id?.includes(notificationFilter);
                             const matchesSettings = notificationSettings[n.type as keyof typeof notificationSettings];
                             return matchesFilter && matchesSettings;
-                        }).map(notification => (
-                          <div 
-                            key={notification.id} 
-                            onClick={() => {
-                                markAsRead(notification.id);
-                                if (notification.os_id) {
-                                    toast.info(`Abrindo O.S. #${notification.os_id}`);
-                                }
-                            }}
-                            className={`p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors cursor-pointer relative ${!notification.read ? 'bg-primary/5' : ''}`}
-                          >
-                            {!notification.read && <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary" />}
-                            <div className="pl-3">
-                              <div className="flex justify-between items-start mb-1">
-                                <div className="flex flex-col">
-                                    <span className="text-[9px] font-black text-white uppercase italic">{notification.title}</span>
-                                    {notification.os_id && <span className="text-[7px] text-primary font-black uppercase italic">O.S. #{notification.os_id}</span>}
+                        }).length > 0 ? (
+                          notifications.filter(n => {
+                              const matchesFilter = !notificationFilter || n.os_id?.includes(notificationFilter);
+                              const matchesSettings = notificationSettings[n.type as keyof typeof notificationSettings];
+                              return matchesFilter && matchesSettings;
+                          }).map(notification => (
+                            <div 
+                              key={notification.id} 
+                              onClick={() => {
+                                  markAsRead(notification.id);
+                                  if (notification.os_id) {
+                                      toast.info(`Abrindo O.S. #${notification.os_id}`);
+                                  }
+                              }}
+                              className={`p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors cursor-pointer relative ${!notification.read ? 'bg-primary/5' : ''}`}
+                            >
+                              {!notification.read && <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary" />}
+                              <div className="pl-3">
+                                <div className="flex justify-between items-start mb-1">
+                                  <div className="flex flex-col">
+                                      <span className="text-[9px] font-black text-white uppercase italic">{notification.title}</span>
+                                      {notification.os_id && <span className="text-[7px] text-primary font-black uppercase italic">O.S. #{notification.os_id}</span>}
+                                  </div>
+                                  <span className="text-[7px] text-muted-foreground font-bold">{notification.time}</span>
                                 </div>
-                                <span className="text-[7px] text-muted-foreground font-bold">{notification.time}</span>
+                                <p className="text-[10px] text-white/70 leading-tight">{notification.message}</p>
                               </div>
-                              <p className="text-[10px] text-white/70 leading-tight">{notification.message}</p>
                             </div>
+                          ))
+                        ) : (
+                          <div className="p-8 text-center">
+                            <Bell className="w-8 h-8 text-white/10 mx-auto mb-2" />
+                            <p className="text-[9px] text-muted-foreground uppercase font-bold italic">Nenhum alerta compatível</p>
                           </div>
-                        ))
-                      ) : (
-                        <div className="p-8 text-center">
-                          <Bell className="w-8 h-8 text-white/10 mx-auto mb-2" />
-                          <p className="text-[9px] text-muted-foreground uppercase font-bold italic">Nenhum alerta compatível</p>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-[10px] font-black text-primary uppercase italic">Sessão Ativa</span>
+                </div>
               </div>
-              <PanelActions role="lojista" />
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-[10px] font-black text-primary uppercase italic">Sessão Ativa</span>
-              </div>
-           </div>
-        </header>
+            }
+          />
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
 
