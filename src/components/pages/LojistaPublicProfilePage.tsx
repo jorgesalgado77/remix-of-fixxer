@@ -1114,23 +1114,12 @@ export function LojistaPublicProfilePage() {
                       <AvailabilityBadge userId={profile?.user_id ?? null} />
                     </div>
                   </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
-                        🏪 Lojista
-                      </span>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-red-500" />
-                        {profile?.city ? `${profile.city} / ${profile.state}` : "Localização não informada"}
-                      </span>
-                    </div>
-                  </div>
+                </div>
 
   const yearsActive = profile?.created_at ? Math.floor((new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : 0;
   const yearsActiveLabel = yearsActive >= 1 
     ? `Ativo há +${yearsActive} ${yearsActive === 1 ? "ano" : "anos"}`
     : `Ativo desde ${profile?.created_at ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : 'recentemente'}`;
-
-                </div>
 
 
 
