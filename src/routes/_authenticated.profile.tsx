@@ -860,12 +860,12 @@ function ProfilePage() {
           try {
             const geo = await geocodeAddress({
               data: {
-                street: profile.street || undefined,
-                number: profile.number || undefined,
-                neighborhood: profile.neighborhood || undefined,
-                city: profile.city || undefined,
-                state: profile.state || undefined,
-                cep: profile.cep || undefined,
+                street: profile?.street || undefined,
+                number: profile?.number || undefined,
+                neighborhood: profile?.neighborhood || undefined,
+                city: profile?.city || undefined,
+                state: profile?.state || undefined,
+                cep: profile?.cep || undefined,
               }
             });
             if (geo && isValidCoordinate(geo.lat, geo.lng)) {
