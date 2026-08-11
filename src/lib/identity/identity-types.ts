@@ -1,0 +1,44 @@
+import type { PublicProfileCategory } from "@/lib/public-profile-category";
+
+/** 
+ * Identidade Canônica do FIXXER.
+ * Dados básicos e imutáveis de apresentação.
+ */
+export interface CanonicalIdentity {
+  id: string;
+  displayName: string;
+  fullName: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  isOfficial: boolean;
+  isVerified: boolean;
+}
+
+/**
+ * Apresentação Consistente.
+ * Como o usuário deve ser renderizado na UI.
+ */
+export interface ProfilePresentation {
+  name: string;
+  initials: string;
+  avatarUrl: string | null;
+  category: PublicProfileCategory;
+  themeColor: string;
+  label: string;
+  badges: string[];
+}
+
+/**
+ * Objeto Completo de Perfil Resolvido.
+ */
+export interface ResolvedProfile {
+  identity: CanonicalIdentity;
+  roles: string[];
+  mainCategory: PublicProfileCategory;
+  presentation: ProfilePresentation;
+  specializations: {
+    store?: any;
+    provider?: any;
+    supplier?: any;
+  };
+}

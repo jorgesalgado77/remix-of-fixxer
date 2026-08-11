@@ -1,93 +1,31 @@
 /**
  * FIXXER — Resolução centralizada do perfil do destinatário do chat.
- *
- * Estratégia (com cache em memória):
- *   1) profiles_public por id/user_id (view segura; não quebra com RLS da tabela privada)
- *   2) profiles por id/user_id (quando a política permitir)
- *   3) custom_sections.__extras (display_name / avatar)
- *   4) provider_profiles / store_profiles (foto e nome públicos por categoria)
- *
- * Retorna SEMPRE um objeto renderizável (name + initials), mesmo em falha.
+ * Refatorado para usar o Identity Service Canônico (Prompt 15).
  */
-import { supabaseExternal } from "@/lib/supabaseExternal";
-import {
-  primePublicProfileCategory,
-  resolvePublicProfileCategory,
-  type PublicProfileCategory,
-} from "@/lib/public-profile-category";
+import { resolveIdentity } from "@/lib/identity/identity-service";
+import type { PeerProfile } from "@/lib/identity/chat-peer-profile.types";
 
-const CATEGORY_TO_ROLE: Record<PublicProfileCategory, string> = {
-  lojista: "lojista",
-  prestador: "prestador",
-  fornecedor: "fornecedor",
-  cliente: "cliente",
-};
-
-export type PeerProfile = {
-  id: string;
-  name: string;
-  initials: string;
-  avatarUrl: string | null;
-  role: string | null;
-  isFallback: boolean;
-  source: string[]; // origens dos dados encontrados (para diagnóstico)
-  diagnostics: string[];
-};
+export type { PeerProfile };
 
 const CACHE = new Map<string, { at: number; value: PeerProfile }>();
 const TTL_MS = 60_000;
-const LS_KEY = "fixxer_chat_peer_cache_v1";
-const LS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias para exibição instantânea
-
-function loadLsCache() {
-  if (typeof window === "undefined") return;
-  try {
-    const raw = window.localStorage.getItem(LS_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw) as Record<string, { at: number; value: PeerProfile }>;
-    const now = Date.now();
-    for (const [id, entry] of Object.entries(parsed)) {
-      if (!entry?.value || entry.value.isFallback) continue;
-      if (now - entry.at > LS_TTL_MS) continue;
-      // Reinsere sem invalidar TTL de rede (para revalidar em background).
-      CACHE.set(id, { at: 0, value: entry.value });
-    }
-  } catch {}
-}
-loadLsCache();
-
-function persistLsCache() {
-  if (typeof window === "undefined") return;
-  try {
-    const out: Record<string, { at: number; value: PeerProfile }> = {};
-    for (const [id, entry] of CACHE.entries()) {
-      if (entry.value.isFallback) continue;
-      out[id] = { at: entry.at || Date.now(), value: entry.value };
-    }
-    window.localStorage.setItem(LS_KEY, JSON.stringify(out));
-  } catch {}
-}
-
-/** Leitura síncrona do cache (memória + LS) para render instantâneo. */
-export function getCachedPeer(peerId: string): PeerProfile | null {
-  const c = CACHE.get(peerId);
-  return c && !c.value.isFallback ? c.value : null;
-}
-
-function isDebugEnabled() {
-  if (typeof window === "undefined") return false;
-  try {
-    return (window as any).__FIXXER_CHAT_DEBUG__ === true || window.localStorage.getItem("fixxer_chat_debug") === "1";
-  } catch {
-    return (window as any).__FIXXER_CHAT_DEBUG__ === true;
-  }
-}
 
 export function initialsOf(name: string): string {
   const clean = String(name || "").trim();
   if (!clean) return "?";
   const parts = clean.split(/\s+/).slice(0, 2);
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || clean[0]!.toUpperCase();
+}
+
+/** Leitura síncrona do cache para render instantâneo. */
+export function getCachedPeer(peerId: string): PeerProfile | null {
+  const c = CACHE.get(peerId);
+  return c && !c.value.isFallback ? c.value : null;
+}
+
+export function clearPeerCache(peerId?: string) {
+  if (peerId) CACHE.delete(peerId);
+  else CACHE.clear();
 }
 
 export function fallbackPeer(peerId: string): PeerProfile {
@@ -103,211 +41,32 @@ export function fallbackPeer(peerId: string): PeerProfile {
   };
 }
 
-export function clearPeerCache(peerId?: string) {
-  if (peerId) CACHE.delete(peerId);
-  else CACHE.clear();
-  persistLsCache();
-}
-
-
-function firstText(...values: unknown[]): string | undefined {
-  for (const value of values) {
-    const text = String(value ?? "").trim();
-    if (text && text.toLowerCase() !== "null" && text.toLowerCase() !== "undefined") return text;
-  }
-  return undefined;
-}
-
-function firstUrl(...values: unknown[]): string | undefined {
-  for (const value of values) {
-    const text = String(value ?? "").trim();
-    if (/^(https?:|blob:|data:image\/)/i.test(text)) return text;
-  }
-  return undefined;
-}
-
-function asRecord(value: unknown): Record<string, any> {
-  return value && typeof value === "object" ? (value as Record<string, any>) : {};
-}
-
-function pickFromExtras(extras: any): { name?: string; avatar?: string; role?: string } {
-  if (!extras || typeof extras !== "object") return {};
-  const name = firstText(
-    extras.display_name,
-    extras.displayName,
-    extras.full_name,
-    extras.company_name,
-    extras.social_name,
-    extras.name,
-    extras.responsible_name,
-  );
-  const avatar = firstUrl(
-    extras.avatar_url,
-    extras.photo_url,
-    extras.profile_photo_url,
-    extras.profile_photo,
-    extras.profile_image_url,
-    extras.profile_image,
-    extras.image_url,
-    extras.logo_url,
-    extras.avatar,
-  );
-  const role = firstText(extras.role, extras.user_type, extras.category);
-  return { name, avatar, role };
-}
-
-function absorbRow(
-  row: any,
-  label: string,
-  current: { name: string; avatarUrl: string | null; role: string | null; ownerUid: string | null },
-  source: string[],
-  diagnostics: string[],
-) {
-  const r = asRecord(row);
-  if (!Object.keys(r).length) return current;
-
-  diagnostics.push(`${label}: campos encontrados [${Object.keys(r).sort().join(", ")}]`);
-
-  const extras = pickFromExtras(asRecord(r.custom_sections).__extras ?? r.__extras ?? r.extras);
-  const name = firstText(
-    r.display_name,
-    r.full_name,
-    r.company_name,
-    r.social_name,
-    r.name,
-    r.responsible_name,
-    extras.name,
-  );
-  const avatar = firstUrl(
-    r.avatar_url,
-    r.photo_url,
-    r.profile_photo_url,
-    r.profile_image_url,
-    r.image_url,
-    r.logo_url,
-    r.avatar,
-    extras.avatar,
-  );
-  const role = firstText(r.role, r.user_type, r.category, r.profile_type, extras.role);
-  const ownerUid = firstText(r.user_id, r.owner_id, r.auth_user_id, r.id);
-
-  if (!current.name && name) {
-    current.name = name;
-    source.push(`${label}.name`);
-  }
-  if (!current.avatarUrl && avatar) {
-    current.avatarUrl = avatar;
-    source.push(`${label}.avatar`);
-  }
-  if (!current.role && role) {
-    current.role = role;
-    source.push(`${label}.role`);
-  }
-  if (!current.ownerUid && ownerUid) current.ownerUid = ownerUid;
-  return current;
-}
-
-async function querySingle(table: string, column: string, value: string, diagnostics: string[]) {
-  try {
-    const { data, error } = await supabaseExternal.from(table).select("*").eq(column, value).maybeSingle();
-    if (error) {
-      diagnostics.push(`${table}.${column}: ${error.message}`);
-      return null;
-    }
-    if (!data) diagnostics.push(`${table}.${column}: sem linha`);
-    return data ?? null;
-  } catch (e: any) {
-    diagnostics.push(`${table}.${column}: exceção ${e?.message || String(e)}`);
-    return null;
-  }
-}
-
 export async function resolvePeerProfile(peerId: string, options?: { refresh?: boolean }): Promise<PeerProfile> {
   if (!peerId) return fallbackPeer("");
+  
   const cached = CACHE.get(peerId);
   if (!options?.refresh && cached && Date.now() - cached.at < TTL_MS) return cached.value;
 
-  const source: string[] = [];
-  const diagnostics: string[] = [];
-  let current = { name: "", avatarUrl: null as string | null, role: null as string | null, ownerUid: null as string | null };
-
-  // O `peerId` do chat é o UUID do auth.users. Por isso, priorizamos
-  // user_id antes de id para não confundir o dono do perfil com o id interno
-  // da linha/perfil.
-  // A view pública é a primeira fonte porque a tabela `profiles` pode estar
-  // corretamente protegida por RLS e bloquear leitura direta de terceiros.
-  for (const [table, columns] of [
-    ["profiles_public", ["user_id", "id"]],
-    ["profiles", ["user_id", "id"]],
-  ] as const) {
-    for (const column of columns) {
-      if (current.name && current.avatarUrl && current.role && current.ownerUid) break;
-      const row = await querySingle(table, column, peerId, diagnostics);
-      if (row) {
-        source.push(`${table}.${column}`);
-        current = absorbRow(row, `${table}.${column}`, current, source, diagnostics);
-      }
-    }
-  }
-
-  const owner = current.ownerUid || peerId;
-  // Consulta todas as tabelas especializadas — elas são a fonte autoritativa
-  // de categoria. Qualquer valor genérico em profiles.role ("user", "usuario")
-  // NÃO deve sobrescrever a categoria real derivada da tabela específica.
-  // Coletamos apenas name/avatar dessas tabelas; a categoria final vem do
-  // resolver canônico (público) para manter chat e perfil público em sincronia.
-  let loadedProfileRow: any = null;
-  for (const [table, columns] of [
-    ["provider_profiles", ["user_id", "id"]],
-    ["store_profiles", ["user_id", "id"]],
-    ["supplier_profiles", ["user_id", "id"]],
-  ] as const) {
-    for (const column of columns) {
-      const row = await querySingle(table, column, owner, diagnostics);
-      if (row) {
-        source.push(`${table}.${column}`);
-        if (!loadedProfileRow) loadedProfileRow = row;
-        current = absorbRow(row, `${table}.${column}`, current, source, diagnostics);
-        break;
-      }
-    }
-  }
-
-  // Delega a categoria ao resolver canônico (mesmo usado pelo perfil público).
-  // Isso garante que provider_profiles vença store_profiles residual, que
-  // profiles.role autoritativo (ex.: "prestador") sobreponha tabelas antigas
-  // e que chat + perfil público mostrem sempre a MESMA cor para o mesmo peer.
-  let detectedCategory: PublicProfileCategory | null = null;
   try {
-    detectedCategory = await resolvePublicProfileCategory(owner, {
-      profile: loadedProfileRow,
-      refresh: options?.refresh,
-    });
-  } catch (e: any) {
-    diagnostics.push(`resolvePublicProfileCategory: exceção ${e?.message || String(e)}`);
+    const resolved = await resolveIdentity(peerId, options);
+    
+    const peer: PeerProfile = {
+      id: peerId,
+      name: resolved.presentation.name,
+      initials: resolved.presentation.initials,
+      avatarUrl: resolved.presentation.avatarUrl,
+      role: resolved.presentation.category,
+      isFallback: false,
+      source: ["canonical-identity"],
+      diagnostics: [`Resolved via IdentityService as ${resolved.mainCategory}`]
+    };
+
+    CACHE.set(peerId, { at: Date.now(), value: peer });
+    return peer;
+  } catch (error) {
+    console.warn("[chat-peer] Failed to resolve canonical identity, using legacy fallback", error);
+    return fallbackPeer(peerId);
   }
-  if (detectedCategory) {
-    current.role = CATEGORY_TO_ROLE[detectedCategory];
-    source.push(`category.${detectedCategory}`);
-    primePublicProfileCategory(owner, detectedCategory);
-  }
-
-
-
-  const finalName = current.name || "Conversa";
-
-  const result: PeerProfile = {
-    id: peerId,
-    name: finalName,
-    initials: initialsOf(finalName),
-    avatarUrl: current.avatarUrl || null,
-    role: current.role,
-    isFallback: source.length === 0,
-    source: source.length ? source : ["fallback"],
-    diagnostics,
-  };
-  if (isDebugEnabled()) console.info("[chat-peer] resolved", peerId, result);
-  // Não cacheia fallback puro para permitir recuperação imediata após ajuste de RLS/dados.
-  if (source.length) { CACHE.set(peerId, { at: Date.now(), value: result }); persistLsCache(); }
-  return result;
 }
+
+
