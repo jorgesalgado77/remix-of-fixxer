@@ -446,13 +446,64 @@ BEGIN
     END IF;
 END $$;
 
-CREATE TABLE IF NOT EXISTS public.os_messages (
+CREATE TABLE IF NOT EXISTS public.messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    os_id UUID REFERENCES public.service_orders(id) ON DELETE CASCADE,
-    sender_id UUID REFERENCES public.profiles(id),
-    content TEXT NOT NULL,
+    sender_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    recipient_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    content TEXT,
+    attachment_url TEXT,
+    attachment_type TEXT, -- 'image', 'video', 'document'
+    attachment_name TEXT,
+    read BOOLEAN DEFAULT FALSE,
+    metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migração de dados de chat_messages e os_messages para messages
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'chat_messages' AND schemaname = 'public') THEN
+        INSERT INTO public.messages (id, sender_id, content, created_at)
+        SELECT id, sender_id, content, created_at
+        FROM public.chat_messages
+        ON CONFLICT (id) DO NOTHING;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'os_messages' AND schemaname = 'public') THEN
+        INSERT INTO public.messages (sender_id, content, created_at, metadata)
+        SELECT sender_id, content, created_at, jsonb_build_object('os_id', os_id)
+        FROM public.os_messages
+        ON CONFLICT DO NOTHING;
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.service_applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    os_id UUID REFERENCES public.service_orders(id) ON DELETE CASCADE,
+    provider_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    message TEXT,
+    proposed_value NUMERIC(12, 2),
+    status TEXT NOT NULL DEFAULT 'pendente', -- pendente, aceito, recusado
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(os_id, provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.b2b_quotes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    store_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    supplier_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    request_id UUID,
+    title TEXT,
+    description TEXT,
+    value NUMERIC(12, 2),
+    delivery_time TEXT,
+    status TEXT NOT NULL DEFAULT 'pendente',
+    valid_until TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 
 
 CREATE TABLE IF NOT EXISTS public.lead_requests (
