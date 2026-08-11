@@ -262,6 +262,8 @@ export default function FeedLojistaPage() {
   const branchCtx = useUserBranchContext();
   const visible = posts;
   const paged = posts;
+  const searching = loading && posts.length === 0;
+
 
 
   // Persiste local sempre que muda
