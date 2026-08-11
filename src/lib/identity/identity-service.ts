@@ -63,17 +63,25 @@ export async function resolveIdentity(
     roles = (rolesData || []).map((r: any) => r.role);
   }
 
-  const mainCategory = await resolvePublicProfileCategory(userId, {
-    profile: baseProfile,
-    refresh: options?.refresh
-  });
+  // 2. Tentar buscar dados de especializações de forma isolada (Safe-check para tabelas ausentes)
+  let store: any = null;
+  let provider: any = null;
+  let supplier: any = null;
 
-  // Helper para extrair dados de arrays ou objetos (Supabase joins podem retornar ambos)
-  const extract = (val: any) => Array.isArray(val) ? val[0] : val;
+  try {
+    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state").eq("user_id", userId).maybeSingle();
+    store = storeData;
+  } catch (e) { console.warn("[IdentityService] store_profiles indisponível"); }
 
-  const store = extract(effectiveProfile.store_profiles);
-  const provider = extract(effectiveProfile.provider_profiles);
-  const supplier = extract(effectiveProfile.supplier_profiles);
+  try {
+    const { data: providerData } = await supabaseExternal.from("provider_profiles").select("display_name, avatar_url, city, state").eq("user_id", userId).maybeSingle();
+    provider = providerData;
+  } catch (e) { console.warn("[IdentityService] provider_profiles indisponível"); }
+
+  try {
+    const { data: supplierData } = await supabaseExternal.from("supplier_profiles").select("company_name, logo_url, city, state").eq("user_id", userId).maybeSingle();
+    supplier = supplierData;
+  } catch (e) { console.warn("[IdentityService] supplier_profiles indisponível"); }
 
   // REGRA ÚNICA DE FALLBACK (CANONICAL PRIORITY)
   // 1. Nome profissional/empresa (se disponível)
