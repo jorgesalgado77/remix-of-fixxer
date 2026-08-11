@@ -165,10 +165,18 @@ export function useProviderStats(): ProviderStats {
   const nums = reviews.map((r) => Number(r?.rating)).filter((n) => Number.isFinite(n));
   const ratingAvg = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null;
 
-  // Mock de saldos categorizados (em moedas, escala 10x p/ visualização)
-  const balanceReservations = balance * 0.3;
-  const balanceProducts = balance * 0.2;
-  const balanceServices = balance * 0.5;
+  // Saldos reais baseados no período selecionado e tipo de transação/ordem
+  const balanceReservations = orders
+    .filter(o => o.status?.toLowerCase().includes("reserva") && isDone(o.status))
+    .reduce((acc, o) => acc + (o.price || 0), 0);
+    
+  const balanceProducts = transactions
+    .filter(tx => tx.source === "purchase_pack" || tx.reason?.toLowerCase().includes("produto"))
+    .reduce((acc, tx) => acc + (tx.amount || 0), 0);
+    
+  const balanceServices = orders
+    .filter(o => !o.status?.toLowerCase().includes("reserva") && isDone(o.status))
+    .reduce((acc, o) => acc + (o.price || 0), 0);
 
   return {
     loading,
