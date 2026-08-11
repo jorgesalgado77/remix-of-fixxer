@@ -1129,14 +1129,14 @@ export function LojistaPublicProfilePage() {
                 return (
                   <div className="flex flex-col gap-5 mt-4">
                     {/* Reputação */}
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30 shrink-0">
                         <Star className="w-4 h-4 fill-primary text-primary" />
                         <span className="text-sm font-black text-primary italic">{avgRating > 0 ? avgRating.toFixed(1) : "s/av."}</span>
                         <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
                       </div>
                       {profile?.plan_id && profile.plan_id !== 'free' && (
-                        <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
+                        <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1 shrink-0">
                           <Award className="w-3 h-3" /> Selo Ouro FIXXER
                         </span>
                       )}
