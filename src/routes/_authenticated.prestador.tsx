@@ -27,7 +27,7 @@ import { PanelActions } from "@/components/PanelActions";
 import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 import { RecentStoresCarousel } from "@/components/RecentStoresCarousel";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
-import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
+import { ProfileHeader } from "@/components/ProfileHeader";
 
 
 
