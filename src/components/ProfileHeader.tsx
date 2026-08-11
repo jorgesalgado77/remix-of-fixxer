@@ -75,28 +75,30 @@ export function ProfileHeader({
     <>
       {!hideSidebarCard && <ProfileSummaryCard role={role} variant="sidebar" />}
       
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
         <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary`}>
+          <div className={`w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary shrink-0`}>
             {displayIcon}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+              <h1 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter truncate max-w-[200px] md:max-w-none">
                 {displayTitle}
               </h1>
             </div>
             {displaySubtitle && (
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-relaxed">
+              <p className="text-[9px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-relaxed">
                 {displaySubtitle}
               </p>
             )}
           </div>
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-center gap-4 ml-auto">
-          {actions}
-          <div className="hidden md:block">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 ml-auto w-full lg:w-auto">
+          <div className="flex-1 lg:flex-none overflow-x-auto no-scrollbar">
+            {actions}
+          </div>
+          <div className="hidden md:block shrink-0">
             <PanelActions role={role} />
           </div>
         </div>

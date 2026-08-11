@@ -47,7 +47,7 @@ function ClientePortal() {
           <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
             <TabButton active={activeTab === 'jornada'} onClick={() => setActiveTab('jornada')} label="Minha Obra" icon={<Clock className="w-3 h-3" />} />
             <Link to="/feed/cliente" search={{ urgency: 'todos', distance: 'todos', tag: '' }} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-[10px] tracking-widest hover:shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all shrink-0">
-               <Search className="w-3 h-3" /> Acessar Feed da Categoria
+               <Search className="w-3 h-3" /> Feed Fixxer
             </Link>
             <TabButton active={activeTab === 'contratacoes'} onClick={() => setActiveTab('contratacoes')} label="Contratações" icon={<ShieldCheck className="w-3 h-3" />} />
           </div>
