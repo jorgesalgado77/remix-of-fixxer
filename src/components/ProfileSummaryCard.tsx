@@ -111,8 +111,8 @@ export function ProfileSummaryCard({
             display_name: resolved.identity.displayName,
             full_name: resolved.identity.fullName,
             avatar_url: resolved.identity.avatarUrl,
-            company_name: (resolved.specializations as any)?.store?.company_name || (resolved.specializations as any)?.supplier?.company_name || null,
-            logo_url: (resolved.specializations as any)?.store?.logo_url || (resolved.specializations as any)?.supplier?.logo_url || null,
+            company_name: (resolved.specializations as any)?.store?.company_name || (resolved.specializations as any)?.supplier?.company_name || resolved.identity.displayName,
+            logo_url: (resolved.specializations as any)?.store?.logo_url || (resolved.specializations as any)?.supplier?.logo_url || resolved.identity.avatarUrl,
             city: (resolved.specializations as any)?.store?.city || (resolved.specializations as any)?.provider?.city || (resolved.specializations as any)?.supplier?.city || null,
             state: (resolved.specializations as any)?.store?.state || (resolved.specializations as any)?.provider?.state || (resolved.specializations as any)?.supplier?.state || null,
           };
