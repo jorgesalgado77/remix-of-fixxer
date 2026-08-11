@@ -1,4 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+import { resolveIdentity } from "@/lib/identity/identity-service";
 import {
   Outlet,
   Link,
@@ -159,11 +161,12 @@ function RootShell({ children }: { children: ReactNode }) {
         {children}
         <Scripts />
         {/*
-          AUDITORIA DE IDENTIDADE (PROMPT 15.5):
-          1. Identidade Canônica PERSISTENTE entre navegações (TTL 5min).
-          2. Eliminação de flickers e refetching constante no ProfileSummaryCard.
-          3. Sincronização de foto/nome garantida via Cache Global.
-          4. Antiguidade e Verificação reais mantidas.
+          AUDITORIA DE IDENTIDADE (PROMPT 15.6):
+          1. Identidade Canônica PERSISTENTE entre navegações via LocalStorage Global.
+          2. Sincronização automática na etapa de login/update no Root.
+          3. Eliminação total de flicker usando hidratação síncrona no ProfileSummaryCard.
+          4. Validação rigorosa de avatar_url e display_name (fallbacks do banco externo).
+          5. Cache global (10min) e Teste de Regressão via Playwright.
         */}
       </body>
     </html>
@@ -198,9 +201,11 @@ function RootComponent() {
           void subscribeBlockedStatus(data.session.user.id);
         }
         supabase.auth.onAuthStateChange((event, session) => {
-          if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user?.id) {
+          if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && session?.user?.id) {
             void initCoinsForUser(session.user.id);
             void subscribeBlockedStatus(session.user.id);
+            // PROMPT 15.6: Sincronização automática na etapa de login e mudanças de estado
+            void resolveIdentity(session.user.id, { refresh: true }).catch(console.error);
           }
         });
       } catch (e) { console.warn("[coins init] falhou", e); }
