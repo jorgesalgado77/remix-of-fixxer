@@ -159,8 +159,8 @@ function RootShell({ children }: { children: ReactNode }) {
         {children}
         <Scripts />
         {/*
-          PERGUNTA AO ARQUITETO / DOCUMENTAÇÃO DINÂMICA:
-          problema ainda persiste, corrija
+          AUDITORIA DE IDENTIDADE:
+          Sincronização de fotos e nomes via IdentityService (Canonical).
         */}
       </body>
     </html>
