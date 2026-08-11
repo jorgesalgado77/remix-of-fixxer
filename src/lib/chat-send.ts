@@ -55,7 +55,12 @@ export function classifyChatError(err: unknown): ClassifiedChatError {
     return { kind: "session", message: raw || "Sessão expirada", retryable: false };
   }
   if (code === "42501" || msg.includes("row-level security") || msg.includes("permission denied")) {
-    return { kind: "rls", message: raw || "Sem permissão para enviar", retryable: false };
+    const isBlocked = msg.includes("blocked") || msg.includes("user_blocks");
+    return { 
+      kind: "rls", 
+      message: isBlocked ? "Você não pode enviar mensagens para este usuário." : (raw || "Sem permissão para enviar"), 
+      retryable: false 
+    };
   }
   if (code === "22P02" || msg.includes("invalid input syntax for type uuid")) {
     return { kind: "validation", message: raw || "Identificador inválido", retryable: false };
