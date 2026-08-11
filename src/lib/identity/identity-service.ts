@@ -60,12 +60,14 @@ export async function resolveIdentity(
   }
 
   if (!effectiveProfile) {
+    // Busca apenas campos TÉCNICOS/ESPECÍFICOS das tabelas especializadas.
+    // Identidade visual (nome, avatar, bio) DEVE vir de profiles.
     const specializedTables = ["provider_profiles", "store_profiles", "supplier_profiles"];
     const results = await Promise.all(
       specializedTables.map(table => 
         supabaseExternal
           .from(table)
-          .select("display_name, name, full_name, company_name, city, state")
+          .select("city, state") // Removido display_name, name, full_name, company_name como fallbacks
           .eq("user_id", userId)
           .maybeSingle()
       )
@@ -93,19 +95,20 @@ export async function resolveIdentity(
 
   const identity: CanonicalIdentity = {
     id: userId,
-    displayName: base.display_name || base.full_name || base.company_name || base.name || (hasData ? "Usuário" : "Conversa"),
-    fullName: base.full_name || base.company_name || null,
-    avatarUrl: base.avatar_url || base.logo_url || null,
-    bio: base.bio || base.description || null,
-    isOfficial: !!base.is_official,
-    isVerified: !!base.is_verified,
-    planId: base.plan_id || "free",
-    createdAt: base.created_at || new Date().toISOString(),
-    karmaScore: base.karma_score ? Number(base.karma_score) : 5.0,
+    // Prioridade absoluta: profiles -> fallback genérico. Especializadas NUNCA definem nome/avatar.
+    displayName: baseProfile?.display_name || baseProfile?.full_name || (hasData ? "Usuário" : "Conversa"),
+    fullName: baseProfile?.full_name || null,
+    avatarUrl: baseProfile?.avatar_url || null,
+    bio: baseProfile?.bio || null,
+    isOfficial: !!baseProfile?.is_official,
+    isVerified: !!baseProfile?.is_verified,
+    planId: baseProfile?.plan_id || "free",
+    createdAt: baseProfile?.created_at || new Date().toISOString(),
+    karmaScore: baseProfile?.karma_score ? Number(baseProfile.karma_score) : 5.0,
 
-    lastActiveAt: base.last_active_at || null,
-    verificationStatus: base.verification_status || (base.is_verified ? "verified" : "none"),
-    verificationNote: base.verification_note || null,
+    lastActiveAt: baseProfile?.last_active_at || null,
+    verificationStatus: baseProfile?.verification_status || (baseProfile?.is_verified ? "verified" : "none"),
+    verificationNote: baseProfile?.verification_note || null,
   };
 
   const timeSinceActive = identity.lastActiveAt ? Date.now() - new Date(identity.lastActiveAt).getTime() : Infinity;
