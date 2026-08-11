@@ -365,7 +365,7 @@ export default function FeedLojistaPage() {
     });
   }, [filter, statusFilter, urgencyFilter, distanceFilter, tagFilter, debouncedSearch]);
 
-  const branchCtx = useUserBranchContext();
+  
   const visible = useMemo(() => {
     if (!branchCtx.hasContext) return visibleRaw;
     const decorated = visibleRaw.map((p) => ({
@@ -653,7 +653,7 @@ export default function FeedLojistaPage() {
 
         <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
           <B2BSuggestionsCard />
-          {searching ? (
+          {loading && posts.length === 0 ? (
             <div className="space-y-4" aria-live="polite">
               {[0, 1, 2].map((i) => (
                 <div
