@@ -1162,9 +1162,9 @@ export function LojistaPublicProfilePage() {
                     suffix="Serviços" 
                   />
                   <MetricCard 
-                    label="Satisfação" 
-                    value={reviews.length > 0 ? `${Math.round((reviews.filter(r => r.rating >= 4).length / reviews.length) * 100)}%` : "100%"} 
-                    suffix="Positivo" 
+                    label="Reputação" 
+                    value={profile?.karma_score && profile.karma_score > 0 ? (profile.karma_score / 10).toFixed(1) : "0.0"} 
+                    suffix={profile?.karma_score && profile.karma_score > 0 ? `(${profile.karma_score.toFixed(0)} pts)` : "Real"} 
                   />
                   <MetricCard 
                     label="Tempo Resposta" 
