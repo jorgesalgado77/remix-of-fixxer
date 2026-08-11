@@ -184,10 +184,14 @@ export function ProfileSummaryCard({
     loadProfile();
 
     // Inscrição para mudanças de autenticação - força refetch imediato
-    const { data: authListener } = supabaseExternal.auth.onAuthStateChange((event) => {
+    const { data: authListener } = supabaseExternal.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        setLoading(true);
-        loadProfile();
+        if (session?.user?.id) {
+          // Garante que o cache seja invalidado e recarregado no login/update
+          loadProfile();
+        }
+      } else if (event === "SIGNED_OUT") {
+        setProfile(null);
       }
     });
 
