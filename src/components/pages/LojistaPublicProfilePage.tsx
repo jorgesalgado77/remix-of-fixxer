@@ -1155,7 +1155,7 @@ export function LojistaPublicProfilePage() {
 
 
                 {/* Métricas reais */}
-                <div className="grid grid-cols-3 gap-2 md:gap-3 pt-2">
+                <div className="grid grid-cols-3 gap-1.5 md:gap-3 pt-2">
                   <MetricCard 
                     label="O.S. Concluídas" 
                     value={String(profile?.os_completed_count ?? 0)} 
@@ -2063,15 +2063,15 @@ function Badge({ icon, label }: { icon: React.ReactNode; label: string }) {
   );
 }
 
-function MetricCard({ label, value, suffix }: { label: string; value: string; suffix: string }) {
-  return (
-    <div className="bg-black/40 border border-white/5 rounded-xl p-2.5 text-center">
-      <div className="text-lg md:text-xl font-black text-primary italic leading-none">{value}</div>
-      <div className="text-[8px] font-black uppercase text-muted-foreground mt-1">{label}</div>
-      <div className="text-[8px] text-white/40 uppercase font-bold">{suffix}</div>
-    </div>
-  );
-}
+ function MetricCard({ label, value, suffix }: { label: string; value: string; suffix: string }) {
+   return (
+     <div className="bg-black/40 border border-white/5 rounded-xl p-1.5 md:p-2.5 text-center flex flex-col justify-center min-w-0 h-full">
+       <div className="text-base md:text-xl font-black text-primary italic leading-none truncate">{value}</div>
+       <div className="text-[7px] md:text-[8px] font-black uppercase text-muted-foreground mt-1 truncate">{label}</div>
+       <div className="text-[7px] md:text-[8px] text-white/40 uppercase font-bold truncate">{suffix}</div>
+     </div>
+   );
+ }
 
 function EmptyState({ label }: { label: string }) {
   return (
