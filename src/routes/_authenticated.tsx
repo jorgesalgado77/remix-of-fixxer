@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle } from "lucide-react";
+import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle, HelpCircle } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCurrentUser, isCurrentUserAdmin, clearCurrentUserCache, useCurrentUser, useIsAdmin } from "@/lib/current-user";
 import { useEffect, useState } from "react";
@@ -111,14 +111,23 @@ function AuthenticatedLayout() {
     <div className="min-h-screen bg-background text-foreground flex flex-col" style={getCategoryCssVars(currentCategory)}>
 
       <nav className="border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-6">
           <div onClick={() => navigate({ to: isAdmin ? "/admin" as any : "/feed" as any })} className="flex items-center gap-2 cursor-pointer group">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-xl shadow-[0_0_15px_rgba(0,255,135,0.3)] group-hover:scale-110 transition-transform">
               F
             </div>
             <span className="font-bold tracking-tight text-white group-hover:text-primary transition-colors">FIXXER</span>
           </div>
+
+          <Link
+            to="/ajuda"
+            className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-colors ${pathname === '/ajuda' ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            Ajuda
+          </Link>
         </div>
+
 
         <div className="flex items-center gap-6">
           {isAdmin && (
