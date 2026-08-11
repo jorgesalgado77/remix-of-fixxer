@@ -8,7 +8,7 @@ const IDENTITY_CACHE = new Map<string, { at: number; value: ResolvedProfile }>()
 const TTL_MS = 600_000; // Aumentado para 10 minutos para maior estabilidade visual
 
 // Chave para persistência em localStorage para evitar flash de "Usuário" no refresh
-const PERSISTENCE_KEY = "fixxer_identity_cache_v1";
+const PERSISTENCE_KEY = "fixxer_identity_cache_v1.1";
 
 function getStoredIdentities(): Record<string, ResolvedProfile> {
   if (typeof window === "undefined") return {};
@@ -68,7 +68,7 @@ export async function resolveIdentity(
   const { data: baseProfile, error: profileError } = await supabaseExternal
     .from("profiles")
     .select(`
-      id, display_name, full_name, avatar_url, bio, about_bio, is_official, is_verified, plan_id, created_at, karma_score, last_active_at, verification_status, verification_note,
+      id, display_name, full_name, avatar_url, bio, about_bio, is_verified, plan_id, created_at, karma_score, last_active_at, verification_status, verification_note, company_name,
       user_roles (role)
     `)
     .eq("id", userId)
@@ -78,13 +78,19 @@ export async function resolveIdentity(
     console.error(`[IdentityService] Erro ao buscar perfis para ${userId}:`, profileError);
   }
 
+  // Debug local do baseProfile
+  if (!baseProfile) {
+    console.warn(`[IdentityService] Perfil mestre não encontrado para ${userId}. Tentando busca relaxada...`);
+    // Opcional: tentar buscar pelo user_id se for diferente do id principal por algum motivo legado
+  }
+
   // 1.1 Tentar buscar dados de especializações de forma isolada (Safe-check para tabelas ausentes)
   let store: any = null;
   let provider: any = null;
   let supplier: any = null;
 
   try {
-    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
+    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state, is_verified, social_name").eq("user_id", userId).maybeSingle();
     store = storeData;
   } catch (e) { console.warn("[IdentityService] store_profiles indisponível"); }
 
@@ -128,17 +134,20 @@ export async function resolveIdentity(
   // 4. Fallback genérico (apenas se não houver dados reais)
   const displayName = 
     effectiveProfile.display_name?.trim() || 
+    effectiveProfile.company_name?.trim() || 
     store?.company_name?.trim() || 
+    store?.social_name?.trim() ||
     supplier?.company_name?.trim() || 
     provider?.display_name?.trim() || 
     effectiveProfile.full_name?.trim() || 
     (baseProfile ? "Usuário Fixxer" : "Usuário");
 
   // REGRA ÚNICA DE FALLBACK PARA AVATAR
-  // 1. Logo da empresa (lojista/fornecedor)
-  // 2. Foto profissional (prestador)
-  // 3. Avatar do perfil mestre
-  // 4. null (fallback UI)
+  // 1. Avatar do perfil mestre (profiles.avatar_url) - Prioridade máxima pois é o que o usuário edita no perfil global
+  // 2. Logo da empresa (store_profiles.logo_url)
+  // 3. Logo do fornecedor (supplier_profiles.logo_url)
+  // 4. Foto profissional (provider_profiles.avatar_url)
+  // 5. null (fallback UI)
   const avatarUrl = 
     effectiveProfile.avatar_url || 
     store?.logo_url || 
@@ -147,7 +156,7 @@ export async function resolveIdentity(
     null;
 
   // Validação rigorosa: se for uma string vazia ou placeholder conhecido, tratar como null
-  const validatedAvatar = (typeof avatarUrl === 'string' && avatarUrl.startsWith('http')) ? avatarUrl : null;
+  const validatedAvatar = (typeof avatarUrl === 'string' && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'))) ? avatarUrl : null;
 
   console.log(`[IdentityService] Identidade resolvida para ${userId}:`, {
     displayName,
@@ -163,7 +172,7 @@ export async function resolveIdentity(
     fullName: effectiveProfile.full_name || null,
     avatarUrl: validatedAvatar,
     bio: effectiveProfile.bio || effectiveProfile.about_bio || null,
-    isOfficial: !!effectiveProfile.is_official,
+    isOfficial: !!(effectiveProfile as any).is_official,
     // CNPJ VERIFICADO REAL: Só é true se estiver marcado como verificado no perfil base ou especializado
     isVerified: !!(effectiveProfile.is_verified || store?.is_verified || provider?.is_verified || supplier?.is_verified),
     planId: effectiveProfile.plan_id || "free",
