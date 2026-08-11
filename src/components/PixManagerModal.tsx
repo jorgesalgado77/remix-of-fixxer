@@ -164,7 +164,7 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
                         toast.error("Data inicial não pode ser maior que a final");
                         return;
                       }
-                      stats?.reload?.();
+                      handleReload();
                     }}
                     className="h-9 w-9 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg"
                   >
