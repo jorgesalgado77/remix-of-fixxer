@@ -54,11 +54,11 @@ export function AvailabilityBadge({ userId, size = "sm", className }: Props) {
   return (
     <span
       aria-label={label}
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border font-black uppercase italic tracking-widest whitespace-nowrap ${textSize} ${className ?? ""}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border font-black uppercase italic tracking-widest flex-shrink-0 ${textSize} ${className ?? ""}`}
       style={{
         color,
-        borderColor: `${color}55`,
-        background: `${color}18`,
+        borderColor: className?.includes('!border-none') ? 'transparent' : `${color}55`,
+        background: className?.includes('!bg-transparent') ? 'transparent' : `${color}18`,
       }}
     >
       <span
