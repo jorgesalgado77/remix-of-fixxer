@@ -34,7 +34,9 @@ export async function resolveIdentity(
     .select(`
       *,
       user_roles (role),
-      store_profiles (company_name, logo_url)
+      store_profiles (company_name, logo_url, city, state),
+      provider_profiles (city, state),
+      supplier_profiles (city, state)
     `)
     .eq("id", userId)
     .maybeSingle();
@@ -97,9 +99,9 @@ export async function resolveIdentity(
   const identity: CanonicalIdentity = {
     id: userId,
     // Prioridade absoluta: profiles -> fallback genérico. Especializadas NUNCA definem nome/avatar.
-    displayName: baseProfile?.display_name || baseProfile?.full_name || baseProfile?.company_name || (baseProfile?.store_profiles as any)?.company_name || (hasData ? "Usuário" : "Conversa"),
+    displayName: baseProfile?.display_name || baseProfile?.full_name || (baseProfile?.store_profiles as any)?.company_name || (Array.isArray(baseProfile?.store_profiles) ? (baseProfile.store_profiles[0] as any)?.company_name : null) || baseProfile?.company_name || (hasData ? "Usuário" : "Conversa"),
     fullName: baseProfile?.full_name || null,
-    avatarUrl: baseProfile?.avatar_url || baseProfile?.logo_url || (baseProfile?.store_profiles as any)?.logo_url || null,
+    avatarUrl: baseProfile?.avatar_url || (baseProfile?.store_profiles as any)?.logo_url || (Array.isArray(baseProfile?.store_profiles) ? (baseProfile.store_profiles[0] as any)?.logo_url : null) || baseProfile?.logo_url || null,
     bio: baseProfile?.bio || baseProfile?.about_bio || null,
     isOfficial: !!baseProfile?.is_official,
     isVerified: !!baseProfile?.is_verified,
@@ -137,7 +139,11 @@ export async function resolveIdentity(
     roles,
     mainCategory,
     presentation,
-    specializations: {}
+    specializations: {
+      store: Array.isArray(baseProfile?.store_profiles) ? baseProfile.store_profiles[0] : baseProfile?.store_profiles,
+      provider: Array.isArray(baseProfile?.provider_profiles) ? baseProfile.provider_profiles[0] : baseProfile?.provider_profiles,
+      supplier: Array.isArray(baseProfile?.supplier_profiles) ? baseProfile.supplier_profiles[0] : baseProfile?.supplier_profiles,
+    }
   };
 
   IDENTITY_CACHE.set(userId, { at: Date.now(), value: result });

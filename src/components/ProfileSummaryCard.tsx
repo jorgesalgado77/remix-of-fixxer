@@ -101,7 +101,8 @@ export function ProfileSummaryCard({
         console.log("[ProfileSummaryCard] Identidade resolvida:", {
           uid,
           displayName: resolved?.identity?.displayName,
-          avatarUrl: resolved?.identity?.avatarUrl
+          avatarUrl: resolved?.identity?.avatarUrl,
+          specializations: resolved?.specializations
         });
 
         if (!cancelled && resolved) {
@@ -112,8 +113,8 @@ export function ProfileSummaryCard({
             avatar_url: resolved.identity.avatarUrl,
             company_name: (resolved.specializations as any)?.store?.company_name || null,
             logo_url: (resolved.specializations as any)?.store?.logo_url || null,
-            city: (resolved.specializations as any)?.store?.city || (resolved.specializations as any)?.provider?.city || null,
-            state: (resolved.specializations as any)?.store?.state || (resolved.specializations as any)?.provider?.state || null,
+            city: (resolved.specializations as any)?.store?.city || (resolved.specializations as any)?.provider?.city || (resolved.specializations as any)?.supplier?.city || null,
+            state: (resolved.specializations as any)?.store?.state || (resolved.specializations as any)?.provider?.state || (resolved.specializations as any)?.supplier?.state || null,
           };
           setProfile(prof);
         }
