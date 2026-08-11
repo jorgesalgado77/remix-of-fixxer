@@ -848,11 +848,11 @@ function ProfilePage() {
       // TAREFA: Geocodificação em background se campos de endereço mudaram
       const lastSaved = lastSavedSnapshotRef.current ? JSON.parse(lastSavedSnapshotRef.current) : {};
       const addressChanged = 
-        profile.street !== lastSaved.street || 
-        profile.city !== lastSaved.city || 
-        profile.state !== lastSaved.state || 
-        profile.cep !== lastSaved.cep || 
-        profile.number !== lastSaved.number;
+        (profile?.street !== lastSaved?.street) || 
+        (profile?.city !== lastSaved?.city) || 
+        (profile?.state !== lastSaved?.state) || 
+        (profile?.cep !== lastSaved?.cep) || 
+        (profile?.number !== lastSaved?.number);
 
       if (!lastError && addressChanged) {
         console.log("[Background Geocoding] Detectada mudança de endereço, agendando...");
@@ -860,12 +860,12 @@ function ProfilePage() {
           try {
             const geo = await geocodeAddress({
               data: {
-                street: profile.street || undefined,
-                number: profile.number || undefined,
-                neighborhood: profile.neighborhood || undefined,
-                city: profile.city || undefined,
-                state: profile.state || undefined,
-                cep: profile.cep || undefined,
+                street: profile?.street || undefined,
+                number: profile?.number || undefined,
+                neighborhood: profile?.neighborhood || undefined,
+                city: profile?.city || undefined,
+                state: profile?.state || undefined,
+                cep: profile?.cep || undefined,
               }
             });
             if (geo && isValidCoordinate(geo.lat, geo.lng)) {
@@ -1050,11 +1050,11 @@ function ProfilePage() {
     // Compara com o snapshot salvo para ver se houve mudança nos campos de endereço
     const lastSaved = lastSavedSnapshotRef.current ? JSON.parse(lastSavedSnapshotRef.current) : {};
     const hasAddressFieldChanged = 
-      profile.street !== lastSaved.street || 
-      profile.number !== lastSaved.number ||
-      profile.neighborhood !== lastSaved.neighborhood ||
-      profile.city !== lastSaved.city || 
-      profile.state !== lastSaved.state;
+      (profile?.street !== lastSaved?.street) || 
+      (profile?.number !== lastSaved?.number) ||
+      (profile?.neighborhood !== lastSaved?.neighborhood) ||
+      (profile?.city !== lastSaved?.city) || 
+      (profile?.state !== lastSaved?.state);
 
     if (!hasAddressFieldChanged) return;
 
@@ -1063,12 +1063,12 @@ function ProfilePage() {
         console.log("[Address Geocoding] Sincronizando coordenadas...");
         const geo = await geocodeAddress({
           data: {
-            street: profile.street || undefined,
-            number: profile.number || undefined,
-            neighborhood: profile.neighborhood || undefined,
-            city: profile.city || undefined,
-            state: profile.state || undefined,
-            cep: profile.cep || undefined,
+            street: profile?.street || undefined,
+            number: profile?.number || undefined,
+            neighborhood: profile?.neighborhood || undefined,
+            city: profile?.city || undefined,
+            state: profile?.state || undefined,
+            cep: profile?.cep || undefined,
           }
         });
         
@@ -1081,7 +1081,7 @@ function ProfilePage() {
     }, 2000); // 2 segundos após parar de digitar
 
     return () => clearTimeout(timer);
-  }, [profile.street, profile.number, profile.neighborhood, profile.city, profile.state, loading, profileId]);
+  }, [profile?.street, profile?.number, profile?.neighborhood, profile?.city, profile?.state, loading, profileId]);
 
   // ⚠️ Hooks SEMPRE antes de qualquer early return, para manter a ordem estável
   // entre renders (evita "Rendered more hooks than during the previous render").
