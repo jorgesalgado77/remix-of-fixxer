@@ -89,9 +89,11 @@ export async function resolveIdentity(
   });
 
   // 3. Construir Identidade Canônica
+  const hasData = !!effectiveProfile && Object.keys(effectiveProfile).length > 0;
   const identity: CanonicalIdentity = {
     id: userId,
-    displayName: base.display_name || base.full_name || base.company_name || base.name || "Usuário",
+    displayName: base.display_name || base.full_name || base.company_name || base.name || (hasData ? "Usuário" : "Conversa"),
+
     fullName: base.full_name || base.company_name || null,
     avatarUrl: base.avatar_url || base.logo_url || null,
     bio: base.bio || base.description || null,
