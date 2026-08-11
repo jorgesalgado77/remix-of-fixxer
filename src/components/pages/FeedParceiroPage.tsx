@@ -145,16 +145,12 @@ export default function FeedParceiroPage() {
   const [quoteOpen, setQuoteOpen] = useState<B2BRequest | null>(null);
   const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_parceiro_status", "todos");
   const [detailsFor, setDetailsFor] = useState<B2BRequest | null>(null);
-  const [page, setPage] = usePersistedState<number>("fixxer_feed_parceiro_page", 1);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [savesRemote, setSavesRemote] = useState(false);
-  const [quotesRemote, setQuotesRemote] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
 
 
   // Persistência local imediata dos favoritos
