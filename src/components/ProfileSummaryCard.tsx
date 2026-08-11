@@ -79,11 +79,51 @@ export function ProfileSummaryCard({
   variant?: "auto" | "inline" | "sidebar";
   className?: string;
 }) {
-  const [profile, setProfile] = useState<ProfileLite | null>(null);
+  const [profile, setProfile] = useState<ProfileLite | null>(() => {
+    // Tentar hidratar do cache global/persistente imediatamente
+    if (typeof window !== "undefined") {
+      try {
+        const auth = window.localStorage.getItem("fixxer-auth-token-v1");
+        const uid = auth ? JSON.parse(auth)?.user?.id : null;
+        if (uid) {
+          const cached = window.localStorage.getItem("fixxer_identity_cache_v1");
+          const identities = cached ? JSON.parse(cached) : {};
+          const res = identities[uid];
+          if (res) {
+            return {
+              id: res.identity.id,
+              display_name: res.identity.displayName,
+              full_name: res.identity.fullName,
+              avatar_url: res.identity.avatarUrl,
+              company_name: res.specializations?.store?.company_name || 
+                            res.specializations?.supplier?.company_name || 
+                            res.identity.displayName,
+              logo_url: res.specializations?.store?.logo_url || 
+                        res.specializations?.supplier?.logo_url || 
+                        res.specializations?.provider?.avatar_url || 
+                        res.identity.avatarUrl,
+              city: res.specializations?.store?.city || 
+                    res.specializations?.provider?.city || 
+                    res.specializations?.supplier?.city || null,
+              state: res.specializations?.store?.state || 
+                     res.specializations?.provider?.state || 
+                     res.specializations?.supplier?.state || null,
+              plan_id: res.identity.planId,
+              karma_score: res.identity.karmaScore,
+              is_verified: res.identity.isVerified
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("[ProfileSummaryCard] Erro na hidratação inicial:", e);
+      }
+    }
+    return null;
+  });
   const [rating, setRating] = useState<{ avg: number; count: number } | null>(null);
   const [allReviews, setAllReviews] = useState<Review[]>([]);
   const [showReviewsModal, setShowReviewsModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
