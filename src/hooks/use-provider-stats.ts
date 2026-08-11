@@ -258,8 +258,31 @@ export function useProviderStats(): ProviderStats {
     .filter(o => !o.status?.toLowerCase().includes("reserva") && isDone(o.status))
     .reduce((acc, o) => acc + (o.price || 0), 0);
 
+  // Extrato consolidado do período (ordens concluídas + transações de produtos)
+  const periodEntries: PixEntry[] = [
+    ...filteredOrders
+      .filter((o) => isDone(o.status))
+      .map((o) => ({
+        id: o.id,
+        date: o.created_at,
+        type: (o.status?.toLowerCase().includes("reserva") ? "Reserva" : "Serviço") as PixEntry["type"],
+        label: o.title || "Ordem de serviço",
+        amount: o.price || 0,
+      })),
+    ...filteredTx
+      .filter((tx) => tx.source === "purchase_pack" || tx.reason?.toLowerCase().includes("produto"))
+      .map((tx) => ({
+        id: tx.id,
+        date: tx.created_at,
+        type: "Info Produto" as const,
+        label: tx.reason || "Info produto",
+        amount: tx.amount || 0,
+      })),
+  ].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+
   return {
     loading,
+    error,
     userId,
     activeOrders,
     doneOrders,
