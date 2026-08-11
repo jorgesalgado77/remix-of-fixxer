@@ -96,11 +96,11 @@ export async function resolveIdentity(
   // 3. Nome completo (perfil mestre)
   // 4. Fallback genérico
   const displayName = 
+    effectiveProfile.display_name || 
+    effectiveProfile.full_name || 
     store?.company_name || 
     supplier?.company_name || 
     provider?.display_name || 
-    effectiveProfile.display_name || 
-    effectiveProfile.full_name || 
     (baseProfile ? "Usuário" : "Usuário Externo");
 
   // REGRA ÚNICA DE FALLBACK PARA AVATAR
@@ -109,10 +109,10 @@ export async function resolveIdentity(
   // 3. Avatar do perfil mestre
   // 4. null (fallback UI)
   const avatarUrl = 
+    effectiveProfile.avatar_url || 
     store?.logo_url || 
     supplier?.logo_url || 
     provider?.avatar_url || 
-    effectiveProfile.avatar_url || 
     null;
 
   console.log(`[IdentityService] Identidade resolvida para ${userId}:`, {
