@@ -30,7 +30,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
-import { getCategoryTheme } from "@/lib/category-colors";
+
 import { consumeCoins, initCoinsForUser, adjustCachedBalance, getCachedBalance } from "@/lib/coins";
 import { confirmCoins } from "@/components/ConfirmCoinsDialog";
 
@@ -2168,7 +2168,7 @@ function ReviewCard({
     cliente: { icon: <User className="w-3 h-3" />, label: "Cliente Final" },
   };
   const cat = catInfo[review.reviewer_category] ?? catInfo.cliente;
-  const color = getCategoryTheme(review.reviewer_category).hex;
+  const color = getCategoryTheme(review.reviewer_category);
 
   return (
     <div

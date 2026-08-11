@@ -23,7 +23,7 @@ import {
   type PublicProfileCategory,
 } from "@/lib/public-profile-category";
 import { getCategoryTheme, CATEGORY_COLORS } from "@/lib/category-colors";
-import { getCategoryColor } from "@/lib/getCategoryColor";
+import { getCategoryTheme } from "@/lib/category-colors";
 
 // Reproduz literalmente o initializer do useState no componente.
 function seedCategory(userId: string, pathname: string): PublicProfileCategory {

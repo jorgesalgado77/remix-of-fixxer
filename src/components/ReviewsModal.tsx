@@ -181,7 +181,7 @@ export function ReviewsModal({ isOpen, onClose, reviews, displayName }: ReviewsM
 }
 
 function ReviewItem({ review }: { review: Review }) {
-  const color = getCategoryTheme(review.reviewer_category).hex;
+  const color = getCategoryTheme(review.reviewer_category);
   
   return (
     <div 
