@@ -160,7 +160,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <Scripts />
         {/*
           PERGUNTA AO ARQUITETO / DOCUMENTAÇÃO DINÂMICA:
-          IDENTIDADE CANÔNICA RESTAURADA: Corrigido o mapeamento de especializações (store/provider/supplier) no IdentityService e ProfileSummaryCard para garantir que nome e foto apareçam corretamente para todos os perfis.
+          PROBLEMA PERSISTE, CORRIJA
         */}
       </body>
     </html>
