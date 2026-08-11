@@ -1050,11 +1050,11 @@ function ProfilePage() {
     // Compara com o snapshot salvo para ver se houve mudança nos campos de endereço
     const lastSaved = lastSavedSnapshotRef.current ? JSON.parse(lastSavedSnapshotRef.current) : {};
     const hasAddressFieldChanged = 
-      profile.street !== lastSaved.street || 
-      profile.number !== lastSaved.number ||
-      profile.neighborhood !== lastSaved.neighborhood ||
-      profile.city !== lastSaved.city || 
-      profile.state !== lastSaved.state;
+      (profile?.street !== lastSaved?.street) || 
+      (profile?.number !== lastSaved?.number) ||
+      (profile?.neighborhood !== lastSaved?.neighborhood) ||
+      (profile?.city !== lastSaved?.city) || 
+      (profile?.state !== lastSaved?.state);
 
     if (!hasAddressFieldChanged) return;
 
