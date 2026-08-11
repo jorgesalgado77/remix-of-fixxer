@@ -76,7 +76,7 @@ function AuditoriaUsuarioPage() {
         supabaseExternal.from("coin_transactions").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(30),
         supabaseExternal.from("service_orders").select("id, title, status, price, created_at").or(`owner_id.eq.${id},invitee_id.eq.${id},provider_id.eq.${id}`).order("created_at", { ascending: false }).limit(20),
         supabaseExternal.from("reviews").select("id, rating, comment, created_at").eq("reviewed_user_id", id).order("created_at", { ascending: false }).limit(20),
-        supabaseExternal.from("chat_messages").select("id, chat_room_id, content, created_at").eq("sender_id", id).order("created_at", { ascending: false }).limit(15),
+        supabaseExternal.from("messages").select("id, content, created_at").eq("sender_id", id).order("created_at", { ascending: false }).limit(15),
       ] as any);
       setProfile(p as any ?? null);
       setBalance(Number(coins?.balance ?? 0));
