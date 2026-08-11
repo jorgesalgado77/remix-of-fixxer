@@ -128,6 +128,7 @@ function mapProfileRowToStore(p: any): StoreProfile {
       .filter(Boolean),
     activity_branch: merged.activity_branch || merged.main_activity || merged.activity_branch_id,
     preferred_services: Array.isArray(merged.preferred_services) ? merged.preferred_services : [],
+    karma_score: merged.karma_score,
     offerings: Array.isArray(merged.offerings)
       ? merged.offerings
       : typeof merged.offerings === 'string' && merged.offerings.length
@@ -211,6 +212,7 @@ export function LojistaPublicProfilePage() {
     () => (params?.id ? peekPublicProfileCategory(String(params.id)) : null) ?? routeCategory,
   );
   const category: CategoryKey = resolvedCategory;
+  const role = category; // Alias para compatibilidade com ROLE_ICON/LABEL no futuro se necessário
   const theme = useMemo(() => getCategoryTheme(category), [category]);
   const themeStyle = {
     ["--primary" as any]: theme.hex,
@@ -682,9 +684,10 @@ export function LojistaPublicProfilePage() {
 
 
   const avgRating = useMemo(() => {
-    if (reviews.length === 0) return 5.0;
+    if (profile?.karma_score && profile.karma_score > 0) return profile.karma_score / 10;
+    if (reviews.length === 0) return 0.0;
     return reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
-  }, [reviews]);
+  }, [reviews, profile?.karma_score]);
 
   const yearsActive = useMemo(() => {
     if (!profile?.created_at) return 0;
@@ -1128,7 +1131,7 @@ export function LojistaPublicProfilePage() {
                     <div className="flex items-center gap-3 flex-wrap">
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
                         <Star className="w-4 h-4 fill-primary text-primary" />
-                        <span className="text-sm font-black text-primary italic">{avgRating.toFixed(1)}</span>
+                        <span className="text-sm font-black text-primary italic">{avgRating > 0 ? avgRating.toFixed(1) : "s/av."}</span>
                         <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
                       </div>
                       {profile?.plan_id && profile.plan_id !== 'free' && (
