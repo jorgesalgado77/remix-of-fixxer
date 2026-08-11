@@ -30,7 +30,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
-
 import { consumeCoins, initCoinsForUser, adjustCachedBalance, getCachedBalance } from "@/lib/coins";
 import { confirmCoins } from "@/components/ConfirmCoinsDialog";
 
@@ -49,7 +48,6 @@ import { haversineKm } from "@/lib/activity-branches";
 import { useFavoriteUser } from "@/hooks/useFavoriteUser";
 import { createProfileRefetchHandler, type ProfileLike } from "@/lib/profile-refetch";
 import { isMockPeerId, getMockProfile, getMockPeerName } from "@/lib/mock-chat";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
