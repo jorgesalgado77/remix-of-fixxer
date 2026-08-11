@@ -119,6 +119,43 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
     UNIQUE (user_id, role)
 );
 
+-- 2.1 TABELAS DE IDENTIDADE ESPECIALIZADA
+CREATE TABLE IF NOT EXISTS public.store_profiles (
+    user_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+    store_name TEXT,
+    cnpj TEXT,
+    brand_flag TEXT,
+    is_verified BOOLEAN DEFAULT FALSE,
+    address_json JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.provider_profiles (
+    user_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+    full_name TEXT,
+    cpf_cnpj TEXT,
+    specialty TEXT,
+    is_verified BOOLEAN DEFAULT FALSE,
+    bio TEXT,
+    experience_years INTEGER,
+    has_vehicle BOOLEAN DEFAULT FALSE,
+    vehicle_type TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.supplier_profiles (
+    user_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+    company_name TEXT,
+    cnpj TEXT,
+    business_category TEXT,
+    is_verified BOOLEAN DEFAULT FALSE,
+    catalog_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS public.admin_config (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT UNIQUE NOT NULL,
