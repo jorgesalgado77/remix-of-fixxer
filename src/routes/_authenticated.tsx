@@ -239,6 +239,22 @@ function AuthenticatedLayout() {
         ) : (
           <Outlet />
         )}
+
+        {showPixModal && (
+          <Suspense fallback={null}>
+            <PixManagerModal 
+              open={showPixModal}
+              onClose={() => setShowPixModal(false)}
+              profile={{
+                id: user?.id,
+                display_name: user?.user_metadata?.display_name || user?.email?.split('@')[0],
+                avatar_url: user?.user_metadata?.avatar_url,
+                pix_key: 'financeiro@fixxer.com.br'
+              }}
+              stats={providerStats}
+            />
+          </Suspense>
+        )}
       </main>
     </div>
   );
