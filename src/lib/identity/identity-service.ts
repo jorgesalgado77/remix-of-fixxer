@@ -63,6 +63,11 @@ export async function resolveIdentity(
     roles = (rolesData || []).map((r: any) => r.role);
   }
 
+  const mainCategory = await resolvePublicProfileCategory(userId, {
+    profile: baseProfile,
+    refresh: options?.refresh
+  });
+
   // 2. Tentar buscar dados de especializações de forma isolada (Safe-check para tabelas ausentes)
   let store: any = null;
   let provider: any = null;
