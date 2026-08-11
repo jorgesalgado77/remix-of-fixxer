@@ -22,6 +22,7 @@ import {
   Image as ImageIcon,
   Zap,
   Globe,
+  Hammer,
   Video,
   Phone,
   MessageCircle,
@@ -528,6 +529,18 @@ export function LojistaDashboard() {
 
         <TooltipProvider>
           <nav className="flex flex-col gap-2">
+              <div className="p-3 bg-white/5 border border-white/10 rounded-xl mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
+                    <Hammer className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-[10px] font-black text-white uppercase italic tracking-tighter">MEU PAINEL</h3>
+                    <p className="text-[7px] text-muted-foreground font-bold uppercase leading-none">Gestão e O.S.</p>
+                  </div>
+                </div>
+              </div>
+
               <Link to="/feed/lojista" search={{ urgency: 'todos', distance: 'todos', tag: '' }} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground hover:text-white font-black uppercase italic text-xs tracking-wider border border-transparent hover:border-white/10 mb-2">
                   <Search className="w-4 h-4 text-primary" /> Ir para o Feed
               </Link>
@@ -582,15 +595,23 @@ export function LojistaDashboard() {
       <main className="flex-1 overflow-y-auto scrollbar-none bg-[#050505] pt-16 md:pt-0">
         {/* Barra de ações do painel — visível em mobile (o header desktop já a exibe) */}
         <div className="md:hidden px-4 pt-3 space-y-3">
-          <ProfileSummaryCard role="lojista" variant="inline" />
           <PanelActions role="lojista" />
+          <ProfileSummaryCard role="lojista" variant="inline" />
         </div>
 
         <header className="px-8 py-6 border-b border-white/10 flex items-center justify-between sticky top-0 z-10 bg-[#050505]/80 backdrop-blur-md hidden md:flex">
-           <div className="flex items-center gap-4">
-               <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
-                  {activeTab === 'dashboard' ? `Painel ${CATEGORY_LABEL[userRole] ?? 'Lojista'}` : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
-               </h2>
+           <div className="flex flex-col gap-1">
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
+                   <Hammer className="w-5 h-5" />
+                 </div>
+                 <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                    {activeTab === 'dashboard' ? `MEU PAINEL` : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
+                 </h2>
+               </div>
+               {activeTab === 'dashboard' && (
+                 <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest ml-12">Controle de Agendas, O.S. e Reputação</p>
+               )}
            </div>
            <div className="flex items-center gap-4">
               <div className="relative">

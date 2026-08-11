@@ -31,7 +31,6 @@ function ParceiroDashboard() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 md:pl-72 animate-in fade-in duration-500">
       <ProfileSummaryCard role="parceiro" variant="sidebar" />
-      <ProfileSummaryCard role="parceiro" variant="auto" className="md:hidden" />
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
@@ -42,7 +41,6 @@ function ParceiroDashboard() {
               <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
                 HUB <span className="text-[#00FF87]">PARCEIRO</span>
               </h1>
-              <span className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-[8px] font-bold text-blue-500 uppercase tracking-widest">Fornecedor B2B</span>
             </div>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Gestão de Vitrine e Fornecimento B2B</p>
           </div>
@@ -55,6 +53,7 @@ function ParceiroDashboard() {
           <PanelActions role="parceiro" />
         </div>
       </header>
+      <ProfileSummaryCard role="parceiro" variant="auto" className="md:hidden" />
 
 
       <CoinBalancePlanCard />
