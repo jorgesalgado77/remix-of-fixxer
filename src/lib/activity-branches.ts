@@ -503,8 +503,9 @@ export function getB2BSuggestions(
     const list = B2B_SUGGESTIONS[key];
     if (!list) continue;
     for (const s of list) {
-      if (seen.has(s.title)) continue;
-      seen.add(s.title);
+      const uniqueKey = `${s.title}-${s.targetBranch}`;
+      if (seen.has(uniqueKey)) continue;
+      seen.add(uniqueKey);
       staticList.push(s);
     }
   }
