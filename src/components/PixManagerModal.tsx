@@ -145,15 +145,15 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
               <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" /> Reservas
               </p>
-              <p className="text-lg font-black text-white">{BRL(stats.balanceReservations * 10)}</p>
+              <p className="text-lg font-black text-white">{BRL(stats.balanceReservations)}</p>
             </div>
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
               <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">Info Produtos</p>
-              <p className="text-lg font-black text-white">{BRL(stats.balanceProducts * 10)}</p>
+              <p className="text-lg font-black text-white">{BRL(stats.balanceProducts)}</p>
             </div>
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
               <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">Serviços</p>
-              <p className="text-lg font-black text-white">{BRL(stats.balanceServices * 10)}</p>
+              <p className="text-lg font-black text-white">{BRL(stats.balanceServices)}</p>
             </div>
           </div>
 
