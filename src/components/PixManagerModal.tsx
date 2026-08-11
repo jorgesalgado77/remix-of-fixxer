@@ -216,6 +216,54 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
             </div>
           )}
 
+          {/* Extrato do período */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase text-white/40 tracking-widest">
+                Extrato do período {entries.length > 0 && <span className="text-emerald-400">({entries.length})</span>}
+              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={exportCSV}
+                disabled={isLoadingStats || stats?.loading || entries.length === 0}
+                className="h-7 gap-1.5 text-[10px] uppercase font-black tracking-widest text-white/60 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg disabled:opacity-30"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                Exportar CSV
+              </Button>
+            </div>
+
+            {isLoadingStats || stats?.loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl bg-white/5" />)}
+              </div>
+            ) : entries.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-white/[0.02] border border-dashed border-white/10 text-center">
+                <Info className="w-5 h-5 text-white/20 mx-auto mb-2" />
+                <p className="text-xs font-bold text-white/40">Nenhuma transação no período selecionado</p>
+                <p className="text-[10px] text-white/25 mt-0.5">Ajuste o filtro de datas para visualizar outros registros.</p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/5 divide-y divide-white/5 overflow-hidden max-h-64 overflow-y-auto scrollbar-none">
+                {entries.map((e) => (
+                  <div key={`${e.type}-${e.id}`} className="flex items-center gap-3 p-3 bg-white/[0.02] hover:bg-white/[0.05] transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{e.label}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400/70">{e.type}</span>
+                        <span className="text-[9px] text-white/30">
+                          {e.date ? new Date(e.date).toLocaleDateString("pt-BR") : "—"}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm font-black text-white tracking-tighter shrink-0">{BRL(e.amount || 0)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Chave PIX */}
           {!pixKey ? (
             <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-between">
