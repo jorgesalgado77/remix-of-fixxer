@@ -17,7 +17,7 @@ export type FeedPostType =
   | "solicitacao_b2b"
   | "conteudo_relevante";
 
-export interface FeedPost {
+export interface FeedPostData {
   id: string;
   type: FeedPostType;
   category: FeedCategory;
@@ -61,7 +61,7 @@ class FeedService {
   /**
    * Busca posts do feed com filtros unificados e resolução de identidade canônica.
    */
-  async getFeed(filters: FeedFilters): Promise<FeedPost[]> {
+  async getFeed(filters: FeedFilters): Promise<FeedPostData[]> {
     let query = supabaseExternal
       .from("feed_posts")
       .select("*")
@@ -101,8 +101,8 @@ class FeedService {
 
     if (!data) return [];
 
-    // Mapear para o formato FeedPost e resolver identidades em paralelo
-    const posts: FeedPost[] = await Promise.all(
+    // Mapear para o formato FeedPostData e resolver identidades em paralelo
+    const posts: FeedPostData[] = await Promise.all(
       data.map(async (row) => {
         const author = await resolveIdentity(row.author_id);
         return {
@@ -119,7 +119,7 @@ class FeedService {
           metadata: row.metadata || {},
           createdAt: row.created_at,
           status: row.status,
-          urgency: (row.metadata?.urgency || "normal") as FeedPost["urgency"],
+          urgency: (row.metadata?.urgency || "normal") as FeedPostData["urgency"],
         };
       })
     );
@@ -130,7 +130,7 @@ class FeedService {
   /**
    * Escuta novos posts em tempo real para um canal específico.
    */
-  subscribeToFeed(callback: (post: FeedPost) => void) {
+  subscribeToFeed(callback: (post: FeedPostData) => void) {
     return supabaseExternal
       .channel("public:feed_posts")
       .on(
@@ -154,7 +154,7 @@ class FeedService {
               metadata: row.metadata || {},
               createdAt: row.created_at,
               status: row.status,
-              urgency: (row.metadata?.urgency || "normal") as FeedPost["urgency"],
+              urgency: (row.metadata?.urgency || "normal") as FeedPostData["urgency"],
             });
           }
         }
