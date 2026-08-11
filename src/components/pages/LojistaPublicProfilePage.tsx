@@ -1104,10 +1104,13 @@ export function LojistaPublicProfilePage() {
                       {profile?.company_name || profile?.display_name || "Lojista"}
                     </h1>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
-                        <span aria-hidden="true">{role === 'lojista' ? "🏪" : role === 'prestador' ? "🛠️" : role === 'fornecedor' ? "🚚" : "👤"}</span>
-                        {role === 'lojista' ? "LOJISTA" : role === 'prestador' ? "PRESTADOR" : role === 'fornecedor' ? "PARCEIRO" : "CLIENTE"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
+                          <span aria-hidden="true">{role === 'lojista' ? "🏪" : role === 'prestador' ? "🛠️" : role === 'fornecedor' ? "🚚" : "👤"}</span>
+                          {role === 'lojista' ? "LOJISTA" : role === 'prestador' ? "PRESTADOR" : role === 'fornecedor' ? "PARCEIRO" : "CLIENTE"}
+                        </span>
+                        <AvailabilityBadge userId={profile?.user_id ?? null} className="shrink-0" />
+                      </div>
                       <span className="shrink-0 text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-red-500" />
                         {profile?.city ? `${profile.city} / ${profile.state}` : "Localização não informada"}
@@ -1115,7 +1118,6 @@ export function LojistaPublicProfilePage() {
                           <span className="text-primary/90 ml-1">• {isSelf ? distanceLabel : `${distanceLabel} de você`}</span>
                         )}
                       </span>
-                      <AvailabilityBadge userId={profile?.user_id ?? null} className="shrink-0" />
                     </div>
                   </div>
                 </div>
@@ -1130,10 +1132,13 @@ export function LojistaPublicProfilePage() {
                   <div className="flex flex-col gap-5 mt-4">
                     {/* Reputação */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30 shrink-0">
-                        <Star className="w-4 h-4 fill-primary text-primary" />
-                        <span className="text-sm font-black text-primary italic">{avgRating > 0 ? avgRating.toFixed(1) : "s/av."}</span>
-                        <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30 shrink-0">
+                          <Star className="w-4 h-4 fill-primary text-primary" />
+                          <span className="text-sm font-black text-primary italic">{avgRating > 0 ? avgRating.toFixed(1) : "s/av."}</span>
+                          <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
+                        </div>
+                        <Badge icon={<Clock className="w-3 h-3" />} label={yearsActiveLabel} />
                       </div>
                       {profile?.plan_id && profile.plan_id !== 'free' && (
                         <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1 shrink-0">
@@ -1147,7 +1152,6 @@ export function LojistaPublicProfilePage() {
                       {profile?.is_verified && (
                         <Badge icon={<ShieldCheck className="w-3 h-3" />} label="CNPJ Verificado" />
                       )}
-                      <Badge icon={<Clock className="w-3 h-3" />} label={yearsActiveLabel} />
                     </div>
                   </div>
                 );
