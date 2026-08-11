@@ -1081,7 +1081,7 @@ function ProfilePage() {
     }, 2000); // 2 segundos após parar de digitar
 
     return () => clearTimeout(timer);
-  }, [profile.street, profile.number, profile.neighborhood, profile.city, profile.state, loading, profileId]);
+  }, [profile?.street, profile?.number, profile?.neighborhood, profile?.city, profile?.state, loading, profileId]);
 
   // ⚠️ Hooks SEMPRE antes de qualquer early return, para manter a ordem estável
   // entre renders (evita "Rendered more hooks than during the previous render").
