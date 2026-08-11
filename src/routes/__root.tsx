@@ -160,7 +160,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <Scripts />
         {/*
           PERGUNTA AO ARQUITETO / DOCUMENTAÇÃO DINÂMICA:
-          O CARD AINDA NÃO MOSTRA A FOTO DO PERFIL E NOME DE EXIBIÇÃO DO USUARIO, CORRIJA IMEDIATAMENTE
+          veja as imagens, a foto do perfil e nome de exibição mostrados na primeira imagem, devem ser os mesmos exibidos no card da segunda imagem, corrija e faça funcionar como esperado
         */}
       </body>
     </html>
