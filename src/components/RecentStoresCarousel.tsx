@@ -550,7 +550,7 @@ function RecentStoresCarouselInner() {
                     <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
                       <div className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 shadow-lg">
                         <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                        <span className="text-[10px] font-black text-white italic">{(p.rating || 5.0).toFixed(1)}</span>
+                        <span className="text-[10px] font-black text-white italic">{p.rating && p.rating > 0 ? p.rating.toFixed(1) : "s/av."}</span>
                       </div>
                       
                       {p._distance !== undefined && (
