@@ -84,6 +84,7 @@ import { PhotoSectionsManager, EMPTY_PHOTO_SECTIONS, type PhotoSectionsValue } f
 import { RecentPartnersCarousel } from "@/components/RecentPartnersCarousel";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
 import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
+import { ProfileHeader } from "@/components/ProfileHeader";
 
 
 import { useSortable } from "@dnd-kit/sortable";
