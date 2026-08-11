@@ -77,11 +77,6 @@ export async function resolveIdentity(
     console.error(`[IdentityService] Erro ao buscar perfis para ${userId}:`, profileError);
   }
 
-  // Debug local do baseProfile
-  if (!baseProfile) {
-    console.warn(`[IdentityService] Perfil mestre não encontrado para ${userId}. Tentando busca relaxada...`);
-    // Opcional: tentar buscar pelo user_id se for diferente do id principal por algum motivo legado
-  }
 
   // 1.1 Tentar buscar dados de especializações de forma isolada (Safe-check para tabelas ausentes)
   let store: any = null;
