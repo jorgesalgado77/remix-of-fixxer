@@ -489,9 +489,16 @@ function RecentStoresCarouselInner() {
            <button onClick={() => fetchList()} className="mt-4 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] font-black uppercase text-red-400 hover:bg-red-500/20 transition-all">Tentar Novamente</button>
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl text-white/40 italic text-sm">
-           Nenhum parceiro encontrado nesta categoria.
+        <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl text-white/40 italic text-sm space-y-3">
+           <p>{items.length > 0 ? "Nenhum parceiro corresponde aos filtros selecionados." : "Nenhum lojista ou fornecedor disponível no momento."}</p>
+           <button
+             onClick={() => { setKindFilter("all"); setRadiusFilter(0); fetchList(false); }}
+             className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase text-white/70 hover:bg-white/10 transition-all"
+           >
+             Limpar filtros e recarregar
+           </button>
         </div>
+
       ) : (
 
         <div className="relative">
