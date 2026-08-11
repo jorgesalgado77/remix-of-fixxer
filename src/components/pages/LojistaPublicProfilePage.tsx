@@ -47,7 +47,6 @@ import { useUserCoords, cityCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
 import { useFavoriteUser } from "@/hooks/useFavoriteUser";
 import { createProfileRefetchHandler, type ProfileLike } from "@/lib/profile-refetch";
-import { isMockPeerId, getMockProfile, getMockPeerName } from "@/lib/mock-chat";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
