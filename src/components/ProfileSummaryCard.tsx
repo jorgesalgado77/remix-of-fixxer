@@ -166,10 +166,15 @@ export function ProfileSummaryCard({
               <div className="w-14 h-14 rounded-full border-2 border-primary/50 overflow-hidden bg-white/5 flex items-center justify-center">
                 {avatar ? (
                   <img
+                    key={avatar}
                     src={avatar}
-                    alt=""
-                    loading="lazy"
+                    alt={name}
+                    loading="eager"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error("[ProfileSummaryCard] Erro ao carregar imagem:", avatar);
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                 ) : (
                   <UserIcon className="w-7 h-7 text-white/40" aria-hidden="true" />
