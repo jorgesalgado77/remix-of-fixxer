@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { X, Bookmark, MessageSquare, MapPin, Clock, Star, Play, Lock, Coins, Loader2, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Bookmark, MessageSquare, MapPin, Clock, Star, Play, Lock, Coins, Loader2, Zap, User, Trash2, CheckCircle2 } from "lucide-react";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+import { useOSWorkflow } from "@/hooks/use-os-workflow";
+import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { getCategoryTheme, type CategoryKey } from "@/lib/category-colors";
 import {
@@ -25,6 +28,7 @@ export type FeedDetailsData = {
   metaRows?: { label: string; value: string }[];
   media?: DetailsMedia[];
   ctaLabel?: string;       // padrão: "Entrar em contato"
+  isOwner?: boolean;
 };
 
 export function FeedDetailsModal({
@@ -51,6 +55,36 @@ export function FeedDetailsModal({
   onCandidatar?: () => void;
 }) {
   const [unlocking, setUnlocking] = useState(false);
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [loadingProposals, setLoadingProposals] = useState(false);
+  const { acceptProposal: acceptOSProposal, isAccepting } = useOSWorkflow();
+
+  const loadProposals = async () => {
+    if (!data || !data.isOwner) return;
+    setLoadingProposals(true);
+    try {
+      const { data: list, error } = await supabaseExternal
+        .from("proposals")
+        .select(`
+          *,
+          prestador:profiles(id, display_name, name, avatar_url)
+        `)
+        .eq("os_id", data.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setProposals(list || []);
+    } catch (err) {
+      console.error("[FeedDetails] Erro ao carregar propostas:", err);
+    } finally {
+      setLoadingProposals(false);
+    }
+  };
+
+  useEffect(() => {
+    if (data?.isOwner) loadProposals();
+  }, [data?.id, data?.isOwner]);
+
   if (!data) return null;
   const theme = getCategoryTheme(data.category);
   const statusColor = data.status ? FEED_STATUS_COLOR[data.status] : null;
@@ -253,6 +287,98 @@ export function FeedDetailsModal({
                     className="w-full aspect-video object-cover rounded-2xl border border-white/10"
                   />
                 ),
+              )}
+            </div>
+          )}
+
+          {/* Seção de Propostas para o Dono */}
+          {data.isOwner && (
+            <div className="mt-6 border-t border-white/10 pt-6">
+              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-[#00FF87]" /> Propostas Recebidas
+              </h3>
+              
+              {loadingProposals ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-white/30" />
+                </div>
+              ) : proposals.length === 0 ? (
+                <div className="text-center py-8 rounded-2xl border-2 border-dashed border-white/5 bg-white/2">
+                  <p className="text-xs text-white/40 font-bold uppercase tracking-widest">Nenhuma proposta ainda</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {proposals.map((p) => (
+                    <div 
+                      key={p.id} 
+                      className="p-4 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/[0.08] transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-[#222] border border-white/10 flex items-center justify-center font-bold text-xs">
+                            {p.prestador?.display_name?.[0] || "?"}
+                          </div>
+                          <div>
+                            <div className="text-xs font-black text-white uppercase">{p.prestador?.display_name || "Prestador"}</div>
+                            <div className="text-[10px] text-white/50">{new Date(p.created_at).toLocaleDateString("pt-BR")}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-black text-[#00FF87]">R$ {Number(p.value).toLocaleString("pt-BR")}</div>
+                          <div className={`text-[9px] font-black uppercase tracking-widest ${
+                            p.status === 'aceita' ? 'text-[#00FF87]' : 
+                            p.status === 'recusada' ? 'text-red-500' : 'text-amber-500'
+                          }`}>
+                            {p.status}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {p.message && (
+                        <p className="mt-3 text-xs text-white/70 italic bg-black/20 p-2 rounded-lg border border-white/5">
+                          "{p.message}"
+                        </p>
+                      )}
+
+                      {p.status === 'pendente' && (
+                        <div className="mt-4 flex gap-2">
+                          <button
+                            onClick={() => {
+                              acceptOSProposal({ proposalId: p.id });
+                              setTimeout(loadProposals, 1000);
+                            }}
+                            disabled={isAccepting}
+                            className="flex-1 py-2 rounded-xl bg-[#00FF87] text-black text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-transform disabled:opacity-50"
+                          >
+                            {isAccepting ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : "Aceitar Proposta"}
+                          </button>
+                          <button
+                            onClick={async () => {
+                              const { error } = await supabaseExternal
+                                .from("proposals")
+                                .update({ status: 'recusada' })
+                                .eq("id", p.id);
+                              if (error) toast.error("Erro ao recusar");
+                              else {
+                                toast.success("Proposta recusada");
+                                loadProposals();
+                              }
+                            }}
+                            className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/50 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+
+                      {p.status === 'aceita' && (
+                        <div className="mt-4 p-2 rounded-xl bg-[#00FF87]/10 border border-[#00FF87]/30 flex items-center justify-center gap-2 text-[#00FF87] text-[10px] font-black uppercase tracking-widest">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Contratação realizada
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}

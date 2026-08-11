@@ -9,6 +9,18 @@ import { thumbSrc } from "@/lib/feed-thumb";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { useOSWorkflow } from "@/hooks/use-os-workflow";
+import { parseCurrencyBRL } from "@/lib/currency-brl";
+import { UniversalSearchPanel } from "@/components/UniversalSearchPanel";
+import { RadiusFilter } from "@/components/RadiusFilter";
+import { B2BSuggestionsCard } from "@/components/B2BSuggestionsCard";
+import { OpportunitiesBadge } from "@/components/OpportunitiesBadge";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FeedCardSkeletonList } from "@/components/FeedCardSkeleton";
+import { thumbSrc } from "@/lib/feed-thumb";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCategoryTheme } from "@/lib/category-colors";
 import { AdMetaBadges, URGENCY_META, type UrgencyTag } from "@/components/AdMetaBadges";
 import {

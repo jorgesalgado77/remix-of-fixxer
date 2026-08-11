@@ -8,6 +8,8 @@ import { FeedCardSkeletonList } from "@/components/FeedCardSkeleton";
 import { thumbSrc } from "@/lib/feed-thumb";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { CurrencyInputBRL } from "@/components/CurrencyInputBRL";
+import { parseCurrencyBRL } from "@/lib/currency-brl";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCategoryTheme } from "@/lib/category-colors";
@@ -206,52 +208,58 @@ function ApplyModal({
 }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen || !job) return null;
 
   const handleSubmit = async () => {
     if (alreadyApplied) {
-      toast.info("Você já se candidatou a esta O.S.");
+      toast.info("Você já enviou uma proposta para esta O.S.");
       onClose();
       return;
     }
+
+    const val = parseCurrencyBRL(value);
+    if (!val || val <= 0) {
+      setError("Informe um valor válido.");
+      return;
+    }
+
     setLoading(true);
     try {
       const {
         data: { user },
       } = await supabaseExternal.auth.getUser();
       if (!user) {
-        toast.error("Faça login para se candidatar.");
+        toast.error("Faça login para enviar propostas.");
         setLoading(false);
         return;
       }
-      const payload = {
-        provider_id: user.id,
-        job_id: job.id,
-        contractor_id: job.contractor.id,
-        message: message.trim() || null,
-        status: "pendente",
-      };
-      const { error } = await supabaseExternal
-        .from("service_applications")
-        .upsert(payload, { onConflict: "provider_id,job_id", ignoreDuplicates: true });
-      if (error) {
-        // Fallback silencioso: se a tabela ainda não existir, apenas marca localmente.
-        console.warn("[feed] service_applications indisponível:", error.message);
-        toast.warning("Candidatura registrada localmente", {
-          description: "Sincronização com o banco pendente.",
+
+      const { error: dbError } = await supabaseExternal
+        .from("proposals")
+        .insert({
+          os_id: job.id,
+          prestador_id: user.id,
+          value: val,
+          status: "pendente",
+          message: message.trim() || null,
         });
-      } else {
-        toast.success("Candidatura enviada!", {
-          description: `Você se candidatou à O.S. de ${job.contractor.name}.`,
-        });
-      }
+
+      if (dbError) throw dbError;
+
+      toast.success("Proposta enviada!", {
+        description: `Sua proposta de R$ ${val.toLocaleString("pt-BR")} foi registrada.`,
+      });
+      
       onApplied(job.id);
       setMessage("");
+      setValue("");
       onClose();
-    } catch (err) {
-      console.warn("[feed] erro ao candidatar:", err);
-      toast.error("Não foi possível enviar sua candidatura.");
+    } catch (err: any) {
+      console.warn("[feed] erro ao enviar proposta:", err);
+      toast.error(err.message || "Não foi possível enviar sua proposta.");
     } finally {
       setLoading(false);
     }
@@ -282,10 +290,6 @@ function ApplyModal({
             <span className="text-[10px] font-black text-white">{job.contractor.name}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase">Valor</span>
-            <span className="text-[10px] font-black text-[#FF9F0A]">{job.value}</span>
-          </div>
-          <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-muted-foreground uppercase">Cidade</span>
             <span className="text-[10px] font-black text-white">
               {job.city}/{job.state}
@@ -293,11 +297,25 @@ function ApplyModal({
           </div>
         </div>
 
+        <div className="mb-2">
+          <CurrencyInputBRL
+            label="Seu valor para este serviço"
+            value={value}
+            onChange={(v) => {
+              setValue(v);
+              if (error) setError(null);
+            }}
+            error={error}
+            accentColor="#FF9F0A"
+            placeholder="0,00"
+          />
+        </div>
+
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           disabled={alreadyApplied}
-          placeholder="Escreva uma mensagem breve para o contratante..."
+          placeholder="Prazo, condições ou dúvidas sobre a O.S..."
           className="w-full min-h-[100px] bg-black/30 border border-white/10 rounded-2xl p-4 text-xs text-white placeholder:text-muted-foreground outline-none focus:border-[#FF9F0A]/50 resize-none disabled:opacity-50"
         />
 
@@ -317,7 +335,7 @@ function ApplyModal({
             </>
           ) : (
             <>
-              <Zap className="w-4 h-4" /> Confirmar Candidatura
+              <Zap className="w-4 h-4" /> Enviar Proposta Real
             </>
           )}
         </button>
