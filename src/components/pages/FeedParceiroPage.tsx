@@ -148,9 +148,14 @@ export default function FeedParceiroPage() {
   const [page, setPage] = usePersistedState<number>("fixxer_feed_parceiro_page", 1);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [savesRemote, setSavesRemote] = useState(false);
+  const [quotesRemote, setQuotesRemote] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+
 
   // Persistência local imediata dos favoritos
   useEffect(() => {
