@@ -23,12 +23,19 @@ export async function resolveIdentity(
 ): Promise<ResolvedProfile> {
   if (!userId) throw new Error("userId is required");
 
+  const start = performance.now();
+  console.log(`[IdentityService] Resolvendo para ${userId} (refresh: ${!!options?.refresh})`);
+
   if (!options?.refresh) {
     const cached = IDENTITY_CACHE.get(userId);
-    if (cached && Date.now() - cached.at < TTL_MS) return cached.value;
+    if (cached && Date.now() - cached.at < TTL_MS) {
+      console.log(`[IdentityService] Cache HIT para ${userId} (${(performance.now() - start).toFixed(2)}ms)`);
+      return cached.value;
+    }
   }
 
   // 1. Buscar Perfil Mestre (Identidade) e Roles com Joins
+  // Garantimos que buscamos todos os campos necessários para a identidade visual
   const { data: baseProfile, error: profileError } = await supabaseExternal
     .from("profiles")
     .select(`
@@ -41,13 +48,17 @@ export async function resolveIdentity(
     .eq("id", userId)
     .maybeSingle();
 
+  if (profileError) {
+    console.error(`[IdentityService] Erro ao buscar perfis para ${userId}:`, profileError);
+  }
+
   let roles: string[] = [];
   const effectiveProfile: any = baseProfile || {};
 
-  if (!profileError && baseProfile) {
+  if (baseProfile) {
     roles = (baseProfile.user_roles || []).map((r: any) => r.role);
   } else {
-    // Fallback para roles se profiles falhar
+    // Fallback para roles se profiles falhar ou não retornar dados
     const { data: rolesData } = await supabaseExternal
       .from("user_roles")
       .select("role")
@@ -67,22 +78,44 @@ export async function resolveIdentity(
   const provider = extract(effectiveProfile.provider_profiles);
   const supplier = extract(effectiveProfile.supplier_profiles);
 
+  // REGRA ÚNICA DE FALLBACK (CANONICAL PRIORITY)
+  // 1. Nome profissional/empresa (se disponível)
+  // 2. Nome de exibição customizado no perfil mestre
+  // 3. Nome completo (perfil mestre)
+  // 4. Fallback genérico
+  const displayName = 
+    store?.company_name || 
+    supplier?.company_name || 
+    provider?.display_name || 
+    effectiveProfile.display_name || 
+    effectiveProfile.full_name || 
+    (baseProfile ? "Usuário" : "Usuário Externo");
+
+  // REGRA ÚNICA DE FALLBACK PARA AVATAR
+  // 1. Logo da empresa (lojista/fornecedor)
+  // 2. Foto profissional (prestador)
+  // 3. Avatar do perfil mestre
+  // 4. null (fallback UI)
+  const avatarUrl = 
+    store?.logo_url || 
+    supplier?.logo_url || 
+    provider?.avatar_url || 
+    effectiveProfile.avatar_url || 
+    null;
+
+  console.log(`[IdentityService] Identidade resolvida para ${userId}:`, {
+    displayName,
+    hasAvatar: !!avatarUrl,
+    category: mainCategory,
+    roles,
+    duration: `${(performance.now() - start).toFixed(2)}ms`
+  });
+
   const identity: CanonicalIdentity = {
     id: userId,
-    displayName: 
-      effectiveProfile.display_name || 
-      effectiveProfile.full_name || 
-      store?.company_name || 
-      provider?.display_name || 
-      supplier?.company_name || 
-      (baseProfile ? "Usuário" : "Carregando..."),
+    displayName,
     fullName: effectiveProfile.full_name || null,
-    avatarUrl: 
-      effectiveProfile.avatar_url || 
-      store?.logo_url || 
-      provider?.avatar_url || 
-      supplier?.logo_url || 
-      null,
+    avatarUrl,
     bio: effectiveProfile.bio || effectiveProfile.about_bio || null,
     isOfficial: !!effectiveProfile.is_official,
     isVerified: !!effectiveProfile.is_verified,
