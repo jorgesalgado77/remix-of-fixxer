@@ -260,7 +260,7 @@ export function ProfileSummaryCard({
 
             <div className="flex-1 min-w-0">
               <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate">
-                {loading ? "Carregando…" : name}
+                {loading && !profile ? "Carregando…" : name}
               </div>
               <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
                 <span aria-hidden="true">{ROLE_ICON[role]}</span>

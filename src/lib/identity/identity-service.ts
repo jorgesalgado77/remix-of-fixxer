@@ -125,14 +125,14 @@ export async function resolveIdentity(
   // 1. Nome profissional/empresa (se disponível)
   // 2. Nome de exibição customizado no perfil mestre
   // 3. Nome completo (perfil mestre)
-  // 4. Fallback genérico
+  // 4. Fallback genérico (apenas se não houver dados reais)
   const displayName = 
-    effectiveProfile.display_name || 
-    effectiveProfile.full_name || 
-    store?.company_name || 
-    supplier?.company_name || 
-    provider?.display_name || 
-    (baseProfile ? "Usuário" : "Usuário Externo");
+    effectiveProfile.display_name?.trim() || 
+    store?.company_name?.trim() || 
+    supplier?.company_name?.trim() || 
+    provider?.display_name?.trim() || 
+    effectiveProfile.full_name?.trim() || 
+    (baseProfile ? "Usuário Fixxer" : "Usuário");
 
   // REGRA ÚNICA DE FALLBACK PARA AVATAR
   // 1. Logo da empresa (lojista/fornecedor)
@@ -146,6 +146,9 @@ export async function resolveIdentity(
     provider?.avatar_url || 
     null;
 
+  // Validação rigorosa: se for uma string vazia ou placeholder conhecido, tratar como null
+  const validatedAvatar = (typeof avatarUrl === 'string' && avatarUrl.startsWith('http')) ? avatarUrl : null;
+
   console.log(`[IdentityService] Identidade resolvida para ${userId}:`, {
     displayName,
     hasAvatar: !!avatarUrl,
@@ -158,7 +161,7 @@ export async function resolveIdentity(
     id: userId,
     displayName,
     fullName: effectiveProfile.full_name || null,
-    avatarUrl,
+    avatarUrl: validatedAvatar,
     bio: effectiveProfile.bio || effectiveProfile.about_bio || null,
     isOfficial: !!effectiveProfile.is_official,
     // CNPJ VERIFICADO REAL: Só é true se estiver marcado como verificado no perfil base ou especializado
