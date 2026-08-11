@@ -129,26 +129,26 @@ function AuthenticatedLayout() {
         </div>
 
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 md:gap-6">
           {isAdmin && (
             <div
               onClick={() => navigate({ to: "/admin" as any })}
-              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors ${showAdminPanel ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-white'}`}
+              className={`text-[10px] md:text-xs font-black uppercase tracking-widest md:tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors ${showAdminPanel ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-white'}`}
             >
-              <ShieldCheck className="w-4 h-4" />
-              Admin
+              <ShieldCheck className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">Admin</span>
             </div>
           )}
 
           <div
             onClick={() => navigate({ to: "/feed" as any })}
-            className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors ${!showAdminPanel ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-white'}`}
+            className={`text-[10px] md:text-xs font-black uppercase tracking-widest md:tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors hidden sm:flex ${!showAdminPanel ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-white'}`}
           >
-            <LayoutDashboard className="w-4 h-4" />
-            Dashboard
+            <LayoutDashboard className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span>Dashboard</span>
           </div>
 
-          <div className="h-4 w-[1px] bg-white/10 mx-1" />
+          <div className="h-4 w-[1px] bg-white/10 mx-0.5 md:mx-1" />
 
           <button 
             onClick={async () => {
@@ -156,12 +156,11 @@ function AuthenticatedLayout() {
               clearCurrentUserCache();
               window.location.href = "/auth";
             }}
-            className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-red-400 transition-colors flex items-center gap-1 cursor-pointer"
+            className="text-[10px] md:text-xs font-black uppercase tracking-widest md:tracking-wider text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 md:px-4 md:py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(220,38,38,0.2)] hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] border border-red-500/30"
           >
-            <LogOut className="w-4 h-4" />
-            Sair
+            <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span>Sair</span>
           </button>
-
         </div>
       </nav>
 
