@@ -30,8 +30,9 @@ vi.mock("@/lib/supabaseExternal", () => ({
 }));
 
 // Mock do resolver de categoria para evitar interferência de lógica de rede/cache real nos testes de peer profile
-vi.mock("@/lib/public-profile-category", async () => {
-  const actual = await vi.importActual<any>("@/lib/public-profile-category");
+vi.mock("@/lib/public-profile-category", async (importOriginal) => {
+  const actual = await importOriginal() as any;
+
 
   return {
     ...actual,
