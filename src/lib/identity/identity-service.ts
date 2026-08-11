@@ -104,18 +104,26 @@ export async function resolveIdentity(
   const identity: CanonicalIdentity = {
     id: userId,
     displayName: base.display_name || base.full_name || base.company_name || base.name || (hasData ? "Usuário" : "Conversa"),
-
-
-
     fullName: base.full_name || base.company_name || null,
     avatarUrl: base.avatar_url || base.logo_url || null,
     bio: base.bio || base.description || null,
     isOfficial: !!base.is_official,
-    isVerified: !!base.is_verified
+    isVerified: !!base.is_verified,
+    planId: base.plan_id || "free",
+    createdAt: base.created_at || new Date().toISOString(),
+    lastActiveAt: base.last_active_at || null,
+    verificationStatus: base.verification_status || (base.is_verified ? "verified" : "none"),
+    verificationNote: base.verification_note || null,
   };
 
+  // 4. Calcular atividade e badges reais
+  const timeSinceActive = identity.lastActiveAt ? Date.now() - new Date(identity.lastActiveAt).getTime() : Infinity;
+  const activityLabel = timeSinceActive < 5 * 60 * 1000 ? "Online" : 
+                       timeSinceActive < 60 * 60 * 1000 ? "Ativo recentemente" : 
+                       identity.lastActiveAt ? \`Visto em \${new Date(identity.lastActiveAt).toLocaleDateString("pt-BR")}\` :
+                       "Ativo na plataforma";
 
-  // 4. Construir Apresentação
+  // 5. Construir Apresentação
   const presentation: ProfilePresentation = {
     name: identity.displayName,
     initials: initialsOf(identity.displayName),
@@ -123,8 +131,12 @@ export async function resolveIdentity(
     category: mainCategory,
     themeColor: CATEGORY_COLORS[mainCategory] || CATEGORY_COLORS.cliente,
     label: CATEGORY_LABEL[mainCategory] || "Usuário",
-    badges: []
+    badges: [],
+    activityLabel
   };
+
+  if (identity.isVerified) presentation.badges.push("Verificado");
+  if (identity.planId === "premium") presentation.badges.push("Ouro");
 
   const result: ResolvedProfile = {
     identity,
