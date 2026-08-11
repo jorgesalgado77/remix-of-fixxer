@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Coins, Copy, QrCode, TrendingUp, Info, Check, Share2, FileDown, MessageSquare, Loader2, AlertTriangle, X, Settings, RefreshCw, Calendar, Search, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,55 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
         .finally(() => setLoading(false));
     }
   }, [open]);
+
+  // Sinaliza recarga manual para exibir toast de sucesso quando terminar
+  const reloadingRef = useRef(false);
+  useEffect(() => {
+    if (reloadingRef.current && !stats?.loading) {
+      reloadingRef.current = false;
+      if (stats?.error) toast.error("Falha ao recarregar saldos", { description: stats.error });
+      else toast.success("Saldos atualizados com sucesso");
+    }
+  }, [stats?.loading, stats?.error]);
+
+  const handleReload = () => {
+    reloadingRef.current = true;
+    stats?.reload?.();
+  };
+
+  const periodLabel = (p: string) =>
+    p === "custom" ? "intervalo personalizado" : `últimos ${p} dias`;
+
+  const handlePeriodChange = (v: string) => {
+    stats?.setPeriod?.(v);
+    toast.info(`Período alterado: ${periodLabel(v)}`);
+  };
+
+  const entries: any[] = stats?.periodEntries ?? [];
+
+  const exportCSV = () => {
+    if (!entries.length) {
+      toast.error("Nenhuma transação no período selecionado para exportar.");
+      return;
+    }
+    const rows = [
+      ["Data", "Tipo", "Descrição", "Valor (BRL)"],
+      ...entries.map((e) => [
+        e.date ? new Date(e.date).toLocaleDateString("pt-BR") : "-",
+        e.type,
+        String(e.label ?? "").replace(/[";\n]/g, " "),
+        Number(e.amount || 0).toFixed(2).replace(".", ","),
+      ]),
+    ];
+    const csv = "\uFEFF" + rows.map((r) => r.map((c) => `"${c}"`).join(";")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `extrato-pix-${stats?.period || "30"}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Extrato exportado em CSV");
+  };
 
   const pixKey = profile?.pix_key;
 
