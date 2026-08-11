@@ -149,6 +149,8 @@ export default function FeedParceiroPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
 
@@ -435,7 +437,7 @@ export default function FeedParceiroPage() {
   };
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} accent="#A855F7">
+    <PullToRefresh onRefresh={handleGlobalRefresh} accent="#A855F7">
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       <UniversalSearchPanel defaultPill="fornecedor" />
       {/* HEADER FIXO */}
@@ -742,13 +744,13 @@ export default function FeedParceiroPage() {
         {/* Sentinela do scroll infinito */}
         {filtered.length > 0 && (
           <div ref={sentinelRef} className="py-6 text-center">
-            {loadingMore && (
+            {loading && (
               <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-white/50">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#A855F7] border-t-transparent" />
                 Carregando mais demandas...
               </div>
             )}
-            {!hasMore && !loadingMore && (
+            {!hasMore && !loading && (
               <span className="text-[11px] uppercase tracking-widest text-white/40">
                 — Fim das demandas —
               </span>
