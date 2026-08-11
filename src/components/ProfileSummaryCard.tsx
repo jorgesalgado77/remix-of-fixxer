@@ -247,10 +247,10 @@ export function ProfileSummaryCard({
               <GoldMedalBadge />
             </div>
           ) : (
-            <div className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-primary/5 border border-primary/10">
-              <ShieldCheck className="w-3 h-3 text-primary" aria-hidden="true" />
-              <span className="text-[8px] font-black text-primary uppercase italic tracking-widest">
-                Selo Ouro FIXXER
+            <div className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 opacity-50">
+              <ShieldCheck className="w-3 h-3 text-white/40" aria-hidden="true" />
+              <span className="text-[8px] font-black text-white/40 uppercase italic tracking-widest">
+                Sem Selo Ouro
               </span>
             </div>
           )}

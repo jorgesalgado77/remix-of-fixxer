@@ -339,30 +339,9 @@ export function LojistaPublicProfilePage() {
     const load = async () => {
       if (!cancelled) setLoading(true);
       try {
-        // Perfis mockados (usados durante a construção do sistema)
-        if (storeId && storeId.startsWith("mock-")) {
-          const mock = (window as any).__FIXXER_MOCK_PROFILES__?.[storeId];
-          const name = mock?.name ?? "Perfil";
-          if (mock && !cancelled) {
-            setProfile({
-              user_id: storeId,
-              company_name: mock.companyName ?? name,
-              social_name: name,
-              city: mock.city,
-              state: mock.state,
-              whatsapp: mock.whatsapp,
-              logo_url: null,
-              banner_url: mock.bannerUrl,
-              gallery_urls: mock.gallery,
-              video_urls: mock.videos ?? [],
-              activity_branch: mock.activityBranch,
-              created_at: mock.memberSince,
-            });
-            setReviews(mock.reviews as Review[]);
-            setOrders([]);
-          }
-          return;
-        }
+        // Os perfis mockados foram removidos para garantir que apenas dados reais sejam exibidos.
+        // O sistema agora busca exclusivamente do Supabase.
+
 
         // Fonte primária: tabela `profiles` (onde o próprio dono salva pelo editor).
         // Compatibilidade: se não achar, tenta a legado `store_profiles`.
@@ -424,7 +403,7 @@ export function LojistaPublicProfilePage() {
         if (profileCandidate) setProfile(profileCandidate);
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
 
-        if (storeId && !storeId.startsWith("mock-")) {
+        if (storeId) {
           if (panelNavigationInProgress()) return;
 
           const detectedCategory = await resolvePublicProfileCategory(storeId, {
@@ -505,7 +484,7 @@ export function LojistaPublicProfilePage() {
   // Realtime: reflete alterações do perfil (fotos/vídeos/seções) em tempo real
   useEffect(() => {
     const key = profile?.user_id;
-    if (!key || (storeId && storeId.startsWith("mock-"))) return;
+    if (!key) return;
     const legacy = supabaseExternal
       .channel(`store-profile-${key}`)
       .on(
@@ -708,7 +687,7 @@ export function LojistaPublicProfilePage() {
   }, [reviews]);
 
   const yearsActive = useMemo(() => {
-    if (!profile?.created_at) return 2;
+    if (!profile?.created_at) return 0;
     const diff = Date.now() - new Date(profile.created_at).getTime();
     return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24 * 365)));
   }, [profile?.created_at]);
@@ -1107,9 +1086,11 @@ export function LojistaPublicProfilePage() {
                     <span className="text-3xl font-black text-primary italic">F</span>
                   )}
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-primary text-black px-2 py-1 rounded-lg text-[9px] font-black uppercase italic shadow-lg flex items-center gap-1">
-                  <Award className="w-3 h-3" /> Ouro
-                </div>
+                {profile?.plan_id && profile.plan_id !== 'free' && (
+                  <div className="absolute -bottom-2 -right-2 bg-primary text-black px-2 py-1 rounded-lg text-[9px] font-black uppercase italic shadow-lg flex items-center gap-1">
+                    <Award className="w-3 h-3" /> {profile.plan_id.toUpperCase()}
+                  </div>
+                )}
               </div>
 
               {/* Infos */}
@@ -1150,9 +1131,11 @@ export function LojistaPublicProfilePage() {
                     <span className="text-sm font-black text-primary italic">{avgRating.toFixed(1)}</span>
                     <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
                   </div>
-                  <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
-                    <Award className="w-3 h-3" /> Selo Ouro FIXXER
-                  </span>
+                  {profile?.plan_id && profile.plan_id !== 'free' && (
+                    <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
+                      <Award className="w-3 h-3" /> Selo Ouro FIXXER
+                    </span>
+                  )}
                 </div>
 
                 {/* Badges */}
@@ -1162,11 +1145,23 @@ export function LojistaPublicProfilePage() {
                 </div>
 
 
-                {/* Métricas */}
+                {/* Métricas reais */}
                 <div className="grid grid-cols-3 gap-2 md:gap-3 pt-2">
-                  <MetricCard label="O.S. Concluídas" value="148" suffix="Serviços" />
-                  <MetricCard label="Satisfação" value="99%" suffix="Positivo" />
-                  <MetricCard label="Tempo Resposta" value="<15" suffix="min" />
+                  <MetricCard 
+                    label="O.S. Concluídas" 
+                    value={String(profile?.os_completed_count ?? 0)} 
+                    suffix="Serviços" 
+                  />
+                  <MetricCard 
+                    label="Satisfação" 
+                    value={reviews.length > 0 ? `${Math.round((reviews.filter(r => r.rating >= 4).length / reviews.length) * 100)}%` : "100%"} 
+                    suffix="Positivo" 
+                  />
+                  <MetricCard 
+                    label="Tempo Resposta" 
+                    value={profile?.response_time_min ? `<${profile.response_time_min}` : "<30"} 
+                    suffix="min" 
+                  />
                 </div>
 
                 

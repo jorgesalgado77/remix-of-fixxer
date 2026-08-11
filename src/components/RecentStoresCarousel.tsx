@@ -289,7 +289,7 @@ function RecentStoresCarouselInner() {
             neighborhood: r.neighborhood || null,
             number: r.number || null,
             cep: r.cep || null,
-            rating: 4.5 + Math.random() * 0.5,
+            rating: r.rating || 5.0,
             created_at: (r as any).created_at || null,
             lat: r.lat !== null ? Number(r.lat) : null,
             lng: r.lng !== null ? Number(r.lng) : null,
