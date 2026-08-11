@@ -1112,19 +1112,23 @@ export function LojistaPublicProfilePage() {
                         )}
                       </span>
                       <AvailabilityBadge userId={profile?.user_id ?? null} />
-                    </div>
                   </div>
                 </div>
+              </div>
 
-  const yearsActive = profile?.created_at ? Math.floor((new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : 0;
-  const yearsActiveLabel = yearsActive >= 1 
-    ? `Ativo há +${yearsActive} ${yearsActive === 1 ? "ano" : "anos"}`
-    : `Ativo desde ${profile?.created_at ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : 'recentemente'}`;
+              {(() => {
+                const yearsActive = profile?.created_at ? Math.floor((new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : 0;
+                const yearsActiveLabel = yearsActive >= 1 
+                  ? `Ativo há +${yearsActive} ${yearsActive === 1 ? "ano" : "anos"}`
+                  : `Ativo desde ${profile?.created_at ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : 'recentemente'}`;
 
+                return (
+                  <div className="flex flex-col gap-5 mt-4">
+                  </div>
+                );
+              })()}
 
-
-                {/* Reputação */}
-                <div className="flex items-center gap-3 flex-wrap">
+              <div className="hidden">
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
                     <Star className="w-4 h-4 fill-primary text-primary" />
                     <span className="text-sm font-black text-primary italic">{avgRating.toFixed(1)}</span>
