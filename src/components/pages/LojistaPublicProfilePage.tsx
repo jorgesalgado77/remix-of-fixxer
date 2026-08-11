@@ -339,30 +339,9 @@ export function LojistaPublicProfilePage() {
     const load = async () => {
       if (!cancelled) setLoading(true);
       try {
-        // Perfis mockados (usados durante a construção do sistema)
-        if (storeId && storeId.startsWith("mock-")) {
-          const mock = (window as any).__FIXXER_MOCK_PROFILES__?.[storeId];
-          const name = mock?.name ?? "Perfil";
-          if (mock && !cancelled) {
-            setProfile({
-              user_id: storeId,
-              company_name: mock.companyName ?? name,
-              social_name: name,
-              city: mock.city,
-              state: mock.state,
-              whatsapp: mock.whatsapp,
-              logo_url: null,
-              banner_url: mock.bannerUrl,
-              gallery_urls: mock.gallery,
-              video_urls: mock.videos ?? [],
-              activity_branch: mock.activityBranch,
-              created_at: mock.memberSince,
-            });
-            setReviews(mock.reviews as Review[]);
-            setOrders([]);
-          }
-          return;
-        }
+        // Os perfis mockados foram removidos para garantir que apenas dados reais sejam exibidos.
+        // O sistema agora busca exclusivamente do Supabase.
+
 
         // Fonte primária: tabela `profiles` (onde o próprio dono salva pelo editor).
         // Compatibilidade: se não achar, tenta a legado `store_profiles`.
@@ -424,7 +403,7 @@ export function LojistaPublicProfilePage() {
         if (profileCandidate) setProfile(profileCandidate);
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
 
-        if (storeId && !storeId.startsWith("mock-")) {
+        if (storeId) {
           if (panelNavigationInProgress()) return;
 
           const detectedCategory = await resolvePublicProfileCategory(storeId, {
@@ -505,7 +484,7 @@ export function LojistaPublicProfilePage() {
   // Realtime: reflete alterações do perfil (fotos/vídeos/seções) em tempo real
   useEffect(() => {
     const key = profile?.user_id;
-    if (!key || (storeId && storeId.startsWith("mock-"))) return;
+    if (!key) return;
     const legacy = supabaseExternal
       .channel(`store-profile-${key}`)
       .on(
@@ -708,7 +687,7 @@ export function LojistaPublicProfilePage() {
   }, [reviews]);
 
   const yearsActive = useMemo(() => {
-    if (!profile?.created_at) return 2;
+    if (!profile?.created_at) return 0;
     const diff = Date.now() - new Date(profile.created_at).getTime();
     return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24 * 365)));
   }, [profile?.created_at]);
