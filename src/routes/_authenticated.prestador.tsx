@@ -88,6 +88,7 @@ function PrestadorDashboard() {
               </h2>
             </div>
             <div className="space-y-4">
+              {/* Os jobs abaixo são exemplos visuais, mas o componente deve ser alimentado por useProviderStats() em produção */}
               <JobCard id="OS-2490" client="Loja Móveis Premium" category="Montagem" value="R$ 450,00" status="Em Execução" />
               <JobCard id="OS-2512" client="Carlos Silva (Residencial)" category="Elétrica" value="R$ 180,00" status="Aguardando" />
             </div>
