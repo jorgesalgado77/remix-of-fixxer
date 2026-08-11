@@ -361,19 +361,16 @@ export default function FeedClientePage() {
   }, [query, solution, sortBy, savedOnly]);
 
   useEffect(() => {
-    if (!hasMore) return;
+    if (!hasMore || loading) return;
     const el = sentinelRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !isFetchingNextPage) {
-          setIsFetchingNextPage(true);
-          setTimeout(() => {
-            setVisibleCount((c) => c + PAGE_SIZE);
-            setIsFetchingNextPage(false);
-          }, 300);
+          loadFeed();
         }
       },
+
       { rootMargin: "800px" },
     );
     io.observe(el);
