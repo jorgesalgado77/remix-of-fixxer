@@ -174,7 +174,7 @@ export async function notifyNewChatMessage(recipientId: string, senderId: string
       sender_id: senderId,
       type: "chat",
       event_key: "chat_message",
-      title: sender?.display_name || "Nova mensagem",
+      title: sender?.identity?.displayName || "Nova mensagem",
       content: content.slice(0, 100),
       link: `/chat/${senderId}`,
       metadata: { chat: true }
