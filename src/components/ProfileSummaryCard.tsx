@@ -263,12 +263,11 @@ export function ProfileSummaryCard({
               <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate">
                 {loading && !profile ? "Carregando…" : name}
               </div>
-              <div className="mt-1.5 flex items-center gap-1.5">
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
                   <span aria-hidden="true">{ROLE_ICON[role]}</span>
                   {ROLE_LABEL[role]}
                 </div>
-                {/* A pílula de disponibilidade é mostrada no card resumo ao lado do papel */}
                 <AvailabilityBadge userId={profile?.id ?? null} className="!border-none !bg-transparent !px-0" />
               </div>
               {location && (
@@ -280,66 +279,66 @@ export function ProfileSummaryCard({
             </div>
           </Link>
 
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button
-              onClick={() => {
-                setShowReviewsModal(true);
-              }}
-              className="rounded-lg border border-white/10 bg-black/30 p-2 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all group/rating min-h-[52px] flex flex-col justify-center text-left w-full"
-            >
-              <div className="text-[8px] font-black text-white/50 uppercase tracking-widest group-hover/rating:text-emerald-400/70 transition-colors">
-                Reputação
-              </div>
-              <div className="mt-0.5 flex items-center gap-1 text-xs font-black text-white">
-                <Star className="w-3 h-3 text-emerald-400 fill-current" aria-hidden="true" />
-                <span>{profile?.karma_score && profile.karma_score > 0 ? (profile.karma_score / 10).toFixed(1) : "s/av."} / 5.0</span>
-                {profile?.karma_score && profile.karma_score > 0 ? (
-                  <span className="text-[9px] text-white/50 font-bold">
-                    ({profile.karma_score.toFixed(0)} pts)
-                  </span>
-                ) : (
-                  <span className="text-[9px] text-white/40 font-bold normal-case tracking-normal">
-                    s/ avaliações
-                  </span>
-                )}
-              </div>
-            </button>
+          <div className="mt-4 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setShowReviewsModal(true)}
+                className="rounded-lg border border-white/10 bg-black/30 p-2 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all group/rating min-h-[52px] flex flex-col justify-center text-left w-full"
+              >
+                <div className="text-[8px] font-black text-white/50 uppercase tracking-widest group-hover/rating:text-emerald-400/70 transition-colors">
+                  Reputação
+                </div>
+                <div className="mt-0.5 flex items-center gap-1 text-xs font-black text-white">
+                  <Star className="w-3 h-3 text-emerald-400 fill-current" aria-hidden="true" />
+                  <span>{profile?.karma_score && profile.karma_score > 0 ? (profile.karma_score / 10).toFixed(1) : "s/av."} / 5.0</span>
+                </div>
+              </button>
 
-            <div
-              className="rounded-lg border border-white/10 bg-black/30 p-2 flex flex-col min-h-[52px] justify-center"
-            >
-              <div className="text-[8px] font-black text-white/50 uppercase tracking-widest group-hover/plan:text-primary/70 transition-colors">
-                Plano
+              <div className="rounded-lg border border-white/10 bg-black/30 p-2 flex flex-col min-h-[52px] justify-center">
+                <div className="text-[8px] font-black text-white/50 uppercase tracking-widest">
+                  Plano
+                </div>
+                <div className="mt-0.5">
+                  <PlanBadge
+                    planId={planId}
+                    renewsAt={profile?.plan_renews_at ?? null}
+                    className="!px-2 !py-0.5 !text-[9px]"
+                  />
+                </div>
               </div>
-              <div className="mt-0.5">
-                <PlanBadge
-                  planId={planId}
-                  renewsAt={profile?.plan_renews_at ?? null}
-                  className="!px-2 !py-0.5 !text-[9px]"
-                />
-              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {profile?.is_verified ? (
+                <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00FF88]/10 border border-[#00FF88]/20 h-[36px]">
+                  <ShieldCheck className="w-3 h-3 text-[#00FF88]" aria-hidden="true" />
+                  <span className="text-[8px] font-black text-[#00FF88] uppercase italic tracking-widest">
+                    Verificado
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 opacity-50 h-[36px]">
+                  <ShieldCheck className="w-3 h-3 text-white/40" aria-hidden="true" />
+                  <span className="text-[8px] font-black text-white/40 uppercase italic tracking-widest">
+                    Não Verificado
+                  </span>
+                </div>
+              )}
+
+              {isGold ? (
+                <div className="flex justify-center items-center h-[36px]">
+                  <GoldMedalBadge />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 opacity-50 h-[36px]">
+                  <Star className="w-3 h-3 text-white/40" aria-hidden="true" />
+                  <span className="text-[8px] font-black text-white/40 uppercase italic tracking-widest">
+                    Sem Selo
+                  </span>
+                </div>
+              )}
             </div>
           </div>
-
-          {profile?.is_verified ? (
-            <div className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-[#00FF88]/10 border border-[#00FF88]/20">
-              <ShieldCheck className="w-3 h-3 text-[#00FF88]" aria-hidden="true" />
-              <span className="text-[8px] font-black text-[#00FF88] uppercase italic tracking-widest">
-                CNPJ Verificado
-              </span>
-            </div>
-          ) : isGold ? (
-            <div className="mt-3 flex justify-center">
-              <GoldMedalBadge />
-            </div>
-          ) : (
-            <div className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 opacity-50">
-              <ShieldCheck className="w-3 h-3 text-white/40" aria-hidden="true" />
-              <span className="text-[8px] font-black text-white/40 uppercase italic tracking-widest">
-                Sem Selo Ouro
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Modal de Avaliações Independente */}
