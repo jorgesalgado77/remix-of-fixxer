@@ -1086,9 +1086,11 @@ export function LojistaPublicProfilePage() {
                     <span className="text-3xl font-black text-primary italic">F</span>
                   )}
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-primary text-black px-2 py-1 rounded-lg text-[9px] font-black uppercase italic shadow-lg flex items-center gap-1">
-                  <Award className="w-3 h-3" /> Ouro
-                </div>
+                {profile?.plan_id && profile.plan_id !== 'free' && (
+                  <div className="absolute -bottom-2 -right-2 bg-primary text-black px-2 py-1 rounded-lg text-[9px] font-black uppercase italic shadow-lg flex items-center gap-1">
+                    <Award className="w-3 h-3" /> {profile.plan_id.toUpperCase()}
+                  </div>
+                )}
               </div>
 
               {/* Infos */}
@@ -1129,9 +1131,11 @@ export function LojistaPublicProfilePage() {
                     <span className="text-sm font-black text-primary italic">{avgRating.toFixed(1)}</span>
                     <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
                   </div>
-                  <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
-                    <Award className="w-3 h-3" /> Selo Ouro FIXXER
-                  </span>
+                  {profile?.plan_id && profile.plan_id !== 'free' && (
+                    <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
+                      <Award className="w-3 h-3" /> Selo Ouro FIXXER
+                    </span>
+                  )}
                 </div>
 
                 {/* Badges */}
