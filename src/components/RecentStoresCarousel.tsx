@@ -35,15 +35,63 @@ type Card = Row & { _kind: Kind; _branch: string | null; _distance?: number };
 
 // A lógica de cálculo Haversine foi movida para @/lib/haversine-helper.ts para uso global.
 
+/**
+ * Colunas garantidas na view `profiles_public` do Supabase externo.
+ * NUNCA adicionar colunas não existentes aqui (ex.: karma_score / is_verified),
+ * pois um único 42703 derruba a seção inteira.
+ */
+const SAFE_COLS =
+  "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, business_category, activity_branch, custom_branch, preferred_service, city, state, neighborhood, lat, lng, rating, created_at";
+
+const CACHE_KEY = "fixxer_recent_stores_v2";
+const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
+const PAGE_SIZE = 20;
+
+type CachedPayload = { items: Card[]; ts: number };
+
+function readStoresCache(): CachedPayload | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedPayload;
+    if (!parsed?.items?.length) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoresCache(items: Card[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify({ items, ts: Date.now() }));
+  } catch { /* noop */ }
+}
+
+/** Classifica a role em lojista/fornecedor. Retorna null para perfis fora da seção. */
+function classifyStoreKind(role: string | null | undefined, userType?: string | null): Kind | null {
+  const r = `${role || ""} ${userType || ""}`.toLowerCase();
+  if (r.includes("admin")) return null;
+  if (r.includes("fornec") || r.includes("parceiro") || r.includes("b2b") || r.includes("suppl")) return "fornecedor";
+  if (r.includes("lojist") || r.includes("loja") || r.includes("store")) return "lojista";
+  return null;
+}
+
 function RecentStoresCarouselInner() {
   const navigate = useNavigate();
-  const [items, setItems] = useState<Card[]>([]);
-  const [loading, setLoading] = useState(false);
+  const cachedInitial = useMemo(() => readStoresCache(), []);
+  const [items, setItems] = useState<Card[]>(() => cachedInitial?.items ?? []);
+  const [loading, setLoading] = useState(!cachedInitial);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Persistência do estado dos filtros
-  const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">("all");
+  const [kindFilter, setKindFilter] = useState<"all" | Kind | "branch">(() => {
+    if (typeof window === "undefined") return "all";
+    const v = window.localStorage.getItem("fixxer_carousel_filter");
+    return v === "lojista" || v === "fornecedor" || v === "branch" ? v : "all";
+  });
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [radiusFilter, setRadiusFilter] = useState<number>(0); // 0 = Sem limite
@@ -53,26 +101,23 @@ function RecentStoresCarouselInner() {
   });
 
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; address?: string } | null>(null);
-  const [page, setPage] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const pageRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 20;
+  const inFlight = useRef(false);
   const userBranchCtx = useUserBranchContext();
-
-  // Cache simples em memória para evitar chamadas repetidas
-  const cacheRef = useRef<{ [key: string]: { data: Card[], timestamp: number } }>({});
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
   // Monitorar progresso do scroll e persistir
   const handleScroll = () => {
     if (!scrollerRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollerRef.current;
     const totalScrollable = scrollWidth - clientWidth;
-    
+
     if (totalScrollable > 0) {
       const progress = (scrollLeft / totalScrollable) * 100;
       setScrollProgress(progress);
       localStorage.setItem('fixxer_carousel_scroll', progress.toString());
-      
+
       // Infinite Scroll: se chegar perto do fim, carrega mais
       if (totalScrollable - scrollLeft < 500 && !loadingMore && hasMore && !loading) {
         fetchList(true);
@@ -112,31 +157,31 @@ function RecentStoresCarouselInner() {
         const { data: { session } } = await supabaseExternal.auth.getSession();
         if (session?.user) {
           const userId = session.user.id;
-          
+          setCurrentUserId(userId);
+
           // Busca RIGOROSA e COMPLETA dos dados de endereço.
-          const { data: profile, error } = await supabaseExternal
+          const { data: profile } = await supabaseExternal
             .from("profiles")
             .select("id, lat, lng, city, state, street, neighborhood, number, cep")
             .eq("id", userId)
             .maybeSingle();
-          
+
           if (profile) {
             let currentLat = (profile.lat !== null && profile.lat !== undefined) ? Number(profile.lat) : 0;
             let currentLng = (profile.lng !== null && profile.lng !== undefined) ? Number(profile.lng) : 0;
 
             // Rotina de Geocodificação Automática com Cache e Validação
             const needsGeo = (!currentLat || !currentLng || (Math.abs(currentLat) < 0.000001)) && (profile.cep || profile.city);
-            
+
             if (needsGeo) {
               const geoCacheKey = `fixxer_geo_cache_${userId}_${profile.cep || profile.city}`;
               const cached = localStorage.getItem(geoCacheKey);
-              
+
               if (cached) {
                 const parsed = JSON.parse(cached);
                 currentLat = parsed.lat;
                 currentLng = parsed.lng;
               } else {
-                console.log("[Geocoding] Iniciando preenchimento automático para:", profile.id);
                 try {
                   const geo = await geocodeAddress({
                     data: {
@@ -150,22 +195,16 @@ function RecentStoresCarouselInner() {
                   });
 
                   if (geo && geo.lat && geo.lng) {
-                    console.log("[Geocoding] Coordenadas encontradas:", geo);
                     currentLat = geo.lat;
                     currentLng = geo.lng;
-
-                    // Persistir no banco de dados para evitar re-processamento
                     await supabaseExternal
                       .from("profiles")
                       .update({ lat: geo.lat, lng: geo.lng })
                       .eq("id", userId);
-                    
-                    // Cache local para evitar chamadas durante a sessão se o banco demorar a refletir
                     localStorage.setItem(geoCacheKey, JSON.stringify({ lat: geo.lat, lng: geo.lng }));
                   }
                 } catch (geoErr) {
                   console.error("[Geocoding] Falha na rotina automática:", geoErr);
-                  // Não faz nada, mantém lat/lng zero para não quebrar a UI
                 }
               }
             }
@@ -178,8 +217,8 @@ function RecentStoresCarouselInner() {
               profile.state
             ].filter(Boolean);
 
-            const coords = { 
-              lat: currentLat, 
+            const coords = {
+              lat: currentLat,
               lng: currentLng,
               address: addressParts.join(", ") + (profile.cep ? ` - CEP ${profile.cep}` : "")
             };
@@ -194,170 +233,116 @@ function RecentStoresCarouselInner() {
     getUserLocation();
   }, []);
 
+  /**
+   * Busca perfis públicos. Independente de filtros/coordenadas (filtragem e
+   * distância são calculadas no cliente) → evita recarregamentos desnecessários.
+   */
   const fetchList = useCallback(async (isMore = false) => {
-    const currentPage = isMore ? page + 1 : 0;
-    const cacheKey = `carousel_${kindFilter}_${currentPage}`;
-    
-    // Verificar cache se não for "carregar mais" (ou se quisermos cache por página também)
-    if (!isMore && cacheRef.current[cacheKey] && (Date.now() - cacheRef.current[cacheKey].timestamp < CACHE_TTL)) {
-      setItems(cacheRef.current[cacheKey].data);
-      setLoading(false);
-      return;
-    }
+    if (inFlight.current) return;
+    inFlight.current = true;
+    const currentPage = isMore ? pageRef.current + 1 : 0;
 
     try {
-      // Limpar cache ao forçar atualização manual
-      if (!isMore) cacheRef.current = {};
-
       if (isMore) setLoadingMore(true);
-      else setLoading(true);
-      
+      else if (items.length === 0) setLoading(true);
+
       setError(null);
-      
-      // Construção da query com colunas básicas primeiro para evitar quebra total
-      // Se a view não tiver as colunas novas, o Supabase retornará erro 42703 (coluna inexistente)
-      let query = supabaseExternal
+
+      const { data, error: supabaseError } = await supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, lat, lng, karma_score, is_verified, created_at")
+        .select(SAFE_COLS)
+        .order("created_at", { ascending: false })
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
-
-      // Tentativa de buscar colunas de endereço detalhado separadamente ou verificar erro
-      // Para manter a UI estável, se as colunas novas falharem, tentamos um fallback de campos seguros
-      let fetchResult = await query;
-      let profiles = fetchResult.data as any[] | null;
-      let supabaseError = fetchResult.error;
-
-      if (supabaseError && (supabaseError.code === '42703' || supabaseError.message.includes('does not exist'))) {
-        console.warn("[RecentStoresCarousel] Colunas ausentes na view, tentando fallback seguro...");
-        const fallbackQuery = supabaseExternal
-          .from("profiles_public")
-          .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng")
-          .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
-          .order('created_at', { ascending: false });
-        
-        const fallbackResult = await fallbackQuery;
-        profiles = fallbackResult.data as any[] | null;
-        supabaseError = fallbackResult.error;
-      }
 
       if (supabaseError) throw supabaseError;
 
-      if (profiles) {
-        // Recuperar o ID do usuário atual do Supabase (para filtrar o próprio card)
-        const { data: { session } } = await supabaseExternal.auth.getSession();
-        const currentUserId = session?.user?.id;
+      const profiles = (data as any[]) ?? [];
 
-        // Filtrar Admins e o PRÓPRIO usuário logado
-        const filteredProfiles = profiles.filter((p: any) => {
-          const isMe = String(p.id) === String(currentUserId);
-          // Usamos apenas role para admin, já que user_type pode ser a coluna faltante
-          const roleStr = String(p.role || "").toLowerCase();
-          const isAdmin = roleStr === 'admin';
-          return !isAdmin && !isMe;
-        });
+      const rows: Card[] = profiles
+        .map((r: any) => {
+          const kind = classifyStoreKind(r.role, r.user_type);
+          if (!kind) return null;
+          if (currentUserId && String(r.id) === String(currentUserId)) return null;
 
-
-
-        const rows: Card[] = filteredProfiles.map((r: any) => {
-          const roleStr = (r.role || "").toLowerCase();
-          const isLojista = roleStr.includes("lojist");
-          const isFornecedor = roleStr.includes("fornec") || roleStr.includes("parceiro");
-          const kind = isFornecedor ? "fornecedor" : "lojista";
-
-          const branch = (r as any).activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
-          
-          const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : 0;
-          const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : 0;
-          const uLat = (userCoords?.lat !== null && userCoords?.lat !== undefined) ? Number(userCoords?.lat) : 0;
-          const uLng = (userCoords?.lng !== null && userCoords?.lng !== undefined) ? Number(userCoords?.lng) : 0;
-
-          const dist = getHaversineDistance(uLat, uLng, rLat, rLng) ?? undefined;
+          const branch =
+            r.activity_branch ||
+            r.custom_branch ||
+            r.business_category ||
+            (kind === "lojista" ? "Lojista" : "Fornecedor B2B");
 
           return {
             id: r.id,
             full_name: r.full_name,
             display_name: r.display_name,
             company_name: r.company_name,
-            avatar_url: r.avatar_url,
+            avatar_url: r.avatar_url || r.logo_url || null,
             role: r.role,
             business_category: r.business_category,
             custom_branch: r.custom_branch,
             preferred_service: r.preferred_service,
             city: r.city,
             state: r.state,
-            street: r.street || null,
             neighborhood: r.neighborhood || null,
-            number: r.number || null,
-            cep: r.cep || null,
-            rating: r.karma_score != null ? Number(r.karma_score) : 0.0,
+            rating: r.rating != null ? Number(r.rating) : 0,
             created_at: r.created_at || null,
-            is_verified: !!r.is_verified,
-            lat: r.lat !== null ? Number(r.lat) : null,
-            lng: r.lng !== null ? Number(r.lng) : null,
-            _kind: kind as Kind,
+            lat: r.lat !== null && r.lat !== undefined ? Number(r.lat) : null,
+            lng: r.lng !== null && r.lng !== undefined ? Number(r.lng) : null,
+            _kind: kind,
             _branch: branch,
-            _distance: dist
           } as Card;
-        });
-        
-        const newItems = isMore ? [...items, ...rows] : rows;
-        
-        // Remove duplicates by ID
-        const uniqueItems = Array.from(new Map(newItems.map(item => [item.id, item])).values());
-        
-        // Ordenar por distância se disponível, senão por data
-        const sorted = userCoords 
-          ? [...uniqueItems].sort((a, b) => {
-              const distA = a._distance ?? Infinity;
-              const distB = b._distance ?? Infinity;
-              return distA - distB;
-            })
-          : uniqueItems;
+        })
+        .filter(Boolean) as Card[];
 
-        // Persistência em cache de memória (opcional) e estado
-        setItems(sorted);
-        setPage(currentPage);
-        setHasMore(rows.length === PAGE_SIZE);
+      const merged = isMore ? [...items, ...rows] : rows;
+      const uniqueItems = Array.from(new Map(merged.map((i) => [i.id, i])).values());
 
-        if (!isMore) {
-          cacheRef.current[cacheKey] = { data: sorted, timestamp: Date.now() };
-        }
-      }
+      // Só sobrescreve a lista quando há resultado, mantendo o cache visível.
+      if (uniqueItems.length > 0 || !isMore) setItems(uniqueItems);
+      if (uniqueItems.length > 0) writeStoresCache(uniqueItems);
+      pageRef.current = currentPage;
+      setHasMore(profiles.length === PAGE_SIZE);
     } catch (e: any) {
-      dataMonitor.logError("RecentStoresCarousel", e, { kindFilter, userCoords });
-      setError(e.message || "Falha ao carregar parceiros.");
+      dataMonitor.logError("RecentStoresCarousel", e, { kindFilter });
+      setError(e?.message || "Falha ao carregar parceiros.");
     } finally {
+      inFlight.current = false;
       setLoading(false);
       setLoadingMore(false);
       if (!isMore) setTimeout(handleScroll, 100);
     }
-  }, [userCoords, kindFilter, page, items, userBranchCtx]);
+  }, [items, currentUserId, kindFilter]);
 
-  // Busca inicial + refetch quando o filtro ou as coordenadas do usuário mudam.
-  // Depende de valores primitivos para evitar loops causados por novas referências de objeto.
-  const coordsKey = userCoords ? `${userCoords.lat},${userCoords.lng}` : "none";
+  // Busca inicial (uma única vez) + revalidação apenas quando o cache está velho.
+  const didFetch = useRef(false);
   useEffect(() => {
-    setPage(0);
-    setHasMore(true);
-    fetchList();
+    if (didFetch.current) return;
+    didFetch.current = true;
+    const cached = readStoresCache();
+    if (!cached || Date.now() - cached.ts > CACHE_TTL) {
+      fetchList(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kindFilter, coordsKey]);
+  }, []);
+
+  // Ao identificar o usuário logado, apenas remove o próprio card (sem refetch).
+  useEffect(() => {
+    if (!currentUserId) return;
+    setItems((prev) => prev.filter((i) => String(i.id) !== String(currentUserId)));
+  }, [currentUserId]);
 
   const filteredItems = useMemo(() => {
-    let filtered = [...items];
-    
-    // 0. Ordenação Global por Distância (Garante que mesmo após filtros, o mais próximo venha primeiro)
+    const uLat = userCoords?.lat ?? 0;
+    const uLng = userCoords?.lng ?? 0;
+
+    let filtered = items.map((i) => ({
+      ...i,
+      _distance: getHaversineDistance(uLat, uLng, i.lat ?? 0, i.lng ?? 0) ?? undefined,
+    }));
+
     if (userCoords) {
-      filtered.sort((a, b) => {
-        const distA = a._distance ?? Infinity;
-        const distB = b._distance ?? Infinity;
-        return distA - distB;
-      });
+      filtered.sort((a, b) => (a._distance ?? Infinity) - (b._distance ?? Infinity));
     }
-    
-    // 1. Filtragem por Tipo (Role)
-    
-    // 1. Filtragem por Tipo (Role)
+
     if (kindFilter === "lojista") {
       filtered = filtered.filter(i => i._kind === "lojista");
     } else if (kindFilter === "fornecedor") {
@@ -365,18 +350,21 @@ function RecentStoresCarouselInner() {
     } else if (kindFilter === "branch") {
       filtered = filtered.filter(i => {
         if (!userBranchCtx.hasContext) return true;
-        const relevance = scoreRelevance([i.business_category], userBranchCtx);
+        const relevance = scoreRelevance(
+          [i.business_category, i.custom_branch, i._branch, i.preferred_service].filter(Boolean) as string[],
+          userBranchCtx
+        );
         return relevance !== "none";
       });
     }
 
-    // 2. Filtragem por Raio (Distância)
     if (radiusFilter > 0) {
       filtered = filtered.filter(i => i._distance !== undefined && i._distance <= radiusFilter);
     }
 
     return filtered;
-  }, [items, kindFilter, radiusFilter, userBranchCtx]);
+  }, [items, kindFilter, radiusFilter, userBranchCtx, userCoords]);
+
 
 
   const scroll = (direction: "left" | "right") => {
