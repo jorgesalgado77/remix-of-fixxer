@@ -160,7 +160,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <Scripts />
         {/*
           PERGUNTA AO ARQUITETO / DOCUMENTAÇÃO DINÂMICA:
-          PROBLEMA PERSISTE, CORRIJA
+          PROBLEMA PERSISTE, FOTO DO PERFIL DO USUARIO E NOME DE EXIBIÇÃO AINDA ESTÃO AUSENTES, PROCURE O MOTIVO E CORRIJA, VEJA A TELA
         */}
       </body>
     </html>
