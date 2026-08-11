@@ -19,7 +19,7 @@ import { Search, MapPin, MessageSquare, Heart, Send, X, Loader2, Store, Wrench, 
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
-import { getCategoryColor } from "@/lib/getCategoryColor";
+import { getCategoryTheme } from "@/lib/category-colors";
 import {
   stripAccents,
   rowMatchesTerm,
@@ -732,7 +732,7 @@ const ResultCard = memo(function ResultCard(props: {
   onFav: () => void;
 }) {
   const { item, term = "", favorited = false, onChat, onFav } = props;
-  const c = getCategoryColor(item.category);
+  const c = getCategoryTheme(item.category).hex;
   const meta = CAT_META[item.category];
   const distance =
     item.distanceKm == null
