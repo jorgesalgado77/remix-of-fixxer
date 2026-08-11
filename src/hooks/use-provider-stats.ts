@@ -25,8 +25,17 @@ export type StatTx = {
   created_at: string | null;
 };
 
+export type PixEntry = {
+  id: string;
+  date: string | null;
+  type: "Reserva" | "Info Produto" | "Serviço";
+  label: string;
+  amount: number;
+};
+
 export type ProviderStats = {
   loading: boolean;
+  error: string | null;
   userId: string | null;
   activeOrders: StatOrder[];
   doneOrders: StatOrder[];
@@ -37,6 +46,7 @@ export type ProviderStats = {
   balanceReservations: number;
   balanceProducts: number;
   balanceServices: number;
+  periodEntries: PixEntry[];
   period: string;
   customRange: { start: string; end: string } | null;
   setPeriod: (p: string) => void;
