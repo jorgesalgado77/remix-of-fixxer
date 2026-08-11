@@ -695,6 +695,7 @@ export function LojistaDashboard() {
               </div>
             }
           />
+        </div>
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
 
