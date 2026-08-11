@@ -157,6 +157,15 @@ export default function FeedLojistaPage() {
   }, [setSearch]);
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   
+  // Debounce da busca
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 220);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [savesLoaded, setSavesLoaded] = useState(false);
   const [savesRemote, setSavesRemote] = useState(false);
