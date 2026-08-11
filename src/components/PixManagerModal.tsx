@@ -175,6 +175,17 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
             )}
           </div>
 
+          {/* Erro de carregamento */}
+          {(stats?.error || error) && (
+            <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 animate-in fade-in">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+              <p className="text-xs text-red-100 flex-1">{stats?.error || error}</p>
+              <Button size="sm" variant="ghost" onClick={handleReload} className="h-7 text-[10px] uppercase font-black text-red-300 hover:text-white hover:bg-red-500/20">
+                Tentar novamente
+              </Button>
+            </div>
+          )}
+
           {/* Saldos Reais */}
           {isLoadingStats || loading ? (
              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
