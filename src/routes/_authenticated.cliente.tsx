@@ -26,6 +26,7 @@ import { ReviewModal } from "@/components/ReviewModal";
 import { PanelActions } from "@/components/PanelActions";
 import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
+import { ProfileHeader } from "@/components/ProfileHeader";
 import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
 
 
