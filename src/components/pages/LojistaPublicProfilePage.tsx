@@ -1103,22 +1103,22 @@ export function LojistaPublicProfilePage() {
                     <h1 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter leading-none">
                       {profile?.company_name || profile?.display_name || "Lojista"}
                     </h1>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
                         <span aria-hidden="true">{role === 'lojista' ? "🏪" : role === 'prestador' ? "🛠️" : role === 'fornecedor' ? "🚚" : "👤"}</span>
                         {role === 'lojista' ? "LOJISTA" : role === 'prestador' ? "PRESTADOR" : role === 'fornecedor' ? "PARCEIRO" : "CLIENTE"}
                       </span>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                      <span className="shrink-0 text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-red-500" />
                         {profile?.city ? `${profile.city} / ${profile.state}` : "Localização não informada"}
                         {distanceLabel && (
                           <span className="text-primary/90 ml-1">• {isSelf ? distanceLabel : `${distanceLabel} de você`}</span>
                         )}
                       </span>
-                      <AvailabilityBadge userId={profile?.user_id ?? null} />
+                      <AvailabilityBadge userId={profile?.user_id ?? null} className="shrink-0" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
               {(() => {
                 const yearsActive = profile?.created_at ? Math.floor((new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : 0;
