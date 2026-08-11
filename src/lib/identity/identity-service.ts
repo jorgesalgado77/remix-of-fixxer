@@ -136,12 +136,6 @@ export async function resolveIdentity(
     effectiveProfile.full_name?.trim() || 
     (baseProfile ? "Usuário Fixxer" : "Usuário");
 
-  console.log(`[IdentityService] Debug Resolução Final para ${userId}:`, {
-    displayName,
-    baseProfile_display: baseProfile?.display_name,
-    baseProfile_company: baseProfile?.company_name,
-    store_company: store?.company_name
-  });
 
   // REGRA ÚNICA DE FALLBACK PARA AVATAR
   // 1. Avatar do perfil mestre (profiles.avatar_url) - Prioridade máxima pois é o que o usuário edita no perfil global
