@@ -134,35 +134,35 @@ const OPEN_CONVERSATIONS: Array<{
 }> = [
   {
     label: "LOJISTA (ciano)",
-    peerId: "peer-lojista-uuid",
+    peerId: "u1",
     setup: () => {
-      state.profiles = { user_id: "peer-lojista-uuid", display_name: "Loja X", role: "user" };
-      state.store = { user_id: "peer-lojista-uuid", company_name: "Loja X" };
+      state.profiles = { user_id: "u1", display_name: "Loja X", role: "user" };
+      state.store = { user_id: "u1", company_name: "Loja X" };
     },
     expected: "lojista",
   },
   {
     label: "PRESTADOR (âmbar)",
-    peerId: "peer-prestador-uuid",
+    peerId: "u2",
     setup: () => {
-      state.profiles = { user_id: "peer-prestador-uuid", display_name: "João", role: null };
-      state.provider = { user_id: "peer-prestador-uuid", display_name: "João Prestador" };
+      state.profiles = { user_id: "u2", display_name: "João", role: null };
+      state.provider = { user_id: "u2", display_name: "João Prestador" };
     },
     expected: "prestador",
   },
   {
     label: "FORNECEDOR (roxo)",
-    peerId: "peer-fornec-uuid",
+    peerId: "u3",
     setup: () => {
-      state.profiles = { user_id: "peer-fornec-uuid", display_name: "Fornec.", role: "fornecedor" };
+      state.profiles = { user_id: "u3", display_name: "Fornec.", role: "fornecedor" };
     },
     expected: "fornecedor",
   },
   {
     label: "CLIENTE FINAL (verde)",
-    peerId: "peer-cliente-uuid",
+    peerId: "u4",
     setup: () => {
-      state.profiles = { user_id: "peer-cliente-uuid", display_name: "Cliente", role: "cliente" };
+      state.profiles = { user_id: "u4", display_name: "Cliente", role: "cliente" };
     },
     expected: "cliente",
   },

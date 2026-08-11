@@ -117,10 +117,10 @@ export function validateChatIdentities(senderUid: unknown, peerId: unknown): {
   if (senderUid === peerId) return { ok: false, reason: "same" };
 
   // Verificação de bloqueio via lib/moderation (usa cache local + remote effort)
-  // Nota: Usamos import dinâmico para evitar dependência circular se moderation importar chat-send
+  // Nota: Usamos require condicional para evitar dependência circular e falhas em ambientes de teste puro
   try {
-    const { isUserBlocked } = require("./moderation");
-    if (typeof isUserBlocked === "function" && isUserBlocked(peerId)) {
+    const mod = require("./moderation");
+    if (mod && typeof mod.isUserBlocked === "function" && mod.isUserBlocked(peerId)) {
       return { 
         ok: false, 
         reason: "blocked", 
@@ -128,8 +128,7 @@ export function validateChatIdentities(senderUid: unknown, peerId: unknown): {
       };
     }
   } catch (e) {
-    // Se moderation não existir ou falhar no require (comum em testes unitários puros), 
-    // ignoramos a trava de bloqueio de frontend e deixamos o RLS do banco agir.
+    // Silencioso: moderation pode falhar em testes ou ambiente SSR se não houver localStorage
   }
   
   return { ok: true };
