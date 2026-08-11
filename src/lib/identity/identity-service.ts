@@ -66,17 +66,27 @@ export async function resolveIdentity(
     // Se ainda não temos nada, buscamos minimamente no specialized_profiles
     // apenas para garantir um nome se existir
     const specializedTables = ["provider_profiles", "store_profiles", "supplier_profiles"];
-    for (const table of specializedTables) {
-      const { data: specData } = await supabaseExternal
-        .from(table)
-        .select("display_name, name, full_name, company_name")
-        .eq("user_id", userId)
-        .maybeSingle();
+    const results = await Promise.all(
+      specializedTables.map(table => 
+        supabaseExternal
+          .from(table)
+          .select("display_name, name, full_name, company_name, city, state")
+          .eq("user_id", userId)
+          .maybeSingle()
+      )
+    );
+    
+    for (let i = 0; i < results.length; i++) {
+      const specData = results[i].data;
       if (specData) {
         effectiveProfile = { ...specData, id: userId };
+        // Armazena a especialização para uso no ResolvedProfile se necessário
+        const tableName = specializedTables[i].split("_")[0];
+        (effectiveProfile as any)[`_${tableName}`] = specData;
         break;
       }
     }
+
   }
 
   const base = effectiveProfile || {};
