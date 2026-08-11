@@ -139,7 +139,11 @@ export async function resolveIdentity(
     roles,
     mainCategory,
     presentation,
-    specializations: {}
+    specializations: {
+      store: Array.isArray(baseProfile?.store_profiles) ? baseProfile.store_profiles[0] : baseProfile?.store_profiles,
+      provider: Array.isArray(baseProfile?.provider_profiles) ? baseProfile.provider_profiles[0] : baseProfile?.provider_profiles,
+      supplier: Array.isArray(baseProfile?.supplier_profiles) ? baseProfile.supplier_profiles[0] : baseProfile?.supplier_profiles,
+    }
   };
 
   IDENTITY_CACHE.set(userId, { at: Date.now(), value: result });
