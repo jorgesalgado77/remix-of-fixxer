@@ -159,12 +159,11 @@ function RootShell({ children }: { children: ReactNode }) {
         {children}
         <Scripts />
         {/*
-          AUDITORIA DE IDENTIDADE (PROMPT 15.4):
-          1. Identidade Canônica com dados REAIS e consistentes (Reputação, CNPJ, Antiguidade).
-          2. Antiguidade ("Ativo há...") baseada na data real de criação (profiles.created_at).
-          3. CNPJ Verificado dinâmico (somente se verificado no banco).
-          4. Métricas profissionais reais e consistentes em todo o sistema.
-          5. Proteção try/catch contra tabelas inexistentes (Safe Identity).
+          AUDITORIA DE IDENTIDADE (PROMPT 15.5):
+          1. Identidade Canônica PERSISTENTE entre navegações (TTL 5min).
+          2. Eliminação de flickers e refetching constante no ProfileSummaryCard.
+          3. Sincronização de foto/nome garantida via Cache Global.
+          4. Antiguidade e Verificação reais mantidas.
         */}
       </body>
     </html>
