@@ -85,7 +85,7 @@ export function ProfileSummaryCard({
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const loadProfile = async () => {
       try {
         const { data: sessData } = await supabaseExternal.auth.getSession();
         const uid = sessData.session?.user?.id;
@@ -95,36 +95,61 @@ export function ProfileSummaryCard({
         }
 
         const { resolveIdentity } = await import("@/lib/identity/identity-service");
-        // Força refresh para garantir que não estamos pegando cache sujo
+        // Força refresh inicial para garantir consistência
         const resolved = await resolveIdentity(uid, { refresh: true });
         
-        console.log("[ProfileSummaryCard] Identidade resolvida:", {
-          uid,
-          displayName: resolved?.identity?.displayName,
-          avatarUrl: resolved?.identity?.avatarUrl,
-          specializations: resolved?.specializations
-        });
-
         if (!cancelled && resolved) {
           const prof: ProfileLite = {
             id: resolved.identity.id,
             display_name: resolved.identity.displayName,
             full_name: resolved.identity.fullName,
             avatar_url: resolved.identity.avatarUrl,
-            company_name: (resolved.specializations as any)?.store?.company_name || (resolved.specializations as any)?.supplier?.company_name || resolved.identity.displayName,
-            logo_url: (resolved.specializations as any)?.store?.logo_url || (resolved.specializations as any)?.supplier?.logo_url || (resolved.specializations as any)?.provider?.avatar_url || resolved.identity.avatarUrl,
-            city: (resolved.specializations as any)?.store?.city || (resolved.specializations as any)?.provider?.city || (resolved.specializations as any)?.supplier?.city || null,
-            state: (resolved.specializations as any)?.store?.state || (resolved.specializations as any)?.provider?.state || (resolved.specializations as any)?.supplier?.state || null,
+            // Prioriza nomes e logos profissionais/empresa vindos das especializações
+            company_name: (resolved.specializations as any)?.store?.company_name || 
+                          (resolved.specializations as any)?.supplier?.company_name || 
+                          resolved.identity.displayName,
+            logo_url: (resolved.specializations as any)?.store?.logo_url || 
+                      (resolved.specializations as any)?.supplier?.logo_url || 
+                      (resolved.specializations as any)?.provider?.avatar_url || 
+                      resolved.identity.avatarUrl,
+            city: (resolved.specializations as any)?.store?.city || 
+                  (resolved.specializations as any)?.provider?.city || 
+                  (resolved.specializations as any)?.supplier?.city || null,
+            state: (resolved.specializations as any)?.store?.state || 
+                   (resolved.specializations as any)?.provider?.state || 
+                   (resolved.specializations as any)?.supplier?.state || null,
+            plan_id: resolved.identity.planId
           };
+          
+          console.log("[ProfileSummaryCard] Aplicando Perfil Consistente:", {
+            uid,
+            name: prof.display_name,
+            hasLogo: !!prof.logo_url
+          });
+          
           setProfile(prof);
         }
       } catch (err) {
-        console.error("[ProfileSummaryCard] Erro crítico:", err);
+        console.error("[ProfileSummaryCard] Erro crítico no carregamento:", err);
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
-    return () => { cancelled = true; };
+    };
+
+    loadProfile();
+
+    // Inscrição para mudanças de autenticação - força refetch imediato
+    const { data: authListener } = supabaseExternal.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        setLoading(true);
+        loadProfile();
+      }
+    });
+
+    return () => { 
+      cancelled = true; 
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
 
