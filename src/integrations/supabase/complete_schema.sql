@@ -328,6 +328,10 @@ CREATE TABLE IF NOT EXISTS public.service_orders (
     city TEXT,
     state TEXT,
     image_url TEXT,
+    priority TEXT DEFAULT 'normal',
+    deadline TIMESTAMP WITH TIME ZONE,
+    attachments JSONB DEFAULT '[]'::jsonb,
+    location_json JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     -- Compatibilidade com orders_of_service
