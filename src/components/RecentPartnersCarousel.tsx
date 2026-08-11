@@ -269,7 +269,7 @@ function RecentPartnersCarouselInner() {
   const fetchPartners = useCallback(async (ctx: BranchContext): Promise<{ ok: boolean }> => {
     // Seleciona APENAS colunas que existem com segurança na tabela `profiles` do
     // Supabase externo.
-    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, business_category, custom_branch, preferred_service, job_roles, city, state, created_at, lat, lng";
+    const SAFE_COLS = "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, business_category, custom_branch, preferred_service, job_roles, city, state, lat, lng";
     try {
       // Bloqueia administradores e o próprio usuário logado do carrossel público.
       let selfId = ctx.userId;
@@ -291,7 +291,6 @@ function RecentPartnersCarouselInner() {
         .from("profiles_public")
         .select(SAFE_COLS)
         .not("role", "is", null)
-        .order("created_at", { ascending: false })
         .limit(100);
       
       let data = fetchRes.data as any[] | null;
@@ -299,12 +298,11 @@ function RecentPartnersCarouselInner() {
       
       if (error && (error.code === '42703' || error.message.includes('does not exist'))) {
         console.warn("[RecentPartnersCarousel] Colunas ausentes na view, tentando fallback seguro...");
-        const FALLBACK_COLS = "id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng";
+        const FALLBACK_COLS = "id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, lat, lng";
         const fallbackRes = await supabaseExternal
           .from("profiles_public")
           .select(FALLBACK_COLS)
           .not("role", "is", null)
-          .order("created_at", { ascending: false })
           .limit(100);
         data = fallbackRes.data as any[] | null;
         error = fallbackRes.error;
@@ -438,8 +436,8 @@ function RecentPartnersCarouselInner() {
       });
     } else {
       base = [...base].sort((a, b) => {
-        const ta = a.created_at ? Date.parse(a.created_at) : 0;
-        const tb = b.created_at ? Date.parse(b.created_at) : 0;
+        const ta = (a as any).created_at ? Date.parse((a as any).created_at) : 0;
+        const tb = (b as any).created_at ? Date.parse((b as any).created_at) : 0;
         return tb - ta;
       });
     }

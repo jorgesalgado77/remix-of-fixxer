@@ -216,9 +216,8 @@ function RecentStoresCarouselInner() {
       // Se a view não tiver as colunas novas, o Supabase retornará erro 42703 (coluna inexistente)
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng, activity_branch")
-        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
-        .order('created_at', { ascending: false });
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, lat, lng")
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
       // Tentativa de buscar colunas de endereço detalhado separadamente ou verificar erro
       // Para manter a UI estável, se as colunas novas falharem, tentamos um fallback de campos seguros
@@ -263,7 +262,7 @@ function RecentStoresCarouselInner() {
           const isFornecedor = roleStr.includes("fornec") || roleStr.includes("parceiro");
           const kind = isFornecedor ? "fornecedor" : "lojista";
 
-          const branch = r.activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
+          const branch = (r as any).activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
           
           const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : 0;
           const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : 0;
@@ -289,7 +288,7 @@ function RecentStoresCarouselInner() {
             number: r.number || null,
             cep: r.cep || null,
             rating: 4.5 + Math.random() * 0.5,
-            created_at: r.created_at,
+            created_at: (r as any).created_at || null,
             lat: r.lat !== null ? Number(r.lat) : null,
             lng: r.lng !== null ? Number(r.lng) : null,
             _kind: kind as Kind,
