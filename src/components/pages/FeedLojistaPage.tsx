@@ -571,6 +571,7 @@ export default function FeedLojistaPage() {
                   [post.specialty ?? "", ...(post.keywords ?? []), post.title],
                   branchCtx,
                 );
+
                 return (
                   <div key={post.id} className="feed-item-cv relative">
                     {_relevance.level !== "none" && (
