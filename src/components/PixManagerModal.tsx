@@ -91,7 +91,7 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl bg-[#0a0a0b] border border-white/10 rounded-[32px] p-0 overflow-hidden shadow-2xl">
+      <DialogContent className="max-w-xl bg-[#0a0a0b] border border-white/10 rounded-[32px] p-0 overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
         <div className="bg-gradient-to-br from-emerald-500/20 via-transparent to-transparent p-6 border-b border-white/5">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-1">
@@ -104,7 +104,7 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
           </DialogHeader>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-none relative">
+        <div className="p-6 space-y-6 overflow-y-auto scrollbar-none relative flex-1">
           {loading && (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-300">
               <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-3" />
