@@ -314,36 +314,25 @@ export default function FeedParceiroPage() {
     return applyRelevanceFallback(sorted, 3).map((x) => x.r);
   }, [filtered, branchCtx]);
 
-  const paged = useMemo(() => rankedFiltered.slice(0, page * PAGE_SIZE), [rankedFiltered, page]);
-  useFeedPreload(
-    rankedFiltered,
-    paged.length,
-    PAGE_SIZE,
-    (r) => r.attachment ?? null,
-  );
-  const hasMore = paged.length < rankedFiltered.length;
+  const paged = rankedFiltered;
+  const hasMore = hasMoreResult;
+
+
 
   useEffect(() => {
-    setPage(1);
-  }, [search, activeSector]);
-
-  useEffect(() => {
-    if (!sentinelRef.current || !hasMore || loadingMore) return;
+    if (!sentinelRef.current || !hasMore || loading) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setLoadingMore(true);
-          setTimeout(() => {
-            setPage((p) => p + 1);
-            setLoadingMore(false);
-          }, 350);
+          loadFeed();
         }
       },
       { rootMargin: "800px" },
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore]);
+  }, [hasMore, loading, loadFeed]);
+
 
   const persistSave = useCallback(
     async (postId: string, willSave: boolean) => {
@@ -493,7 +482,7 @@ export default function FeedParceiroPage() {
               accent="#A855F7"
               busy={refreshing}
               error={loadError}
-              onRetry={handleRefresh}
+              onRetry={handleGlobalRefresh}
             />
           </div>
         )}
