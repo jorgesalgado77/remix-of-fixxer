@@ -29,7 +29,6 @@ export async function resolveIdentity(
   }
 
   // 1. Buscar Perfil Mestre (Identidade) e Roles
-  // Otimizado com JOIN para evitar N+1
   const { data: baseProfile, error: profileError } = await supabaseExternal
     .from("profiles")
     .select(`
@@ -43,7 +42,6 @@ export async function resolveIdentity(
   let effectiveProfile = baseProfile;
 
   if (profileError || !baseProfile) {
-    // Fallback para profiles_public (View sanitizada) se profiles falhar (RLS)
     const { data: publicData } = await supabaseExternal
       .from("profiles_public")
       .select("*")
@@ -52,7 +50,6 @@ export async function resolveIdentity(
     
     if (publicData) effectiveProfile = publicData;
     
-    // Buscar roles separadamente se o join falhou
     const { data: rolesData } = await supabaseExternal
       .from("user_roles")
       .select("role")
@@ -63,8 +60,6 @@ export async function resolveIdentity(
   }
 
   if (!effectiveProfile) {
-    // Se ainda não temos nada, buscamos minimamente no specialized_profiles
-    // apenas para garantir um nome se existir
     const specializedTables = ["provider_profiles", "store_profiles", "supplier_profiles"];
     const results = await Promise.all(
       specializedTables.map(table => 
@@ -80,7 +75,6 @@ export async function resolveIdentity(
       const specData = results[i].data;
       if (specData) {
         effectiveProfile = { ...specData, id: userId };
-        // Armazena a especialização para uso no ResolvedProfile se necessário
         const tableName = specializedTables[i].split("_")[0];
         (effectiveProfile as any)[`_${tableName}`] = specData;
         break;
@@ -90,13 +84,11 @@ export async function resolveIdentity(
 
   const base = effectiveProfile || {};
 
-  // 2. Resolver Categoria Principal (Aproveita a lógica existente)
   const mainCategory = await resolvePublicProfileCategory(userId, {
     profile: baseProfile,
     refresh: options?.refresh
   });
 
-  // 3. Construir Identidade Canônica
   const hasData = effectiveProfile && Object.keys(effectiveProfile).length > 0;
 
   const identity: CanonicalIdentity = {
@@ -114,14 +106,12 @@ export async function resolveIdentity(
     verificationNote: base.verification_note || null,
   };
 
-  // 4. Calcular atividade e badges reais
   const timeSinceActive = identity.lastActiveAt ? Date.now() - new Date(identity.lastActiveAt).getTime() : Infinity;
   const activityLabel = timeSinceActive < 5 * 60 * 1000 ? "Online" : 
                        timeSinceActive < 60 * 60 * 1000 ? "Ativo recentemente" : 
-                       identity.lastActiveAt ? `Visto em ${new Date(identity.lastActiveAt).toLocaleDateString("pt-BR")}` :
+                       identity.lastActiveAt ? "Visto em " + new Date(identity.lastActiveAt).toLocaleDateString("pt-BR") :
                        "Ativo na plataforma";
 
-  // 5. Construir Apresentação
   const presentation: ProfilePresentation = {
     name: identity.displayName,
     initials: initialsOf(identity.displayName),
