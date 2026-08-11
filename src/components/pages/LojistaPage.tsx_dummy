@@ -1,0 +1,5 @@
+import { useProviderStats } from "@/hooks/use-provider-stats";
+import { GoldMedalBadge } from "@/components/GoldMedalBadge";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
+// ... existing imports ...
