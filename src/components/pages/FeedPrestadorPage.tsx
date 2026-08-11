@@ -1025,7 +1025,7 @@ export default function FeedPrestadorPage() {
   const searching = search !== debouncedSearch;
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} accent="#FF9F0A">
+    <PullToRefresh onRefresh={handleGlobalRefresh} accent="#FF9F0A">
     <div className="min-h-screen bg-[#0A0A0B] text-foreground pb-24 animate-in fade-in duration-500">
       <UniversalSearchPanel defaultPill="prestador" />
 
@@ -1076,9 +1076,9 @@ export default function FeedPrestadorPage() {
         {loadError && (
           <FeedErrorState
             accent="#FF9F0A"
-            busy={refreshing}
+            busy={isRefreshing}
             error={loadError}
-            onRetry={handleRefresh}
+            onRetry={handleGlobalRefresh}
           />
         )}
         <B2BSuggestionsCard />
