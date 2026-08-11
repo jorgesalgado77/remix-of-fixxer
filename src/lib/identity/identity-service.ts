@@ -32,11 +32,11 @@ export async function resolveIdentity(
   const { data: baseProfile, error: profileError } = await supabaseExternal
     .from("profiles")
     .select(`
-      *,
+      id, display_name, full_name, avatar_url, bio, about_bio, is_official, is_verified, plan_id, created_at, karma_score, last_active_at, verification_status, verification_note,
       user_roles (role),
       store_profiles (company_name, logo_url, city, state),
-      provider_profiles (city, state),
-      supplier_profiles (city, state)
+      provider_profiles (display_name, avatar_url, city, state),
+      supplier_profiles (company_name, logo_url, city, state)
     `)
     .eq("id", userId)
     .maybeSingle();
