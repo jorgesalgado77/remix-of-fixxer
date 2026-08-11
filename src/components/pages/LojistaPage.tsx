@@ -1476,11 +1476,11 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 
                 <div className="space-y-3 md:space-y-4">
                     {(() => {
-                        const services = [
-                            { id: 2490, title: 'Montagem Dormitório', location: 'São Paulo/SP', value: 'R$ 450,00', deadline: '15/07', status: 'Concluído', color: 'text-primary', bg: 'bg-primary/10', icon: <Briefcase className="w-4 h-4" /> },
+                             { id: 2490, title: 'Montagem Dormitório', location: 'São Paulo/SP', value: 'R$ 450,00', deadline: '15/07', status: 'Concluído', color: 'text-primary', bg: 'bg-primary/10', icon: <Briefcase className="w-4 h-4" /> },
                             { id: 2491, title: 'Medição Cozinha', location: 'Campinas/SP', value: 'R$ 200,00', deadline: '18/07', status: 'Pendente', color: 'text-orange-400', bg: 'bg-orange-400/10', icon: <Clock className="w-4 h-4" /> },
                             { id: 2492, title: 'Instalação Cooktop', location: 'Santos/SP', value: 'R$ 150,00', deadline: '20/07', status: 'Em andamento', color: 'text-blue-400', bg: 'bg-blue-400/10', icon: <Activity className="w-4 h-4" /> },
                             { id: 2493, title: 'Reparo Dobradiças', location: 'Jundiaí/SP', value: 'R$ 80,00', deadline: '10/07', status: 'Atrasado', color: 'text-red-500', bg: 'bg-red-500/10', icon: <AlertCircle className="w-4 h-4" /> },
+                        ] as any[];
                             { id: 2494, title: 'Ajuste Portas', location: 'Osasco/SP', value: 'R$ 120,00', deadline: '22/07', status: 'Pendente', color: 'text-orange-400', bg: 'bg-orange-400/10', icon: <Clock className="w-4 h-4" /> }
                         ];
 

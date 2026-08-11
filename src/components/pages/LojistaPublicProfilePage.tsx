@@ -1096,22 +1096,24 @@ export function LojistaPublicProfilePage() {
               {/* Infos */}
               <div className="flex-1 min-w-0 w-full space-y-3 overflow-hidden">
                 <div className="min-w-0">
-                  <h1 className="text-xl md:text-3xl font-black uppercase italic tracking-tight break-words">
-                    {profile?.company_name || "Lojista FIXXER"}
-                  </h1>
-                  <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase italic mt-1 flex-wrap">
-                    <MapPin className="w-3 h-3 text-primary" />
-                    {profile?.city || "Cidade"} / {profile?.state || "UF"}
-                    {distanceLabel && (
-                      <span className="text-primary/90">• {isSelf ? distanceLabel : `${distanceLabel} de você`}</span>
-                    )}
-                    <AvailabilityBadge userId={profile?.user_id ?? null} />
-                  </div>
-                  {/* Nome e Categoria */}
                   <div className="space-y-1">
                     <h1 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter leading-none">
                       {profile?.company_name || profile?.display_name || "Lojista"}
                     </h1>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
+                        🏪 Lojista
+                      </span>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-red-500" />
+                        {profile?.city ? `${profile.city} / ${profile.state}` : "Localização não informada"}
+                        {distanceLabel && (
+                          <span className="text-primary/90 ml-1">• {isSelf ? distanceLabel : `${distanceLabel} de você`}</span>
+                        )}
+                      </span>
+                      <AvailabilityBadge userId={profile?.user_id ?? null} />
+                    </div>
+                  </div>
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
                         🏪 Lojista
