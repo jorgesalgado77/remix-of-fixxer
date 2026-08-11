@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useProviderStats } from "@/hooks/use-provider-stats";
 import { StatDetailsModal, type StatListItem } from "@/components/StatDetailsModal";
-import { PixManagerModal } from "@/components/PixManagerModal";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import {
   Briefcase,
@@ -286,19 +285,8 @@ function ProviderStatsGrid() {
         items={txItems}
       />
 
-      {showPixModal && (
-        <PixManagerModal 
-          open={showPixModal} 
-          onClose={() => setShowPixModal(false)} 
-          profile={{ pix_key: 'fixxer@pix.com.br' }} 
-          stats={{
-            balance: stats.balance,
-            balanceReservations: stats.balanceReservations,
-            balanceProducts: stats.balanceProducts,
-            balanceServices: stats.balanceServices
-          }}
-        />
-      )}
+      {/* O modal de PIX agora é gerenciado globalmente no layout AuthenticatedLayout */}
+
     </>
   );
 }
