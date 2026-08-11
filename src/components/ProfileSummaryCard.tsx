@@ -32,6 +32,8 @@ type ProfileLite = {
   state?: string | null;
   plan_id?: string | null;
   plan_renews_at?: string | null;
+  karma_score?: number;
+  is_verified?: boolean;
 };
 
 const ROLE_LABEL: Record<PanelRole, string> = {
@@ -118,7 +120,9 @@ export function ProfileSummaryCard({
             state: (resolved.specializations as any)?.store?.state || 
                    (resolved.specializations as any)?.provider?.state || 
                    (resolved.specializations as any)?.supplier?.state || null,
-            plan_id: resolved.identity.planId
+            plan_id: resolved.identity.planId,
+            karma_score: resolved.identity.karmaScore,
+            is_verified: resolved.identity.isVerified
           };
           
           console.log("[ProfileSummaryCard] Aplicando Perfil Consistente:", {
@@ -238,10 +242,10 @@ export function ProfileSummaryCard({
               </div>
               <div className="mt-0.5 flex items-center gap-1 text-xs font-black text-white">
                 <Star className="w-3 h-3 text-emerald-400 fill-current" aria-hidden="true" />
-                <span>{rating ? rating.avg.toFixed(1) : "0.0"} / 5.0</span>
-                {rating ? (
+                <span>{profile?.karma_score && profile.karma_score > 0 ? profile.karma_score.toFixed(1) : "s/av."} / 5.0</span>
+                {profile?.karma_score && profile.karma_score > 0 ? (
                   <span className="text-[9px] text-white/50 font-bold">
-                    ({rating.count})
+                    (Real)
                   </span>
                 ) : (
                   <span className="text-[9px] text-white/40 font-bold normal-case tracking-normal">
@@ -267,7 +271,14 @@ export function ProfileSummaryCard({
             </div>
           </div>
 
-          {isGold ? (
+          {profile?.is_verified ? (
+            <div className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-[#00FF88]/10 border border-[#00FF88]/20">
+              <ShieldCheck className="w-3 h-3 text-[#00FF88]" aria-hidden="true" />
+              <span className="text-[8px] font-black text-[#00FF88] uppercase italic tracking-widest">
+                CNPJ Verificado
+              </span>
+            </div>
+          ) : isGold ? (
             <div className="mt-3 flex justify-center">
               <GoldMedalBadge />
             </div>

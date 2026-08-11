@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Star, MapPin, UserCircle2, ChevronLeft, ChevronRight, Navigation, Puzzle } from "lucide-react";
+import { Star, MapPin, UserCircle2, ChevronLeft, ChevronRight, Navigation, Puzzle, ShieldCheck } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { primePublicProfileCategory } from "@/lib/public-profile-category";
@@ -218,7 +218,7 @@ function RecentStoresCarouselInner() {
       // Se a view não tiver as colunas novas, o Supabase retornará erro 42703 (coluna inexistente)
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, lat, lng")
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, lat, lng, karma_score, is_verified, created_at")
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
       // Tentativa de buscar colunas de endereço detalhado separadamente ou verificar erro
@@ -289,8 +289,9 @@ function RecentStoresCarouselInner() {
             neighborhood: r.neighborhood || null,
             number: r.number || null,
             cep: r.cep || null,
-            rating: r.rating || 5.0,
-            created_at: (r as any).created_at || null,
+            rating: r.karma_score != null ? Number(r.karma_score) : 0.0,
+            created_at: r.created_at || null,
+            is_verified: !!r.is_verified,
             lat: r.lat !== null ? Number(r.lat) : null,
             lng: r.lng !== null ? Number(r.lng) : null,
             _kind: kind as Kind,
@@ -549,7 +550,7 @@ function RecentStoresCarouselInner() {
                     <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
                       <div className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 shadow-lg">
                         <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                        <span className="text-[10px] font-black text-white italic">{(p.rating || 5.0).toFixed(1)}</span>
+                        <span className="text-[10px] font-black text-white italic">{p.rating && p.rating > 0 ? p.rating.toFixed(1) : "s/av."}</span>
                       </div>
                       
                       {p._distance !== undefined && (
@@ -561,6 +562,16 @@ function RecentStoresCarouselInner() {
                         </div>
                       )}
                     </div>
+
+                    {/* Badge CNPJ Verificado Real */}
+                    {(p as any).is_verified && (
+                      <div className="absolute top-4 left-4 z-20">
+                        <div className="px-2 py-0.5 rounded-full bg-[#00FF88]/20 backdrop-blur-md border border-[#00FF88]/30 flex items-center gap-1 shadow-lg">
+                          <ShieldCheck className="w-2.5 h-2.5 text-[#00FF88]" />
+                          <span className="text-[8px] font-black text-[#00FF88] uppercase italic">Verificado</span>
+                        </div>
+                      </div>
+                    )}
 
                     {p.avatar_url ? (
                       <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover/card:scale-110 shadow-2xl ${
@@ -638,7 +649,15 @@ function RecentStoresCarouselInner() {
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/20">
                           <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] shadow-[0_0_8px_#00FF88] animate-pulse" />
-                          <span className="text-[9px] font-black text-[#00FF88] uppercase italic">Disponível</span>
+                          <span className="text-[9px] font-black text-[#00FF88] uppercase italic">
+                            {p.created_at ? (
+                              (() => {
+                                const diff = Math.abs(Date.now() - new Date(p.created_at).getTime());
+                                const years = diff / (1000 * 60 * 60 * 24 * 365.25);
+                                return years >= 1 ? `Ativo há +${Math.floor(years)} ano` : "Ativo recentemente";
+                              })()
+                            ) : "Online"}
+                          </span>
                         </div>
                       </div>
                     </div>

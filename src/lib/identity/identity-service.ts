@@ -74,17 +74,17 @@ export async function resolveIdentity(
   let supplier: any = null;
 
   try {
-    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state").eq("user_id", userId).maybeSingle();
+    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
     store = storeData;
   } catch (e) { console.warn("[IdentityService] store_profiles indisponível"); }
 
   try {
-    const { data: providerData } = await supabaseExternal.from("provider_profiles").select("display_name, avatar_url, city, state").eq("user_id", userId).maybeSingle();
+    const { data: providerData } = await supabaseExternal.from("provider_profiles").select("display_name, avatar_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
     provider = providerData;
   } catch (e) { console.warn("[IdentityService] provider_profiles indisponível"); }
 
   try {
-    const { data: supplierData } = await supabaseExternal.from("supplier_profiles").select("company_name, logo_url, city, state").eq("user_id", userId).maybeSingle();
+    const { data: supplierData } = await supabaseExternal.from("supplier_profiles").select("company_name, logo_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
     supplier = supplierData;
   } catch (e) { console.warn("[IdentityService] supplier_profiles indisponível"); }
 
@@ -128,20 +128,29 @@ export async function resolveIdentity(
     avatarUrl,
     bio: effectiveProfile.bio || effectiveProfile.about_bio || null,
     isOfficial: !!effectiveProfile.is_official,
-    isVerified: !!effectiveProfile.is_verified,
+    // CNPJ VERIFICADO REAL: Só é true se estiver marcado como verificado no perfil base ou especializado
+    isVerified: !!(effectiveProfile.is_verified || store?.is_verified || provider?.is_verified || supplier?.is_verified),
     planId: effectiveProfile.plan_id || "free",
     createdAt: effectiveProfile.created_at || new Date().toISOString(),
-    karmaScore: effectiveProfile.karma_score ? Number(effectiveProfile.karma_score) : 5.0,
+    // REPUTAÇÃO REAL: Usa o karma_score do banco (Profiles) como fonte única de verdade
+    karmaScore: effectiveProfile.karma_score != null ? Number(effectiveProfile.karma_score) : 0.0,
     lastActiveAt: effectiveProfile.last_active_at || null,
     verificationStatus: effectiveProfile.verification_status || (effectiveProfile.is_verified ? "verified" : "none"),
     verificationNote: effectiveProfile.verification_note || null,
   };
 
+  // CÁLCULO DE ANTIGUIDADE REAL
+  const createdDate = new Date(identity.createdAt);
+  const diffTime = Math.abs(Date.now() - createdDate.getTime());
+  const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365.25);
+  const activeLabel = diffYears >= 1 
+    ? `Ativo há +${Math.floor(diffYears)} ano${Math.floor(diffYears) > 1 ? 's' : ''}` 
+    : `Ativo desde ${createdDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}`;
+
   const timeSinceActive = identity.lastActiveAt ? Date.now() - new Date(identity.lastActiveAt).getTime() : Infinity;
   const activityLabel = timeSinceActive < 5 * 60 * 1000 ? "Online" : 
                        timeSinceActive < 60 * 60 * 1000 ? "Ativo recentemente" : 
-                       identity.lastActiveAt ? "Visto em " + new Date(identity.lastActiveAt).toLocaleDateString("pt-BR") :
-                       "Ativo na plataforma";
+                       activeLabel;
 
   const presentation: ProfilePresentation = {
     name: identity.displayName,
