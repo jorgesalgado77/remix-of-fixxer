@@ -160,7 +160,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <Scripts />
         {/*
           PERGUNTA AO ARQUITETO / DOCUMENTAÇÃO DINÂMICA:
-          COMO UM USUARIO PODE ADQUIRIR O SELO OURO E O CNPJ VERIFICADO DE FORMA REAL DENTRO DA PLATAFORMA ?
+          PROBLEMA PERSISTE, CORRIJA
         */}
       </body>
     </html>
