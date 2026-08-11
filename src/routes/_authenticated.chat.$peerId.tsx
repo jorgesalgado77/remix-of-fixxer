@@ -997,7 +997,18 @@ function ConversationPage() {
       toast.error("Falha de rede", { description: "Sem conexão após novas tentativas. Toque em ↻ para tentar de novo." });
       return;
     }
-    toast.error("Falha ao enviar", { description: c.message });
+    const c = classifyChatError(err);
+    if (c.kind === "rls") {
+      toast.error("Mensagem não enviada", { 
+        description: c.message,
+        action: {
+          label: "Saber mais",
+          onClick: () => window.open('https://fixxer.app/ajuda/bloqueios', '_blank')
+        }
+      });
+    } else {
+      toast.error("Falha ao enviar", { description: c.message });
+    }
   };
 
   /**
