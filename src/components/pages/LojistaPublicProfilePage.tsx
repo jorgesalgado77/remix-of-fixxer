@@ -30,6 +30,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
+import { Button } from "@/components/ui/button";
 import { consumeCoins, initCoinsForUser, adjustCachedBalance, getCachedBalance } from "@/lib/coins";
 import { confirmCoins } from "@/components/ConfirmCoinsDialog";
 
@@ -339,9 +340,9 @@ export function LojistaPublicProfilePage() {
       if (!cancelled) setLoading(true);
       try {
         // Perfis mockados (usados durante a construção do sistema)
-        if (storeId && isMockPeerId(storeId)) {
-          const mock = getMockProfile(storeId);
-          const name = getMockPeerName(storeId) ?? "Perfil";
+        if (storeId && storeId.startsWith("mock-")) {
+          const mock = (window as any).__FIXXER_MOCK_PROFILES__?.[storeId];
+          const name = mock?.name ?? "Perfil";
           if (mock && !cancelled) {
             setProfile({
               user_id: storeId,
@@ -423,7 +424,7 @@ export function LojistaPublicProfilePage() {
         if (profileCandidate) setProfile(profileCandidate);
         else console.warn("[LojistaPublicProfilePage] Nenhum perfil encontrado para storeId:", storeId);
 
-        if (storeId && !isMockPeerId(storeId)) {
+        if (storeId && !storeId.startsWith("mock-")) {
           if (panelNavigationInProgress()) return;
 
           const detectedCategory = await resolvePublicProfileCategory(storeId, {
@@ -504,7 +505,7 @@ export function LojistaPublicProfilePage() {
   // Realtime: reflete alterações do perfil (fotos/vídeos/seções) em tempo real
   useEffect(() => {
     const key = profile?.user_id;
-    if (!key || (storeId && isMockPeerId(storeId))) return;
+    if (!key || (storeId && storeId.startsWith("mock-"))) return;
     const legacy = supabaseExternal
       .channel(`store-profile-${key}`)
       .on(

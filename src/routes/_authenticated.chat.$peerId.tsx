@@ -745,7 +745,7 @@ function ConversationPage() {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
         const uid = userId || (await getAuthUid());
-        if (uid && !isMockPeerId(peerId)) markIncomingRead(uid);
+        if (uid && !peerId.startsWith("mock-")) markIncomingRead(uid);
       }
     };
 
@@ -797,7 +797,7 @@ function ConversationPage() {
   // reconectando). Só bate no banco a cada 4s e usa a última data conhecida
   // como cursor, então o custo é mínimo.
   useEffect(() => {
-    if (!userId || !peerId || isMockPeerId(peerId)) return;
+    if (!userId || !peerId || peerId.startsWith("mock-")) return;
     let stopped = false;
     let timer: ReturnType<typeof setInterval> | null = null;
     const tick = async () => {
@@ -1179,7 +1179,7 @@ function ConversationPage() {
     clearDraft(peerId);
 
     // === MODO MOCK: sem persistência, com auto-resposta simulada ===
-    if (isMockPeerId(peerId)) {
+    if (peerId.startsWith("mock-")) {
       // Enriquecer as linhas otimistas com URLs de blob para pré-visualizar
       // imagens/vídeos anexados diretamente nos balões (sem ir ao Storage).
       const optimIds = new Set(optimisticRows.map((r) => r.id));
