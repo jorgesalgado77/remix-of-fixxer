@@ -262,7 +262,7 @@ function RecentStoresCarouselInner() {
           const isFornecedor = roleStr.includes("fornec") || roleStr.includes("parceiro");
           const kind = isFornecedor ? "fornecedor" : "lojista";
 
-          const branch = r.activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
+          const branch = (r as any).activity_branch || r.custom_branch || r.business_category || (isLojista ? "Lojista" : isFornecedor ? "Fornecedor B2B" : "Profissional");
           
           const rLat = r.lat !== null && r.lat !== undefined ? Number(r.lat) : 0;
           const rLng = r.lng !== null && r.lng !== undefined ? Number(r.lng) : 0;
