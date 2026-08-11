@@ -7,6 +7,8 @@ import { primePublicProfileCategory } from "@/lib/public-profile-category";
 import { useUserBranchContext, scoreRelevance } from "@/lib/branch-relevance";
 import { geocodeAddress } from "@/lib/geocoding.functions";
 import { getHaversineDistance } from "@/lib/haversine-helper";
+import { CarouselErrorFallback, CarouselLoadingFallback } from "./CarouselFallback";
+import { dataMonitor } from "@/lib/monitoring";
 
 
 type Row = {
@@ -321,7 +323,7 @@ function RecentStoresCarouselInner() {
         }
       }
     } catch (e: any) {
-      console.error("[RecentStoresCarousel] Fetch error:", e);
+      dataMonitor.logError("RecentStoresCarousel", e, { kindFilter, userCoords });
       setError(e.message || "Falha ao carregar parceiros.");
     } finally {
       setLoading(false);
@@ -386,6 +388,25 @@ function RecentStoresCarouselInner() {
     primePublicProfileCategory(p.id, p._kind);
     navigate({ to: `/perfil/${p.id}` as any });
   };
+
+  if (loading && items.length === 0) {
+    return (
+      <section className="bg-[#121214] border border-white/5 rounded-3xl p-6 shadow-2xl">
+        <h3 className="font-black italic uppercase text-white text-xl tracking-tighter mb-4">LOJISTAS E FORNECEDORES RECENTES</h3>
+        <CarouselLoadingFallback />
+      </section>
+    );
+  }
+
+  if (error && items.length === 0) {
+    return (
+      <CarouselErrorFallback 
+        title="LOJISTAS E FORNECEDORES RECENTES"
+        error={error}
+        onRetry={() => fetchList(false)}
+      />
+    );
+  }
 
   return (
     <section aria-label="Lojistas e Fornecedores Recentes" className="bg-[#121214] border border-white/5 rounded-3xl p-6 relative group shadow-2xl">
