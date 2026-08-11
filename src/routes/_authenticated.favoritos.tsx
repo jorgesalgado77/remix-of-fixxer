@@ -65,48 +65,7 @@ interface FavAd {
 
 /* ============================ MOCK ============================ */
 
-const MOCK_PROFILES: FavProfile[] = [
-  {
-    id: "mock-p-1",
-    userId: "mock-jorge-salgado",
-    name: "Jorge Salgado",
-    avatarUrl:
-      "https://ui-avatars.com/api/?name=Jorge+Salgado&background=FF7A00&color=fff&size=256&bold=true&format=png",
-    kind: "prestador",
-    branch: "Conferente Técnico",
-    city: "Votorantim",
-    state: "SP",
-    rating: 5.0,
-    isMock: true,
-  },
-  {
-    id: "mock-p-2",
-    userId: "mock-eletrotech",
-    name: "EletroTech Soluções",
-    avatarUrl:
-      "https://ui-avatars.com/api/?name=EletroTech&background=B18CFF&color=fff&size=256&bold=true&format=png",
-    kind: "parceiro",
-    branch: "Materiais Elétricos B2B",
-    city: "Sorocaba",
-    state: "SP",
-    rating: 4.9,
-    isMock: true,
-  },
-];
 
-const MOCK_ADS: FavAd[] = [
-  {
-    id: "mock-ad-1",
-    title: "Kit Furadeira Bosch 12V em Promoção",
-    price: 380,
-    priceFrom: 499,
-    city: "Sorocaba",
-    state: "SP",
-    imageUrl: null,
-    category: "Ferramentas",
-    isMock: true,
-  },
-];
 
 /* ======================= CORES POR CATEGORIA ======================= */
 
@@ -132,11 +91,11 @@ function normalizeEmail(email?: string | null) {
 function scopedMockProfiles(email?: string | null): FavProfile[] {
   // Mock obrigatório apenas para o lojista demo Confere Planejados.
   // Não reutiliza esses cards para outros usuários autenticados.
-  return normalizeEmail(email) === "confere2024@gmail.com" ? MOCK_PROFILES : [];
+  return [];
 }
 
 function scopedMockAds(email?: string | null): FavAd[] {
-  return normalizeEmail(email) === "confere2024@gmail.com" ? MOCK_ADS : [];
+  return [];
 }
 
 function firstText(...values: unknown[]): string | null {

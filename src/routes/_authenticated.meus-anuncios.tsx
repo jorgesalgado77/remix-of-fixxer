@@ -40,45 +40,6 @@ const LOCAL_KEY = "fixxer:commercial_ads:local";
 const AD_TABLES = ["posts", "ads", "feed_posts"] as const;
 
 // ---- MOCK FALLBACK ----
-const MOCK_USER_ADS: AdRow[] = [
-  {
-    id: "mock-ad-bosch-12v",
-    title: "Kit Furadeira e Parafusadeira Bosch 12V em Promoção",
-    content: "Kit completo com maleta, 2 baterias, carregador e maleta de brocas.",
-    category: "lojista",
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    metadata: {
-      photos: ["https://images.tcdn.com.br/img/img_prod/1058380/kit_furadeira_e_parafusadeira_bosch_12v_go_kit_com_2_baterias_carregador_e_maleta_1223_1_2ba1e5c9c4ae5b8e46bdff09f16b5e56.jpg"],
-      price_from: 450, price_to: 380, stock: 12, ad_kind: "Produto", status: "active",
-      views: 214, chats: 8,
-      expires_at: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  },
-  {
-    id: "mock-ad-mdf-cru-15mm",
-    title: "Lote B2B de Chapa MDF Cru 15mm - Liquidação de Estoque",
-    content: "Lote fechado com 50 chapas de MDF cru 15mm (2750x1830mm).",
-    category: "parceiro",
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    metadata: {
-      photos: [], price_to: 1250, stock: 50, ad_kind: "Lote B2B", status: "active",
-      views: 89, chats: 3,
-      expires_at: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  },
-  {
-    id: "mock-ad-expired-tinta",
-    title: "Tinta Acrílica Suvinil Premium 18L",
-    content: "Estoque de fim de temporada. Cores diversas em promoção.",
-    category: "lojista",
-    created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    metadata: {
-      photos: [], price_to: 289, stock: 6, ad_kind: "Produto", status: "active",
-      views: 412, chats: 15,
-      expires_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  },
-];
 
 function readLocalAds(uid: string | null): AdRow[] {
   try {
@@ -222,9 +183,9 @@ function MeusAnunciosPage() {
     try {
       const local = readLocalAds(currentUid).filter((l) => !remote.some((r) => r.id === l.id));
       const merged = [...remote, ...local];
-      setAds(merged.length > 0 ? merged : MOCK_USER_ADS);
+      setAds(merged);
     } catch {
-      setAds(anySucceeded ? remote : MOCK_USER_ADS);
+      setAds(remote);
     } finally {
       setLoading(false);
     }
