@@ -102,6 +102,7 @@ export function ProfileSummaryCard({
             display_name: resolved.identity.displayName,
             full_name: resolved.identity.fullName,
             avatar_url: resolved.identity.avatarUrl,
+            company_name: (resolved.specializations as any)?.store?.company_name || null,
             // Mantém city/state das especializações (dados técnicos, não de identidade visual)
             city: (resolved.specializations as any)?.store?.city || (resolved.specializations as any)?.provider?.city || null,
             state: (resolved.specializations as any)?.store?.state || (resolved.specializations as any)?.provider?.state || null,
