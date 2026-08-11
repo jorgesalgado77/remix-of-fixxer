@@ -32,6 +32,8 @@ type ProfileLite = {
   state?: string | null;
   plan_id?: string | null;
   plan_renews_at?: string | null;
+  karma_score?: number;
+  is_verified?: boolean;
 };
 
 const ROLE_LABEL: Record<PanelRole, string> = {
