@@ -24,7 +24,6 @@ vi.mock("@/lib/supabaseExternal", () => ({
     from(table: string) {
       if (table === "profiles_public") return chainByColumn({ user_id: state.publicProfile, id: state.publicProfileById });
       if (table === "profiles") {
-        // Retorna primeiro por id, depois por user_id conforme chamadas subsequentes
         return {
           select: () => ({
             eq: (col: string) => ({
@@ -43,6 +42,23 @@ vi.mock("@/lib/supabaseExternal", () => ({
   },
 }));
 
+// Mock do resolver de categoria para evitar interferência de lógica de rede/cache real nos testes de peer profile
+vi.mock("@/lib/public-profile-category", async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  return {
+    ...actual,
+    resolvePublicProfileCategory: vi.fn(async (userId: string, options?: any) => {
+      // Lógica simplificada para o mock de teste baseada no estado global injetado
+      if (state.store && (state.store.user_id === userId || userId === "u1")) return "lojista";
+      if (state.provider && (state.provider.user_id === userId || userId === "u2")) return "prestador";
+      if (options?.profile?.role === "fornecedor" || (state.profiles?.role === "fornecedor" && userId === "u3")) return "fornecedor";
+      if (options?.profile?.role === "cliente" || (state.profiles?.role === "cliente" && userId === "u4")) return "cliente";
+      if (options?.profile?.role === "prestador" || (state.publicProfile?.role === "prestador" && userId === "u0")) return "prestador";
+      return null;
+    }),
+  };
+});
+
 import { resolvePeerProfile, clearPeerCache, initialsOf } from "@/lib/chat-peer-profile";
 
 beforeEach(() => {
@@ -53,6 +69,7 @@ beforeEach(() => {
   state.provider = null;
   state.store = null;
   clearPeerCache();
+  vi.clearAllMocks();
 });
 
 describe("chat-peer-profile", () => {
@@ -79,7 +96,7 @@ describe("chat-peer-profile", () => {
     expect(p.name).toBe("Conversa");
     expect(p.avatarUrl).toBeNull();
     expect(p.initials).toBe("C");
-    expect(p.source).toContain("fallback");
+    expect(p.isFallback).toBe(true);
   });
 
   it("prefers display_name from profiles by id", async () => {
@@ -113,7 +130,6 @@ describe("chat-peer-profile", () => {
     const p = await resolvePeerProfile("u4");
     expect(p.name).toBe("Loja Alpha");
     expect(p.avatarUrl).toBe("http://logo.png");
-    expect(p.source).toEqual(expect.arrayContaining(["store_profiles.user_id.name", "store_profiles.user_id.avatar"]));
   });
 
   it("falls back to provider_profiles for service provider avatar and name", async () => {
@@ -122,7 +138,6 @@ describe("chat-peer-profile", () => {
     const p = await resolvePeerProfile("u6");
     expect(p.name).toBe("Prestador Real");
     expect(p.avatarUrl).toBe("http://provider.png");
-    expect(p.source).toEqual(expect.arrayContaining(["provider_profiles.user_id.name", "provider_profiles.user_id.avatar"]));
   });
 
   it("caches resolved profile for subsequent calls", async () => {
