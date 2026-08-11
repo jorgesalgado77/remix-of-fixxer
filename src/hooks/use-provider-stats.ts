@@ -25,8 +25,17 @@ export type StatTx = {
   created_at: string | null;
 };
 
+export type PixEntry = {
+  id: string;
+  date: string | null;
+  type: "Reserva" | "Info Produto" | "Serviço";
+  label: string;
+  amount: number;
+};
+
 export type ProviderStats = {
   loading: boolean;
+  error: string | null;
   userId: string | null;
   activeOrders: StatOrder[];
   doneOrders: StatOrder[];
@@ -37,6 +46,7 @@ export type ProviderStats = {
   balanceReservations: number;
   balanceProducts: number;
   balanceServices: number;
+  periodEntries: PixEntry[];
   period: string;
   customRange: { start: string; end: string } | null;
   setPeriod: (p: string) => void;
@@ -56,6 +66,7 @@ function isCanceled(s: string | null) {
 
 export function useProviderStats(): ProviderStats {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [orders, setOrders] = useState<StatOrder[]>([]);
   const [reviews, setReviews] = useState<StatReview[]>([]);
@@ -100,6 +111,7 @@ export function useProviderStats(): ProviderStats {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(null);
       try {
         const { data: sess } = await supabaseExternal.auth.getSession();
         const uid = sess.session?.user?.id ?? null;
@@ -185,6 +197,9 @@ export function useProviderStats(): ProviderStats {
           console.error("useProviderStats: failed to fetch transactions", e);
           if (!cancelled) setTransactions([]);
         }
+      } catch (e: any) {
+        console.error("useProviderStats: fatal", e);
+        if (!cancelled) setError(e?.message ?? "Falha ao carregar dados financeiros.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -243,8 +258,31 @@ export function useProviderStats(): ProviderStats {
     .filter(o => !o.status?.toLowerCase().includes("reserva") && isDone(o.status))
     .reduce((acc, o) => acc + (o.price || 0), 0);
 
+  // Extrato consolidado do período (ordens concluídas + transações de produtos)
+  const periodEntries: PixEntry[] = [
+    ...filteredOrders
+      .filter((o) => isDone(o.status))
+      .map((o) => ({
+        id: o.id,
+        date: o.created_at,
+        type: (o.status?.toLowerCase().includes("reserva") ? "Reserva" : "Serviço") as PixEntry["type"],
+        label: o.title || "Ordem de serviço",
+        amount: o.price || 0,
+      })),
+    ...filteredTx
+      .filter((tx) => tx.source === "purchase_pack" || tx.reason?.toLowerCase().includes("produto"))
+      .map((tx) => ({
+        id: tx.id,
+        date: tx.created_at,
+        type: "Info Produto" as const,
+        label: tx.reason || "Info produto",
+        amount: tx.amount || 0,
+      })),
+  ].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+
   return {
     loading,
+    error,
     userId,
     activeOrders,
     doneOrders,
@@ -255,6 +293,7 @@ export function useProviderStats(): ProviderStats {
     balanceReservations,
     balanceProducts,
     balanceServices,
+    periodEntries,
     period,
     customRange,
     setPeriod,

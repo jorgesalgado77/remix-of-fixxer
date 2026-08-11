@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Coins, Copy, QrCode, TrendingUp, Info, Check, Share2, FileDown, MessageSquare, Loader2, AlertTriangle, X, Settings, RefreshCw, Calendar, Search, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,55 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
     }
   }, [open]);
 
+  // Sinaliza recarga manual para exibir toast de sucesso quando terminar
+  const reloadingRef = useRef(false);
+  useEffect(() => {
+    if (reloadingRef.current && !stats?.loading) {
+      reloadingRef.current = false;
+      if (stats?.error) toast.error("Falha ao recarregar saldos", { description: stats.error });
+      else toast.success("Saldos atualizados com sucesso");
+    }
+  }, [stats?.loading, stats?.error]);
+
+  const handleReload = () => {
+    reloadingRef.current = true;
+    stats?.reload?.();
+  };
+
+  const periodLabel = (p: string) =>
+    p === "custom" ? "intervalo personalizado" : `últimos ${p} dias`;
+
+  const handlePeriodChange = (v: string) => {
+    stats?.setPeriod?.(v);
+    toast.info(`Período alterado: ${periodLabel(v)}`);
+  };
+
+  const entries: any[] = stats?.periodEntries ?? [];
+
+  const exportCSV = () => {
+    if (!entries.length) {
+      toast.error("Nenhuma transação no período selecionado para exportar.");
+      return;
+    }
+    const rows = [
+      ["Data", "Tipo", "Descrição", "Valor (BRL)"],
+      ...entries.map((e) => [
+        e.date ? new Date(e.date).toLocaleDateString("pt-BR") : "-",
+        e.type,
+        String(e.label ?? "").replace(/[";\n]/g, " "),
+        Number(e.amount || 0).toFixed(2).replace(".", ","),
+      ]),
+    ];
+    const csv = "\uFEFF" + rows.map((r) => r.map((c) => `"${c}"`).join(";")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `extrato-pix-${stats?.period || "30"}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Extrato exportado em CSV");
+  };
+
   const pixKey = profile?.pix_key;
 
   return (
@@ -62,7 +111,7 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => stats?.reload?.()} 
+                onClick={handleReload} 
                 disabled={isLoadingStats || loading}
                 className="h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-emerald-400 transition-all active:scale-90"
                 title="Recarregar saldos"
@@ -76,7 +125,7 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
         <div className="p-6 space-y-6 overflow-y-auto scrollbar-none relative flex-1">
           {/* Filtros de Período */}
           <div className="space-y-4">
-            <Tabs value={stats?.period || "30"} onValueChange={(v) => stats?.setPeriod?.(v)} className="w-full">
+            <Tabs value={stats?.period || "30"} onValueChange={handlePeriodChange} className="w-full">
               <TabsList className="grid w-full grid-cols-4 bg-white/5 p-1 rounded-xl">
                 {['7', '15', '30', 'custom'].map((p) => (
                   <TabsTrigger key={p} value={p} className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-white/10 transition-all">
@@ -115,7 +164,7 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
                         toast.error("Data inicial não pode ser maior que a final");
                         return;
                       }
-                      stats?.reload?.();
+                      handleReload();
                     }}
                     className="h-9 w-9 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg"
                   >
@@ -125,6 +174,17 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
               </div>
             )}
           </div>
+
+          {/* Erro de carregamento */}
+          {(stats?.error || error) && (
+            <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 animate-in fade-in">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+              <p className="text-xs text-red-100 flex-1">{stats?.error || error}</p>
+              <Button size="sm" variant="ghost" onClick={handleReload} className="h-7 text-[10px] uppercase font-black text-red-300 hover:text-white hover:bg-red-500/20">
+                Tentar novamente
+              </Button>
+            </div>
+          )}
 
           {/* Saldos Reais */}
           {isLoadingStats || loading ? (
@@ -155,6 +215,54 @@ export function PixManagerModal({ open, onClose, profile, stats, isLoadingStats 
               ))}
             </div>
           )}
+
+          {/* Extrato do período */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase text-white/40 tracking-widest">
+                Extrato do período {entries.length > 0 && <span className="text-emerald-400">({entries.length})</span>}
+              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={exportCSV}
+                disabled={isLoadingStats || stats?.loading || entries.length === 0}
+                className="h-7 gap-1.5 text-[10px] uppercase font-black tracking-widest text-white/60 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg disabled:opacity-30"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                Exportar CSV
+              </Button>
+            </div>
+
+            {isLoadingStats || stats?.loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl bg-white/5" />)}
+              </div>
+            ) : entries.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-white/[0.02] border border-dashed border-white/10 text-center">
+                <Info className="w-5 h-5 text-white/20 mx-auto mb-2" />
+                <p className="text-xs font-bold text-white/40">Nenhuma transação no período selecionado</p>
+                <p className="text-[10px] text-white/25 mt-0.5">Ajuste o filtro de datas para visualizar outros registros.</p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/5 divide-y divide-white/5 overflow-hidden max-h-64 overflow-y-auto scrollbar-none">
+                {entries.map((e) => (
+                  <div key={`${e.type}-${e.id}`} className="flex items-center gap-3 p-3 bg-white/[0.02] hover:bg-white/[0.05] transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{e.label}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400/70">{e.type}</span>
+                        <span className="text-[9px] text-white/30">
+                          {e.date ? new Date(e.date).toLocaleDateString("pt-BR") : "—"}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm font-black text-white tracking-tighter shrink-0">{BRL(e.amount || 0)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Chave PIX */}
           {!pixKey ? (
