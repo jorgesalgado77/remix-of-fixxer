@@ -67,7 +67,7 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
       // TODO: integrar checkout real (PIX mensal / Cartão 12x anual)
       setTimeout(async () => {
         setProcessing(false);
-        toast.success(\`Upgrade para \${targetCfg.name} (\${billing === "monthly" ? "PIX Mensal" : "Cartão Anual 12x"}) iniciado!\`);
+        toast.success(`Upgrade para ${targetCfg.name} (${billing === "monthly" ? "PIX Mensal" : "Cartão Anual 12x"}) iniciado!`);
         
         // Simulação de sucesso no backend gravando resposta
         if (user) {
@@ -75,10 +75,10 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
             user_id: user.id,
             event_type: 'plan_upgrade',
             status: 'success',
-            description: \`Upgrade para \${targetCfg.name} concluído com sucesso.\`,
+            description: `Upgrade para ${targetCfg.name} concluído com sucesso.`,
             metadata: {
               plan_id: targetCfg.id,
-              transaction_id: \`TX-\${Math.random().toString(36).slice(2, 10).toUpperCase()}\`,
+              transaction_id: `TX-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
               receipt_url: 'https://fixxer.app/receipts/demo',
               document_path: 'receipts/demo-receipt.pdf' // Simulação de path para download
             }
