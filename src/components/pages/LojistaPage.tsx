@@ -582,8 +582,8 @@ export function LojistaDashboard() {
       <main className="flex-1 overflow-y-auto scrollbar-none bg-[#050505] pt-16 md:pt-0">
         {/* Barra de ações do painel — visível em mobile (o header desktop já a exibe) */}
         <div className="md:hidden px-4 pt-3 space-y-3">
-          <ProfileSummaryCard role="lojista" variant="inline" />
           <PanelActions role="lojista" />
+          <ProfileSummaryCard role="lojista" variant="inline" />
         </div>
 
         <header className="px-8 py-6 border-b border-white/10 flex items-center justify-between sticky top-0 z-10 bg-[#050505]/80 backdrop-blur-md hidden md:flex">

@@ -43,7 +43,6 @@ function PrestadorDashboard() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 md:pl-72 animate-in fade-in duration-500">
       <ProfileSummaryCard role="prestador" variant="sidebar" />
-      <ProfileSummaryCard role="prestador" variant="auto" className="md:hidden" />
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
@@ -54,9 +53,6 @@ function PrestadorDashboard() {
               <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
                 MEU <span className="text-primary">PAINEL</span>
               </h1>
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-500 uppercase">
-                <Star className="w-2 h-2 fill-current" /> 4.9
-              </div>
             </div>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Controle de Agendas, O.S. e Reputação</p>
           </div>
@@ -64,6 +60,7 @@ function PrestadorDashboard() {
         {/* Notifications handled inside ProfileSummaryCard sidebar */}
         <PanelActions role="prestador" />
       </header>
+      <ProfileSummaryCard role="prestador" variant="auto" className="md:hidden" />
 
 
 
