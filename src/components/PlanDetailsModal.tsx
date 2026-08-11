@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { X, Crown, Check, Rocket, Calendar, Coins, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+
 import { type PlanId } from "@/lib/monetization";
 import { useMonetization } from "@/hooks/use-monetization";
 
@@ -42,13 +44,55 @@ export function PlanDetailsModal({ currentPlan, renewsAt, onClose }: Props) {
     if (!targetCfg) return;
     if (targetCfg.id === currentPlan) { toast.info("Você já está neste plano."); return; }
     setProcessing(true);
-    // TODO: integrar checkout real (PIX mensal / Cartão 12x anual)
-    setTimeout(() => {
+    
+    try {
+      // 1. Log da tentativa no histórico (Auditoria)
+      const { data: { user } } = await supabaseExternal.auth.getUser();
+      if (user) {
+        await supabaseExternal.from('system_audit').insert({
+          user_id: user.id,
+          event_type: 'plan_upgrade',
+          status: 'pending',
+          description: \`Iniciada tentativa de upgrade para o plano \${targetCfg.name} (\${billing})\`,
+          metadata: {
+            plan_id: targetCfg.id,
+            billing_cycle: billing,
+            price: targetCfg.priceMonthlyBRL,
+            currency: 'BRL',
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+
+      // TODO: integrar checkout real (PIX mensal / Cartão 12x anual)
+      setTimeout(async () => {
+        setProcessing(false);
+        toast.success(\`Upgrade para \${targetCfg.name} (\${billing === "monthly" ? "PIX Mensal" : "Cartão Anual 12x"}) iniciado!\`);
+        
+        // Simulação de sucesso no backend gravando resposta
+        if (user) {
+          await supabaseExternal.from('system_audit').insert({
+            user_id: user.id,
+            event_type: 'plan_upgrade',
+            status: 'success',
+            description: \`Upgrade para \${targetCfg.name} concluído com sucesso.\`,
+            metadata: {
+              plan_id: targetCfg.id,
+              transaction_id: \`TX-\${Math.random().toString(36).slice(2, 10).toUpperCase()}\`,
+              receipt_url: 'https://fixxer.app/receipts/demo',
+              document_path: 'receipts/demo-receipt.pdf' // Simulação de path para download
+            }
+          });
+        }
+        
+        onClose();
+      }, 1500);
+    } catch (e) {
       setProcessing(false);
-      toast.success(`Upgrade para ${targetCfg.name} (${billing === "monthly" ? "PIX Mensal" : "Cartão Anual 12x"}) iniciado!`);
-      onClose();
-    }, 900);
+      toast.error("Erro ao processar upgrade.");
+    }
   };
+
 
   const price = targetCfg ? (billing === "monthly" ? targetCfg.priceMonthlyBRL : targetCfg.priceYearlyBRL) : 0;
   const monthlyEquivalent = billing === "yearly" && targetCfg ? targetCfg.priceYearlyBRL / 12 : null;
