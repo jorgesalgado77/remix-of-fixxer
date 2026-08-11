@@ -798,6 +798,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
     );
     const base: any = {
       category: effectiveCategory,
+      type: effectiveCategory === "fornecedor" ? "anuncio_fornecedor" : "anuncio_loja",
       service_types: finalServiceTypes,
       location: {
         neighborhood: neighborhood.trim(),
@@ -826,6 +827,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         name: i.file.name,
         size: i.file.size,
         kind: i.kind,
+        url: i.url,
         order,
       })),
     };
@@ -835,6 +837,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         weight_kg: Number(freightWeight),
       };
     }
+
     const fvNum = parseCurrencyBRL(fixedValue);
     const cvNum = parseCurrencyBRL(contractValue);
     if (priceType === "fixo") return { ...base, fixed_value: fvNum };
@@ -929,6 +932,7 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         freight: (payload as any).freight ?? null,
         files: (payload as any).files,
         category: payload.category,
+        type: (payload as any).type,
         urgency_tag: (payload as any).urgency_tag ?? null,
         service_radius_km: (payload as any).service_radius_km ?? null,
         tags: (payload as any).tags ?? [],
@@ -936,11 +940,35 @@ export function CreateAdModal({ open, onClose, defaultCategory = "lojista" }: Cr
         status: "CRIADA",
       };
 
+      // Se for fornecedor, também persiste no feed_posts para descoberta global
+      if (payload.category === "fornecedor") {
+        await supabaseExternal
+          .from("feed_posts")
+          .insert({
+            author_id: uid,
+            type: "anuncio_fornecedor",
+            category: "fornecedor",
+            title: row.title,
+            description: row.description,
+            price: row.price,
+            location: { city: row.city, state: row.uf, neighborhood: row.neighborhood },
+            media: row.files,
+            metadata: {
+              urgency: row.urgency_tag,
+              tags: row.tags,
+              specs: row.tech_specs,
+              delivery_modes: (payload as any).delivery_modes
+            },
+            status: "ativo"
+          });
+      }
+
       const { data, error } = await supabaseExternal
         .from("service_orders")
         .insert(row)
         .select("id")
         .single();
+
 
       if (error) throw error;
 
