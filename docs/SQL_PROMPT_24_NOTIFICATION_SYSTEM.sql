@@ -15,6 +15,14 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Garantir que a coluna content exista se a tabela já existir (caso o schema cache esteja desatualizado)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='content') THEN
+        ALTER TABLE public.notifications ADD COLUMN content TEXT;
+    END IF;
+END $$;
+
 -- Habilitar RLS
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
