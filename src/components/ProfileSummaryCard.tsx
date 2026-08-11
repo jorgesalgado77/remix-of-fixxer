@@ -87,32 +87,24 @@ export function ProfileSummaryCard({
     let cancelled = false;
     (async () => {
       try {
-        // 1. Obtém sessão rápida primeiro
         const { data: sessData } = await supabaseExternal.auth.getSession();
         const uid = sessData.session?.user?.id;
         if (!uid) return;
 
-        // Tenta ler cache local para renderização instantânea
-        const cacheKey = `fixxer_profile_lite_${uid}`;
-        const cached = localStorage.getItem(cacheKey);
-        if (cached && !cancelled) {
-          setProfile(JSON.parse(cached));
-          setLoading(false);
-        }
-
-        // 2. Busca dados frescos
-        const { data } = await supabaseExternal
-          .from("profiles")
-          .select(
-            "id, display_name, company_name, full_name, avatar_url, logo_url, city, state, plan_id, plan_renews_at",
-          )
-          .eq("id", uid)
-          .maybeSingle();
+        const { resolveIdentity } = await import("@/lib/identity/identity-service");
+        const resolved = await resolveIdentity(uid);
         
-        if (!cancelled && data) {
-          const prof = data as ProfileLite;
+        if (!cancelled && resolved) {
+          // Mapeia de CanonicalIdentity (Identity Service) para o formato interno do Card
+          const prof: ProfileLite = {
+            id: resolved.identity.id,
+            display_name: resolved.identity.displayName,
+            full_name: resolved.identity.fullName,
+            avatar_url: resolved.identity.avatarUrl,
+            city: (resolved.specializations as any)?.store?.city || (resolved.specializations as any)?.provider?.city || null,
+            state: (resolved.specializations as any)?.store?.state || (resolved.specializations as any)?.provider?.state || null,
+          };
           setProfile(prof);
-          localStorage.setItem(cacheKey, JSON.stringify(prof));
         }
 
         try {
@@ -131,12 +123,15 @@ export function ProfileSummaryCard({
             }
           }
         } catch { /* reviews indisponível */ }
-      } catch { /* ignore */ } finally {
+      } catch (err) {
+        console.warn("[ProfileSummaryCard] Erro ao carregar identidade canônica:", err);
+      } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
   }, []);
+
 
   const name = displayNameOf(profile);
   const avatar = avatarOf(profile);
