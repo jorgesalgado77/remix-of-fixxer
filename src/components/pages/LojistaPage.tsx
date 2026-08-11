@@ -1,3 +1,4 @@
+import { GoldMedalBadge } from "@/components/GoldMedalBadge";
 import { useProviderStats } from "@/hooks/use-provider-stats";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
@@ -699,8 +700,8 @@ export function LojistaDashboard() {
                 isProfileComplete={isProfileComplete}
                 profileSummary={{
                   ...profileSummary,
-                  isVerified: profile?.is_verified,
-                  planId: profile?.plan_id
+                  isVerified: profileSummary?.isVerified,
+                  planId: profileSummary?.planId
                 }}
                 showPixModal={showPixModal}
                 setShowPixModal={setShowPixModal}

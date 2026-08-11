@@ -1107,13 +1107,21 @@ export function LojistaPublicProfilePage() {
                     )}
                     <AvailabilityBadge userId={profile?.user_id ?? null} />
                   </div>
-                  {primaryPosition && (
-                    <div className="mt-2">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-400/50 text-[11px] font-black uppercase italic text-amber-300">
-                        ★ {primaryPosition}
+                  {/* Nome e Categoria */}
+                  <div className="space-y-1">
+                    <h1 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter leading-none">
+                      {profile?.company_name || profile?.display_name || "Lojista"}
+                    </h1>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
+                        🏪 Lojista
+                      </span>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-red-500" />
+                        {profile?.city ? `${profile.city} / ${profile.state}` : "Localização não informada"}
                       </span>
                     </div>
-                  )}
+                  </div>
 
                   {/* Bloco de chips de compatibilidade removido do header a pedido:
                       as mesmas informações (work_modes, veículo, ofertas) já aparecem
