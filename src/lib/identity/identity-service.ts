@@ -101,6 +101,8 @@ export async function resolveIdentity(
     isVerified: !!base.is_verified,
     planId: base.plan_id || "free",
     createdAt: base.created_at || new Date().toISOString(),
+    karmaScore: base.karma_score ? Number(base.karma_score) : 5.0,
+
     lastActiveAt: base.last_active_at || null,
     verificationStatus: base.verification_status || (base.is_verified ? "verified" : "none"),
     verificationNote: base.verification_note || null,

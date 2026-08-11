@@ -106,7 +106,7 @@ const SECTORS: Array<"Todas as Demandas" | Sector> = [
   "Softwares & Maquinário",
 ];
 
-const MOCK_REQUESTS: B2BRequest[] = [];
+// MOCK_REQUESTS removido conforme Prompt 17.
 
 
 const PAGE_SIZE = 10;
@@ -145,12 +145,15 @@ export default function FeedParceiroPage() {
   const [quoteOpen, setQuoteOpen] = useState<B2BRequest | null>(null);
   const [statusFilter, setStatusFilter] = usePersistedState<StatusFilterKey>("fixxer_feed_parceiro_status", "todos");
   const [detailsFor, setDetailsFor] = useState<B2BRequest | null>(null);
-  const [page, setPage] = usePersistedState<number>("fixxer_feed_parceiro_page", 1);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+
 
   // Persistência local imediata dos favoritos
   useEffect(() => {
@@ -215,15 +218,14 @@ export default function FeedParceiroPage() {
     })();
   }, [reloadKey]);
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setLoadError(null);
-    setPage(1);
+  const handleGlobalRefresh = useCallback(async () => {
+    setIsRefreshing(true);
     setReloadKey((k) => k + 1);
     await new Promise((r) => setTimeout(r, 400));
-    setRefreshing(false);
+    setIsRefreshing(false);
     toast.success("Feed atualizado");
   }, []);
+
 
   const {
     urgency: urgencyFilter,
@@ -234,35 +236,72 @@ export default function FeedParceiroPage() {
     setTag: setTagFilter,
   } = useAdFilterSearchState("/_authenticated/feed/parceiro");
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const distNum =
-      distanceFilter === "todos" ? ("todos" as const) : (Number(distanceFilter) as number);
-    return MOCK_REQUESTS.filter((r) => {
-      if (activeSector !== "Todas as Demandas" && r.sector !== activeSector) return false;
-      if (statusFilter !== "todos" && getFeedStatus(r.id) !== statusFilter) return false;
-      // Deriva atributos de anúncio a partir do B2BRequest (compat com applyAdFiltersToQuery).
-      const urgency_tag = coerceUrgency(r.status) ?? (r.status === "urgente" ? "urgente" : "normal");
-      const service_radius_km =
-        (r as unknown as { service_radius_km?: number }).service_radius_km ?? 30;
-      const tags =
-        (r as unknown as { tags?: string[] }).tags ??
-        [r.sector, r.store.name]
-          .map((s) => s.toLowerCase().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}_-]+/gu, ""))
-          .filter(Boolean);
-      return matchesAdFilters(
-        {
-          urgency_tag,
-          service_radius_km,
-          tags,
-          title: r.title,
-          description: r.description,
-          keywords: [r.store.name, r.city, r.state, r.sector],
+  const [posts, setPosts] = useState<B2BRequest[]>([]);
+  const [offset, setOffset] = useState(0);
+  const [hasMoreResult, setHasMoreResult] = useState(true);
+
+  const loadFeed = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+        setOffset(0);
+      } else {
+        setLoading(true);
+      }
+      setLoadError(null);
+
+      const { feedService } = await import("@/lib/feed-service");
+      const results = await feedService.getFeed({
+        category: "fornecedor",
+        type: "solicitacao_b2b",
+        query: search,
+        status: statusFilter,
+        offset: isRefresh ? 0 : offset,
+        limit: 10
+      });
+
+      const mapped: B2BRequest[] = results.map(p => ({
+        id: p.id,
+        store: {
+          id: p.authorId,
+          name: p.author?.presentation.name || "Lojista",
+          initials: p.author?.presentation.initials || "??",
+          verified: p.author?.identity.isVerified
         },
-        { urgency: urgencyFilter, distance: distNum, tag: tagFilter, term },
-      );
-    });
-  }, [search, activeSector, statusFilter, urgencyFilter, distanceFilter, tagFilter]);
+        requesterType: p.category === "lojista" ? "lojista" : "prestador",
+        city: p.location.city || "Região",
+        state: p.location.state || "",
+        rating: p.author?.identity.karmaScore || 5,
+        postedAt: new Date(p.createdAt).toLocaleDateString("pt-BR"),
+        status: p.urgency === "urgente" ? "urgente" : "aberto",
+        sector: (p.metadata?.sector || "Ferragens & Insumos") as Sector,
+        title: p.title,
+        description: p.description,
+        specs: (p.metadata?.specs || []) as string[],
+        quantity: String(p.metadata?.quantity || "Consultar"),
+        deadline: p.metadata?.deadline || "A combinar",
+        paymentTerms: p.metadata?.paymentTerms || "A combinar",
+        attachment: p.media?.[0]?.url
+      }));
+
+      setPosts(prev => isRefresh ? mapped : [...prev, ...mapped]);
+      setHasMoreResult(results.length === 10);
+      setOffset(prev => isRefresh ? 10 : prev + 10);
+    } catch (err: any) {
+      setLoadError(err.message || "Erro ao carregar demandas.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [search, statusFilter, offset]);
+
+  useEffect(() => {
+    loadFeed(true);
+  }, [search, activeSector, statusFilter]);
+
+  const filtered = posts;
+
+
 
   const branchCtx = useUserBranchContext();
   const rankedFiltered = useMemo(() => {
@@ -277,36 +316,25 @@ export default function FeedParceiroPage() {
     return applyRelevanceFallback(sorted, 3).map((x) => x.r);
   }, [filtered, branchCtx]);
 
-  const paged = useMemo(() => rankedFiltered.slice(0, page * PAGE_SIZE), [rankedFiltered, page]);
-  useFeedPreload(
-    rankedFiltered,
-    paged.length,
-    PAGE_SIZE,
-    (r) => r.attachment ?? null,
-  );
-  const hasMore = paged.length < rankedFiltered.length;
+  const paged = rankedFiltered;
+  const hasMore = hasMoreResult;
+
+
 
   useEffect(() => {
-    setPage(1);
-  }, [search, activeSector]);
-
-  useEffect(() => {
-    if (!sentinelRef.current || !hasMore || loadingMore) return;
+    if (!sentinelRef.current || !hasMore || loading) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setLoadingMore(true);
-          setTimeout(() => {
-            setPage((p) => p + 1);
-            setLoadingMore(false);
-          }, 350);
+          loadFeed();
         }
       },
       { rootMargin: "800px" },
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore]);
+  }, [hasMore, loading, loadFeed]);
+
 
   const persistSave = useCallback(
     async (postId: string, willSave: boolean) => {
@@ -408,7 +436,7 @@ export default function FeedParceiroPage() {
   };
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} accent="#A855F7">
+    <PullToRefresh onRefresh={handleGlobalRefresh} accent="#A855F7">
     <div className="min-h-screen bg-[#0A0A0B] text-white pb-32">
       <UniversalSearchPanel defaultPill="fornecedor" />
       {/* HEADER FIXO */}
@@ -456,7 +484,7 @@ export default function FeedParceiroPage() {
               accent="#A855F7"
               busy={refreshing}
               error={loadError}
-              onRetry={handleRefresh}
+              onRetry={handleGlobalRefresh}
             />
           </div>
         )}
@@ -715,13 +743,13 @@ export default function FeedParceiroPage() {
         {/* Sentinela do scroll infinito */}
         {filtered.length > 0 && (
           <div ref={sentinelRef} className="py-6 text-center">
-            {loadingMore && (
+            {loading && (
               <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-white/50">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#A855F7] border-t-transparent" />
                 Carregando mais demandas...
               </div>
             )}
-            {!hasMore && !loadingMore && (
+            {!hasMore && !loading && (
               <span className="text-[11px] uppercase tracking-widest text-white/40">
                 — Fim das demandas —
               </span>

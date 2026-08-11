@@ -93,7 +93,7 @@ type FeedPost = {
   keywords: string[];
 };
 
-const MOCK_POSTS: FeedPost[] = [];
+// MOCK_POSTS removido conforme Prompt 17.
 
 
 const FILTERS: { key: "todos" | FeedCategory; label: string; icon: React.ReactNode }[] = [
@@ -156,7 +156,16 @@ export default function FeedLojistaPage() {
     return () => window.removeEventListener("fixxer:universal-search", h as EventListener);
   }, [setSearch]);
   const [debouncedSearch, setDebouncedSearch] = useState(search);
-  const [searching, setSearching] = useState(false);
+  
+  // Debounce da busca
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 220);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [savesLoaded, setSavesLoaded] = useState(false);
   const [savesRemote, setSavesRemote] = useState(false);
@@ -181,127 +190,90 @@ export default function FeedLojistaPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
 
-  const fetchPosts = useCallback(async () => {
+  const loadFeed = useCallback(async (isRefresh = false) => {
     try {
-      setSearching(true);
+      if (isRefresh) {
+        setRefreshing(true);
+        setOffset(0);
+      } else {
+        setLoading(true);
+      }
       setLoadError(null);
+
+      const currentOffset = isRefresh ? 0 : offset;
+      const { feedService } = await import("@/lib/feed-service");
       
-      const { data, error } = await supabaseExternal
-        .from("feed_posts")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const results = await feedService.getFeed({
+        category: "lojista",
+        type: filter === "todos" ? "todos" : (filter as any),
+        query: debouncedSearch,
+        status: statusFilter,
+        offset: currentOffset,
+        limit: 10
+      });
 
-      if (error) throw error;
+      const mappedPosts: FeedPost[] = results.map(p => ({
+        id: p.id,
+        category: p.category as any,
+        author: {
+          id: p.authorId,
+          name: p.author?.presentation.name || "Usuário",
+          avatarInitials: p.author?.presentation.initials || "?",
+          isMine: p.authorId === userId,
+          gold: p.author?.identity.planId === "premium"
+        },
+        rating: p.author?.identity.karmaScore ? Number(p.author.identity.karmaScore) : 5,
+        city: p.location.city || "Região",
+        postedAt: new Date(p.createdAt).toLocaleDateString("pt-BR"),
+        title: p.title,
+        description: p.description,
+        budget: p.price ? `R$ ${p.price.toLocaleString("pt-BR")}` : undefined,
+        urgency: p.urgency as any,
+        media: p.media as any,
+        keywords: []
+      }));
 
-      if (data) {
-        const formatted: FeedPost[] = data.map((p: any) => ({
-          id: p.id,
-          category: p.type === "b2c" ? "cliente" : p.type as any,
-          author: {
-            id: p.author_id,
-            name: p.metadata?.author_name || "Membro FIXXER",
-            avatarInitials: (p.metadata?.author_name || "FX").substring(0, 2).toUpperCase(),
-            gold: p.metadata?.is_gold,
-            isMine: p.author_id === userId
-          },
-          rating: p.metadata?.rating || 5.0,
-          city: p.location || "Região",
-          postedAt: "há pouco",
-          title: p.title,
-          description: p.description,
-          budget: p.price ? `R$ ${p.price.toLocaleString("pt-BR")}` : undefined,
-          urgency: p.metadata?.urgency_tag as any,
-          serviceRadiusKm: p.metadata?.service_radius_km,
-          media: (p.metadata?.media || []).map((m: any) => ({
-            type: m.type || "image",
-            url: m.url
-          })),
-          keywords: p.metadata?.keywords || []
-        }));
-        setPosts(formatted);
-      }
+      setPosts(prev => isRefresh ? mappedPosts : [...prev, ...mappedPosts]);
+      setHasMore(results.length === 10);
+      setOffset(prev => isRefresh ? 10 : prev + 10);
     } catch (err: any) {
-      console.error("[FeedLojista] Erro ao carregar posts:", err);
-      setLoadError("Falha ao carregar publicações reais.");
+      setLoadError(err.message || "Erro ao carregar feed.");
     } finally {
-      setSearching(false);
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [userId]);
+  }, [filter, debouncedSearch, statusFilter, offset, userId]);
 
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts, reloadKey]);
+    loadFeed(true);
+  }, [filter, debouncedSearch, statusFilter]);
 
-
-  // Debounce da busca — evita filtrar a cada tecla e mostra "buscando..."
+  // Realtime
   useEffect(() => {
-    setSearching(true);
-    const t = setTimeout(() => {
-      setDebouncedSearch(search);
-      setSearching(false);
-    }, 220);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  // Carregar favoritos: primeiro do localStorage (instantâneo),
-  // depois sincronizar com Supabase se logado + tabela existir.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(SAVES_STORAGE_KEY);
-      if (raw) setSaved(new Set(JSON.parse(raw)));
-    } catch {}
-    setSavesLoaded(true);
-
+    let sub: any;
     (async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabaseExternal.auth.getUser();
-        if (!user) return;
-        setUserId(user.id);
-        const { data, error } = await supabaseExternal
-          .from("feed_post_saves")
-          .select("post_id")
-          .eq("user_id", user.id);
-        if (error) {
-          // Tabela não existe: mantém localStorage como fallback silencioso.
-          console.warn("[feed] feed_post_saves indisponível, usando localStorage.", error.message);
-          return;
+      const { feedService } = await import("@/lib/feed-service");
+      sub = feedService.subscribeToFeed((newPost) => {
+        if (newPost.category === "lojista") {
+          loadFeed(true);
         }
-        setSavesRemote(true);
-        const remote = new Set<string>((data || []).map((r: any) => r.post_id));
-        // Merge local + remoto e reconcilia no servidor.
-        const local = new Set(saved);
-        const missing = [...local].filter((id) => !remote.has(id));
-        if (missing.length > 0) {
-          await supabaseExternal.from("feed_post_saves").upsert(
-            missing.map((post_id) => ({ user_id: user.id, post_id })),
-            {
-              onConflict: "user_id,post_id",
-            },
-          );
-          missing.forEach((id) => remote.add(id));
-        }
-        setSaved(remote);
-        localStorage.setItem(SAVES_STORAGE_KEY, JSON.stringify([...remote]));
-      } catch (err) {
-        console.warn("[feed] falha ao sincronizar favoritos:", err);
-        setLoadError(err instanceof Error ? err.message : "Falha de conexão");
-      }
+      });
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reloadKey]);
+    return () => sub?.unsubscribe();
+  }, [loadFeed]);
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setLoadError(null);
-    setPage(1);
-    setReloadKey((k) => k + 1);
-    await new Promise((r) => setTimeout(r, 400));
-    setRefreshing(false);
-    toast.success("Feed atualizado");
-  }, []);
+  const handleRefresh = () => loadFeed(true);
+
+  const branchCtx = useUserBranchContext();
+  const visible = posts;
+  const paged = posts;
+  const searching = loading && posts.length === 0;
+
+
 
   // Persiste local sempre que muda
   useEffect(() => {
@@ -311,112 +283,6 @@ export default function FeedLojistaPage() {
     } catch {}
   }, [saved, savesLoaded]);
 
-  const visibleRaw = useMemo(() => {
-    const q = debouncedSearch.trim().toLowerCase().replace(/^#/, "");
-    // Deriva urgência/raio/tags a partir de keywords quando o mock não traz explícito
-    const decorated: FeedPost[] = posts.map((p) => {
-      const kws = (p.keywords || []).map((k) => k.toLowerCase());
-      const urgency: UrgencyTag =
-        p.urgency ?? (kws.includes("urgente") ? "urgente" : kws.includes("encomenda") ? "encomenda" : "normal");
-      const serviceRadiusKm =
-        p.serviceRadiusKm ?? (p.radiusKm ? Math.min(p.radiusKm, 30) : undefined);
-      const tags = p.tags ?? (p.keywords || []).slice(0, 4);
-      return { ...p, urgency, serviceRadiusKm, tags };
-    });
-    const byCategory = decorated.filter((p) => filter === "todos" || p.category === filter);
-    const byStatus =
-      statusFilter === "todos"
-        ? byCategory
-        : byCategory.filter((p) => getFeedStatus(p.id) === statusFilter);
-    const byUrgency =
-      urgencyFilter === "todos" ? byStatus : byStatus.filter((p) => p.urgency === urgencyFilter);
-    const byDistance =
-      distanceFilter === "todos"
-        ? byUrgency
-        : byUrgency.filter((p) => {
-            const max = Number(distanceFilter);
-            const r = p.serviceRadiusKm ?? p.radiusKm ?? 0;
-            return r > 0 && r <= max;
-          });
-    const tagQ = tagFilter.trim().toLowerCase().replace(/^#/, "");
-    const byTag = tagQ
-      ? byDistance.filter((p) => (p.tags || []).some((t) => t.toLowerCase().includes(tagQ)))
-      : byDistance;
-    const filtered = q
-      ? byTag.filter((p) => {
-          const hay = [
-            p.title,
-            p.description,
-            p.city,
-            p.specialty ?? "",
-            p.author.name,
-            ...(p.keywords || []),
-            ...(p.tags || []),
-          ]
-            .join(" ")
-            .toLowerCase();
-          return hay.includes(q);
-        })
-      : byTag;
-    return [...filtered].sort((a, b) => {
-      if (a.category === "cliente" && b.category !== "cliente") return -1;
-      if (b.category === "cliente" && a.category !== "cliente") return 1;
-      return 0;
-    });
-  }, [filter, statusFilter, urgencyFilter, distanceFilter, tagFilter, debouncedSearch]);
-
-  const branchCtx = useUserBranchContext();
-  const visible = useMemo(() => {
-    if (!branchCtx.hasContext) return visibleRaw;
-    const decorated = visibleRaw.map((p) => ({
-      p,
-      _relevance: scoreRelevanceDetailed(
-        [p.specialty ?? "", ...(p.keywords ?? []), p.title],
-        branchCtx,
-      ),
-    }));
-    const sorted = [...decorated].sort(
-      (a, b) => relevanceRank(a._relevance.level) - relevanceRank(b._relevance.level),
-    );
-    return applyRelevanceFallback(sorted, 3).map((x) => x.p);
-  }, [visibleRaw, branchCtx]);
-
-  const paged = useMemo(() => visible.slice(0, page * PAGE_SIZE), [visible, page]);
-  const hasMore = paged.length < visible.length;
-  useFeedPreload(
-    visible,
-    paged.length,
-    PAGE_SIZE,
-    (post) => post.media?.[0]?.poster ?? post.media?.[0]?.url ?? null,
-  );
-
-  // Reset da paginação quando filtro/busca muda
-  useEffect(() => {
-    setPage(1);
-  }, [filter, statusFilter, debouncedSearch]);
-
-  // IntersectionObserver para scroll infinito
-  useEffect(() => {
-    if (!hasMore) return;
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && !loadingMore) {
-          setLoadingMore(true);
-          // Pequeno delay para simular carga em rede e evitar flicker
-          setTimeout(() => {
-            setPage((p) => p + 1);
-            setLoadingMore(false);
-          }, 350);
-        }
-      },
-      { rootMargin: "800px 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [hasMore, loadingMore, paged.length]);
 
   const persistSave = useCallback(
     async (postId: string, nextSaved: boolean) => {
@@ -653,7 +519,7 @@ export default function FeedLojistaPage() {
 
         <main className="max-w-3xl mx-auto w-full p-3 sm:p-4 space-y-4 flex-1 lg:mx-0 lg:max-w-none">
           <B2BSuggestionsCard />
-          {searching ? (
+          {loading && posts.length === 0 ? (
             <div className="space-y-4" aria-live="polite">
               {[0, 1, 2].map((i) => (
                 <div
@@ -705,6 +571,7 @@ export default function FeedLojistaPage() {
                   [post.specialty ?? "", ...(post.keywords ?? []), post.title],
                   branchCtx,
                 );
+
                 return (
                   <div key={post.id} className="feed-item-cv relative">
                     {_relevance.level !== "none" && (
@@ -744,7 +611,12 @@ export default function FeedLojistaPage() {
               {hasMore ? (
                 <>
                   <div ref={sentinelRef} aria-hidden className="h-1 w-full" />
-                  <FeedCardSkeletonList count={2} accent="rgba(0,229,255,0.25)" />
+                  <button 
+                    onClick={() => loadFeed()}
+                    className="w-full py-4 text-xs font-bold text-[#00E5FF]/50 uppercase hover:text-[#00E5FF] transition-colors"
+                  >
+                    Carregar mais
+                  </button>
                 </>
               ) : (
                 <div className="py-6 text-center text-[11px] font-bold uppercase tracking-wide text-white/30">

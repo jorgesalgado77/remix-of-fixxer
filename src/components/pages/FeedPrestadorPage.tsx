@@ -102,7 +102,7 @@ type JobPost = {
   requirements: string[];
   tools: string[];
   value: string;
-  valueType: "fixo" | "percentual";
+  valueType: "fixo" | "percentual" | "total";
   media: MediaItem[];
 };
 
@@ -110,7 +110,7 @@ type JobPost = {
 // MOCK DATA
 // =============================================================================
 
-const MOCK_JOBS: JobPost[] = [];
+// MOCK_JOBS removido conforme Prompt 17.
 
 
 const FILTERS: { key: "todas" | Subcategory; label: string; icon: React.ReactNode }[] = [
@@ -767,13 +767,13 @@ export default function FeedPrestadorPage() {
   const [applied, setApplied] = useState<Set<string>>(new Set());
   const [applyFor, setApplyFor] = useState<JobPost | null>(null);
   const [lightbox, setLightbox] = useState<{ job: JobPost; index: number } | null>(null);
-  const [page, setPage] = usePersistedState<number>("fixxer_feed_prestador_page", 1);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [savesRemote, setSavesRemote] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Debounce de busca
@@ -842,103 +842,114 @@ export default function FeedPrestadorPage() {
     })();
   }, [reloadKey]);
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setLoadError(null);
-    setPage(1);
+  const handleGlobalRefresh = useCallback(async () => {
+    setIsRefreshing(true);
     setReloadKey((k) => k + 1);
-    // dá tempo do estado propagar para dar feedback visual
     await new Promise((r) => setTimeout(r, 400));
-    setRefreshing(false);
+    setIsRefreshing(false);
     toast.success("Feed atualizado");
   }, []);
 
-  // Persistir salvos localmente
-  useEffect(() => {
-    try {
-      localStorage.setItem(SAVES_STORAGE_KEY, JSON.stringify([...saved]));
-    } catch {
-      // ignore
-    }
-  }, [saved]);
+  const [posts, setPosts] = useState<JobPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const [hasMoreResult, setHasMoreResult] = useState(true);
 
-  // Filtro + busca (com urgência, raio e tags via helper compartilhado)
-  const filtered = useMemo(() => {
-    const term = debouncedSearch.toLowerCase().trim();
-    return MOCK_JOBS.filter((job) => {
-      const matchesFilter = filter === "todas" || job.subcategory === filter;
-      if (!matchesFilter) return false;
-      if (statusFilter !== "todos" && getFeedStatus(job.id) !== statusFilter) return false;
-      // Deriva atributos do anúncio a partir do JobPost (compatibilidade com mocks)
-      const urgency_tag = coerceUrgency(job.urgency) ?? "normal";
-      const service_radius_km =
-        (job as unknown as { service_radius_km?: number }).service_radius_km ??
-        (job.urgency === "critica" ? 5 : job.urgency === "urgente" ? 15 : 30);
-      const tags =
-        (job as unknown as { tags?: string[] }).tags ??
-        [job.subcategory, ...(job.tools ?? []).slice(0, 2)]
-          .map((s) => s.toLowerCase().replace(/\s+/g, "-"))
-          .filter(Boolean);
-      const distance =
-        distanceFilter === "todos" ? ("todos" as const) : (Number(distanceFilter) as number);
-      return matchesAdFilters(
-        {
-          urgency_tag,
-          service_radius_km,
-          tags,
-          title: job.title,
-          description: job.description,
-          keywords: [job.contractor.name, job.city, job.state, job.subcategory],
+  const loadFeed = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+        setOffset(0);
+      } else {
+        setLoading(true);
+      }
+      setLoadError(null);
+
+      const { feedService } = await import("@/lib/feed-service");
+      const results = await feedService.getFeed({
+        category: "prestador",
+        type: filter === "todas" ? "todos" : (filter as any),
+        query: debouncedSearch,
+        status: statusFilter,
+        offset: isRefresh ? 0 : offset,
+        limit: 10
+      });
+
+      const mapped: JobPost[] = results.map(p => ({
+        id: p.id,
+        type: p.category === "lojista" ? "lojista" : "cliente_final",
+        contractor: {
+          id: p.authorId,
+          name: p.author?.presentation.name || "Contratante",
+          initials: p.author?.presentation.initials || "??",
+          isVerified: p.author?.identity.isVerified
         },
-        { urgency: urgencyFilter, distance, tag: tagFilter, term },
-      );
-    });
-  }, [debouncedSearch, filter, statusFilter, urgencyFilter, distanceFilter, tagFilter]);
+        city: p.location.city || "Região",
+        state: p.location.state || "",
+        rating: p.author?.identity.karmaScore || 5,
+        postedAt: new Date(p.createdAt).toLocaleDateString("pt-BR"),
+        urgency: p.urgency as any,
+        subcategory: (p.metadata?.subcategory || "Montagem de Móveis") as Subcategory,
+        title: p.title,
+        description: p.description,
+        value: p.price ? `R$ ${p.price.toLocaleString("pt-BR")}` : "A combinar",
+        valueType: "total", // Adicionado para satisfazer o tipo JobPost
+        requirements: (p.metadata?.requirements || []) as string[],
+        tools: (p.metadata?.tools || []) as string[],
+        media: p.media as any,
+        keywords: []
+      }));
+
+
+      setPosts(prev => isRefresh ? mapped : [...prev, ...mapped]);
+      setHasMoreResult(results.length === 10);
+      setOffset(prev => isRefresh ? 10 : prev + 10);
+    } catch (err: any) {
+      setLoadError(err.message || "Erro ao carregar vagas.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [filter, debouncedSearch, statusFilter, offset]);
+
+  useEffect(() => {
+    loadFeed(true);
+  }, [filter, debouncedSearch, statusFilter]);
+
+  const filtered = posts;
+
 
   const branchCtx = useUserBranchContext();
   const rankedFiltered = useMemo(() => {
-    if (!branchCtx.hasContext) return filtered;
     const decorated = filtered.map((job) => ({
       job,
       _relevance: scoreRelevanceDetailed([job.subcategory, job.title], branchCtx),
     }));
+    if (!branchCtx.hasContext) return decorated;
     const sorted = [...decorated].sort(
       (a, b) => relevanceRank(a._relevance.level) - relevanceRank(b._relevance.level),
     );
-    return applyRelevanceFallback(sorted, 3).map((x) => x.job);
+    return applyRelevanceFallback(sorted, 3);
   }, [filtered, branchCtx]);
 
   // Paginação por scroll infinito
-  const paged = useMemo(() => rankedFiltered.slice(0, page * PAGE_SIZE), [rankedFiltered, page]);
-  useFeedPreload(
-    rankedFiltered,
-    paged.length,
-    PAGE_SIZE,
-    (job) => job.media?.[0]?.poster ?? job.media?.[0]?.url ?? null,
-  );
-  const hasMore = paged.length < rankedFiltered.length;
+  const paged = rankedFiltered.map(x => x.job);
+  const hasMore = hasMoreResult;
 
   useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, filter]);
-
-  useEffect(() => {
-    if (!sentinelRef.current || !hasMore || loadingMore) return;
+    if (!sentinelRef.current || !hasMore || loading) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setLoadingMore(true);
-          setTimeout(() => {
-            setPage((p) => p + 1);
-            setLoadingMore(false);
-          }, 400);
+          loadFeed();
         }
       },
       { rootMargin: "800px" },
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore]);
+  }, [hasMore, loading, loadFeed]);
+
 
   const persistSave = useCallback(
     async (postId: string, nextSaved: boolean) => {
@@ -1014,7 +1025,7 @@ export default function FeedPrestadorPage() {
   const searching = search !== debouncedSearch;
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} accent="#FF9F0A">
+    <PullToRefresh onRefresh={handleGlobalRefresh} accent="#FF9F0A">
     <div className="min-h-screen bg-[#0A0A0B] text-foreground pb-24 animate-in fade-in duration-500">
       <UniversalSearchPanel defaultPill="prestador" />
 
@@ -1065,9 +1076,9 @@ export default function FeedPrestadorPage() {
         {loadError && (
           <FeedErrorState
             accent="#FF9F0A"
-            busy={refreshing}
+            busy={isRefreshing}
             error={loadError}
-            onRetry={handleRefresh}
+            onRetry={handleGlobalRefresh}
           />
         )}
         <B2BSuggestionsCard />
