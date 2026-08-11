@@ -150,7 +150,7 @@ function AuthenticatedLayout() {
               clearCurrentUserCache();
               window.location.href = "/auth";
             }}
-            className="text-[10px] md:text-xs font-black uppercase tracking-widest md:tracking-wider text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 md:px-4 md:py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(220,38,38,0.2)] hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] border border-red-500/30"
+            className="text-[10px] md:text-xs font-black uppercase tracking-widest md:tracking-wider text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 md:px-4 md:py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(220,38,38,0.2)] hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] border border-red-500/30"
           >
             <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
             <span>Sair</span>
