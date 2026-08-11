@@ -93,7 +93,7 @@ type FeedPost = {
   keywords: string[];
 };
 
-const MOCK_POSTS: FeedPost[] = [];
+// MOCK_POSTS removido conforme Prompt 17.
 
 
 const FILTERS: { key: "todos" | FeedCategory; label: string; icon: React.ReactNode }[] = [
@@ -744,7 +744,12 @@ export default function FeedLojistaPage() {
               {hasMore ? (
                 <>
                   <div ref={sentinelRef} aria-hidden className="h-1 w-full" />
-                  <FeedCardSkeletonList count={2} accent="rgba(0,229,255,0.25)" />
+                  <button 
+                    onClick={() => loadFeed()}
+                    className="w-full py-4 text-xs font-bold text-[#00E5FF]/50 uppercase hover:text-[#00E5FF] transition-colors"
+                  >
+                    Carregar mais
+                  </button>
                 </>
               ) : (
                 <div className="py-6 text-center text-[11px] font-bold uppercase tracking-wide text-white/30">
