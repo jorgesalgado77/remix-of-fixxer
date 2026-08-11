@@ -94,9 +94,11 @@ export function ProfileHeader({
           </div>
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 ml-auto">
           {actions}
-          <PanelActions role={role} />
+          <div className="hidden md:block">
+            <PanelActions role={role} />
+          </div>
         </div>
       </header>
 
