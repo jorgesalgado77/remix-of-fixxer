@@ -291,6 +291,7 @@ function RecentStoresCarouselInner() {
             cep: r.cep || null,
             rating: r.karma_score != null ? Number(r.karma_score) : 0.0,
             created_at: r.created_at || null,
+            is_verified: !!r.is_verified,
             lat: r.lat !== null ? Number(r.lat) : null,
             lng: r.lng !== null ? Number(r.lng) : null,
             _kind: kind as Kind,
