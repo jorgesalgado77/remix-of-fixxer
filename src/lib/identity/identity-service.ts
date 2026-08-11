@@ -208,5 +208,6 @@ export async function resolveIdentity(
   };
 
   IDENTITY_CACHE.set(userId, { at: Date.now(), value: result });
+  storeIdentity(userId, result);
   return result;
 }
