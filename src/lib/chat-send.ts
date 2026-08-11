@@ -151,5 +151,35 @@ export function detectContactBypass(text: string): boolean {
   // Se houver qualquer bloqueio por padrão, retorna true
   const { sanitizeContactText } = require("./contact-guard");
   const result = sanitizeContactText(text);
+  
+  // Notificação de segurança se violar regras
+  if (result.violated) {
+     // Aqui poderíamos disparar uma notificação de sistema para o usuário sobre a política de bypass
+  }
+
   return result.violated;
+}
+
+/**
+ * Dispara notificação de nova mensagem via NotificationService.
+ */
+export async function notifyNewChatMessage(recipientId: string, senderId: string, content: string) {
+  try {
+    const { notificationService } = await import("./notification-service");
+    const { resolveIdentity } = await import("./identity/identity-service");
+    const sender = await resolveIdentity(senderId);
+    
+    await notificationService.notify({
+      owner_id: recipientId,
+      sender_id: senderId,
+      type: "chat",
+      event_key: "chat_message",
+      title: sender?.identity?.displayName || "Nova mensagem",
+      content: content.slice(0, 100),
+      link: `/chat/${senderId}`,
+      metadata: { chat: true }
+    });
+  } catch (err) {
+    console.error("[ChatNotify] Falha ao disparar notificação real", err);
+  }
 }
