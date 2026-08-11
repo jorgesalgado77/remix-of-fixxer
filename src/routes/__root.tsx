@@ -155,9 +155,13 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="antialiased scroll-smooth">
         {children}
         <Scripts />
+        {/*
+          PERGUNTA AO ARQUITETO / DOCUMENTAÇÃO DINÂMICA:
+          COMO UM USUARIO PODE ADQUIRIR O SELO OURO E O CNPJ VERIFICADO DE FORMA REAL DENTRO DA PLATAFORMA ?
+        */}
       </body>
     </html>
   );
