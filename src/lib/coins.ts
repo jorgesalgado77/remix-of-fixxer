@@ -249,19 +249,17 @@ export async function creditCoins(
   window.dispatchEvent(new CustomEvent("fixxer:coin-tx", { detail: tx }));
 
   try {
-    const { error } = await supabaseExternal.rpc("credit_coins", {
+    const { data, error } = await supabaseExternal.rpc("credit_coins_safe", {
       _user_id: userId,
       _amount: amount,
       _source: source,
       _description: description,
       _idempotency_key: idem ?? null,
-      _operation: opts.operation ?? null,
-      _origin: opts.origin ?? "client",
-      _metadata: opts.metadata ?? null,
-      _reference: opts.reference ?? null,
+      _reference_id: opts.reference ?? null,
     });
     if (error) throw error;
-    return { ok: true, balance: next };
+    const finalBalance = data && data[0] ? data[0].new_balance : next;
+    return { ok: true, balance: finalBalance };
   } catch (e: any) {
     return { ok: true, balance: next, error: e?.message ?? String(e) };
   }
