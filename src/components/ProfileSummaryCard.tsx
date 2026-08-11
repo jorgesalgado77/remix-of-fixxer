@@ -97,8 +97,9 @@ export function ProfileSummaryCard({
         }
 
         const { resolveIdentity } = await import("@/lib/identity/identity-service");
-        // Removemos o refresh: true para usar o cache global e evitar flicker na navegação
-        const resolved = await resolveIdentity(uid, { refresh: false });
+        // Forçamos o refresh uma vez no mount para garantir o estado inicial, 
+        // mas mantemos refresh: false nas navegações subsequentes via cache.
+        const resolved = await resolveIdentity(uid, { refresh: true });
         
         if (!cancelled && resolved) {
           const prof: ProfileLite = {

@@ -35,7 +35,6 @@ export async function resolveIdentity(
   }
 
   // 1. Buscar Perfil Mestre (Identidade) e Roles
-  // Removido joins com tabelas especializadas que podem não existir no banco do usuário
   const { data: baseProfile, error: profileError } = await supabaseExternal
     .from("profiles")
     .select(`
@@ -48,6 +47,26 @@ export async function resolveIdentity(
   if (profileError) {
     console.error(`[IdentityService] Erro ao buscar perfis para ${userId}:`, profileError);
   }
+
+  // 1.1 Tentar buscar dados de especializações de forma isolada (Safe-check para tabelas ausentes)
+  let store: any = null;
+  let provider: any = null;
+  let supplier: any = null;
+
+  try {
+    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
+    store = storeData;
+  } catch (e) { console.warn("[IdentityService] store_profiles indisponível"); }
+
+  try {
+    const { data: providerData } = await supabaseExternal.from("provider_profiles").select("display_name, avatar_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
+    provider = providerData;
+  } catch (e) { console.warn("[IdentityService] provider_profiles indisponível"); }
+
+  try {
+    const { data: supplierData } = await supabaseExternal.from("supplier_profiles").select("company_name, logo_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
+    supplier = supplierData;
+  } catch (e) { console.warn("[IdentityService] supplier_profiles indisponível"); }
 
   let roles: string[] = [];
   const effectiveProfile: any = baseProfile || {};
@@ -68,25 +87,8 @@ export async function resolveIdentity(
     refresh: options?.refresh
   });
 
-  // 2. Tentar buscar dados de especializações de forma isolada (Safe-check para tabelas ausentes)
-  let store: any = null;
-  let provider: any = null;
-  let supplier: any = null;
+  // 2. Resolver Categoria Principal
 
-  try {
-    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
-    store = storeData;
-  } catch (e) { console.warn("[IdentityService] store_profiles indisponível"); }
-
-  try {
-    const { data: providerData } = await supabaseExternal.from("provider_profiles").select("display_name, avatar_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
-    provider = providerData;
-  } catch (e) { console.warn("[IdentityService] provider_profiles indisponível"); }
-
-  try {
-    const { data: supplierData } = await supabaseExternal.from("supplier_profiles").select("company_name, logo_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
-    supplier = supplierData;
-  } catch (e) { console.warn("[IdentityService] supplier_profiles indisponível"); }
 
   // REGRA ÚNICA DE FALLBACK (CANONICAL PRIORITY)
   // 1. Nome profissional/empresa (se disponível)
