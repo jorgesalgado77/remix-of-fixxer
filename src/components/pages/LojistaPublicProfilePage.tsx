@@ -1141,11 +1141,23 @@ export function LojistaPublicProfilePage() {
                 </div>
 
 
-                {/* Métricas */}
+                {/* Métricas reais */}
                 <div className="grid grid-cols-3 gap-2 md:gap-3 pt-2">
-                  <MetricCard label="O.S. Concluídas" value="148" suffix="Serviços" />
-                  <MetricCard label="Satisfação" value="99%" suffix="Positivo" />
-                  <MetricCard label="Tempo Resposta" value="<15" suffix="min" />
+                  <MetricCard 
+                    label="O.S. Concluídas" 
+                    value={String(profile?.os_completed_count ?? 0)} 
+                    suffix="Serviços" 
+                  />
+                  <MetricCard 
+                    label="Satisfação" 
+                    value={reviews.length > 0 ? `${Math.round((reviews.filter(r => r.rating >= 4).length / reviews.length) * 100)}%` : "100%"} 
+                    suffix="Positivo" 
+                  />
+                  <MetricCard 
+                    label="Tempo Resposta" 
+                    value={profile?.response_time_min ? `<${profile.response_time_min}` : "<30"} 
+                    suffix="min" 
+                  />
                 </div>
 
                 
