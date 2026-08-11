@@ -5,7 +5,31 @@ import { CATEGORY_LABEL, CATEGORY_COLORS } from "@/lib/category-colors";
 import type { CanonicalIdentity, ProfilePresentation, ResolvedProfile } from "./identity-types";
 
 const IDENTITY_CACHE = new Map<string, { at: number; value: ResolvedProfile }>();
-const TTL_MS = 300_000; // Cache aumentado para 5 minutos para evitar refetching constante
+const TTL_MS = 600_000; // Aumentado para 10 minutos para maior estabilidade visual
+
+// Chave para persistência em localStorage para evitar flash de "Usuário" no refresh
+const PERSISTENCE_KEY = "fixxer_identity_cache_v1";
+
+function getStoredIdentities(): Record<string, ResolvedProfile> {
+  if (typeof window === "undefined") return {};
+  try {
+    const stored = window.localStorage.getItem(PERSISTENCE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function storeIdentity(userId: string, profile: ResolvedProfile) {
+  if (typeof window === "undefined") return;
+  try {
+    const stored = getStoredIdentities();
+    stored[userId] = profile;
+    window.localStorage.setItem(PERSISTENCE_KEY, JSON.stringify(stored));
+  } catch (e) {
+    console.warn("[IdentityService] Falha ao persistir identidade", e);
+  }
+}
 
 function initialsOf(name: string): string {
   const clean = String(name || "").trim();
