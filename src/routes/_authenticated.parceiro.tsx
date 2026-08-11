@@ -75,7 +75,7 @@ function ParceiroDashboard() {
             <h2 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
               <Package className="w-5 h-5 text-primary" /> Minha Vitrine Ativa
             </h2>
-            <Link to="/feed/parceiro" className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Ver Feed B2B</Link>
+            <Link to="/feed/parceiro" search={{ urgency: 'todos', distance: 'todos', tag: '' }} className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Ver Feed B2B</Link>
           </div>
           <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
@@ -111,7 +111,7 @@ function ParceiroDashboard() {
           <div className={`${glassClass} border border-white/5 rounded-3xl p-6 bg-gradient-to-br from-[#00FF87]/5 to-transparent`}>
              <h2 className="text-sm font-black text-white uppercase italic mb-2">Selo de Verificado</h2>
              <p className="text-[10px] text-muted-foreground font-medium mb-4">Aumente sua credibilidade enviando seus documentos comerciais.</p>
-             <Link to="/profile" className="block w-full py-3 rounded-xl bg-white/5 border border-white/10 text-center text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all">Configurar Perfil</Link>
+             <Link to="/profile" search={{}} className="block w-full py-3 rounded-xl bg-white/5 border border-white/10 text-center text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all">Configurar Perfil</Link>
           </div>
         </div>
 
