@@ -1,3 +1,4 @@
+import { GoldMedalBadge } from "@/components/GoldMedalBadge";
 import { useProviderStats } from "@/hooks/use-provider-stats";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
@@ -697,7 +698,11 @@ export function LojistaDashboard() {
                 getRatingColor={getRatingColor} 
                 handleTabChange={handleTabChange} 
                 isProfileComplete={isProfileComplete}
-                profileSummary={profileSummary}
+                profileSummary={{
+                  ...profileSummary,
+                  isVerified: (profileSummary as any)?.isVerified,
+                  planId: (profileSummary as any)?.planId
+                }}
                 showPixModal={showPixModal}
                 setShowPixModal={setShowPixModal}
                 userRole={userRole}
@@ -787,7 +792,10 @@ export function LojistaDashboard() {
   );
 }
 
-function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [], missingKeys = [], onOpenProfile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string }; missingLabels?: string[]; missingKeys?: string[]; onOpenProfile?: (focusKey?: string) => void }) {
+function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [], missingKeys = [], onOpenProfile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string; isVerified?: boolean; planId?: string }; missingLabels?: string[]; missingKeys?: string[]; onOpenProfile?: (focusKey?: string) => void }) {
+    const isGold = profile?.planId === 'pro' || profile?.planId === 'premium';
+    const planLabel = profile?.planId ? (profile.planId === 'free' ? 'Free' : profile.planId === 'basico' ? 'Básico' : profile.planId === 'pro' ? 'Pro' : 'Premium') : 'Free';
+
     // 🎉 Detecta a transição incompleto → completo para exibir
     // um pulso verde "Perfil completo!" por alguns segundos, sem reload.
     const prevCompleteRef = useRef(isProfileComplete);
@@ -891,16 +899,31 @@ function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRat
                 <div className="flex flex-col items-end">
                     <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest text-right">Plano</span>
                     <div className="flex items-center gap-1">
-                        <Zap className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-                        <span className="text-[10px] font-black text-amber-500 italic">Plano Pro</span>
+                        <Zap className={`w-2.5 h-2.5 ${isGold ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
+                        <span className={`text-[10px] font-black italic ${isGold ? 'text-amber-500' : 'text-slate-400'}`}>Plano {planLabel}</span>
                     </div>
                 </div>
             </div>
 
-            <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-primary/5 border border-primary/10">
-                <ShieldCheck className="w-3 h-3 text-primary" />
-                <span className="text-[8px] font-black text-primary uppercase italic">Selo Ouro FIXXER</span>
-            </div>
+            {isGold ? (
+                <div className="flex justify-center mt-2">
+                    <GoldMedalBadge />
+                </div>
+            ) : profile?.isVerified ? (
+                <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-[#00FF88]/10 border border-[#00FF88]/20 mt-2">
+                    <ShieldCheck className="w-3 h-3 text-[#00FF88]" aria-hidden="true" />
+                    <span className="text-[8px] font-black text-[#00FF88] uppercase italic tracking-widest">
+                        CNPJ Verificado
+                    </span>
+                </div>
+            ) : (
+                <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 opacity-50 mt-2">
+                    <ShieldCheck className="w-3 h-3 text-white/40" aria-hidden="true" />
+                    <span className="text-[8px] font-black text-white/40 uppercase italic tracking-widest">
+                        Sem Selo Ouro
+                    </span>
+                </div>
+            )}
         </div>
     );
 }

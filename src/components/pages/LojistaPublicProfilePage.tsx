@@ -1096,53 +1096,58 @@ export function LojistaPublicProfilePage() {
               {/* Infos */}
               <div className="flex-1 min-w-0 w-full space-y-3 overflow-hidden">
                 <div className="min-w-0">
-                  <h1 className="text-xl md:text-3xl font-black uppercase italic tracking-tight break-words">
-                    {profile?.company_name || "Lojista FIXXER"}
-                  </h1>
-                  <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase italic mt-1 flex-wrap">
-                    <MapPin className="w-3 h-3 text-primary" />
-                    {profile?.city || "Cidade"} / {profile?.state || "UF"}
-                    {distanceLabel && (
-                      <span className="text-primary/90">• {isSelf ? distanceLabel : `${distanceLabel} de você`}</span>
-                    )}
-                    <AvailabilityBadge userId={profile?.user_id ?? null} />
-                  </div>
-                  {primaryPosition && (
-                    <div className="mt-2">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-400/50 text-[11px] font-black uppercase italic text-amber-300">
-                        ★ {primaryPosition}
+                  <div className="space-y-1">
+                    <h1 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter leading-none">
+                      {profile?.company_name || profile?.display_name || "Lojista"}
+                    </h1>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
+                        🏪 Lojista
                       </span>
-                    </div>
-                  )}
-
-                  {/* Bloco de chips de compatibilidade removido do header a pedido:
-                      as mesmas informações (work_modes, veículo, ofertas) já aparecem
-                      nas seções abaixo ao rolar o perfil. Mantemos apenas o cargo principal
-                      acima e evitamos duplicação visual no topo. */}
-
-                </div>
-
-
-
-                {/* Reputação */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
-                    <Star className="w-4 h-4 fill-primary text-primary" />
-                    <span className="text-sm font-black text-primary italic">{avgRating.toFixed(1)}</span>
-                    <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-red-500" />
+                        {profile?.city ? `${profile.city} / ${profile.state}` : "Localização não informada"}
+                        {distanceLabel && (
+                          <span className="text-primary/90 ml-1">• {isSelf ? distanceLabel : `${distanceLabel} de você`}</span>
+                        )}
+                      </span>
+                      <AvailabilityBadge userId={profile?.user_id ?? null} />
                   </div>
-                  {profile?.plan_id && profile.plan_id !== 'free' && (
-                    <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
-                      <Award className="w-3 h-3" /> Selo Ouro FIXXER
-                    </span>
-                  )}
                 </div>
+              </div>
 
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2">
-                  <Badge icon={<ShieldCheck className="w-3 h-3" />} label="CNPJ Verificado" />
-                  <Badge icon={<Clock className="w-3 h-3" />} label={`Ativo há +${yearsActive} ${yearsActive === 1 ? "ano" : "anos"}`} />
-                </div>
+              {(() => {
+                const yearsActive = profile?.created_at ? Math.floor((new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : 0;
+                const yearsActiveLabel = yearsActive >= 1 
+                  ? `Ativo há +${yearsActive} ${yearsActive === 1 ? "ano" : "anos"}`
+                  : `Ativo desde ${profile?.created_at ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : 'recentemente'}`;
+
+                return (
+                  <div className="flex flex-col gap-5 mt-4">
+                    {/* Reputação */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
+                        <Star className="w-4 h-4 fill-primary text-primary" />
+                        <span className="text-sm font-black text-primary italic">{avgRating.toFixed(1)}</span>
+                        <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
+                      </div>
+                      {profile?.plan_id && profile.plan_id !== 'free' && (
+                        <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
+                          <Award className="w-3 h-3" /> Selo Ouro FIXXER
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Badges */}
+                    <div className="flex flex-wrap gap-2">
+                      {profile?.is_verified && (
+                        <Badge icon={<ShieldCheck className="w-3 h-3" />} label="CNPJ Verificado" />
+                      )}
+                      <Badge icon={<Clock className="w-3 h-3" />} label={yearsActiveLabel} />
+                    </div>
+                  </div>
+                );
+              })()}
 
 
                 {/* Métricas reais */}
@@ -1159,7 +1164,7 @@ export function LojistaPublicProfilePage() {
                   />
                   <MetricCard 
                     label="Tempo Resposta" 
-                    value={profile?.response_time_min ? `<${profile.response_time_min}` : "<30"} 
+                    value={profile?.response_time_min && profile.response_time_min > 0 ? `<${profile.response_time_min}` : "<30"} 
                     suffix="min" 
                   />
                 </div>

@@ -650,13 +650,11 @@ function RecentStoresCarouselInner() {
                         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/20">
                           <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] shadow-[0_0_8px_#00FF88] animate-pulse" />
                           <span className="text-[9px] font-black text-[#00FF88] uppercase italic">
-                            {p.created_at ? (
-                              (() => {
-                                const diff = Math.abs(Date.now() - new Date(p.created_at).getTime());
-                                const years = diff / (1000 * 60 * 60 * 24 * 365.25);
-                                return years >= 1 ? `Ativo há +${Math.floor(years)} ano` : "Ativo recentemente";
-                              })()
-                            ) : "Online"}
+                            {(() => {
+                              if (!p.created_at) return "Online";
+                              const years = Math.floor(Math.abs(Date.now() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+                              return years >= 1 ? `Ativo há +${years} ${years === 1 ? "ano" : "anos"}` : "Ativo recentemente";
+                            })()}
                           </span>
                         </div>
                       </div>
