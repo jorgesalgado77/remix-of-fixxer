@@ -93,431 +93,8 @@ type FeedPost = {
   keywords: string[];
 };
 
-const MOCK_POSTS: FeedPost[] = [
-  {
-    id: "p1",
-    category: "cliente",
-    author: { id: "u-mariana", name: "Mariana Souza", avatarInitials: "MS" },
-    rating: 5.0,
-    city: "Sorocaba, SP",
-    postedAt: "há 10 min",
-    title: "Montagem Urgente de Guarda-Roupa Casal 6 Portas na Caixa",
-    description:
-      "Comprei um guarda-roupa 6 portas e preciso de montador experiente para atendimento até sábado. Produto entregue e ainda na embalagem.",
-    budget: "R$ 250 – R$ 400",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&q=70&auto=format&fit=crop",
-      },
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["guarda-roupa", "montagem", "urgente", "sorocaba"],
-  },
-  {
-    id: "p2",
-    category: "cliente",
-    author: { id: "u-julio", name: "Júlio Menezes", avatarInitials: "JM" },
-    rating: 4.8,
-    city: "Votorantim, SP",
-    postedAt: "há 42 min",
-    title: "Assistência Técnica para Porta de Armário Desnivelada",
-    description:
-      "Porta de armário de cozinha desalinhada após uso. Preciso de conferente/montador para ajuste fino das dobradiças.",
-    budget: "Sob orçamento",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1595515106969-1ad0e6f0edc3?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["assistência", "porta", "armário", "votorantim"],
-  },
-  {
-    id: "p3",
-    category: "prestador",
-    author: {
-      id: "u-carlos",
-      name: "Carlos Silva",
-      avatarInitials: "CS",
-      gold: true,
-    },
-    rating: 4.9,
-    city: "Sorocaba, SP",
-    postedAt: "há 2 h",
-    specialty: "Conferente Técnico & Medidor Fino",
-    radiusKm: 60,
-    title: "Conferente Técnico Disponível para a Região Metropolitana",
-    description:
-      "Especialista em conferência de projetos, medidas finais e apontamentos técnicos. Selo Ouro Fixxer. Atendo lojistas e marcenarias.",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1581092919535-9a3f7f6f6a25?w=1200&q=70&auto=format&fit=crop",
-      },
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1581091012184-7f0a2b3b8f31?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["conferente", "medidor", "sorocaba", "selo ouro"],
-  },
-  {
-    id: "p4",
-    category: "prestador",
-    author: { id: "u-ana", name: "Ana Projetos", avatarInitials: "AP" },
-    rating: 4.7,
-    city: "Itu, SP",
-    postedAt: "há 5 h",
-    specialty: "Projetista 3D (Promob / Gabster)",
-    radiusKm: 80,
-    title: "Projetista 3D com Renderização de Alta Fidelidade",
-    description:
-      "Entrego projetos executivos com renderização foto-realista em 48h. Especialidade em dormitórios e cozinhas planejadas.",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1616627451515-9d3c1a4d4c65?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["projetista", "3d", "promob", "gabster"],
-  },
-  {
-    id: "p5",
-    category: "fornecedor",
-    author: { id: "u-marmoraria", name: "Marmoraria Granitos & Arte", avatarInitials: "MG" },
-    rating: 4.6,
-    city: "Sorocaba, SP",
-    postedAt: "há 1 dia",
-    title: "Tampos de Mármore para Cozinhas Planejadas — Entrega em 5 dias",
-    description:
-      "Fornecemos tampos, soleiras e nichos em mármore e granito para marmorarias e lojistas parceiros. Corte, polimento e instalação inclusos.",
-    budget: "A partir de R$ 890/m²",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=1200&q=70&auto=format&fit=crop",
-      },
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["mármore", "granito", "tampo", "cozinha"],
-  },
-  {
-    id: "p6",
-    category: "fornecedor",
-    author: { id: "u-vidros", name: "Vidraçaria Cristal Prime", avatarInitials: "VC" },
-    rating: 4.5,
-    city: "Campinas, SP",
-    postedAt: "há 2 dias",
-    title: "Vidros Temperados sob Medida para Portas de Armário",
-    description:
-      "Corte, lapidação e serigrafia sob demanda. Prazo de 72h para lojistas cadastrados. Frete parceiro para toda a região.",
-    budget: "Cotação em 1h",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1585421514738-01798e348b17?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["vidro", "temperado", "porta", "campinas"],
-  },
-  {
-    id: "p7",
-    category: "lojista",
-    author: {
-      id: "u-euloja",
-      name: "Minha Loja (Você)",
-      avatarInitials: "ML",
-      isMine: true,
-    },
-    rating: 4.8,
-    city: "Sorocaba, SP",
-    postedAt: "há 3 h",
-    title: "Repasse: Instalação Completa de Cozinha Planejada em Alphaville",
-    description:
-      "Tenho um projeto executado e preciso de uma marcenaria parceira para instalação em Alphaville na próxima semana. Divisão de comissão negociável.",
-    budget: "R$ 3.800 (repasse)",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["repasse", "parceria", "cozinha", "alphaville"],
-  },
-  {
-    id: "p8",
-    category: "lojista",
-    author: { id: "u-lojaparc", name: "Móveis Bianchi", avatarInitials: "MB" },
-    rating: 4.9,
-    city: "Jundiaí, SP",
-    postedAt: "há 6 h",
-    title: "Troca de Demandas entre Marcenarias — Semana Cheia",
-    description:
-      "Estamos com agenda cheia em Jundiaí e liberamos 3 O.S. para parceiros. Ideal para lojistas com equipe própria de montagem.",
-    budget: "3 O.S. disponíveis",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["parceria", "marcenaria", "jundiaí"],
-  },
-  {
-    id: "p9",
-    category: "cliente",
-    author: { id: "u-fernanda", name: "Fernanda Ribeiro", avatarInitials: "FR" },
-    rating: 4.9,
-    city: "Sorocaba, SP",
-    postedAt: "há 25 min",
-    title: "Cozinha Planejada para Apartamento de 68m² — Preciso de Orçamento",
-    description:
-      "Apartamento novo em Sorocaba, cozinha americana com 4,20m de bancada. Busco lojistas que trabalhem com MDF branco e puxadores em alumínio.",
-    budget: "R$ 12.000 – R$ 18.000",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=70&auto=format&fit=crop",
-      },
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["cozinha", "planejada", "mdf", "sorocaba"],
-  },
-  {
-    id: "p10",
-    category: "prestador",
-    author: { id: "u-pedro-frete", name: "Pedro Transportes", avatarInitials: "PT" },
-    rating: 4.8,
-    city: "Votorantim, SP",
-    postedAt: "há 3 h",
-    specialty: "Fretista com Van Baú 3,5m",
-    radiusKm: 120,
-    title: "Fretista Dedicado para Móveis Planejados — Van Baú Fechada",
-    description:
-      "Van baú fechada 3,5m com escada e diárias flexíveis. Atendo lojistas no eixo Sorocaba/Campinas/São Paulo. Cargas seguradas.",
-    budget: "R$ 380/diária",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["frete", "van", "transporte", "planejados"],
-  },
-  {
-    id: "p11",
-    category: "prestador",
-    author: {
-      id: "u-julia-montadora",
-      name: "Júlia Martins",
-      avatarInitials: "JM",
-      gold: true,
-    },
-    rating: 5.0,
-    city: "Sorocaba, SP",
-    postedAt: "há 4 h",
-    specialty: "Montadora Certificada Todeschini",
-    radiusKm: 90,
-    title: "Montadora Certificada — Todeschini, Italinea e Dellanno",
-    description:
-      "10 anos montando planejados de alto padrão. Tenho equipe própria de 2 auxiliares. Selo Ouro Fixxer. Fotos do portfólio disponíveis.",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?w=1200&q=70&auto=format&fit=crop",
-      },
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["montadora", "todeschini", "italinea", "premium"],
-  },
-  {
-    id: "p12",
-    category: "fornecedor",
-    author: { id: "u-ferragens", name: "Ferragens Blum Distribuidora", avatarInitials: "FB" },
-    rating: 4.7,
-    city: "São Paulo, SP",
-    postedAt: "há 8 h",
-    title: "Corrediças e Dobradiças Blum — Estoque Total e Entrega em 24h",
-    description:
-      "Distribuidor autorizado Blum. Corrediças Tandem, Movento e dobradiças Clip-Top com preço de fábrica para lojistas cadastrados.",
-    budget: "Tabela exclusiva B2B",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["ferragens", "blum", "corrediças", "b2b"],
-  },
-  {
-    id: "p13",
-    category: "cliente",
-    author: { id: "u-roberto", name: "Roberto Almeida", avatarInitials: "RA" },
-    rating: 4.6,
-    city: "Itu, SP",
-    postedAt: "há 12 h",
-    title: "Home Theater Planejado com Painel Ripado e Iluminação LED",
-    description:
-      "Sala de estar 4,80m x 3,20m. Quero painel ripado escuro com nichos e iluminação LED integrada. Envio referências no chat.",
-    budget: "R$ 6.000 – R$ 9.500",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["home", "theater", "painel", "ripado", "itu"],
-  },
-  {
-    id: "p14",
-    category: "lojista",
-    author: { id: "u-loja-decor", name: "Decor Ambientes", avatarInitials: "DA" },
-    rating: 4.8,
-    city: "Campinas, SP",
-    postedAt: "há 1 dia",
-    title: "Parceria de Cross-Selling — Marcenaria + Tapeçaria",
-    description:
-      "Estamos abrindo parcerias com tapeçarias e vidraçarias para indicação mútua de clientes. Zero taxa, apenas troca de leads qualificados.",
-    budget: "Comissão negociável",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["parceria", "cross", "selling", "marcenaria"],
-  },
-  // ============ NOVOS MOCKS (adicionados) ============
-  {
-    id: "p13",
-    category: "cliente",
-    author: { id: "u-rafaela", name: "Rafaela Nunes", avatarInitials: "RN" },
-    rating: 4.7,
-    city: "Itu, SP",
-    postedAt: "há 18 min",
-    title: "Home Office Planejado 2,40m — Preciso de Lojista Local",
-    description:
-      "Quero uma bancada em L com nichos e gaveteiro para escritório em casa. MDF cinza + puxadores pretos. Aceito visita técnica.",
-    budget: "R$ 4.500 – R$ 6.800",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["home office", "planejado", "itu"],
-  },
-  {
-    id: "p14",
-    category: "cliente",
-    author: { id: "u-thiago", name: "Thiago Almeida", avatarInitials: "TA" },
-    rating: 4.6,
-    city: "Campinas, SP",
-    postedAt: "há 55 min",
-    title: "Painel de TV Ripado + Rack Suspenso para Sala",
-    description:
-      "Painel ripado freijó com 3,20m e rack suspenso. Já tenho projeto em PDF, preciso apenas execução e instalação.",
-    budget: "R$ 3.200 – R$ 4.800",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["painel", "ripado", "rack", "campinas"],
-  },
-  {
-    id: "p15",
-    category: "prestador",
-    author: { id: "u-bruno-mont", name: "Bruno Montador Pro", avatarInitials: "BM", gold: true },
-    rating: 4.95,
-    city: "Sorocaba, SP",
-    postedAt: "há 1 h",
-    specialty: "Montador Master — Cozinhas & Closets",
-    radiusKm: 70,
-    title: "Montador Master Disponível esta Semana — Selo Ouro",
-    description:
-      "Vagas para 3 O.S. de médio/grande porte. Equipe própria com 2 auxiliares, ferramenta completa e seguro incluso.",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["montador", "selo ouro", "sorocaba"],
-  },
-  {
-    id: "p16",
-    category: "prestador",
-    author: { id: "u-lucia-proj", name: "Lúcia Interiores 3D", avatarInitials: "LI" },
-    rating: 4.8,
-    city: "Jundiaí, SP",
-    postedAt: "há 3 h",
-    specialty: "Projetista Promob + Render Corona",
-    radiusKm: 100,
-    title: "Projetos Executivos em 72h com Render Foto-Realista",
-    description:
-      "Atendo lojistas com pacote fechado por ambiente. Entrega inclui memorial, lista de corte e 4 imagens em alta.",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["projetista", "promob", "render"],
-  },
-  {
-    id: "p17",
-    category: "fornecedor",
-    author: { id: "u-mdf-master", name: "MDF Master Distribuidora", avatarInitials: "MM" },
-    rating: 4.9,
-    city: "Campinas, SP",
-    postedAt: "há 4 h",
-    title: "Chapas MDF Duratex 15/18mm — Entrega em 24h para Lojistas",
-    description:
-      "Estoque completo em MDF branco TX, freijó, carvalho munique e cinza cristal. Frete grátis acima de 20 chapas.",
-    budget: "A partir de R$ 189/chapa",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["mdf", "duratex", "chapas", "distribuidor"],
-  },
-  {
-    id: "p18",
-    category: "fornecedor",
-    author: { id: "u-ferragens-blum", name: "Blum Center Sorocaba", avatarInitials: "BC" },
-    rating: 4.8,
-    city: "Sorocaba, SP",
-    postedAt: "há 6 h",
-    title: "Ferragens Blum Originais — Corrediças, Dobradiças e Aventos",
-    description:
-      "Distribuidor oficial Blum. Kits promocionais para lojistas cadastrados. Consultoria técnica gratuita para projetos.",
-    budget: "Descontos progressivos",
-    media: [
-      {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=1200&q=70&auto=format&fit=crop",
-      },
-    ],
-    keywords: ["blum", "ferragens", "corrediças"],
-  },
-];
+const MOCK_POSTS: FeedPost[] = [];
+
 
 const FILTERS: { key: "todos" | FeedCategory; label: string; icon: React.ReactNode }[] = [
   { key: "todos", label: "Todos os Anúncios", icon: null },
@@ -603,6 +180,59 @@ export default function FeedLojistaPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+
+  const fetchPosts = useCallback(async () => {
+    try {
+      setSearching(true);
+      setLoadError(null);
+      
+      const { data, error } = await supabaseExternal
+        .from("feed_posts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const formatted: FeedPost[] = data.map((p: any) => ({
+          id: p.id,
+          category: p.type === "b2c" ? "cliente" : p.type as any,
+          author: {
+            id: p.author_id,
+            name: p.metadata?.author_name || "Membro FIXXER",
+            avatarInitials: (p.metadata?.author_name || "FX").substring(0, 2).toUpperCase(),
+            gold: p.metadata?.is_gold,
+            isMine: p.author_id === userId
+          },
+          rating: p.metadata?.rating || 5.0,
+          city: p.location || "Região",
+          postedAt: "há pouco",
+          title: p.title,
+          description: p.description,
+          budget: p.price ? `R$ ${p.price.toLocaleString("pt-BR")}` : undefined,
+          urgency: p.metadata?.urgency_tag as any,
+          serviceRadiusKm: p.metadata?.service_radius_km,
+          media: (p.metadata?.media || []).map((m: any) => ({
+            type: m.type || "image",
+            url: m.url
+          })),
+          keywords: p.metadata?.keywords || []
+        }));
+        setPosts(formatted);
+      }
+    } catch (err: any) {
+      console.error("[FeedLojista] Erro ao carregar posts:", err);
+      setLoadError("Falha ao carregar publicações reais.");
+    } finally {
+      setSearching(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts, reloadKey]);
+
 
   // Debounce da busca — evita filtrar a cada tecla e mostra "buscando..."
   useEffect(() => {
@@ -684,7 +314,7 @@ export default function FeedLojistaPage() {
   const visibleRaw = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase().replace(/^#/, "");
     // Deriva urgência/raio/tags a partir de keywords quando o mock não traz explícito
-    const decorated: FeedPost[] = MOCK_POSTS.map((p) => {
+    const decorated: FeedPost[] = posts.map((p) => {
       const kws = (p.keywords || []).map((k) => k.toLowerCase());
       const urgency: UrgencyTag =
         p.urgency ?? (kws.includes("urgente") ? "urgente" : kws.includes("encomenda") ? "encomenda" : "normal");
