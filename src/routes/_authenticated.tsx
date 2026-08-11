@@ -140,13 +140,7 @@ function AuthenticatedLayout() {
             </div>
           )}
 
-          <div
-            onClick={() => navigate({ to: "/feed" as any })}
-            className={`text-[10px] md:text-xs font-black uppercase tracking-widest md:tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors hidden sm:flex ${!showAdminPanel ? 'text-[#00FF87]' : 'text-muted-foreground hover:text-white'}`}
-          >
-            <LayoutDashboard className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            <span>Dashboard</span>
-          </div>
+          {/* Dashboard removido conforme solicitado para mobile e desktop */}
 
           <div className="h-4 w-[1px] bg-white/10 mx-0.5 md:mx-1" />
 

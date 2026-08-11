@@ -26,6 +26,7 @@ import { ReviewModal } from "@/components/ReviewModal";
 import { PanelActions } from "@/components/PanelActions";
 import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
+import { ProfileHeader } from "@/components/ProfileHeader";
 import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
 
 
@@ -40,34 +41,18 @@ function ClientePortal() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-24 md:pl-72 animate-in fade-in duration-500">
-      <ProfileSummaryCard role="cliente" variant="sidebar" />
-      {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
-            <Home className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
-              PORTAL DO <span className="text-[#00FF87]">CLIENTE</span>
-            </h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Acompanhe sua reforma e contrate profissionais</p>
-          </div>
-        </div>
-        
-        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+      <ProfileHeader 
+        role="cliente" 
+        actions={
           <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
             <TabButton active={activeTab === 'jornada'} onClick={() => setActiveTab('jornada')} label="Minha Obra" icon={<Clock className="w-3 h-3" />} />
             <Link to="/feed/cliente" search={{ urgency: 'todos', distance: 'todos', tag: '' }} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00FF87] text-black font-black uppercase italic text-[10px] tracking-widest hover:shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all shrink-0">
-               <Search className="w-3 h-3" /> Acessar Feed da Categoria
+               <Search className="w-3 h-3" /> Feed Fixxer
             </Link>
             <TabButton active={activeTab === 'contratacoes'} onClick={() => setActiveTab('contratacoes')} label="Contratações" icon={<ShieldCheck className="w-3 h-3" />} />
           </div>
-          {/* Notificações agora estão integradas no ProfileSummaryCard */}
-          <PanelActions role="cliente" />
-        </div>
-      </header>
-      <ProfileSummaryCard role="cliente" variant="auto" className="md:hidden" />
+        }
+      />
 
 
       <CoinBalancePlanCard />
