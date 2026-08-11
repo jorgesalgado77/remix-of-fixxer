@@ -58,7 +58,7 @@ import ExportChatModal from "@/components/Chat/ExportChatModal";
 import { notifyIncomingMessage, requestNotificationPermission, currentPermission } from "@/lib/chat-notifications";
 import { downloadAttachment } from "@/lib/attachment-download";
 import { sanitizeContactText, CONTACT_GUARD_WARNING } from "@/lib/contact-guard";
-import { getMockConversation, isMockPeerId, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
+
 import { getCategoryTheme, getPeerTheme, resolvePeerCategory, type CategoryKey } from "@/lib/category-colors";
 import { useCurrentCategory, setContextCategoryOverride } from "@/lib/user-category";
 import { peekPublicProfileCategory } from "@/lib/public-profile-category";
@@ -199,7 +199,7 @@ function ConversationPage() {
   const [archived, setArchived] = useState(false);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [linkedAd, setLinkedAd] = useState<MockLinkedAd | null>(null);
+  const [linkedAd, setLinkedAd] = useState<any | null>(null);
   const [guardBlocked, setGuardBlocked] = useState(false);
   const [peerAvailable, setPeerAvailable] = useState<boolean | null>(null);
 
@@ -459,34 +459,6 @@ function ConversationPage() {
 
 
 
-      // === MODO MOCK (peerId "mock-*") ===
-      if (isMockPeerId(peerId)) {
-        const mock = getMockConversation(peerId);
-        if (mock) {
-          setPeerName(mock.peerName);
-          setPeerAvatar(mock.peerAvatar);
-          setPeerRole(mock.peerRole);
-          setPeerOnline(!!mock.online);
-          setLinkedAd(mock.linkedAd ?? null);
-          const mockRows: MessageRow[] = mock.messages.map((m) => ({
-            id: `${peerId}-${m.id}`,
-            sender_id: m.fromMe ? uid : peerId,
-            recipient_id: m.fromMe ? peerId : uid,
-            content: m.content,
-            created_at: mockMessageIsoAt(m.minutesAgo),
-            read: true,
-            _delivered: true,
-            attachment_url: m.attachment?.url ?? null,
-            attachment_type: m.attachment?.type ?? null,
-            attachment_name: m.attachment?.name ?? null,
-          }));
-          setMessages(mockRows);
-          setHasMore(false);
-          setLoading(false);
-          markMockConversationSeen(peerId);
-          return;
-        }
-      }
 
 
 
@@ -773,7 +745,7 @@ function ConversationPage() {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
         const uid = userId || (await getAuthUid());
-        if (uid && !isMockPeerId(peerId)) markIncomingRead(uid);
+        if (uid && !peerId.startsWith("mock-")) markIncomingRead(uid);
       }
     };
 
@@ -825,7 +797,7 @@ function ConversationPage() {
   // reconectando). Só bate no banco a cada 4s e usa a última data conhecida
   // como cursor, então o custo é mínimo.
   useEffect(() => {
-    if (!userId || !peerId || isMockPeerId(peerId)) return;
+    if (!userId || !peerId || peerId.startsWith("mock-")) return;
     let stopped = false;
     let timer: ReturnType<typeof setInterval> | null = null;
     const tick = async () => {
@@ -1207,7 +1179,7 @@ function ConversationPage() {
     clearDraft(peerId);
 
     // === MODO MOCK: sem persistência, com auto-resposta simulada ===
-    if (isMockPeerId(peerId)) {
+    if (peerId.startsWith("mock-")) {
       // Enriquecer as linhas otimistas com URLs de blob para pré-visualizar
       // imagens/vídeos anexados diretamente nos balões (sem ir ao Storage).
       const optimIds = new Set(optimisticRows.map((r) => r.id));

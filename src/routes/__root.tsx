@@ -21,7 +21,6 @@ import { ChatRealtimeDebugPanel } from "@/components/Chat/RealtimeDebugPanel";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { fixAuthAndPreview } from "../lib/preview-fixer";
 import { subscribeBlockedStatus } from "../lib/blocked-guard";
 import { useContextualCategory, getCategoryCssVars } from "../lib/user-category";
 
@@ -172,7 +171,7 @@ function RootComponent() {
   useEffect(() => {
     // Aplica o tema (Escuro/Claro) o quanto antes para evitar flash.
     void import("../lib/theme").then((m) => m.initTheme());
-    fixAuthAndPreview();
+    
     void import("../lib/chat-read-queue").then((m) => m.initChatReadQueue());
     void import("../lib/chat-sound").then((m) => m.installChatSoundUnlock());
     // Registra Service Worker para push notifications (best-effort)

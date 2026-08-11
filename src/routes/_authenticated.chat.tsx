@@ -39,8 +39,6 @@ import {
   setConversationMuted,
 } from "@/lib/chat-preferences";
 import { enqueueMarkAllRead, enqueueMarkConversationRead } from "@/lib/chat-read-queue";
-import { MOCK_CONVERSATIONS, mockMessageIsoAt, type MockLinkedAd } from "@/lib/mock-chat";
-import { getMockSeenAt, markMockConversationSeen } from "@/lib/chat-drafts";
 import { getPeerTheme } from "@/lib/category-colors";
 import { ThreadCard } from "@/components/chat/ThreadCard";
 
@@ -94,7 +92,7 @@ type Conversation = {
   unread: number;
   archived: boolean;
   muted: boolean;
-  linkedAd?: MockLinkedAd | null;
+  linkedAd?: any | null;
 };
 
 const PAGE_SIZE = 100;
@@ -812,7 +810,7 @@ function ChatInboxPage() {
 
   const openConversation = useCallback((peerId: string) => {
     if (peerId.startsWith("mock-")) {
-      markMockConversationSeen(peerId);
+      // markMockConversationSeen removed
     }
     if (userId) {
       enqueueMarkConversationRead(userId, peerId);

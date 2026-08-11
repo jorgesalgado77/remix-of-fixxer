@@ -19,7 +19,7 @@ import { Search, MapPin, MessageSquare, Heart, Send, X, Loader2, Store, Wrench, 
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { cityCoords, useUserCoords } from "@/lib/geo-distance";
 import { haversineKm } from "@/lib/activity-branches";
-import { getCategoryColor } from "@/lib/getCategoryColor";
+import { getCategoryTheme } from "@/lib/category-colors";
 import {
   stripAccents,
   rowMatchesTerm,
@@ -732,7 +732,7 @@ const ResultCard = memo(function ResultCard(props: {
   onFav: () => void;
 }) {
   const { item, term = "", favorited = false, onChat, onFav } = props;
-  const c = getCategoryColor(item.category);
+  const c = getCategoryTheme(item.category);
   const meta = CAT_META[item.category];
   const distance =
     item.distanceKm == null
@@ -756,8 +756,8 @@ const ResultCard = memo(function ResultCard(props: {
     <li
       className={[
         "rounded-2xl border-2 bg-[#1A1A1B] p-3 flex flex-col gap-2",
-        c.border,
-        c.bgGlow,
+        c.borderStrong.borderColor,
+        c.glow.boxShadow,
       ].join(" ")}
     >
       <div className="flex items-start gap-3">
@@ -768,13 +768,13 @@ const ResultCard = memo(function ResultCard(props: {
               alt=""
               loading="lazy"
               decoding="async"
-              className={["h-12 w-12 rounded-full object-cover border-2", c.border].join(" ")}
+              className={["h-12 w-12 rounded-full object-cover border-2", c.borderStrong.borderColor].join(" ")}
             />
           ) : (
             <div
               className={[
                 "h-12 w-12 rounded-full border-2 flex items-center justify-center text-sm font-bold text-white bg-[#0A0A0B]",
-                c.border,
+                c.borderStrong.borderColor,
               ].join(" ")}
             >
               {(item.name[0] || "?").toUpperCase()}
@@ -789,7 +789,7 @@ const ResultCard = memo(function ResultCard(props: {
             >
               <Highlight text={item.name} term={term} />
             </Link>
-            <span className={["text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border", c.badgeBg].join(" ")}>
+            <span className={["text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border", c.bgSoft.backgroundColor].join(" ")}>
               {meta.badge} {meta.label}
             </span>
           </div>
@@ -833,7 +833,7 @@ const ResultCard = memo(function ResultCard(props: {
           onClick={onChat}
           className={[
             "h-9 flex-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-[#0A0A0B] transition active:scale-95",
-            c.bg,
+            c.bgSolid.backgroundColor,
           ].join(" ")}
         >
           {item.category === "cliente" ? (

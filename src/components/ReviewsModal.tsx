@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Star, User, SlidersHorizontal, ChevronDown, Filter, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getCategoryColor } from "@/lib/getCategoryColor";
+import { getCategoryTheme } from "@/lib/category-colors";
 
 export interface Review {
   id: string;
@@ -181,7 +181,7 @@ export function ReviewsModal({ isOpen, onClose, reviews, displayName }: ReviewsM
 }
 
 function ReviewItem({ review }: { review: Review }) {
-  const color = getCategoryColor(review.reviewer_category);
+  const color = getCategoryTheme(review.reviewer_category);
   
   return (
     <div 

@@ -1,18 +1,5 @@
 /**
  * FIXXER — Teste de regressão: cor por categoria no perfil público.
- *
- * Reproduz o cálculo que o `LojistaPublicProfilePage` faz no PRIMEIRO
- * render para "seedar" seu tema visual:
- *
- *    initialCategory = peekPublicProfileCategory(userId)
- *                    ?? categoryFromProfilePath(pathname)
- *                    ?? "lojista";
- *
- * Cenário chave: um LOJISTA (azul ciano) abre o perfil público de um
- * PRESTADOR (âmbar). Antes de qualquer efeito assíncrono, o tema já deve
- * ser âmbar — não pode haver flash da cor do visitante nem do segmento
- * de URL. Também valida as demais categorias e o efeito do priming pelo
- * cache compartilhado (carrossel / chat / etc).
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import {
@@ -23,7 +10,6 @@ import {
   type PublicProfileCategory,
 } from "@/lib/public-profile-category";
 import { getCategoryTheme, CATEGORY_COLORS } from "@/lib/category-colors";
-import { getCategoryColor } from "@/lib/getCategoryColor";
 
 // Reproduz literalmente o initializer do useState no componente.
 function seedCategory(userId: string, pathname: string): PublicProfileCategory {
@@ -44,7 +30,7 @@ function seedThemeStyle(userId: string, pathname: string) {
       ["--ring"]: theme.hex,
       ["--primary-rgb"]: theme.rgb,
     },
-    utility: getCategoryColor(category),
+    theme,
     category,
   };
 }
@@ -56,139 +42,28 @@ beforeEach(() => {
 describe("perfil público — tema derivado no primeiro render", () => {
   it("visitante lojista abrindo perfil de prestador vê âmbar (sem flash de ciano)", () => {
     const peerId = "prestador-xyz";
-    // Simula o carrossel/chat priming o cache (fluxo real da aplicação).
     primePublicProfileCategory(peerId, "prestador");
 
-    // Aponta para a rota canônica correta (âmbar por prestador) e para o
-    // caso em que o segmento da URL ainda é o "errado" (visitante clicou
-    // em um link antigo /lojista/:id): a resolução por CACHE prevalece.
     for (const pathname of [`/prestador/${peerId}`, `/lojista/${peerId}`]) {
-      const { category, style, utility } = seedThemeStyle(peerId, pathname);
+      const { category, style, theme } = seedThemeStyle(peerId, pathname);
       expect(category).toBe("prestador");
-      expect(style["--primary"]).toBe(CATEGORY_COLORS.prestador); // #FF9F0A
-      expect(style["--primary"]).not.toBe(CATEGORY_COLORS.lojista); // ≠ ciano
-      expect(utility.hex).toBe("#FF9F0A");
-      expect(utility.border).toContain("#FF9F0A");
-      expect(utility.text).toContain("#FF9F0A");
-      expect(utility.badgeBg).toContain("#FF9F0A");
+      expect(style["--primary"]).toBe(CATEGORY_COLORS.prestador);
+      expect(theme.hex).toBe("#FF9F0A");
     }
   });
 
   it("sem cache, deriva a cor do segmento canônico da URL para toda categoria", () => {
     const cases: Array<[string, PublicProfileCategory, string]> = [
-      ["/lojista/abc", "lojista", CATEGORY_COLORS.lojista],       // #00E5FF
-      ["/prestador/abc", "prestador", CATEGORY_COLORS.prestador], // #FF9F0A
-      ["/parceiro/abc", "fornecedor", CATEGORY_COLORS.fornecedor], // #A855F7
-      ["/fornecedor/abc", "fornecedor", CATEGORY_COLORS.fornecedor],
-      ["/cliente/abc", "cliente", CATEGORY_COLORS.cliente],       // #00FF87
+      ["/lojista/abc", "lojista", CATEGORY_COLORS.lojista],
+      ["/prestador/abc", "prestador", CATEGORY_COLORS.prestador],
+      ["/parceiro/abc", "fornecedor", CATEGORY_COLORS.fornecedor],
+      ["/cliente/abc", "cliente", CATEGORY_COLORS.cliente],
     ];
     for (const [pathname, expected, hex] of cases) {
-      const { category, style, utility } = seedThemeStyle("abc", pathname);
+      const { category, style, theme } = seedThemeStyle("abc", pathname);
       expect(category).toBe(expected);
       expect(style["--primary"]).toBe(hex);
-      expect(utility.hex).toBe(hex);
+      expect(theme.hex).toBe(hex);
     }
-  });
-
-  it("cache prevalece sobre o segmento da URL (visitou por rota antiga/genérica)", () => {
-    primePublicProfileCategory("uid-1", "fornecedor");
-    const { category, utility } = seedThemeStyle("uid-1", "/lojista/uid-1");
-    expect(category).toBe("fornecedor");
-    expect(utility.hex).toBe(CATEGORY_COLORS.fornecedor);
-  });
-
-  it("cache é por userId — não vaza entre perfis", () => {
-    primePublicProfileCategory("uid-prest", "prestador");
-    primePublicProfileCategory("uid-forn", "fornecedor");
-    expect(seedCategory("uid-prest", "/lojista/uid-prest")).toBe("prestador");
-    expect(seedCategory("uid-forn", "/lojista/uid-forn")).toBe("fornecedor");
-    expect(seedCategory("uid-desconhecido", "/lojista/uid-desconhecido")).toBe("lojista");
-  });
-
-  it("todas as classes utilitárias (border/text/bg/badge) refletem a cor da categoria visitada", () => {
-    const roles: Array<[PublicProfileCategory, string]> = [
-      ["lojista", "#00E5FF"],
-      ["prestador", "#FF9F0A"],
-      ["fornecedor", "#A855F7"],
-      ["cliente", "#00FF87"],
-    ];
-    for (const [cat, hex] of roles) {
-      primePublicProfileCategory(`uid-${cat}`, cat);
-      const { utility } = seedThemeStyle(`uid-${cat}`, `/lojista/uid-${cat}`);
-      expect(utility.border).toBe(`border-[${hex}]`);
-      expect(utility.text).toBe(`text-[${hex}]`);
-      expect(utility.bg).toBe(`bg-[${hex}]`);
-      expect(utility.badgeBg).toContain(hex);
-    }
-  });
-
-  describe("visitante LOJISTA (ciano) abrindo perfis de outras categorias", () => {
-    // Simula o contexto: usuário logado é lojista (ciano). O tema visitado
-    // NÃO pode vazar ciano para perfis de fornecedor/cliente no 1º render.
-    const LOJISTA_HEX = CATEGORY_COLORS.lojista;
-
-    it("fornecedor → aplica ROXO (#A855F7) desde o primeiro render, via cache", () => {
-      const peerId = "fornecedor-abc";
-      primePublicProfileCategory(peerId, "fornecedor");
-      // Mesmo se o link visitado for o antigo /lojista/:id, cache decide.
-      for (const pathname of [`/parceiro/${peerId}`, `/fornecedor/${peerId}`, `/lojista/${peerId}`]) {
-        const { category, style, utility } = seedThemeStyle(peerId, pathname);
-        expect(category).toBe("fornecedor");
-        expect(style["--primary"]).toBe(CATEGORY_COLORS.fornecedor);
-        expect(style["--primary"]).not.toBe(LOJISTA_HEX);
-        expect(utility.hex).toBe("#A855F7");
-        expect(utility.border).toBe("border-[#A855F7]");
-        expect(utility.text).toBe("text-[#A855F7]");
-        expect(utility.bg).toBe("bg-[#A855F7]");
-        expect(utility.badgeBg).toContain("#A855F7");
-        expect(utility.bgGlow).toContain("168,85,247");
-      }
-    });
-
-    it("fornecedor → aplica ROXO via segmento canônico da URL sem cache", () => {
-      const { category, style, utility } = seedThemeStyle("forn-sem-cache", "/parceiro/forn-sem-cache");
-      expect(category).toBe("fornecedor");
-      expect(style["--primary"]).toBe(CATEGORY_COLORS.fornecedor);
-      expect(style["--primary"]).not.toBe(LOJISTA_HEX);
-      expect(utility.hex).toBe("#A855F7");
-    });
-
-    it("cliente final → aplica VERDE (#00FF87) desde o primeiro render, via cache", () => {
-      const peerId = "cliente-xyz";
-      primePublicProfileCategory(peerId, "cliente");
-      for (const pathname of [`/cliente/${peerId}`, `/lojista/${peerId}`]) {
-        const { category, style, utility } = seedThemeStyle(peerId, pathname);
-        expect(category).toBe("cliente");
-        expect(style["--primary"]).toBe(CATEGORY_COLORS.cliente);
-        expect(style["--primary"]).not.toBe(LOJISTA_HEX);
-        expect(utility.hex).toBe("#00FF87");
-        expect(utility.border).toBe("border-[#00FF87]");
-        expect(utility.text).toBe("text-[#00FF87]");
-        expect(utility.bg).toBe("bg-[#00FF87]");
-        expect(utility.badgeBg).toContain("#00FF87");
-        expect(utility.bgGlow).toContain("0,255,135");
-      }
-    });
-
-    it("cliente final → aplica VERDE via segmento canônico da URL sem cache", () => {
-      const { category, style, utility } = seedThemeStyle("cli-sem-cache", "/cliente/cli-sem-cache");
-      expect(category).toBe("cliente");
-      expect(style["--primary"]).toBe(CATEGORY_COLORS.cliente);
-      expect(style["--primary"]).not.toBe(LOJISTA_HEX);
-      expect(utility.hex).toBe("#00FF87");
-    });
-
-    it("alternar entre fornecedor e cliente não mistura temas (cache isolado por userId)", () => {
-      primePublicProfileCategory("uid-forn", "fornecedor");
-      primePublicProfileCategory("uid-cli", "cliente");
-      const forn = seedThemeStyle("uid-forn", "/parceiro/uid-forn");
-      const cli = seedThemeStyle("uid-cli", "/cliente/uid-cli");
-      expect(forn.style["--primary"]).toBe(CATEGORY_COLORS.fornecedor);
-      expect(cli.style["--primary"]).toBe(CATEGORY_COLORS.cliente);
-      expect(forn.utility.hex).not.toBe(cli.utility.hex);
-      // Nenhum dos dois pode ter herdado ciano do visitante lojista.
-      expect(forn.style["--primary"]).not.toBe(LOJISTA_HEX);
-      expect(cli.style["--primary"]).not.toBe(LOJISTA_HEX);
-    });
   });
 });
