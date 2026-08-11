@@ -128,7 +128,7 @@ export async function resolveIdentity(
     avatarUrl,
     bio: effectiveProfile.bio || effectiveProfile.about_bio || null,
     isOfficial: !!effectiveProfile.is_official,
-    isVerified: !!effectiveProfile.is_verified,
+    isVerified: !!(effectiveProfile.is_verified || store?.is_verified || provider?.is_verified || supplier?.is_verified),
     planId: effectiveProfile.plan_id || "free",
     createdAt: effectiveProfile.created_at || new Date().toISOString(),
     karmaScore: effectiveProfile.karma_score ? Number(effectiveProfile.karma_score) : 5.0,
