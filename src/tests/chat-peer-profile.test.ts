@@ -92,19 +92,18 @@ describe("chat-peer-profile", () => {
   });
 
   it("prefers display_name from profiles by id", async () => {
-    // Note: 'user_roles' key is not needed here as resolveIdentity uses the base fields
-    state.profiles = { id: "u1", user_id: "u1", display_name: "Ana Loja", avatar_url: "http://a.png", role: "lojista", city: "X" };
+    state.profiles = { id: "u1", user_id: "u1", display_name: "Ana Loja", avatar_url: "http://a.png", role: "lojista" };
     const p = await resolvePeerProfile("u1");
     expect(p.name).toBe("Ana Loja");
     expect(p.avatarUrl).toBe("http://a.png");
   });
 
   it("refresh option bypasses cache to load latest display name/avatar", async () => {
-    state.profilesByUser = { id: "u7", user_id: "u7", display_name: "Nome Antigo", city: "X" };
+    state.profilesByUser = { id: "u7", user_id: "u7", display_name: "Nome Antigo" };
     const a = await resolvePeerProfile("u7");
     expect(a.name).toBe("Nome Antigo");
 
-    state.profilesByUser = { id: "u7", user_id: "u7", display_name: "Nome Novo", city: "X" };
+    state.profilesByUser = { id: "u7", user_id: "u7", display_name: "Nome Novo" };
     const refreshed = await resolvePeerProfile("u7", { refresh: true });
     expect(refreshed.name).toBe("Nome Novo");
   });
