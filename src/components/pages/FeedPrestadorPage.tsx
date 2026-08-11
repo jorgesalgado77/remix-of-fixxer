@@ -113,6 +113,8 @@ type JobPost = {
 // =============================================================================
 
 // MOCK_JOBS removido conforme Prompt 17.
+// O FeedPrestadorPage agora consome dados reais através do FeedService/FeedPostData.
+
 
 
 const FILTERS: { key: "todas" | Subcategory; label: string; icon: React.ReactNode }[] = [
