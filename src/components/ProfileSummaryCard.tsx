@@ -262,9 +262,13 @@ export function ProfileSummaryCard({
               <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate">
                 {loading && !profile ? "Carregando…" : name}
               </div>
-              <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
-                <span aria-hidden="true">{ROLE_ICON[role]}</span>
-                {ROLE_LABEL[role]}
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
+                  <span aria-hidden="true">{ROLE_ICON[role]}</span>
+                  {ROLE_LABEL[role]}
+                </div>
+                {/* A pílula de disponibilidade é mostrada no card resumo ao lado do papel */}
+                <AvailabilityBadge userId={profile?.id ?? null} className="!border-none !bg-transparent !px-0" />
               </div>
               {location && (
                 <div className="mt-1.5 flex items-center gap-1 text-[10px] text-white/60 font-bold uppercase tracking-widest">
