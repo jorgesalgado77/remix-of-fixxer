@@ -10,7 +10,7 @@ export type ResumableUploadEvent =
   | { kind: "progress"; percent: number; attempt: number }
   | { kind: "retry"; attempt: number; nextDelayMs: number; reason: string }
   | { kind: "waiting-online" }
-  | { kind: "done"; publicUrl: string; attempts: number };
+  | { kind: "done"; url: string; attempts: number };
 
 export type ResumableUploadOptions = {
   maxAttempts?: number;
@@ -45,7 +45,8 @@ export async function uploadWithRetry(
   path: string,
   file: File,
   opts: ResumableUploadOptions = {},
-): Promise<{ publicUrl: string; attempts: number }> {
+  isPrivate: boolean = false,
+): Promise<{ url: string; attempts: number }> {
   const max = opts.maxAttempts ?? 5;
   let attempt = 0;
   let lastErr: unknown = null;
@@ -63,9 +64,10 @@ export async function uploadWithRetry(
         file,
         (p: UploadProgress) => opts.onEvent?.({ kind: "progress", percent: p.percent, attempt }),
         opts.signal,
+        isPrivate
       );
-      opts.onEvent?.({ kind: "done", publicUrl: res.publicUrl, attempts: attempt });
-      return { publicUrl: res.publicUrl, attempts: attempt };
+      opts.onEvent?.({ kind: "done", url: res.url, attempts: attempt });
+      return { url: res.url, attempts: attempt };
     } catch (e) {
       lastErr = e;
       if ((e as any)?.name === "AbortError") throw e;
