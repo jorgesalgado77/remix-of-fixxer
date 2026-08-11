@@ -563,6 +563,16 @@ function RecentStoresCarouselInner() {
                       )}
                     </div>
 
+                    {/* Badge CNPJ Verificado Real */}
+                    {(p as any).is_verified && (
+                      <div className="absolute top-4 left-4 z-20">
+                        <div className="px-2 py-0.5 rounded-full bg-[#00FF88]/20 backdrop-blur-md border border-[#00FF88]/30 flex items-center gap-1 shadow-lg">
+                          <ShieldCheck className="w-2.5 h-2.5 text-[#00FF88]" />
+                          <span className="text-[8px] font-black text-[#00FF88] uppercase italic">Verificado</span>
+                        </div>
+                      </div>
+                    )}
+
                     {p.avatar_url ? (
                       <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover/card:scale-110 shadow-2xl ${
                         p._kind === 'lojista' ? 'border-[#00E5FF]' : 'border-[#A855F7]'
