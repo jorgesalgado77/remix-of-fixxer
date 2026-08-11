@@ -1140,8 +1140,10 @@ export function LojistaPublicProfilePage() {
 
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2">
-                  <Badge icon={<ShieldCheck className="w-3 h-3" />} label="CNPJ Verificado" />
-                  <Badge icon={<Clock className="w-3 h-3" />} label={`Ativo há +${yearsActive} ${yearsActive === 1 ? "ano" : "anos"}`} />
+                  {profile?.is_verified && (
+                    <Badge icon={<ShieldCheck className="w-3 h-3" />} label="CNPJ Verificado" />
+                  )}
+                  <Badge icon={<Clock className="w-3 h-3" />} label={yearsActiveLabel} />
                 </div>
 
 
@@ -1159,7 +1161,7 @@ export function LojistaPublicProfilePage() {
                   />
                   <MetricCard 
                     label="Tempo Resposta" 
-                    value={profile?.response_time_min ? `<${profile.response_time_min}` : "<30"} 
+                    value={profile?.response_time_min && profile.response_time_min > 0 ? `<${profile.response_time_min}` : "<30"} 
                     suffix="min" 
                   />
                 </div>
