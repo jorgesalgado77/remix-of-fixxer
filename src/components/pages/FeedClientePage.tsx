@@ -53,7 +53,9 @@ import {
   Trash2,
   Navigation,
   Check,
+  PlusCircle,
 } from "lucide-react";
+import { CreateAdModal } from "@/components/CreateAdModal";
 
 // =============================================================================
 // TIPOS
@@ -158,6 +160,7 @@ export default function FeedClientePage() {
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [lightbox, setLightbox] = useState<{ vendor: Vendor; index: number } | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [createAdOpen, setCreateAdOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string>("");
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
