@@ -3,19 +3,29 @@
  * Refatorado para usar o Identity Service Canônico (Prompt 15).
  */
 import { resolveIdentity } from "@/lib/identity/identity-service";
-import type { PeerProfile } from "./chat-peer-profile.types";
+import type { PeerProfile } from "@/lib/identity/chat-peer-profile.types";
 
 export type { PeerProfile };
 
 const CACHE = new Map<string, { at: number; value: PeerProfile }>();
 const TTL_MS = 60_000;
-const LS_KEY = "fixxer_chat_peer_cache_v2";
 
 export function initialsOf(name: string): string {
   const clean = String(name || "").trim();
   if (!clean) return "?";
   const parts = clean.split(/\s+/).slice(0, 2);
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || clean[0]!.toUpperCase();
+}
+
+/** Leitura síncrona do cache para render instantâneo. */
+export function getCachedPeer(peerId: string): PeerProfile | null {
+  const c = CACHE.get(peerId);
+  return c && !c.value.isFallback ? c.value : null;
+}
+
+export function clearPeerCache(peerId?: string) {
+  if (peerId) CACHE.delete(peerId);
+  else CACHE.clear();
 }
 
 export function fallbackPeer(peerId: string): PeerProfile {
@@ -58,4 +68,5 @@ export async function resolvePeerProfile(peerId: string, options?: { refresh?: b
     return fallbackPeer(peerId);
   }
 }
+
 
