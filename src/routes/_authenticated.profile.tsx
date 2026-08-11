@@ -53,6 +53,10 @@ import { detectPixKeyType, validatePixKey, PIX_KEY_TYPE_LABELS, type PixKeyType 
 import { uploadProfileDocument, resolveDocumentUrl, deleteProfileDocument } from "@/lib/profile-documents";
 import { RecommendationPreferences } from "@/components/RecommendationPreferences";
 import { geocodeAddress, isValidCoordinate } from "@/lib/geocoding.functions";
+import { ProfileStatusSection } from "@/components/ProfileStatusSection";
+import { resolveIdentity } from "@/lib/identity/identity-service";
+import { type ResolvedProfile } from "@/lib/identity/identity-types";
+
 
 function roleToCategory(role?: string | null): CategoryKey {
   const r = (role || "").toLowerCase();
@@ -250,6 +254,8 @@ function ProfilePage() {
   const [uploads, setUploads] = useState<Array<{ id: string; name: string; type: 'image'|'video'|'document'; status: 'uploading'|'success'|'error'; error?: string; file?: File }>>([]);
   const [preview, setPreview] = useState<{ open: boolean; url: string; name: string; kind: 'image'|'video'|'pdf'|'other' }>({ open: false, url: '', name: '', kind: 'other' });
   const dragRef = useRef<{ list: 'doc'|'image'|'video'; index: number } | null>(null);
+  const [resolvedIdentity, setResolvedIdentity] = useState<ResolvedProfile | null>(null);
+
 
   const lastSavedSnapshotRef = useRef<string>('');
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -346,8 +352,17 @@ function ProfilePage() {
         setProductTypes(merged);
       }
       if (postRes?.data) setTargetPost(postRes.data);
+      
+      try {
+        const identity = await resolveIdentity(idToLoad, { refresh: true });
+        setResolvedIdentity(identity);
+      } catch (e) {
+        console.warn("Falha ao resolver identidade:", e);
+      }
+      
       setLoading(false);
     }
+
     loadData();
   }, [profileId, postId]);
 
@@ -1265,7 +1280,19 @@ function ProfilePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
+            {/* STATUS E AUDITORIA */}
+            {!profileId && resolvedIdentity && (
+              <section className="bg-card/30 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl space-y-8 animate-in fade-in duration-500">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                  <BadgeCheck className="w-6 h-6 text-primary" />
+                  <h3 className="text-xl font-black uppercase tracking-tighter">Status da Conta & Verificação</h3>
+                </div>
+                <ProfileStatusSection profile={resolvedIdentity} />
+              </section>
+            )}
+
             {/* FORMULÁRIO DINÂMICO */}
+
             <section className="bg-card/30 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl space-y-8">
               <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                 <User className="w-6 h-6 text-primary" />

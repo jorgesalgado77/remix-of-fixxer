@@ -12,6 +12,11 @@ export interface CanonicalIdentity {
   bio: string | null;
   isOfficial: boolean;
   isVerified: boolean;
+  planId: string;
+  createdAt: string;
+  lastActiveAt: string | null;
+  verificationStatus: "none" | "pending" | "verified" | "rejected";
+  verificationNote?: string | null;
 }
 
 /**
@@ -26,6 +31,7 @@ export interface ProfilePresentation {
   themeColor: string;
   label: string;
   badges: string[];
+  activityLabel: string;
 }
 
 /**

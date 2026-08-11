@@ -29,7 +29,6 @@ export async function resolveIdentity(
   }
 
   // 1. Buscar Perfil Mestre (Identidade) e Roles
-  // Otimizado com JOIN para evitar N+1
   const { data: baseProfile, error: profileError } = await supabaseExternal
     .from("profiles")
     .select(`
@@ -43,7 +42,6 @@ export async function resolveIdentity(
   let effectiveProfile = baseProfile;
 
   if (profileError || !baseProfile) {
-    // Fallback para profiles_public (View sanitizada) se profiles falhar (RLS)
     const { data: publicData } = await supabaseExternal
       .from("profiles_public")
       .select("*")
@@ -52,7 +50,6 @@ export async function resolveIdentity(
     
     if (publicData) effectiveProfile = publicData;
     
-    // Buscar roles separadamente se o join falhou
     const { data: rolesData } = await supabaseExternal
       .from("user_roles")
       .select("role")
@@ -63,8 +60,6 @@ export async function resolveIdentity(
   }
 
   if (!effectiveProfile) {
-    // Se ainda não temos nada, buscamos minimamente no specialized_profiles
-    // apenas para garantir um nome se existir
     const specializedTables = ["provider_profiles", "store_profiles", "supplier_profiles"];
     const results = await Promise.all(
       specializedTables.map(table => 
@@ -80,42 +75,43 @@ export async function resolveIdentity(
       const specData = results[i].data;
       if (specData) {
         effectiveProfile = { ...specData, id: userId };
-        // Armazena a especialização para uso no ResolvedProfile se necessário
         const tableName = specializedTables[i].split("_")[0];
         (effectiveProfile as any)[`_${tableName}`] = specData;
         break;
       }
     }
-
   }
 
   const base = effectiveProfile || {};
 
-
-  // 2. Resolver Categoria Principal (Aproveita a lógica existente)
   const mainCategory = await resolvePublicProfileCategory(userId, {
     profile: baseProfile,
     refresh: options?.refresh
   });
 
-  // 3. Construir Identidade Canônica
   const hasData = effectiveProfile && Object.keys(effectiveProfile).length > 0;
 
   const identity: CanonicalIdentity = {
     id: userId,
     displayName: base.display_name || base.full_name || base.company_name || base.name || (hasData ? "Usuário" : "Conversa"),
-
-
-
     fullName: base.full_name || base.company_name || null,
     avatarUrl: base.avatar_url || base.logo_url || null,
     bio: base.bio || base.description || null,
     isOfficial: !!base.is_official,
-    isVerified: !!base.is_verified
+    isVerified: !!base.is_verified,
+    planId: base.plan_id || "free",
+    createdAt: base.created_at || new Date().toISOString(),
+    lastActiveAt: base.last_active_at || null,
+    verificationStatus: base.verification_status || (base.is_verified ? "verified" : "none"),
+    verificationNote: base.verification_note || null,
   };
 
+  const timeSinceActive = identity.lastActiveAt ? Date.now() - new Date(identity.lastActiveAt).getTime() : Infinity;
+  const activityLabel = timeSinceActive < 5 * 60 * 1000 ? "Online" : 
+                       timeSinceActive < 60 * 60 * 1000 ? "Ativo recentemente" : 
+                       identity.lastActiveAt ? "Visto em " + new Date(identity.lastActiveAt).toLocaleDateString("pt-BR") :
+                       "Ativo na plataforma";
 
-  // 4. Construir Apresentação
   const presentation: ProfilePresentation = {
     name: identity.displayName,
     initials: initialsOf(identity.displayName),
@@ -123,8 +119,12 @@ export async function resolveIdentity(
     category: mainCategory,
     themeColor: CATEGORY_COLORS[mainCategory] || CATEGORY_COLORS.cliente,
     label: CATEGORY_LABEL[mainCategory] || "Usuário",
-    badges: []
+    badges: [],
+    activityLabel
   };
+
+  if (identity.isVerified) presentation.badges.push("Verificado");
+  if (identity.planId === "premium") presentation.badges.push("Ouro");
 
   const result: ResolvedProfile = {
     identity,
