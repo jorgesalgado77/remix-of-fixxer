@@ -42,7 +42,15 @@ function PrestadorDashboard() {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 md:pl-72 animate-in fade-in duration-500">
-      <ProfileHeader role="prestador" />
+      <ProfileHeader 
+        role="prestador" 
+        actions={
+          <button className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-xl text-primary text-[10px] font-black uppercase italic hover:bg-primary/20 transition-all">
+            <TrendingUp className="w-4 h-4" />
+            <span>Métricas</span>
+          </button>
+        }
+      />
 
 
 
