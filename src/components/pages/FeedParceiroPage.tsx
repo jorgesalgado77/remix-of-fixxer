@@ -106,7 +106,7 @@ const SECTORS: Array<"Todas as Demandas" | Sector> = [
   "Softwares & Maquinário",
 ];
 
-const MOCK_REQUESTS: B2BRequest[] = [];
+// MOCK_REQUESTS removido conforme Prompt 17.
 
 
 const PAGE_SIZE = 10;
@@ -234,35 +234,72 @@ export default function FeedParceiroPage() {
     setTag: setTagFilter,
   } = useAdFilterSearchState("/_authenticated/feed/parceiro");
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const distNum =
-      distanceFilter === "todos" ? ("todos" as const) : (Number(distanceFilter) as number);
-    return MOCK_REQUESTS.filter((r) => {
-      if (activeSector !== "Todas as Demandas" && r.sector !== activeSector) return false;
-      if (statusFilter !== "todos" && getFeedStatus(r.id) !== statusFilter) return false;
-      // Deriva atributos de anúncio a partir do B2BRequest (compat com applyAdFiltersToQuery).
-      const urgency_tag = coerceUrgency(r.status) ?? (r.status === "urgente" ? "urgente" : "normal");
-      const service_radius_km =
-        (r as unknown as { service_radius_km?: number }).service_radius_km ?? 30;
-      const tags =
-        (r as unknown as { tags?: string[] }).tags ??
-        [r.sector, r.store.name]
-          .map((s) => s.toLowerCase().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}_-]+/gu, ""))
-          .filter(Boolean);
-      return matchesAdFilters(
-        {
-          urgency_tag,
-          service_radius_km,
-          tags,
-          title: r.title,
-          description: r.description,
-          keywords: [r.store.name, r.city, r.state, r.sector],
+  const [posts, setPosts] = useState<B2BRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const [hasMoreResult, setHasMoreResult] = useState(true);
+
+  const loadFeed = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+        setOffset(0);
+      } else {
+        setLoading(true);
+      }
+      setLoadError(null);
+
+      const { feedService } = await import("@/lib/feed-service");
+      const results = await feedService.getFeed({
+        category: "fornecedor",
+        type: "solicitacao_b2b",
+        query: search,
+        status: statusFilter,
+        offset: isRefresh ? 0 : offset,
+        limit: 10
+      });
+
+      const mapped: B2BRequest[] = results.map(p => ({
+        id: p.id,
+        store: {
+          id: p.authorId,
+          name: p.author?.presentation.name || "Lojista",
+          initials: p.author?.presentation.initials || "??",
+          verified: p.author?.identity.isVerified
         },
-        { urgency: urgencyFilter, distance: distNum, tag: tagFilter, term },
-      );
-    });
-  }, [search, activeSector, statusFilter, urgencyFilter, distanceFilter, tagFilter]);
+        requesterType: p.category === "lojista" ? "lojista" : "prestador",
+        city: p.location.city || "Região",
+        state: p.location.state || "",
+        rating: p.author?.identity.karmaScore || 5,
+        postedAt: new Date(p.createdAt).toLocaleDateString("pt-BR"),
+        status: p.urgency === "urgente" ? "urgente" : "aberto",
+        sector: (p.metadata?.sector || "Ferragens & Insumos") as Sector,
+        title: p.title,
+        description: p.description,
+        specs: (p.metadata?.specs || []) as string[],
+        quantity: String(p.metadata?.quantity || "Consultar"),
+        deadline: p.metadata?.deadline || "A combinar",
+        paymentTerms: p.metadata?.paymentTerms || "A combinar",
+        attachment: p.media?.[0]?.url
+      }));
+
+      setPosts(prev => isRefresh ? mapped : [...prev, ...mapped]);
+      setHasMoreResult(results.length === 10);
+      setOffset(prev => isRefresh ? 10 : prev + 10);
+    } catch (err: any) {
+      setLoadError(err.message || "Erro ao carregar demandas.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [search, statusFilter, offset]);
+
+  useEffect(() => {
+    loadFeed(true);
+  }, [search, activeSector, statusFilter]);
+
+  const filtered = posts;
+
 
   const branchCtx = useUserBranchContext();
   const rankedFiltered = useMemo(() => {

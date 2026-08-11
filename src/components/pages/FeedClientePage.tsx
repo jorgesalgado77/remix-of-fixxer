@@ -9,6 +9,8 @@ import { thumbSrc } from "@/lib/feed-thumb";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { usePerformanceMode } from "@/hooks/use-performance-mode";
+import { resolveIdentity } from "@/lib/identity/identity-service";
+
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { formatDistanceFromCity } from "@/lib/geo-distance";
 import { PullToRefresh } from "@/components/PullToRefresh";
@@ -92,7 +94,7 @@ const SOLUTIONS: Solution[] = [
   "Reformas & Projetos",
 ];
 
-const MOCK_VENDORS: Vendor[] = [];
+// MOCK_VENDORS removido conforme Prompt 17.
 
 
 const PAGE_SIZE = 10;

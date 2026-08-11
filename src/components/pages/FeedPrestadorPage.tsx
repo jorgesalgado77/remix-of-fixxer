@@ -110,7 +110,7 @@ type JobPost = {
 // MOCK DATA
 // =============================================================================
 
-const MOCK_JOBS: JobPost[] = [];
+// MOCK_JOBS removido conforme Prompt 17.
 
 
 const FILTERS: { key: "todas" | Subcategory; label: string; icon: React.ReactNode }[] = [
