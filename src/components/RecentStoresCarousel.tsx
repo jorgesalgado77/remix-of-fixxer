@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Star, MapPin, UserCircle2, ChevronLeft, ChevronRight, Navigation, Puzzle } from "lucide-react";
+import { Star, MapPin, UserCircle2, ChevronLeft, ChevronRight, Navigation, Puzzle, ShieldCheck } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { primePublicProfileCategory } from "@/lib/public-profile-category";
