@@ -278,69 +278,65 @@ export default function FeedClientePage() {
     }
   }, [sortBy, userCoords, geoStatus, requestGeolocation]);
 
-  const filtered = useMemo(() => {
-    const distNum =
-      distanceFilter === "todos" ? ("todos" as const) : (Number(distanceFilter) as number);
-    let list = MOCK_VENDORS.filter((v) => {
-      if (solution !== "Todas as Opções" && !v.solutions.includes(solution)) return false;
-      if (savedOnly && !saved.has(v.id)) return false;
-      if (query.trim()) {
-        const q = query.toLowerCase();
-        const hit =
-          v.name.toLowerCase().includes(q) ||
-          v.headline.toLowerCase().includes(q) ||
-          v.city.toLowerCase().includes(q);
-        if (!hit) return false;
-      }
-      // Deriva atributos de anúncio para reaproveitar matchesAdFilters (paridade com service_orders)
-      const tags = v.solutions.map((s) =>
-        s.toLowerCase().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}_-]+/gu, ""),
-      );
-      return matchesAdFilters(
-        {
-          urgency_tag: "normal",
-          service_radius_km: 30,
-          tags,
-          title: v.name,
-          description: v.headline,
-          keywords: [v.city, v.state, ...v.solutions],
-        },
-        { urgency: urgencyFilter, distance: distNum, tag: tagFilter },
-      );
-    });
+  const [posts, setPosts] = useState<Vendor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMoreResult, setHasMoreResult] = useState(true);
 
-    if (sortBy === "reputation") {
-      list = [...list].sort((a, b) => b.rating - a.rating || b.reviews - a.reviews);
-    } else if (sortBy === "nearest") {
-      if (userCoords) {
-        const dist = (v: Vendor) => {
-          const c = CITY_COORDS[v.city.toLowerCase()];
-          return c ? haversineKm(userCoords, c) : Number.POSITIVE_INFINITY;
-        };
-        list = [...list].sort((a, b) => dist(a) - dist(b));
+  const loadFeed = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+        setOffset(0);
       } else {
-        const city = userCity.trim().toLowerCase();
-        list = [...list].sort((a, b) => {
-          const aMatch = city && a.city.toLowerCase() === city ? 0 : 1;
-          const bMatch = city && b.city.toLowerCase() === city ? 0 : 1;
-          if (aMatch !== bMatch) return aMatch - bMatch;
-          return a.city.localeCompare(b.city);
-        });
+        setLoading(true);
       }
+      setLoadError(null);
+
+      const { feedService } = await import("@/lib/feed-service");
+      const results = await feedService.getFeed({
+        category: "cliente",
+        query: query,
+        status: "ativo",
+        offset: isRefresh ? 0 : offset,
+        limit: 10
+      });
+
+      const mapped: Vendor[] = results.map(p => ({
+        id: p.authorId,
+        kind: p.category === "lojista" ? "loja" : "prestador",
+        name: p.author?.presentation.name || "Usuário",
+        city: p.location.city || "Região",
+        state: p.location.state || "",
+        rating: p.author?.identity.karmaScore || 5,
+        reviews: 0,
+        goldSeal: p.author?.identity.planId === "premium",
+        headline: p.title,
+        solutions: (p.metadata?.solutions || []) as Solution[],
+        avatar: p.author?.presentation.avatarUrl || "",
+        gallery: (p.media || []).filter(m => m.type === "image").map(m => m.url)
+      }));
+
+      setPosts(prev => isRefresh ? mapped : [...prev, ...mapped]);
+      setHasMoreResult(results.length === 10);
+      setOffset(prev => isRefresh ? 10 : prev + 10);
+    } catch (err: any) {
+      setLoadError(err.message || "Erro ao carregar profissionais.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    return list;
-  }, [
-    query,
-    solution,
-    savedOnly,
-    saved,
-    sortBy,
-    userCity,
-    userCoords,
-    urgencyFilter,
-    distanceFilter,
-    tagFilter,
-  ]);
+  }, [query, offset]);
+
+  useEffect(() => {
+    loadFeed(true);
+  }, [query, solution]);
+
+  const handleRefresh = () => loadFeed(true);
+
+  const filtered = posts;
 
   const branchCtx = useUserBranchContext();
   const ranked = useMemo(() => {
@@ -354,9 +350,11 @@ export default function FeedClientePage() {
     );
     return applyRelevanceFallback(sorted, 3);
   }, [filtered, branchCtx]);
+
   const visible = ranked.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
+  const hasMore = visibleCount < filtered.length || hasMoreResult;
   const savedCount = saved.size;
+
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
