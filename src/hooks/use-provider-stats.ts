@@ -66,6 +66,7 @@ function isCanceled(s: string | null) {
 
 export function useProviderStats(): ProviderStats {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [orders, setOrders] = useState<StatOrder[]>([]);
   const [reviews, setReviews] = useState<StatReview[]>([]);
