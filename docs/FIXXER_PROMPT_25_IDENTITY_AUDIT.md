@@ -3,8 +3,8 @@
 ## Veredito Final: 🟢 VERIFIED (GO-LIVE READY)
 
 ### Ações Executadas:
-1. **Remoção de Fallbacks:**  foi refatorado para ignorar `display_name`, `logo_url` e `description` de tabelas especializadas.
-2. **Profiles como Single Source of Truth:**  (nome, avatar, bio) é agora a única fonte para identidade visual em todo o app.
+1. **Remoção de Fallbacks:** `IdentityService` foi refatorado para ignorar `display_name`, `logo_url` e `description` de tabelas especializadas.
+2. **Profiles como Single Source of Truth:** `profiles` (nome, avatar, bio) é agora a única fonte para identidade visual em todo o app.
 3. **Consistência Visual:** Chat, Feed e Perfil agora resolvem exatamente o mesmo objeto de identidade via `resolveIdentity`.
 4. **Segurança de PII:** Validado que dados técnicos (cidade/estado) continuam vindo das especializações, mas identidade visual é centralizada.
 
