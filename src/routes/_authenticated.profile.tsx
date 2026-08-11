@@ -848,11 +848,11 @@ function ProfilePage() {
       // TAREFA: Geocodificação em background se campos de endereço mudaram
       const lastSaved = lastSavedSnapshotRef.current ? JSON.parse(lastSavedSnapshotRef.current) : {};
       const addressChanged = 
-        profile.street !== lastSaved.street || 
-        profile.city !== lastSaved.city || 
-        profile.state !== lastSaved.state || 
-        profile.cep !== lastSaved.cep || 
-        profile.number !== lastSaved.number;
+        (profile?.street !== lastSaved?.street) || 
+        (profile?.city !== lastSaved?.city) || 
+        (profile?.state !== lastSaved?.state) || 
+        (profile?.cep !== lastSaved?.cep) || 
+        (profile?.number !== lastSaved?.number);
 
       if (!lastError && addressChanged) {
         console.log("[Background Geocoding] Detectada mudança de endereço, agendando...");
