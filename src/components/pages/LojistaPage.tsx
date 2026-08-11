@@ -400,7 +400,6 @@ export function LojistaDashboard() {
       return;
     }
     if (tab === 'create') {
-      // "Criar Serviço" da sidebar/dashboard abre o mesmo modal do botão global "Criar".
       setShowCreateModal(true);
       setMobileMenuOpen(false);
       return;
