@@ -137,11 +137,15 @@ export async function resolveIdentity(
     verificationNote: effectiveProfile.verification_note || null,
   };
 
+  const createdDate = new Date(identity.createdAt);
+  const diffTime = Math.abs(Date.now() - createdDate.getTime());
+  const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365.25);
+  const activeLabel = diffYears >= 1 ? `Ativo há +${Math.floor(diffYears)} ano${Math.floor(diffYears) > 1 ? 's' : ''}` : `Ativo desde ${createdDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}`;
+
   const timeSinceActive = identity.lastActiveAt ? Date.now() - new Date(identity.lastActiveAt).getTime() : Infinity;
   const activityLabel = timeSinceActive < 5 * 60 * 1000 ? "Online" : 
                        timeSinceActive < 60 * 60 * 1000 ? "Ativo recentemente" : 
-                       identity.lastActiveAt ? "Visto em " + new Date(identity.lastActiveAt).toLocaleDateString("pt-BR") :
-                       "Ativo na plataforma";
+                       activeLabel;
 
   const presentation: ProfilePresentation = {
     name: identity.displayName,
