@@ -102,7 +102,7 @@ type JobPost = {
   requirements: string[];
   tools: string[];
   value: string;
-  valueType: "fixo" | "percentual";
+  valueType: "fixo" | "percentual" | "total";
   media: MediaItem[];
 };
 
