@@ -700,8 +700,8 @@ export function LojistaDashboard() {
                 isProfileComplete={isProfileComplete}
                 profileSummary={{
                   ...profileSummary,
-                  isVerified: profileSummary?.isVerified,
-                  planId: profileSummary?.planId
+                  isVerified: (profileSummary as any)?.isVerified,
+                  planId: (profileSummary as any)?.planId
                 }}
                 showPixModal={showPixModal}
                 setShowPixModal={setShowPixModal}

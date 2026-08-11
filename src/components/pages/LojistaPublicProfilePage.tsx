@@ -1123,10 +1123,10 @@ export function LojistaPublicProfilePage() {
                     </div>
                   </div>
 
-                  {/* Bloco de chips de compatibilidade removido do header a pedido:
-                      as mesmas informações (work_modes, veículo, ofertas) já aparecem
-                      nas seções abaixo ao rolar o perfil. Mantemos apenas o cargo principal
-                      acima e evitamos duplicação visual no topo. */}
+  const yearsActive = profile?.created_at ? Math.floor((new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : 0;
+  const yearsActiveLabel = yearsActive >= 1 
+    ? `Ativo há +${yearsActive} ${yearsActive === 1 ? "ano" : "anos"}`
+    : `Ativo desde ${profile?.created_at ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : 'recentemente'}`;
 
                 </div>
 
