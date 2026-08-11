@@ -74,17 +74,17 @@ export async function resolveIdentity(
   let supplier: any = null;
 
   try {
-    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state").eq("user_id", userId).maybeSingle();
+    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
     store = storeData;
   } catch (e) { console.warn("[IdentityService] store_profiles indisponível"); }
 
   try {
-    const { data: providerData } = await supabaseExternal.from("provider_profiles").select("display_name, avatar_url, city, state").eq("user_id", userId).maybeSingle();
+    const { data: providerData } = await supabaseExternal.from("provider_profiles").select("display_name, avatar_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
     provider = providerData;
   } catch (e) { console.warn("[IdentityService] provider_profiles indisponível"); }
 
   try {
-    const { data: supplierData } = await supabaseExternal.from("supplier_profiles").select("company_name, logo_url, city, state").eq("user_id", userId).maybeSingle();
+    const { data: supplierData } = await supabaseExternal.from("supplier_profiles").select("company_name, logo_url, city, state, is_verified").eq("user_id", userId).maybeSingle();
     supplier = supplierData;
   } catch (e) { console.warn("[IdentityService] supplier_profiles indisponível"); }
 
