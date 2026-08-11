@@ -199,7 +199,7 @@ function ConversationPage() {
   const [archived, setArchived] = useState(false);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [linkedAd, setLinkedAd] = useState<MockLinkedAd | null>(null);
+  const [linkedAd, setLinkedAd] = useState<any | null>(null);
   const [guardBlocked, setGuardBlocked] = useState(false);
   const [peerAvailable, setPeerAvailable] = useState<boolean | null>(null);
 
