@@ -70,16 +70,17 @@ export async function blockUser(
   const map = readBlocks();
   map[targetUserId] = { blockedAt: new Date().toISOString(), note };
   writeBlocks(map);
-  // Best-effort remote (não bloqueia UI se tabela não existir)
+  // Remote enforcement (essencial para RLS e sincronização)
   if (actorUserId && actorUserId !== targetUserId) {
     try {
-      await supabaseExternal.from("user_blocks").insert({
+      const { error } = await supabaseExternal.from("user_blocks").upsert({
         blocker_id: actorUserId,
         blocked_id: targetUserId,
         note: note ?? null,
-      });
-    } catch {
-      /* silencioso: tabela pode não existir */
+      }, { onConflict: 'blocker_id,blocked_id' });
+      if (error) console.error("[moderation] block error:", error);
+    } catch (err) {
+      console.error("[moderation] block exception:", err);
     }
   }
   return { ok: true };

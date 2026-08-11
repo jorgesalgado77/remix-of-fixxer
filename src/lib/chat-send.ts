@@ -117,10 +117,10 @@ export function validateChatIdentities(senderUid: unknown, peerId: unknown): {
   if (senderUid === peerId) return { ok: false, reason: "same" };
 
   // Verificação de bloqueio via lib/moderation (usa cache local + remote effort)
-  // Nota: Usamos require condicional para evitar dependência circular e falhas em ambientes de teste puro
+  // Nota: Importação dinâmica para evitar ciclos
   try {
-    const mod = require("./moderation");
-    if (mod && typeof mod.isUserBlocked === "function" && mod.isUserBlocked(peerId)) {
+    const { isUserBlocked } = require("./moderation");
+    if (isUserBlocked(peerId)) {
       return { 
         ok: false, 
         reason: "blocked", 
@@ -128,7 +128,7 @@ export function validateChatIdentities(senderUid: unknown, peerId: unknown): {
       };
     }
   } catch (e) {
-    // Silencioso: moderation pode falhar em testes ou ambiente SSR se não houver localStorage
+    // Silencioso em SSR
   }
   
   return { ok: true };
@@ -146,6 +146,10 @@ const BYPASS_PATTERNS = [
  * Retorna true se detectar algo suspeito.
  */
 export function detectContactBypass(text: string): boolean {
+  if (!text) return false;
   const clean = text.toLowerCase();
-  return BYPASS_PATTERNS.some(re => re.test(clean));
+  // Se houver qualquer bloqueio por padrão, retorna true
+  const { sanitizeContactText } = require("./contact-guard");
+  const result = sanitizeContactText(text);
+  return result.violated;
 }
