@@ -60,12 +60,14 @@ export async function resolveIdentity(
   }
 
   if (!effectiveProfile) {
+    // Busca apenas campos TÉCNICOS/ESPECÍFICOS das tabelas especializadas.
+    // Identidade visual (nome, avatar, bio) DEVE vir de profiles.
     const specializedTables = ["provider_profiles", "store_profiles", "supplier_profiles"];
     const results = await Promise.all(
       specializedTables.map(table => 
         supabaseExternal
           .from(table)
-          .select("display_name, name, full_name, company_name, city, state")
+          .select("city, state") // Removido display_name, name, full_name, company_name como fallbacks
           .eq("user_id", userId)
           .maybeSingle()
       )
