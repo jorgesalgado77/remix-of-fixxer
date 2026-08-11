@@ -592,26 +592,13 @@ export function LojistaDashboard() {
 
       {/* Conteúdo Principal */}
       <main className="flex-1 overflow-y-auto scrollbar-none bg-[#050505] pt-16 md:pt-0">
-        {/* Barra de ações do painel — visível em mobile (o header desktop já a exibe) */}
-        <div className="md:hidden px-4 pt-3 space-y-3">
-          <PanelActions role="lojista" />
-          <ProfileSummaryCard role="lojista" variant="inline" />
-        </div>
-
-        <header className="px-8 py-6 border-b border-white/10 flex items-center justify-between sticky top-0 z-10 bg-[#050505]/80 backdrop-blur-md hidden md:flex">
-           <div className="flex flex-col gap-1">
-               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
-                   <Hammer className="w-5 h-5" />
-                 </div>
-                 <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
-                    {activeTab === 'dashboard' ? `MEU PAINEL` : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
-                 </h2>
-               </div>
-               {activeTab === 'dashboard' && (
-                 <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest ml-12">Controle de Agendas, O.S. e Reputação</p>
-               )}
-           </div>
+        <div className="p-4 md:p-8 space-y-8">
+          <ProfileHeader 
+            role="lojista" 
+            title={activeTab === 'dashboard' ? undefined : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
+            subtitle={activeTab === 'dashboard' ? undefined : ""}
+            hideSidebarCard
+          />
            <div className="flex items-center gap-4">
               <div className="relative">
                 <Button 
