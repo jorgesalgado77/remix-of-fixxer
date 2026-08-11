@@ -67,10 +67,11 @@ export async function resolveIdentity(
   // 1. Buscar Perfil Mestre (Identidade) e Roles
   const { data: baseProfile, error: profileError } = await supabaseExternal
     .from("profiles")
-    .select(`
-      id, display_name, full_name, avatar_url, bio, about_bio, is_verified, plan_id, created_at, karma_score, last_active_at, verification_status, verification_note, company_name,
-      user_roles (role)
-    `)
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  console.log(`[IdentityService] Fetch direto para ${userId}:`, { baseProfile, profileError });
     .eq("id", userId)
     .maybeSingle();
 
