@@ -29,24 +29,58 @@ export async function resolveIdentity(
   }
 
   // 1. Buscar Perfil Mestre (Identidade) e Roles
-  const [profileRes, rolesRes] = await Promise.all([
-    supabaseExternal.from("profiles").select("*").eq("id", userId).maybeSingle(),
-    supabaseExternal.from("user_roles").select("role").eq("user_id", userId)
-  ]);
+  // Otimizado com JOIN para evitar N+1
+  const { data: baseProfile, error: profileError } = await supabaseExternal
+    .from("profiles")
+    .select(`
+      *,
+      user_roles (role)
+    `)
+    .eq("id", userId)
+    .maybeSingle();
 
-  const profile = profileRes.data || {};
-  const roles = (rolesRes.data || []).map((r: any) => r.role);
+  let roles: string[] = [];
+  let effectiveProfile = baseProfile;
 
-  // Se não encontrar no profiles, tenta no profiles_public (fallback de RLS)
-  let baseProfile = profile;
-  if (!profileRes.data) {
+  if (profileError || !baseProfile) {
+    // Fallback para profiles_public (View sanitizada) se profiles falhar (RLS)
     const { data: publicData } = await supabaseExternal
       .from("profiles_public")
       .select("*")
       .eq("user_id", userId)
       .maybeSingle();
-    if (publicData) baseProfile = publicData;
+    
+    if (publicData) effectiveProfile = publicData;
+    
+    // Buscar roles separadamente se o join falhou
+    const { data: rolesData } = await supabaseExternal
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    roles = (rolesData || []).map((r: any) => r.role);
+  } else {
+    roles = (baseProfile.user_roles || []).map((r: any) => r.role);
   }
+
+  if (!effectiveProfile) {
+    // Se ainda não temos nada, buscamos minimamente no specialized_profiles
+    // apenas para garantir um nome se existir
+    const specializedTables = ["provider_profiles", "store_profiles", "supplier_profiles"];
+    for (const table of specializedTables) {
+      const { data: specData } = await supabaseExternal
+        .from(table)
+        .select("display_name, name, full_name, company_name")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (specData) {
+        effectiveProfile = { ...specData, id: userId };
+        break;
+      }
+    }
+  }
+
+  const base = effectiveProfile || {};
+
 
   // 2. Resolver Categoria Principal (Aproveita a lógica existente)
   const mainCategory = await resolvePublicProfileCategory(userId, {
@@ -57,13 +91,14 @@ export async function resolveIdentity(
   // 3. Construir Identidade Canônica
   const identity: CanonicalIdentity = {
     id: userId,
-    displayName: baseProfile.display_name || baseProfile.full_name || "Usuário",
-    fullName: baseProfile.full_name || null,
-    avatarUrl: baseProfile.avatar_url || null,
-    bio: baseProfile.bio || null,
-    isOfficial: !!baseProfile.is_official,
-    isVerified: !!baseProfile.is_verified
+    displayName: base.display_name || base.full_name || base.company_name || base.name || "Usuário",
+    fullName: base.full_name || base.company_name || null,
+    avatarUrl: base.avatar_url || base.logo_url || null,
+    bio: base.bio || base.description || null,
+    isOfficial: !!base.is_official,
+    isVerified: !!base.is_verified
   };
+
 
   // 4. Construir Apresentação
   const presentation: ProfilePresentation = {
