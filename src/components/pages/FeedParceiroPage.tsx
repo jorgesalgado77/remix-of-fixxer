@@ -237,7 +237,6 @@ export default function FeedParceiroPage() {
   } = useAdFilterSearchState("/_authenticated/feed/parceiro");
 
   const [posts, setPosts] = useState<B2BRequest[]>([]);
-  const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
   const [hasMoreResult, setHasMoreResult] = useState(true);
 
