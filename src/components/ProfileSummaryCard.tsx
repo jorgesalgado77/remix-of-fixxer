@@ -120,7 +120,9 @@ export function ProfileSummaryCard({
             state: (resolved.specializations as any)?.store?.state || 
                    (resolved.specializations as any)?.provider?.state || 
                    (resolved.specializations as any)?.supplier?.state || null,
-            plan_id: resolved.identity.planId
+            plan_id: resolved.identity.planId,
+            karma_score: resolved.identity.karmaScore,
+            is_verified: resolved.identity.isVerified
           };
           
           console.log("[ProfileSummaryCard] Aplicando Perfil Consistente:", {
