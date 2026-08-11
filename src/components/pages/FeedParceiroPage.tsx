@@ -215,15 +215,14 @@ export default function FeedParceiroPage() {
     })();
   }, [reloadKey]);
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setLoadError(null);
-    setPage(1);
+  const handleGlobalRefresh = useCallback(async () => {
+    setIsRefreshing(true);
     setReloadKey((k) => k + 1);
     await new Promise((r) => setTimeout(r, 400));
-    setRefreshing(false);
+    setIsRefreshing(false);
     toast.success("Feed atualizado");
   }, []);
+
 
   const {
     urgency: urgencyFilter,
@@ -299,6 +298,7 @@ export default function FeedParceiroPage() {
   }, [search, activeSector, statusFilter]);
 
   const filtered = posts;
+
 
 
   const branchCtx = useUserBranchContext();
