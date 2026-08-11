@@ -216,9 +216,8 @@ function RecentStoresCarouselInner() {
       // Se a view não tiver as colunas novas, o Supabase retornará erro 42703 (coluna inexistente)
       let query = supabaseExternal
         .from("profiles_public")
-        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, created_at, lat, lng, activity_branch")
-        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
-        .order('created_at', { ascending: false });
+        .select("id, full_name, display_name, company_name, avatar_url, role, business_category, custom_branch, preferred_service, city, state, lat, lng")
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
       // Tentativa de buscar colunas de endereço detalhado separadamente ou verificar erro
       // Para manter a UI estável, se as colunas novas falharem, tentamos um fallback de campos seguros
