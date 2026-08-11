@@ -18,6 +18,7 @@ import { ReviewsModal, type Review } from "@/components/ReviewsModal";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { PlanBadge } from "@/components/PlanBadge";
 import { GoldMedalBadge } from "@/components/GoldMedalBadge";
+import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import type { PanelRole } from "@/components/PanelActions";
 import { getCategoryTheme } from "@/lib/category-colors";
 
