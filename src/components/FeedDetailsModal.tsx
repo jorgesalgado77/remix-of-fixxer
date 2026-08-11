@@ -344,7 +344,7 @@ export function FeedDetailsModal({
                         <div className="mt-4 flex gap-2">
                           <button
                             onClick={() => {
-                              acceptOSProposal({ proposalId: p.id });
+                              acceptOSProposal({ data: { proposalId: p.id } });
                               setTimeout(loadProposals, 1000);
                             }}
                             disabled={isAccepting}
