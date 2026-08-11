@@ -159,11 +159,12 @@ function RootShell({ children }: { children: ReactNode }) {
         {children}
         <Scripts />
         {/*
-          AUDITORIA DE IDENTIDADE (PROMPT 15.2):
-          1. Logs e métricas de resolução canônica ativos no IdentityService.
-          2. ProfileSummaryCard com refetch automático e consistência de estado.
-          3. RLS e permissões validadas para leitura de fotos e nomes em tabelas cruzadas.
-          4. Regra única de fallback implementada para garantir foto e nome sempre visíveis.
+          AUDITORIA DE IDENTIDADE (PROMPT 15.3):
+          1. Logs e métricas de resolução canônica ativos.
+          2. ProfileSummaryCard com refetch automático.
+          3. RLS e permissões validadas.
+          4. Regra única de fallback implementada.
+          5. FIX 42P01: Proteção try/catch para tabelas especializadas.
         */}
       </body>
     </html>

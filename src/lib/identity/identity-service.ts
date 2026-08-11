@@ -34,16 +34,13 @@ export async function resolveIdentity(
     }
   }
 
-  // 1. Buscar Perfil Mestre (Identidade) e Roles com Joins
-  // Garantimos que buscamos todos os campos necessários para a identidade visual
+  // 1. Buscar Perfil Mestre (Identidade) e Roles
+  // Removido joins com tabelas especializadas que podem não existir no banco do usuário
   const { data: baseProfile, error: profileError } = await supabaseExternal
     .from("profiles")
     .select(`
       id, display_name, full_name, avatar_url, bio, about_bio, is_official, is_verified, plan_id, created_at, karma_score, last_active_at, verification_status, verification_note,
-      user_roles (role),
-      store_profiles (company_name, logo_url, city, state),
-      provider_profiles (display_name, avatar_url, city, state),
-      supplier_profiles (company_name, logo_url, city, state)
+      user_roles (role)
     `)
     .eq("id", userId)
     .maybeSingle();
@@ -71,12 +68,25 @@ export async function resolveIdentity(
     refresh: options?.refresh
   });
 
-  // Helper para extrair dados de arrays ou objetos (Supabase joins podem retornar ambos)
-  const extract = (val: any) => Array.isArray(val) ? val[0] : val;
+  // 2. Tentar buscar dados de especializações de forma isolada (Safe-check para tabelas ausentes)
+  let store: any = null;
+  let provider: any = null;
+  let supplier: any = null;
 
-  const store = extract(effectiveProfile.store_profiles);
-  const provider = extract(effectiveProfile.provider_profiles);
-  const supplier = extract(effectiveProfile.supplier_profiles);
+  try {
+    const { data: storeData } = await supabaseExternal.from("store_profiles").select("company_name, logo_url, city, state").eq("user_id", userId).maybeSingle();
+    store = storeData;
+  } catch (e) { console.warn("[IdentityService] store_profiles indisponível"); }
+
+  try {
+    const { data: providerData } = await supabaseExternal.from("provider_profiles").select("display_name, avatar_url, city, state").eq("user_id", userId).maybeSingle();
+    provider = providerData;
+  } catch (e) { console.warn("[IdentityService] provider_profiles indisponível"); }
+
+  try {
+    const { data: supplierData } = await supabaseExternal.from("supplier_profiles").select("company_name, logo_url, city, state").eq("user_id", userId).maybeSingle();
+    supplier = supplierData;
+  } catch (e) { console.warn("[IdentityService] supplier_profiles indisponível"); }
 
   // REGRA ÚNICA DE FALLBACK (CANONICAL PRIORITY)
   // 1. Nome profissional/empresa (se disponível)
