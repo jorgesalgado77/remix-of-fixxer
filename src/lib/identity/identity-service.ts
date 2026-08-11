@@ -33,7 +33,8 @@ export async function resolveIdentity(
     .from("profiles")
     .select(`
       *,
-      user_roles (role)
+      user_roles (role),
+      store_profiles (company_name, logo_url)
     `)
     .eq("id", userId)
     .maybeSingle();
