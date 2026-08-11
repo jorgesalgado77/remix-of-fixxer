@@ -5,7 +5,7 @@ import { CATEGORY_LABEL, CATEGORY_COLORS } from "@/lib/category-colors";
 import type { CanonicalIdentity, ProfilePresentation, ResolvedProfile } from "./identity-types";
 
 const IDENTITY_CACHE = new Map<string, { at: number; value: ResolvedProfile }>();
-const TTL_MS = 60_000;
+const TTL_MS = 300_000; // Cache aumentado para 5 minutos para evitar refetching constante
 
 function initialsOf(name: string): string {
   const clean = String(name || "").trim();
