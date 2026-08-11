@@ -1103,22 +1103,22 @@ export function LojistaPublicProfilePage() {
                     <h1 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter leading-none">
                       {profile?.company_name || profile?.display_name || "Lojista"}
                     </h1>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
                         <span aria-hidden="true">{role === 'lojista' ? "🏪" : role === 'prestador' ? "🛠️" : role === 'fornecedor' ? "🚚" : "👤"}</span>
                         {role === 'lojista' ? "LOJISTA" : role === 'prestador' ? "PRESTADOR" : role === 'fornecedor' ? "PARCEIRO" : "CLIENTE"}
                       </span>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                      <span className="shrink-0 text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-red-500" />
                         {profile?.city ? `${profile.city} / ${profile.state}` : "Localização não informada"}
                         {distanceLabel && (
                           <span className="text-primary/90 ml-1">• {isSelf ? distanceLabel : `${distanceLabel} de você`}</span>
                         )}
                       </span>
-                      <AvailabilityBadge userId={profile?.user_id ?? null} />
+                      <AvailabilityBadge userId={profile?.user_id ?? null} className="shrink-0" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
               {(() => {
                 const yearsActive = profile?.created_at ? Math.floor((new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : 0;
@@ -1129,14 +1129,14 @@ export function LojistaPublicProfilePage() {
                 return (
                   <div className="flex flex-col gap-5 mt-4">
                     {/* Reputação */}
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30 shrink-0">
                         <Star className="w-4 h-4 fill-primary text-primary" />
                         <span className="text-sm font-black text-primary italic">{avgRating > 0 ? avgRating.toFixed(1) : "s/av."}</span>
                         <span className="text-[9px] text-muted-foreground font-bold uppercase">/ 5.0</span>
                       </div>
                       {profile?.plan_id && profile.plan_id !== 'free' && (
-                        <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1">
+                        <span className="text-[9px] font-black uppercase italic text-amber-400 flex items-center gap-1 shrink-0">
                           <Award className="w-3 h-3" /> Selo Ouro FIXXER
                         </span>
                       )}
@@ -1155,7 +1155,7 @@ export function LojistaPublicProfilePage() {
 
 
                 {/* Métricas reais */}
-                <div className="grid grid-cols-3 gap-2 md:gap-3 pt-2">
+                <div className="grid grid-cols-3 gap-1.5 md:gap-3 pt-2">
                   <MetricCard 
                     label="O.S. Concluídas" 
                     value={String(profile?.os_completed_count ?? 0)} 
@@ -2063,15 +2063,15 @@ function Badge({ icon, label }: { icon: React.ReactNode; label: string }) {
   );
 }
 
-function MetricCard({ label, value, suffix }: { label: string; value: string; suffix: string }) {
-  return (
-    <div className="bg-black/40 border border-white/5 rounded-xl p-2.5 text-center">
-      <div className="text-lg md:text-xl font-black text-primary italic leading-none">{value}</div>
-      <div className="text-[8px] font-black uppercase text-muted-foreground mt-1">{label}</div>
-      <div className="text-[8px] text-white/40 uppercase font-bold">{suffix}</div>
-    </div>
-  );
-}
+ function MetricCard({ label, value, suffix }: { label: string; value: string; suffix: string }) {
+   return (
+     <div className="bg-black/40 border border-white/5 rounded-xl p-1.5 md:p-2.5 text-center flex flex-col justify-center min-w-0 h-full">
+       <div className="text-base md:text-xl font-black text-primary italic leading-none truncate">{value}</div>
+       <div className="text-[7px] md:text-[8px] font-black uppercase text-muted-foreground mt-1 truncate">{label}</div>
+       <div className="text-[7px] md:text-[8px] text-white/40 uppercase font-bold truncate">{suffix}</div>
+     </div>
+   );
+ }
 
 function EmptyState({ label }: { label: string }) {
   return (
