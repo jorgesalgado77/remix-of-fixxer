@@ -91,7 +91,7 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl bg-[#0a0a0b] border border-white/10 rounded-[32px] p-0 overflow-hidden shadow-2xl">
+      <DialogContent className="max-w-xl bg-[#0a0a0b] border border-white/10 rounded-[32px] p-0 overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
         <div className="bg-gradient-to-br from-emerald-500/20 via-transparent to-transparent p-6 border-b border-white/5">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-1">
@@ -104,7 +104,7 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
           </DialogHeader>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-none relative">
+        <div className="p-6 space-y-6 overflow-y-auto scrollbar-none relative flex-1">
           {loading && (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-300">
               <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-3" />
@@ -145,15 +145,15 @@ export function PixManagerModal({ open, onClose, profile, stats }: Props) {
               <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" /> Reservas
               </p>
-              <p className="text-lg font-black text-white">{BRL(stats.balanceReservations * 10)}</p>
+              <p className="text-lg font-black text-white">{BRL(stats.balanceReservations)}</p>
             </div>
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
               <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">Info Produtos</p>
-              <p className="text-lg font-black text-white">{BRL(stats.balanceProducts * 10)}</p>
+              <p className="text-lg font-black text-white">{BRL(stats.balanceProducts)}</p>
             </div>
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
               <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-1">Serviços</p>
-              <p className="text-lg font-black text-white">{BRL(stats.balanceServices * 10)}</p>
+              <p className="text-lg font-black text-white">{BRL(stats.balanceServices)}</p>
             </div>
           </div>
 
