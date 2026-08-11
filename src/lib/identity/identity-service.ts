@@ -5,7 +5,31 @@ import { CATEGORY_LABEL, CATEGORY_COLORS } from "@/lib/category-colors";
 import type { CanonicalIdentity, ProfilePresentation, ResolvedProfile } from "./identity-types";
 
 const IDENTITY_CACHE = new Map<string, { at: number; value: ResolvedProfile }>();
-const TTL_MS = 300_000; // Cache aumentado para 5 minutos para evitar refetching constante
+const TTL_MS = 600_000; // Aumentado para 10 minutos para maior estabilidade visual
+
+// Chave para persistência em localStorage para evitar flash de "Usuário" no refresh
+const PERSISTENCE_KEY = "fixxer_identity_cache_v1";
+
+function getStoredIdentities(): Record<string, ResolvedProfile> {
+  if (typeof window === "undefined") return {};
+  try {
+    const stored = window.localStorage.getItem(PERSISTENCE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function storeIdentity(userId: string, profile: ResolvedProfile) {
+  if (typeof window === "undefined") return;
+  try {
+    const stored = getStoredIdentities();
+    stored[userId] = profile;
+    window.localStorage.setItem(PERSISTENCE_KEY, JSON.stringify(stored));
+  } catch (e) {
+    console.warn("[IdentityService] Falha ao persistir identidade", e);
+  }
+}
 
 function initialsOf(name: string): string {
   const clean = String(name || "").trim();
@@ -27,9 +51,15 @@ export async function resolveIdentity(
   console.log(`[IdentityService] Resolvendo para ${userId} (refresh: ${!!options?.refresh})`);
 
   if (!options?.refresh) {
+    const stored = getStoredIdentities();
+    if (stored[userId]) {
+      console.log(`[IdentityService] Cache LocalStorage HIT para ${userId}`);
+      return stored[userId];
+    }
+
     const cached = IDENTITY_CACHE.get(userId);
     if (cached && Date.now() - cached.at < TTL_MS) {
-      console.log(`[IdentityService] Cache HIT para ${userId} (${(performance.now() - start).toFixed(2)}ms)`);
+      console.log(`[IdentityService] Cache Memory HIT para ${userId} (${(performance.now() - start).toFixed(2)}ms)`);
       return cached.value;
     }
   }
@@ -95,14 +125,14 @@ export async function resolveIdentity(
   // 1. Nome profissional/empresa (se disponível)
   // 2. Nome de exibição customizado no perfil mestre
   // 3. Nome completo (perfil mestre)
-  // 4. Fallback genérico
+  // 4. Fallback genérico (apenas se não houver dados reais)
   const displayName = 
-    effectiveProfile.display_name || 
-    effectiveProfile.full_name || 
-    store?.company_name || 
-    supplier?.company_name || 
-    provider?.display_name || 
-    (baseProfile ? "Usuário" : "Usuário Externo");
+    effectiveProfile.display_name?.trim() || 
+    store?.company_name?.trim() || 
+    supplier?.company_name?.trim() || 
+    provider?.display_name?.trim() || 
+    effectiveProfile.full_name?.trim() || 
+    (baseProfile ? "Usuário Fixxer" : "Usuário");
 
   // REGRA ÚNICA DE FALLBACK PARA AVATAR
   // 1. Logo da empresa (lojista/fornecedor)
@@ -116,6 +146,9 @@ export async function resolveIdentity(
     provider?.avatar_url || 
     null;
 
+  // Validação rigorosa: se for uma string vazia ou placeholder conhecido, tratar como null
+  const validatedAvatar = (typeof avatarUrl === 'string' && avatarUrl.startsWith('http')) ? avatarUrl : null;
+
   console.log(`[IdentityService] Identidade resolvida para ${userId}:`, {
     displayName,
     hasAvatar: !!avatarUrl,
@@ -128,7 +161,7 @@ export async function resolveIdentity(
     id: userId,
     displayName,
     fullName: effectiveProfile.full_name || null,
-    avatarUrl,
+    avatarUrl: validatedAvatar,
     bio: effectiveProfile.bio || effectiveProfile.about_bio || null,
     isOfficial: !!effectiveProfile.is_official,
     // CNPJ VERIFICADO REAL: Só é true se estiver marcado como verificado no perfil base ou especializado
@@ -178,5 +211,6 @@ export async function resolveIdentity(
   };
 
   IDENTITY_CACHE.set(userId, { at: Date.now(), value: result });
+  storeIdentity(userId, result);
   return result;
 }
