@@ -28,90 +28,70 @@ export async function resolveIdentity(
     if (cached && Date.now() - cached.at < TTL_MS) return cached.value;
   }
 
-  // 1. Buscar Perfil Mestre (Identidade) e Roles
+  // 1. Buscar Perfil Mestre (Identidade) e Roles com Joins
   const { data: baseProfile, error: profileError } = await supabaseExternal
     .from("profiles")
     .select(`
-      *,
+      id, display_name, full_name, avatar_url, bio, about_bio, is_official, is_verified, plan_id, created_at, karma_score, last_active_at, verification_status, verification_note,
       user_roles (role),
       store_profiles (company_name, logo_url, city, state),
-      provider_profiles (city, state),
-      supplier_profiles (city, state)
+      provider_profiles (display_name, avatar_url, city, state),
+      supplier_profiles (company_name, logo_url, city, state)
     `)
     .eq("id", userId)
     .maybeSingle();
 
   let roles: string[] = [];
-  let effectiveProfile = baseProfile;
+  const effectiveProfile: any = baseProfile || {};
 
-  if (profileError || !baseProfile) {
-    const { data: publicData } = await supabaseExternal
-      .from("profiles_public")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
-    
-    if (publicData) effectiveProfile = publicData;
-    
+  if (!profileError && baseProfile) {
+    roles = (baseProfile.user_roles || []).map((r: any) => r.role);
+  } else {
+    // Fallback para roles se profiles falhar
     const { data: rolesData } = await supabaseExternal
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
     roles = (rolesData || []).map((r: any) => r.role);
-  } else {
-    roles = (baseProfile.user_roles || []).map((r: any) => r.role);
   }
-
-  if (!effectiveProfile) {
-    // Busca apenas campos TÉCNICOS/ESPECÍFICOS das tabelas especializadas.
-    // Identidade visual (nome, avatar, bio) DEVE vir de profiles.
-    const specializedTables = ["provider_profiles", "store_profiles", "supplier_profiles"];
-    const results = await Promise.all(
-      specializedTables.map(table => 
-        supabaseExternal
-          .from(table)
-          .select("city, state") // Removido display_name, name, full_name, company_name como fallbacks
-          .eq("user_id", userId)
-          .maybeSingle()
-      )
-    );
-    
-    for (let i = 0; i < results.length; i++) {
-      const specData = results[i].data;
-      if (specData) {
-        effectiveProfile = { ...specData, id: userId };
-        const tableName = specializedTables[i].split("_")[0];
-        (effectiveProfile as any)[`_${tableName}`] = specData;
-        break;
-      }
-    }
-  }
-
-  const base = effectiveProfile || {};
 
   const mainCategory = await resolvePublicProfileCategory(userId, {
     profile: baseProfile,
     refresh: options?.refresh
   });
 
-  const hasData = effectiveProfile && Object.keys(effectiveProfile).length > 0;
+  // Helper para extrair dados de arrays ou objetos (Supabase joins podem retornar ambos)
+  const extract = (val: any) => Array.isArray(val) ? val[0] : val;
+
+  const store = extract(effectiveProfile.store_profiles);
+  const provider = extract(effectiveProfile.provider_profiles);
+  const supplier = extract(effectiveProfile.supplier_profiles);
 
   const identity: CanonicalIdentity = {
     id: userId,
-    // Prioridade absoluta: profiles -> fallback genérico. Especializadas NUNCA definem nome/avatar.
-    displayName: baseProfile?.display_name || baseProfile?.full_name || (Array.isArray(baseProfile?.store_profiles) ? (baseProfile.store_profiles[0] as any)?.company_name : (baseProfile?.store_profiles as any)?.company_name) || (Array.isArray(baseProfile?.provider_profiles) ? (baseProfile.provider_profiles[0] as any)?.display_name : (baseProfile?.provider_profiles as any)?.display_name) || (Array.isArray(baseProfile?.supplier_profiles) ? (baseProfile.supplier_profiles[0] as any)?.company_name : (baseProfile?.supplier_profiles as any)?.company_name) || (hasData ? "Usuário" : "Conversa"),
-    fullName: baseProfile?.full_name || null,
-    avatarUrl: baseProfile?.avatar_url || (Array.isArray(baseProfile?.store_profiles) ? (baseProfile.store_profiles[0] as any)?.logo_url : (baseProfile?.store_profiles as any)?.logo_url) || (Array.isArray(baseProfile?.provider_profiles) ? (baseProfile.provider_profiles[0] as any)?.avatar_url : (baseProfile?.provider_profiles as any)?.avatar_url) || (Array.isArray(baseProfile?.supplier_profiles) ? (baseProfile.supplier_profiles[0] as any)?.logo_url : (baseProfile?.supplier_profiles as any)?.logo_url) || null,
-    bio: baseProfile?.bio || baseProfile?.about_bio || null,
-    isOfficial: !!baseProfile?.is_official,
-    isVerified: !!baseProfile?.is_verified,
-    planId: baseProfile?.plan_id || "free",
-    createdAt: baseProfile?.created_at || new Date().toISOString(),
-    karmaScore: baseProfile?.karma_score ? Number(baseProfile.karma_score) : 5.0,
-
-    lastActiveAt: baseProfile?.last_active_at || null,
-    verificationStatus: baseProfile?.verification_status || (baseProfile?.is_verified ? "verified" : "none"),
-    verificationNote: baseProfile?.verification_note || null,
+    displayName: 
+      effectiveProfile.display_name || 
+      effectiveProfile.full_name || 
+      store?.company_name || 
+      provider?.display_name || 
+      supplier?.company_name || 
+      (baseProfile ? "Usuário" : "Carregando..."),
+    fullName: effectiveProfile.full_name || null,
+    avatarUrl: 
+      effectiveProfile.avatar_url || 
+      store?.logo_url || 
+      provider?.avatar_url || 
+      supplier?.logo_url || 
+      null,
+    bio: effectiveProfile.bio || effectiveProfile.about_bio || null,
+    isOfficial: !!effectiveProfile.is_official,
+    isVerified: !!effectiveProfile.is_verified,
+    planId: effectiveProfile.plan_id || "free",
+    createdAt: effectiveProfile.created_at || new Date().toISOString(),
+    karmaScore: effectiveProfile.karma_score ? Number(effectiveProfile.karma_score) : 5.0,
+    lastActiveAt: effectiveProfile.last_active_at || null,
+    verificationStatus: effectiveProfile.verification_status || (effectiveProfile.is_verified ? "verified" : "none"),
+    verificationNote: effectiveProfile.verification_note || null,
   };
 
   const timeSinceActive = identity.lastActiveAt ? Date.now() - new Date(identity.lastActiveAt).getTime() : Infinity;
@@ -132,18 +112,14 @@ export async function resolveIdentity(
   };
 
   if (identity.isVerified) presentation.badges.push("Verificado");
-  if (identity.planId === "premium") presentation.badges.push("Ouro");
+  if (identity.planId === "premium" || identity.planId === "pro") presentation.badges.push("Ouro");
 
   const result: ResolvedProfile = {
     identity,
     roles,
     mainCategory,
     presentation,
-    specializations: {
-      store: Array.isArray(baseProfile?.store_profiles) ? baseProfile.store_profiles[0] : baseProfile?.store_profiles,
-      provider: Array.isArray(baseProfile?.provider_profiles) ? baseProfile.provider_profiles[0] : baseProfile?.provider_profiles,
-      supplier: Array.isArray(baseProfile?.supplier_profiles) ? baseProfile.supplier_profiles[0] : baseProfile?.supplier_profiles,
-    }
+    specializations: { store, provider, supplier }
   };
 
   IDENTITY_CACHE.set(userId, { at: Date.now(), value: result });

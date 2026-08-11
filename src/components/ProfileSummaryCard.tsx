@@ -112,7 +112,7 @@ export function ProfileSummaryCard({
             full_name: resolved.identity.fullName,
             avatar_url: resolved.identity.avatarUrl,
             company_name: (resolved.specializations as any)?.store?.company_name || (resolved.specializations as any)?.supplier?.company_name || resolved.identity.displayName,
-            logo_url: (resolved.specializations as any)?.store?.logo_url || (resolved.specializations as any)?.supplier?.logo_url || resolved.identity.avatarUrl,
+            logo_url: (resolved.specializations as any)?.store?.logo_url || (resolved.specializations as any)?.supplier?.logo_url || (resolved.specializations as any)?.provider?.avatar_url || resolved.identity.avatarUrl,
             city: (resolved.specializations as any)?.store?.city || (resolved.specializations as any)?.provider?.city || (resolved.specializations as any)?.supplier?.city || null,
             state: (resolved.specializations as any)?.store?.state || (resolved.specializations as any)?.provider?.state || (resolved.specializations as any)?.supplier?.state || null,
           };
@@ -128,7 +128,7 @@ export function ProfileSummaryCard({
   }, []);
 
 
-  const name = profile?.display_name || profile?.company_name || profile?.full_name || "Carregando...";
+  const name = profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário");
   const avatar = profile?.avatar_url || profile?.logo_url || null;
   const planId = (profile?.plan_id || "free").toLowerCase();
   const isGold = planId === "pro" || planId === "premium";
