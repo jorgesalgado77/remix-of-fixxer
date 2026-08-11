@@ -293,6 +293,7 @@ export function useProviderStats(): ProviderStats {
     balanceReservations,
     balanceProducts,
     balanceServices,
+    periodEntries,
     period,
     customRange,
     setPeriod,
