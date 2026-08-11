@@ -436,8 +436,8 @@ function RecentPartnersCarouselInner() {
       });
     } else {
       base = [...base].sort((a, b) => {
-        const ta = a.created_at ? Date.parse(a.created_at) : 0;
-        const tb = b.created_at ? Date.parse(b.created_at) : 0;
+        const ta = (a as any).created_at ? Date.parse((a as any).created_at) : 0;
+        const tb = (b as any).created_at ? Date.parse((b as any).created_at) : 0;
         return tb - ta;
       });
     }
