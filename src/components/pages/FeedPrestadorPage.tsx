@@ -893,11 +893,13 @@ export default function FeedPrestadorPage() {
         title: p.title,
         description: p.description,
         value: p.price ? `R$ ${p.price.toLocaleString("pt-BR")}` : "A combinar",
+        valueType: "total", // Adicionado para satisfazer o tipo JobPost
         requirements: (p.metadata?.requirements || []) as string[],
         tools: (p.metadata?.tools || []) as string[],
         media: p.media as any,
         keywords: []
       }));
+
 
       setPosts(prev => isRefresh ? mapped : [...prev, ...mapped]);
       setHasMoreResult(results.length === 10);
@@ -931,7 +933,7 @@ export default function FeedPrestadorPage() {
   }, [filtered, branchCtx]);
 
   // Paginação por scroll infinito
-  const paged = rankedFiltered;
+  const paged = rankedFiltered.map(x => x.job);
   const hasMore = hasMoreResult;
 
   useEffect(() => {
