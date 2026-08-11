@@ -183,19 +183,19 @@ export default function FeedClientePage() {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const [reloadKey, setReloadKey] = useState(0);
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setLoadError(null);
+  const handleGlobalRefresh = useCallback(async () => {
+    setIsRefreshing(true);
     setVisibleCount(PAGE_SIZE);
     setReloadKey((k) => k + 1);
     await new Promise((r) => setTimeout(r, 400));
-    setRefreshing(false);
+    setIsRefreshing(false);
     toast.success("Feed atualizado");
   }, []);
+
 
   const loadMyNeeds = useCallback(async (uid: string) => {
     const { data, error } = await supabaseExternal

@@ -771,9 +771,8 @@ export default function FeedPrestadorPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [savesRemote, setSavesRemote] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Debounce de busca
@@ -842,16 +841,15 @@ export default function FeedPrestadorPage() {
     })();
   }, [reloadKey]);
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setLoadError(null);
-    setPage(1);
+  const handleGlobalRefresh = useCallback(async () => {
+    setIsRefreshing(true);
     setReloadKey((k) => k + 1);
     // dá tempo do estado propagar para dar feedback visual
     await new Promise((r) => setTimeout(r, 400));
-    setRefreshing(false);
+    setIsRefreshing(false);
     toast.success("Feed atualizado");
   }, []);
+
 
   // Persistir salvos localmente
   useEffect(() => {
