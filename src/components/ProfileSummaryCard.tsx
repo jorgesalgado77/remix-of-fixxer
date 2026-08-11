@@ -89,45 +89,36 @@ export function ProfileSummaryCard({
       try {
         const { data: sessData } = await supabaseExternal.auth.getSession();
         const uid = sessData.session?.user?.id;
-        if (!uid) return;
+        if (!uid) {
+          console.warn("[ProfileSummaryCard] Sem UID na sessão");
+          return;
+        }
 
         const { resolveIdentity } = await import("@/lib/identity/identity-service");
-        const resolved = await resolveIdentity(uid);
+        // Força refresh para garantir que não estamos pegando cache sujo
+        const resolved = await resolveIdentity(uid, { refresh: true });
         
+        console.log("[ProfileSummaryCard] Identidade resolvida:", {
+          uid,
+          displayName: resolved?.identity?.displayName,
+          avatarUrl: resolved?.identity?.avatarUrl
+        });
+
         if (!cancelled && resolved) {
-          // Mapeia de CanonicalIdentity (Identity Service) para o formato interno do Card
-          // Fonte única: resolved.identity (que já resolve de profiles)
           const prof: ProfileLite = {
             id: resolved.identity.id,
             display_name: resolved.identity.displayName,
             full_name: resolved.identity.fullName,
             avatar_url: resolved.identity.avatarUrl,
             company_name: (resolved.specializations as any)?.store?.company_name || null,
-            // Mantém city/state das especializações (dados técnicos, não de identidade visual)
+            logo_url: (resolved.specializations as any)?.store?.logo_url || null,
             city: (resolved.specializations as any)?.store?.city || (resolved.specializations as any)?.provider?.city || null,
             state: (resolved.specializations as any)?.store?.state || (resolved.specializations as any)?.provider?.state || null,
           };
           setProfile(prof);
         }
-
-        try {
-          const { data: reviews } = await supabaseExternal
-            .from("reviews")
-            .select("*")
-            .eq("reviewed_user_id", uid);
-          if (!cancelled && Array.isArray(reviews) && reviews.length > 0) {
-            setAllReviews(reviews as Review[]);
-            const nums = reviews
-              .map((r: any) => Number(r?.rating))
-              .filter((n) => Number.isFinite(n));
-            if (nums.length > 0) {
-              const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
-              setRating({ avg, count: nums.length });
-            }
-          }
-        } catch { /* reviews indisponível */ }
       } catch (err) {
-        console.warn("[ProfileSummaryCard] Erro ao carregar identidade canônica:", err);
+        console.error("[ProfileSummaryCard] Erro crítico:", err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -136,8 +127,8 @@ export function ProfileSummaryCard({
   }, []);
 
 
-  const name = displayNameOf(profile);
-  const avatar = avatarOf(profile);
+  const name = profile?.display_name || profile?.company_name || profile?.full_name || "Meu perfil";
+  const avatar = profile?.avatar_url || profile?.logo_url || null;
   const planId = (profile?.plan_id || "free").toLowerCase();
   const isGold = planId === "pro" || planId === "premium";
   const city = profile?.city?.trim() || "";
@@ -176,10 +167,15 @@ export function ProfileSummaryCard({
               <div className="w-14 h-14 rounded-full border-2 border-primary/50 overflow-hidden bg-white/5 flex items-center justify-center">
                 {avatar ? (
                   <img
+                    key={avatar}
                     src={avatar}
-                    alt=""
-                    loading="lazy"
+                    alt={name}
+                    loading="eager"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error("[ProfileSummaryCard] Erro ao carregar imagem:", avatar);
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                 ) : (
                   <UserIcon className="w-7 h-7 text-white/40" aria-hidden="true" />
