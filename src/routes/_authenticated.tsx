@@ -2,9 +2,12 @@ import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tan
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle, HelpCircle } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCurrentUser, isCurrentUserAdmin, clearCurrentUserCache, useCurrentUser, useIsAdmin } from "@/lib/current-user";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { useCurrentCategory, getCategoryCssVars } from "@/lib/user-category";
+import { useProviderStats } from "@/hooks/use-provider-stats";
+
+const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m => ({ default: m.PixManagerModal })));
 
 
 export const Route = createFileRoute("/_authenticated")({
@@ -25,8 +28,19 @@ function AuthenticatedLayout() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const currentCategory = useCurrentCategory();
+  const providerStats = useProviderStats();
+  const [showPixModal, setShowPixModal] = useState(false);
 
   const email = user?.email ?? '';
+
+  useEffect(() => {
+    const handlePixModalEvent = (e: any) => {
+      console.log("[AuthenticatedLayout] Evento fixxer:open-pix-modal recebido", e);
+      setShowPixModal(true);
+    };
+    window.addEventListener('fixxer:open-pix-modal', handlePixModalEvent);
+    return () => window.removeEventListener('fixxer:open-pix-modal', handlePixModalEvent);
+  }, []);
 
   useEffect(() => {
     if (userLoading) return;
