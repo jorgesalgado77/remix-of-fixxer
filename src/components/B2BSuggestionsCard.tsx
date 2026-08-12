@@ -97,6 +97,8 @@ function B2BSuggestionsCardInner() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
 
   const theme = getCategoryTheme(category);
   const preset = PRESETS[category] || PRESETS.prestador;
