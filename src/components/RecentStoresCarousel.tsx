@@ -248,13 +248,26 @@ function RecentStoresCarouselInner() {
 
       setError(null);
 
-      const { data, error: supabaseError } = await supabaseExternal
-        .from("profiles_public")
-        .select(SAFE_COLS)
-        .order("created_at", { ascending: false })
-        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+      const runQuery = (cols: string, withOrder: boolean) => {
+        let q = supabaseExternal.from("profiles_public").select(cols);
+        if (withOrder) q = q.order("created_at", { ascending: false });
+        return q.range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+      };
+
+      let { data, error: supabaseError } = await runQuery(SAFE_COLS, true);
+
+      // Resiliência 42703: view desatualizada não pode derrubar a seção.
+      if (
+        supabaseError &&
+        (supabaseError.code === "42703" || String(supabaseError.message || "").includes("does not exist"))
+      ) {
+        const retry = await runQuery(PUBLIC_PROFILE_MINIMAL_COLS, false);
+        data = retry.data as any;
+        supabaseError = retry.error;
+      }
 
       if (supabaseError) throw supabaseError;
+
 
       const profiles = (data as any[]) ?? [];
 
