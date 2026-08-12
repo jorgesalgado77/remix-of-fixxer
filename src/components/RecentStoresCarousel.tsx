@@ -40,8 +40,11 @@ type Card = Row & { _kind: Kind; _branch: string | null; _distance?: number };
  * NUNCA adicionar colunas não existentes aqui (ex.: karma_score / is_verified),
  * pois um único 42703 derruba a seção inteira.
  */
+import { PUBLIC_PROFILE_MINIMAL_COLS } from "@/lib/public-profiles-query";
+
 const SAFE_COLS =
   "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, business_category, activity_branch, custom_branch, preferred_service, city, state, neighborhood, lat, lng, rating, created_at";
+
 
 const CACHE_KEY = "fixxer_recent_stores_v2";
 const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
