@@ -40,8 +40,11 @@ type Card = Row & { _kind: Kind; _branch: string | null; _distance?: number };
  * NUNCA adicionar colunas não existentes aqui (ex.: karma_score / is_verified),
  * pois um único 42703 derruba a seção inteira.
  */
+import { PUBLIC_PROFILE_MINIMAL_COLS } from "@/lib/public-profiles-query";
+
 const SAFE_COLS =
   "id, full_name, display_name, company_name, avatar_url, logo_url, banner_url, role, user_type, business_category, activity_branch, custom_branch, preferred_service, city, state, neighborhood, lat, lng, rating, created_at";
+
 
 const CACHE_KEY = "fixxer_recent_stores_v2";
 const CACHE_TTL = 10 * 60 * 1000; // 10 min (stale-while-revalidate)
@@ -248,13 +251,26 @@ function RecentStoresCarouselInner() {
 
       setError(null);
 
-      const { data, error: supabaseError } = await supabaseExternal
-        .from("profiles_public")
-        .select(SAFE_COLS)
-        .order("created_at", { ascending: false })
-        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+      const runQuery = (cols: string, withOrder: boolean) => {
+        let q = supabaseExternal.from("profiles_public").select(cols);
+        if (withOrder) q = q.order("created_at", { ascending: false });
+        return q.range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+      };
+
+      let { data, error: supabaseError } = await runQuery(SAFE_COLS, true);
+
+      // Resiliência 42703: view desatualizada não pode derrubar a seção.
+      if (
+        supabaseError &&
+        (supabaseError.code === "42703" || String(supabaseError.message || "").includes("does not exist"))
+      ) {
+        const retry = await runQuery(PUBLIC_PROFILE_MINIMAL_COLS, false);
+        data = retry.data as any;
+        supabaseError = retry.error;
+      }
 
       if (supabaseError) throw supabaseError;
+
 
       const profiles = (data as any[]) ?? [];
 

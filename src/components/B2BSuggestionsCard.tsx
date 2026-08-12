@@ -20,6 +20,8 @@ import {
 } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 import { Button } from "@/components/ui/button";
+import { fetchPublicProfiles, readSwrCache, writeSwrCache } from "@/lib/public-profiles-query";
+
 
 const DISMISS_KEY_BASE = "fixxer_b2b_suggestions_dismissed_v1";
 
@@ -95,6 +97,8 @@ function B2BSuggestionsCardInner() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
 
   const theme = getCategoryTheme(category);
   const preset = PRESETS[category] || PRESETS.prestador;
@@ -135,21 +139,17 @@ function B2BSuggestionsCardInner() {
 
     // Hidratação imediata pelo cache (evita seção vazia / piscando ao navegar)
     let hadCache = false;
-    try {
-      const raw = window.localStorage.getItem(cacheKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as { items: B2BSuggestion[]; ts: number };
-        if (parsed?.items?.length) {
-          setSuggestions(parsed.items);
-          setIsLoading(false);
-          hadCache = true;
-          if (Date.now() - parsed.ts < CACHE_TTL) return;
-        }
-      }
-    } catch { /* noop */ }
+    const cached = readSwrCache<B2BSuggestion>(cacheKey);
+    if (cached) {
+      setSuggestions(cached.items);
+      setIsLoading(false);
+      hadCache = true;
+      if (Date.now() - cached.ts < CACHE_TTL) return;
+    }
 
     try {
       if (!hadCache) setIsLoading(true);
+      setErrorMsg(null);
 
       const { data: auth } = await supabaseExternal.auth.getUser();
       const uid = auth?.user?.id ?? null;
@@ -164,17 +164,9 @@ function B2BSuggestionsCardInner() {
         if (userProfile?.lat != null) userLoc = { lat: Number(userProfile.lat), lng: Number(userProfile.lng) };
       }
 
-      // Perfis públicos reais (view segura). Sem exigir business_category,
-      // pois muitos perfis usam custom_branch / preferred_service.
-      const { data: cands, error } = await supabaseExternal
-        .from("profiles_public")
-        .select(
-          "id, display_name, company_name, full_name, business_category, activity_branch, custom_branch, preferred_service, avatar_url, logo_url, lat, lng, city, state, role, user_type, created_at"
-        )
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
+      // Perfis públicos reais (view segura, com fallback de colunas).
+      const { data: cands, error } = await fetchPublicProfiles({ limit: 100 });
+      if (error) throw new Error(error);
 
       // Alvos por categoria do usuário logado.
       const targetsByCategory: Record<string, string[]> = {
@@ -186,15 +178,8 @@ function B2BSuggestionsCardInner() {
       };
       const targets = targetsByCategory[category] ?? [];
 
-      const list: B2BSuggestion[] = ((cands as any[]) ?? [])
-        .filter((c) => {
-          if (uid && String(c.id) === String(uid)) return false;
-          const role = `${c.role || ""} ${c.user_type || ""}`.toLowerCase();
-          if (role.includes("admin")) return false;
-          if (!targets.length) return true;
-          return targets.some((t) => role.includes(t));
-        })
-        .map((c: any) => {
+      const mapAll = (arr: any[]) =>
+        arr.map((c: any) => {
           const branches = normalizeBranches(c);
           const name = c.display_name || c.company_name || c.full_name || "Membro FIXXER";
           const dist = userLoc && c.lat != null ? haversineKm(userLoc, { lat: Number(c.lat), lng: Number(c.lng) }) : null;
@@ -211,6 +196,22 @@ function B2BSuggestionsCardInner() {
           } as any;
         });
 
+      const base = ((cands as any[]) ?? []).filter((c) => {
+        if (uid && String(c.id) === String(uid)) return false;
+        const role = `${c.role || ""} ${c.user_type || ""}`.toLowerCase();
+        return !role.includes("admin");
+      });
+
+      const matched = targets.length
+        ? base.filter((c) => {
+            const role = `${c.role || ""} ${c.user_type || ""}`.toLowerCase();
+            return targets.some((t) => role.includes(t));
+          })
+        : base;
+
+      // Nunca deixar a seção vazia por falta de match: cai para a rede geral.
+      const list: B2BSuggestion[] = mapAll(matched.length ? matched : base);
+
       const sorted = list.sort((a: any, b: any) => {
         const rankA = relevanceRank(a._relevance.level);
         const rankB = relevanceRank(b._relevance.level);
@@ -220,17 +221,15 @@ function B2BSuggestionsCardInner() {
 
       const finalList = sorted.slice(0, 25);
       if (finalList.length > 0 || !hadCache) setSuggestions(finalList);
-      if (finalList.length > 0) {
-        try {
-          window.localStorage.setItem(cacheKey, JSON.stringify({ items: finalList, ts: Date.now() }));
-        } catch { /* noop */ }
-      }
-    } catch (err) {
+      writeSwrCache(cacheKey, finalList);
+    } catch (err: any) {
       console.error("Erro ao carregar sugestões B2B reais:", err);
+      if (!hadCache) setErrorMsg(err?.message || "Não foi possível carregar as sugestões agora.");
     } finally {
       setIsLoading(false);
     }
   }, [branchCtx, category]);
+
 
   const didLoad = useRef(false);
   useEffect(() => {
@@ -363,11 +362,24 @@ function B2BSuggestionsCardInner() {
               </div>
             ))
           ) : (
-            <div className="w-full py-10 flex flex-col items-center justify-center text-center opacity-30">
-              <Sparkles className="w-8 h-8 mb-2" />
-              <p className="text-[10px] font-black uppercase italic tracking-widest">Buscando novos parceiros reais...</p>
+            <div className="w-full py-10 flex flex-col items-center justify-center text-center gap-3">
+              <Sparkles className="w-8 h-8 opacity-30" />
+              <p className="text-[10px] font-black uppercase italic tracking-widest text-white/40 max-w-xs">
+                {errorMsg
+                  ? "Não foi possível carregar as sugestões agora."
+                  : "Nenhum parceiro disponível no momento."}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { didLoad.current = false as any; loadRealData(); }}
+                className="h-7 px-3 text-[9px] font-black uppercase border-white/10"
+              >
+                Tentar novamente
+              </Button>
             </div>
           )}
+
         </div>
       </div>
     </div>
