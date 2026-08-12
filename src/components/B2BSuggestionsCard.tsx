@@ -20,6 +20,8 @@ import {
 } from "@/lib/branch-relevance";
 import { RelevanceBadge } from "@/components/RelevanceBadge";
 import { Button } from "@/components/ui/button";
+import { fetchPublicProfiles, readSwrCache, writeSwrCache } from "@/lib/public-profiles-query";
+
 
 const DISMISS_KEY_BASE = "fixxer_b2b_suggestions_dismissed_v1";
 
