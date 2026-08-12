@@ -362,11 +362,24 @@ function B2BSuggestionsCardInner() {
               </div>
             ))
           ) : (
-            <div className="w-full py-10 flex flex-col items-center justify-center text-center opacity-30">
-              <Sparkles className="w-8 h-8 mb-2" />
-              <p className="text-[10px] font-black uppercase italic tracking-widest">Buscando novos parceiros reais...</p>
+            <div className="w-full py-10 flex flex-col items-center justify-center text-center gap-3">
+              <Sparkles className="w-8 h-8 opacity-30" />
+              <p className="text-[10px] font-black uppercase italic tracking-widest text-white/40 max-w-xs">
+                {errorMsg
+                  ? "Não foi possível carregar as sugestões agora."
+                  : "Nenhum parceiro disponível no momento."}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { didLoad.current = false as any; loadRealData(); }}
+                className="h-7 px-3 text-[9px] font-black uppercase border-white/10"
+              >
+                Tentar novamente
+              </Button>
             </div>
           )}
+
         </div>
       </div>
     </div>
