@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -21,6 +22,7 @@ import { Route as PerfilLojistaRouteImport } from './routes/perfil.lojista'
 import { Route as PerfilUserIdRouteImport } from './routes/perfil.$userId'
 import { Route as ParceiroIdRouteImport } from './routes/parceiro.$id'
 import { Route as LojistaIdRouteImport } from './routes/lojista.$id'
+import { Route as InfoIdRouteImport } from './routes/info.$id'
 import { Route as DashboardPrestadorRouteImport } from './routes/dashboard.prestador'
 import { Route as DashboardLojistaRouteImport } from './routes/dashboard.lojista'
 import { Route as ClienteIdRouteImport } from './routes/cliente.$id'
@@ -61,6 +63,11 @@ import { Route as AuthenticatedAdminUsuariosIdRouteImport } from './routes/_auth
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketplaceRoute = MarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CadastroRoute = CadastroRouteImport.update({
@@ -115,6 +122,11 @@ const ParceiroIdRoute = ParceiroIdRouteImport.update({
 const LojistaIdRoute = LojistaIdRouteImport.update({
   id: '/lojista/$id',
   path: '/lojista/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InfoIdRoute = InfoIdRouteImport.update({
+  id: '/info/$id',
+  path: '/info/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardPrestadorRoute = DashboardPrestadorRouteImport.update({
@@ -317,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
+  '/marketplace': typeof MarketplaceRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/afiliados': typeof AuthenticatedAfiliadosRoute
@@ -338,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
+  '/info/$id': typeof InfoIdRoute
   '/lojista/$id': typeof LojistaIdRoute
   '/parceiro/$id': typeof ParceiroIdRoute
   '/perfil/$userId': typeof PerfilUserIdRoute
@@ -365,6 +379,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
+  '/marketplace': typeof MarketplaceRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/afiliados': typeof AuthenticatedAfiliadosRoute
@@ -385,6 +400,7 @@ export interface FileRoutesByTo {
   '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
+  '/info/$id': typeof InfoIdRoute
   '/lojista/$id': typeof LojistaIdRoute
   '/parceiro/$id': typeof ParceiroIdRoute
   '/perfil/$userId': typeof PerfilUserIdRoute
@@ -415,6 +431,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
+  '/marketplace': typeof MarketplaceRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/afiliados': typeof AuthenticatedAfiliadosRoute
@@ -436,6 +453,7 @@ export interface FileRoutesById {
   '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
+  '/info/$id': typeof InfoIdRoute
   '/lojista/$id': typeof LojistaIdRoute
   '/parceiro/$id': typeof ParceiroIdRoute
   '/perfil/$userId': typeof PerfilUserIdRoute
@@ -466,6 +484,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/cadastro'
+    | '/marketplace'
     | '/terms'
     | '/admin'
     | '/afiliados'
@@ -487,6 +506,7 @@ export interface FileRouteTypes {
     | '/cliente/$id'
     | '/dashboard/lojista'
     | '/dashboard/prestador'
+    | '/info/$id'
     | '/lojista/$id'
     | '/parceiro/$id'
     | '/perfil/$userId'
@@ -514,6 +534,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/cadastro'
+    | '/marketplace'
     | '/terms'
     | '/admin'
     | '/afiliados'
@@ -534,6 +555,7 @@ export interface FileRouteTypes {
     | '/cliente/$id'
     | '/dashboard/lojista'
     | '/dashboard/prestador'
+    | '/info/$id'
     | '/lojista/$id'
     | '/parceiro/$id'
     | '/perfil/$userId'
@@ -563,6 +585,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/cadastro'
+    | '/marketplace'
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/afiliados'
@@ -584,6 +607,7 @@ export interface FileRouteTypes {
     | '/cliente/$id'
     | '/dashboard/lojista'
     | '/dashboard/prestador'
+    | '/info/$id'
     | '/lojista/$id'
     | '/parceiro/$id'
     | '/perfil/$userId'
@@ -614,10 +638,12 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   CadastroRoute: typeof CadastroRoute
+  MarketplaceRoute: typeof MarketplaceRoute
   TermsRoute: typeof TermsRoute
   ClienteIdRoute: typeof ClienteIdRoute
   DashboardLojistaRoute: typeof DashboardLojistaRoute
   DashboardPrestadorRoute: typeof DashboardPrestadorRoute
+  InfoIdRoute: typeof InfoIdRoute
   LojistaIdRoute: typeof LojistaIdRoute
   ParceiroIdRoute: typeof ParceiroIdRoute
   PerfilUserIdRoute: typeof PerfilUserIdRoute
@@ -634,6 +660,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marketplace': {
+      id: '/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof MarketplaceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cadastro': {
@@ -711,6 +744,13 @@ declare module '@tanstack/react-router' {
       path: '/lojista/$id'
       fullPath: '/lojista/$id'
       preLoaderRoute: typeof LojistaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/info/$id': {
+      id: '/info/$id'
+      path: '/info/$id'
+      fullPath: '/info/$id'
+      preLoaderRoute: typeof InfoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/prestador': {
@@ -1108,10 +1148,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   CadastroRoute: CadastroRoute,
+  MarketplaceRoute: MarketplaceRoute,
   TermsRoute: TermsRoute,
   ClienteIdRoute: ClienteIdRoute,
   DashboardLojistaRoute: DashboardLojistaRoute,
   DashboardPrestadorRoute: DashboardPrestadorRoute,
+  InfoIdRoute: InfoIdRoute,
   LojistaIdRoute: LojistaIdRoute,
   ParceiroIdRoute: ParceiroIdRoute,
   PerfilUserIdRoute: PerfilUserIdRoute,

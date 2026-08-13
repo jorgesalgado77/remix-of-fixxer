@@ -8,13 +8,14 @@ interface InfoSecurePlayerProps {
   filePath: string;
   type: 'video' | 'pdf';
   title?: string;
+  className?: string;
 }
 
 /**
  * Player/Viewer Seguro para Info Produtos.
  * Segue Prompt 02: Nunca expõe URL permanente, usa Signed URL temporária.
  */
-export function InfoSecurePlayer({ productId, filePath, type, title }: InfoSecurePlayerProps) {
+export function InfoSecurePlayer({ productId, filePath, type, title, className }: InfoSecurePlayerProps) {
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +54,7 @@ export function InfoSecurePlayer({ productId, filePath, type, title }: InfoSecur
 
   if (type === 'video') {
     return (
-      <div className="relative group">
+      <div className={`relative group ${className || ''}`}>
         <video 
           src={url!} 
           controls 
@@ -73,7 +74,7 @@ export function InfoSecurePlayer({ productId, filePath, type, title }: InfoSecur
     return (
       <iframe 
         src={`${url}#toolbar=0`} 
-        className="w-full h-[600px] rounded-2xl border border-white/10"
+        className={`w-full h-[600px] rounded-2xl border border-white/10 ${className || ''}`}
         title={title}
       />
     );
