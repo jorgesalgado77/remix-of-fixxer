@@ -1,59 +1,28 @@
-# Plano - INFO PRODUTOS PROMPT 07 - FIXXER Secure Player & Progresso
+# Plano de Implementação - Dashboard de Afiliados, Conciliação e Antifraude
 
-Implementação do player de vídeo seguro com gestão de progresso e navegação por módulos/aulas.
+Este plano detalha a implementação do dashboard no Creator Studio para links e comissões, o sistema de conciliação de splits/webhooks e a fila de revisão antifraude no Admin Master.
 
-## 1. Banco de Dados (Supabase Externo)
-Criar a tabela `info_product_progress` para persistir o avanço do usuário.
+## Tarefas Técnicas
 
-```sql
-CREATE TABLE public.info_product_progress (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    product_id uuid REFERENCES public.info_products(id) ON DELETE CASCADE NOT NULL,
-    lesson_id uuid REFERENCES public.info_product_lessons(id) ON DELETE CASCADE NOT NULL,
-    last_position_seconds integer DEFAULT 0,
-    is_completed boolean DEFAULT false,
-    updated_at timestamptz DEFAULT now() NOT NULL,
-    UNIQUE(user_id, lesson_id)
-);
+### 1. Backend & Banco de Dados
+- Criar migração para a tabela `info_webhook_logs` (idempotência e reprocessamento).
+- Criar tabela `info_fraud_queue` para gestão de revisões manuais.
+- Adicionar RPC `reprocess_failed_webhook` para recuperação de falhas.
 
-GRANT SELECT, INSERT, UPDATE ON public.info_product_progress TO authenticated;
-GRANT ALL ON public.info_product_progress TO service_role;
+### 2. Creator Studio (Dashboard de Afiliados)
+- Desenvolver nova aba "Afiliados" no `CreatorProductForm` ou `PanelActions`.
+- Exibir lista de links gerados, cliques, conversões e comissões acumuladas.
+- Adicionar filtros por período e produto.
 
-ALTER TABLE public.info_product_progress ENABLE ROW LEVEL SECURITY;
+### 3. Admin Master (Conciliação e Antifraude)
+- Implementar aba "Conciliação" para monitorar splits e falhas de webhook.
+- Criar "Fila de Revisão" com ações de Aprovar, Cancelar e Revogar.
+- Implementar exportação CSV robusta para eventos de afiliados (cliques, splits, revogações).
 
-CREATE POLICY "Users can manage their own progress"
-ON public.info_product_progress
-FOR ALL
-TO authenticated
-USING (auth.uid() = user_id);
-```
+### 4. Integração & Segurança
+- Reforçar o middleware do webhook ASAAS para registrar logs de tentativa/falha.
+- Garantir que a revogação de comissão atualize o saldo do afiliado corretamente.
 
-## 2. Componentes e UI
-- **FIXXER Player (`src/components/info-products/FixxerPlayer.tsx`)**:
-  - Baseado em HTML5 Video nativo (otimizado para mobile).
-  - Custom UI: Play/Pause, Volume, Progresso, Fullscreen, Velocidade (0.5x a 2x).
-  - Watermark visual discreto com ID do usuário (proteção V1).
-  - Próxima/Anterior integrados.
-- **Navegação de Curso (`src/components/info-products/CourseCurriculum.tsx`)**:
-  - Lista de módulos colapsável.
-  - Indicadores de conclusão por aula.
-- **Página de Aula (`src/routes/info.$id.aula.$lessonId.tsx`)**:
-  - Layout focado no conteúdo.
-  - Sidebar ou drawer (mobile) para currículo.
-
-## 3. Lógica de Persistência
-- **Sincronização de Progresso (`src/lib/info-products/progress-service.ts`)**:
-  - Função `updateProgress` com debounce de 10-15 segundos.
-  - Salvar obrigatoriamente no evento `ended` do vídeo.
-  - Recuperar `last_position_seconds` ao carregar a aula.
-
-## 4. Otimização Realme C55
-- **Lazy Loading**: Não carregar o componente de vídeo até a interação ou visibilidade.
-- **Preload**: Definido como `metadata` para economizar banda e CPU.
-- **Memory Management**: Limpeza de referências de vídeo ao trocar de aula.
-
-## 5. Auditoria
-- Criar `docs/FIXXER_INFO_PRODUCTS_PROMPT_07_AUDIT.md`.
-- Testar troca rápida de aulas.
-- Verificar persistência pós-refresh.
+## Detalhes Adicionais
+- As exportações CSV seguirão o padrão do sistema com cabeçalhos sanitizados.
+- A interface manterá o estilo visual "Cyberpunk/Minimalist" da Fixxer Academy.
