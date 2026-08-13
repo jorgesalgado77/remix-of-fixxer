@@ -217,7 +217,7 @@ export function ProfileSummaryCard({
 
   const wrapperVariantClass =
     variant === "sidebar"
-      ? "hidden md:block fixed left-4 top-20 w-64 z-30"
+      ? "hidden md:block fixed left-4 top-24 w-64 z-30"
       : variant === "inline"
         ? ""
         : "md:hidden";
