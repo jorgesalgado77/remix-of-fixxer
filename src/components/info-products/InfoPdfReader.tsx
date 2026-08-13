@@ -9,6 +9,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
+interface PdfViewerProps {
+  fileUrl: string;
+}
+
 /**
  * Container que isola o uso de bibliotecas pesadas de PDF.
  * Importado dinamicamente no cliente para evitar falhas de build SSR.
@@ -16,7 +20,7 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 const PdfViewerContainer = React.lazy(async () => {
   // Apenas importa se estiver no navegador
   if (typeof window === 'undefined') {
-    return { default: () => null };
+    return { default: () => null as any };
   }
 
   try {
@@ -28,7 +32,7 @@ const PdfViewerContainer = React.lazy(async () => {
     const { Worker, Viewer } = core;
     const { defaultLayoutPlugin } = layout;
 
-    const Component = ({ fileUrl }: { fileUrl: string }) => {
+    const Component = ({ fileUrl }: PdfViewerProps) => {
       const defaultLayoutPluginInstance = defaultLayoutPlugin({
         sidebarTabs: () => [], 
       });
@@ -47,7 +51,7 @@ const PdfViewerContainer = React.lazy(async () => {
     return { default: Component };
   } catch (e) {
     console.error('Falha ao carregar leitor de PDF:', e);
-    return { default: () => <div className="p-4 text-red-500">Erro ao carregar leitor.</div> };
+    return { default: () => <div className="p-4 text-red-500">Erro ao carregar leitor.</div> as any };
   }
 });
 
