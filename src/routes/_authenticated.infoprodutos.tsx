@@ -16,7 +16,8 @@ import {
   Trash2,
   Pause,
   Play,
-  Archive
+  Archive,
+  Zap
 } from 'lucide-react';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { PanelActions } from '@/components/PanelActions';
