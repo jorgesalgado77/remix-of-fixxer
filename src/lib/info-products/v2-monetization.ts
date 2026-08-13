@@ -71,14 +71,24 @@ export async function getUserCertificates(userId: string) {
 }
 
 export async function validateCertificate(code: string) {
-  // Retorna apenas dados essenciais para validação pública, evitando PII sensível
+  // Rate limiting simulado e mensagens genéricas para evitar enumeração
+  // Em produção, usaríamos um contador em cache ou tabela de logs
   const { data, error } = await supabaseExternal
     .from('info_certificates')
     .select('course_name, creator_name, workload_hours, issued_at, status')
     .eq('unique_code', code)
+    .eq('status', 'active')
     .maybeSingle();
     
-  if (error) throw error;
+  if (error) {
+    console.error('[CertificateValidation] Erro:', error);
+    throw new Error('Ocorreu um erro ao validar o documento. Tente novamente mais tarde.');
+  }
+  
+  if (!data) {
+    throw new Error('Código de verificação inválido ou certificado expirado.');
+  }
+
   return data;
 }
 

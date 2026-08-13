@@ -332,7 +332,46 @@ function AdminInfoProductsPage() {
           </div>
         )}
 
-        {['storage', 'moderacao', 'produtos', 'criadores', 'auditoria'].includes(tab) && (
+        {tab === 'auditoria' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-black italic uppercase tracking-tighter">Auditoria de Certificados</h2>
+              <div className="flex gap-2">
+                <Input placeholder="Filtrar por Creator..." className="h-9 w-48 bg-white/5 border-white/10 text-[10px] rounded-xl" />
+                <Button variant="outline" size="sm" className="bg-white/5 border-white/10 text-[10px] font-bold uppercase tracking-widest rounded-xl">Filtrar Datas</Button>
+              </div>
+            </div>
+            
+            <div className="bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <th className="p-4 border-b border-white/5">Data</th>
+                    <th className="p-4 border-b border-white/5">Evento</th>
+                    <th className="p-4 border-b border-white/5">Creator</th>
+                    <th className="p-4 border-b border-white/5">Produto</th>
+                    <th className="p-4 border-b border-white/5">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="text-xs font-medium">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <tr key={i} className="hover:bg-white/5 transition-colors">
+                      <td className="p-4 border-b border-white/5 text-muted-foreground">13/08/2026</td>
+                      <td className="p-4 border-b border-white/5 text-white font-bold italic">Emissão de Certificado</td>
+                      <td className="p-4 border-b border-white/5 text-primary">Jorge Salgado</td>
+                      <td className="p-4 border-b border-white/5">Curso de Fixxer Pro</td>
+                      <td className="p-4 border-b border-white/5">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[8px] border border-emerald-500/20">SUCESSO</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {['storage', 'moderacao', 'produtos', 'criadores'].includes(tab) && (
           <div className="py-32 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[40px]">
             <Activity className="w-12 h-12 text-muted-foreground/20 mx-auto" />
             <p className="text-muted-foreground font-black uppercase tracking-widest text-xs italic">

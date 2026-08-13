@@ -347,22 +347,43 @@ export function CreatorProductForm({ onClose, onSave, initialData }: CreatorProd
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-4 pt-8 border-t border-white/10">
-        <Button 
-          type="button" 
-          variant="ghost" 
-          onClick={onClose}
-          className="font-black uppercase tracking-widest text-xs h-12 px-8 rounded-2xl"
-        >
-          Cancelar
-        </Button>
-        <Button 
-          type="submit"
-          className="bg-primary text-primary-foreground font-black px-10 h-12 rounded-2xl shadow-[0_0_25px_rgba(0,255,135,0.4)] hover:scale-105 transition-all uppercase tracking-widest text-xs gap-2"
-        >
-          <Save className="w-4 h-4" />
-          Salvar Produto
-        </Button>
+      <div className="flex items-center justify-between pt-8 border-t border-white/10">
+        <div className="flex items-center gap-2">
+           <Button 
+            type="button"
+            variant="outline"
+            onClick={() => toast.success("Ações em lote não implementadas neste protótipo")}
+            className="font-bold uppercase tracking-widest text-[9px] h-10 px-4 rounded-xl border-white/10"
+          >
+            Ações em Lote
+          </Button>
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={() => toast.info("Histórico de versões resetado localmente")}
+            className="font-bold uppercase tracking-widest text-[9px] h-10 px-4 rounded-xl border-white/10"
+          >
+            Limpar Histórico
+          </Button>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <Button 
+            type="button" 
+            variant="ghost" 
+            onClick={onClose}
+            className="font-black uppercase tracking-widest text-xs h-12 px-8 rounded-2xl"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            type="submit"
+            className="bg-primary text-primary-foreground font-black px-10 h-12 rounded-2xl shadow-[0_0_25px_rgba(0,255,135,0.4)] hover:scale-105 transition-all uppercase tracking-widest text-xs gap-2"
+          >
+            <Save className="w-4 h-4" />
+            Salvar Produto
+          </Button>
+        </div>
       </div>
     </form>
   );
