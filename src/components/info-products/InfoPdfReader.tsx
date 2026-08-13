@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Worker, Viewer } from '@react-pdf-viewer/core';
-import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import React, { useState, useEffect } from 'react';
 import { getSecureInfoUrl } from '@/lib/info-storage.server';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, Lock, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+// Importação dinâmica para evitar erro de SSR com PDF.js/canvas
+const Viewer = React.lazy(() => import('@react-pdf-viewer/core').then(m => ({ default: m.Viewer })));
+const Worker = React.lazy(() => import('@react-pdf-viewer/core').then(m => ({ default: m.Worker })));
+const defaultLayoutPlugin = React.lazy(() => import('@react-pdf-viewer/default-layout').then(m => ({ default: m.defaultLayoutPlugin })));
+
 
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
