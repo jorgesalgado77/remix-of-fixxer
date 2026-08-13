@@ -281,6 +281,7 @@ export async function getAffiliateStats(affiliateId: string) {
     clickCount: clicks || 0,
     conversionRate: clicks ? ((sales || []).length / clicks) * 100 : 0
   };
+}
 
 export async function resendCertificateNotification(certificateId: string) {
   const { data: cert, error: certErr } = await supabaseExternal
