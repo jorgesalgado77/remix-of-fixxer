@@ -31,7 +31,8 @@ function LessonPage() {
     <div className="min-h-screen bg-background p-8">
       <h1 className="text-2xl font-black text-white">{lesson.title}</h1>
       <FixxerPlayer 
-        url={lesson.video_url} 
+        productId={productId}
+        filePath={lesson.video_url} 
         onProgress={(s) => console.log('Progresso:', s)} 
       />
     </div>
