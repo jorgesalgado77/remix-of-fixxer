@@ -1,14 +1,61 @@
-import { useState, useEffect } from 'react';
-import { Worker, Viewer } from '@react-pdf-viewer/core';
-import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import React, { useState, useEffect, Suspense } from 'react';
 import { getSecureInfoUrl } from '@/lib/info-storage.server';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, Lock, Download } from 'lucide-react';
+import { AlertTriangle, Lock, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
+// CSS deve ser importado fora do componente
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+
+interface PdfViewerProps {
+  fileUrl: string;
+}
+
+/**
+ * Container que isola o uso de bibliotecas pesadas de PDF.
+ * Importado dinamicamente no cliente para evitar falhas de build SSR.
+ */
+const PdfViewerContainer = React.lazy(async () => {
+  // Apenas importa se estiver no navegador
+  if (typeof window === 'undefined') {
+    const Fallback = () => null;
+    return { default: Fallback as React.ComponentType<PdfViewerProps> };
+  }
+
+  try {
+    const [core, layout] = await Promise.all([
+      import('@react-pdf-viewer/core'),
+      import('@react-pdf-viewer/default-layout')
+    ]);
+    
+    const { Worker, Viewer } = core;
+    const { defaultLayoutPlugin } = layout;
+
+    const Component = ({ fileUrl }: PdfViewerProps) => {
+      const defaultLayoutPluginInstance = defaultLayoutPlugin({
+        sidebarTabs: () => [], 
+      });
+
+      return (
+        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+          <Viewer
+            fileUrl={fileUrl}
+            plugins={[defaultLayoutPluginInstance]}
+            theme="dark"
+          />
+        </Worker>
+      );
+    };
+
+    return { default: Component as React.ComponentType<PdfViewerProps> };
+  } catch (e) {
+    console.error('Falha ao carregar leitor de PDF:', e);
+    const ErrorComponent = () => <div className="p-4 text-red-500">Erro ao carregar leitor.</div>;
+    return { default: ErrorComponent as React.ComponentType<PdfViewerProps> };
+  }
+});
 
 interface InfoPdfReaderProps {
   productId: string;
@@ -20,8 +67,7 @@ interface InfoPdfReaderProps {
 
 /**
  * Leitor de PDF Seguro (Prompt 08).
- * Integrado com URLs assinadas e controle de entitlement.
- * Otimizado para Realme C55 (lazy loading de páginas).
+ * Otimizado para Realme C55 e compatível com SSR (TanStack Start).
  */
 export function InfoPdfReader({ 
   productId, 
@@ -33,20 +79,17 @@ export function InfoPdfReader({
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const defaultLayoutPluginInstance = defaultLayoutPlugin({
-    sidebarTabs: (defaultTabs) => [], // Simplifica para mobile/low-end
-  });
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     async function loadSecureUrl() {
       try {
         setLoading(true);
-        // @ts-ignore - Server Function call pattern
+        // @ts-ignore
         const result = await getSecureInfoUrl({ data: { productId, filePath } });
         setUrl(result.url);
       } catch (err: any) {
-        console.error('[PdfReader] Erro:', err);
         setError(err.message || 'Falha ao carregar documento.');
       } finally {
         setLoading(false);
@@ -58,7 +101,7 @@ export function InfoPdfReader({
 
   const handleDownload = async () => {
     try {
-      // @ts-ignore - Server Function call pattern para download
+      // @ts-ignore
       const result = await getSecureInfoUrl({ data: { productId, filePath, isDownload: true } });
       window.open(result.url, '_blank');
     } catch (err) {
@@ -66,7 +109,8 @@ export function InfoPdfReader({
     }
   };
 
-  if (loading) return <Skeleton className="w-full h-[600px] rounded-2xl" />;
+  // Previne renderização no servidor para bibliotecas com dependências nativas (canvas)
+  if (!isClient) return <Skeleton className="w-full h-[600px] rounded-2xl" />;
 
   if (error) {
     return (
@@ -116,15 +160,18 @@ export function InfoPdfReader({
       </div>
 
       <div className="relative h-[600px] w-full bg-black/40 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-        {url && (
-          <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-            <Viewer
-              fileUrl={url}
-              plugins={[defaultLayoutPluginInstance]}
-              theme="dark"
-            />
-          </Worker>
-        )}
+        {loading ? (
+          <Skeleton className="w-full h-full" />
+        ) : url ? (
+          <Suspense fallback={
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-black/20">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Iniciando Leitor Seguro...</p>
+            </div>
+          }>
+            <PdfViewerContainer fileUrl={url} />
+          </Suspense>
+        ) : null}
       </div>
     </div>
   );
