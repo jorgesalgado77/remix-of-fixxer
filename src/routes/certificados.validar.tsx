@@ -76,7 +76,7 @@ function ValidateCertificatePage() {
             <div className="space-y-3">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground font-bold uppercase">Aluno</span>
-                <span className="text-white font-black italic">{result.student_name}</span>
+                <span className="text-white font-black italic">Verificado</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground font-bold uppercase">Curso</span>
