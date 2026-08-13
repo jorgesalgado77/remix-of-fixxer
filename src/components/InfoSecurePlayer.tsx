@@ -24,7 +24,7 @@ export function InfoSecurePlayer({ productId, filePath, type, title }: InfoSecur
       try {
         setLoading(true);
         // Chama a Server Function para obter a URL assinada
-        const result = await getSecureInfoUrl({ productId, filePath });
+        const result = await getSecureInfoUrl({ data: { productId, filePath } });
         setUrl(result.url);
       } catch (err: any) {
         console.error('[SecurePlayer] Erro:', err);
