@@ -1,25 +1,31 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, PlayCircle, GraduationCap, ChevronRight, Search, Clock, Library } from 'lucide-react';
+import { BookOpen, PlayCircle, GraduationCap, ChevronRight, Search, Library } from 'lucide-react';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { getMyLibrary } from '@/lib/info-products/entitlement-service';
-import { useAuth } from '@/hooks/use-auth'; // Assumindo que existe ou usaremos current-user
 import { Skeleton } from '@/components/ui/skeleton';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { supabaseExternal } from '@/lib/supabaseExternal';
 
 export const Route = createFileRoute('/_authenticated/biblioteca')({
   component: LibraryPage,
 });
 
 function LibraryPage() {
-  const { user } = useAuth();
+  const [userId, setUserId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
+  useEffect(() => {
+    supabaseExternal.auth.getUser().then(({ data }) => {
+      if (data?.user) setUserId(data.user.id);
+    });
+  }, []);
+
   const { data: library, isLoading } = useQuery({
-    queryKey: ['my-library', user?.id],
-    queryFn: () => getMyLibrary(user!.id),
-    enabled: !!user?.id,
+    queryKey: ['my-library', userId],
+    queryFn: () => getMyLibrary(userId!),
+    enabled: !!userId,
   });
 
   const filteredLibrary = library?.filter(item => 
@@ -78,7 +84,8 @@ function LibraryCard({ item }: { item: any }) {
 
   return (
     <Link 
-      to={`/info/${product.id}`}
+      to="/info/$id"
+      params={{ id: product.id }}
       className="group bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden hover:border-primary/50 transition-all hover:translate-y-[-4px] flex flex-col h-full"
     >
       {/* Capa */}

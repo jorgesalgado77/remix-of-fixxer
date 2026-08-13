@@ -39,6 +39,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated.configuracoes'
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated.cliente'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
+import { Route as AuthenticatedBibliotecaRouteImport } from './routes/_authenticated.biblioteca'
 import { Route as AuthenticatedAjudaRouteImport } from './routes/_authenticated.ajuda'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated.agenda'
 import { Route as AuthenticatedAfiliadosRouteImport } from './routes/_authenticated.afiliados'
@@ -213,6 +214,11 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBibliotecaRoute = AuthenticatedBibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAjudaRoute = AuthenticatedAjudaRouteImport.update({
   id: '/ajuda',
   path: '/ajuda',
@@ -341,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/afiliados': typeof AuthenticatedAfiliadosRoute
   '/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/ajuda': typeof AuthenticatedAjudaRoute
+  '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
@@ -392,6 +399,7 @@ export interface FileRoutesByTo {
   '/afiliados': typeof AuthenticatedAfiliadosRoute
   '/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/ajuda': typeof AuthenticatedAjudaRoute
+  '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
@@ -445,6 +453,7 @@ export interface FileRoutesById {
   '/_authenticated/afiliados': typeof AuthenticatedAfiliadosRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRouteWithChildren
   '/_authenticated/ajuda': typeof AuthenticatedAjudaRoute
+  '/_authenticated/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
@@ -499,6 +508,7 @@ export interface FileRouteTypes {
     | '/afiliados'
     | '/agenda'
     | '/ajuda'
+    | '/biblioteca'
     | '/chat'
     | '/cliente'
     | '/configuracoes'
@@ -550,6 +560,7 @@ export interface FileRouteTypes {
     | '/afiliados'
     | '/agenda'
     | '/ajuda'
+    | '/biblioteca'
     | '/chat'
     | '/cliente'
     | '/configuracoes'
@@ -602,6 +613,7 @@ export interface FileRouteTypes {
     | '/_authenticated/afiliados'
     | '/_authenticated/agenda'
     | '/_authenticated/ajuda'
+    | '/_authenticated/biblioteca'
     | '/_authenticated/chat'
     | '/_authenticated/cliente'
     | '/_authenticated/configuracoes'
@@ -878,6 +890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/biblioteca': {
+      id: '/_authenticated/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/biblioteca'
+      preLoaderRoute: typeof AuthenticatedBibliotecaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/ajuda': {
       id: '/_authenticated/ajuda'
       path: '/ajuda'
@@ -1111,6 +1130,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAfiliadosRoute: typeof AuthenticatedAfiliadosRoute
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRouteWithChildren
   AuthenticatedAjudaRoute: typeof AuthenticatedAjudaRoute
+  AuthenticatedBibliotecaRoute: typeof AuthenticatedBibliotecaRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
@@ -1132,6 +1152,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAfiliadosRoute: AuthenticatedAfiliadosRoute,
   AuthenticatedAgendaRoute: AuthenticatedAgendaRouteWithChildren,
   AuthenticatedAjudaRoute: AuthenticatedAjudaRoute,
+  AuthenticatedBibliotecaRoute: AuthenticatedBibliotecaRoute,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
