@@ -345,7 +345,91 @@ function AdminInfoProductsPage() {
           </div>
         )}
 
-        {tab === 'afiliados' && (
+        {tab === 'preview' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-black italic uppercase tracking-tighter">Preview de Certificado</h2>
+                <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 rounded-full">
+                  <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic">Tempo Real</span>
+                </div>
+             </div>
+             
+             <div className="grid lg:grid-cols-2 gap-8">
+                {/* Editor Sidebar */}
+                <div className="bg-white/[0.03] border border-white/10 p-8 rounded-[32px] space-y-6 h-fit">
+                   <h3 className="text-xs font-black text-white uppercase italic flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-primary" />
+                      Ajustes de Branding
+                   </h3>
+                   <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Logo do Criador</label>
+                        <Input placeholder="URL da logo..." className="bg-black/40 border-white/10 h-11 rounded-xl" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cor de Destaque</label>
+                        <div className="flex gap-3">
+                           <Input type="color" className="w-11 h-11 p-1 bg-black/40 border-white/10 rounded-xl cursor-pointer" defaultValue="#00FF87" />
+                           <Input placeholder="#00FF87" className="flex-1 bg-black/40 border-white/10 h-11 rounded-xl" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Texto de Rodapé</label>
+                        <Input defaultValue="Fixxer Academy - Certificado de Conclusão" className="bg-black/40 border-white/10 h-11 rounded-xl" />
+                      </div>
+                   </div>
+                   <Button className="w-full bg-primary text-primary-foreground font-black h-12 rounded-2xl uppercase tracking-widest text-[10px]">
+                      <Save className="w-4 h-4 mr-2" />
+                      Salvar Identidade
+                   </Button>
+                </div>
+
+                {/* Live Preview */}
+                <div className="bg-white p-12 rounded-[32px] shadow-2xl min-h-[500px] flex flex-col border border-black/5 text-black">
+                   <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
+                      <div className="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-300">
+                         <span className="text-[10px] font-bold text-gray-400 uppercase">Logo</span>
+                      </div>
+                      
+                      <div className="space-y-4">
+                         <h1 className="text-3xl font-black uppercase tracking-tighter italic">Certificado de Conclusão</h1>
+                         <div className="w-32 h-1 bg-[#00FF87] mx-auto" />
+                      </div>
+
+                      <div className="space-y-2">
+                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Certificamos que</p>
+                         <p className="text-2xl font-black italic">Nome do Aluno Exemplo</p>
+                      </div>
+
+                      <div className="max-w-md">
+                         <p className="text-sm leading-relaxed">
+                            Concluiu com êxito o treinamento avançado <strong>"Expert em Fixxer Pro"</strong> com carga horária de 40 horas, 
+                            demonstrando proficiência total nos módulos de arquitetura e infraestrutura.
+                         </p>
+                      </div>
+
+                      <div className="pt-8 flex gap-12">
+                         <div className="text-center">
+                            <div className="w-32 h-px bg-gray-300 mb-2" />
+                            <p className="text-[10px] font-bold uppercase tracking-widest">Fixxer Academy</p>
+                         </div>
+                         <div className="text-center">
+                            <div className="w-32 h-px bg-gray-300 mb-2" />
+                            <p className="text-[10px] font-bold uppercase tracking-widest">Jorge Salgado</p>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="mt-12 flex items-center justify-between border-t pt-6 text-[8px] font-bold uppercase text-gray-400">
+                      <span>CÓD: FX-PREVIEW-2026</span>
+                      <span>VALIDADO EM FIXXER.APP/CERTIFICADOS</span>
+                      <div className="w-8 h-8 bg-black rounded" />
+                   </div>
+                </div>
+             </div>
+          </div>
+        )}
+
           <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-black italic uppercase tracking-tighter">Gestão de Afiliados & Anti-Fraude</h2>
