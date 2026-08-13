@@ -17,7 +17,8 @@ import {
   Pause,
   Play,
   Archive,
-  Zap
+  Zap,
+  ArrowLeft
 } from 'lucide-react';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { PanelActions } from '@/components/PanelActions';
@@ -30,6 +31,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { CreatorProductForm } from '@/components/info-products/CreatorProductForm';
 
 export const Route = createFileRoute('/_authenticated/infoprodutos')({
   component: CreatorStudioPage,
@@ -38,104 +40,117 @@ export const Route = createFileRoute('/_authenticated/infoprodutos')({
 function CreatorStudioPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'products' | 'sales' | 'analytics' | 'coupons'>('products');
+  const [isCreating, setIsCreating] = useState(false);
 
   return (
     <div className="min-h-screen bg-background pb-32">
       <ProfileHeader role="prestador" title="CREATOR STUDIO" subtitle="Gestão de Info Produtos e Vendas" />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10 space-y-8">
-        {/* MENU NAVEGAÇÃO CREATOR */}
-        <div className="flex items-center gap-2 p-1.5 bg-white/[0.03] border border-white/10 rounded-2xl w-fit backdrop-blur-xl overflow-x-auto max-w-full no-scrollbar">
-          <TabButton 
-            active={activeTab === 'products'} 
-            onClick={() => setActiveTab('products')}
-            icon={<Package className="w-4 h-4" />}
-            label="Produtos"
+        {isCreating ? (
+          <CreatorProductForm 
+            onClose={() => setIsCreating(false)} 
+            onSave={(data) => {
+              toast.success("Produto salvo com sucesso!");
+              setIsCreating(false);
+            }} 
           />
-          <TabButton 
-            active={activeTab === 'sales'} 
-            onClick={() => setActiveTab('sales')}
-            icon={<TrendingUp className="w-4 h-4" />}
-            label="Vendas"
-          />
-          <TabButton 
-            active={activeTab === 'analytics'} 
-            onClick={() => setActiveTab('analytics')}
-            icon={<LayoutGrid className="w-4 h-4" />}
-            label="Analytics"
-          />
-          <TabButton 
-            active={activeTab === 'coupons'} 
-            onClick={() => setActiveTab('coupons')}
-            icon={<Zap className="w-4 h-4 text-amber-400" />}
-            label="Cupons"
-          />
-        </div>
+        ) : (
+          <>
+            {/* MENU NAVEGAÇÃO CREATOR */}
+            <div className="flex items-center gap-2 p-1.5 bg-white/[0.03] border border-white/10 rounded-2xl w-fit backdrop-blur-xl overflow-x-auto max-w-full no-scrollbar">
+              <TabButton 
+                active={activeTab === 'products'} 
+                onClick={() => setActiveTab('products')}
+                icon={<Package className="w-4 h-4" />}
+                label="Produtos"
+              />
+              <TabButton 
+                active={activeTab === 'sales'} 
+                onClick={() => setActiveTab('sales')}
+                icon={<TrendingUp className="w-4 h-4" />}
+                label="Vendas"
+              />
+              <TabButton 
+                active={activeTab === 'analytics'} 
+                onClick={() => setActiveTab('analytics')}
+                icon={<LayoutGrid className="w-4 h-4" />}
+                label="Analytics"
+              />
+              <TabButton 
+                active={activeTab === 'coupons'} 
+                onClick={() => setActiveTab('coupons')}
+                icon={<Zap className="w-4 h-4 text-amber-400" />}
+                label="Cupons"
+              />
+            </div>
 
-        {activeTab === 'products' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Seus Info Produtos</h2>
-                <p className="text-muted-foreground text-sm">Gerencie seus e-books, aulas e cursos digitais.</p>
+            {activeTab === 'products' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Seus Info Produtos</h2>
+                    <p className="text-muted-foreground text-sm">Gerencie seus e-books, aulas e cursos digitais.</p>
+                  </div>
+                  
+                  <Button 
+                    onClick={() => setIsCreating(true)}
+                    className="bg-primary text-primary-foreground font-black px-6 py-6 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:scale-105 transition-all uppercase tracking-widest text-xs gap-2"
+                    title="Criar novo info produto — use o Assistente IA para acelerar seu trabalho"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Criar Produto
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   <EmptyState />
+                </div>
               </div>
-              
-              <Button 
-                onClick={() => toast.info('Fluxo de criação em desenvolvimento')}
-                className="bg-primary text-primary-foreground font-black px-6 py-6 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:scale-105 transition-all uppercase tracking-widest text-xs gap-2"
-                title="Criar novo info produto — comece a vender seu conhecimento agora"
-              >
-                <Plus className="w-4 h-4" />
-                Criar Produto
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               <EmptyState />
-            </div>
-          </div>
-        )}
+            )}
 
-        {activeTab === 'analytics' && (
-          <div className="space-y-8">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard 
-                label="Receita Bruta" 
-                value="R$ 0,00" 
-                icon={<TrendingUp className="text-emerald-400" />} 
-                tip="Total acumulado de vendas antes das taxas."
-              />
-              <MetricCard 
-                label="Receita Líquida" 
-                value="R$ 0,00" 
-                icon={<CheckCircle2 className="text-primary" />} 
-                tip="Valor disponível para saque (85% do bruto)."
-              />
-              <MetricCard 
-                label="Conversão" 
-                value="0%" 
-                icon={<Zap className="text-amber-400" />} 
-                tip="Percentual de visitantes que realizaram a compra."
-              />
-              <MetricCard 
-                label="Avaliações" 
-                value="0.0" 
-                icon={<LayoutGrid className="text-blue-400" />} 
-                tip="Média de satisfação dos seus alunos."
-              />
-            </div>
+            {activeTab === 'analytics' && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <MetricCard 
+                    label="Receita Bruta" 
+                    value="R$ 0,00" 
+                    icon={<TrendingUp className="text-emerald-400" />} 
+                    tip="Total acumulado de vendas antes das taxas."
+                  />
+                  <MetricCard 
+                    label="Receita Líquida" 
+                    value="R$ 0,00" 
+                    icon={<CheckCircle2 className="text-primary" />} 
+                    tip="Valor disponível para saque (85% do bruto)."
+                  />
+                  <MetricCard 
+                    label="Conversão" 
+                    value="0%" 
+                    icon={<Zap className="text-amber-400" />} 
+                    tip="Percentual de visitantes que realizaram a compra."
+                  />
+                  <MetricCard 
+                    label="Avaliações" 
+                    value="0.0" 
+                    icon={<LayoutGrid className="text-blue-400" />} 
+                    tip="Média de satisfação dos seus alunos."
+                  />
+                </div>
+                
+                <div className="py-20 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[32px]">
+                  <TrendingUp className="w-12 h-12 text-muted-foreground/30 mx-auto" />
+                  <p className="text-muted-foreground font-bold uppercase tracking-widest text-sm text-center px-4">Gráficos de desempenho em processamento...</p>
+                </div>
+              </div>
+            )}
             
-            <div className="py-20 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[32px]">
-              <TrendingUp className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-              <p className="text-muted-foreground font-bold uppercase tracking-widest text-sm text-center px-4">Gráficos de desempenho em processamento...</p>
-            </div>
-          </div>
-        )}
-        
-        {(activeTab === 'sales' || activeTab === 'coupons') && (
-           <div className="py-20 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[32px]">
-             <Clock className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-             <p className="text-muted-foreground font-bold uppercase tracking-widest text-sm">Gestão de {activeTab === 'sales' ? 'Vendas' : 'Cupons'} em breve.</p>
-           </div>
+            {(activeTab === 'sales' || activeTab === 'coupons') && (
+               <div className="py-20 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[32px]">
+                 <Clock className="w-12 h-12 text-muted-foreground/30 mx-auto" />
+                 <p className="text-muted-foreground font-bold uppercase tracking-widest text-sm">Gestão de {activeTab === 'sales' ? 'Vendas' : 'Cupons'} em breve.</p>
+               </div>
+            )}
+          </>
         )}
       </main>
 
