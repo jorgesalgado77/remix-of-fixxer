@@ -233,6 +233,58 @@ export async function getAffiliateSales(affiliateId: string) {
   return data;
 }
 
+export async function trackAffiliateClick(params: {
+  trackingCode: string;
+  productId?: string;
+  metadata?: any;
+}) {
+  const { data: affiliate } = await supabaseExternal
+    .from('info_affiliates')
+    .select('affiliate_id, product_id')
+    .eq('tracking_code', params.trackingCode)
+    .eq('status', 'active')
+    .single();
+
+  if (!affiliate) return null;
+
+  const { error } = await supabaseExternal
+    .from('info_affiliate_clicks')
+    .insert({
+      affiliate_id: affiliate.affiliate_id,
+      product_id: params.productId || affiliate.product_id,
+      tracking_code: params.trackingCode,
+      metadata: params.metadata
+    });
+
+  if (error) console.error('[AffiliateTracking] Erro ao registrar clique:', error);
+  return affiliate;
+}
+
+export async function getAffiliateStats(affiliateId: string) {
+  const { data: sales, error: salesErr } = await supabaseExternal
+    .from('info_affiliate_sales')
+    .select('commission_amount, status')
+    .eq('affiliate_id', affiliateId);
+
+  const { count: clicks, error: clicksErr } = await supabaseExternal
+    .from('info_affiliate_clicks')
+    .select('*', { count: 'exact', head: true })
+    .eq('affiliate_id', affiliateId);
+
+  if (salesErr || clicksErr) throw salesErr || clicksErr;
+
+  const stats = {
+    totalCommission: (sales || []).reduce((acc, s) => acc + Number(s.commission_amount), 0),
+    pendingCommission: (sales || []).filter(s => s.status === 'pending').reduce((acc, s) => acc + Number(s.commission_amount), 0),
+    paidCommission: (sales || []).filter(s => s.status === 'paid').reduce((acc, s) => acc + Number(s.commission_amount), 0),
+    conversionCount: (sales || []).length,
+    clickCount: clicks || 0,
+    conversionRate: clicks ? ((sales || []).length / clicks) * 100 : 0
+  };
+
+  return stats;
+}
+
 // --- Hardening & Analytics V3 ---
 
 export async function exportCertificatesCSV(params: {

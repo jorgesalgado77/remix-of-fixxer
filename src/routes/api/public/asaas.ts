@@ -63,27 +63,43 @@ export const Route = createFileRoute('/api/public/asaas')({
             if (txError) throw txError;
 
             // 2. Liberar Entitlement (Se for um Info Produto)
-            const productId = payment.externalReference; // Assumimos que passamos o ID no externalReference
+            const productId = payment.externalReference; 
             if (productId && payment.customer) {
-               // Buscar user_id vinculado ao customer ou metadata (a implementar no fluxo de criação)
-               // Por enquanto, registramos o entitlement se tivermos o user_id
                 const userId = body.payment.metadata?.userId; 
+                const trackingCode = body.payment.metadata?.affiliateTrackingCode;
                
                if (userId) {
-                 // Garantimos a liberação do entitlement aqui
-                 const { error: entError } = await supabaseExternal.from('info_product_entitlements').upsert({
-                   user_id: userId,
-                   product_id: productId,
-                   purchase_id: tx.id,
-                   status: 'active',
-                   granted_at: new Date().toISOString()
-                 }, { onConflict: 'user_id,product_id' });
-                 
-                 if (entError) {
-                   console.error(`[AsaasWebhook] Falha ao liberar entitlement:`, entError);
-                 } else {
-                   console.log(`[AsaasWebhook] Entitlement liberado para ${userId} -> ${productId}`);
-                 }
+                  // A. Registrar Entitlement
+                  const { error: entError } = await supabaseExternal.from('info_product_entitlements').upsert({
+                    user_id: userId,
+                    product_id: productId,
+                    purchase_id: tx.id,
+                    status: 'active',
+                    granted_at: new Date().toISOString()
+                  }, { onConflict: 'user_id,product_id' });
+                  
+                  if (entError) {
+                    console.error(`[AsaasWebhook] Falha ao liberar entitlement:`, entError);
+                  }
+
+                  // B. Atribuição de Afiliado (Se houver tracking code)
+                  if (trackingCode) {
+                    const { data: affResult, error: affErr } = await supabaseExternal.rpc('process_affiliate_sale_v2', {
+                      _sale_id: tx.id,
+                      _product_id: productId,
+                      _buyer_id: userId,
+                      _tracking_code: trackingCode,
+                      _amount_total: payment.value
+                    });
+
+                    if (affErr) {
+                      console.error(`[AsaasWebhook] Falha na atribuição de afiliado:`, affErr);
+                    } else if (affResult?.processed) {
+                      console.log(`[AsaasWebhook] Comissão atribuída com sucesso:`, affResult);
+                    } else {
+                      console.warn(`[AsaasWebhook] Atribuição de afiliado negada:`, affResult?.reason);
+                    }
+                  }
                }
             }
           } else {
