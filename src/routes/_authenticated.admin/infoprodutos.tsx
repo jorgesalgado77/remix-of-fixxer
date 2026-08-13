@@ -256,7 +256,7 @@ function AdminInfoProductsPage() {
           </div>
         )}
 
-        {['storage', 'moderacao', 'produtos', 'vendas', 'criadores', 'auditoria'].includes(tab) && (
+        {['storage', 'moderacao', 'produtos', 'vendas', 'criadores', 'auditoria', 'certificados', 'assinatura'].includes(tab) && (
           <div className="py-32 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[40px]">
             <Activity className="w-12 h-12 text-muted-foreground/20 mx-auto" />
             <p className="text-muted-foreground font-black uppercase tracking-widest text-xs italic">
