@@ -44,7 +44,13 @@ function CreatorStudioPage() {
 
   return (
     <div className="min-h-screen bg-background pb-32 overflow-x-hidden">
-      <ProfileHeader role="prestador" title="CREATOR STUDIO" subtitle="Gestão de Info Produtos e Vendas" hideSidebarCard />
+      <ProfileHeader 
+        role="prestador" 
+        title="CREATOR STUDIO" 
+        subtitle="Gestão de Info Produtos e Vendas" 
+        hideSidebarCard 
+        actions={<PanelActions role="prestador" />}
+      />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10 space-y-8">
         {isCreating ? (
@@ -154,9 +160,6 @@ function CreatorStudioPage() {
         )}
       </main>
 
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-fit px-4">
-        <PanelActions role="prestador" />
-      </div>
     </div>
   );
 }
