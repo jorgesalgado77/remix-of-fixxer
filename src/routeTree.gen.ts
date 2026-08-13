@@ -59,6 +59,7 @@ import { Route as AuthenticatedAdminDocumentosLegadosRouteImport } from './route
 import { Route as AuthenticatedAdminDisputasRouteImport } from './routes/_authenticated.admin.disputas'
 import { Route as AuthenticatedAdminComunicacaoRouteImport } from './routes/_authenticated.admin/comunicacao'
 import { Route as AuthenticatedAdminAuditoriaCategoriasRouteImport } from './routes/_authenticated.admin.auditoria-categorias'
+import { Route as InfoIdAulaLessonIdRouteImport } from './routes/info.$id.aula.$lessonId'
 import { Route as ApiPublicPushDispatchRouteImport } from './routes/api/public/push.dispatch'
 import { Route as AuthenticatedAdminUsuariosIdRouteImport } from './routes/_authenticated.admin.usuarios.$id'
 
@@ -325,6 +326,11 @@ const AuthenticatedAdminAuditoriaCategoriasRoute =
     path: '/auditoria-categorias',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const InfoIdAulaLessonIdRoute = InfoIdAulaLessonIdRouteImport.update({
+  id: '/aula/$lessonId',
+  path: '/aula/$lessonId',
+  getParentRoute: () => InfoIdRoute,
+} as any)
 const ApiPublicPushDispatchRoute = ApiPublicPushDispatchRouteImport.update({
   id: '/api/public/push/dispatch',
   path: '/api/public/push/dispatch',
@@ -364,7 +370,7 @@ export interface FileRoutesByFullPath {
   '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
-  '/info/$id': typeof InfoIdRoute
+  '/info/$id': typeof InfoIdRouteWithChildren
   '/lojista/$id': typeof LojistaIdRoute
   '/parceiro/$id': typeof ParceiroIdRoute
   '/perfil/$userId': typeof PerfilUserIdRoute
@@ -389,6 +395,7 @@ export interface FileRoutesByFullPath {
   '/feed/': typeof AuthenticatedFeedIndexRoute
   '/admin/usuarios/$id': typeof AuthenticatedAdminUsuariosIdRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
+  '/info/$id/aula/$lessonId': typeof InfoIdAulaLessonIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -415,7 +422,7 @@ export interface FileRoutesByTo {
   '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
-  '/info/$id': typeof InfoIdRoute
+  '/info/$id': typeof InfoIdRouteWithChildren
   '/lojista/$id': typeof LojistaIdRoute
   '/parceiro/$id': typeof ParceiroIdRoute
   '/perfil/$userId': typeof PerfilUserIdRoute
@@ -440,6 +447,7 @@ export interface FileRoutesByTo {
   '/feed': typeof AuthenticatedFeedIndexRoute
   '/admin/usuarios/$id': typeof AuthenticatedAdminUsuariosIdRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
+  '/info/$id/aula/$lessonId': typeof InfoIdAulaLessonIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -470,7 +478,7 @@ export interface FileRoutesById {
   '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
-  '/info/$id': typeof InfoIdRoute
+  '/info/$id': typeof InfoIdRouteWithChildren
   '/lojista/$id': typeof LojistaIdRoute
   '/parceiro/$id': typeof ParceiroIdRoute
   '/perfil/$userId': typeof PerfilUserIdRoute
@@ -495,6 +503,7 @@ export interface FileRoutesById {
   '/_authenticated/feed/': typeof AuthenticatedFeedIndexRoute
   '/_authenticated/admin/usuarios/$id': typeof AuthenticatedAdminUsuariosIdRoute
   '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
+  '/info/$id/aula/$lessonId': typeof InfoIdAulaLessonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -550,6 +559,7 @@ export interface FileRouteTypes {
     | '/feed/'
     | '/admin/usuarios/$id'
     | '/api/public/push/dispatch'
+    | '/info/$id/aula/$lessonId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -601,6 +611,7 @@ export interface FileRouteTypes {
     | '/feed'
     | '/admin/usuarios/$id'
     | '/api/public/push/dispatch'
+    | '/info/$id/aula/$lessonId'
   id:
     | '__root__'
     | '/'
@@ -655,6 +666,7 @@ export interface FileRouteTypes {
     | '/_authenticated/feed/'
     | '/_authenticated/admin/usuarios/$id'
     | '/api/public/push/dispatch'
+    | '/info/$id/aula/$lessonId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -667,7 +679,7 @@ export interface RootRouteChildren {
   ClienteIdRoute: typeof ClienteIdRoute
   DashboardLojistaRoute: typeof DashboardLojistaRoute
   DashboardPrestadorRoute: typeof DashboardPrestadorRoute
-  InfoIdRoute: typeof InfoIdRoute
+  InfoIdRoute: typeof InfoIdRouteWithChildren
   LojistaIdRoute: typeof LojistaIdRoute
   ParceiroIdRoute: typeof ParceiroIdRoute
   PerfilUserIdRoute: typeof PerfilUserIdRoute
@@ -1030,6 +1042,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaCategoriasRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/info/$id/aula/$lessonId': {
+      id: '/info/$id/aula/$lessonId'
+      path: '/aula/$lessonId'
+      fullPath: '/info/$id/aula/$lessonId'
+      preLoaderRoute: typeof InfoIdAulaLessonIdRouteImport
+      parentRoute: typeof InfoIdRoute
+    }
     '/api/public/push/dispatch': {
       id: '/api/public/push/dispatch'
       path: '/api/public/push/dispatch'
@@ -1184,6 +1203,17 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface InfoIdRouteChildren {
+  InfoIdAulaLessonIdRoute: typeof InfoIdAulaLessonIdRoute
+}
+
+const InfoIdRouteChildren: InfoIdRouteChildren = {
+  InfoIdAulaLessonIdRoute: InfoIdAulaLessonIdRoute,
+}
+
+const InfoIdRouteWithChildren =
+  InfoIdRoute._addFileChildren(InfoIdRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
@@ -1194,7 +1224,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClienteIdRoute: ClienteIdRoute,
   DashboardLojistaRoute: DashboardLojistaRoute,
   DashboardPrestadorRoute: DashboardPrestadorRoute,
-  InfoIdRoute: InfoIdRoute,
+  InfoIdRoute: InfoIdRouteWithChildren,
   LojistaIdRoute: LojistaIdRoute,
   ParceiroIdRoute: ParceiroIdRoute,
   PerfilUserIdRoute: PerfilUserIdRoute,
