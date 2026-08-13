@@ -39,7 +39,15 @@ import {
 import { toast } from 'sonner';
 import { CreatorProductForm } from '@/components/info-products/CreatorProductForm';
 import { useCurrentUserId } from '@/lib/current-user';
-import { getCreatorSalesStats, getCreatorSalesList, exportSalesCSV } from '@/lib/info-products/v2-monetization';
+import { getCreatorSalesStats, getCreatorSalesList, exportSalesCSV, getSaleDetails } from '@/lib/info-products/v2-monetization';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
