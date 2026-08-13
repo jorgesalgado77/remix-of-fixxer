@@ -43,7 +43,12 @@ import {
   saveMonetizationConfig, 
   type MonetizationConfig 
 } from "@/lib/monetization";
-import { exportCertificatesCSV } from "@/lib/info-products/v2-monetization";
+import { 
+  exportCertificatesCSV,
+  exportAffiliateEvents,
+  resolveFraudEvent
+} from "@/lib/info-products/v2-monetization";
+
 
 export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   beforeLoad: requireAdmin,
