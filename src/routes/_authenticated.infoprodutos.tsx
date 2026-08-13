@@ -199,6 +199,7 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
   return (
     <button
       onClick={onClick}
+      aria-label={label}
       className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
         active 
           ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(0,255,135,0.2)]' 
@@ -206,10 +207,11 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
       }`}
     >
       {icon}
-      {label}
+      <span>{label}</span>
     </button>
   );
 }
+
 
 function EmptyState() {
   return (
