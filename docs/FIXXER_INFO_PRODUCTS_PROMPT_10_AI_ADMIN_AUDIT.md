@@ -6,7 +6,7 @@ Implementação do Painel Administrativo Master para Info Produtos, incluindo co
 ## Componentes Implementados
 1.  **Server Functions ()**:
     *   : Busca segura de configurações de IA, ofuscando chaves no frontend.
-    *   : Persistência segura no Supabase via .
+    *   : Persistência segura no Supabase.
     *   : Teste real de conectividade com provedores.
 2.  **Painel Administrativo ()**:
     *   Abas: Config, Taxas, IA, Storage, Moderação, Produtos, Vendas, Criadores, Auditoria.
@@ -17,8 +17,8 @@ Implementação do Painel Administrativo Master para Info Produtos, incluindo co
     *   Inclusão do card "Info Produtos" na dashboard principal do Admin Master.
 
 ## Segurança & Resiliência
-*   **Secrets**: Chaves de API nunca são expostas em texto claro no frontend (ofuscação com ).
-*   **RLS**: Acesso restrito via  e validação no server-side.
+*   **Secrets**: Chaves de API nunca são expostas em texto claro no frontend (ofuscação com `sk-****`).
+*   **RLS**: Acesso restrito via `requireAdmin` e validação no server-side.
 *   **Fallback**: Lógica preparada para tentar OpenAI -> Perplexity -> Gemini.
 *   **UX**: Tooltips e feedbacks claros para ações administrativas.
 
