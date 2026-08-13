@@ -14,20 +14,27 @@ import {
 import { AIAssistantButton } from './AIAssistantButton';
 import { toast } from 'sonner';
 
+interface ProductFormData {
+  title: string;
+  description_short: string;
+  description: string;
+  category: 'ebook' | 'video' | 'course';
+  price: number;
+}
+
 interface CreatorProductFormProps {
   onClose: () => void;
-  onSave: (data: any) => void;
-  initialData?: any;
+  onSave: (data: ProductFormData) => void;
+  initialData?: Partial<ProductFormData>;
 }
 
 export function CreatorProductForm({ onClose, onSave, initialData }: CreatorProductFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormData>({
     title: initialData?.title || '',
     description_short: initialData?.description_short || '',
     description: initialData?.description || '',
     category: initialData?.category || 'ebook',
     price: initialData?.price || 0,
-    ...initialData
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -75,12 +82,12 @@ export function CreatorProductForm({ onClose, onSave, initialData }: CreatorProd
               <AIAssistantButton 
                 type="title" 
                 context={{ currentValue: formData.title, category: formData.category }}
-                onAccept={(val) => setFormData(prev => ({ ...prev, title: val }))}
+                onAccept={(val: string) => setFormData((prev: ProductFormData) => ({ ...prev, title: val }))}
               />
             </div>
             <Input 
               value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: ProductFormData) => ({ ...prev, title: e.target.value }))}
               placeholder="Ex: O Guia Definitivo do Fixxer"
               className="bg-white/5 border-white/10 rounded-2xl h-14 text-white font-bold"
             />
@@ -92,12 +99,12 @@ export function CreatorProductForm({ onClose, onSave, initialData }: CreatorProd
               <AIAssistantButton 
                 type="description_short" 
                 context={{ title: formData.title, category: formData.category }}
-                onAccept={(val) => setFormData(prev => ({ ...prev, description_short: val }))}
+                onAccept={(val: string) => setFormData((prev: ProductFormData) => ({ ...prev, description_short: val }))}
               />
             </div>
             <Textarea 
               value={formData.description_short}
-              onChange={(e) => setFormData(prev => ({ ...prev, description_short: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((prev: ProductFormData) => ({ ...prev, description_short: e.target.value }))}
               placeholder="Um resumo de 1-2 frases para o card do marketplace."
               className="bg-white/5 border-white/10 rounded-2xl min-h-[80px] text-white"
             />
@@ -109,12 +116,12 @@ export function CreatorProductForm({ onClose, onSave, initialData }: CreatorProd
               <AIAssistantButton 
                 type="description" 
                 context={{ title: formData.title, shortDesc: formData.description_short }}
-                onAccept={(val) => setFormData(prev => ({ ...prev, description: val }))}
+                onAccept={(val: string) => setFormData((prev: ProductFormData) => ({ ...prev, description: val }))}
               />
             </div>
             <Textarea 
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((prev: ProductFormData) => ({ ...prev, description: e.target.value }))}
               placeholder="Detalhe todo o valor que seu produto entrega."
               className="bg-white/5 border-white/10 rounded-2xl min-h-[160px] text-white"
             />
@@ -134,7 +141,7 @@ export function CreatorProductForm({ onClose, onSave, initialData }: CreatorProd
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, category: cat.id as any }))}
+                  onClick={() => setFormData((prev: ProductFormData) => ({ ...prev, category: cat.id as any }))}
                   className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all gap-2 ${
                     formData.category === cat.id 
                       ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(0,255,135,0.1)]' 
@@ -154,9 +161,9 @@ export function CreatorProductForm({ onClose, onSave, initialData }: CreatorProd
               <AIAssistantButton 
                 type="price_recommendation" 
                 context={{ title: formData.title, category: formData.category }}
-                onAccept={(val) => {
-                  const match = val.match(/\\d+/);
-                  if (match) setFormData(prev => ({ ...prev, price: parseInt(match[0]) }));
+                onAccept={(val: string) => {
+                  const match = val.match(/\d+/);
+                  if (match) setFormData((prev: ProductFormData) => ({ ...prev, price: parseInt(match[0]) }));
                 }}
                 label="Sugestão de Preço"
               />
@@ -166,7 +173,7 @@ export function CreatorProductForm({ onClose, onSave, initialData }: CreatorProd
               <Input 
                 type="number"
                 value={formData.price}
-                onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: ProductFormData) => ({ ...prev, price: parseFloat(e.target.value) }))}
                 className="bg-white/5 border-white/10 rounded-2xl h-14 pl-12 text-white font-black text-xl italic"
               />
             </div>
