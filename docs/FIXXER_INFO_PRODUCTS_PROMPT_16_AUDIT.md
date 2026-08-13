@@ -18,7 +18,9 @@ Implementação do dashboard de vendas reais e correção de layout no Creator S
 ### Backend (Service)
 - Expandido o service `src/lib/info-products/v2-monetization.ts` com:
   - `getCreatorSalesStats`: Agregação de dados financeiros.
-  - `getCreatorSalesList`: Busca paginada de vendas com joins (produtos e compradores).
+  - `getCreatorSalesList`: Busca paginada e filtrada de vendas com joins (produtos e compradores).
+  - `getSaleDetails`: Detalhamento completo de uma transação específica incluindo ofertas e cupons.
+
   - `exportSalesCSV`: Geração de relatório CSV respeitando RLS.
 
 ### Banco de Dados (Supabase)
