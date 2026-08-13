@@ -106,6 +106,6 @@ export function ProfileHeader({
       </header>
 
       <ProfileSummaryCard role={role} variant="auto" className="md:hidden mb-8" />
-    </>
+    </div>
   );
 }
