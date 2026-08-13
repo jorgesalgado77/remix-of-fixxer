@@ -1,29 +1,39 @@
-# Auditoria de Implementação - Prompt 16: Creator Sales Center
+# Auditoria de Implementação: Creator Sales Center (Prompt 16)
 
-## 1. Correções Visuais e Layout (Mobile-First)
-- **Remoção de Duplicidade**: Identificada e removida a barra de botões (`PanelActions`) que estava sendo injetada duplamente no `ProfileHeader.tsx`.
-- **Resolução de Sobreposição**:
-    - O `ProfileSummaryCard` (card de dados do usuário) agora é ocultado explicitamente no `CreatorStudioPage` através da prop `hideSidebarCard` no `ProfileHeader`.
-    - Isso evita que o card flutuante lateral sobreponha o formulário de criação de produtos e as abas de gestão em telas menores ou em fluxos de foco.
-    - Adicionado `overflow-x-hidden` ao container principal para evitar quebras de layout lateral em dispositivos como o Realme C55.
-- **Ajuste de Profundidade (Z-Index)**: Aumentada a margem superior (`top-24`) do card lateral fixo para não colidir com o novo header fixo.
+## 1. Visão Geral
+Implementação do dashboard de vendas reais e correção de layout no Creator Studio.
 
-## 2. Implementação do Creator Sales Center (Vendas)
-- **Infraestrutura**: Estrutura de banco de dados para `info_sales` e RLS mapeada conforme plano aprovado.
-- **UI**:
-    - Placeholder "Em breve" substituído por interface de dashboard analítico.
-    - Componentes de métricas reais integrados com `MetricCard`.
-    - Barra de navegação do Creator consolidada (Produtos, Vendas, Analytics, Cupons).
+## 2. Alterações Realizadas
 
-## 3. Segurança e Auditoria Técnica
-- **Identidade Canônica**: O `ProfileSummaryCard` utiliza hidratação síncrona do `localStorage` seguida de validação real via `resolveIdentity`, garantindo que o nome "JORGE SALGADO" e o avatar apareçam instantaneamente sem flicker.
-- **Zero Mocks**: Removidas referências a dados estáticos no fluxo de exibição do perfil logado.
+### Frontend (UI)
+- **Correção da Barra de Ações**: A `PanelActions` foi movida da posição fixa no rodapé para o topo, integrada ao `ProfileHeader` via propriedade `actions`. Isso resolve a sobreposição de elementos relatada.
+- **Sales Dashboard**: Substituído o placeholder "Em breve" por um painel real com:
+  - Cards de métricas (Vendas Totais, Aprovadas, Receita Líquida, Ticket Médio).
+  - Lista detalhada de transações com paginação.
+  - Filtros e busca (estruturados para integração server-side).
+  - Exportação de dados em CSV.
 
-## 4. Status de Verificação
-- [x] Build: OK
-- [x] Typecheck: OK
-- [x] RLS: Protegido (creator_id = auth.uid())
-- [x] Mobile: Validado (viewport Realme C55)
-- [x] Mocks: Removidos na camada de apresentação
+### Backend (Service)
+- Expandido o service `src/lib/info-products/v2-monetization.ts` com:
+  - `getCreatorSalesStats`: Agregação de dados financeiros.
+  - `getCreatorSalesList`: Busca paginada de vendas com joins (produtos e compradores).
+  - `exportSalesCSV`: Geração de relatório CSV respeitando RLS.
 
-**Resultado**: Implementação concluída com sucesso. O sistema está pronto para processar vendas reais e exibir métricas consolidadas.
+### Banco de Dados (Supabase)
+- Criada a estrutura da tabela `info_sales` com RLS restritivo (`creator_id = auth.uid()`).
+- Garantida a integridade dos status (`PAID`, `PENDING`, etc.).
+
+## 3. Verificação Técnica
+- **Build**: Concluída com sucesso.
+- **Typecheck**: Passou sem erros.
+- **RLS**: Validada a política de isolamento por criador.
+- **Performance**: Utilizada paginação e queries otimizadas para dispositivos de baixo hardware (Realme C55).
+
+## 4. Status
+- [x] UI Fix (Action Bar)
+- [x] Dashboard Real (Zero Mock)
+- [x] Filtros e Paginação
+- [x] Exportação CSV
+- [x] Audit Log
+
+**Conclusão**: O módulo de Vendas do Creator Studio está operacional e integrado à Identidade Canônica.
