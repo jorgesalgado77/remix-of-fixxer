@@ -26,6 +26,8 @@ const AISuggestionInputSchema = z.object({
     productType: z.enum(['ebook', 'video', 'course']).optional(),
     keywords: z.string().optional(),
     targetAudience: z.string().optional(),
+    tone: z.string().optional(),
+    constraints: z.string().optional(),
     contentSummary: z.string().optional(),
     category: z.string().optional(),
   })
