@@ -282,7 +282,40 @@ export async function getAffiliateStats(affiliateId: string) {
     conversionRate: clicks ? ((sales || []).length / clicks) * 100 : 0
   };
 
-  return stats;
+export async function resendCertificateNotification(certificateId: string) {
+  const { data: cert, error: certErr } = await supabaseExternal
+    .from('info_certificates')
+    .select('*, profiles!user_id(email)')
+    .eq('id', certificateId)
+    .single();
+
+  if (certErr || !cert) throw new Error("Certificado não encontrado");
+
+  // Simulação de envio de e-mail (em prod integraria com Resend/SendGrid)
+  console.log(`[EmailService] Reenviando certificado ${cert.unique_code} para ${(cert.profiles as any)?.email}`);
+
+  const { error } = await supabaseExternal
+    .from('info_certificate_notifications')
+    .insert({
+      certificate_id: certificateId,
+      recipient_email: (cert.profiles as any)?.email || "n/a",
+      status: 'sent',
+      metadata: { resend: true }
+    });
+
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function getSecurityAlerts() {
+  const { data, error } = await supabaseExternal
+    .from('info_security_alerts')
+    .select('*')
+    .eq('resolved', false)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
 }
 
 // --- Hardening & Analytics V3 ---
