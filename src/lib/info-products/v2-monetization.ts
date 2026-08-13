@@ -1,6 +1,20 @@
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { z } from "zod";
 
+// --- Afiliados ---
+export const AffiliateSchema = z.object({
+  id: z.string().uuid(),
+  creator_id: z.string().uuid(),
+  product_id: z.string().uuid().nullable(),
+  affiliate_id: z.string().uuid(),
+  commission_percent: z.number(),
+  status: z.enum(['active', 'paused', 'banned']),
+  tracking_code: z.string(),
+  created_at: z.string()
+});
+
+export type Affiliate = z.infer<typeof AffiliateSchema>;
+
 // --- Certificados ---
 export const CertificateSchema = z.object({
   id: z.string().uuid(),
@@ -169,4 +183,52 @@ export async function getInfoModuleAnalytics(params: {
     totalRevenue: 85400.50,
     period: params.period || '30d'
   };
+}
+
+// --- Afiliados & V3 Readiness ---
+
+export async function getCreatorAffiliates(creatorId: string) {
+  const { data, error } = await supabaseExternal
+    .from('info_affiliates')
+    .select('*, profiles!affiliate_id(display_name, avatar_url)')
+    .eq('creator_id', creatorId);
+    
+  if (error) throw error;
+  return data;
+}
+
+export async function createAffiliateLink(params: {
+  creatorId: string;
+  productId?: string;
+  affiliateId: string;
+  commission: number;
+}) {
+  const trackingCode = `AFF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  
+  const { data, error } = await supabaseExternal
+    .from('info_affiliates')
+    .insert({
+      creator_id: params.creatorId,
+      product_id: params.productId || null,
+      affiliate_id: params.affiliateId,
+      commission_percent: params.commission,
+      tracking_code: trackingCode,
+      status: 'active'
+    })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data;
+}
+
+export async function getAffiliateSales(affiliateId: string) {
+  const { data, error } = await supabaseExternal
+    .from('info_affiliate_sales')
+    .select('*, info_products(title)')
+    .eq('affiliate_id', affiliateId)
+    .order('created_at', { ascending: false });
+    
+  if (error) throw error;
+  return data;
 }
