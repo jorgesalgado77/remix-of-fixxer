@@ -1,60 +1,59 @@
-# Plano - INFO PRODUTOS PROMPT 06 - Direito de Acesso e Minha Biblioteca
+# Plano - INFO PRODUTOS PROMPT 07 - FIXXER Secure Player & Progresso
 
-Implementação do controle de direitos de acesso (Entitlements) e da visualização centralizada de produtos adquiridos.
+Implementação do player de vídeo seguro com gestão de progresso e navegação por módulos/aulas.
 
 ## 1. Banco de Dados (Supabase Externo)
-Criar a tabela `info_product_entitlements` para gerir o acesso aos conteúdos.
+Criar a tabela `info_product_progress` para persistir o avanço do usuário.
 
 ```sql
-CREATE TABLE public.info_product_entitlements (
+CREATE TABLE public.info_product_progress (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     product_id uuid REFERENCES public.info_products(id) ON DELETE CASCADE NOT NULL,
-    purchase_id uuid REFERENCES public.financial_transactions(id) ON DELETE SET NULL,
-    status text NOT NULL DEFAULT 'active', -- active, revoked, expired
-    granted_at timestamptz DEFAULT now() NOT NULL,
-    revoked_at timestamptz,
-    expiration timestamptz,
-    metadata jsonb DEFAULT '{}'::jsonb,
-    UNIQUE(user_id, product_id)
+    lesson_id uuid REFERENCES public.info_product_lessons(id) ON DELETE CASCADE NOT NULL,
+    last_position_seconds integer DEFAULT 0,
+    is_completed boolean DEFAULT false,
+    updated_at timestamptz DEFAULT now() NOT NULL,
+    UNIQUE(user_id, lesson_id)
 );
 
-GRANT SELECT ON public.info_product_entitlements TO authenticated;
-GRANT ALL ON public.info_product_entitlements TO service_role;
+GRANT SELECT, INSERT, UPDATE ON public.info_product_progress TO authenticated;
+GRANT ALL ON public.info_product_progress TO service_role;
 
-ALTER TABLE public.info_product_entitlements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.info_product_progress ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view their own entitlements"
-ON public.info_product_entitlements
-FOR SELECT
+CREATE POLICY "Users can manage their own progress"
+ON public.info_product_progress
+FOR ALL
 TO authenticated
 USING (auth.uid() = user_id);
 ```
 
-## 2. Lógica de Negócio e Serviços
-- **Serviço de Entitlement (`src/lib/info-products/entitlement-service.ts`)**:
-  - Função para verificar se um usuário possui acesso a um produto (`checkUserEntitlement`).
-  - Função para buscar todos os produtos com acesso válido para o usuário logado (`getMyLibrary`).
-- **Webhooks (`src/routes/api/public/asaas.ts`)**:
-  - Garantir que a liberação do entitlement ocorra apenas no evento `PAYMENT_CONFIRMED` ou `PAYMENT_RECEIVED`.
-  - Implementar idempotência usando `upsert` na tabela de entitlements.
+## 2. Componentes e UI
+- **FIXXER Player (`src/components/info-products/FixxerPlayer.tsx`)**:
+  - Baseado em HTML5 Video nativo (otimizado para mobile).
+  - Custom UI: Play/Pause, Volume, Progresso, Fullscreen, Velocidade (0.5x a 2x).
+  - Watermark visual discreto com ID do usuário (proteção V1).
+  - Próxima/Anterior integrados.
+- **Navegação de Curso (`src/components/info-products/CourseCurriculum.tsx`)**:
+  - Lista de módulos colapsável.
+  - Indicadores de conclusão por aula.
+- **Página de Aula (`src/routes/info.$id.aula.$lessonId.tsx`)**:
+  - Layout focado no conteúdo.
+  - Sidebar ou drawer (mobile) para currículo.
 
-## 3. Interface do Usuário (Frontend)
-- **Minha Biblioteca (`src/routes/_authenticated.biblioteca.tsx`)**:
-  - Nova rota autenticada para listar produtos adquiridos.
-  - Exibição de cards com: capa, título, criador, progresso e botão de ação dinâmico.
-  - Lógica do botão de ação:
-    - Ebook: "Abrir".
-    - Vídeo/Curso: "Continuar" (da última aula/posição).
-- **Proteção de Conteúdo**:
-  - A página de detalhes do produto (`src/routes/info.$id.tsx`) e o player (`InfoSecurePlayer`) devem verificar o entitlement antes de solicitar URLs assinadas.
+## 3. Lógica de Persistência
+- **Sincronização de Progresso (`src/lib/info-products/progress-service.ts`)**:
+  - Função `updateProgress` com debounce de 10-15 segundos.
+  - Salvar obrigatoriamente no evento `ended` do vídeo.
+  - Recuperar `last_position_seconds` ao carregar a aula.
 
-## 4. Segurança e Auditoria
-- **Revogação**: Preparar sistema para lidar com `status = 'revoked'` (estornos/fraude).
-- **Downloads**: Verificação dupla (Entitlement + Permissão de download no arquivo).
-- **Documentação**: Gerar `docs/FIXXER_INFO_PRODUCTS_PROMPT_06_AUDIT.md`.
+## 4. Otimização Realme C55
+- **Lazy Loading**: Não carregar o componente de vídeo até a interação ou visibilidade.
+- **Preload**: Definido como `metadata` para economizar banda e CPU.
+- **Memory Management**: Limpeza de referências de vídeo ao trocar de aula.
 
-## Detalhes Técnicos
-- Utilizar `tanstack-query` para cache da biblioteca.
-- Reutilizar `IdentityService` para exibir dados dos criadores nos cards da biblioteca.
-- Garantir que o `InfoSecurePlayer` não carregue o arquivo se não houver um entitlement ativo retornado pelo backend.
+## 5. Auditoria
+- Criar `docs/FIXXER_INFO_PRODUCTS_PROMPT_07_AUDIT.md`.
+- Testar troca rápida de aulas.
+- Verificar persistência pós-refresh.
