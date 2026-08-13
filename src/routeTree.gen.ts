@@ -55,6 +55,7 @@ import { Route as AuthenticatedChatPeerIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAgendaIdRouteImport } from './routes/_authenticated.agenda.$id'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated.admin.usuarios'
 import { Route as AuthenticatedAdminMonetizacaoRouteImport } from './routes/_authenticated.admin/monetizacao'
+import { Route as AuthenticatedAdminInfoprodutosRouteImport } from './routes/_authenticated.admin/infoprodutos'
 import { Route as AuthenticatedAdminDocumentosLegadosRouteImport } from './routes/_authenticated.admin.documentos-legados'
 import { Route as AuthenticatedAdminDisputasRouteImport } from './routes/_authenticated.admin.disputas'
 import { Route as AuthenticatedAdminComunicacaoRouteImport } from './routes/_authenticated.admin/comunicacao'
@@ -302,6 +303,12 @@ const AuthenticatedAdminMonetizacaoRoute =
     path: '/monetizacao',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminInfoprodutosRoute =
+  AuthenticatedAdminInfoprodutosRouteImport.update({
+    id: '/infoprodutos',
+    path: '/infoprodutos',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminDocumentosLegadosRoute =
   AuthenticatedAdminDocumentosLegadosRouteImport.update({
     id: '/documentos-legados',
@@ -382,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/admin/comunicacao': typeof AuthenticatedAdminComunicacaoRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/admin/documentos-legados': typeof AuthenticatedAdminDocumentosLegadosRoute
+  '/admin/infoprodutos': typeof AuthenticatedAdminInfoprodutosRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
@@ -434,6 +442,7 @@ export interface FileRoutesByTo {
   '/admin/comunicacao': typeof AuthenticatedAdminComunicacaoRoute
   '/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/admin/documentos-legados': typeof AuthenticatedAdminDocumentosLegadosRoute
+  '/admin/infoprodutos': typeof AuthenticatedAdminInfoprodutosRoute
   '/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
   '/agenda/$id': typeof AuthenticatedAgendaIdRoute
@@ -490,6 +499,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/comunicacao': typeof AuthenticatedAdminComunicacaoRoute
   '/_authenticated/admin/disputas': typeof AuthenticatedAdminDisputasRoute
   '/_authenticated/admin/documentos-legados': typeof AuthenticatedAdminDocumentosLegadosRoute
+  '/_authenticated/admin/infoprodutos': typeof AuthenticatedAdminInfoprodutosRoute
   '/_authenticated/admin/monetizacao': typeof AuthenticatedAdminMonetizacaoRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRouteWithChildren
   '/_authenticated/agenda/$id': typeof AuthenticatedAgendaIdRoute
@@ -546,6 +556,7 @@ export interface FileRouteTypes {
     | '/admin/comunicacao'
     | '/admin/disputas'
     | '/admin/documentos-legados'
+    | '/admin/infoprodutos'
     | '/admin/monetizacao'
     | '/admin/usuarios'
     | '/agenda/$id'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/admin/comunicacao'
     | '/admin/disputas'
     | '/admin/documentos-legados'
+    | '/admin/infoprodutos'
     | '/admin/monetizacao'
     | '/admin/usuarios'
     | '/agenda/$id'
@@ -653,6 +665,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/comunicacao'
     | '/_authenticated/admin/disputas'
     | '/_authenticated/admin/documentos-legados'
+    | '/_authenticated/admin/infoprodutos'
     | '/_authenticated/admin/monetizacao'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/agenda/$id'
@@ -1014,6 +1027,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMonetizacaoRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/infoprodutos': {
+      id: '/_authenticated/admin/infoprodutos'
+      path: '/infoprodutos'
+      fullPath: '/admin/infoprodutos'
+      preLoaderRoute: typeof AuthenticatedAdminInfoprodutosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/documentos-legados': {
       id: '/_authenticated/admin/documentos-legados'
       path: '/documentos-legados'
@@ -1085,6 +1105,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminComunicacaoRoute: typeof AuthenticatedAdminComunicacaoRoute
   AuthenticatedAdminDisputasRoute: typeof AuthenticatedAdminDisputasRoute
   AuthenticatedAdminDocumentosLegadosRoute: typeof AuthenticatedAdminDocumentosLegadosRoute
+  AuthenticatedAdminInfoprodutosRoute: typeof AuthenticatedAdminInfoprodutosRoute
   AuthenticatedAdminMonetizacaoRoute: typeof AuthenticatedAdminMonetizacaoRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRouteWithChildren
 }
@@ -1096,6 +1117,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminDisputasRoute: AuthenticatedAdminDisputasRoute,
   AuthenticatedAdminDocumentosLegadosRoute:
     AuthenticatedAdminDocumentosLegadosRoute,
+  AuthenticatedAdminInfoprodutosRoute: AuthenticatedAdminInfoprodutosRoute,
   AuthenticatedAdminMonetizacaoRoute: AuthenticatedAdminMonetizacaoRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRouteWithChildren,
 }
