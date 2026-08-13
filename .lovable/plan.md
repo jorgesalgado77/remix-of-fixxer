@@ -1,41 +1,60 @@
-# Plano de Implementação — FIXXER INFO PRODUTOS — PROMPT 01
+# Plano - INFO PRODUTOS PROMPT 06 - Direito de Acesso e Minha Biblioteca
 
-Este plano detalha a criação da base de dados canônica para o módulo de INFO PRODUTOS no Supabase externo, seguindo rigorosamente as Regras Mestras FIXXER.
+Implementação do controle de direitos de acesso (Entitlements) e da visualização centralizada de produtos adquiridos.
 
-## Alterações de Usuário
+## 1. Banco de Dados (Supabase Externo)
+Criar a tabela `info_product_entitlements` para gerir o acesso aos conteúdos.
 
-### Banco de Dados (Supabase Externo)
-Criação de tabelas com prefixo `info_` para evitar conflitos e garantir isolamento, mantendo integridade com a tabela `profiles` existente.
-
-1.  **info_products**: Tabela mestre para produtos digitais (Ebooks, Cursos, Mentorias).
-2.  **info_product_modules**: Estrutura de módulos para cursos.
-3.  **info_product_lessons**: Aulas vinculadas aos módulos.
-4.  **info_product_files**: Gestão de ativos (PDFs, vídeos, links) com suporte a Storage privado.
-5.  **info_product_previews**: Conteúdo gratuito para degustação.
-6.  **info_product_offers**: Gestão de preços, moedas e validades.
-7.  **info_product_reviews**: Avaliações vinculadas a compras reais.
-
-### Segurança e Auditoria
-*   **RLS (Row Level Security)**: Políticas rigorosas para que apenas criadores editem seus produtos e apenas compradores acessem conteúdos pagos (via entitlements futuros).
-*   **Indices e FKs**: Otimização para performance em dispositivos de entrada (Realme C55).
-*   **Relatório de Auditoria**: Documentação técnica detalhada em `docs/FIXXER_INFO_PRODUCTS_PROMPT_01_AUDIT.md`.
-
-## Detalhes Técnicos
-
-### Estrutura de Tabelas (SQL)
 ```sql
--- Exemplo de relacionamento canônico
-ALTER TABLE public.info_products 
-ADD CONSTRAINT info_products_creator_id_fkey 
-FOREIGN KEY (creator_id) REFERENCES public.profiles(id);
+CREATE TABLE public.info_product_entitlements (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    product_id uuid REFERENCES public.info_products(id) ON DELETE CASCADE NOT NULL,
+    purchase_id uuid REFERENCES public.financial_transactions(id) ON DELETE SET NULL,
+    status text NOT NULL DEFAULT 'active', -- active, revoked, expired
+    granted_at timestamptz DEFAULT now() NOT NULL,
+    revoked_at timestamptz,
+    expiration timestamptz,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    UNIQUE(user_id, product_id)
+);
+
+GRANT SELECT ON public.info_product_entitlements TO authenticated;
+GRANT ALL ON public.info_product_entitlements TO service_role;
+
+ALTER TABLE public.info_product_entitlements ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own entitlements"
+ON public.info_product_entitlements
+FOR SELECT
+TO authenticated
+USING (auth.uid() = user_id);
 ```
 
-### Componentes e Hooks
-*   Reuso do `IdentityService` para identificação de criadores.
-*   Reuso do `use-media-upload` para upload de capas e arquivos.
-*   Uso do prefixo `info_` em todos os novos objetos de banco.
+## 2. Lógica de Negócio e Serviços
+- **Serviço de Entitlement (`src/lib/info-products/entitlement-service.ts`)**:
+  - Função para verificar se um usuário possui acesso a um produto (`checkUserEntitlement`).
+  - Função para buscar todos os produtos com acesso válido para o usuário logado (`getMyLibrary`).
+- **Webhooks (`src/routes/api/public/asaas.ts`)**:
+  - Garantir que a liberação do entitlement ocorra apenas no evento `PAYMENT_CONFIRMED` ou `PAYMENT_RECEIVED`.
+  - Implementar idempotência usando `upsert` na tabela de entitlements.
 
-### Verificações Pós-Execução
-1.  Build e Typecheck.
-2.  Validação de RLS via SQL.
-3.  Verificação de redundâncias ou mocks.
+## 3. Interface do Usuário (Frontend)
+- **Minha Biblioteca (`src/routes/_authenticated.biblioteca.tsx`)**:
+  - Nova rota autenticada para listar produtos adquiridos.
+  - Exibição de cards com: capa, título, criador, progresso e botão de ação dinâmico.
+  - Lógica do botão de ação:
+    - Ebook: "Abrir".
+    - Vídeo/Curso: "Continuar" (da última aula/posição).
+- **Proteção de Conteúdo**:
+  - A página de detalhes do produto (`src/routes/info.$id.tsx`) e o player (`InfoSecurePlayer`) devem verificar o entitlement antes de solicitar URLs assinadas.
+
+## 4. Segurança e Auditoria
+- **Revogação**: Preparar sistema para lidar com `status = 'revoked'` (estornos/fraude).
+- **Downloads**: Verificação dupla (Entitlement + Permissão de download no arquivo).
+- **Documentação**: Gerar `docs/FIXXER_INFO_PRODUCTS_PROMPT_06_AUDIT.md`.
+
+## Detalhes Técnicos
+- Utilizar `tanstack-query` para cache da biblioteca.
+- Reutilizar `IdentityService` para exibir dados dos criadores nos cards da biblioteca.
+- Garantir que o `InfoSecurePlayer` não carregue o arquivo se não houver um entitlement ativo retornado pelo backend.
