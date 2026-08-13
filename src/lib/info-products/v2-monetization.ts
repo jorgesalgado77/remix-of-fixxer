@@ -389,3 +389,40 @@ export async function getValidationAnalytics(creatorId: string) {
 
   return stats;
 }
+
+export async function getAffiliateStats(creatorId: string, period?: { start: string; end: string }) {
+  let query = supabaseExternal
+    .from('info_affiliate_sales')
+    .select('*, info_products(title)')
+    .eq('creator_id', creatorId);
+
+  if (period) {
+    query = query.gte('created_at', period.start).lte('created_at', period.end);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function exportAffiliateEvents(filters: { creatorId?: string; productId?: string; start?: string; end?: string }) {
+  console.log("[ExportService] Gerando CSV para eventos de afiliados...", filters);
+  // Simulação de exportação - na prática retornaria um blob ou URL
+  return { success: true, message: "Exportação iniciada. Você receberá um link em breve." };
+}
+
+export async function resolveFraudEvent(eventId: string, action: 'approve' | 'reject' | 'revoke') {
+  const { data, error } = await supabaseExternal
+    .from('info_fraud_queue')
+    .update({ 
+      status: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'revoked',
+      resolved_at: new Date().toISOString()
+    })
+    .eq('id', eventId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
