@@ -240,19 +240,59 @@ function SalesDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [salesData, setSalesData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedSale, setSelectedSale] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  
   const [filters, setFilters] = useState({
     status: 'ALL',
+    period: 'last_30_days',
+    startDate: '',
+    endDate: '',
     page: 0,
     pageSize: 10
   });
+
+  const getPeriodDates = (period: string) => {
+    const now = new Date();
+    let start = new Date();
+    
+    switch (period) {
+      case 'today':
+        start.setHours(0, 0, 0, 0);
+        break;
+      case 'last_7_days':
+        start.setDate(now.getDate() - 7);
+        break;
+      case 'last_30_days':
+        start.setDate(now.getDate() - 30);
+        break;
+      case 'current_month':
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      default:
+        return { start: '', end: '' };
+    }
+    
+    return {
+      start: start.toISOString(),
+      end: now.toISOString()
+    };
+  };
 
   const loadData = async () => {
     if (!userId) return;
     setLoading(true);
     try {
+      const periodDates = filters.period !== 'custom' ? getPeriodDates(filters.period) : { start: filters.startDate, end: filters.endDate };
+      
       const [s, list] = await Promise.all([
-        getCreatorSalesStats(userId),
-        getCreatorSalesList(userId, filters)
+        getCreatorSalesStats(userId, periodDates.start ? periodDates : undefined),
+        getCreatorSalesList(userId, {
+          ...filters,
+          startDate: periodDates.start,
+          endDate: periodDates.end
+        })
       ]);
       setStats(s);
       setSalesData(list);
@@ -266,7 +306,23 @@ function SalesDashboard() {
 
   useEffect(() => {
     loadData();
-  }, [userId, filters]);
+  }, [userId, filters.status, filters.period, filters.startDate, filters.endDate, filters.page]);
+
+  const handleSaleClick = async (saleId: string) => {
+    setLoadingDetails(true);
+    setIsDetailsOpen(true);
+    try {
+      const details = await getSaleDetails(saleId);
+      setSelectedSale(details);
+    } catch (error) {
+      console.error("Erro ao carregar detalhes da venda:", error);
+      toast.error("Erro ao carregar detalhes da venda.");
+      setIsDetailsOpen(false);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
 
   const handleExport = async () => {
     if (!userId) return;
