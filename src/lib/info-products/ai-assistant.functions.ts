@@ -73,9 +73,29 @@ async function callAIProvider(provider: any, prompt: string) {
   };
 }
 
+// Cache simples em memória (server-side) para evitar chamadas idênticas em curto intervalo
+const aiCache = new Map<string, { result: any, expires: number }>();
+
+export const getAICreatorStats = createServerFn({ method: "GET" })
+  .handler(async () => {
+    // Em um cenário real, buscaríamos o userId do contexto de auth
+    // Por enquanto, simulamos ou buscamos do Supabase se houvesse sessão
+    return {
+      limit: 1000,
+      used: 42,
+      resetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString()
+    };
+  });
+
 export const generateAISuggestion = createServerFn({ method: "POST" })
   .validator((data: unknown) => AISuggestionInputSchema.parse(data))
   .handler(async ({ data }) => {
+    const cacheKey = JSON.stringify(data);
+    const cached = aiCache.get(cacheKey);
+    if (cached && cached.expires > Date.now()) {
+      return cached.result;
+    }
+
     const config = await getSecureAIConfig();
     const sortedProviders = [...config.providers]
       .filter(p => p.enabled && p.apiKey)
@@ -89,14 +109,14 @@ export const generateAISuggestion = createServerFn({ method: "POST" })
       title: "Sugira um título atraente para um info produto...",
       description: "Escreva uma descrição detalhada para um info produto...",
       description_short: "Escreva uma descrição curta e impactante...",
-      course_structure: "Sugira a estrutura completa de módulos e aulas...",
-      modules: "Sugira os módulos principais...",
+      course_structure: "Sugira a estrutura completa de módulos e aulas (módulos, aulas, duração estimada)...",
+      modules: "Sugira os módulos principais para este curso...",
       lessons: "Sugira os nomes das aulas para este módulo...",
-      faq: "Crie uma lista de perguntas frequentes...",
-      tags: "Sugira 5 a 10 tags relevantes...",
-      category: "Recomende a melhor categoria...",
-      sales_copy: "Escreva um texto de vendas persuasivo...",
-      price_recommendation: "Recomende um preço justo..."
+      faq: "Crie uma lista de perguntas frequentes (FAQ) com respostas para este produto...",
+      tags: "Sugira 5 a 10 tags relevantes e otimizadas para SEO...",
+      category: "Recomende a melhor categoria do marketplace para este conteúdo...",
+      sales_copy: "Escreva um texto de vendas persuasivo (copywriting) usando técnicas de gatilhos mentais...",
+      price_recommendation: "Recomende um preço justo baseado no valor percebido e mercado..."
     };
 
     const prompt = `${promptMap[data.type]} Contexto: ${JSON.stringify(data.context)}`;
@@ -106,31 +126,29 @@ export const generateAISuggestion = createServerFn({ method: "POST" })
       try {
         const result = await callAIProvider(provider, prompt);
         
-        // Log de sucesso se habilitado
-        if (config.logsEnabled) {
-          await supabaseExternal.from('system_logs').insert({
-            type: 'ai_assistant_usage',
-            severity: 'info',
-            message: `Sucesso com ${provider.id}`,
-            payload: { provider: provider.id, type: data.type, model: provider.model }
-          });
-        }
-
-        return {
+        const response = {
           suggestion: result.content,
-          provider: provider.name
+          provider: provider.name,
+          timestamp: new Date().toISOString()
         };
+
+        // Salvar no cache (10 minutos)
+        aiCache.set(cacheKey, { 
+          result: response, 
+          expires: Date.now() + 10 * 60 * 1000 
+        });
+
+        // Log de uso no Supabase
+        await supabaseExternal.from('info_ai_usage').insert({
+          provider_id: provider.id,
+          suggestion_type: data.type,
+          tokens_used: result.usage.prompt_tokens + result.usage.completion_tokens,
+          creator_id: '00000000-0000-0000-0000-000000000000' // Placeholder para o criador logado
+        });
+
+        return response;
       } catch (err: any) {
         lastError = err;
-        // Log de erro/fallback
-        if (config.logsEnabled) {
-          await supabaseExternal.from('system_logs').insert({
-            type: 'ai_assistant_fallback',
-            severity: 'warning',
-            message: `Falha no provedor ${provider.id}: ${err.message}`,
-            payload: { provider: provider.id, type: data.type }
-          });
-        }
         continue;
       }
     }
