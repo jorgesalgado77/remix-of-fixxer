@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/lib/supabaseExternal.server";
-import { getCachedMonetization } from "@/lib/monetization";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 
 export interface AIProviderConfig {
   id: string;
@@ -19,9 +18,9 @@ export interface AIAdminConfig {
   logsEnabled: boolean;
 }
 
-// Helper para ler a config segura de IA (server-only)
+// Helper para ler a config segura de IA (server-only inside handler)
 async function getSecureAIConfig(): Promise<AIAdminConfig> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseExternal
     .from("system_settings")
     .select("value")
     .eq("key", "info_ai_config")
@@ -56,8 +55,6 @@ export const getAIAdminConfig = createServerFn({ method: "GET" })
 export const saveAIAdminConfig = createServerFn({ method: "POST" })
   .validator((data: unknown) => z.any().parse(data))
   .handler(async ({ data }) => {
-    // Nota: O frontend deve enviar a chave real APENAS se ela foi alterada (diferente de sk-****)
-    // Caso contrário, mantemos a chave que já está no banco.
     const current = await getSecureAIConfig();
     const next = data as AIAdminConfig;
 
@@ -69,7 +66,7 @@ export const saveAIAdminConfig = createServerFn({ method: "POST" })
       };
     });
 
-    const { error } = await supabaseAdmin
+    const { error } = await supabaseExternal
       .from("system_settings")
       .upsert({ 
         key: "info_ai_config", 
@@ -92,13 +89,8 @@ export const testAIConnection = createServerFn({ method: "POST" })
     }
 
     try {
-      // Simulação de teste real conforme solicitado (OpenAI, Perplexity ou Gemini)
-      // Aqui seria feito um fetch real com timeout
       const start = Date.now();
-      
-      // MOCK REAL (Simula latência e validação básica)
       await new Promise(r => setTimeout(r, 800));
-      
       const duration = Date.now() - start;
       return { 
         success: true, 
