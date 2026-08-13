@@ -1,18 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { getSecureInfoUrl } from '@/lib/info-storage.server';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, Lock, Download } from 'lucide-react';
+import { AlertTriangle, Lock, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-// Importação dinâmica para evitar erro de SSR com PDF.js/canvas
-const Viewer = React.lazy(() => import('@react-pdf-viewer/core').then(m => ({ default: m.Viewer })));
-const Worker = React.lazy(() => import('@react-pdf-viewer/core').then(m => ({ default: m.Worker })));
-const defaultLayoutPlugin = React.lazy(() => import('@react-pdf-viewer/default-layout').then(m => ({ default: m.defaultLayoutPlugin })));
-
-
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+
+// Usamos importação dinâmica pura para os componentes que dependem de canvas/pdf.js no servidor
+const PdfViewerContainer = React.lazy(async () => {
+  const [core, layout] = await Promise.all([
+    import('@react-pdf-viewer/core'),
+    import('@react-pdf-viewer/default-layout')
+  ]);
+  
+  const { Worker, Viewer } = core;
+  const { defaultLayoutPlugin } = layout;
+
+  return {
+    default: ({ fileUrl, title }: { fileUrl: string; title?: string }) => {
+      const defaultLayoutPluginInstance = defaultLayoutPlugin({
+        sidebarTabs: () => [], 
+      });
+
+      return (
+        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+          <Viewer
+            fileUrl={fileUrl}
+            plugins={[defaultLayoutPluginInstance]}
+            theme="dark"
+          />
+        </Worker>
+      );
+    }
+  };
+});
 
 interface InfoPdfReaderProps {
   productId: string;
@@ -25,7 +48,7 @@ interface InfoPdfReaderProps {
 /**
  * Leitor de PDF Seguro (Prompt 08).
  * Integrado com URLs assinadas e controle de entitlement.
- * Otimizado para Realme C55 (lazy loading de páginas).
+ * Otimizado para Realme C55 (lazy loading e render condicional).
  */
 export function InfoPdfReader({ 
   productId, 
@@ -37,16 +60,14 @@ export function InfoPdfReader({
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const defaultLayoutPluginInstance = defaultLayoutPlugin({
-    sidebarTabs: (defaultTabs) => [], // Simplifica para mobile/low-end
-  });
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     async function loadSecureUrl() {
       try {
         setLoading(true);
-        // @ts-ignore - Server Function call pattern
+        // @ts-ignore
         const result = await getSecureInfoUrl({ data: { productId, filePath } });
         setUrl(result.url);
       } catch (err: any) {
@@ -62,7 +83,7 @@ export function InfoPdfReader({
 
   const handleDownload = async () => {
     try {
-      // @ts-ignore - Server Function call pattern para download
+      // @ts-ignore
       const result = await getSecureInfoUrl({ data: { productId, filePath, isDownload: true } });
       window.open(result.url, '_blank');
     } catch (err) {
@@ -70,7 +91,7 @@ export function InfoPdfReader({
     }
   };
 
-  if (loading) return <Skeleton className="w-full h-[600px] rounded-2xl" />;
+  if (loading || !mounted) return <Skeleton className="w-full h-[600px] rounded-2xl" />;
 
   if (error) {
     return (
@@ -121,13 +142,14 @@ export function InfoPdfReader({
 
       <div className="relative h-[600px] w-full bg-black/40 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
         {url && (
-          <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-            <Viewer
-              fileUrl={url}
-              plugins={[defaultLayoutPluginInstance]}
-              theme="dark"
-            />
-          </Worker>
+          <Suspense fallback={
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-black/20">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Iniciando Leitor Seguro...</p>
+            </div>
+          }>
+            <PdfViewerContainer fileUrl={url} title={title} />
+          </Suspense>
         )}
       </div>
     </div>
