@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/admin/monetizacao")({
   component: AdminMonetizacaoPage,
 });
 
-type TabId = "taxa" | "planos" | "acoes" | "pacotes" | "historico" | "backup";
+type TabId = "taxa" | "asaas" | "planos" | "acoes" | "pacotes" | "historico" | "backup";
 
 function AdminMonetizacaoPage() {
   const navigate = useNavigate();
@@ -119,7 +119,8 @@ function AdminMonetizacaoPage() {
 
         <div className="max-w-5xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-none">
           {[
-            { id: "taxa" as TabId, label: "Taxa PIX", icon: Coins },
+            { id: "taxa" as TabId, label: "Taxas", icon: Coins },
+            { id: "asaas" as TabId, label: "ASAAS", icon: Settings2 },
             { id: "planos" as TabId, label: "Planos", icon: Zap },
             { id: "acoes" as TabId, label: "Custos", icon: Coins },
             { id: "pacotes" as TabId, label: "Pacotes", icon: Package },
@@ -145,17 +146,74 @@ function AdminMonetizacaoPage() {
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-4">
         {tab === "taxa" && (
+          <div className="space-y-4">
+            <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/5 space-y-6">
+              <h3 className="text-sm font-black text-white uppercase italic">Taxa de Intermediação FIXXER</h3>
+              <p className="text-xs text-muted-foreground">Esta taxa é aplicada sobre todas as vendas de Info Produtos e serviços via plataforma.</p>
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={cfg.pixPlatformFeePercent}
+                  onChange={(e) => update({ pixPlatformFeePercent: parseFloat(e.target.value || "0") })}
+                  className="bg-black/40 border-white/10 rounded-2xl h-12 pl-4 pr-12 text-white font-black italic"
+                  min="0" max="100" step="0.5"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-black">%</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === "asaas" && (
           <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/5 space-y-6">
-            <h3 className="text-sm font-black text-white uppercase italic">Taxa de Intermediação PIX</h3>
-            <div className="relative">
-              <Input
-                type="number"
-                value={cfg.pixPlatformFeePercent}
-                onChange={(e) => update({ pixPlatformFeePercent: parseFloat(e.target.value || "0") })}
-                className="bg-black/40 border-white/10 rounded-2xl h-12 pl-4 pr-12 text-white font-black italic"
-                min="0" max="100" step="0.5"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-black">%</span>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-white uppercase italic">Configuração Gateway ASAAS</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ambiente:</span>
+                <select 
+                  value={cfg.asaasEnvironment}
+                  onChange={(e) => update({ asaasEnvironment: e.target.value as any })}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-1 text-[10px] font-black uppercase text-white outline-none"
+                >
+                  <option value="sandbox">Sandbox (Teste)</option>
+                  <option value="production">Produção</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">API Key</label>
+                <Input
+                  type="password"
+                  value={cfg.asaasApiKey || ""}
+                  onChange={(e) => update({ asaasApiKey: e.target.value })}
+                  placeholder="\$asaas_..."
+                  className="bg-black/40 border-white/10 rounded-2xl h-12 text-white font-mono"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Webhook Secret</label>
+                <Input
+                  type="password"
+                  value={cfg.asaasWebhookSecret || ""}
+                  onChange={(e) => update({ asaasWebhookSecret: e.target.value })}
+                  placeholder="Secret para validação das notificações"
+                  className="bg-black/40 border-white/10 rounded-2xl h-12 text-white font-mono"
+                />
+              </div>
+
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-4">
+                <CloudOff className="w-5 h-5 text-amber-500 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-amber-200 uppercase tracking-tight">Segurança das Chaves</p>
+                  <p className="text-[10px] text-amber-200/60 leading-relaxed">
+                    As chaves são armazenadas de forma segura no Supabase. O frontend as consome apenas para configuração; 
+                    as transações reais ocorrem exclusivamente via Server Functions (Backend).
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
