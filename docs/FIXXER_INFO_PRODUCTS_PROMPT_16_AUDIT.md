@@ -9,8 +9,10 @@ Implementação do dashboard de vendas reais e correção de layout no Creator S
 - **Correção da Barra de Ações**: A `PanelActions` foi movida da posição fixa no rodapé para o topo, integrada ao `ProfileHeader` via propriedade `actions`. Isso resolve a sobreposição de elementos relatada.
 - **Sales Dashboard**: Substituído o placeholder "Em breve" por um painel real com:
   - Cards de métricas (Vendas Totais, Aprovadas, Receita Líquida, Ticket Médio).
-  - Lista detalhada de transações com paginação.
-  - Filtros e busca (estruturados para integração server-side).
+  - Lista detalhada de transações com paginação real.
+  - Filtros server-side (Hoje, 7 dias, 30 dias, Mês Atual e Período Personalizado).
+  - Modal de detalhes da compra com informações completas (Valores, Cupons, Comprador, Entitlement).
+
   - Exportação de dados em CSV.
 
 ### Backend (Service)
