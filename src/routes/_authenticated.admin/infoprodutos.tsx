@@ -150,6 +150,8 @@ function AdminInfoProductsPage() {
           <TabBtn active={tab === 'vendas'} onClick={() => setTab('vendas')} icon={<TrendingUp className="w-3.5 h-3.5" />} label="Vendas" />
           <TabBtn active={tab === 'criadores'} onClick={() => setTab('criadores')} icon={<Users className="w-3.5 h-3.5" />} label="Criadores" />
           <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria" />
+          <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certificados" />
+          <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
         </div>
       </header>
 
