@@ -40,7 +40,7 @@ function CreatorStudioPage() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <ProfileHeader />
+      <ProfileHeader role="prestador" title={<>CREATOR <span className="text-primary">STUDIO</span></>} subtitle="Gestão de Info Produtos e Vendas" />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10 space-y-8">
         {/* MENU NAVEGAÇÃO CREATOR */}
