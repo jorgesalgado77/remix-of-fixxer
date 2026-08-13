@@ -347,14 +347,109 @@ function AdminInfoProductsPage() {
         {tab === 'afiliados' && (
           <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-black italic uppercase tracking-tighter">Gestão de Afiliados (V3 Ready)</h2>
-              <div className="bg-primary/10 border border-primary/20 px-4 py-1.5 rounded-full">
-                <span className="text-[10px] font-black text-primary uppercase tracking-widest italic">Arquitetura Agnóstica</span>
+              <h2 className="text-xl font-black italic uppercase tracking-tighter">Gestão de Afiliados & Anti-Fraude</h2>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="bg-white/5 border-white/10 text-[10px] font-bold uppercase tracking-widest rounded-xl">
+                  Configurações Globais
+                </Button>
+                <div className="bg-primary/10 border border-primary/20 px-4 py-1.5 rounded-full">
+                  <span className="text-[10px] font-black text-primary uppercase tracking-widest italic">V3 Ready Architecture</span>
+                </div>
               </div>
             </div>
             
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-4">
+              <MetricBox label="Volume Atribuído" value="R$ 128.450" sub="+12% este mês" color="text-primary" />
+              <MetricBox label="Cliques Totais" value="42.150" sub="CTR 3.2%" color="text-blue-400" />
               <MetricBox label="Afiliados Ativos" value="1.242" sub="Rede Global" color="text-emerald-400" />
+              <MetricBox label="Bloqueios Fraude" value="12" sub="Self-referral detectado" color="text-rose-500" />
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2 bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden">
+                <div className="p-6 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                  <h3 className="text-xs font-black text-white uppercase italic flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-primary" />
+                    Eventos de Auditoria & Conversões
+                  </h3>
+                  <div className="flex gap-2">
+                    <Input placeholder="Filtrar por Creator/Produto..." className="w-48 h-8 bg-black/40 border-white/10 text-[10px] uppercase font-bold" />
+                  </div>
+                </div>
+                <div className="p-0 overflow-x-auto">
+                   <table className="w-full text-left border-collapse">
+                     <thead>
+                       <tr className="border-b border-white/5 bg-white/[0.01]">
+                         <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Data</th>
+                         <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Afiliado</th>
+                         <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Evento</th>
+                         <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Valor</th>
+                         <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
+                       </tr>
+                     </thead>
+                     <tbody className="text-xs">
+                       <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                         <td className="p-4 font-mono text-muted-foreground">13/08 14:20</td>
+                         <td className="p-4 font-bold">FX-USER-092</td>
+                         <td className="p-4"><span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase">Venda Atribuída</span></td>
+                         <td className="p-4 font-black italic">R$ 99,90</td>
+                         <td className="p-4 text-emerald-400">EFETIVADO</td>
+                       </tr>
+                       <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                         <td className="p-4 font-mono text-muted-foreground">13/08 13:45</td>
+                         <td className="p-4 font-bold">FX-USER-441</td>
+                         <td className="p-4"><span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 text-[9px] font-black uppercase">Bloqueio Fraude</span></td>
+                         <td className="p-4 font-black italic">R$ 450,00</td>
+                         <td className="p-4 text-rose-500">RECUSADO (Self)</td>
+                       </tr>
+                     </tbody>
+                   </table>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-white/[0.03] border border-white/10 p-6 rounded-[32px] space-y-4">
+                  <h4 className="text-[10px] font-black text-white uppercase italic tracking-widest">Regras Anti-Fraude</h4>
+                  <div className="space-y-3">
+                    <ToggleRow label="Bloquear Self-Referral" desc="Impede afiliado de comprar via próprio link" on={true} />
+                    <ToggleRow label="Cookie Fingerprint" desc="Validação por IP e User-Agent" on={true} />
+                    <ToggleRow label="Atribuição Last-Click" desc="Prioriza o último link clicado pelo usuário" on={true} />
+                  </div>
+                </div>
+                
+                <div className="bg-primary/5 border border-primary/10 p-6 rounded-[32px]">
+                   <h4 className="text-[10px] font-black text-primary uppercase italic tracking-widest flex items-center gap-2">
+                     <PieChart className="w-3.5 h-3.5" />
+                     Distribuição de Splits
+                   </h4>
+                   <div className="mt-4 space-y-3">
+                      <div className="flex justify-between text-[10px] font-bold uppercase">
+                        <span className="text-muted-foreground">Criador</span>
+                        <span>75%</span>
+                      </div>
+                      <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-primary h-full w-[75%]" />
+                      </div>
+                      <div className="flex justify-between text-[10px] font-bold uppercase">
+                        <span className="text-muted-foreground">Afiliado (Méd.)</span>
+                        <span>15%</span>
+                      </div>
+                      <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-blue-400 h-full w-[15%]" />
+                      </div>
+                      <div className="flex justify-between text-[10px] font-bold uppercase">
+                        <span className="text-muted-foreground">FIXXER (Plat.)</span>
+                        <span>10%</span>
+                      </div>
+                      <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-emerald-400 h-full w-[10%]" />
+                      </div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
               <MetricBox label="Comissão Média" value="15%" sub="Vendas Info" color="text-blue-400" />
               <MetricBox label="Volume Atribuído" value="R$ 18.250,00" sub="Últimos 30 dias" color="text-amber-400" />
             </div>
