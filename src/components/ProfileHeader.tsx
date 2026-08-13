@@ -72,7 +72,7 @@ export function ProfileHeader({
   const displayIcon = icon || info.defaultIcon;
 
   return (
-    <>
+    <div className="relative isolate">
       {!hideSidebarCard && <ProfileSummaryCard role={role} variant="sidebar" />}
       
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
