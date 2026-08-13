@@ -367,6 +367,7 @@ function AdminInfoProductsPage() {
                </div>
             </div>
           </div>
+        )}
 
         {tab === 'auditoria' && (
           <div className="space-y-8 animate-in fade-in duration-500">
