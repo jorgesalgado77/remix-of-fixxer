@@ -256,7 +256,83 @@ function AdminInfoProductsPage() {
           </div>
         )}
 
-        {['storage', 'moderacao', 'produtos', 'vendas', 'criadores', 'auditoria', 'certificados', 'assinatura'].includes(tab) && (
+        {tab === 'vendas' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-black italic uppercase tracking-tighter">Analytics de Vendas</h2>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="bg-white/5 border-white/10 text-[10px] font-bold uppercase tracking-widest rounded-xl">7 Dias</Button>
+                <Button variant="outline" size="sm" className="bg-primary/20 border-primary/30 text-primary text-[10px] font-bold uppercase tracking-widest rounded-xl">30 Dias</Button>
+                <Button variant="outline" size="sm" className="bg-white/5 border-white/10 text-[10px] font-bold uppercase tracking-widest rounded-xl">Tudo</Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <MetricBox label="Vendas Individuais" value="R$ 42.150,00" sub="842 unidades" color="text-emerald-400" />
+              <MetricBox label="Assinaturas Academy" value="R$ 28.400,00" sub="156 planos ativos" color="text-amber-400" />
+              <MetricBox label="Bundles (Combos)" value="R$ 14.890,50" sub="92 combos vendidos" color="text-blue-400" />
+            </div>
+
+            <div className="bg-white/[0.03] border border-white/10 rounded-[32px] p-8 min-h-[300px] flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <TrendingUp className="w-12 h-12 text-muted-foreground/20 mx-auto" />
+                <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Gráfico de Performance em Processamento...</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {(tab === 'certificados' || tab === 'assinatura') && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-black italic uppercase tracking-tighter">
+                Configuração de {tab === 'certificados' ? 'Certificados' : 'Assinaturas'}
+              </h2>
+            </div>
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="bg-white/[0.03] border border-white/10 p-8 rounded-[32px] space-y-6">
+                <h3 className="text-xs font-black text-white uppercase italic flex items-center gap-2">
+                   <Settings className="w-4 h-4 text-primary" />
+                   Regras do Catálogo & Limites
+                </h3>
+                <div className="space-y-4">
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Preço Base (BRL)</label>
+                     <Input type="number" defaultValue={tab === 'certificados' ? 29 : 99} className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Duração do Acesso (Dias)</label>
+                     <Input type="number" defaultValue={365} className="bg-black/40 border-white/10 h-12 rounded-xl" />
+                   </div>
+                   <ToggleRow label="Auto-Geração" desc="Emitir certificado automaticamente no fim do curso" on={true} />
+                   <ToggleRow label="Validação Pública" desc="Permitir consulta externa de autenticidade" on={true} />
+                </div>
+                <Button className="w-full bg-primary text-primary-foreground font-black h-12 rounded-2xl uppercase tracking-widest text-[10px]">
+                   <Save className="w-4 h-4 mr-2" />
+                   Salvar Configuração
+                </Button>
+              </div>
+
+              <div className="bg-white/[0.03] border border-white/10 p-8 rounded-[32px] space-y-6">
+                <h3 className="text-xs font-black text-white uppercase italic flex items-center gap-2">
+                   <ShieldAlert className="w-4 h-4 text-amber-400" />
+                   Regras de Elegibilidade
+                </h3>
+                <div className="space-y-4">
+                  <p className="text-[10px] text-muted-foreground uppercase leading-relaxed font-bold">
+                    Defina quais produtos do catálogo podem ser incluídos neste módulo administrativo. O criador deve possuir reputação mínima de 4.5.
+                  </p>
+                  <div className="p-4 rounded-2xl bg-white/5 border border-dashed border-white/10 flex items-center justify-center min-h-[150px]">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold italic">Configuração de filtros avançada em breve</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {['storage', 'moderacao', 'produtos', 'criadores', 'auditoria'].includes(tab) && (
           <div className="py-32 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[40px]">
             <Activity className="w-12 h-12 text-muted-foreground/20 mx-auto" />
             <p className="text-muted-foreground font-black uppercase tracking-widest text-xs italic">
@@ -265,6 +341,16 @@ function AdminInfoProductsPage() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function MetricBox({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
+  return (
+    <div className="bg-white/[0.03] border border-white/10 p-6 rounded-[32px] space-y-2">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
+      <p className={`text-2xl font-black italic tracking-tighter ${color}`}>{value}</p>
+      <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">{sub}</p>
     </div>
   );
 }
