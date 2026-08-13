@@ -615,38 +615,32 @@ function AdminInfoProductsPage() {
           </div>
         )}
 
-        {tab === 'assinatura' && (
+        {tab === 'vendas' && (
           <div className="space-y-8 mt-8 border-t border-white/5 pt-8">
-             <ConfigSection title="Branding de Certificados (Personalização)" icon={<Palette className="text-primary" />}>
-                <div className="grid md:grid-cols-3 gap-6">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Logo (URL)</label>
-                      <Input placeholder="https://..." className="bg-black/40 border-white/10 h-10 rounded-xl" />
+             <div className="flex items-center justify-between mb-4">
+               <h3 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
+                 <ShieldAlert className="w-4 h-4 text-rose-500" />
+                 Alertas de Segurança & Anomalias
+               </h3>
+               <Button variant="outline" size="sm" className="bg-rose-500/10 border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-xl">
+                 Limpar Alertas
+               </Button>
+             </div>
+             <div className="grid gap-4">
+                <div className="bg-rose-500/5 border border-rose-500/20 p-4 rounded-2xl flex items-center gap-4 animate-pulse">
+                   <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center">
+                      <ShieldAlert className="w-5 h-5 text-rose-500" />
                    </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cor Primária</label>
-                      <div className="flex gap-2">
-                        <Input type="color" className="w-10 h-10 p-1 bg-black/40 border-white/10 rounded-xl cursor-pointer" defaultValue="#00FF87" />
-                        <Input placeholder="#00FF87" className="flex-1 bg-black/40 border-white/10 h-10 rounded-xl" />
-                      </div>
+                   <div className="flex-1">
+                      <p className="text-xs font-black text-white uppercase italic">Pico de Falhas na Validação</p>
+                      <p className="text-[10px] text-rose-400/80 uppercase font-bold">52 tentativas falhas detectadas nos últimos 5 minutos via IP 187.xx.xx.xx</p>
                    </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Rodapé Customizado</label>
-                      <Input placeholder="Emitido por Fixxer Academy" className="bg-black/40 border-white/10 h-10 rounded-xl" />
-                   </div>
+                   <span className="text-[9px] font-black text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest">Crítico</span>
                 </div>
-                <div className="mt-6 flex items-center gap-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                   <Mail className="w-5 h-5 text-primary" />
-                   <div>
-                     <p className="text-[10px] font-black text-white uppercase tracking-widest">Notificações por E-mail</p>
-                     <p className="text-[9px] text-muted-foreground mt-0.5 uppercase font-bold">Alunos recebem automaticamente o PDF com QR Code e link de validação.</p>
-                   </div>
-                   <div className="flex-1" />
-                   <ToggleRow label="Ativar E-mails" desc="" on={true} />
-                </div>
-             </ConfigSection>
+             </div>
           </div>
         )}
+
 
         {['storage', 'moderacao', 'produtos', 'criadores'].includes(tab) && (
           <div className="py-32 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[40px]">
