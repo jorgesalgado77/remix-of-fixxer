@@ -497,3 +497,113 @@ export async function resolveFraudEvent(eventId: string, action: 'approve' | 're
   return data;
 }
 
+export async function getCreatorSalesStats(creatorId: string, period?: { start: string; end: string }) {
+  let query = supabaseExternal
+    .from('info_sales')
+    .select('status, amount_paid, fixxer_fee, amount_net, amount_original, amount_discount')
+    .eq('creator_id', creatorId);
+
+  if (period) {
+    query = query.gte('created_at', period.start).lte('created_at', period.end);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const stats = (data || []).reduce((acc, sale) => {
+    acc.totalSales++;
+    if (sale.status === 'PAID') {
+      acc.approvedSales++;
+      acc.revenueGross += Number(sale.amount_paid);
+      acc.revenueNet += Number(sale.amount_net);
+      acc.fixxerFees += Number(sale.fixxer_fee);
+      acc.discounts += Number(sale.amount_discount);
+    } else if (sale.status === 'PENDING') {
+      acc.pendingSales++;
+    } else if (sale.status === 'CANCELLED') {
+      acc.cancelledSales++;
+    } else if (sale.status === 'REFUNDED') {
+      acc.refunds++;
+    }
+    return acc;
+  }, {
+    totalSales: 0,
+    approvedSales: 0,
+    pendingSales: 0,
+    cancelledSales: 0,
+    refunds: 0,
+    revenueGross: 0,
+    revenueNet: 0,
+    fixxerFees: 0,
+    discounts: 0,
+    avgTicket: 0
+  });
+
+  if (stats.approvedSales > 0) {
+    stats.avgTicket = stats.revenueGross / stats.approvedSales;
+  }
+
+  return stats;
+}
+
+export async function getCreatorSalesList(creatorId: string, filters: { 
+  status?: string; 
+  startDate?: string; 
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const pageSize = filters.pageSize || 10;
+  const page = filters.page || 0;
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabaseExternal
+    .from('info_sales')
+    .select('*, info_products(title), profiles!buyer_id(display_name, avatar_url)', { count: 'exact' })
+    .eq('creator_id', creatorId)
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (filters.status && filters.status !== 'ALL') {
+    query = query.eq('status', filters.status);
+  }
+  if (filters.startDate) {
+    query = query.gte('created_at', filters.startDate);
+  }
+  if (filters.endDate) {
+    query = query.lte('created_at', filters.endDate);
+  }
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+
+  return {
+    data,
+    count,
+    page,
+    pageSize
+  };
+}
+
+export async function exportSalesCSV(creatorId: string, filters: { startDate?: string; endDate?: string }) {
+  let query = supabaseExternal
+    .from('info_sales')
+    .select('id, created_at, amount_paid, amount_net, status, payment_method, info_products(title)')
+    .eq('creator_id', creatorId);
+
+  if (filters.startDate) query = query.gte('created_at', filters.startDate);
+  if (filters.endDate) query = query.lte('created_at', filters.endDate);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const header = "ID;Data;Produto;Valor Pago;Valor Líquido;Status;Método\n";
+  const rows = (data || []).map(s => 
+    `${s.id};${new Date(s.created_at).toLocaleString()};${(s.info_products as any)?.title || 'N/A'};${s.amount_paid};${s.amount_net};${s.status};${s.payment_method}`
+  ).join("\n");
+
+  return header + rows;
+}
+
+
