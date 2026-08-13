@@ -11,6 +11,7 @@ import {
   Heart,
   PlusCircle,
   QrCode,
+  BookOpen,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -127,6 +128,16 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
       >
         <Settings className="w-5 h-5" aria-hidden="true" />
       </IconLink>
+
+      {role === "prestador" && (
+        <IconLink 
+          to="/infoprodutos" 
+          label="Creator Studio" 
+          tip="Gerenciar meus Info Produtos — e-books, aulas e cursos digitais"
+        >
+          <BookOpen className="w-5 h-5 text-primary" aria-hidden="true" />
+        </IconLink>
+      )}
 
       {role !== "cliente" && (
         <button
