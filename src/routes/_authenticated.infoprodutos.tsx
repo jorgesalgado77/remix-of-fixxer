@@ -154,7 +154,7 @@ function CreatorStudioPage() {
         )}
       </main>
 
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-fit px-4">
         <PanelActions role="prestador" />
       </div>
     </div>
