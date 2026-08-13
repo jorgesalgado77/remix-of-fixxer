@@ -12,6 +12,7 @@ import {
   PlusCircle,
   QrCode,
   BookOpen,
+  Library,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -105,9 +106,14 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
       )}
 
       {showFavoritos && (
-        <IconLink to="/favoritos" label="Favoritos" tip="Ver meus profissionais e fornecedores favoritos">
-          <Heart className="w-5 h-5" aria-hidden="true" />
-        </IconLink>
+        <div className="flex items-center gap-3">
+          <IconLink to="/favoritos" label="Favoritos" tip="Ver meus profissionais e fornecedores favoritos">
+            <Heart className="w-5 h-5" aria-hidden="true" />
+          </IconLink>
+          <IconLink to="/biblioteca" label="Minha Biblioteca" tip="Ver meus produtos digitais adquiridos">
+            <Library className="w-5 h-5 text-[#00FF87]" aria-hidden="true" />
+          </IconLink>
+        </div>
       )}
 
       {showPerfilPublico && (
