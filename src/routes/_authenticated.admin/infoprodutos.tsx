@@ -64,6 +64,9 @@ function AdminInfoProductsPage() {
   const [tab, setTab] = useState<AdminTab>("config");
   const [aiConfig, setAIConfig] = useState<AIAdminConfig | null>(null);
   const [monConfig, setMonConfig] = useState<MonetizationConfig | null>(null);
+  const [pdfQueue, setPdfQueue] = useState<any[]>([]);
+  const [selectedCertificateId, setSelectedCertificateId] = useState<string | null>(null);
+  const [emailAudit, setEmailAudit] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState<string | null>(null);
   const [dirtyAI, setDirtyAI] = useState(false);
