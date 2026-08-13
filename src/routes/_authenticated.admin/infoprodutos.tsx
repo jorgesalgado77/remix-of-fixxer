@@ -622,8 +622,9 @@ function AdminInfoProductsPage() {
              </div>
           </div>
         )}
-
+        {tab === 'certificados' && (
           <div className="space-y-8 animate-in fade-in duration-500">
+
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-black italic uppercase tracking-tighter">Auditoria de Certificados</h2>
               <div className="flex gap-2">
