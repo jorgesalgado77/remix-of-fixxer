@@ -6,6 +6,8 @@ import {
   TrendingUp, 
   ChevronRight, 
   LayoutGrid,
+  Mail,
+
   Settings,
   AlertCircle,
   Clock,
