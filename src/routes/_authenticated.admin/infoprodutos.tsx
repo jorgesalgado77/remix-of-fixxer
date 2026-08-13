@@ -86,7 +86,17 @@ function AdminInfoProductsPage() {
       setMonConfig(mon);
       setLoading(false);
     });
-  }, []);
+    // Carregar fila de PDFs e auditoria se necessário
+    if (tab === 'certificados') {
+      getPDFQueueStatus('SYSTEM').then(setPdfQueue);
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    if (selectedCertificateId) {
+      getEmailAuditLogs(selectedCertificateId).then(setEmailAudit);
+    }
+  }, [selectedCertificateId]);
 
   const handleSaveAI = async () => {
     if (!aiConfig) return;
