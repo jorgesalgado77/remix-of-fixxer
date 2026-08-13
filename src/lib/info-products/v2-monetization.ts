@@ -390,7 +390,7 @@ export async function getValidationAnalytics(creatorId: string) {
   return stats;
 }
 
-export async function getAffiliateStats(creatorId: string, period?: { start: string; end: string }) {
+export async function getCreatorAffiliateStats(creatorId: string, period?: { start: string; end: string }) {
   let query = supabaseExternal
     .from('info_affiliate_sales')
     .select('*, info_products(title)')
@@ -404,6 +404,7 @@ export async function getAffiliateStats(creatorId: string, period?: { start: str
   if (error) throw error;
   return data;
 }
+
 
 export async function exportAffiliateEvents(filters: { creatorId?: string; productId?: string; start?: string; end?: string }) {
   console.log("[ExportService] Gerando CSV para eventos de afiliados...", filters);
