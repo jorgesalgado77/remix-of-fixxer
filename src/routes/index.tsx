@@ -51,10 +51,13 @@ function Index() {
             <a href="#reputacao" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest">Reputação</a>
             <a href="#planos" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest">Planos</a>
             <Link to="/marketplace" className="text-sm font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-2">
-               <Zap className="w-3 h-3" />
-               Info Produtos
+               <Zap className="w-3 h-3 shadow-[0_0_10px_rgba(0,255,135,0.5)]" />
+               Marketplace
             </Link>
-            <Link to="/terms" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest">Termos</Link>
+            <Link to="/academy" className="text-sm font-bold text-amber-400 hover:text-amber-300 transition-colors uppercase tracking-widest flex items-center gap-2">
+               <Award className="w-3 h-3" />
+               Academy
+            </Link>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
