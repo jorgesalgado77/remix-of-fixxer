@@ -450,30 +450,6 @@ function AdminInfoProductsPage() {
             </div>
           </div>
         )}
-              <MetricBox label="Comissão Média" value="15%" sub="Vendas Info" color="text-blue-400" />
-              <MetricBox label="Volume Atribuído" value="R$ 18.250,00" sub="Últimos 30 dias" color="text-amber-400" />
-            </div>
-
-            <div className="bg-white/[0.03] border border-white/10 p-8 rounded-[32px] space-y-6">
-               <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                     <ShieldAlert className="w-6 h-6 text-amber-500" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white uppercase tracking-widest text-xs">Proteção contra Fraude & Self-Referral</h4>
-                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-                      O sistema bloqueia automaticamente tentativas de auto-afiliação e limita comissões a vendas verificadas via Webhook. 
-                      A arquitetura V3 garante que qualquer perfil (Lojista/Prestador) possa atuar como criador ou afiliado sem conflito de identidade.
-                    </p>
-                  </div>
-               </div>
-               
-               <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center min-h-[150px]">
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold italic">Painel de Auditoria de Afiliados em Desenvolvimento</span>
-               </div>
-            </div>
-          </div>
-        )}
 
         {tab === 'auditoria' && (
           <div className="space-y-8 animate-in fade-in duration-500">
