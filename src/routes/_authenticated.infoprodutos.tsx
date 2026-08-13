@@ -549,9 +549,129 @@ function SalesDashboard() {
           </div>
         )}
       </div>
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-2xl bg-[#0F172A] border-white/10 text-white p-0 overflow-hidden rounded-[32px]">
+          <DialogHeader className="p-6 border-b border-white/10 bg-white/5">
+            <DialogTitle className="text-xl font-black uppercase italic tracking-tighter">Detalhes da Transação</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs uppercase tracking-widest font-bold">Informações completas da venda e comprador.</DialogDescription>
+          </DialogHeader>
+
+          {loadingDetails ? (
+            <div className="p-20 flex flex-col items-center justify-center gap-4">
+              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs font-black uppercase tracking-widest text-muted-foreground animate-pulse">Carregando dados reais...</p>
+            </div>
+          ) : selectedSale && (
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar">
+              {/* Resumo Principal */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1">Status do Pagamento</p>
+                  <StatusBadge status={selectedSale.status} />
+                </div>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-right">
+                  <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1">Data da Venda</p>
+                  <p className="text-sm font-bold">{new Date(selectedSale.created_at).toLocaleDateString()} às {new Date(selectedSale.created_at).toLocaleTimeString()}</p>
+                </div>
+              </div>
+
+              {/* Seção Produto */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Produto & Entrega</h4>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl bg-white/10 overflow-hidden flex-shrink-0">
+                    {selectedSale.info_products?.thumbnail_url ? (
+                      <img src={selectedSale.info_products.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-6 h-6 m-auto text-muted-foreground/30" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-white truncate">{selectedSale.info_products?.title}</p>
+                    <p className="text-xs text-muted-foreground">ID: {selectedSale.product_id}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                       <Button 
+                         size="sm" 
+                         variant="outline" 
+                         className="h-7 text-[10px] font-black rounded-lg bg-white/5 border-white/10 px-3 uppercase tracking-widest"
+                         onClick={() => navigate({ to: `/marketplace/${selectedSale.product_id}` as any })}
+                       >
+                         Ver Produto
+                       </Button>
+                       <Button 
+                         size="sm" 
+                         className="h-7 text-[10px] font-black rounded-lg bg-primary text-primary-foreground px-3 uppercase tracking-widest"
+                         onClick={() => navigate({ to: '/biblioteca' })}
+                       >
+                         Ver Entitlement
+                       </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção Financeira */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Valores & Taxas</h4>
+                <div className="bg-white/5 rounded-2xl border border-white/10 divide-y divide-white/5 overflow-hidden">
+                  <div className="p-4 flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Valor Original</span>
+                    <span className="text-sm font-bold text-white">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.amount_original)}</span>
+                  </div>
+                  {selectedSale.amount_discount > 0 && (
+                    <div className="p-4 flex justify-between items-center bg-amber-500/5">
+                      <span className="text-xs text-amber-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                        <Zap className="w-3 h-3" /> Desconto (Cupom)
+                      </span>
+                      <span className="text-sm font-bold text-amber-400">-{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.amount_discount)}</span>
+                    </div>
+                  )}
+                  <div className="p-4 flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Valor Pago (Bruto)</span>
+                    <span className="text-sm font-bold text-white">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.amount_paid)}</span>
+                  </div>
+                  <div className="p-4 flex justify-between items-center">
+                    <span className="text-xs text-red-400 font-bold uppercase tracking-widest">Taxa FIXXER (15%)</span>
+                    <span className="text-sm font-bold text-red-400">-{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.fixxer_fee)}</span>
+                  </div>
+                  <div className="p-4 flex justify-between items-center bg-primary/10">
+                    <span className="text-xs text-primary font-black uppercase tracking-widest">Receita Líquida</span>
+                    <span className="text-lg font-black text-primary italic tracking-tighter">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.amount_net)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção Comprador */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Dados do Comprador</h4>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden">
+                      {selectedSale.profiles?.avatar_url ? (
+                        <img src={selectedSale.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-5 h-5 m-auto text-muted-foreground/30" />
+                      )}
+                   </div>
+                   <div>
+                      <p className="text-sm font-bold text-white">{selectedSale.profiles?.display_name || 'Usuário Fixxer'}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Mail className="w-3 h-3" /> {selectedSale.profiles?.email}
+                      </p>
+                   </div>
+                </div>
+              </div>
+              
+              <div className="text-[9px] text-muted-foreground/50 text-center pt-4 uppercase font-bold tracking-widest">
+                Transação ID: {selectedSale.id} • Processado via ASAAS Gateway
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function StatusBadge({ status }: { status: string }) {
   const configs: any = {
