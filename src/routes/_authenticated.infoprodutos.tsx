@@ -236,7 +236,9 @@ function EmptyState() {
 }
 
 function SalesDashboard() {
+  const navigate = useNavigate();
   const userId = useCurrentUserId();
+
   const [stats, setStats] = useState<any>(null);
   const [salesData, setSalesData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
