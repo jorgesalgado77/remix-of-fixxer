@@ -29,6 +29,7 @@ import { Route as AuthenticatedPrestadorRouteImport } from './routes/_authentica
 import { Route as AuthenticatedParceiroRouteImport } from './routes/_authenticated.parceiro'
 import { Route as AuthenticatedMeusAnunciosRouteImport } from './routes/_authenticated.meus-anuncios'
 import { Route as AuthenticatedLojistaRouteImport } from './routes/_authenticated.lojista'
+import { Route as AuthenticatedInfoprodutosRouteImport } from './routes/_authenticated.infoprodutos'
 import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated.feed'
 import { Route as AuthenticatedFavoritosRouteImport } from './routes/_authenticated.favoritos'
 import { Route as AuthenticatedExtratoRouteImport } from './routes/_authenticated.extrato'
@@ -157,6 +158,12 @@ const AuthenticatedLojistaRoute = AuthenticatedLojistaRouteImport.update({
   path: '/lojista',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedInfoprodutosRoute =
+  AuthenticatedInfoprodutosRouteImport.update({
+    id: '/infoprodutos',
+    path: '/infoprodutos',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedFeedRoute = AuthenticatedFeedRouteImport.update({
   id: '/feed',
   path: '/feed',
@@ -322,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/extrato': typeof AuthenticatedExtratoRoute
   '/favoritos': typeof AuthenticatedFavoritosRoute
   '/feed': typeof AuthenticatedFeedRouteWithChildren
+  '/infoprodutos': typeof AuthenticatedInfoprodutosRoute
   '/lojista': typeof AuthenticatedLojistaRoute
   '/meus-anuncios': typeof AuthenticatedMeusAnunciosRoute
   '/parceiro': typeof AuthenticatedParceiroRoute
@@ -368,6 +376,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/extrato': typeof AuthenticatedExtratoRoute
   '/favoritos': typeof AuthenticatedFavoritosRoute
+  '/infoprodutos': typeof AuthenticatedInfoprodutosRoute
   '/lojista': typeof AuthenticatedLojistaRoute
   '/meus-anuncios': typeof AuthenticatedMeusAnunciosRoute
   '/parceiro': typeof AuthenticatedParceiroRoute
@@ -418,6 +427,7 @@ export interface FileRoutesById {
   '/_authenticated/extrato': typeof AuthenticatedExtratoRoute
   '/_authenticated/favoritos': typeof AuthenticatedFavoritosRoute
   '/_authenticated/feed': typeof AuthenticatedFeedRouteWithChildren
+  '/_authenticated/infoprodutos': typeof AuthenticatedInfoprodutosRoute
   '/_authenticated/lojista': typeof AuthenticatedLojistaRoute
   '/_authenticated/meus-anuncios': typeof AuthenticatedMeusAnunciosRoute
   '/_authenticated/parceiro': typeof AuthenticatedParceiroRoute
@@ -468,6 +478,7 @@ export interface FileRouteTypes {
     | '/extrato'
     | '/favoritos'
     | '/feed'
+    | '/infoprodutos'
     | '/lojista'
     | '/meus-anuncios'
     | '/parceiro'
@@ -514,6 +525,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/extrato'
     | '/favoritos'
+    | '/infoprodutos'
     | '/lojista'
     | '/meus-anuncios'
     | '/parceiro'
@@ -563,6 +575,7 @@ export interface FileRouteTypes {
     | '/_authenticated/extrato'
     | '/_authenticated/favoritos'
     | '/_authenticated/feed'
+    | '/_authenticated/infoprodutos'
     | '/_authenticated/lojista'
     | '/_authenticated/meus-anuncios'
     | '/_authenticated/parceiro'
@@ -754,6 +767,13 @@ declare module '@tanstack/react-router' {
       path: '/lojista'
       fullPath: '/lojista'
       preLoaderRoute: typeof AuthenticatedLojistaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/infoprodutos': {
+      id: '/_authenticated/infoprodutos'
+      path: '/infoprodutos'
+      fullPath: '/infoprodutos'
+      preLoaderRoute: typeof AuthenticatedInfoprodutosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/feed': {
@@ -1038,6 +1058,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedExtratoRoute: typeof AuthenticatedExtratoRoute
   AuthenticatedFavoritosRoute: typeof AuthenticatedFavoritosRoute
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRouteWithChildren
+  AuthenticatedInfoprodutosRoute: typeof AuthenticatedInfoprodutosRoute
   AuthenticatedLojistaRoute: typeof AuthenticatedLojistaRoute
   AuthenticatedMeusAnunciosRoute: typeof AuthenticatedMeusAnunciosRoute
   AuthenticatedParceiroRoute: typeof AuthenticatedParceiroRoute
@@ -1058,6 +1079,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedExtratoRoute: AuthenticatedExtratoRoute,
   AuthenticatedFavoritosRoute: AuthenticatedFavoritosRoute,
   AuthenticatedFeedRoute: AuthenticatedFeedRouteWithChildren,
+  AuthenticatedInfoprodutosRoute: AuthenticatedInfoprodutosRoute,
   AuthenticatedLojistaRoute: AuthenticatedLojistaRoute,
   AuthenticatedMeusAnunciosRoute: AuthenticatedMeusAnunciosRoute,
   AuthenticatedParceiroRoute: AuthenticatedParceiroRoute,
