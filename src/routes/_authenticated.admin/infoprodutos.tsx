@@ -39,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   component: AdminInfoProductsPage,
 });
 
-type AdminTab = "config" | "taxa" | "ia" | "storage" | "moderacao" | "produtos" | "vendas" | "criadores" | "auditoria" | "certificados" | "assinatura";
+type AdminTab = "config" | "taxa" | "ia" | "storage" | "moderacao" | "produtos" | "vendas" | "criadores" | "auditoria" | "certificados" | "assinatura" | "afiliados";
 
 function AdminInfoProductsPage() {
   const [tab, setTab] = useState<AdminTab>("config");
@@ -152,6 +152,7 @@ function AdminInfoProductsPage() {
           <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria" />
           <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certificados" />
           <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
+          <TabBtn active={tab === 'afiliados'} onClick={() => setTab('afiliados')} icon={<Users className="w-3.5 h-3.5" />} label="Afiliados" />
         </div>
       </header>
 
@@ -328,6 +329,42 @@ function AdminInfoProductsPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'afiliados' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-black italic uppercase tracking-tighter">Gestão de Afiliados (V3 Ready)</h2>
+              <div className="bg-primary/10 border border-primary/20 px-4 py-1.5 rounded-full">
+                <span className="text-[10px] font-black text-primary uppercase tracking-widest italic">Arquitetura Agnóstica</span>
+              </div>
+            </div>
+            
+            <div className="grid gap-6 md:grid-cols-3">
+              <MetricBox label="Afiliados Ativos" value="1.242" sub="Rede Global" color="text-emerald-400" />
+              <MetricBox label="Comissão Média" value="15%" sub="Vendas Info" color="text-blue-400" />
+              <MetricBox label="Volume Atribuído" value="R$ 18.250,00" sub="Últimos 30 dias" color="text-amber-400" />
+            </div>
+
+            <div className="bg-white/[0.03] border border-white/10 p-8 rounded-[32px] space-y-6">
+               <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                     <ShieldAlert className="w-6 h-6 text-amber-500" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white uppercase tracking-widest text-xs">Proteção contra Fraude & Self-Referral</h4>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
+                      O sistema bloqueia automaticamente tentativas de auto-afiliação e limita comissões a vendas verificadas via Webhook. 
+                      A arquitetura V3 garante que qualquer perfil (Lojista/Prestador) possa atuar como criador ou afiliado sem conflito de identidade.
+                    </p>
+                  </div>
+               </div>
+               
+               <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center min-h-[150px]">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold italic">Painel de Auditoria de Afiliados em Desenvolvimento</span>
+               </div>
             </div>
           </div>
         )}
