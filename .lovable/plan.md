@@ -1,28 +1,52 @@
-# Plano de Implementação - Dashboard de Afiliados, Conciliação e Antifraude
+# Plano de Implementação - Prompt 16: Creator Sales Center
 
-Este plano detalha a implementação do dashboard no Creator Studio para links e comissões, o sistema de conciliação de splits/webhooks e a fila de revisão antifraude no Admin Master.
+Implementação completa do módulo de Vendas do Creator Studio no módulo de Info Produtos, garantindo a exibição de dados reais do Supabase, dashboard analítico e lista detalhada de vendas com filtros e exportação.
 
-## Tarefas Técnicas
+## 1. Banco de Dados (Supabase Externo)
+Criação da estrutura de vendas e status para info produtos.
 
-### 1. Backend & Banco de Dados
-- Criar migração para a tabela `info_webhook_logs` (idempotência e reprocessamento).
-- Criar tabela `info_fraud_queue` para gestão de revisões manuais.
-- Adicionar RPC `reprocess_failed_webhook` para recuperação de falhas.
+- **Tabela `info_sales`**: Registro principal de vendas.
+    - `id` (uuid, pk)
+    - `creator_id` (uuid, fk -> profiles)
+    - `buyer_id` (uuid, fk -> profiles)
+    - `product_id` (uuid, fk -> info_products)
+    - `offer_id` (uuid, fk -> info_offers)
+    - `coupon_id` (uuid, fk -> info_coupons, nullable)
+    - `amount_original` (decimal)
+    - `amount_discount` (decimal)
+    - `amount_paid` (decimal)
+    - `fee_platform` (decimal)
+    - `amount_net` (decimal)
+    - `status` (enum: PENDING, PAID, FAILED, CANCELLED, REFUNDED, EXPIRED)
+    - `payment_method` (text)
+    - `payment_id` (text, asaas reference)
+    - `created_at` (timestamp)
+- **RLS**: Apenas o creator (`creator_id = auth.uid()`) ou comprador (`buyer_id = auth.uid()`) podem ler seus dados. Admin Master tem acesso total.
 
-### 2. Creator Studio (Dashboard de Afiliados)
-- Desenvolver nova aba "Afiliados" no `CreatorProductForm` ou `PanelActions`.
-- Exibir lista de links gerados, cliques, conversões e comissões acumuladas.
-- Adicionar filtros por período e produto.
+## 2. Backend (TanStack Server Functions)
+Implementação da lógica de agregação e filtros no service `v2-monetization.ts`.
 
-### 3. Admin Master (Conciliação e Antifraude)
-- Implementar aba "Conciliação" para monitorar splits e falhas de webhook.
-- Criar "Fila de Revisão" com ações de Aprovar, Cancelar e Revogar.
-- Implementar exportação CSV robusta para eventos de afiliados (cliques, splits, revogações).
+- **`getCreatorSalesStats`**: Agregação server-side para o dashboard (totais, taxa fixxer, receita líquida, ticket médio).
+- **`getCreatorSalesList`**: Consulta paginada com filtros por status e período.
+- **`getSaleDetails`**: Busca detalhada de uma única transação, incluindo dados do comprador (protegendo PII).
+- **`exportSalesCSV`**: Geração de relatório para download.
 
-### 4. Integração & Segurança
-- Reforçar o middleware do webhook ASAAS para registrar logs de tentativa/falha.
-- Garantir que a revogação de comissão atualize o saldo do afiliado corretamente.
+## 3. Frontend (Creator Studio)
+Substituição do placeholder "Em breve" por componentes reais em `src/routes/_authenticated.infoprodutos.tsx`.
 
-## Detalhes Adicionais
-- As exportações CSV seguirão o padrão do sistema com cabeçalhos sanitizados.
-- A interface manterá o estilo visual "Cyberpunk/Minimalist" da Fixxer Academy.
+- **Dashboard Analítico**: Cards com métricas principais (Vendas totais, Receita Líquida, etc).
+- **Filtros de Período**: Interface para Hoje, 7 dias, 30 dias e Personalizado.
+- **Tabela de Vendas**: Lista com paginação e badges de status.
+- **Modal de Detalhes**: Visualização completa da venda, oferta e entitlement.
+- **Tooltips**: Implementação de dicas curtas em todos os botões de ação.
+
+## 4. Segurança e Qualidade
+- **Zero Mocks**: Todas as chamadas usam `supabaseExternal`.
+- **Performance**: Implementação de debounce nos filtros e paginação para evitar sobrecarga no Realme C55.
+- **Auditoria**: Criação de script SQL de seed para uma compra real de teste.
+- **Relatório**: Geração do documento `docs/FIXXER_INFO_PRODUCTS_PROMPT_16_AUDIT.md`.
+
+## Detalhes Técnicos
+- Uso de `useQuery` com `keepPreviousData` para transições suaves entre filtros.
+- Separação de componentes para `SalesDashboard`, `SalesTable` e `SaleDetailModal`.
+- Garantia de que a barra de botões duplicada removida anteriormente não retorne.
