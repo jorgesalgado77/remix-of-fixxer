@@ -19,7 +19,8 @@ import {
   Zap,
   PlayCircle,
   AlertCircle,
-  Activity
+  Activity,
+  Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   component: AdminInfoProductsPage,
 });
 
-type AdminTab = "config" | "taxa" | "ia" | "storage" | "moderacao" | "produtos" | "vendas" | "criadores" | "auditoria";
+type AdminTab = "config" | "taxa" | "ia" | "storage" | "moderacao" | "produtos" | "vendas" | "criadores" | "auditoria" | "certificados" | "assinatura";
 
 function AdminInfoProductsPage() {
   const [tab, setTab] = useState<AdminTab>("config");
@@ -149,6 +150,8 @@ function AdminInfoProductsPage() {
           <TabBtn active={tab === 'vendas'} onClick={() => setTab('vendas')} icon={<TrendingUp className="w-3.5 h-3.5" />} label="Vendas" />
           <TabBtn active={tab === 'criadores'} onClick={() => setTab('criadores')} icon={<Users className="w-3.5 h-3.5" />} label="Criadores" />
           <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria" />
+          <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certificados" />
+          <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
         </div>
       </header>
 
@@ -253,7 +256,7 @@ function AdminInfoProductsPage() {
           </div>
         )}
 
-        {['storage', 'moderacao', 'produtos', 'vendas', 'criadores', 'auditoria'].includes(tab) && (
+        {['storage', 'moderacao', 'produtos', 'vendas', 'criadores', 'auditoria', 'certificados', 'assinatura'].includes(tab) && (
           <div className="py-32 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[40px]">
             <Activity className="w-12 h-12 text-muted-foreground/20 mx-auto" />
             <p className="text-muted-foreground font-black uppercase tracking-widest text-xs italic">

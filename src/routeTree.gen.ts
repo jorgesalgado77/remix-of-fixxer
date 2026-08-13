@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AcademyRouteImport } from './routes/academy'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
@@ -26,6 +27,7 @@ import { Route as InfoIdRouteImport } from './routes/info.$id'
 import { Route as DashboardPrestadorRouteImport } from './routes/dashboard.prestador'
 import { Route as DashboardLojistaRouteImport } from './routes/dashboard.lojista'
 import { Route as ClienteIdRouteImport } from './routes/cliente.$id'
+import { Route as CertificadosValidarRouteImport } from './routes/certificados.validar'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPrestadorRouteImport } from './routes/_authenticated.prestador'
 import { Route as AuthenticatedParceiroRouteImport } from './routes/_authenticated.parceiro'
@@ -82,6 +84,11 @@ const CadastroRoute = CadastroRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcademyRoute = AcademyRouteImport.update({
+  id: '/academy',
+  path: '/academy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -146,6 +153,11 @@ const DashboardLojistaRoute = DashboardLojistaRouteImport.update({
 const ClienteIdRoute = ClienteIdRouteImport.update({
   id: '/cliente/$id',
   path: '/cliente/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CertificadosValidarRoute = CertificadosValidarRouteImport.update({
+  id: '/certificados/validar',
+  path: '/certificados/validar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -352,6 +364,7 @@ const AuthenticatedAdminUsuariosIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/academy': typeof AcademyRoute
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
   '/marketplace': typeof MarketplaceRoute
@@ -374,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/parceiro': typeof AuthenticatedParceiroRoute
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/certificados/validar': typeof CertificadosValidarRoute
   '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
@@ -407,6 +421,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/academy': typeof AcademyRoute
   '/cadastro': typeof CadastroRoute
   '/marketplace': typeof MarketplaceRoute
   '/terms': typeof TermsRoute
@@ -427,6 +442,7 @@ export interface FileRoutesByTo {
   '/parceiro': typeof AuthenticatedParceiroRoute
   '/prestador': typeof AuthenticatedPrestadorRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/certificados/validar': typeof CertificadosValidarRoute
   '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
@@ -462,6 +478,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/academy': typeof AcademyRoute
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
   '/marketplace': typeof MarketplaceRoute
@@ -484,6 +501,7 @@ export interface FileRoutesById {
   '/_authenticated/parceiro': typeof AuthenticatedParceiroRoute
   '/_authenticated/prestador': typeof AuthenticatedPrestadorRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/certificados/validar': typeof CertificadosValidarRoute
   '/cliente/$id': typeof ClienteIdRoute
   '/dashboard/lojista': typeof DashboardLojistaRoute
   '/dashboard/prestador': typeof DashboardPrestadorRoute
@@ -519,6 +537,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/academy'
     | '/auth'
     | '/cadastro'
     | '/marketplace'
@@ -541,6 +560,7 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/prestador'
     | '/profile'
+    | '/certificados/validar'
     | '/cliente/$id'
     | '/dashboard/lojista'
     | '/dashboard/prestador'
@@ -574,6 +594,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/academy'
     | '/cadastro'
     | '/marketplace'
     | '/terms'
@@ -594,6 +615,7 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/prestador'
     | '/profile'
+    | '/certificados/validar'
     | '/cliente/$id'
     | '/dashboard/lojista'
     | '/dashboard/prestador'
@@ -628,6 +650,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/academy'
     | '/auth'
     | '/cadastro'
     | '/marketplace'
@@ -650,6 +673,7 @@ export interface FileRouteTypes {
     | '/_authenticated/parceiro'
     | '/_authenticated/prestador'
     | '/_authenticated/profile'
+    | '/certificados/validar'
     | '/cliente/$id'
     | '/dashboard/lojista'
     | '/dashboard/prestador'
@@ -685,10 +709,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AcademyRoute: typeof AcademyRoute
   AuthRoute: typeof AuthRouteWithChildren
   CadastroRoute: typeof CadastroRoute
   MarketplaceRoute: typeof MarketplaceRoute
   TermsRoute: typeof TermsRoute
+  CertificadosValidarRoute: typeof CertificadosValidarRoute
   ClienteIdRoute: typeof ClienteIdRoute
   DashboardLojistaRoute: typeof DashboardLojistaRoute
   DashboardPrestadorRoute: typeof DashboardPrestadorRoute
@@ -731,6 +757,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/academy': {
+      id: '/academy'
+      path: '/academy'
+      fullPath: '/academy'
+      preLoaderRoute: typeof AcademyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -822,6 +855,13 @@ declare module '@tanstack/react-router' {
       path: '/cliente/$id'
       fullPath: '/cliente/$id'
       preLoaderRoute: typeof ClienteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/certificados/validar': {
+      id: '/certificados/validar'
+      path: '/certificados/validar'
+      fullPath: '/certificados/validar'
+      preLoaderRoute: typeof CertificadosValidarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
@@ -1239,10 +1279,12 @@ const InfoIdRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AcademyRoute: AcademyRoute,
   AuthRoute: AuthRouteWithChildren,
   CadastroRoute: CadastroRoute,
   MarketplaceRoute: MarketplaceRoute,
   TermsRoute: TermsRoute,
+  CertificadosValidarRoute: CertificadosValidarRoute,
   ClienteIdRoute: ClienteIdRoute,
   DashboardLojistaRoute: DashboardLojistaRoute,
   DashboardPrestadorRoute: DashboardPrestadorRoute,
