@@ -39,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   component: AdminInfoProductsPage,
 });
 
-type AdminTab = "config" | "taxa" | "ia" | "storage" | "moderacao" | "produtos" | "vendas" | "criadores" | "auditoria";
+type AdminTab = "config" | "taxa" | "ia" | "storage" | "moderacao" | "produtos" | "vendas" | "criadores" | "auditoria" | "certificados" | "assinatura";
 
 function AdminInfoProductsPage() {
   const [tab, setTab] = useState<AdminTab>("config");
