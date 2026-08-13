@@ -15,7 +15,7 @@ export const InfoProductSchema = z.object({
   updated_at: z.string(),
   // Campos virtuais/agregados
   creator_name: z.string().optional(),
-  creator_avatar: z.string().optional(),
+  creator_avatar: z.string().nullable().optional(),
   rating_avg: z.number().optional().default(0),
   rating_count: z.number().optional().default(0),
 });
