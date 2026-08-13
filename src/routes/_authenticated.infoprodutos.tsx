@@ -383,30 +383,68 @@ function SalesDashboard() {
       </div>
 
       <div className="bg-white/[0.02] border border-white/10 rounded-[32px] overflow-hidden">
-        <div className="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">Histórico de Transações</h3>
-            <p className="text-xs text-muted-foreground">Acompanhe detalhadamente cada venda realizada.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="rounded-xl bg-white/5 border-white/10 text-xs font-bold uppercase tracking-widest gap-2"
-              onClick={handleExport}
-            >
-              <Download className="w-3 h-3" />
-              Exportar CSV
-            </Button>
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar venda..." 
-                className="pl-8 h-9 bg-white/5 border-white/10 rounded-xl text-xs w-48 focus:ring-primary/40"
-              />
+        <div className="p-6 border-b border-white/10 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">Histórico de Transações</h3>
+              <p className="text-xs text-muted-foreground">Acompanhe detalhadamente cada venda realizada.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <select 
+                className="bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white px-3 h-9 focus:ring-primary/40 outline-none"
+                value={filters.period}
+                onChange={(e) => setFilters(prev => ({ ...prev, period: e.target.value, page: 0 }))}
+              >
+                <option value="today">Hoje</option>
+                <option value="last_7_days">Últimos 7 dias</option>
+                <option value="last_30_days">Últimos 30 dias</option>
+                <option value="current_month">Mês Atual</option>
+                <option value="custom">Personalizado</option>
+              </select>
+
+              {filters.period === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="date" 
+                    className="h-9 bg-white/5 border-white/10 rounded-xl text-xs w-32"
+                    value={filters.startDate}
+                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value, page: 0 }))}
+                  />
+                  <Input 
+                    type="date" 
+                    className="h-9 bg-white/5 border-white/10 rounded-xl text-xs w-32"
+                    value={filters.endDate}
+                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value, page: 0 }))}
+                  />
+                </div>
+              )}
+
+              <select 
+                className="bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white px-3 h-9 focus:ring-primary/40 outline-none"
+                value={filters.status}
+                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value, page: 0 }))}
+              >
+                <option value="ALL">Todos os Status</option>
+                <option value="PAID">Aprovada</option>
+                <option value="PENDING">Pendente</option>
+                <option value="FAILED">Falhou</option>
+                <option value="CANCELLED">Cancelada</option>
+                <option value="REFUNDED">Reembolsada</option>
+              </select>
+
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-xl bg-white/5 border-white/10 text-xs font-bold uppercase tracking-widest gap-2"
+                onClick={handleExport}
+              >
+                <Download className="w-3 h-3" />
+                Exportar CSV
+              </Button>
             </div>
           </div>
         </div>
+
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
