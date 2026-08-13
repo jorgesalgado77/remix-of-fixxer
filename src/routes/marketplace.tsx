@@ -50,7 +50,7 @@ function MarketplacePage() {
              return {
                ...p,
                creator_name: identity.presentation.name,
-               creator_avatar: identity.presentation.avatar_url
+               creator_avatar: identity.presentation.avatarUrl
              };
            } catch (e) {
              return p;

@@ -12,7 +12,8 @@ import {
   GraduationCap,
   ShieldCheck,
   FileText,
-  MessageSquare
+  MessageSquare,
+  ArrowRight
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -96,8 +97,8 @@ function ProductDetailsPage() {
                {creator && (
                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 w-fit">
                     <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted">
-                      {creator.presentation.avatar_url && (
-                        <img src={creator.presentation.avatar_url} className="w-full h-full object-cover" />
+                      {creator.presentation.avatarUrl && (
+                        <img src={creator.presentation.avatarUrl} className="w-full h-full object-cover" />
                       )}
                     </div>
                     <div>
@@ -116,8 +117,9 @@ function ProductDetailsPage() {
             <div className="aspect-video rounded-[40px] overflow-hidden bg-white/5 border border-white/10 relative group">
                {product.preview_url ? (
                  <InfoSecurePlayer 
-                   fileId={product.id} 
-                   category={product.category}
+                   productId={product.id} 
+                   filePath={product.preview_url}
+                   type={product.category === 'ebook' ? 'pdf' : 'video'}
                    className="w-full h-full"
                  />
                ) : (
