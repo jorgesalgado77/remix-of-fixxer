@@ -36,8 +36,11 @@ Implementação do dashboard de vendas reais e correção de layout no Creator S
 ## 4. Status
 - [x] UI Fix (Action Bar)
 - [x] Dashboard Real (Zero Mock)
-- [x] Filtros e Paginação
+- [x] Filtros Server-side (Períodos e Status)
+- [x] Detalhes da Compra (Modal Completo)
+- [x] Paginação Real
 - [x] Exportação CSV
-- [x] Audit Log
+- [x] Testes de Integração & E2E (Regression Suite)
+
 
 **Conclusão**: O módulo de Vendas do Creator Studio está operacional e integrado à Identidade Canônica.
