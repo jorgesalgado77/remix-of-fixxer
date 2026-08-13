@@ -6,6 +6,8 @@ import {
   TrendingUp, 
   ChevronRight, 
   LayoutGrid,
+  Mail,
+
   Settings,
   AlertCircle,
   Clock,
@@ -39,7 +41,15 @@ import {
 import { toast } from 'sonner';
 import { CreatorProductForm } from '@/components/info-products/CreatorProductForm';
 import { useCurrentUserId } from '@/lib/current-user';
-import { getCreatorSalesStats, getCreatorSalesList, exportSalesCSV } from '@/lib/info-products/v2-monetization';
+import { getCreatorSalesStats, getCreatorSalesList, exportSalesCSV, getSaleDetails } from '@/lib/info-products/v2-monetization';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -228,23 +238,65 @@ function EmptyState() {
 }
 
 function SalesDashboard() {
+  const navigate = useNavigate();
   const userId = useCurrentUserId();
+
   const [stats, setStats] = useState<any>(null);
   const [salesData, setSalesData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedSale, setSelectedSale] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  
   const [filters, setFilters] = useState({
     status: 'ALL',
+    period: 'last_30_days',
+    startDate: '',
+    endDate: '',
     page: 0,
     pageSize: 10
   });
+
+  const getPeriodDates = (period: string) => {
+    const now = new Date();
+    let start = new Date();
+    
+    switch (period) {
+      case 'today':
+        start.setHours(0, 0, 0, 0);
+        break;
+      case 'last_7_days':
+        start.setDate(now.getDate() - 7);
+        break;
+      case 'last_30_days':
+        start.setDate(now.getDate() - 30);
+        break;
+      case 'current_month':
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      default:
+        return { start: '', end: '' };
+    }
+    
+    return {
+      start: start.toISOString(),
+      end: now.toISOString()
+    };
+  };
 
   const loadData = async () => {
     if (!userId) return;
     setLoading(true);
     try {
+      const periodDates = filters.period !== 'custom' ? getPeriodDates(filters.period) : { start: filters.startDate, end: filters.endDate };
+      
       const [s, list] = await Promise.all([
-        getCreatorSalesStats(userId),
-        getCreatorSalesList(userId, filters)
+        getCreatorSalesStats(userId, periodDates.start ? periodDates : undefined),
+        getCreatorSalesList(userId, {
+          ...filters,
+          startDate: periodDates.start,
+          endDate: periodDates.end
+        })
       ]);
       setStats(s);
       setSalesData(list);
@@ -258,7 +310,23 @@ function SalesDashboard() {
 
   useEffect(() => {
     loadData();
-  }, [userId, filters]);
+  }, [userId, filters.status, filters.period, filters.startDate, filters.endDate, filters.page]);
+
+  const handleSaleClick = async (saleId: string) => {
+    setLoadingDetails(true);
+    setIsDetailsOpen(true);
+    try {
+      const details = await getSaleDetails(saleId);
+      setSelectedSale(details);
+    } catch (error) {
+      console.error("Erro ao carregar detalhes da venda:", error);
+      toast.error("Erro ao carregar detalhes da venda.");
+      setIsDetailsOpen(false);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
 
   const handleExport = async () => {
     if (!userId) return;
@@ -319,30 +387,68 @@ function SalesDashboard() {
       </div>
 
       <div className="bg-white/[0.02] border border-white/10 rounded-[32px] overflow-hidden">
-        <div className="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">Histórico de Transações</h3>
-            <p className="text-xs text-muted-foreground">Acompanhe detalhadamente cada venda realizada.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="rounded-xl bg-white/5 border-white/10 text-xs font-bold uppercase tracking-widest gap-2"
-              onClick={handleExport}
-            >
-              <Download className="w-3 h-3" />
-              Exportar CSV
-            </Button>
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar venda..." 
-                className="pl-8 h-9 bg-white/5 border-white/10 rounded-xl text-xs w-48 focus:ring-primary/40"
-              />
+        <div className="p-6 border-b border-white/10 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">Histórico de Transações</h3>
+              <p className="text-xs text-muted-foreground">Acompanhe detalhadamente cada venda realizada.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <select 
+                className="bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white px-3 h-9 focus:ring-primary/40 outline-none"
+                value={filters.period}
+                onChange={(e) => setFilters(prev => ({ ...prev, period: e.target.value, page: 0 }))}
+              >
+                <option value="today">Hoje</option>
+                <option value="last_7_days">Últimos 7 dias</option>
+                <option value="last_30_days">Últimos 30 dias</option>
+                <option value="current_month">Mês Atual</option>
+                <option value="custom">Personalizado</option>
+              </select>
+
+              {filters.period === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="date" 
+                    className="h-9 bg-white/5 border-white/10 rounded-xl text-xs w-32"
+                    value={filters.startDate}
+                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value, page: 0 }))}
+                  />
+                  <Input 
+                    type="date" 
+                    className="h-9 bg-white/5 border-white/10 rounded-xl text-xs w-32"
+                    value={filters.endDate}
+                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value, page: 0 }))}
+                  />
+                </div>
+              )}
+
+              <select 
+                className="bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white px-3 h-9 focus:ring-primary/40 outline-none"
+                value={filters.status}
+                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value, page: 0 }))}
+              >
+                <option value="ALL">Todos os Status</option>
+                <option value="PAID">Aprovada</option>
+                <option value="PENDING">Pendente</option>
+                <option value="FAILED">Falhou</option>
+                <option value="CANCELLED">Cancelada</option>
+                <option value="REFUNDED">Reembolsada</option>
+              </select>
+
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-xl bg-white/5 border-white/10 text-xs font-bold uppercase tracking-widest gap-2"
+                onClick={handleExport}
+              >
+                <Download className="w-3 h-3" />
+                Exportar CSV
+              </Button>
             </div>
           </div>
         </div>
+
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -397,9 +503,11 @@ function SalesDashboard() {
                          size="icon" 
                          className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg hover:bg-white/10"
                          title="Ver detalhes da venda"
+                         onClick={() => handleSaleClick(sale.id)}
                        >
                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
                        </Button>
+
                     </td>
                   </tr>
                 ))
@@ -445,9 +553,129 @@ function SalesDashboard() {
           </div>
         )}
       </div>
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-2xl bg-[#0F172A] border-white/10 text-white p-0 overflow-hidden rounded-[32px]">
+          <DialogHeader className="p-6 border-b border-white/10 bg-white/5">
+            <DialogTitle className="text-xl font-black uppercase italic tracking-tighter">Detalhes da Transação</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs uppercase tracking-widest font-bold">Informações completas da venda e comprador.</DialogDescription>
+          </DialogHeader>
+
+          {loadingDetails ? (
+            <div className="p-20 flex flex-col items-center justify-center gap-4">
+              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs font-black uppercase tracking-widest text-muted-foreground animate-pulse">Carregando dados reais...</p>
+            </div>
+          ) : selectedSale && (
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar">
+              {/* Resumo Principal */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1">Status do Pagamento</p>
+                  <StatusBadge status={selectedSale.status} />
+                </div>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-right">
+                  <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1">Data da Venda</p>
+                  <p className="text-sm font-bold">{new Date(selectedSale.created_at).toLocaleDateString()} às {new Date(selectedSale.created_at).toLocaleTimeString()}</p>
+                </div>
+              </div>
+
+              {/* Seção Produto */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Produto & Entrega</h4>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl bg-white/10 overflow-hidden flex-shrink-0">
+                    {selectedSale.info_products?.thumbnail_url ? (
+                      <img src={selectedSale.info_products.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-6 h-6 m-auto text-muted-foreground/30" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-white truncate">{selectedSale.info_products?.title}</p>
+                    <p className="text-xs text-muted-foreground">ID: {selectedSale.product_id}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                       <Button 
+                         size="sm" 
+                         variant="outline" 
+                         className="h-7 text-[10px] font-black rounded-lg bg-white/5 border-white/10 px-3 uppercase tracking-widest"
+                         onClick={() => navigate({ to: `/marketplace/${selectedSale.product_id}` as any })}
+                       >
+                         Ver Produto
+                       </Button>
+                       <Button 
+                         size="sm" 
+                         className="h-7 text-[10px] font-black rounded-lg bg-primary text-primary-foreground px-3 uppercase tracking-widest"
+                         onClick={() => navigate({ to: '/biblioteca' })}
+                       >
+                         Ver Entitlement
+                       </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção Financeira */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Valores & Taxas</h4>
+                <div className="bg-white/5 rounded-2xl border border-white/10 divide-y divide-white/5 overflow-hidden">
+                  <div className="p-4 flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Valor Original</span>
+                    <span className="text-sm font-bold text-white">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.amount_original)}</span>
+                  </div>
+                  {selectedSale.amount_discount > 0 && (
+                    <div className="p-4 flex justify-between items-center bg-amber-500/5">
+                      <span className="text-xs text-amber-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                        <Zap className="w-3 h-3" /> Desconto (Cupom)
+                      </span>
+                      <span className="text-sm font-bold text-amber-400">-{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.amount_discount)}</span>
+                    </div>
+                  )}
+                  <div className="p-4 flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Valor Pago (Bruto)</span>
+                    <span className="text-sm font-bold text-white">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.amount_paid)}</span>
+                  </div>
+                  <div className="p-4 flex justify-between items-center">
+                    <span className="text-xs text-red-400 font-bold uppercase tracking-widest">Taxa FIXXER (15%)</span>
+                    <span className="text-sm font-bold text-red-400">-{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.fixxer_fee)}</span>
+                  </div>
+                  <div className="p-4 flex justify-between items-center bg-primary/10">
+                    <span className="text-xs text-primary font-black uppercase tracking-widest">Receita Líquida</span>
+                    <span className="text-lg font-black text-primary italic tracking-tighter">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedSale.amount_net)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção Comprador */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Dados do Comprador</h4>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden">
+                      {selectedSale.profiles?.avatar_url ? (
+                        <img src={selectedSale.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-5 h-5 m-auto text-muted-foreground/30" />
+                      )}
+                   </div>
+                   <div>
+                      <p className="text-sm font-bold text-white">{selectedSale.profiles?.display_name || 'Usuário Fixxer'}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Mail className="w-3 h-3" /> {selectedSale.profiles?.email}
+                      </p>
+                   </div>
+                </div>
+              </div>
+              
+              <div className="text-[9px] text-muted-foreground/50 text-center pt-4 uppercase font-bold tracking-widest">
+                Transação ID: {selectedSale.id} • Processado via ASAAS Gateway
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function StatusBadge({ status }: { status: string }) {
   const configs: any = {

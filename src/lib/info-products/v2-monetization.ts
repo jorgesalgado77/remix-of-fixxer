@@ -606,4 +606,41 @@ export async function exportSalesCSV(creatorId: string, filters: { startDate?: s
   return header + rows;
 }
 
+export async function getSaleDetails(saleId: string) {
+  const { data, error } = await supabaseExternal
+    .from('info_sales')
+    .select(`
+      *,
+      info_products (
+        id,
+        title,
+        description,
+        thumbnail_url
+      ),
+      info_offers (
+        id,
+        title,
+        price
+      ),
+      info_coupons (
+        id,
+        code,
+        discount_value,
+        discount_type
+      ),
+      profiles!buyer_id (
+        id,
+        display_name,
+        avatar_url,
+        email
+      )
+    `)
+    .eq('id', saleId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+
 

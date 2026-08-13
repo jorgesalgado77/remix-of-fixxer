@@ -9,14 +9,18 @@ Implementação do dashboard de vendas reais e correção de layout no Creator S
 - **Correção da Barra de Ações**: A `PanelActions` foi movida da posição fixa no rodapé para o topo, integrada ao `ProfileHeader` via propriedade `actions`. Isso resolve a sobreposição de elementos relatada.
 - **Sales Dashboard**: Substituído o placeholder "Em breve" por um painel real com:
   - Cards de métricas (Vendas Totais, Aprovadas, Receita Líquida, Ticket Médio).
-  - Lista detalhada de transações com paginação.
-  - Filtros e busca (estruturados para integração server-side).
+  - Lista detalhada de transações com paginação real.
+  - Filtros server-side (Hoje, 7 dias, 30 dias, Mês Atual e Período Personalizado).
+  - Modal de detalhes da compra com informações completas (Valores, Cupons, Comprador, Entitlement).
+
   - Exportação de dados em CSV.
 
 ### Backend (Service)
 - Expandido o service `src/lib/info-products/v2-monetization.ts` com:
   - `getCreatorSalesStats`: Agregação de dados financeiros.
-  - `getCreatorSalesList`: Busca paginada de vendas com joins (produtos e compradores).
+  - `getCreatorSalesList`: Busca paginada e filtrada de vendas com joins (produtos e compradores).
+  - `getSaleDetails`: Detalhamento completo de uma transação específica incluindo ofertas e cupons.
+
   - `exportSalesCSV`: Geração de relatório CSV respeitando RLS.
 
 ### Banco de Dados (Supabase)
@@ -32,8 +36,11 @@ Implementação do dashboard de vendas reais e correção de layout no Creator S
 ## 4. Status
 - [x] UI Fix (Action Bar)
 - [x] Dashboard Real (Zero Mock)
-- [x] Filtros e Paginação
+- [x] Filtros Server-side (Períodos e Status)
+- [x] Detalhes da Compra (Modal Completo)
+- [x] Paginação Real
 - [x] Exportação CSV
-- [x] Audit Log
+- [x] Testes de Integração & E2E (Regression Suite)
+
 
 **Conclusão**: O módulo de Vendas do Creator Studio está operacional e integrado à Identidade Canônica.
