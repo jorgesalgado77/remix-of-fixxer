@@ -67,17 +67,23 @@ export const Route = createFileRoute('/api/public/asaas')({
             if (productId && payment.customer) {
                // Buscar user_id vinculado ao customer ou metadata (a implementar no fluxo de criação)
                // Por enquanto, registramos o entitlement se tivermos o user_id
-               const userId = body.payment.metadata?.userId; 
+                const userId = body.payment.metadata?.userId; 
                
                if (userId) {
-                 await supabaseExternal.from('info_product_entitlements').upsert({
+                 // Garantimos a liberação do entitlement aqui
+                 const { error: entError } = await supabaseExternal.from('info_product_entitlements').upsert({
                    user_id: userId,
                    product_id: productId,
-                   transaction_id: tx.id,
-                   status: 'active'
+                   purchase_id: tx.id,
+                   status: 'active',
+                   granted_at: new Date().toISOString()
                  }, { onConflict: 'user_id,product_id' });
                  
-                 console.log(`[AsaasWebhook] Entitlement liberado para ${userId} -> ${productId}`);
+                 if (entError) {
+                   console.error(`[AsaasWebhook] Falha ao liberar entitlement:`, entError);
+                 } else {
+                   console.log(`[AsaasWebhook] Entitlement liberado para ${userId} -> ${productId}`);
+                 }
                }
             }
           } else {
