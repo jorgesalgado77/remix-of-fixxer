@@ -6,6 +6,7 @@ import { useEffect, useState, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { useCurrentCategory, getCategoryCssVars } from "@/lib/user-category";
 import { useProviderStats } from "@/hooks/use-provider-stats";
+import { InfoAdminSection } from "@/components/admin/InfoAdminSection";
 
 const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m => ({ default: m.PixManagerModal })));
 
@@ -223,6 +224,14 @@ function AuthenticatedLayout() {
                 <div className="text-3xl font-black text-white mb-1">100%</div>
                 <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status do Sistema</div>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <InfoAdminSection />
+               <div className="bg-card/50 backdrop-blur-xl border border-white/10 p-8 rounded-[40px] space-y-6 group hover:border-blue-500/30 transition-all flex flex-col justify-center items-center text-center opacity-50">
+                  <ShieldCheck className="w-12 h-12 text-blue-500 mb-2" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/40 italic">Módulo Segurança & Auditoria em breve</p>
+               </div>
             </div>
 
             <div className="bg-[#00FF87]/5 border border-[#00FF87]/20 p-6 rounded-3xl flex items-start gap-4">
