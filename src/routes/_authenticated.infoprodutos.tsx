@@ -499,9 +499,11 @@ function SalesDashboard() {
                          size="icon" 
                          className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg hover:bg-white/10"
                          title="Ver detalhes da venda"
+                         onClick={() => handleSaleClick(sale.id)}
                        >
                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
                        </Button>
+
                     </td>
                   </tr>
                 ))
