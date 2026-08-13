@@ -16,7 +16,8 @@ import {
   Shield,
   Clock,
   Menu,
-  X
+  X,
+  Award
 } from "lucide-react";
 import { RecentStoresCarousel } from "@/components/RecentStoresCarousel";
 
