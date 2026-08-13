@@ -162,6 +162,7 @@ function AdminInfoProductsPage() {
           <TabBtn active={tab === 'criadores'} onClick={() => setTab('criadores')} icon={<Users className="w-3.5 h-3.5" />} label="Criadores" />
           <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria" />
           <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certificados" />
+          <TabBtn active={tab === 'preview'} onClick={() => setTab('preview')} icon={<Palette className="w-3.5 h-3.5" />} label="Preview" />
           <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
           <TabBtn active={tab === 'afiliados'} onClick={() => setTab('afiliados')} icon={<Users className="w-3.5 h-3.5" />} label="Afiliados" />
         </div>
