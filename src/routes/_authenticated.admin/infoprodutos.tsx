@@ -46,7 +46,10 @@ import {
 import { 
   exportCertificatesCSV,
   exportAffiliateEvents,
-  resolveFraudEvent
+  resolveFraudEvent,
+  getPDFQueueStatus,
+  getEmailAuditLogs,
+  processPDFQueueItem
 } from "@/lib/info-products/v2-monetization";
 
 
@@ -61,6 +64,9 @@ function AdminInfoProductsPage() {
   const [tab, setTab] = useState<AdminTab>("config");
   const [aiConfig, setAIConfig] = useState<AIAdminConfig | null>(null);
   const [monConfig, setMonConfig] = useState<MonetizationConfig | null>(null);
+  const [pdfQueue, setPdfQueue] = useState<any[]>([]);
+  const [selectedCertificateId, setSelectedCertificateId] = useState<string | null>(null);
+  const [emailAudit, setEmailAudit] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState<string | null>(null);
   const [dirtyAI, setDirtyAI] = useState(false);
@@ -80,7 +86,17 @@ function AdminInfoProductsPage() {
       setMonConfig(mon);
       setLoading(false);
     });
-  }, []);
+    // Carregar fila de PDFs e auditoria se necessário
+    if (tab === 'certificados') {
+      getPDFQueueStatus('SYSTEM').then(setPdfQueue);
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    if (selectedCertificateId) {
+      getEmailAuditLogs(selectedCertificateId).then(setEmailAudit);
+    }
+  }, [selectedCertificateId]);
 
   const handleSaveAI = async () => {
     if (!aiConfig) return;
@@ -630,15 +646,18 @@ function AdminInfoProductsPage() {
         )}
         {tab === 'certificados' && (
           <div className="space-y-8 animate-in fade-in duration-500">
-
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-black italic uppercase tracking-tighter">Auditoria de Certificados</h2>
+              <h2 className="text-xl font-black italic uppercase tracking-tighter">Gestão de PDFs & Auditoria</h2>
               <div className="flex gap-2">
-                <div className="relative">
-                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                   <Input type="date" className="h-9 pl-9 w-40 bg-white/5 border-white/10 text-[10px] rounded-xl font-bold uppercase tracking-widest" />
-                </div>
-                <Input placeholder="Filtrar por Creator..." className="h-9 w-48 bg-white/5 border-white/10 text-[10px] rounded-xl" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-primary/20 border-primary/30 text-primary text-[10px] font-bold uppercase tracking-widest rounded-xl"
+                  onClick={() => getPDFQueueStatus('SYSTEM').then(setPdfQueue)}
+                >
+                  <Activity className="w-3 h-3 mr-2" />
+                  Atualizar Fila
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -659,36 +678,119 @@ function AdminInfoProductsPage() {
                   className="bg-emerald-500/10 border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-widest rounded-xl"
                 >
                   <Download className="w-3.5 h-3.5 mr-2" />
-                  Exportar CSV
+                  Exportar Auditoria (CSV)
                 </Button>
               </div>
             </div>
-            
-            <div className="bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    <th className="p-4 border-b border-white/5">Data</th>
-                    <th className="p-4 border-b border-white/5">Evento</th>
-                    <th className="p-4 border-b border-white/5">Creator</th>
-                    <th className="p-4 border-b border-white/5">Produto</th>
-                    <th className="p-4 border-b border-white/5">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="text-xs font-medium">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <tr key={i} className="hover:bg-white/5 transition-colors">
-                      <td className="p-4 border-b border-white/5 text-muted-foreground">13/08/2026</td>
-                      <td className="p-4 border-b border-white/5 text-white font-bold italic">Emissão de Certificado</td>
-                      <td className="p-4 border-b border-white/5 text-primary">Jorge Salgado</td>
-                      <td className="p-4 border-b border-white/5">Curso de Fixxer Pro</td>
-                      <td className="p-4 border-b border-white/5">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[8px] border border-emerald-500/20">SUCESSO</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* Fila de PDFs */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden">
+                <div className="p-6 border-b border-white/5 bg-white/[0.02]">
+                  <h3 className="text-[10px] font-black text-white uppercase italic tracking-widest flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-primary" />
+                    Fila de Geração em Lote
+                  </h3>
+                </div>
+                <div className="p-0 overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white/5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                        <th className="p-4">Aluno / Curso</th>
+                        <th className="p-4 text-center">Tentativas</th>
+                        <th className="p-4">Status</th>
+                        <th className="p-4 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-[10px] font-medium">
+                      {pdfQueue.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="p-8 text-center text-muted-foreground italic font-bold">Nenhum item na fila</td>
+                        </tr>
+                      ) : (
+                        pdfQueue.map(item => (
+                          <tr key={item.id} className="hover:bg-white/5 border-b border-white/5 transition-colors">
+                            <td className="p-4">
+                              <p className="font-bold text-white uppercase italic">{item.info_certificates?.student_name || "Desconhecido"}</p>
+                              <p className="text-[8px] text-muted-foreground uppercase">{item.info_certificates?.course_name || "N/A"}</p>
+                            </td>
+                            <td className="p-4 text-center font-mono">{item.attempts} / {item.max_attempts}</td>
+                            <td className="p-4">
+                              <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${
+                                item.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                item.status === 'failed' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                              }`}>
+                                {item.status}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right">
+                              {item.status === 'failed' && (
+                                <Button size="sm" onClick={() => processPDFQueueItem(item.id)} className="h-6 px-2 bg-amber-500 text-black text-[8px] font-black uppercase rounded-lg">Retry</Button>
+                              )}
+                              {item.status === 'completed' && (
+                                <Button variant="ghost" size="sm" asChild className="h-6 w-6 p-0 text-emerald-400">
+                                  <a href={item.pdf_url} target="_blank" rel="noreferrer"><Download className="w-3 h-3" /></a>
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Auditoria de E-mail */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden">
+                <div className="p-6 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                  <h3 className="text-[10px] font-black text-white uppercase italic tracking-widest flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-blue-400" />
+                    Log de Auditoria de E-mail
+                  </h3>
+                  <div className="flex gap-2">
+                    <Search className="w-3 h-3 text-muted-foreground" />
+                    <Input 
+                      placeholder="ID do Certificado..." 
+                      className="h-7 w-32 bg-black/40 border-white/10 text-[9px] uppercase font-bold"
+                      onChange={(e) => setSelectedCertificateId(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="p-0 overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white/5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                        <th className="p-4">Destinatário</th>
+                        <th className="p-4">Tipo</th>
+                        <th className="p-4">Status</th>
+                        <th className="p-4 text-right">Data</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-[10px] font-medium">
+                      {emailAudit.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="p-8 text-center text-muted-foreground italic font-bold">Pesquise um ID para ver auditoria</td>
+                        </tr>
+                      ) : (
+                        emailAudit.map(log => (
+                          <tr key={log.id} className="hover:bg-white/5 border-b border-white/5 transition-colors">
+                            <td className="p-4 font-bold text-white lowercase">{log.recipient_email}</td>
+                            <td className="p-4 uppercase text-[8px]">{log.notification_type}</td>
+                            <td className="p-4">
+                              <span className="text-emerald-400 uppercase font-black italic">{log.status}</span>
+                            </td>
+                            <td className="p-4 text-right text-muted-foreground font-mono">
+                              {new Date(log.created_at).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         )}

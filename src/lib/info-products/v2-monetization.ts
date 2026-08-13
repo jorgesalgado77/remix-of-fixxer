@@ -319,7 +319,77 @@ export async function getSecurityAlerts() {
   return data;
 }
 
-// --- Hardening & Analytics V3 ---
+// --- Fila de PDF & Auditoria V4 ---
+
+export async function queueCertificatePDF(certificateId: string, creatorId: string) {
+  const { data, error } = await supabaseExternal
+    .from('info_certificate_pdf_queue')
+    .insert({
+      certificate_id: certificateId,
+      creator_id: creatorId,
+      status: 'pending'
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getPDFQueueStatus(creatorId: string) {
+  const { data, error } = await supabaseExternal
+    .from('info_certificate_pdf_queue')
+    .select('*, info_certificates(student_name, course_name)')
+    .eq('creator_id', creatorId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function processPDFQueueItem(queueId: string) {
+  // Simulação de processamento no backend
+  await supabaseExternal
+    .from('info_certificate_pdf_queue')
+    .update({ status: 'processing', started_at: new Date().toISOString() })
+    .eq('id', queueId);
+
+  try {
+    // Lógica pesada de geração de PDF aqui...
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    await supabaseExternal
+      .from('info_certificate_pdf_queue')
+      .update({ 
+        status: 'completed', 
+        finished_at: new Date().toISOString(),
+        pdf_url: `https://storage.fixxer.app/certificates/pdf-${queueId}.pdf`
+      })
+      .eq('id', queueId);
+  } catch (err: any) {
+    await supabaseExternal
+      .from('info_certificate_pdf_queue')
+      .update({ 
+        status: 'failed', 
+        error_log: err.message,
+        attempts: 1 // Incrementaria em lógica real
+      })
+      .eq('id', queueId);
+  }
+}
+
+export async function getEmailAuditLogs(certificateId: string) {
+  const { data, error } = await supabaseExternal
+    .from('info_certificate_email_audit')
+    .select('*')
+    .eq('certificate_id', certificateId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+
 
 export async function exportCertificatesCSV(params: {
   creatorId?: string;
