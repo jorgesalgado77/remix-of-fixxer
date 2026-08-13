@@ -43,7 +43,12 @@ import {
   saveMonetizationConfig, 
   type MonetizationConfig 
 } from "@/lib/monetization";
-import { exportCertificatesCSV } from "@/lib/info-products/v2-monetization";
+import { 
+  exportCertificatesCSV,
+  exportAffiliateEvents,
+  resolveFraudEvent
+} from "@/lib/info-products/v2-monetization";
+
 
 export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   beforeLoad: requireAdmin,
@@ -155,16 +160,17 @@ function AdminInfoProductsPage() {
           <TabBtn active={tab === 'config'} onClick={() => setTab('config')} icon={<Settings className="w-3.5 h-3.5" />} label="Config" />
           <TabBtn active={tab === 'taxa'} onClick={() => setTab('taxa')} icon={<Coins className="w-3.5 h-3.5" />} label="Taxas" />
           <TabBtn active={tab === 'ia'} onClick={() => setTab('ia')} icon={<Cpu className="w-3.5 h-3.5" />} label="IA" />
-          <TabBtn active={tab === 'storage'} onClick={() => setTab('storage')} icon={<Database className="w-3.5 h-3.5" />} label="Storage" />
-          <TabBtn active={tab === 'moderacao'} onClick={() => setTab('moderacao')} icon={<ShieldAlert className="w-3.5 h-3.5" />} label="Moderação" />
-          <TabBtn active={tab === 'produtos'} onClick={() => setTab('produtos')} icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Produtos" />
           <TabBtn active={tab === 'vendas'} onClick={() => setTab('vendas')} icon={<TrendingUp className="w-3.5 h-3.5" />} label="Vendas" />
-          <TabBtn active={tab === 'criadores'} onClick={() => setTab('criadores')} icon={<Users className="w-3.5 h-3.5" />} label="Criadores" />
-          <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria" />
+          <TabBtn active={tab === 'afiliados'} onClick={() => setTab('afiliados')} icon={<Users className="w-3.5 h-3.5" />} label="Afiliados" />
+          <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria (Fraude)" />
           <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certificados" />
           <TabBtn active={tab === 'preview'} onClick={() => setTab('preview')} icon={<Palette className="w-3.5 h-3.5" />} label="Preview" />
           <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
-          <TabBtn active={tab === 'afiliados'} onClick={() => setTab('afiliados')} icon={<Users className="w-3.5 h-3.5" />} label="Afiliados" />
+          <TabBtn active={tab === 'storage'} onClick={() => setTab('storage')} icon={<Database className="w-3.5 h-3.5" />} label="Storage" />
+          <TabBtn active={tab === 'moderacao'} onClick={() => setTab('moderacao')} icon={<ShieldAlert className="w-3.5 h-3.5" />} label="Moderação" />
+          <TabBtn active={tab === 'produtos'} onClick={() => setTab('produtos')} icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Produtos" />
+          <TabBtn active={tab === 'criadores'} onClick={() => setTab('criadores')} icon={<Users className="w-3.5 h-3.5" />} label="Criadores" />
+
         </div>
       </header>
 
@@ -539,6 +545,92 @@ function AdminInfoProductsPage() {
 
         {tab === 'auditoria' && (
           <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-black italic uppercase tracking-tighter">Fila de Revisão & Conciliação</h2>
+                <div className="flex gap-2">
+                   <Button 
+                     variant="outline" 
+                     size="sm" 
+                     onClick={() => exportAffiliateEvents({})}
+                     className="bg-white/5 border-white/10 text-[10px] font-bold uppercase tracking-widest rounded-xl"
+                   >
+                      <Download className="w-3 h-3 mr-2" />
+                      Exportar Auditoria (CSV)
+                   </Button>
+                   <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 rounded-full">
+                      <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic">Antifraude Ativo</span>
+                   </div>
+                </div>
+             </div>
+
+             <div className="grid gap-6">
+                <div className="bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden">
+                   <div className="p-6 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                      <h3 className="text-xs font-black text-white uppercase italic flex items-center gap-2">
+                        <ShieldAlert className="w-4 h-4 text-primary" />
+                        Eventos Suspeitos Aguardando Revisão
+                      </h3>
+                   </div>
+                   <div className="p-0 overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                         <thead>
+                            <tr className="border-b border-white/5 bg-white/[0.01]">
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Origem</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Motivo</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Severidade</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ações</th>
+                            </tr>
+                         </thead>
+                         <tbody className="text-xs">
+                            <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                               <td className="p-4 font-bold">SALE-X442</td>
+                               <td className="p-4 text-muted-foreground">Self-referral detectado (mesmo IP)</td>
+                               <td className="p-4"><span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 text-[9px] font-black uppercase">Crítico</span></td>
+                               <td className="p-4 flex gap-2">
+                                  <Button size="sm" onClick={() => resolveFraudEvent('1', 'approve')} className="h-7 px-3 bg-emerald-500 text-white text-[9px] font-black uppercase rounded-lg">Aprovar</Button>
+                                  <Button size="sm" onClick={() => resolveFraudEvent('1', 'revoke')} className="h-7 px-3 bg-rose-500 text-white text-[9px] font-black uppercase rounded-lg">Revogar</Button>
+                               </td>
+                            </tr>
+                         </tbody>
+                      </table>
+                   </div>
+                </div>
+
+                <div className="bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden">
+                   <div className="p-6 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                      <h3 className="text-xs font-black text-white uppercase italic flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-amber-500" />
+                        Conciliação de Webhooks & Falhas
+                      </h3>
+                      <Button size="sm" variant="ghost" className="text-[9px] font-black uppercase text-primary">Reprocessar Todos</Button>
+                   </div>
+                   <div className="p-0 overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                         <thead>
+                            <tr className="border-b border-white/5 bg-white/[0.01]">
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Provider</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Retentativas</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Erro</th>
+                            </tr>
+                         </thead>
+                         <tbody className="text-xs">
+                            <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                               <td className="p-4 font-bold">ASAAS</td>
+                               <td className="p-4"><span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 text-[9px] font-black uppercase">Falha (Timeout)</span></td>
+                               <td className="p-4 font-mono">3 / 5</td>
+                               <td className="p-4 text-muted-foreground truncate max-w-[200px]">Network error: request timed out...</td>
+                            </tr>
+                         </tbody>
+                      </table>
+                   </div>
+                </div>
+             </div>
+          </div>
+        )}
+        {tab === 'certificados' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-black italic uppercase tracking-tighter">Auditoria de Certificados</h2>
               <div className="flex gap-2">
