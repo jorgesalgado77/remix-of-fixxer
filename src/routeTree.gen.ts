@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -61,6 +62,11 @@ import { Route as AuthenticatedAdminUsuariosIdRouteImport } from './routes/_auth
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketplaceRoute = MarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CadastroRoute = CadastroRouteImport.update({
@@ -317,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
+  '/marketplace': typeof MarketplaceRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/afiliados': typeof AuthenticatedAfiliadosRoute
@@ -365,6 +372,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
+  '/marketplace': typeof MarketplaceRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/afiliados': typeof AuthenticatedAfiliadosRoute
@@ -415,6 +423,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/cadastro': typeof CadastroRoute
+  '/marketplace': typeof MarketplaceRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/afiliados': typeof AuthenticatedAfiliadosRoute
@@ -466,6 +475,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/cadastro'
+    | '/marketplace'
     | '/terms'
     | '/admin'
     | '/afiliados'
@@ -514,6 +524,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/cadastro'
+    | '/marketplace'
     | '/terms'
     | '/admin'
     | '/afiliados'
@@ -563,6 +574,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/cadastro'
+    | '/marketplace'
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/afiliados'
@@ -614,6 +626,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   CadastroRoute: typeof CadastroRoute
+  MarketplaceRoute: typeof MarketplaceRoute
   TermsRoute: typeof TermsRoute
   ClienteIdRoute: typeof ClienteIdRoute
   DashboardLojistaRoute: typeof DashboardLojistaRoute
@@ -634,6 +647,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marketplace': {
+      id: '/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof MarketplaceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cadastro': {
@@ -1108,6 +1128,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   CadastroRoute: CadastroRoute,
+  MarketplaceRoute: MarketplaceRoute,
   TermsRoute: TermsRoute,
   ClienteIdRoute: ClienteIdRoute,
   DashboardLojistaRoute: DashboardLojistaRoute,

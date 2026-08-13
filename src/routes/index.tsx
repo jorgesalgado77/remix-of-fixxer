@@ -50,6 +50,10 @@ function Index() {
             <a href="#para-quem" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest">Para Quem É</a>
             <a href="#reputacao" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest">Reputação</a>
             <a href="#planos" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest">Planos</a>
+            <Link to="/marketplace" className="text-sm font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-2">
+               <Zap className="w-3 h-3" />
+               Info Produtos
+            </Link>
             <Link to="/terms" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest">Termos</Link>
           </div>
 
