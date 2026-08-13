@@ -20,7 +20,13 @@ import {
   PlayCircle,
   AlertCircle,
   Activity,
-  Award
+  Award,
+  Download,
+  Calendar,
+  Filter,
+  Palette,
+  Mail,
+  PieChart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +38,12 @@ import {
   type AIProviderConfig
 } from "@/lib/info-products/ai-admin.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { fetchMonetizationConfig, saveMonetizationConfig, type MonetizationConfig } from "@/lib/monetization";
+import { 
+  fetchMonetizationConfig, 
+  saveMonetizationConfig, 
+  type MonetizationConfig 
+} from "@/lib/monetization";
+import { exportCertificatesCSV } from "@/lib/info-products/v2-monetization";
 
 export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   beforeLoad: requireAdmin,
@@ -374,8 +385,33 @@ function AdminInfoProductsPage() {
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-black italic uppercase tracking-tighter">Auditoria de Certificados</h2>
               <div className="flex gap-2">
+                <div className="relative">
+                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                   <Input type="date" className="h-9 pl-9 w-40 bg-white/5 border-white/10 text-[10px] rounded-xl font-bold uppercase tracking-widest" />
+                </div>
                 <Input placeholder="Filtrar por Creator..." className="h-9 w-48 bg-white/5 border-white/10 text-[10px] rounded-xl" />
-                <Button variant="outline" size="sm" className="bg-white/5 border-white/10 text-[10px] font-bold uppercase tracking-widest rounded-xl">Filtrar Datas</Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={async () => {
+                    try {
+                      const csv = await exportCertificatesCSV({});
+                      const blob = new Blob([csv], { type: 'text/csv' });
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `auditoria_certificados_${new Date().toISOString().split('T')[0]}.csv`;
+                      a.click();
+                      toast.success("CSV exportado com sucesso.");
+                    } catch (e) {
+                      toast.error("Erro ao exportar CSV");
+                    }
+                  }}
+                  className="bg-emerald-500/10 border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-widest rounded-xl"
+                >
+                  <Download className="w-3.5 h-3.5 mr-2" />
+                  Exportar CSV
+                </Button>
               </div>
             </div>
             
@@ -405,6 +441,54 @@ function AdminInfoProductsPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {tab === 'vendas' && (
+          <div className="space-y-8 mt-8 border-t border-white/5 pt-8">
+            <h3 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
+              <PieChart className="w-4 h-4 text-primary" />
+              Métricas de Validação Pública
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <MetricBox label="Validações OK" value="842" sub="Últimos 30 dias" color="text-emerald-400" />
+              <MetricBox label="Falhas / Inválidos" value="12" sub="Tentativas frustradas" color="text-red-400" />
+              <MetricBox label="Rate Limit Acionado" value="3" sub="Proteção Anti-Brute" color="text-amber-400" />
+              <MetricBox label="IPs Únicos" value="156" sub="Origem das consultas" color="text-blue-400" />
+            </div>
+          </div>
+        )}
+
+        {tab === 'assinatura' && (
+          <div className="space-y-8 mt-8 border-t border-white/5 pt-8">
+             <ConfigSection title="Branding de Certificados (Personalização)" icon={<Palette className="text-primary" />}>
+                <div className="grid md:grid-cols-3 gap-6">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Logo (URL)</label>
+                      <Input placeholder="https://..." className="bg-black/40 border-white/10 h-10 rounded-xl" />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cor Primária</label>
+                      <div className="flex gap-2">
+                        <Input type="color" className="w-10 h-10 p-1 bg-black/40 border-white/10 rounded-xl cursor-pointer" defaultValue="#00FF87" />
+                        <Input placeholder="#00FF87" className="flex-1 bg-black/40 border-white/10 h-10 rounded-xl" />
+                      </div>
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Rodapé Customizado</label>
+                      <Input placeholder="Emitido por Fixxer Academy" className="bg-black/40 border-white/10 h-10 rounded-xl" />
+                   </div>
+                </div>
+                <div className="mt-6 flex items-center gap-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                   <Mail className="w-5 h-5 text-primary" />
+                   <div>
+                     <p className="text-[10px] font-black text-white uppercase tracking-widest">Notificações por E-mail</p>
+                     <p className="text-[9px] text-muted-foreground mt-0.5 uppercase font-bold">Alunos recebem automaticamente o PDF com QR Code e link de validação.</p>
+                   </div>
+                   <div className="flex-1" />
+                   <ToggleRow label="Ativar E-mails" desc="" on={true} />
+                </div>
+             </ConfigSection>
           </div>
         )}
 

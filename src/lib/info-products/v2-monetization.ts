@@ -232,3 +232,74 @@ export async function getAffiliateSales(affiliateId: string) {
   if (error) throw error;
   return data;
 }
+
+// --- Hardening & Analytics V3 ---
+
+export async function exportCertificatesCSV(params: {
+  creatorId?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  let query = supabaseExternal
+    .from('info_certificates')
+    .select('unique_code, student_name, course_name, creator_name, workload_hours, issued_at, status');
+
+  if (params.creatorId) query = query.eq('creator_id', params.creatorId);
+  if (params.startDate) query = query.gte('issued_at', params.startDate);
+  if (params.endDate) query = query.lte('issued_at', params.endDate);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const header = "Código;Aluno;Curso;Criador;Carga Horária;Data Emissão;Status\n";
+  const rows = (data || []).map(c => 
+    `${c.unique_code};${c.student_name};${c.course_name};${c.creator_name};${c.workload_hours};${new Date(c.issued_at).toLocaleDateString()};${c.status}`
+  ).join("\n");
+
+  return header + rows;
+}
+
+export async function getCreatorBranding(creatorId: string) {
+  const { data, error } = await supabaseExternal
+    .from('info_creator_branding')
+    .select('*')
+    .eq('creator_id', creatorId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function saveCreatorBranding(branding: {
+  creator_id: string;
+  logo_url?: string;
+  primary_color?: string;
+  footer_text?: string;
+}) {
+  const { data, error } = await supabaseExternal
+    .from('info_creator_branding')
+    .upsert(branding)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getValidationAnalytics(creatorId: string) {
+  const { data, error } = await supabaseExternal
+    .from('info_certificate_validation_metrics')
+    .select('status, created_at')
+    .eq('creator_id', creatorId);
+
+  if (error) throw error;
+
+  const stats = {
+    success: data.filter(d => d.status === 'success').length,
+    failed: data.filter(d => d.status === 'failed').length,
+    rate_limited: data.filter(d => d.status === 'rate_limited').length,
+    total: data.length
+  };
+
+  return stats;
+}
