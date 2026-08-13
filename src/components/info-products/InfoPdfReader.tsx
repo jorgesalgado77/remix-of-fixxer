@@ -20,7 +20,7 @@ interface PdfViewerProps {
 const PdfViewerContainer = React.lazy(async () => {
   // Apenas importa se estiver no navegador
   if (typeof window === 'undefined') {
-    return { default: () => null as any };
+    return { default: (props: any) => null };
   }
 
   try {
@@ -48,10 +48,10 @@ const PdfViewerContainer = React.lazy(async () => {
       );
     };
 
-    return { default: Component };
+    return { default: Component as any };
   } catch (e) {
     console.error('Falha ao carregar leitor de PDF:', e);
-    return { default: () => <div className="p-4 text-red-500">Erro ao carregar leitor.</div> as any };
+    return { default: (props: any) => <div className="p-4 text-red-500">Erro ao carregar leitor.</div> };
   }
 });
 
