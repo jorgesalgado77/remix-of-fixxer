@@ -47,8 +47,19 @@ function InfoAdminMasterPage() {
   });
 
   useEffect(() => {
-    loadData();
-  }, [activeTab, filters]);
+    if (!adminLoading && !isAdmin) {
+      toast.error("Acesso restrito ao Administrador.");
+      navigate({ to: "/feed" as any });
+      return;
+    }
+  }, [isAdmin, adminLoading, navigate]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadData();
+    }
+  }, [activeTab, filters, isAdmin]);
+
 
   async function loadData() {
     setLoading(true);
