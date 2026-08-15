@@ -328,11 +328,82 @@ function AdminInfoProductsPage() {
               <MetricBox label="Bundles (Combos)" value="R$ 14.890,50" sub="92 combos vendidos" color="text-blue-400" />
             </div>
 
-            <div className="bg-white/[0.03] border border-white/10 rounded-[32px] p-8 min-h-[300px] flex items-center justify-center">
-              <div className="text-center space-y-4">
-                <TrendingUp className="w-12 h-12 text-muted-foreground/20 mx-auto" />
-                <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Gráfico de Performance em Processamento...</p>
-              </div>
+            <div className="bg-card/50 backdrop-blur-xl border border-white/10 rounded-[32px] overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/5">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Comprador</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Produto / Criador</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Data</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-right">Valor Bruto</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Status</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {sales.map((sale) => (
+                        <tr key={sale.id} className="group hover:bg-white/[0.02] transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 text-[10px] font-bold">
+                                {sale.profiles?.display_name?.charAt(0) || 'U'}
+                              </div>
+                              <div>
+                                <div className="text-sm font-black text-white italic">{sale.profiles?.display_name || 'Usuário Fixxer'}</div>
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase">{sale.profiles?.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-0.5">
+                              <div className="text-sm font-bold text-white">{sale.info_products?.title}</div>
+                              <div className="text-[10px] font-black text-primary uppercase tracking-tighter italic">Por: {sale.creator?.display_name}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center text-[10px] font-bold text-muted-foreground uppercase">
+                             {new Date(sale.created_at).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="text-sm font-black text-white italic">R$ {Number(sale.amount_gross).toFixed(2)}</div>
+                            {sale.amount_discount > 0 && (
+                              <div className="text-[9px] font-bold text-red-400 uppercase">Desc: -R$ {Number(sale.amount_discount).toFixed(2)}</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center">
+                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                                sale.status === 'PAID' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                sale.status === 'REFUNDED' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                'bg-white/5 text-muted-foreground border-white/10'
+                              }`}>
+                                {sale.status}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center gap-2">
+                              {sale.status === 'PAID' && (
+                                <button 
+                                  onClick={async () => {
+                                    if(confirm("Estornar?")) {
+                                      await adminRefundSale(sale.id, "Admin Refund");
+                                      toast.success("Estornado.");
+                                      getAdminSalesList(filters).then(res => setSales(res.data || []));
+                                    }
+                                  }}
+                                  className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all border border-red-500/20"
+                                >
+                                  <AlertCircle className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
             </div>
           </div>
         )}
