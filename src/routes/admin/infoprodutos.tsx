@@ -34,7 +34,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
+export const Route = createFileRoute("/admin/infoprodutos")({
   component: InfoAdminMasterPage,
 });
 
