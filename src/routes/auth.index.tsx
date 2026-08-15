@@ -36,13 +36,22 @@ function LoginComponent() {
       if (!err) return "";
       if (typeof err === "string") return err;
       if (typeof err === "object") {
+        // Log para auditoria de erros no console do navegador
+        console.error("[Auth] Erro bruto:", err);
+        
         const raw = err.message || err.error_description || err.error || err.msg || "";
         if (raw) return String(raw);
+
+        // Caso especial para erro 500 do Supabase (unexpected_failure)
+        if (err.status === 500 || err.code === "unexpected_failure") {
+          return "Erro interno no servidor de autenticação (500). Verifique se o usuário existe no Supabase.";
+        }
+
         try {
           const s = JSON.stringify(err);
-          return s === "{}" ? "Falha na conexão com o servidor. Tente novamente." : s;
+          return s === "{}" ? "Falha na conexão com o servidor ou erro interno (500)." : s;
         } catch {
-          return "Erro desconhecido. Tente novamente.";
+          return "Erro desconhecido ao processar a resposta do servidor.";
         }
       }
       return String(err);
