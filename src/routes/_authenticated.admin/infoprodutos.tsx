@@ -61,7 +61,7 @@ import {
   saveGlobalMonetizationConfig,
   updateCouponStatus
 } from "@/lib/info-products/v2-monetization";
-
+import { PanelActions } from "@/components/PanelActions";
 
 export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   beforeLoad: requireAdmin,
@@ -183,17 +183,20 @@ function AdminInfoProductsPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            {dirtyAI && (
-              <Button onClick={handleSaveAI} className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl">
-                Salvar IA
-              </Button>
-            )}
-            {dirtyMon && (
-              <Button onClick={handleSaveMon} className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)]">
-                Salvar Config
-              </Button>
-            )}
+          <div className="flex items-center gap-4">
+            <PanelActions role="prestador" />
+            <div className="flex items-center gap-2">
+              {dirtyAI && (
+                <Button onClick={handleSaveAI} className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl">
+                  Salvar IA
+                </Button>
+              )}
+              {dirtyMon && (
+                <Button onClick={handleSaveMon} className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)]">
+                  Salvar Config
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
