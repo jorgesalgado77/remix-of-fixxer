@@ -100,8 +100,19 @@ function LoginComponent() {
                      (errObj.message && errObj.message.includes("Database error querying schema"));
 
         if (is500 && normalizedEmail === 'jorgericardosalgado@gmail.com') {
-          // Fallback master: em erro 500, se for o email do master, avisamos explicitamente
-          const criticalMsg = "Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL 'ADMIN_FINAL_REMEDY.sql' no painel do Supabase para limpar triggers corrompidos e restaurar o acesso.";
+          // Bypass Emergencial Master: Se houver erro 500, forçamos a entrada do master 
+          // confiando na sessão que pode ter sido criada mas o servidor falhou no retorno.
+          console.warn("[Auth] Bypass emergencial Master ativado devido a erro 500.");
+          
+          // Tenta recuperar a sessão local mesmo após o erro
+          const { data: localSession } = await supabaseExternal.auth.getSession();
+          if (localSession?.session) {
+            toast.success('Bypass Master: Acesso emergencial concedido.');
+            window.location.replace('/admin');
+            return;
+          }
+
+          const criticalMsg = "ERRO PERSISTE: Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL 'ADMIN_FINAL_REMEDY.sql' no painel do Supabase para limpar triggers corrompidos e restaurar o acesso.";
           setErrorMsg(criticalMsg);
           toast.error(criticalMsg, { duration: 10000 });
         } else {
