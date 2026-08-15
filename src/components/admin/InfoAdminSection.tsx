@@ -17,7 +17,7 @@ export function InfoAdminSection() {
           </div>
         </div>
         <button 
-          onClick={() => navigate({ to: "/admin/infoprodutos" as any })}
+          onClick={() => navigate({ to: "/admin/infoprodutos" })}
           className="p-3 bg-white/5 rounded-2xl hover:bg-primary hover:text-primary-foreground transition-all group/btn shadow-xl border border-white/5"
         >
           <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
