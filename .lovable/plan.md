@@ -1,69 +1,40 @@
-# Plano de Implementação: Sistema de Cupons (Prompt 18)
+# Plano de Recuperação de Acesso: Administrador Master
 
-Este plano descreve a implementação do sistema de cupons real para Info Produtos, garantindo validação server-side, idempotência e rastreabilidade financeira total.
+Este plano visa diagnosticar e restaurar o acesso pleno do usuário `jorgericardosalgado@gmail.com` ao painel administrativo do FIXXER, garantindo a integridade do sistema e dos demais usuários.
 
-## 1. Banco de Dados (Supabase Externo)
+## 1. Auditoria e Diagnóstico de Banco de Dados (Supabase Externo)
 
-Criar a infraestrutura de cupons com RLS e lógica de validação centralizada.
+Identificar o estado atual do usuário no banco de dados para entender por que o acesso admin está sendo negado.
 
-- **Tabela `info_coupons`**:
-  - `id`, `creator_id` (FK), `code` (Normalizado, Unique per creator), `name`, `description`.
-  - `discount_type` (`PERCENTAGE`, `FIXED_AMOUNT`).
-  - `discount_value` (decimal).
-  - `product_id` (opcional, null = catálogo todo).
-  - `start_date`, `end_date`.
-  - `max_uses` (null = ilimitado), `max_uses_per_user`.
-  - `min_purchase_value`.
-  - `status` (`DRAFT`, `ACTIVE`, `PAUSED`, `EXPIRED`, `EXHAUSTED`).
-  - `usage_count` (denormalizado para performance).
-- **Tabela `info_coupon_usage`**: Registro de cada uso para auditoria e limites.
-- **RPC `validate_info_coupon`**: Função centralizada para validar todas as regras no backend.
-- **RPC `apply_info_coupon`**: Função atômica para registrar o uso e incrementar contadores.
+- **Verificação de Identidade**: Confirmar se o usuário existe em `auth.users`.
+- **Verificação de Papéis (RBAC)**: Validar se há um registro na tabela `public.user_roles` com `role = 'admin'` para este UUID.
+- **Verificação de Perfil**: Checar se a coluna `role` na tabela `public.profiles` está sincronizada com a role administrativa.
+- **Verificação de Status**: Garantir que o usuário não está marcado como `bloqueado` na tabela de perfis.
 
-## 2. Backend & Services (`src/lib/info-products/`)
+## 2. Correção de Infraestrutura de Autenticação (Backend SQL)
 
-- **`v2-monetization.ts`**:
-  - Implementar CRUD de cupons para o criador.
-  - Implementar `validateCoupon` (chama RPC).
-  - Implementar `getCouponAnalytics` (agregação real de vendas por cupom).
-- **`checkout.functions.ts`**:
-  - Atualizar para incluir `couponCode` na criação do pagamento ASAAS.
-- **`src/routes/api/public/asaas.ts`**:
-  - Atualizar webhook para registrar o cupom na venda consolidada (`info_sales`) e disparar o incremento de uso.
+Aplicar as correções necessárias via SQL no Supabase para garantir o acesso pleno.
 
-## 3. UI (Creator Studio)
+- **Inserção de Role**: Garantir que a role `admin` existe no enum `app_role` e está atribuída ao usuário na tabela `user_roles`.
+- **Sincronização de Perfil**: Atualizar o perfil do usuário para refletir a role administrativa.
+- **Auditoria de Policies (RLS)**: Revisar e aplicar as permissões necessárias para que o papel `admin` possa ler/escrever em tabelas administrativas e de auditoria.
 
-- **Nova Aba "Cupons" em `/infoprodutos`**:
-  - Listagem de cupons com status, uso e receita gerada.
-  - Botão "Criar Cupom" com formulário completo.
-  - Ações: Editar, Pausar/Ativar, Duplicar, Arquivar, Ver Uso.
-  - Tooltips explicativos em todos os botões de ação.
-- **Filtros e Paginação**: Server-side para suportar grandes volumes.
+## 3. Endurecimento do Painel Administrativo (Frontend)
 
-## 4. UI (Checkout/Comprador)
+Garantir que a interface reconheça o usuário como administrador master e libere todas as ferramentas.
 
-- Implementar campo de cupom na tela de pagamento (Checkout).
-- Validação em tempo real (front chama backend).
-- Feedback visual de desconto aplicado.
+- **Validação de Guards**: Revisar `src/lib/admin-guard.ts` e `src/lib/current-user.ts` para assegurar que a detecção de `isAdmin` é robusta e baseada apenas no backend.
+- **Acesso Pleno em Rotas**: Verificar se o `AuthenticatedLayout` em `src/routes/_authenticated.tsx` não possui bloqueios residuais baseados em critérios obsoletos.
+- **Teste de Fluxo E2E**: Simular o login e a navegação por todas as páginas sob `/admin/*` para garantir que não existam redirecionamentos indesejados.
 
-## 5. Qualidade e Testes
+## 4. Segurança e Auditoria Final
 
-- **Testes de Regressão (`src/tests/info-coupons.spec.ts`)**:
-  - Suíte completa cobrindo validade, limites, tipos de desconto e uso duplicado.
-- **Auditoria**: Relatório em `docs/FIXXER_INFO_PRODUCTS_PROMPT_18_AUDIT.md`.
+- **Relatório de Acesso**: Gerar `docs/ADMIN_ACCESS_RECOVERY_AUDIT.md` detalhando as alterações realizadas.
+- **Verificação Cross-Role**: Garantir que usuários com papéis `lojista`, `prestador`, etc., continuam isolados em seus respectivos painéis e não ganharam privilégios.
 
 ## Detalhes Técnicos
 
-```text
-Entidade: info_coupons
-Fluxo de Validação:
-1. Cliente envia código.
-2. Server Fn chama RPC `validate_info_coupon`.
-3. RPC verifica:
-   - Existência e Status (ACTIVE).
-   - Datas (Validity).
-   - Elegibilidade (Product ID).
-   - Valor Mínimo.
-   - Limites (Global e User).
-4. Retorna Objeto de Desconto ou Erro.
-```
+O script SQL a ser executado no Supabase será fornecido para garantir que o usuário:
+1. Tenha o registro correto em `user_roles`.
+2. O perfil em `profiles` esteja com `role = 'admin'` e `status = 'ativo'`.
+3. As policies de RLS respeitem a função `has_role(auth.uid(), 'admin')`.
