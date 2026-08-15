@@ -81,7 +81,6 @@ function CreatorStudioPage() {
         title="CREATOR STUDIO" 
         subtitle="Gestão de Info Produtos e Vendas" 
         hideSidebarCard 
-        actions={<PanelActions role="prestador" />}
       />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10 space-y-8">
