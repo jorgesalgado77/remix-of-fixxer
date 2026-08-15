@@ -103,6 +103,12 @@ function AdminInfoProductsPage() {
     if (tab === 'certificados') {
       getPDFQueueStatus('SYSTEM').then(setPdfQueue);
     }
+    if (tab === 'vendas') {
+      getAdminSalesList(filters).then(res => setSales(res.data || []));
+    }
+    if (tab === 'cupons') {
+      getAdminCouponList().then(setCoupons);
+    }
   }, [tab]);
 
   useEffect(() => {
