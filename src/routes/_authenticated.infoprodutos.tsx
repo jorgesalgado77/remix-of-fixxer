@@ -41,7 +41,17 @@ import {
 import { toast } from 'sonner';
 import { CreatorProductForm } from '@/components/info-products/CreatorProductForm';
 import { useCurrentUserId } from '@/lib/current-user';
-import { getCreatorSalesStats, getCreatorSalesList, exportSalesCSV, getSaleDetails } from '@/lib/info-products/v2-monetization';
+import { 
+  getCreatorSalesStats, 
+  getCreatorSalesList, 
+  exportSalesCSV, 
+  getSaleDetails,
+  getCreatorCoupons,
+  upsertInfoCoupon,
+  getCouponAnalytics,
+  InfoCoupon
+} from '@/lib/info-products/v2-monetization';
+
 import { 
   Dialog,
   DialogContent,
@@ -173,12 +183,8 @@ function CreatorStudioPage() {
             )}
             
             {activeTab === 'sales' && <SalesDashboard />}
-            {activeTab === 'coupons' && (
-               <div className="py-20 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[32px]">
-                 <Clock className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-                 <p className="text-muted-foreground font-bold uppercase tracking-widest text-sm">Gestão de Cupons em breve.</p>
-               </div>
-            )}
+            {activeTab === 'coupons' && <CouponDashboard />}
+
 
           </>
         )}
@@ -695,4 +701,276 @@ function StatusBadge({ status }: { status: string }) {
     </Badge>
   );
 }
+
+function CouponDashboard() {
+  const userId = useCurrentUserId();
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<any>(null);
+
+  const loadCoupons = async () => {
+    if (!userId) return;
+    setLoading(true);
+    try {
+      const data = await getCreatorCoupons(userId);
+      setCoupons(data || []);
+    } catch (error) {
+      toast.error("Erro ao carregar cupons.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCoupons();
+  }, [userId]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Gestão de Cupons</h2>
+          <p className="text-muted-foreground text-sm">Crie descontos estratégicos para seus produtos.</p>
+        </div>
+        
+        <Button 
+          onClick={() => {
+            setSelectedCoupon(null);
+            setIsFormOpen(true);
+          }}
+          className="bg-primary text-primary-foreground font-black px-6 py-6 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.3)] hover:scale-105 transition-all uppercase tracking-widest text-xs gap-2"
+          title="Criar novo cupom de desconto real"
+        >
+          <Plus className="w-4 h-4" />
+          Criar Cupom
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-48 rounded-[32px]" />)}
+        </div>
+      ) : coupons.length === 0 ? (
+        <div className="py-20 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[32px]">
+          <Zap className="w-12 h-12 text-muted-foreground/30 mx-auto" />
+          <p className="text-muted-foreground font-bold uppercase tracking-widest text-sm">Nenhum cupom criado.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {coupons.map((coupon) => (
+            <div key={coupon.id} className="bg-white/[0.03] border border-white/10 p-6 rounded-[32px] space-y-4 relative group hover:border-primary/30 transition-all shadow-xl">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-black text-white italic tracking-tighter uppercase">{coupon.code}</span>
+                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest bg-primary/10 text-primary border-primary/20">
+                      {coupon.status}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-bold mt-1">{coupon.name}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-xl hover:bg-white/5">
+                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-[#1A1F2C] border-white/10 text-white rounded-xl">
+                    <DropdownMenuItem 
+                      className="gap-2 focus:bg-white/5 cursor-pointer text-xs uppercase font-black tracking-widest"
+                      onClick={() => {
+                        setSelectedCoupon(coupon);
+                        setIsFormOpen(true);
+                      }}
+                      title="Editar regras e validade do cupom"
+                    >
+                      <Edit className="w-3 h-3" /> Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="gap-2 focus:bg-white/5 cursor-pointer text-xs uppercase font-black tracking-widest text-amber-400"
+                      title="Pausar uso deste cupom temporariamente"
+                    >
+                      <Pause className="w-3 h-3" /> Pausar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="gap-2 focus:bg-white/5 cursor-pointer text-xs uppercase font-black tracking-widest text-red-500"
+                      title="Arquivar cupom permanentemente"
+                    >
+                      <Archive className="w-3 h-3" /> Arquivar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+                <div>
+                  <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">Desconto</p>
+                  <p className="text-sm font-black text-white italic">
+                    {coupon.discount_type === 'PERCENTAGE' ? `${coupon.discount_value}%` : `R$ ${coupon.discount_value}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">Usos</p>
+                  <p className="text-sm font-black text-white italic">{coupon.usage_count} {coupon.max_uses ? `/ ${coupon.max_uses}` : ''}</p>
+                </div>
+              </div>
+
+              {coupon.product_id ? (
+                <div className="bg-white/5 p-3 rounded-2xl">
+                  <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest mb-1">Restrito ao Produto</p>
+                  <p className="text-[10px] font-bold text-white truncate">{coupon.info_products?.title}</p>
+                </div>
+              ) : (
+                <div className="bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20">
+                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Válido em todo catálogo</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="bg-[#0f172a] border-white/10 text-white max-w-2xl rounded-[32px] overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">
+              {selectedCoupon ? 'Editar Cupom' : 'Novo Cupom'}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs uppercase font-bold tracking-widest">
+              Defina as regras e validade do seu desconto real.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <CouponForm 
+            initialData={selectedCoupon} 
+            onSuccess={() => {
+              setIsFormOpen(false);
+              loadCoupons();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function CouponForm({ initialData, onSuccess }: { initialData?: any; onSuccess: () => void }) {
+  const userId = useCurrentUserId();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    code: initialData?.code || '',
+    name: initialData?.name || '',
+    description: initialData?.description || '',
+    discount_type: initialData?.discount_type || 'PERCENTAGE',
+    discount_value: initialData?.discount_value || 0,
+    product_id: initialData?.product_id || null,
+    max_uses: initialData?.max_uses || null,
+    min_purchase_value: initialData?.min_purchase_value || 0,
+    status: initialData?.status || 'ACTIVE'
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userId) return;
+    setLoading(true);
+    try {
+      await upsertInfoCoupon({
+        ...formData,
+        id: initialData?.id,
+        creator_id: userId
+      } as any);
+      toast.success("Cupom salvo com sucesso!");
+      onSuccess();
+    } catch (error) {
+      toast.error("Erro ao salvar cupom. Verifique se o código já existe.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Código do Cupom</label>
+          <Input 
+            value={formData.code}
+            onChange={e => setFormData(prev => ({ ...prev, code: e.target.value }))}
+            placeholder="EX: FIXXER20"
+            required
+            className="bg-white/5 border-white/10 rounded-2xl h-12 font-black uppercase tracking-widest placeholder:text-muted-foreground/30"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Nome Interno</label>
+          <Input 
+            value={formData.name}
+            onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="Promoção de Lançamento"
+            required
+            className="bg-white/5 border-white/10 rounded-2xl h-12 font-bold"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="space-y-2 col-span-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Tipo de Desconto</label>
+          <select 
+            value={formData.discount_type}
+            onChange={e => setFormData(prev => ({ ...prev, discount_type: e.target.value as any }))}
+            className="w-full bg-white/5 border border-white/10 rounded-2xl h-12 px-4 font-bold text-white outline-none focus:ring-1 ring-primary/50"
+          >
+            <option value="PERCENTAGE">Porcentagem (%)</option>
+            <option value="FIXED_AMOUNT">Valor Fixo (R$)</option>
+          </select>
+        </div>
+        <div className="space-y-2 col-span-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Valor do Desconto</label>
+          <Input 
+            type="number"
+            value={formData.discount_value}
+            onChange={e => setFormData(prev => ({ ...prev, discount_value: Number(e.target.value) }))}
+            required
+            className="bg-white/5 border-white/10 rounded-2xl h-12 font-black italic tracking-tighter text-xl"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Limite de Usos</label>
+          <Input 
+            type="number"
+            value={formData.max_uses || ''}
+            onChange={e => setFormData(prev => ({ ...prev, max_uses: e.target.value ? Number(e.target.value) : null }))}
+            placeholder="Ilimitado"
+            className="bg-white/5 border-white/10 rounded-2xl h-12 font-bold"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Compra Mínima (R$)</label>
+          <Input 
+            type="number"
+            value={formData.min_purchase_value}
+            onChange={e => setFormData(prev => ({ ...prev, min_purchase_value: Number(e.target.value) }))}
+            className="bg-white/5 border-white/10 rounded-2xl h-12 font-bold"
+          />
+        </div>
+      </div>
+
+      <div className="pt-4 flex gap-3">
+        <Button 
+          type="submit" 
+          disabled={loading}
+          className="flex-1 bg-primary text-primary-foreground font-black py-7 rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.2)] uppercase tracking-widest text-xs"
+        >
+          {loading ? "Salvando..." : "Confirmar Cupom Real"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 

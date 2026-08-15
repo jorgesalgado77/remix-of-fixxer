@@ -106,6 +106,27 @@ export const Route = createFileRoute('/api/public/asaas')({
 
             if (saleError) throw saleError;
 
+            // 4.1 Incrementar uso do cupom (se houver)
+            if (couponCode) {
+              const { data: couponData } = await supabaseExternal
+                .from('info_coupons')
+                .select('id, discount_value')
+                .eq('code', couponCode)
+                .single();
+
+              if (couponData) {
+                await supabaseExternal.rpc('increment_coupon_usage', { _coupon_id: couponData.id });
+                
+                // Registrar log de uso para auditoria
+                await supabaseExternal.from('info_coupon_usage').insert({
+                  coupon_id: couponData.id,
+                  user_id: userId,
+                  sale_id: sale.id,
+                  discount_applied: split.amount_discount
+                });
+              }
+            }
+
             // 5. Liberar Entitlement
             const { error: entError } = await supabaseExternal.from('info_product_entitlements').upsert({
               user_id: userId,
@@ -114,6 +135,7 @@ export const Route = createFileRoute('/api/public/asaas')({
               status: 'active',
               granted_at: new Date().toISOString()
             }, { onConflict: 'user_id,product_id' });
+
             
             if (entError) {
               console.error(`[AsaasWebhook] Falha ao liberar entitlement:`, entError);
