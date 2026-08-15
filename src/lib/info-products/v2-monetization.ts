@@ -905,6 +905,15 @@ export async function saveGlobalMonetizationConfig(config: any) {
     new_value: config
   });
 
+
+export async function updateCouponStatus(couponId: string, status: string) {
+  const { error } = await supabaseExternal
+    .from('info_coupons')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', couponId);
+
+  if (error) throw error;
   return true;
 }
+
 

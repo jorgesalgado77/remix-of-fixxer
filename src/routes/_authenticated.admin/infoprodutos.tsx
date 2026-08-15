@@ -892,16 +892,37 @@ function AdminInfoProductsPage() {
           <div className="space-y-8 mt-8 border-t border-white/5 pt-8">
             <h3 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
               <PieChart className="w-4 h-4 text-primary" />
-              Métricas de Validação Pública
+              Métricas Globais de Vendas
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <MetricBox label="Validações OK" value="842" sub="Últimos 30 dias" color="text-emerald-400" />
-              <MetricBox label="Falhas / Inválidos" value="12" sub="Tentativas frustradas" color="text-red-400" />
-              <MetricBox label="Rate Limit Acionado" value="3" sub="Proteção Anti-Brute" color="text-amber-400" />
-              <MetricBox label="IPs Únicos" value="156" sub="Origem das consultas" color="text-blue-400" />
+              <MetricBox 
+                label="Total Bruto" 
+                value={`R$ ${sales.reduce((acc, s) => acc + Number(s.amount_gross), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+                sub="Volume Total" 
+                color="text-emerald-400" 
+              />
+              <MetricBox 
+                label="Estornos" 
+                value={sales.filter(s => s.status === 'REFUNDED').length.toString()} 
+                sub="Qtd. Refund" 
+                color="text-red-400" 
+              />
+              <MetricBox 
+                label="Cupons Usados" 
+                value={sales.filter(s => s.coupon_code).length.toString()} 
+                sub="Adesão a descontos" 
+                color="text-amber-400" 
+              />
+              <MetricBox 
+                label="Ticket Médio" 
+                value={`R$ ${(sales.length ? sales.reduce((acc, s) => acc + Number(s.amount_gross), 0) / sales.length : 0).toFixed(2)}`} 
+                sub="Por venda" 
+                color="text-blue-400" 
+              />
             </div>
           </div>
         )}
+
 
         {tab === 'vendas' && (
           <div className="space-y-8 mt-8 border-t border-white/5 pt-8">
