@@ -45,6 +45,10 @@ export async function getPublicInfoProducts(filters?: {
     query = query.eq('category', filters.category);
   }
 
+  if (filters?.search) {
+    query = query.ilike('title', `%${filters.search}%`);
+  }
+
   if (filters?.minPrice !== undefined) {
     query = query.gte('price', filters.minPrice);
   }
