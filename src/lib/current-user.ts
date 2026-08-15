@@ -105,7 +105,9 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   // Se o e-mail logado for o master, garantimos o acesso administrativo
   // independentemente de falhas na consulta ao banco ou RLS.
   if (email === 'jorgericardosalgado@gmail.com') {
-    console.warn("[Identity] Acesso Admin Master concedido via Bypass de Email.");
+    if (import.meta.env.DEV || cachedAdmin === null) {
+      console.warn("[Identity] Acesso Admin Master concedido via Bypass de Email.");
+    }
     cachedAdmin = true;
     return true;
   }
