@@ -689,5 +689,90 @@ export async function getSaleDetails(saleId: string) {
   return data;
 }
 
+// --- Cupons ---
+
+export const InfoCouponSchema = z.object({
+  id: z.string().uuid(),
+  creator_id: z.string().uuid(),
+  code: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  discount_type: z.enum(['PERCENTAGE', 'FIXED_AMOUNT']),
+  discount_value: z.number(),
+  product_id: z.string().uuid().nullable(),
+  start_date: z.string().nullable(),
+  end_date: z.string().nullable(),
+  max_uses: z.number().nullable(),
+  max_uses_per_user: z.number().nullable(),
+  min_purchase_value: z.number().default(0),
+  status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'EXPIRED', 'ARCHIVED']),
+  usage_count: z.number().default(0),
+  created_at: z.string()
+});
+
+export type InfoCoupon = z.infer<typeof InfoCouponSchema>;
+
+export async function getCreatorCoupons(creatorId: string) {
+  const { data, error } = await supabaseExternal
+    .from('info_coupons')
+    .select('*, info_products(title)')
+    .eq('creator_id', creatorId)
+    .order('created_at', { ascending: false });
+    
+  if (error) throw error;
+  return data;
+}
+
+export async function upsertInfoCoupon(coupon: Partial<InfoCoupon> & { creator_id: string }) {
+  if (coupon.code) {
+    coupon.code = coupon.code.trim().toUpperCase().replace(/\s+/g, '');
+  }
+
+  const { data, error } = await supabaseExternal
+    .from('info_coupons')
+    .upsert(coupon)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data;
+}
+
+export async function validateCoupon(params: {
+  code: string;
+  productId: string;
+  userId: string;
+  purchaseValue: number;
+}) {
+  const { data, error } = await supabaseExternal.rpc('validate_info_coupon', {
+    _code: params.code,
+    _product_id: params.productId,
+    _user_id: params.userId,
+    _purchase_value: params.purchaseValue
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getCouponAnalytics(couponId: string) {
+  const { data: coupon } = await supabaseExternal.from('info_coupons').select('code').eq('id', couponId).single();
+  
+  const { data, error } = await supabaseExternal
+    .from('info_sales')
+    .select('amount_net_paid, amount_discount, created_at')
+    .eq('coupon_code', coupon?.code)
+    .eq('status', 'PAID');
+
+  if (error) throw error;
+
+  return {
+    usageCount: data.length,
+    totalRevenue: data.reduce((acc, s) => acc + Number(s.amount_net_paid), 0),
+    totalDiscount: data.reduce((acc, s) => acc + Number(s.amount_discount), 0)
+  };
+}
+
+
 
 
