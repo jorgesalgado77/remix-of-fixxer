@@ -35,23 +35,25 @@ function LoginComponent() {
     const extractErr = (err: any): string => {
       if (!err) return "";
       if (typeof err === "string") return err;
+      
+      // Log para auditoria de erros no console do navegador
+      console.error("[Auth] Erro bruto:", err);
+
+      // Tratamento para AuthRetryableFetchError ou objetos de erro vazios {} que ocorrem no 500
       if (typeof err === "object") {
-        // Log para auditoria de erros no console do navegador
-        console.error("[Auth] Erro bruto:", err);
-        
-        const raw = err.message || err.error_description || err.error || err.msg || "";
+        const raw = err.message || err.error_description || err.error || err.msg;
         if (raw) return String(raw);
 
-        // Caso especial para erro 500 do Supabase (unexpected_failure)
-        if (err.status === 500 || err.code === "unexpected_failure") {
-          return "Erro interno no servidor de autenticação (500). Verifique se o usuário existe no Supabase.";
+        // Se o status for 500 ou não houver mensagem, mas for um erro do Supabase
+        if (err.status === 500 || (err.name && err.name.includes('Auth'))) {
+          return "Erro interno do servidor Supabase (500). Isso geralmente indica um trigger quebrado ou problema no banco de dados.";
         }
 
         try {
           const s = JSON.stringify(err);
-          return s === "{}" ? "Falha na conexão com o servidor ou erro interno (500)." : s;
+          return s === "{}" ? "Falha na conexão ou erro interno do servidor (500)." : s;
         } catch {
-          return "Erro desconhecido ao processar a resposta do servidor.";
+          return "Erro desconhecido ao processar resposta do servidor.";
         }
       }
       return String(err);
