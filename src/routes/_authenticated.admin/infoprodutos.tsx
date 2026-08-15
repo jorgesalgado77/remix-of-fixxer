@@ -78,6 +78,12 @@ function AdminInfoProductsPage() {
   const [testing, setTesting] = useState<string | null>(null);
   const [dirtyAI, setDirtyAI] = useState(false);
   const [dirtyMon, setDirtyMon] = useState(false);
+  const [sales, setSales] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [filters, setFilters] = useState({
+    period: 'all' as any,
+    status: 'ALL'
+  });
 
   const getAIConfigFn = useServerFn(getAIAdminConfig);
   const saveAIConfigFn = useServerFn(saveAIAdminConfig);
