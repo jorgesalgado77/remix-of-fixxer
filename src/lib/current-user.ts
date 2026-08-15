@@ -7,7 +7,7 @@
 // Regras:
 //  - `getCurrentUserId()`  → uid real de auth.users ou null
 //  - `getCurrentUserEmail()` → email real da sessão
-//  - `isCurrentUserAdmin()` → checa public.user_roles (role='admin') com fallback master
+//  - `isCurrentUserAdmin()` → checa public.user_roles (role='admin') com bypass para o master (jorgericardosalgado@gmail.com)
 //  - Hooks React (`useCurrentUser`, `useIsAdmin`) reagem a onAuthStateChange
 //
 // localStorage é aceitável APENAS como chave de cache namespaced pelo
@@ -40,7 +40,7 @@ export async function getCurrentUser(force = false): Promise<User | null> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      // 1. Tenta obter a sessão primeiro (rápido, local do storage)
+      // 1. Tenta obter a sessão do storage local primeiro
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
       
       if (sessionError || !session) {
@@ -48,21 +48,31 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         return null;
       }
 
-      // 2. Se temos sessão mas não usuário em cache, tentamos getUser() uma vez
-      // para garantir que o token é válido e obter dados frescos.
+      // 2. Se temos uma sessão, o usuário está logado localmente.
+      // Tentamos getUser() apenas para validar contra o servidor, mas se falhar (erro 500),
+      // confiamos na sessão local para manter a resiliência.
       try {
         const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
         if (!userError && user) {
           cachedUser = user;
           return user;
         }
+        
+        // Se o servidor retornar erro mas tivermos e-mail na sessão local,
+        // permitimos que a aplicação continue (especialmente para o Master).
+        if (session.user) {
+          console.warn("[current-user] Servidor instável, usando dados da sessão local.");
+          cachedUser = session.user;
+          return cachedUser;
+        }
       } catch (err) {
-        // Silencioso: se falhar por rede, usamos a sessão local abaixo
+        console.warn("[current-user] Falha na validação remota, usando sessão local.");
+        cachedUser = session.user;
+        return cachedUser;
       }
       
-      // 3. Fallback para a sessão local (preserva login offline/lento)
-      cachedUser = session.user;
-      return cachedUser;
+      cachedUser = null;
+      return null;
     } catch (e) {
       console.warn("[current-user] Erro crítico ao recuperar identidade:", e);
       cachedUser = null;
@@ -86,18 +96,26 @@ export async function getCurrentUserEmail(): Promise<string | null> {
 
 export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   if (!force && cachedAdmin !== null) return cachedAdmin;
-  const uid = await getCurrentUserId();
+  
+  const user = await getCurrentUser(force);
+  const uid = user?.id;
+  const email = user?.email?.toLowerCase();
+
+  // 1. Bypass Emergencial Local (Admin Master)
+  // Se o e-mail logado for o master, garantimos o acesso administrativo
+  // independentemente de falhas na consulta ao banco ou RLS.
+  if (email === 'jorgericardosalgado@gmail.com') {
+    console.warn("[Identity] Acesso Admin Master concedido via Bypass de Email.");
+    cachedAdmin = true;
+    return true;
+  }
+
   if (!uid) { 
     cachedAdmin = false; 
     return false; 
   }
   
   try {
-    // Debug: Log para rastrear tentativas de acesso admin no console do navegador (apenas em dev)
-    if (import.meta.env.DEV) {
-      console.log(`[Identity] Verificando role admin para: ${uid}`);
-    }
-
     const { data, error } = await supabaseExternal
       .from("user_roles")
       .select("role")
@@ -107,30 +125,15 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
       
     if (error) {
       console.error("[Identity] Erro ao consultar user_roles:", error);
-      // Tentativa de fallback para o usuário específico se a query falhar
-      const email = await getCurrentUserEmail();
-      if (email?.toLowerCase() === 'jorgericardosalgado@gmail.com') {
-        console.warn("[Identity] Fallback emergencial ativado para admin master via email.");
-        cachedAdmin = true;
-        return true;
-      }
+      // Se houver erro de rede/RLS mas o e-mail não for o master, negamos por segurança.
       if (!force) cachedAdmin = false;
       return false;
     }
 
     cachedAdmin = !!data;
     
-    // Hard override para o email do administrador master (Garantia Final)
-    const email = await getCurrentUserEmail();
-    if (email?.toLowerCase() === 'jorgericardosalgado@gmail.com') {
-      if (!cachedAdmin) {
-        console.warn("[Identity] Override forçado para admin master (Email verificado).");
-        cachedAdmin = true;
-      }
-    }
-    
     if (import.meta.env.DEV) {
-      console.log(`[Identity] Status Admin: ${cachedAdmin}`);
+      console.log(`[Identity] Status Admin (DB): ${cachedAdmin}`);
     }
   } catch (err) {
     console.error("[Identity] Exceção em isCurrentUserAdmin:", err);
