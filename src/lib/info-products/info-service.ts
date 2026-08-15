@@ -27,6 +27,7 @@ export async function getPublicInfoProducts(filters?: {
   minPrice?: number;
   maxPrice?: number;
   sort?: 'newest' | 'bestseller' | 'rating';
+  search?: string;
   page?: number;
   pageSize?: number;
 }) {
@@ -42,6 +43,10 @@ export async function getPublicInfoProducts(filters?: {
 
   if (filters?.category) {
     query = query.eq('category', filters.category);
+  }
+
+  if (filters?.search) {
+    query = query.ilike('title', `%${filters.search}%`);
   }
 
   if (filters?.minPrice !== undefined) {
