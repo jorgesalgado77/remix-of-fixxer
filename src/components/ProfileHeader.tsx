@@ -99,7 +99,7 @@ export function ProfileHeader({
           <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto no-scrollbar py-2">
             <PanelActions role={role} />
             {actions && (
-              <div className="flex items-center gap-2 border-l border-white/10 pl-4 ml-2">
+              <div className="flex items-center gap-2 border-l border-white/10 pl-4 ml-2 shrink-0">
                 {actions}
               </div>
             )}
