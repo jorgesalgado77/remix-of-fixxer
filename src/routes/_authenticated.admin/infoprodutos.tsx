@@ -61,7 +61,7 @@ import {
   saveGlobalMonetizationConfig,
   updateCouponStatus
 } from "@/lib/info-products/v2-monetization";
-
+import { PanelActions } from "@/components/PanelActions";
 
 export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   beforeLoad: requireAdmin,
@@ -167,8 +167,8 @@ function AdminInfoProductsPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#0A0A0B] text-white pb-32">
-      <header className="sticky top-0 z-30 bg-[#0A0A0B]/95 backdrop-blur border-b border-white/10">
+    <div className="min-h-dvh bg-[#0A0A0B] text-white">
+      <header className="sticky top-0 z-[60] bg-[#0A0A0B]/95 backdrop-blur border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link to="/admin" className="p-2 rounded-xl hover:bg-white/10 transition-colors">
@@ -183,17 +183,20 @@ function AdminInfoProductsPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            {dirtyAI && (
-              <Button onClick={handleSaveAI} className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl">
-                Salvar IA
-              </Button>
-            )}
-            {dirtyMon && (
-              <Button onClick={handleSaveMon} className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)]">
-                Salvar Config
-              </Button>
-            )}
+          <div className="flex items-center gap-4">
+            {/* PanelActions removido para evitar duplicação com a GlobalActionBar */}
+            <div className="flex items-center gap-2">
+              {dirtyAI && (
+                <Button onClick={handleSaveAI} className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl">
+                  Salvar IA
+                </Button>
+              )}
+              {dirtyMon && (
+                <Button onClick={handleSaveMon} className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)]">
+                  Salvar Config
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
