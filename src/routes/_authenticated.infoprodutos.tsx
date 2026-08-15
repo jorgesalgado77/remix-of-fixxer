@@ -41,7 +41,17 @@ import {
 import { toast } from 'sonner';
 import { CreatorProductForm } from '@/components/info-products/CreatorProductForm';
 import { useCurrentUserId } from '@/lib/current-user';
-import { getCreatorSalesStats, getCreatorSalesList, exportSalesCSV, getSaleDetails } from '@/lib/info-products/v2-monetization';
+import { 
+  getCreatorSalesStats, 
+  getCreatorSalesList, 
+  exportSalesCSV, 
+  getSaleDetails,
+  getCreatorCoupons,
+  upsertInfoCoupon,
+  getCouponAnalytics,
+  InfoCoupon
+} from '@/lib/info-products/v2-monetization';
+
 import { 
   Dialog,
   DialogContent,
