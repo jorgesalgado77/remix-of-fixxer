@@ -689,7 +689,7 @@ export async function getSaleDetails(saleId: string) {
   return data;
 }
 
-// --- Cupons ---
+// --- Cupons (Prompt 18/19) ---
 
 export const InfoCouponSchema = z.object({
   id: z.string().uuid(),
@@ -704,9 +704,8 @@ export const InfoCouponSchema = z.object({
   end_date: z.string().nullable(),
   max_uses: z.number().nullable(),
   max_uses_per_user: z.number().nullable(),
-  min_purchase_value: z.number().default(0),
-  status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'EXPIRED', 'ARCHIVED']),
-  usage_count: z.number().default(0),
+  min_purchase_amount: z.number().default(0),
+  status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'EXPIRED', 'EXHAUSTED']),
   created_at: z.string()
 });
 
@@ -715,12 +714,43 @@ export type InfoCoupon = z.infer<typeof InfoCouponSchema>;
 export async function getCreatorCoupons(creatorId: string) {
   const { data, error } = await supabaseExternal
     .from('info_coupons')
-    .select('*, info_products(title)')
+    .select('*, info_coupon_usage(count)')
     .eq('creator_id', creatorId)
     .order('created_at', { ascending: false });
-    
+
   if (error) throw error;
   return data;
+}
+
+/**
+ * Validação de cupom no servidor (TanStack Start)
+ * Chama a RPC que possui lock de concorrência (Prompt 19)
+ */
+export async function validateCouponForCheckout(params: {
+  code: string;
+  productId: string;
+  userId: string;
+  amountGross: number;
+}) {
+  const { data, error } = await supabaseExternal.rpc('validate_and_apply_info_coupon', {
+    _code: params.code.toUpperCase().trim(),
+    _product_id: params.productId,
+    _user_id: params.userId,
+    _amount_gross: params.amountGross
+  });
+
+  if (error) {
+    console.error('[CouponValidation] Erro RPC:', error);
+    return { success: false, error: 'Erro ao validar cupom. Tente novamente.' };
+  }
+
+  return data as {
+    success: boolean;
+    error?: string;
+    coupon_id?: string;
+    discount_amount?: number;
+    final_amount?: number;
+  };
 }
 
 export async function upsertInfoCoupon(coupon: Partial<InfoCoupon> & { creator_id: string }) {
@@ -733,26 +763,19 @@ export async function upsertInfoCoupon(coupon: Partial<InfoCoupon> & { creator_i
     .upsert(coupon)
     .select()
     .single();
-    
+
   if (error) throw error;
   return data;
 }
 
-export async function validateCoupon(params: {
-  code: string;
-  productId: string;
-  userId: string;
-  purchaseValue: number;
-}) {
-  const { data, error } = await supabaseExternal.rpc('validate_info_coupon', {
-    _code: params.code,
-    _product_id: params.productId,
-    _user_id: params.userId,
-    _purchase_value: params.purchaseValue
-  });
+export async function updateCouponStatus(id: string, status: InfoCoupon['status']) {
+  const { error } = await supabaseExternal
+    .from('info_coupons')
+    .update({ status })
+    .eq('id', id);
 
   if (error) throw error;
-  return data;
+  return true;
 }
 
 export async function getCouponAnalytics(couponId: string) {
@@ -772,6 +795,7 @@ export async function getCouponAnalytics(couponId: string) {
     totalDiscount: data.reduce((acc, s) => acc + Number(s.amount_discount), 0)
   };
 }
+
 
 
 
