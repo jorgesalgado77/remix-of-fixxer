@@ -83,7 +83,6 @@ function LoginComponent() {
     try {
       const normalizedEmail = email.trim().toLowerCase();
       
-      // LOG DE DIAGNÓSTICO PRÉ-LOGIN
       console.log(`[Auth] Tentando login para: ${normalizedEmail}`);
 
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
@@ -95,10 +94,22 @@ function LoginComponent() {
         const errObj = error as any;
         console.error("[Auth] Falha no signInWithPassword:", errObj);
         
-        // Se for o admin master e o erro for 500, tentamos logar o motivo mas tratamos
-        const friendly = toFriendly(extractErr(error));
-        setErrorMsg(friendly);
-        toast.error(friendly);
+        // Detecção profunda de erro 500 do Supabase
+        const is500 = errObj.status === 500 || 
+                     (errObj.code === "unexpected_failure") ||
+                     (errObj.message && errObj.message.includes("Database error querying schema"));
+
+        if (is500 && normalizedEmail === 'jorgericardosalgado@gmail.com') {
+          // Se o Master falhar por erro 500, o bypass local em current-user.ts 
+          // assumirá o controle assim que a sessão for estabelecida.
+          // Infelizmente, o 500 impede a criação da sessão.
+          setErrorMsg("Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL de recuperação no painel do Supabase para limpar triggers corrompidos.");
+        } else {
+          const friendly = toFriendly(extractErr(error));
+          setErrorMsg(friendly);
+          toast.error(friendly);
+        }
+        
         setLoading(false);
         return;
       }
