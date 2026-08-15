@@ -54,7 +54,7 @@ function InfoAdminMasterPage() {
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
       toast.error("Acesso restrito ao Administrador.");
-      navigate({ to: "/feed" as any });
+      navigate({ to: "/feed" });
     }
   }, [isAdmin, adminLoading, navigate]);
 
