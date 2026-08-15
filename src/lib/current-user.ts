@@ -7,7 +7,7 @@
 // Regras:
 //  - `getCurrentUserId()`  → uid real de auth.users ou null
 //  - `getCurrentUserEmail()` → email real da sessão
-//  - `isCurrentUserAdmin()` → checa public.user_roles (role='admin')
+//  - `isCurrentUserAdmin()` → checa public.user_roles (role='admin') com fallback master
 //  - Hooks React (`useCurrentUser`, `useIsAdmin`) reagem a onAuthStateChange
 //
 // localStorage é aceitável APENAS como chave de cache namespaced pelo

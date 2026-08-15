@@ -74,12 +74,20 @@ function LoginComponent() {
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
+      
+      // LOG DE DIAGNÓSTICO PRÉ-LOGIN
+      console.log(`[Auth] Tentando login para: ${normalizedEmail}`);
+
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
         email: normalizedEmail,
         password,
       });
 
       if (error) {
+        const errObj = error as any;
+        console.error("[Auth] Falha no signInWithPassword:", errObj);
+        
+        // Se for o admin master e o erro for 500, tentamos logar o motivo mas tratamos
         const friendly = toFriendly(extractErr(error));
         setErrorMsg(friendly);
         toast.error(friendly);
