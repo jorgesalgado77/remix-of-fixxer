@@ -125,7 +125,7 @@ function AuthenticatedLayout() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col" style={getCategoryCssVars(currentCategory)}>
 
-      <nav className="border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+      <nav className="border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-[60] px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div onClick={() => navigate({ to: isAdmin ? "/admin" as any : "/feed" as any })} className="flex items-center gap-2 cursor-pointer group">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-xl shadow-[0_0_15px_rgba(0,255,135,0.3)] group-hover:scale-110 transition-transform">
