@@ -190,7 +190,13 @@ function ProductDetailsPage() {
 
                <div className="space-y-4">
                  <Button 
-                   onClick={() => toast.info('Integração de checkout em breve')}
+                   onClick={() => {
+                     // Fluxo integrado de Checkout (Prompt 21)
+                     navigate({ 
+                       to: '/checkout' as any, 
+                       search: { productId: product.id } as any 
+                     });
+                   }}
                    className="w-full bg-primary text-primary-foreground font-black py-8 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.4)] hover:scale-105 transition-all uppercase tracking-widest text-sm gap-3"
                  >
                    Garantir Acesso Agora

@@ -108,6 +108,13 @@ function MarketplacePage() {
                <Input 
                  placeholder="O que você quer aprender hoje?" 
                  className="bg-transparent border-0 focus-visible:ring-0 text-white placeholder:text-muted-foreground/50 h-12"
+                 onChange={(e) => {
+                   // Integrar com busca real no info-service
+                   const term = e.target.value;
+                   if (term.length > 2) {
+                     getPublicInfoProducts({ category, sort, search: term }).then(res => setProducts(res.products));
+                   }
+                 }}
                />
                <Button className="bg-primary text-primary-foreground font-black rounded-xl px-6 uppercase tracking-widest text-xs h-10">Buscar</Button>
              </div>
