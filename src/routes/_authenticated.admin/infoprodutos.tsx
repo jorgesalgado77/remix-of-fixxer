@@ -31,6 +31,7 @@ import {
   Pause,
   Play
 } from "lucide-react";
+import { PanelActions } from "@/components/PanelActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
