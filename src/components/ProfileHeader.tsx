@@ -73,7 +73,16 @@ export function ProfileHeader({
 
   return (
     <div className="relative isolate">
-      {!hideSidebarCard && <ProfileSummaryCard role={role} variant="sidebar" />}
+      {/* 
+          O ProfileSummaryCard lateral deve aparecer apenas em desktop se hideSidebarCard for false.
+          Em mobile, ele é duplicado pelo card no final do header ou pelo layout. 
+          O usuário reclamou que em mobile está duplicando e a barra lateral não deve existir.
+      */}
+      {!hideSidebarCard && (
+        <div className="hidden lg:block">
+          <ProfileSummaryCard role={role} variant="sidebar" />
+        </div>
+      )}
       
 
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
@@ -107,7 +116,10 @@ export function ProfileHeader({
         </div>
       </header>
 
-      <ProfileSummaryCard role={role} variant="auto" className="md:hidden mb-8" />
+      {/* 
+          Removido o ProfileSummaryCard redundante no mobile que aparecia abaixo do header.
+          A barra de botões (PanelActions) já está no topo dentro do header acima.
+      */}
     </div>
   );
 }
