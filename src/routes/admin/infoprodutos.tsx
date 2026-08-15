@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { 
   ShoppingBag, 
   Search, 
@@ -16,7 +16,9 @@ import {
   Play,
   Archive,
   SearchCode,
-  ArrowLeft
+  ArrowLeft,
+  Settings,
+  ShieldCheck
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { 
@@ -27,15 +29,18 @@ import {
   saveGlobalMonetizationConfig,
   updateCouponStatus
 } from "@/lib/info-products/v2-monetization";
+import { useIsAdmin } from "@/lib/current-user";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export const Route = createFileRoute("/admin/infoprodutos")({
+export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   component: InfoAdminMasterPage,
 });
 
 function InfoAdminMasterPage() {
+  const navigate = useNavigate();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const [activeTab, setActiveTab] = useState<'sales' | 'coupons' | 'config'>('sales');
   const [sales, setSales] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -50,7 +55,6 @@ function InfoAdminMasterPage() {
     if (!adminLoading && !isAdmin) {
       toast.error("Acesso restrito ao Administrador.");
       navigate({ to: "/feed" as any });
-      return;
     }
   }, [isAdmin, adminLoading, navigate]);
 
@@ -59,7 +63,6 @@ function InfoAdminMasterPage() {
       loadData();
     }
   }, [activeTab, filters, isAdmin]);
-
 
   async function loadData() {
     setLoading(true);
@@ -93,6 +96,9 @@ function InfoAdminMasterPage() {
       toast.error("Falha ao realizar estorno.");
     }
   };
+
+  if (adminLoading) return null;
+  if (!isAdmin) return null;
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
