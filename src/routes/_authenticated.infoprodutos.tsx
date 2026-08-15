@@ -173,12 +173,8 @@ function CreatorStudioPage() {
             )}
             
             {activeTab === 'sales' && <SalesDashboard />}
-            {activeTab === 'coupons' && (
-               <div className="py-20 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[32px]">
-                 <Clock className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-                 <p className="text-muted-foreground font-bold uppercase tracking-widest text-sm">Gestão de Cupons em breve.</p>
-               </div>
-            )}
+            {activeTab === 'coupons' && <CouponDashboard />}
+
 
           </>
         )}
