@@ -51,7 +51,7 @@ export const createAsaasPayment = createServerFn({ method: "POST" })
     console.log(`[Checkout] Criando cobrança ASAAS: R$ ${finalAmount} (Desconto: R$ ${discountAmount})`);
     
     // Simulação da chamada ASAAS com metadados robustos para o Webhook
-    // Em prod: fetch('https://sandbox.asaas.com/api/v3/payments', ...)
+    // O prefixo 'pay_mock_' é mantido até a ativação da chave real de produção no Admin Master.
     return {
       success: true,
       paymentId: "pay_mock_" + Math.random().toString(36).substring(7),
