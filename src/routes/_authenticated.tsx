@@ -45,7 +45,11 @@ function AuthenticatedLayout() {
 
   useEffect(() => {
     if (userLoading) return;
-    if (!user) {
+    
+    // Bypass para o Administrador Master em caso de instabilidade
+    const isMaster = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    
+    if (!user && !isMaster) {
       navigate({ to: "/auth" as any });
       return;
     }
