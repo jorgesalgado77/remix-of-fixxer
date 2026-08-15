@@ -597,7 +597,7 @@ export function LojistaDashboard() {
             role="lojista" 
             title={activeTab === 'dashboard' ? undefined : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
             subtitle={activeTab === 'dashboard' ? undefined : ""}
-            hideSidebarCard
+            hideSidebarCard={false}
             actions={
               <div className="flex items-center gap-4">
                 <div className="relative">
