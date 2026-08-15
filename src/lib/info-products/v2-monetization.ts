@@ -497,6 +497,53 @@ export async function resolveFraudEvent(eventId: string, action: 'approve' | 're
   return data;
 }
 
+export interface SaleReconciliation {
+  amount_gross: number;
+  amount_discount: number;
+  amount_net_paid: number;
+  fee_platform_percent: number;
+  fee_platform_amount: number;
+  fee_affiliate_percent: number;
+  fee_affiliate_amount: number;
+  amount_creator_net: number;
+}
+
+export async function calculateSaleSplit(params: {
+  amountGross: number;
+  amountDiscount: number;
+  creatorId: string;
+  affiliatePercent?: number;
+}): Promise<SaleReconciliation> {
+  const { data, error } = await supabaseExternal.rpc('calculate_sale_split', {
+    _amount_gross: params.amountGross,
+    _amount_discount: params.amountDiscount,
+    _creator_id: params.creatorId,
+    _affiliate_percent: params.affiliatePercent || 0
+  });
+
+  if (error) {
+    console.error('[FinancialReconciliation] Erro ao calcular split:', error);
+    // Fallback matemático (seguro, mas prefere a RPC)
+    const netPaid = params.amountGross - params.amountDiscount;
+    const platformFeePercent = 15; // Default Fixxer
+    const platformFeeAmount = Number((netPaid * (platformFeePercent / 100)).toFixed(2));
+    const affiliateFeeAmount = Number((netPaid * ((params.affiliatePercent || 0) / 100)).toFixed(2));
+    
+    return {
+      amount_gross: params.amountGross,
+      amount_discount: params.amountDiscount,
+      amount_net_paid: netPaid,
+      fee_platform_percent: platformFeePercent,
+      fee_platform_amount: platformFeeAmount,
+      fee_affiliate_percent: params.affiliatePercent || 0,
+      fee_affiliate_amount: affiliateFeeAmount,
+      amount_creator_net: Number((netPaid - platformFeeAmount - affiliateFeeAmount).toFixed(2))
+    };
+  }
+
+  return data as SaleReconciliation;
+}
+
 export async function getCreatorSalesStats(creatorId: string, period?: { start: string; end: string }) {
   let query = supabaseExternal
     .from('info_sales')
