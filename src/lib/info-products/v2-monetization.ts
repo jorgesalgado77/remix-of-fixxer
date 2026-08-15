@@ -905,6 +905,8 @@ export async function saveGlobalMonetizationConfig(config: any) {
     new_value: config
   });
 
+  return true;
+}
 
 export async function updateCouponStatus(couponId: string, status: string) {
   const { error } = await supabaseExternal
