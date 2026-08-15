@@ -26,7 +26,10 @@ import {
   Filter,
   Palette,
   Mail,
-  PieChart
+  PieChart,
+  Tag,
+  Pause,
+  Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +52,13 @@ import {
   resolveFraudEvent,
   getPDFQueueStatus,
   getEmailAuditLogs,
-  processPDFQueueItem
+  processPDFQueueItem,
+  getAdminSalesList,
+  getAdminCouponList,
+  adminRefundSale,
+  getGlobalMonetizationConfig,
+  saveGlobalMonetizationConfig,
+  updateCouponStatus
 } from "@/lib/info-products/v2-monetization";
 
 
@@ -58,7 +67,7 @@ export const Route = createFileRoute("/_authenticated/admin/infoprodutos")({
   component: AdminInfoProductsPage,
 });
 
-type AdminTab = "config" | "taxa" | "ia" | "storage" | "moderacao" | "produtos" | "vendas" | "criadores" | "auditoria" | "certificados" | "assinatura" | "afiliados" | "preview";
+type AdminTab = "config" | "taxa" | "ia" | "storage" | "moderacao" | "produtos" | "vendas" | "criadores" | "auditoria" | "certificados" | "assinatura" | "afiliados" | "preview" | "cupons";
 
 function AdminInfoProductsPage() {
   const [tab, setTab] = useState<AdminTab>("config");
@@ -71,6 +80,12 @@ function AdminInfoProductsPage() {
   const [testing, setTesting] = useState<string | null>(null);
   const [dirtyAI, setDirtyAI] = useState(false);
   const [dirtyMon, setDirtyMon] = useState(false);
+  const [sales, setSales] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [filters, setFilters] = useState({
+    period: 'all' as any,
+    status: 'ALL'
+  });
 
   const getAIConfigFn = useServerFn(getAIAdminConfig);
   const saveAIConfigFn = useServerFn(saveAIAdminConfig);
@@ -89,6 +104,12 @@ function AdminInfoProductsPage() {
     // Carregar fila de PDFs e auditoria se necessário
     if (tab === 'certificados') {
       getPDFQueueStatus('SYSTEM').then(setPdfQueue);
+    }
+    if (tab === 'vendas') {
+      getAdminSalesList(filters).then(res => setSales(res.data || []));
+    }
+    if (tab === 'cupons') {
+      getAdminCouponList().then(setCoupons);
     }
   }, [tab]);
 
@@ -181,6 +202,7 @@ function AdminInfoProductsPage() {
           <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria (Fraude)" />
           <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certificados" />
           <TabBtn active={tab === 'preview'} onClick={() => setTab('preview')} icon={<Palette className="w-3.5 h-3.5" />} label="Preview" />
+          <TabBtn active={tab === 'cupons'} onClick={() => setTab('cupons')} icon={<Tag className="w-3.5 h-3.5" />} label="Cupons" />
           <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
           <TabBtn active={tab === 'storage'} onClick={() => setTab('storage')} icon={<Database className="w-3.5 h-3.5" />} label="Storage" />
           <TabBtn active={tab === 'moderacao'} onClick={() => setTab('moderacao')} icon={<ShieldAlert className="w-3.5 h-3.5" />} label="Moderação" />
@@ -308,11 +330,82 @@ function AdminInfoProductsPage() {
               <MetricBox label="Bundles (Combos)" value="R$ 14.890,50" sub="92 combos vendidos" color="text-blue-400" />
             </div>
 
-            <div className="bg-white/[0.03] border border-white/10 rounded-[32px] p-8 min-h-[300px] flex items-center justify-center">
-              <div className="text-center space-y-4">
-                <TrendingUp className="w-12 h-12 text-muted-foreground/20 mx-auto" />
-                <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Gráfico de Performance em Processamento...</p>
-              </div>
+            <div className="bg-card/50 backdrop-blur-xl border border-white/10 rounded-[32px] overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/5">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Comprador</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Produto / Criador</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Data</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-right">Valor Bruto</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Status</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {sales.map((sale) => (
+                        <tr key={sale.id} className="group hover:bg-white/[0.02] transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 text-[10px] font-bold">
+                                {sale.profiles?.display_name?.charAt(0) || 'U'}
+                              </div>
+                              <div>
+                                <div className="text-sm font-black text-white italic">{sale.profiles?.display_name || 'Usuário Fixxer'}</div>
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase">{sale.profiles?.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-0.5">
+                              <div className="text-sm font-bold text-white">{sale.info_products?.title}</div>
+                              <div className="text-[10px] font-black text-primary uppercase tracking-tighter italic">Por: {sale.creator?.display_name}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center text-[10px] font-bold text-muted-foreground uppercase">
+                             {new Date(sale.created_at).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="text-sm font-black text-white italic">R$ {Number(sale.amount_gross).toFixed(2)}</div>
+                            {sale.amount_discount > 0 && (
+                              <div className="text-[9px] font-bold text-red-400 uppercase">Desc: -R$ {Number(sale.amount_discount).toFixed(2)}</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center">
+                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                                sale.status === 'PAID' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                sale.status === 'REFUNDED' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                'bg-white/5 text-muted-foreground border-white/10'
+                              }`}>
+                                {sale.status}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center gap-2">
+                              {sale.status === 'PAID' && (
+                                <button 
+                                  onClick={async () => {
+                                    if(confirm("Estornar?")) {
+                                      await adminRefundSale(sale.id, "Admin Refund");
+                                      toast.success("Estornado.");
+                                      getAdminSalesList(filters).then(res => setSales(res.data || []));
+                                    }
+                                  }}
+                                  className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all border border-red-500/20"
+                                >
+                                  <AlertCircle className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
             </div>
           </div>
         )}
@@ -799,16 +892,37 @@ function AdminInfoProductsPage() {
           <div className="space-y-8 mt-8 border-t border-white/5 pt-8">
             <h3 className="text-sm font-black text-white uppercase italic flex items-center gap-2">
               <PieChart className="w-4 h-4 text-primary" />
-              Métricas de Validação Pública
+              Métricas Globais de Vendas
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <MetricBox label="Validações OK" value="842" sub="Últimos 30 dias" color="text-emerald-400" />
-              <MetricBox label="Falhas / Inválidos" value="12" sub="Tentativas frustradas" color="text-red-400" />
-              <MetricBox label="Rate Limit Acionado" value="3" sub="Proteção Anti-Brute" color="text-amber-400" />
-              <MetricBox label="IPs Únicos" value="156" sub="Origem das consultas" color="text-blue-400" />
+              <MetricBox 
+                label="Total Bruto" 
+                value={`R$ ${sales.reduce((acc, s) => acc + Number(s.amount_gross), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+                sub="Volume Total" 
+                color="text-emerald-400" 
+              />
+              <MetricBox 
+                label="Estornos" 
+                value={sales.filter(s => s.status === 'REFUNDED').length.toString()} 
+                sub="Qtd. Refund" 
+                color="text-red-400" 
+              />
+              <MetricBox 
+                label="Cupons Usados" 
+                value={sales.filter(s => s.coupon_code).length.toString()} 
+                sub="Adesão a descontos" 
+                color="text-amber-400" 
+              />
+              <MetricBox 
+                label="Ticket Médio" 
+                value={`R$ ${(sales.length ? sales.reduce((acc, s) => acc + Number(s.amount_gross), 0) / sales.length : 0).toFixed(2)}`} 
+                sub="Por venda" 
+                color="text-blue-400" 
+              />
             </div>
           </div>
         )}
+
 
         {tab === 'vendas' && (
           <div className="space-y-8 mt-8 border-t border-white/5 pt-8">
@@ -836,6 +950,78 @@ function AdminInfoProductsPage() {
           </div>
         )}
 
+
+        {tab === 'cupons' && (
+          <div className="bg-card/50 backdrop-blur-xl border border-white/10 rounded-[40px] overflow-hidden">
+               <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/5">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Código / Nome</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Criador</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Desconto</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Uso / Limite</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Status</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {coupons.map((coupon) => (
+                        <tr key={coupon.id} className="group hover:bg-white/[0.02] transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                                <Tag className="w-4 h-4 text-primary" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-black text-white italic">{coupon.code}</div>
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{coupon.name}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-bold text-white">{coupon.creator?.display_name || 'Desconhecido'}</div>
+                            <div className="text-[10px] font-black text-primary uppercase tracking-tighter italic">Produto: {coupon.info_products?.title || 'Catálogo'}</div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="text-sm font-black text-white italic">
+                              {coupon.discount_type === 'PERCENTAGE' ? `${coupon.discount_value}%` : `R$ ${coupon.discount_value.toFixed(2)}`}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="text-[11px] font-black text-white italic">
+                              {coupon.usage_count || 0} / {coupon.max_uses || '∞'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                             <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                                coupon.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                'bg-white/5 text-muted-foreground border-white/10'
+                              }`}>
+                                {coupon.status}
+                              </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center gap-2">
+                              <button 
+                                onClick={async () => {
+                                  const next = coupon.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+                                  await updateCouponStatus(coupon.id, next);
+                                  getAdminCouponList().then(setCoupons);
+                                }}
+                                className="p-2 bg-white/5 hover:bg-primary text-muted-foreground hover:text-white rounded-xl transition-all border border-white/10"
+                              >
+                                {coupon.status === 'ACTIVE' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+            </div>
+        )}
 
         {['storage', 'moderacao', 'produtos', 'criadores'].includes(tab) && (
           <div className="py-32 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[40px]">
