@@ -75,9 +75,6 @@ export function ProfileHeader({
     <div className="relative isolate">
       {!hideSidebarCard && <ProfileSummaryCard role={role} variant="sidebar" />}
       
-      <div className="hidden lg:block mb-6">
-        <PanelActions role={role} />
-      </div>
 
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
         <div className="flex items-center gap-4">
