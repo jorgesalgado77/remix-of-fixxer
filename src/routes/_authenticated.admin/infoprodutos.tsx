@@ -928,14 +928,79 @@ function AdminInfoProductsPage() {
         )}
 
 
-        {['storage', 'moderacao', 'produtos', 'criadores'].includes(tab) && (
-          <div className="py-32 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[40px]">
-            <Activity className="w-12 h-12 text-muted-foreground/20 mx-auto" />
-            <p className="text-muted-foreground font-black uppercase tracking-widest text-xs italic">
-              Aba {tab.toUpperCase()} em desenvolvimento no próximo sprint.
-            </p>
-          </div>
+        {tab === 'cupons' && (
+          <div className="bg-card/50 backdrop-blur-xl border border-white/10 rounded-[40px] overflow-hidden">
+               <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/5">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Código / Nome</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Criador</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Desconto</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Uso / Limite</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Status</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground italic text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {coupons.map((coupon) => (
+                        <tr key={coupon.id} className="group hover:bg-white/[0.02] transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                                <Tag className="w-4 h-4 text-primary" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-black text-white italic">{coupon.code}</div>
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{coupon.name}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-bold text-white">{coupon.creator?.display_name || 'Desconhecido'}</div>
+                            <div className="text-[10px] font-black text-primary uppercase tracking-tighter italic">Produto: {coupon.info_products?.title || 'Catálogo'}</div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="text-sm font-black text-white italic">
+                              {coupon.discount_type === 'PERCENTAGE' ? `${coupon.discount_value}%` : `R$ ${coupon.discount_value.toFixed(2)}`}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="text-[11px] font-black text-white italic">
+                              {coupon.usage_count || 0} / {coupon.max_uses || '∞'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                             <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                                coupon.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                'bg-white/5 text-muted-foreground border-white/10'
+                              }`}>
+                                {coupon.status}
+                              </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center gap-2">
+                              <button 
+                                onClick={async () => {
+                                  const next = coupon.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+                                  await updateCouponStatus(coupon.id, next);
+                                  getAdminCouponList().then(setCoupons);
+                                }}
+                                className="p-2 bg-white/5 hover:bg-primary text-muted-foreground hover:text-white rounded-xl transition-all border border-white/10"
+                              >
+                                {coupon.status === 'ACTIVE' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+            </div>
         )}
+
+        {tab === 'criadores' && (
       </main>
     </div>
   );
