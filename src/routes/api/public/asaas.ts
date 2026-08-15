@@ -46,67 +46,116 @@ export const Route = createFileRoute('/api/public/asaas')({
           const newStatus = statusMap[event] || 'PENDING';
 
           if (newStatus === 'PAID') {
-            // 1. Atualizar ou Criar Transação
-            const { data: tx, error: txError } = await supabaseExternal
-              .from('financial_transactions')
+            // 1. Verificar metadados e produto
+            const productId = payment.externalReference;
+            const userId = body.payment.metadata?.userId;
+            const trackingCode = body.payment.metadata?.affiliateTrackingCode;
+            const couponCode = body.payment.metadata?.couponCode;
+
+            if (!productId || !userId) {
+              console.error('[AsaasWebhook] Metadados incompletos (productId/userId ausentes)');
+              return new Response('Missing Metadata', { status: 400 });
+            }
+
+            // 2. Buscar Produto para obter o Criador
+            const { data: product } = await supabaseExternal
+              .from('info_products')
+              .select('creator_id, price')
+              .eq('id', productId)
+              .single();
+
+            if (!product) throw new Error('Produto não encontrado');
+
+            // 3. Reconciliação Financeira via RPC (Centralizada)
+            const { data: split, error: splitErr } = await supabaseExternal.rpc('calculate_sale_split', {
+              _amount_gross: payment.value,
+              _amount_discount: payment.discountValue || 0,
+              _creator_id: product.creator_id,
+              _affiliate_percent: body.payment.metadata?.affiliatePercent || 0
+            });
+
+            if (splitErr) {
+              console.error('[AsaasWebhook] Erro na reconciliação financeira:', splitErr);
+              throw splitErr;
+            }
+
+            // 4. Registrar Venda Consolidada (Ledger)
+            const { data: sale, error: saleError } = await supabaseExternal
+              .from('info_sales')
               .upsert({
                 external_id: payment.id,
-                amount: payment.value,
-                net_amount: payment.netValue,
+                creator_id: product.creator_id,
+                buyer_id: userId,
+                product_id: productId,
+                amount_gross: split.amount_gross,
+                amount_discount: split.amount_discount,
+                amount_net_paid: split.amount_net_paid,
+                fee_platform_percent: split.fee_platform_percent,
+                fee_platform_amount: split.fee_platform_amount,
+                fee_affiliate_percent: split.fee_affiliate_percent,
+                fee_affiliate_amount: split.fee_affiliate_amount,
+                amount_creator_net: split.amount_creator_net,
                 status: 'PAID',
+                payment_method: payment.billingType,
+                coupon_code: couponCode,
                 metadata: body,
                 updated_at: new Date().toISOString()
               }, { onConflict: 'external_id' })
               .select()
               .single();
 
-            if (txError) throw txError;
+            if (saleError) throw saleError;
 
-            // 2. Liberar Entitlement (Se for um Info Produto)
-            const productId = payment.externalReference; 
-            if (productId && payment.customer) {
-                const userId = body.payment.metadata?.userId; 
-                const trackingCode = body.payment.metadata?.affiliateTrackingCode;
-               
-               if (userId) {
-                  // A. Registrar Entitlement
-                  const { error: entError } = await supabaseExternal.from('info_product_entitlements').upsert({
-                    user_id: userId,
-                    product_id: productId,
-                    purchase_id: tx.id,
-                    status: 'active',
-                    granted_at: new Date().toISOString()
-                  }, { onConflict: 'user_id,product_id' });
-                  
-                  if (entError) {
-                    console.error(`[AsaasWebhook] Falha ao liberar entitlement:`, entError);
-                  }
+            // 5. Liberar Entitlement
+            const { error: entError } = await supabaseExternal.from('info_product_entitlements').upsert({
+              user_id: userId,
+              product_id: productId,
+              purchase_id: sale.id,
+              status: 'active',
+              granted_at: new Date().toISOString()
+            }, { onConflict: 'user_id,product_id' });
+            
+            if (entError) {
+              console.error(`[AsaasWebhook] Falha ao liberar entitlement:`, entError);
+            }
 
-                  // B. Atribuição de Afiliado (Se houver tracking code)
-                  if (trackingCode) {
-                    const { data: affResult, error: affErr } = await supabaseExternal.rpc('process_affiliate_sale_v2', {
-                      _sale_id: tx.id,
-                      _product_id: productId,
-                      _buyer_id: userId,
-                      _tracking_code: trackingCode,
-                      _amount_total: payment.value
-                    });
+            // 6. Atribuição de Afiliado (Se houver tracking code)
+            if (trackingCode) {
+              const { data: affResult, error: affErr } = await supabaseExternal.rpc('process_affiliate_sale_v2', {
+                _sale_id: sale.id,
+                _product_id: productId,
+                _buyer_id: userId,
+                _tracking_code: trackingCode,
+                _amount_total: payment.value
+              });
 
-                    if (affErr) {
-                      console.error(`[AsaasWebhook] Falha na atribuição de afiliado:`, affErr);
-                    } else if (affResult?.processed) {
-                      console.log(`[AsaasWebhook] Comissão atribuída com sucesso:`, affResult);
-                    } else {
-                      console.warn(`[AsaasWebhook] Atribuição de afiliado negada:`, affResult?.reason);
-                    }
-                  }
-               }
+              if (affErr) {
+                console.error(`[AsaasWebhook] Falha na atribuição de afiliado:`, affErr);
+              }
+            }
+          } else if (newStatus === 'REFUNDED') {
+            // Tratar estorno/refund
+            await supabaseExternal
+              .from('info_sales')
+              .update({ status: 'REFUNDED', updated_at: new Date().toISOString() })
+              .eq('external_id', payment.id);
+            
+            // Revogar entitlement (opcional, dependendo da política de negócio do criador)
+            // Aqui marcamos como inativo por segurança
+            const userId = body.payment.metadata?.userId;
+            const productId = payment.externalReference;
+            if (userId && productId) {
+              await supabaseExternal
+                .from('info_product_entitlements')
+                .update({ status: 'inactive' })
+                .eq('user_id', userId)
+                .eq('product_id', productId);
             }
           } else {
             // Apenas atualiza status para outros eventos
             await supabaseExternal
-              .from('financial_transactions')
-              .update({ status: newStatus, metadata: body })
+              .from('info_sales')
+              .update({ status: newStatus, metadata: body, updated_at: new Date().toISOString() })
               .eq('external_id', payment.id);
           }
 
