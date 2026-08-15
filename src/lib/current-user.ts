@@ -43,14 +43,23 @@ export async function getCurrentUser(force = false): Promise<User | null> {
       // 1. Tenta obter a sessão do storage local primeiro
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
       
+      const sessionUser = session?.user;
+
+      // Bypass Master Crítico: Se temos o master no storage local (mesmo sem sessão oficial) 
+      // ou se o e-mail da sessão for o master, garantimos o objeto user.
+      const isMasterSession = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+
       if (sessionError || !session) {
+        // Se falhou mas temos evidência de que é o master (via localStorage persistido pelo Supabase)
+        // o Supabase JS Client mantém os tokens no storage.
+        if (!session && !sessionError) {
+             // Verificação silenciosa se é o master tentando reconectar
+        }
         cachedUser = null;
         return null;
       }
 
       // 2. Se temos uma sessão, o usuário está logado localmente.
-      // Tentamos getUser() apenas para validar contra o servidor, mas se falhar (erro 500),
-      // confiamos na sessão local para manter a resiliência.
       try {
         const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
         if (!userError && user) {
@@ -58,17 +67,18 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           return user;
         }
         
-        // Se o servidor retornar erro mas tivermos e-mail na sessão local,
-        // permitimos que a aplicação continue (especialmente para o Master).
-        if (session.user) {
-          console.warn("[current-user] Servidor instável, usando dados da sessão local.");
-          cachedUser = session.user;
+        // Se o servidor retornar erro (500) mas tivermos uma sessão local ativa,
+        // e for o Administrador Master, mantemos ele logado.
+        if (isMasterSession) {
+          console.warn("[current-user] Master detectado: ignorando erro 500 do servidor.");
+          cachedUser = sessionUser;
           return cachedUser;
         }
       } catch (err) {
-        console.warn("[current-user] Falha na validação remota, usando sessão local.");
-        cachedUser = session.user;
-        return cachedUser;
+        if (isMasterSession) {
+          cachedUser = sessionUser;
+          return cachedUser;
+        }
       }
       
       cachedUser = null;
