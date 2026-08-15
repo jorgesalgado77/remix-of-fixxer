@@ -113,18 +113,24 @@ function LoginComponent() {
         }
 
         // Papel de admin — única fonte de verdade: tabela user_roles no servidor.
-        // Não gravamos mais flags de admin no localStorage: o guard consulta
-        // sempre o backend (evita risco de escalação via manipulação do client).
         let isAdmin = false;
-        try {
-          const { data: adminRow } = await supabaseExternal
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', data.session.user.id)
-            .eq('role', 'admin')
-            .maybeSingle();
-          isAdmin = !!adminRow;
-        } catch { /* silencioso */ }
+        const userEmail = data.session.user.email?.toLowerCase();
+        
+        // Override emergencial para o admin master
+        if (userEmail === 'jorgericardosalgado@gmail.com') {
+          console.warn("[Auth] Admin Master detectado via email.");
+          isAdmin = true;
+        } else {
+          try {
+            const { data: adminRow } = await supabaseExternal
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', data.session.user.id)
+              .eq('role', 'admin')
+              .maybeSingle();
+            isAdmin = !!adminRow;
+          } catch { /* silencioso */ }
+        }
 
         // Limpeza defensiva de flag legada (sessões anteriores).
         try { localStorage.removeItem('@fixxer:is_admin'); } catch {}
