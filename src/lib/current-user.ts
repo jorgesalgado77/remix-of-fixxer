@@ -109,7 +109,7 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
       console.error("[Identity] Erro ao consultar user_roles:", error);
       // Tentativa de fallback para o usuário específico se a query falhar
       const email = await getCurrentUserEmail();
-      if (email === 'jorgericardosalgado@gmail.com') {
+      if (email?.toLowerCase() === 'jorgericardosalgado@gmail.com') {
         console.warn("[Identity] Fallback emergencial ativado para admin master.");
         cachedAdmin = true;
         return true;
@@ -120,13 +120,11 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
 
     cachedAdmin = !!data;
     
-    // Hard override para o email do administrador master se por algum motivo a tabela falhar
-    if (!cachedAdmin) {
-      const email = await getCurrentUserEmail();
-      if (email === 'jorgericardosalgado@gmail.com') {
-        console.warn("[Identity] Override forçado para admin master via email.");
-        cachedAdmin = true;
-      }
+    // Hard override para o email do administrador master
+    const email = await getCurrentUserEmail();
+    if (email?.toLowerCase() === 'jorgericardosalgado@gmail.com') {
+      console.warn("[Identity] Override forçado para admin master via email.");
+      cachedAdmin = true;
     }
     
     if (import.meta.env.DEV) {
