@@ -184,7 +184,7 @@ function AdminInfoProductsPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            <PanelActions role="prestador" />
+            {/* PanelActions removido para evitar duplicação com a GlobalActionBar */}
             <div className="flex items-center gap-2">
               {dirtyAI && (
                 <Button onClick={handleSaveAI} className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl">
