@@ -27,6 +27,7 @@ export async function getPublicInfoProducts(filters?: {
   minPrice?: number;
   maxPrice?: number;
   sort?: 'newest' | 'bestseller' | 'rating';
+  search?: string;
   page?: number;
   pageSize?: number;
 }) {
