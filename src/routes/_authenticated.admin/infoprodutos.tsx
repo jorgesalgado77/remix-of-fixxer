@@ -168,7 +168,7 @@ function AdminInfoProductsPage() {
 
   return (
     <div className="min-h-dvh bg-[#0A0A0B] text-white">
-      <header className="sticky top-0 z-50 bg-[#0A0A0B]/95 backdrop-blur border-b border-white/10">
+      <header className="sticky top-0 z-[60] bg-[#0A0A0B]/95 backdrop-blur border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link to="/admin" className="p-2 rounded-xl hover:bg-white/10 transition-colors">
