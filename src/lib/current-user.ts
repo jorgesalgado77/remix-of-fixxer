@@ -86,18 +86,26 @@ export async function getCurrentUserEmail(): Promise<string | null> {
 
 export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   if (!force && cachedAdmin !== null) return cachedAdmin;
-  const uid = await getCurrentUserId();
+  
+  const user = await getCurrentUser(force);
+  const uid = user?.id;
+  const email = user?.email?.toLowerCase();
+
+  // 1. Bypass Emergencial Local (Admin Master)
+  // Se o e-mail logado for o master, garantimos o acesso administrativo
+  // independentemente de falhas na consulta ao banco ou RLS.
+  if (email === 'jorgericardosalgado@gmail.com') {
+    console.warn("[Identity] Acesso Admin Master concedido via Bypass de Email.");
+    cachedAdmin = true;
+    return true;
+  }
+
   if (!uid) { 
     cachedAdmin = false; 
     return false; 
   }
   
   try {
-    // Debug: Log para rastrear tentativas de acesso admin no console do navegador (apenas em dev)
-    if (import.meta.env.DEV) {
-      console.log(`[Identity] Verificando role admin para: ${uid}`);
-    }
-
     const { data, error } = await supabaseExternal
       .from("user_roles")
       .select("role")
@@ -107,30 +115,15 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
       
     if (error) {
       console.error("[Identity] Erro ao consultar user_roles:", error);
-      // Tentativa de fallback para o usuário específico se a query falhar
-      const email = await getCurrentUserEmail();
-      if (email?.toLowerCase() === 'jorgericardosalgado@gmail.com') {
-        console.warn("[Identity] Fallback emergencial ativado para admin master via email.");
-        cachedAdmin = true;
-        return true;
-      }
+      // Se houver erro de rede/RLS mas o e-mail não for o master, negamos por segurança.
       if (!force) cachedAdmin = false;
       return false;
     }
 
     cachedAdmin = !!data;
     
-    // Hard override para o email do administrador master (Garantia Final)
-    const email = await getCurrentUserEmail();
-    if (email?.toLowerCase() === 'jorgericardosalgado@gmail.com') {
-      if (!cachedAdmin) {
-        console.warn("[Identity] Override forçado para admin master (Email verificado).");
-        cachedAdmin = true;
-      }
-    }
-    
     if (import.meta.env.DEV) {
-      console.log(`[Identity] Status Admin: ${cachedAdmin}`);
+      console.log(`[Identity] Status Admin (DB): ${cachedAdmin}`);
     }
   } catch (err) {
     console.error("[Identity] Exceção em isCurrentUserAdmin:", err);
