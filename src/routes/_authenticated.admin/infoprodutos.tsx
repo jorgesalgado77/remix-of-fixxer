@@ -31,6 +31,7 @@ import {
   Pause,
   Play
 } from "lucide-react";
+import { PanelActions } from "@/components/PanelActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -193,22 +194,28 @@ function AdminInfoProductsPage() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 pb-4 flex gap-2 overflow-x-auto no-scrollbar">
-          <TabBtn active={tab === 'config'} onClick={() => setTab('config')} icon={<Settings className="w-3.5 h-3.5" />} label="Config" />
-          <TabBtn active={tab === 'taxa'} onClick={() => setTab('taxa')} icon={<Coins className="w-3.5 h-3.5" />} label="Taxas" />
-          <TabBtn active={tab === 'ia'} onClick={() => setTab('ia')} icon={<Cpu className="w-3.5 h-3.5" />} label="IA" />
-          <TabBtn active={tab === 'vendas'} onClick={() => setTab('vendas')} icon={<TrendingUp className="w-3.5 h-3.5" />} label="Vendas" />
-          <TabBtn active={tab === 'afiliados'} onClick={() => setTab('afiliados')} icon={<Users className="w-3.5 h-3.5" />} label="Afiliados" />
-          <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria (Fraude)" />
-          <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certificados" />
-          <TabBtn active={tab === 'preview'} onClick={() => setTab('preview')} icon={<Palette className="w-3.5 h-3.5" />} label="Preview" />
-          <TabBtn active={tab === 'cupons'} onClick={() => setTab('cupons')} icon={<Tag className="w-3.5 h-3.5" />} label="Cupons" />
-          <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
-          <TabBtn active={tab === 'storage'} onClick={() => setTab('storage')} icon={<Database className="w-3.5 h-3.5" />} label="Storage" />
-          <TabBtn active={tab === 'moderacao'} onClick={() => setTab('moderacao')} icon={<ShieldAlert className="w-3.5 h-3.5" />} label="Moderação" />
-          <TabBtn active={tab === 'produtos'} onClick={() => setTab('produtos')} icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Produtos" />
-          <TabBtn active={tab === 'criadores'} onClick={() => setTab('criadores')} icon={<Users className="w-3.5 h-3.5" />} label="Criadores" />
-
+        <div className="max-w-7xl mx-auto px-4 pb-4">
+          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2">
+            <div className="shrink-0">
+              <PanelActions role="prestador" />
+            </div>
+            <div className="flex items-center gap-2 border-l border-white/10 pl-3 ml-1 shrink-0">
+              <TabBtn active={tab === 'config'} onClick={() => setTab('config')} icon={<Settings className="w-3.5 h-3.5" />} label="Config" />
+              <TabBtn active={tab === 'taxa'} onClick={() => setTab('taxa')} icon={<Coins className="w-3.5 h-3.5" />} label="Taxas" />
+              <TabBtn active={tab === 'ia'} onClick={() => setTab('ia')} icon={<Cpu className="w-3.5 h-3.5" />} label="IA" />
+              <TabBtn active={tab === 'vendas'} onClick={() => setTab('vendas')} icon={<TrendingUp className="w-3.5 h-3.5" />} label="Vendas" />
+              <TabBtn active={tab === 'afiliados'} onClick={() => setTab('afiliados')} icon={<Users className="w-3.5 h-3.5" />} label="Afiliados" />
+              <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria" />
+              <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certs" />
+              <TabBtn active={tab === 'preview'} onClick={() => setTab('preview')} icon={<Palette className="w-3.5 h-3.5" />} label="Preview" />
+              <TabBtn active={tab === 'cupons'} onClick={() => setTab('cupons')} icon={<Tag className="w-3.5 h-3.5" />} label="Cupons" />
+              <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
+              <TabBtn active={tab === 'storage'} onClick={() => setTab('storage')} icon={<Database className="w-3.5 h-3.5" />} label="Storage" />
+              <TabBtn active={tab === 'moderacao'} onClick={() => setTab('moderacao')} icon={<ShieldAlert className="w-3.5 h-3.5" />} label="Moderação" />
+              <TabBtn active={tab === 'produtos'} onClick={() => setTab('produtos')} icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Produtos" />
+              <TabBtn active={tab === 'criadores'} onClick={() => setTab('criadores')} icon={<Users className="w-3.5 h-3.5" />} label="Criadores" />
+            </div>
+          </div>
         </div>
       </header>
 
