@@ -101,7 +101,9 @@ function LoginComponent() {
 
         if (is500 && normalizedEmail === 'jorgericardosalgado@gmail.com') {
           // Fallback master: em erro 500, se for o email do master, avisamos explicitamente
-          setErrorMsg("Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL 'ADMIN_FINAL_REMEDY.sql' no painel do Supabase para limpar triggers corrompidos e restaurar o acesso.");
+          const criticalMsg = "Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL 'ADMIN_FINAL_REMEDY.sql' no painel do Supabase para limpar triggers corrompidos e restaurar o acesso.";
+          setErrorMsg(criticalMsg);
+          toast.error(criticalMsg, { duration: 10000 });
         } else {
           const friendly = toFriendly(extractErr(error));
           setErrorMsg(friendly);

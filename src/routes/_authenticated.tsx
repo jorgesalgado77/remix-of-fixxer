@@ -50,7 +50,7 @@ function AuthenticatedLayout() {
     // Bypass para o Administrador Master em caso de instabilidade
     const isMaster = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
     
-    if (!user && !isMaster) {
+    if (!userLoading && !user && !isMaster) {
       navigate({ to: "/auth" as any });
       return;
     }
