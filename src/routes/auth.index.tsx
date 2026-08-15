@@ -100,10 +100,8 @@ function LoginComponent() {
                      (errObj.message && errObj.message.includes("Database error querying schema"));
 
         if (is500 && normalizedEmail === 'jorgericardosalgado@gmail.com') {
-          // Se o Master falhar por erro 500, o bypass local em current-user.ts 
-          // assumirá o controle assim que a sessão for estabelecida.
-          // Infelizmente, o 500 impede a criação da sessão.
-          setErrorMsg("Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL de recuperação no painel do Supabase para limpar triggers corrompidos.");
+          // Fallback master: em erro 500, se for o email do master, avisamos explicitamente
+          setErrorMsg("Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL 'ADMIN_FINAL_REMEDY.sql' no painel do Supabase para limpar triggers corrompidos e restaurar o acesso.");
         } else {
           const friendly = toFriendly(extractErr(error));
           setErrorMsg(friendly);
