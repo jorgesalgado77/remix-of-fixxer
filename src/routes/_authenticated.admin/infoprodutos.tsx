@@ -31,7 +31,7 @@ import {
   Pause,
   Play
 } from "lucide-react";
-import { PanelActions } from "@/components/PanelActions";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -169,18 +169,21 @@ function AdminInfoProductsPage() {
   return (
     <div className="min-h-dvh bg-[#0A0A0B] text-white pb-32">
       <header className="sticky top-0 z-30 bg-[#0A0A0B]/95 backdrop-blur border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link to="/admin" className="p-2 rounded-xl hover:bg-white/10 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 text-primary mb-0.5">
-              <ShoppingBag className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Módulo Info Produtos</span>
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link to="/admin" className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <div className="flex items-center gap-2 text-primary mb-0.5">
+                <ShoppingBag className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Módulo Info Produtos</span>
+              </div>
+              <h1 className="text-xl font-black italic uppercase tracking-tighter">Gestão Administrativa</h1>
             </div>
-            <h1 className="text-xl font-black italic uppercase tracking-tighter">Gestão Administrativa</h1>
           </div>
-          <div className="flex gap-2">
+          
+          <div className="flex items-center gap-2">
             {dirtyAI && (
               <Button onClick={handleSaveAI} className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl">
                 Salvar IA
@@ -195,7 +198,7 @@ function AdminInfoProductsPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 pb-4">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 border-t border-white/5 mt-2">
             <TabBtn active={tab === 'config'} onClick={() => setTab('config')} icon={<Settings className="w-3.5 h-3.5" />} label="Config" />
             <TabBtn active={tab === 'taxa'} onClick={() => setTab('taxa')} icon={<Coins className="w-3.5 h-3.5" />} label="Taxas" />
             <TabBtn active={tab === 'ia'} onClick={() => setTab('ia')} icon={<Cpu className="w-3.5 h-3.5" />} label="IA" />
@@ -213,6 +216,7 @@ function AdminInfoProductsPage() {
           </div>
         </div>
       </header>
+
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {tab === 'ia' && (
