@@ -87,16 +87,38 @@ export async function getCurrentUserEmail(): Promise<string | null> {
 export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   if (!force && cachedAdmin !== null) return cachedAdmin;
   const uid = await getCurrentUserId();
-  if (!uid) { cachedAdmin = false; return false; }
+  if (!uid) { 
+    cachedAdmin = false; 
+    return false; 
+  }
+  
   try {
-    const { data } = await supabaseExternal
+    // Debug: Log para rastrear tentativas de acesso admin no console do navegador (apenas em dev)
+    if (import.meta.env.DEV) {
+      console.log(`[Identity] Verificando role admin para: ${uid}`);
+    }
+
+    const { data, error } = await supabaseExternal
       .from("user_roles")
       .select("role")
       .eq("user_id", uid)
       .eq("role", "admin")
       .maybeSingle();
+      
+    if (error) {
+      console.error("[Identity] Erro ao consultar user_roles:", error);
+      // Não cacheamos erro de rede como 'false' permanente se for force=true
+      if (!force) cachedAdmin = false;
+      return false;
+    }
+
     cachedAdmin = !!data;
-  } catch {
+    
+    if (import.meta.env.DEV) {
+      console.log(`[Identity] Status Admin: ${cachedAdmin}`);
+    }
+  } catch (err) {
+    console.error("[Identity] Exceção em isCurrentUserAdmin:", err);
     cachedAdmin = false;
   }
   return cachedAdmin;
