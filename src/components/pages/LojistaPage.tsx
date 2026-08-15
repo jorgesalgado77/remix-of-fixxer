@@ -428,21 +428,12 @@ export function LojistaDashboard() {
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
       <ProfileSummaryCard role={userRole} variant="sidebar" className="hidden lg:block" />
-      
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto no-scrollbar pb-24">
-        <div className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8 animate-in fade-in duration-500">
-          <ProfileHeader 
-            role="lojista" 
-            hideSidebarCard={true}
-          />
-        </div>
-      </div>
-    </div>
 
       {/* Mobile Top Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#050505]/95 backdrop-blur-md border-b border-white/10 z-50 flex items-center justify-between px-6">
         <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-primary rounded flex items-center justify-center text-black font-black text-sm">F</div>
+
             <h1 className="font-bold text-white text-sm uppercase italic">FIXXER</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -610,7 +601,8 @@ export function LojistaDashboard() {
             role="lojista" 
             title={activeTab === 'dashboard' ? undefined : activeTab === 'create' ? 'Publicar O.S.' : activeTab === 'profile' ? 'Perfil da Empresa' : 'Avaliações'}
             subtitle={activeTab === 'dashboard' ? undefined : ""}
-            hideSidebarCard={false}
+            hideSidebarCard={true}
+
             actions={
               <div className="flex items-center gap-4">
                 <div className="relative">
