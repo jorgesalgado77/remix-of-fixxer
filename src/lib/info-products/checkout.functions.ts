@@ -1,31 +1,65 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getCachedMonetization } from "@/lib/monetization";
+import { supabaseExternal } from "@/lib/supabaseExternal";
+import { validateCouponForCheckout } from "./v2-monetization.ts";
 
 export const createAsaasPayment = createServerFn({ method: "POST" })
   .validator((data: unknown) => z.object({
     productId: z.string().uuid(),
     userId: z.string().uuid(),
+    couponCode: z.string().optional(),
   }).parse(data))
   .handler(async ({ data }) => {
-    // Por enquanto, como solicitado, deixamos pronto para as chaves
-    // mas sem disparar a chamada real se não houver config
     const config = getCachedMonetization();
     
     if (!config.asaasApiKey) {
       throw new Error("Configuração ASAAS ausente no Admin.");
     }
 
-    console.log("[Checkout] Simulando criação de cobrança ASAAS para:", data.productId);
-    
-    // Aqui viria a chamada: 
-    // fetch('https://sandbox.asaas.com/api/v3/payments', ...)
+    // 1. Buscar o produto para obter o preço original
+    const { data: product, error: prodErr } = await supabaseExternal
+      .from('info_products')
+      .select('price, title')
+      .eq('id', data.productId)
+      .single();
 
+    if (prodErr || !product) throw new Error("Produto não encontrado");
+
+    let finalAmount = product.price;
+    let discountAmount = 0;
+    let couponId = null;
+
+    // 2. Validar Cupom se fornecido (Prompt 19 - Centralized Validation)
+    if (data.couponCode) {
+      const validation = await validateCouponForCheckout({
+        code: data.couponCode,
+        productId: data.productId,
+        userId: data.userId,
+        amountGross: product.price
+      });
+
+      if (!validation.success) {
+        throw new Error(validation.error || "Cupom inválido");
+      }
+
+      finalAmount = validation.final_amount!;
+      discountAmount = validation.discount_amount!;
+      couponId = validation.coupon_id!;
+    }
+
+    console.log(`[Checkout] Criando cobrança ASAAS: R$ ${finalAmount} (Desconto: R$ ${discountAmount})`);
+    
+    // Simulação da chamada ASAAS com metadados robustos para o Webhook
+    // Em prod: fetch('https://sandbox.asaas.com/api/v3/payments', ...)
     return {
       success: true,
       paymentId: "pay_mock_" + Math.random().toString(36).substring(7),
       pixQrCode: "BASE64_MOCK",
       pixCopyPaste: "00020126360014BR.GOV.BCB.PIX0114+55...",
-      value: 99.90 // Valor real viria do produto
+      value: finalAmount,
+      discount: discountAmount,
+      couponCode: data.couponCode
     };
   });
+
