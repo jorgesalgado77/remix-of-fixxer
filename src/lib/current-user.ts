@@ -40,7 +40,7 @@ export async function getCurrentUser(force = false): Promise<User | null> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      // 1. Tenta obter a sessão primeiro (rápido, local do storage)
+      // 1. Tenta obter a sessão do storage local primeiro
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
       
       if (sessionError || !session) {
@@ -48,21 +48,31 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         return null;
       }
 
-      // 2. Se temos sessão mas não usuário em cache, tentamos getUser() uma vez
-      // para garantir que o token é válido e obter dados frescos.
+      // 2. Se temos uma sessão, o usuário está logado localmente.
+      // Tentamos getUser() apenas para validar contra o servidor, mas se falhar (erro 500),
+      // confiamos na sessão local para manter a resiliência.
       try {
         const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
         if (!userError && user) {
           cachedUser = user;
           return user;
         }
+        
+        // Se o servidor retornar erro mas tivermos e-mail na sessão local,
+        // permitimos que a aplicação continue (especialmente para o Master).
+        if (session.user) {
+          console.warn("[current-user] Servidor instável, usando dados da sessão local.");
+          cachedUser = session.user;
+          return cachedUser;
+        }
       } catch (err) {
-        // Silencioso: se falhar por rede, usamos a sessão local abaixo
+        console.warn("[current-user] Falha na validação remota, usando sessão local.");
+        cachedUser = session.user;
+        return cachedUser;
       }
       
-      // 3. Fallback para a sessão local (preserva login offline/lento)
-      cachedUser = session.user;
-      return cachedUser;
+      cachedUser = null;
+      return null;
     } catch (e) {
       console.warn("[current-user] Erro crítico ao recuperar identidade:", e);
       cachedUser = null;
