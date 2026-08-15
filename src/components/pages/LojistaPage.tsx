@@ -1,3 +1,4 @@
+import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
 import { GoldMedalBadge } from "@/components/GoldMedalBadge";
 import { useProviderStats } from "@/hooks/use-provider-stats";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -426,6 +427,14 @@ export function LojistaDashboard() {
 
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
+      <ProfileSummaryCard role={userRole} variant="sidebar" className="hidden lg:block" />
+      
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto no-scrollbar pb-24">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8 animate-in fade-in duration-500">
+          <ProfileHeader 
+            role="lojista" 
+            hideSidebarCard={true}
+          />
       {/* Mobile Top Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#050505]/95 backdrop-blur-md border-b border-white/10 z-50 flex items-center justify-between px-6">
         <div className="flex items-center gap-2">
