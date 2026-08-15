@@ -181,6 +181,7 @@ function AdminInfoProductsPage() {
           <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria (Fraude)" />
           <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certificados" />
           <TabBtn active={tab === 'preview'} onClick={() => setTab('preview')} icon={<Palette className="w-3.5 h-3.5" />} label="Preview" />
+          <TabBtn active={tab === 'cupons'} onClick={() => setTab('cupons')} icon={<Tag className="w-3.5 h-3.5" />} label="Cupons" />
           <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
           <TabBtn active={tab === 'storage'} onClick={() => setTab('storage')} icon={<Database className="w-3.5 h-3.5" />} label="Storage" />
           <TabBtn active={tab === 'moderacao'} onClick={() => setTab('moderacao')} icon={<ShieldAlert className="w-3.5 h-3.5" />} label="Moderação" />
