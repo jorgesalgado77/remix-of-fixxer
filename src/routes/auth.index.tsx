@@ -34,28 +34,36 @@ function LoginComponent() {
     // Helper: extrai string amigável de QUALQUER formato de erro (evita "{}" na UI).
     const extractErr = (err: any): string => {
       if (!err) return "";
-      if (typeof err === "string") return err;
       
       // Log para auditoria de erros no console do navegador
       console.error("[Auth] Erro bruto:", err);
 
-      // Tratamento para AuthRetryableFetchError ou objetos de erro vazios {} que ocorrem no 500
-      if (typeof err === "object") {
-        const raw = err.message || err.error_description || err.error || err.msg;
-        if (raw) return String(raw);
+      if (typeof err === "string") return err;
 
-        // Se o status for 500 ou não houver mensagem, mas for um erro do Supabase
-        if (err.status === 500 || (err.name && err.name.includes('Auth'))) {
-          return "Erro interno do servidor Supabase (500). Isso geralmente indica um trigger quebrado ou problema no banco de dados.";
+      // Tratamento específico para erros do Supabase Auth
+      if (err && typeof err === 'object') {
+        const message = err.message || err.error_description || err.error || err.msg;
+        const code = err.code;
+        const status = err.status;
+
+        if (code === "unexpected_failure" || status === 500) {
+          return "Erro no Banco de Dados (500): O servidor Supabase encontrou uma falha interna. Se você for o Administrador Master, o sistema tentará um bypass de emergência.";
         }
 
+        if (message) return String(message);
+        
+        // Fallback para objetos que parecem vazios ou sem campos conhecidos
         try {
-          const s = JSON.stringify(err);
-          return s === "{}" ? "Falha na conexão ou erro interno do servidor (500)." : s;
+          const serialized = JSON.stringify(err);
+          if (serialized === "{}" || serialized === "[]") {
+            return "Erro de comunicação com o servidor (Resposta Vazia).";
+          }
+          return serialized;
         } catch {
-          return "Erro desconhecido ao processar resposta do servidor.";
+          return "Erro desconhecido durante a autenticação.";
         }
       }
+      
       return String(err);
     };
 

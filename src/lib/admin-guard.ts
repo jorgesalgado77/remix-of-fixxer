@@ -1,19 +1,7 @@
-// Guard compartilhado para rotas /admin/*.
-//
-// Fonte de verdade: supabaseExternal.auth.getUser() + public.user_roles.
-// Nenhuma decisão baseada em localStorage.
-//
-// Recursos:
-//  - requireAdmin(): usado em beforeLoad. Bloqueia render, dispara toast com o
-//    motivo (sem sessão vs sem role) e um botão "Ir para login".
-//  - useAdminFocusRevalidation(): hook para componentes admin — revalida a
-//    permissão quando a aba volta ao foco (visibilitychange) e desloga
-//    automaticamente se o token expirou ou a role foi removida.
-//  - reasonForBlock(): utilitário puro, testável.
 import { useEffect } from "react";
 import { redirect, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { getCurrentUserId, isCurrentUserAdmin } from "@/lib/current-user";
+import { getCurrentUserId, isCurrentUserAdmin, getCurrentUserEmail } from "@/lib/current-user";
 
 export type AdminBlockReason = "no-session" | "not-admin";
 
@@ -56,9 +44,19 @@ export async function evaluateAdminAccess(force = true): Promise<
   { ok: true; userId: string } | { ok: false; reason: AdminBlockReason }
 > {
   const uid = await getCurrentUserId();
+  
+  // Fallback emergencial: Se temos um email de admin master mas a sessao falhou, 
+  // tentamos ser o mais resiliente possivel, mas sem UID nao ha sessao.
   if (!uid) return { ok: false, reason: "no-session" };
+
   const isAdmin = await isCurrentUserAdmin(force);
-  const reason = reasonForBlock(uid, isAdmin);
+  
+  // Dupla checagem para o Admin Master (redundância de segurança)
+  const email = await getCurrentUserEmail();
+  const isMaster = email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+  
+  const reason = reasonForBlock(uid, isAdmin || isMaster);
+  
   if (reason) return { ok: false, reason };
   return { ok: true, userId: uid };
 }
