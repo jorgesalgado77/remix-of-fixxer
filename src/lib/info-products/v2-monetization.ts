@@ -797,6 +797,114 @@ export async function getCouponAnalytics(couponId: string) {
 }
 
 
+// --- Admin Master Services (Prompt 20) ---
 
+export async function getAdminSalesList(filters: {
+  creatorId?: string;
+  productId?: string;
+  status?: string;
+  period?: 'today' | '7d' | '30d' | 'all';
+  paymentMethod?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  let query = supabaseExternal
+    .from('info_sales')
+    .select('*, info_products(title), profiles!buyer_id(display_name, email), creator:profiles!creator_id(display_name)', { count: 'exact' });
 
+  if (filters.creatorId) query = query.eq('creator_id', filters.creatorId);
+  if (filters.productId) query = query.eq('product_id', filters.productId);
+  if (filters.status && filters.status !== 'ALL') query = query.eq('status', filters.status);
+  if (filters.paymentMethod) query = query.eq('payment_method', filters.paymentMethod);
+
+  if (filters.period && filters.period !== 'all') {
+    const date = new Date();
+    if (filters.period === 'today') date.setHours(0, 0, 0, 0);
+    else if (filters.period === '7d') date.setDate(date.getDate() - 7);
+    else if (filters.period === '30d') date.setDate(date.getDate() - 30);
+    query = query.gte('created_at', date.toISOString());
+  }
+
+  const pageSize = filters.pageSize || 20;
+  const page = filters.page || 1;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return { data, count, page, pageSize };
+}
+
+export async function getAdminCouponList() {
+  const { data, error } = await supabaseExternal
+    .from('info_coupons')
+    .select('*, creator:profiles!creator_id(display_name), info_products(title)')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function adminRefundSale(saleId: string, reason: string) {
+  const { data, error } = await supabaseExternal.rpc('admin_refund_sale', {
+    _sale_id: saleId,
+    _reason: reason
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getAdminAuditLogs(limit = 50) {
+  const { data, error } = await supabaseExternal
+    .from('info_admin_audit_logs')
+    .select('*, admin:profiles!admin_id(display_name)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getGlobalMonetizationConfig() {
+  const { data, error } = await supabaseExternal
+    .from('system_settings')
+    .select('value')
+    .eq('key', 'info_products_config')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.value || {
+    defaultFixxerFee: 15,
+    maxFixxerFee: 30,
+    minWithdrawAmount: 50,
+    allowCreatorCustomFee: true
+  };
+}
+
+export async function saveGlobalMonetizationConfig(config: any) {
+  const { error } = await supabaseExternal
+    .from('system_settings')
+    .upsert({ 
+      key: 'info_products_config', 
+      value: config,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'key' });
+
+  if (error) throw error;
+
+  // Registrar auditoria
+  const { data: user } = await supabaseExternal.auth.getUser();
+  await supabaseExternal.from('info_admin_audit_logs').insert({
+    admin_id: user?.user?.id,
+    action: 'UPDATE_CONFIG',
+    entity_type: 'GLOBAL_CONFIG',
+    new_value: config
+  });
+
+  return true;
+}
 
