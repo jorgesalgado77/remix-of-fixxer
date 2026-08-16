@@ -93,8 +93,8 @@ export function ProfileSummaryCard({
         if (isMaster) {
           return {
             id: uid,
-            display_name: lastCat === 'admin' ? 'Admin Master' : 'Prestador Teste',
-            full_name: lastCat === 'admin' ? 'Admin Master' : 'Prestador Teste',
+            display_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
+            full_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
             plan_id: 'pro',
             karma_score: 50,
             is_verified: true
@@ -225,7 +225,8 @@ export function ProfileSummaryCard({
 
 
   const name = (typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true')
-    ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Prestador Teste') 
+    ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Jorge Criare') 
+
     : (profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário"));
   const avatar = profile?.avatar_url || profile?.logo_url || null;
   const planId = (profile?.plan_id || "free").toLowerCase();
@@ -288,7 +289,7 @@ export function ProfileSummaryCard({
               <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate max-w-[200px]" data-testid="user-display-name">
                 {name === "USUÁRIO" || name === "Usuário" 
                   ? (typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true' 
-                    ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Prestador Teste') 
+                    ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Jorge Criare') 
                     : name)
                   : name}
               </div>

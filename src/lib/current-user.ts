@@ -44,8 +44,8 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           email: email,
           app_metadata: { provider: 'email', providers: ['email'] },
           user_metadata: { 
-            display_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Prestador Teste',
-            full_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Prestador Teste',
+            display_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Jorge Criare',
+            full_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Jorge Criare',
             role: category,
             category: category,
             user_type: category,
