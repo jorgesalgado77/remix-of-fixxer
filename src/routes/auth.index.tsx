@@ -66,9 +66,13 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.warn("[Auth] MASTER BYPASS ATIVADO");
+      console.warn("[Auth] MASTER BYPASS ATIVADO para:", category);
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
+      
+      // Limpeza imediata do cache de identidade para refletir a nova categoria
+      const { clearCurrentUserCache } = await import("@/lib/current-user");
+      clearCurrentUserCache();
       
       toast.success('Acesso Master concedido');
       

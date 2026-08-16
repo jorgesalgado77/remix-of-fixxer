@@ -101,7 +101,7 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
 
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
-  if (email === 'jorgericardosalgado@gmail.com' || isMasterBypass) {
+  if (email === 'jorgericardosalgado@gmail.com' || (isMasterBypass && localStorage.getItem('fixxer:last-category') === 'admin')) {
     cachedAdmin = true;
     return true;
   }
@@ -147,7 +147,7 @@ export async function getCurrentCategory(force = false): Promise<Category> {
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
   const email = (await getCurrentUserEmail())?.toLowerCase();
   
-  if (email === 'jorgericardosalgado@gmail.com' || isMasterBypass) {
+  if (email === 'jorgericardosalgado@gmail.com' || (isMasterBypass && (localStorage.getItem('fixxer:last-category') === 'admin'))) {
     cachedCategory = "admin";
     return "admin";
   }
