@@ -83,7 +83,7 @@ export async function resolveIdentity(
         badges: ["Verificado", "Master"],
         activityLabel: "Online"
       },
-      specializations: { store: null, provider: null, supplier: null }
+      specializations: { store: null, provider: userId === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9' ? { display_name: "Prestador Teste" } : null, supplier: null }
     };
     return masterResult;
   }

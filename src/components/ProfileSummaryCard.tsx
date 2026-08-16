@@ -142,7 +142,7 @@ export function ProfileSummaryCard({
         const { resolveIdentity } = await import("@/lib/identity/identity-service");
         // Forçamos o refresh uma vez no mount para garantir o estado inicial, 
         // mas mantemos refresh: false nas navegações subsequentes via cache.
-        const resolved = await resolveIdentity(uid, { refresh: true });
+        const resolved = await resolveIdentity(uid, { refresh: isMaster });
         
         if (!cancelled && resolved) {
           const prof: ProfileLite = {
