@@ -1,5 +1,5 @@
--- FIXXER MASTER DATA RECOVERY V12
--- CONSOLIDAÇÃO FINAL COM CORREÇÃO DE SCHEMA (is_verified)
+-- FIXXER MASTER DATA RECOVERY V13
+-- CONSOLIDAÇÃO FINAL COM CORREÇÃO DE TIPO (plan_id UUID)
 
 -- 1. Garantir que a coluna is_verified exista
 DO $$ 
@@ -10,6 +10,7 @@ BEGIN
 END $$;
 
 -- 2. Garantir existência do usuário Master na tabela profiles com dados reais
+-- Removido 'pro' pois plan_id é do tipo UUID. Usaremos NULL ou um UUID válido se necessário.
 INSERT INTO public.profiles (
     id, 
     display_name, 
@@ -32,7 +33,7 @@ VALUES (
     'admin', 
     'admin', 
     5.0, 
-    'pro', 
+    NULL, 
     'São Paulo', 
     'SP',
     true,
@@ -43,7 +44,7 @@ ON CONFLICT (id) DO UPDATE SET
     role = 'admin',
     user_type = 'admin',
     karma_score = 5.0,
-    plan_id = 'pro',
+    plan_id = NULL,
     city = 'São Paulo',
     state = 'SP',
     is_verified = true;
@@ -71,7 +72,7 @@ VALUES (
     'prestador', 
     'prestador', 
     4.8, 
-    'pro', 
+    NULL, 
     'São Paulo', 
     'SP',
     true,
@@ -81,7 +82,7 @@ ON CONFLICT (id) DO UPDATE SET
     display_name = EXCLUDED.display_name,
     avatar_url = EXCLUDED.avatar_url,
     karma_score = 4.8,
-    plan_id = 'pro',
+    plan_id = NULL,
     city = 'São Paulo',
     state = 'SP',
     is_verified = true;
@@ -104,5 +105,7 @@ GRANT SELECT ON public.user_coins TO authenticated;
 GRANT SELECT ON public.user_roles TO authenticated;
 GRANT ALL ON public.profiles TO service_role;
 
--- HINT: Execute este script no SQL Editor do seu Supabase Externo (rnhgpxembtgupxnrohxo).
+-- Recarregar cache do PostgREST
+NOTIFY pgrst, 'reload schema';
+
 
