@@ -12,7 +12,7 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     // PROMPT 23: Bloqueio Total de Redirect para Admin Master
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     if (hasMasterBypass) {
@@ -25,17 +25,23 @@ export const Route = createFileRoute("/_authenticated")({
       };
     }
     
-    // Tentamos resolver o usuário. TanStack Router aguarda essa promessa.
-    const user = await getCurrentUser(true);
+    // Tenta resolver o usuário sem forçar reload constante
+    const user = await getCurrentUser();
+    
     if (!user) {
       console.warn("[Route Guard] Usuário não logado. Redirecionando para /auth.");
-      throw redirect({ to: "/auth" as any });
+      throw redirect({ 
+        to: "/auth" as any
+      });
     }
+
+    // Verifica admin de forma assíncrona para o contexto
+    const isAdmin = await isCurrentUserAdmin();
 
     return {
       userId: user.id,
       userEmail: user.email,
-      isAdmin: false,
+      isAdmin,
       bypass: false
     };
   },
