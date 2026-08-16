@@ -20,13 +20,12 @@ export const Route = createFileRoute("/_authenticated")({
     }
     
     // 2. Verificação de Usuário via storage (síncrona/rápida)
-    // Usamos getSession() que é muito menos propenso a falhas de rede/recursão do que getUser()
     const { data: { session } } = await supabaseExternal.auth.getSession();
     const user = session?.user;
     
-    // Se estivermos em loop no /auth, e temos um usuário, forçamos o carregamento da rota
-    if (user && location.pathname === '/auth') {
-       console.log("[Route Guard] Usuário detectado no storage durante loop no /auth. Forçando carregamento.");
+    // REDIRECT BYPASS: Se estamos no /auth e temos uma sessão válida, NÃO redirecionamos para /auth
+    if (user && (location.pathname === '/auth' || location.pathname === '/auth/')) {
+       console.log("[Route Guard] Usuário logado tentando acessar /auth. Permitindo entrada na rota protegida.");
        return { userId: user.id, userEmail: user.email, isAdmin: false, bypass: false };
     }
 
