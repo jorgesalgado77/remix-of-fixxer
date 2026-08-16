@@ -33,26 +33,42 @@ export async function getCurrentUser(force = false): Promise<User | null> {
 
       if (isMasterBypass) {
         const category = (localStorage.getItem('fixxer:last-category') as Category) || 'admin';
+        const storedUid = localStorage.getItem('fixxer:bypass-uid');
         const email = (category === 'admin' || category === 'prestador') 
           ? (category === 'admin' ? 'jorgericardosalgado@gmail.com' : 'jorgecriare2021@gmail.com')
           : 'lojista@fixxer.app';
         
         const isMaster = email === 'jorgericardosalgado@gmail.com';
-        
-        // RECUPERAÇÃO DINÂMICA DE UUID DO LOCALSTORAGE PARA EVITAR FK ERRADO
-        const storedUid = localStorage.getItem('fixxer:bypass-uid');
         const defaultUid = isMaster 
           ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' 
           : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9';
         
+        const currentUid = storedUid || defaultUid;
+
+        // Tenta recuperar dados reais do cache de identidade primeiro
+        let displayName = isMaster ? 'Admin Master' : 'Jorge Criare';
+        let avatarUrl = !isMaster ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null;
+
+        if (typeof window !== 'undefined') {
+          try {
+            const cached = JSON.parse(localStorage.getItem('fixxer_identity_cache_v1.2') || '{}');
+            const identity = cached[currentUid];
+            if (identity) {
+              displayName = identity.presentation.name || displayName;
+              avatarUrl = identity.presentation.avatarUrl || avatarUrl;
+              console.log("[current-user] Bypass usando dados reais do cache:", displayName);
+            }
+          } catch (e) {}
+        }
+
         const masterData: User = {
-          id: storedUid || defaultUid,
+          id: currentUid,
           email: email,
           app_metadata: { provider: 'email', providers: ['email'] },
           user_metadata: { 
-            display_name: isMaster ? 'Admin Master' : 'Jorge Criare',
-            full_name: isMaster ? 'Admin Master' : 'Jorge Criare',
-            avatar_url: !isMaster ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null,
+            display_name: displayName,
+            full_name: displayName,
+            avatar_url: avatarUrl,
             role: category,
             category: category,
             user_type: category,
