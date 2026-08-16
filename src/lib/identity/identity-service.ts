@@ -195,8 +195,8 @@ export async function resolveIdentity(
     isVerified: !!(effectiveProfile.is_verified || store?.is_verified || provider?.is_verified || supplier?.is_verified),
     planId: effectiveProfile.plan_id || "free",
     createdAt: effectiveProfile.created_at || new Date().toISOString(),
-    // REPUTAÇÃO REAL: Usa o karma_score do banco (Profiles) como fonte única de verdade
-    karmaScore: effectiveProfile.karma_score != null ? Number(effectiveProfile.karma_score) : 0.0,
+    // REPUTAÇÃO REAL: Normaliza o karma_score. Se o banco usa escala de 0-5 ou 0-50, tratamos aqui.
+    karmaScore: effectiveProfile.karma_score != null ? (Number(effectiveProfile.karma_score) > 5 ? Number(effectiveProfile.karma_score) / 10 : Number(effectiveProfile.karma_score)) : 0.0,
     lastActiveAt: effectiveProfile.last_active_at || null,
     verificationStatus: effectiveProfile.verification_status || (effectiveProfile.is_verified ? "verified" : "none"),
     verificationNote: effectiveProfile.verification_note || null,
