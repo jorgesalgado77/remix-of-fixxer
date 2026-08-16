@@ -11,8 +11,11 @@ export const Route = createFileRoute("/auth")({
             const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
             console.warn("[Auth Layout] Sessão ativa detectada, forçando redirecionamento para:", target);
-            window.location.replace(window.location.origin + target);
-            return { authenticated: true };
+            
+            if (typeof window !== 'undefined') {
+                window.location.replace(window.location.origin + target);
+                return { authenticated: true };
+            }
         }
     }
     return {};
