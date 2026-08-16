@@ -368,7 +368,11 @@ function LoginComponent() {
                 type="button"
                 id="login-button-regular"
                 disabled={loading}
-                onClick={handleLogin}
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log("[Auth] Botão de login clicado");
+                  handleLogin();
+                }}
                 className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
