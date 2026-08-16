@@ -72,6 +72,9 @@ export const Route = createFileRoute("/_authenticated")({
 
     // Se não houver nada, redireciona para login
     console.warn("[Route Guard] Sessão não encontrada. Redirecionando para /auth.");
+    if (typeof window !== 'undefined') {
+      window.location.replace(window.location.origin + "/auth");
+    }
     throw redirect({ to: "/auth" as any });
   },
   component: AuthenticatedLayout,
