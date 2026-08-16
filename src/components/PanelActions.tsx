@@ -172,6 +172,14 @@ export function PanelActions({ role = "prestador" }: { role?: PanelRole }) {
 }
 
 function profileHrefFor(role: PanelRole): string {
+  if (typeof window !== 'undefined') {
+    const isMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+    if (isMasterBypass) {
+      const cat = localStorage.getItem('fixxer:last-category');
+      const uid = cat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9';
+      return `/perfil/${uid}`;
+    }
+  }
   if (role === "cliente") return "/configuracoes";
   return `/perfil/${role}`;
 }
