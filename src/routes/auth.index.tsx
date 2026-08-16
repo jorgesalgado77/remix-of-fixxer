@@ -44,7 +44,7 @@ function AuthLogin() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     
@@ -73,6 +73,7 @@ function AuthLogin() {
         target
       });
       
+      // PERSISTÊNCIA SÍNCRONA OBRIGATÓRIA
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
@@ -84,30 +85,71 @@ function AuthLogin() {
         });
       }
 
-      void (async () => {
-        try {
-          const { supabaseExternal } = await import("@/lib/supabaseExternal");
-          const { data, error } = await supabaseExternal
-            .from("profiles")
-            .select("id")
-            .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Criare')
-            .maybeSingle();
-          
-          if (error) console.error("[Auth Audit] Erro ao buscar ID real:", error);
-          if (data?.id) {
-            console.warn("[Auth Audit] ID Real resolvido:", data.id);
-            localStorage.setItem('fixxer:bypass-uid', data.id);
-            window.dispatchEvent(new Event("fixxer:identity-change"));
-          }
-        } catch (e) {
-          console.warn("[Auth Audit] Falha crítica na resolução de ID:", e);
-        }
-      })();
+      // Busca ID real sem travar a UI
+      import("@/lib/supabaseExternal").then(({ supabaseExternal }) => {
+        supabaseExternal
+          .from("profiles")
+          .select("id")
+          .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Criare')
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) console.error("[Auth Audit] Erro ao buscar ID real:", error);
+            if (data?.id) {
+              console.warn("[Auth Audit] ID Real resolvido:", data.id);
+              localStorage.setItem('fixxer:bypass-uid', data.id);
+              window.dispatchEvent(new Event("fixxer:identity-change"));
+            }
+          });
+      }).catch(e => console.warn("[Auth Audit] Falha ao importar supabase:", e));
       
       toast.success('Acesso Master concedido');
+      
+      // EJEÇÃO BRUTAL SÍNCRONA
       window.location.replace(window.location.origin + target);
       return;
     }
+
+    // Login normal via Supabase (async)
+    (async () => {
+      try {
+        const { supabaseExternal } = await import("@/lib/supabaseExternal");
+        const { error, data } = await supabaseExternal.auth.signInWithPassword({ 
+          email: emailVal, 
+          password: passVal 
+        });
+        
+        if (error) throw error;
+        
+        if (data.session) {
+          const { data: profile } = await supabaseExternal
+            .from("profiles")
+            .select("role, user_type")
+            .eq("id", data.session.user.id)
+            .maybeSingle();
+          
+          const raw = (profile as any)?.role || (profile as any)?.user_type || "lojista";
+          const cat = raw.toLowerCase().includes("prestador") ? "prestador" : 
+                      raw.toLowerCase().includes("admin") ? "admin" : "lojista";
+          
+          localStorage.setItem('fixxer:last-category', cat);
+          const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+          
+          if (typeof sessionStorage !== 'undefined') {
+            Object.keys(sessionStorage).forEach(key => {
+              if (key.includes('tsr-') || key.includes('tanstack')) {
+                sessionStorage.removeItem(key);
+              }
+            });
+          }
+          
+          window.location.replace(window.location.origin + target);
+        }
+      } catch (err: any) {
+        toast.error(err.message || "Credenciais inválidas");
+        setLoading(false);
+      }
+    })();
+  };
 
     try {
       const { supabaseExternal } = await import("@/lib/supabaseExternal");
