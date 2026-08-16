@@ -74,15 +74,11 @@ export function ProfileHeader({
   return (
     <div className="relative isolate">
       {/* 
-          O ProfileSummaryCard lateral deve aparecer apenas em desktop se hideSidebarCard for false.
-          Em mobile, ele é duplicado pelo card no final do header ou pelo layout. 
-          O usuário reclamou que em mobile está duplicando e a barra lateral não deve existir.
+          O ProfileSummaryCard lateral aparece em desktop e mobile por padrão agora, 
+          conforme ordem mestra de não permitir sua remoção.
       */}
-      {!hideSidebarCard && (
-        <div className="hidden lg:block">
-          <ProfileSummaryCard role={role} variant="sidebar" />
-        </div>
-      )}
+      <ProfileSummaryCard role={role} variant="sidebar" />
+      
       
 
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
