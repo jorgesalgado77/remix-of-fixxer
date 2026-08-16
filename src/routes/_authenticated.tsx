@@ -19,15 +19,17 @@ export const Route = createFileRoute("/_authenticated")({
       return {
         userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
         userEmail: 'jorgericardosalgado@gmail.com',
-        isAdmin: true, // Injeta isAdmin diretamente no context do bypass
+        isAdmin: true,
         bypass: true
       };
     }
     
+    // Tenta obter o usuário; se falhar, o AuthenticatedLayout cuidará do redirect no useEffect
     const user = await getCurrentUser(true);
     return {
       userId: user?.id ?? null,
       userEmail: user?.email ?? null,
+      isAdmin: false,
       bypass: false
     };
   },
@@ -64,7 +66,8 @@ function AuthenticatedLayout() {
     // Se não temos usuário E não temos o bypass forçado, vai para o login
     if (!user && !isMaster) {
       console.warn("[AuthenticatedLayout] Usuário não detectado e não é master. Redirecionando para /auth.");
-      navigate({ to: "/auth" as any });
+      // Usamos window.location.replace para garantir a saída do grafo de rotas atual
+      window.location.replace('/auth');
       return;
     }
 
