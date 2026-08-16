@@ -14,9 +14,10 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     // 1. Bypass Master Admin
+    const emailMaster = 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     if (hasMasterBypass) {
-      return { userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f', userEmail: 'jorgericardosalgado@gmail.com', isAdmin: true, bypass: true };
+      return { userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f', userEmail: emailMaster, isAdmin: true, bypass: true };
     }
     
     // 2. Verificação de Usuário via storage (síncrona/rápida)
