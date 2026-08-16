@@ -48,7 +48,8 @@ export async function getCurrentUser(force = false): Promise<User | null> {
             full_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Prestador Teste',
             role: category,
             category: category,
-            user_type: category
+            user_type: category,
+            business_category: category
           },
           aud: 'authenticated',
           created_at: new Date().toISOString()
@@ -159,9 +160,14 @@ export async function getCurrentCategory(force = false): Promise<Category> {
   const uid = user?.id;
   const email = user?.email?.toLowerCase();
   
-  if (email === 'jorgericardosalgado@gmail.com') {
+  if (email === 'jorgericardosalgado@gmail.com' || uid === '6ba65048-803f-44f6-88d2-24d04fee1a0f') {
     cachedCategory = "admin";
     return "admin";
+  }
+
+  if (email === 'jorgecriare2021@gmail.com' || uid === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') {
+    cachedCategory = "prestador";
+    return "prestador";
   }
 
   if (!uid) { cachedCategory = "lojista"; return cachedCategory; }

@@ -84,9 +84,13 @@ export function subscribeBalance(fn: (v: number) => void): () => void {
 
 export async function initCoinsForUser(userId: string): Promise<number> {
   currentUserId = userId;
+  
   // fallback local imediato
   const local = readLocalBalance(userId);
   notify(local);
+  
+  // Em bypass, se o local for 0, tentamos um refresh imediato
+  const isBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
   // busca remoto
   try {

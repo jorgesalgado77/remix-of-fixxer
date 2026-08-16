@@ -40,11 +40,9 @@ export const Route = createFileRoute("/_authenticated")({
           ? (cat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') 
           : JSON.parse(rawToken!).user.id;
 
-        // Recuperação dinâmica de ID para Bypass se houver conflito de email no Auth Externo
-        // Se o email já existir no Supabase Externo com outro ID, o fallback síncrono pode falhar
-        // O IdentityService e o BypassAudit lidarão com a resolução real.
-        
         // Disparar auditoria e inicialização em paralelo
+        // Otimização: Garantir que o cache de identidade está quente para evitar flash de "Usuário"
+        void import("../lib/identity/identity-service").then(m => m.resolveIdentity(uid, { refresh: hasMasterBypass }));
         void import("../lib/bypass-audit").then(m => m.auditBypassAccess());
         void import("../lib/coins").then(m => m.initCoinsForUser(uid));
       }

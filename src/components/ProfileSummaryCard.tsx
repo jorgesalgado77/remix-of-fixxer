@@ -85,8 +85,22 @@ export function ProfileSummaryCard({
       try {
         const auth = window.localStorage.getItem("fixxer-auth-token-v1");
         const isMaster = window.localStorage.getItem('fixxer:master-bypass') === 'true';
-        const uid = isMaster ? (localStorage.getItem('fixxer:last-category') === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') : (auth ? JSON.parse(auth)?.user?.id : null);
+        const lastCat = localStorage.getItem('fixxer:last-category');
+        const uid = isMaster 
+          ? (lastCat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') 
+          : (auth ? JSON.parse(auth)?.user?.id : null);
         
+        if (isMaster) {
+          return {
+            id: uid,
+            display_name: lastCat === 'admin' ? 'Admin Master' : 'Prestador Teste',
+            full_name: lastCat === 'admin' ? 'Admin Master' : 'Prestador Teste',
+            plan_id: 'pro',
+            karma_score: 50,
+            is_verified: true
+          };
+        }
+
         if (uid) {
           const cached = window.localStorage.getItem("fixxer_identity_cache_v1.2");
           const identities = cached ? JSON.parse(cached) : {};
