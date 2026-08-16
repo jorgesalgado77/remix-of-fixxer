@@ -38,7 +38,11 @@ function AuthenticatedLayout() {
   useEffect(() => {
     if (!loading) {
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-      if (!user && !hasBypass && !window.location.pathname.startsWith('/auth')) {
+      const rawToken = localStorage.getItem('fixxer-auth-token-v1');
+      const isAuthPage = window.location.pathname.startsWith('/auth');
+
+      if (!user && !hasBypass && !rawToken && !isAuthPage) {
+        console.warn("[Authenticated Layout] Sem sessão. Redirecionando para login.");
         window.location.replace(window.location.origin + "/auth");
       }
     }

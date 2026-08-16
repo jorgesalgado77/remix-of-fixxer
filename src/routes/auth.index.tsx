@@ -13,13 +13,19 @@ function AuthLogin() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-    if (hasBypass) {
-        const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
-        const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        console.warn("[Auth Page] Redirecionamento Bypass via window.location.href");
-        window.location.href = window.location.origin + target;
-    }
+    const checkBypass = () => {
+      const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+      if (hasBypass) {
+          const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
+          const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+          console.warn("[Auth Page] Bypass detectado. Forçando saída via window.location.href");
+          window.location.href = window.location.origin + target;
+      }
+    };
+    checkBypass();
+    // Re-check a cada 500ms caso o bypass seja setado async
+    const interval = setInterval(checkBypass, 500);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
