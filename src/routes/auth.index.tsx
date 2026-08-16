@@ -167,13 +167,18 @@ function AuthLogin() {
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setEmail(e.target.value);
+            }}
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             autoComplete="off"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
+                e.stopPropagation();
                 handleLogin();
               }
             }}
@@ -181,13 +186,18 @@ function AuthLogin() {
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setPassword(e.target.value);
+            }}
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             autoComplete="off"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
+                e.stopPropagation();
                 handleLogin();
               }
             }}
