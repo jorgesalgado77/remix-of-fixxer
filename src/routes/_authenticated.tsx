@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link, useNavigate, useRouterState, redirect } from "@tanstack/react-router";
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle, HelpCircle } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
-import { getCurrentUser, isCurrentUserAdmin, clearCurrentUserCache, useCurrentUser, useIsAdmin } from "@/lib/current-user";
+import { getCurrentUser, isCurrentUserAdmin, isCurrentUserAdminSync, clearCurrentUserCache, useCurrentUser, useIsAdmin } from "@/lib/current-user";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { useCurrentCategory, getCategoryCssVars } from "@/lib/user-category";
@@ -49,8 +49,9 @@ export const Route = createFileRoute("/_authenticated")({
       if (location.pathname === '/auth' || location.pathname === '/auth/') {
         console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed");
         if (typeof window !== 'undefined') {
-          window.location.assign('/feed');
-          return { userId: '', userEmail: '', isAdmin: false, bypass: false };
+          // REMOVIDO window.location.assign para evitar reload infinito se o router decidir voltar
+          // Mas mantemos o redirect do router
+          throw redirect({ to: "/feed" as any });
         }
         throw redirect({ to: "/feed" as any });
       }
@@ -119,8 +120,8 @@ function AuthenticatedLayout() {
     
     // REDIRECT FIX: Forçamos a saída de /auth se houver usuário
     if (user && (pathname === '/auth' || pathname === '/auth/')) {
-      console.log("[AuthenticatedLayout] Login detectado. Forçando saída para /feed.");
-      window.location.assign("/feed");
+      console.log("[AuthenticatedLayout] Login detectado. Navegando para /feed.");
+      navigate({ to: "/feed" as any });
       return;
     }
 
