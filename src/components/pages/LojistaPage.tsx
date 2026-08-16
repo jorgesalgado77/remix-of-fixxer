@@ -432,19 +432,6 @@ export function LojistaDashboard() {
            <ProfileHeader role="lojista" />
         </div>
 
-        <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center text-black font-black text-sm">F</div>
-
-            <h1 className="font-bold text-white text-sm uppercase italic">FIXXER</h1>
-        </div>
-        <div className="flex items-center gap-2">
-            <div className="relative mr-2">
-                {/* Notificações agora estão integradas no ProfileSummaryCard */}
-            </div>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-white">
-                <Menu className="w-6 h-6" />
-            </button>
-        </div>
       </div>
 
       {/* Mobile Menu Overlay */}
