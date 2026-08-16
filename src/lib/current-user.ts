@@ -49,19 +49,10 @@ export async function getCurrentUser(force = false): Promise<User | null> {
       // ou se o e-mail da sessão for o master, garantimos o objeto user.
       const isMasterSession = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
 
-      if (sessionError || !session) {
-        // Se falhou mas temos evidência de que é o master (via localStorage persistido pelo Supabase)
-        // o Supabase JS Client mantém os tokens no storage.
-        if (!session && !sessionError) {
-             // Verificação silenciosa se é o master tentando reconectar
-        }
-        cachedUser = null;
-        return null;
-      }
-
       // 2. Se temos uma sessão, o usuário está logado localmente.
       try {
         const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
+        
         if (!userError && user) {
           cachedUser = user;
           return user;
@@ -69,16 +60,21 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         
         // Se o servidor retornar erro (500) mas tivermos uma sessão local ativa,
         // e for o Administrador Master, mantemos ele logado.
-        if (isMasterSession) {
-          console.warn("[current-user] Master detectado: ignorando erro 500 do servidor.");
-          cachedUser = sessionUser;
+        if (isMasterSession || (sessionUser && !userError)) {
+          console.warn("[current-user] Master ou Sessão Detectada: ignorando erro 500 do servidor.");
+          cachedUser = sessionUser || null;
           return cachedUser;
         }
       } catch (err) {
-        if (isMasterSession) {
+        if (isMasterSession && sessionUser) {
           cachedUser = sessionUser;
           return cachedUser;
         }
+      }
+
+      if (sessionError || !session) {
+        cachedUser = null;
+        return null;
       }
       
       cachedUser = null;
