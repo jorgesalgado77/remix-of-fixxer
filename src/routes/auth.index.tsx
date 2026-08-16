@@ -112,6 +112,8 @@ function LoginComponent() {
            localStorage.setItem('fixxer-auth-token-v1', JSON.stringify(mockSession));
            
            toast.success('Bypass Master: Acesso emergencial concedido.');
+           
+           // NAVEGAÇÃO BRUTA PARA EVITAR TANSTACK ROUTER STATE
            window.location.href = '/admin';
          }
          return;
