@@ -48,7 +48,8 @@ export async function getCurrentUser(force = false): Promise<User | null> {
             full_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Prestador Teste',
             role: category,
             category: category,
-            user_type: category
+            user_type: category,
+            business_category: category
           },
           aud: 'authenticated',
           created_at: new Date().toISOString()
