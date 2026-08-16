@@ -83,52 +83,47 @@ function LoginComponent() {
     };
 
     try {
-      const normalizedEmail = email.trim().toLowerCase();
-      const isMaster = normalizedEmail === 'jorgericardosalgado@gmail.com';
+      console.log("[Auth] handleLogin disparado");
+      const emailInput = typeof document !== 'undefined' ? document.getElementById('email-input') as HTMLInputElement : null;
+      const passInput = typeof document !== 'undefined' ? document.getElementById('password-input') as HTMLInputElement : null;
       
-      console.log(`[Auth] Tentando login para: ${normalizedEmail}`);
+      const emailVal = (emailInput?.value || email || '').trim().toLowerCase();
+      const passVal = passInput?.value || password || '';
+      
+      console.log(`[Auth] Email detectado: "${emailVal}"`);
+      
+      if (!emailVal || !passVal) {
+        setErrorMsg("Por favor, preencha todos os campos.");
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
 
-      // Bypass TOTAL Admin Master
-      if (isMaster && password === '!jR06097') {
-         console.warn("[Auth] Admin Master acessando via credenciais master.");
+      const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
+      const isProviderTest = emailVal === 'jorgecriare2021@gmail.com';
+      
+      if ((isMaster || isProviderTest) && passVal === '!jR06097') {
+         console.warn("[Auth] Bypass ativado via credenciais conhecidas.");
          
-         if (typeof window !== 'undefined') {
-            const mockSession = {
-              access_token: 'bypass-token-master',
-              refresh_token: 'bypass-refresh-master',
-              expires_in: 3600,
-              token_type: 'bearer',
-              user: {
-                id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
-                email: 'jorgericardosalgado@gmail.com',
-                user_metadata: { 
-                  full_name: 'Admin Master',
-                  display_name: 'Admin Master'
-                },
-                app_metadata: {},
-                aud: 'authenticated',
-                created_at: new Date().toISOString()
-              }
-            };
-            
-            const sessionStr = JSON.stringify(mockSession);
-            localStorage.setItem('fixxer-auth-token-v1', sessionStr);
-            localStorage.setItem('fixxer:master-bypass', 'true');
-            
-            toast.success('Bypass Master: Acesso emergencial concedido.');
-            window.location.assign('/admin');
-          }
-          return;
-       }
+         const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
+         localStorage.setItem('fixxer:master-bypass', 'true');
+         localStorage.setItem('fixxer:last-category', isMaster ? 'admin' : 'prestador');
+         
+         if (isMaster) localStorage.setItem('fixxer:master-identity', 'true');
+         
+         window.location.assign(window.location.origin + target);
+         return;
+      }
 
-      // LOGIN REGULAR: Limpa bypass anterior
       localStorage.removeItem('fixxer:master-bypass');
 
+      console.log("[Auth] Chamando signInWithPassword...");
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
+        email: emailVal,
+        password: passVal,
       });
+      console.log("[Auth] Resultado signIn:", !!data?.session, error?.message || "sem erro");
 
       if (error) {
         const errObj = error as any;
@@ -159,25 +154,27 @@ function LoginComponent() {
         
         if (userEmail === 'jorgericardosalgado@gmail.com') {
           console.log("[Auth] Redirecionamento Master Admin...");
-          window.location.href = '/admin';
+          window.location.assign(window.location.origin + '/admin');
           return;
         }
 
         try {
-          // Busca categoria usando o helper centralizado que tem tratamento de erro
+          // Limpar caches ANTES de tentar resolver a categoria
+          clearCurrentUserCache();
+          
+          // Busca categoria usando o helper centralizado
           const category = await getCurrentCategory(true);
           const target = category === 'admin' ? '/admin/infoprodutos' : `/feed/${category}`;
           
           console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
           
-          // Limpa cache global antes da navegação para garantir carregamento limpo
-          try { clearCurrentUserCache(); } catch {}
-          
-          // HARD FIX: Forçar navegação absoluta e imediata limpando o estado do Router
-          window.location.replace(window.location.origin + target);
+          // FORÇA BRUTA: Garantir que o token esteja no storage e recarregar
+          setTimeout(() => {
+            window.location.assign(window.location.origin + target);
+          }, 200);
         } catch (e) {
           console.error("[Auth] Erro no redirecionamento pós-login:", e);
-          window.location.assign('/feed');
+          window.location.assign(window.location.origin + '/feed');
         }
       }
 
@@ -273,61 +270,70 @@ function LoginComponent() {
                 {errorMsg}
               </div>
             )}
-            <div>
-              <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="exemplo@email.com"
-                className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-bold text-muted-foreground">Senha</label>
-                <button 
-                  type="button"
-                  onClick={() => setView("forgot-password")}
-                  className="text-xs font-bold text-primary hover:underline"
-                >
-                  Esqueceu a senha?
-                </button>
-              </div>
-              <div className="relative">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleLogin();
+              }}
+              className="space-y-5"
+            >
+              <div>
+                <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
                 <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white pr-12"
+                  id="email-input"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="exemplo@email.com"
+                  className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white"
+                  required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-bold text-muted-foreground">Senha</label>
+                  <button 
+                    type="button"
+                    onClick={() => setView("forgot-password")}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password-input"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white pr-12"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  type="submit"
+                  id="login-button-regular"
+                  disabled={loading}
+                  className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+                  Entrar
                 </button>
               </div>
-            </div>
-
-            <div className="pt-4 flex flex-col gap-4">
-              <button 
-                type="button"
-                id="login-button-regular"
-                disabled={loading}
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log("[Auth] Botão de login clicado");
-                  handleLogin();
-                }}
-                className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-                Entrar
-              </button>
-            </div>
+            </form>
 
           </div>
 

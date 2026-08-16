@@ -198,21 +198,23 @@ function RootComponent() {
         const { data } = await supabase.auth.getSession();
         if (data.session?.user?.id) {
           // PROMPT 24 FIX: Forçar saída se estiver em /auth e logado
-          if (window.location.pathname.startsWith('/auth')) {
-            console.warn("[Root] Login detectado em /auth. Forçando salto via window.location.");
-            window.location.assign('/feed');
+          const isAuthPath = window.location.pathname === '/auth' || window.location.pathname === '/auth/' || window.location.pathname.startsWith('/auth/');
+          if (isAuthPath) {
+            console.warn("[Root] Sessão detectada em /auth. Forçando salto via window.location.");
+            window.location.replace(window.location.origin + '/feed');
             return;
           }
           await initCoinsForUser(data.session.user.id);
           void subscribeBlockedStatus(data.session.user.id);
         }
         supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log(`[Identity] Evento Auth: ${event}`, !!session);
+          console.log(`[Identity] Evento Auth Root: ${event}`, !!session);
           
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && session?.user?.id) {
-            if (window.location.pathname.startsWith('/auth')) {
+            const isAuthPath = window.location.pathname === '/auth' || window.location.pathname === '/auth/' || window.location.pathname.startsWith('/auth/');
+            if (isAuthPath) {
                console.warn("[Root] Login detectado em /auth via evento. Forçando salto.");
-               window.location.assign('/feed');
+               window.location.replace(window.location.origin + '/feed');
                return;
             }
             void initCoinsForUser(session.user.id);

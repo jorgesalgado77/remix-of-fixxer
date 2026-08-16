@@ -47,8 +47,15 @@ export const Route = createFileRoute("/_authenticated")({
       console.log("[Route Guard] Usuário autenticado:", user?.email || 'Master Bypass');
       
       // Se o usuário está logado e tenta acessar /auth, mandamos para o feed
-      if (location.pathname === '/auth' || location.pathname === '/auth/') {
-        console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed");
+      if (location.pathname === '/auth' || location.pathname === '/auth/' || location.pathname.startsWith('/auth/')) {
+        console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed via window.location");
+        if (typeof window !== 'undefined') {
+          // Pequeno delay para garantir que o token no localStorage esteja estável
+          setTimeout(() => {
+            window.location.href = window.location.origin + '/feed';
+          }, 100);
+          return { userId: '', userEmail: '', isAdmin: false, bypass: false }; 
+        }
         throw redirect({ to: "/feed" as any });
       }
 
@@ -71,13 +78,14 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     // 4. Se não estiver no /auth e não tiver sessão, redireciona para o login
-    // IMPORTANTE: Permitir acesso a /auth sem redirecionar de volta
     if (location.pathname === '/auth' || location.pathname === '/auth/') {
       return { userId: '', userEmail: '', isAdmin: false, bypass: false };
     }
 
     if (!location.pathname.startsWith('/auth')) {
       console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
+      // Limpamos o cache para garantir que não haja resquícios de sessões anteriores
+      clearCurrentUserCache();
       throw redirect({ to: "/auth" as any });
     }
     

@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth")({
   beforeLoad: async ({ location }) => {
-    // Se já estiver logado (check rápido no storage), manda para o feed
+    // CAMADA 0: Verificação agressiva de storage antes de qualquer render
     if (typeof window !== 'undefined') {
       const raw = localStorage.getItem('fixxer-auth-token-v1');
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
@@ -11,22 +11,28 @@ export const Route = createFileRoute("/auth")({
       if (raw) {
         try {
           const parsed = JSON.parse(raw);
-          if (parsed && parsed.user) hasSession = true;
+          if (parsed && (parsed.user || parsed.session?.user)) hasSession = true;
         } catch {}
       }
       
-      if ((hasSession || hasBypass) && (location.pathname === '/auth' || location.pathname === '/auth/')) {
+      const isAuthPath = location.pathname === '/auth' || location.pathname === '/auth/' || location.pathname.startsWith('/auth/');
+      
+      if ((hasSession || hasBypass) && isAuthPath) {
         console.warn("[Auth Layout Guard] Sessão ativa detectada. Forçando saída via window.location.");
-        window.location.replace('/feed');
-        // O redirect do router serve como fallback se o replace demorar
+        // Usamos replace para não sujar o histórico com o loop
+        window.location.replace(window.location.origin + '/feed');
         throw redirect({ to: '/feed' as any });
       }
     }
     return {};
   },
-  component: () => (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+  component: AuthLayout,
+});
+
+function AuthLayout() {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
       <Outlet />
     </div>
-  ),
-});
+  );
+}
