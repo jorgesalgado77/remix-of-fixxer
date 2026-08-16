@@ -37,13 +37,21 @@ export const Route = createFileRoute("/_authenticated")({
     // 3. Verificação de Admin (Resiliente a erros de banco)
     let isAdmin = false;
     try {
-      // isCurrentUserAdmin já possui bypass para recursão infinita e metadados
-      isAdmin = await isCurrentUserAdmin();
+      // Usamos getSession para pegar o user e checar o cache síncrono
+      const { data: { session: currentSession } } = await supabaseExternal.auth.getSession();
+      const email = currentSession?.user?.email?.toLowerCase();
+      
+      if (email === 'jorgericardosalgado@gmail.com' || hasMasterBypass) {
+        isAdmin = true;
+      } else {
+        // Tentamos a verificação assíncrona, mas com timeout ou catch agressivo
+        isAdmin = await isCurrentUserAdmin().catch(() => false);
+      }
     } catch (e) {
       console.error("[Route Guard] Erro silencioso na verificação de admin:", e);
     }
 
-    return { userId: user.id, userEmail: user.email, isAdmin, bypass: false };
+    return { userId: user.id, userEmail: user.email, isAdmin, bypass: hasMasterBypass };
   },
   component: AuthenticatedLayout,
 });

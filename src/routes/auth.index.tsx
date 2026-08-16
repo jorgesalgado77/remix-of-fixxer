@@ -186,8 +186,12 @@ function LoginComponent() {
           else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) target = '/feed/cliente';
           else if (rawRole.includes('lojista')) target = '/feed/lojista';
           
-          console.log("[Auth] Redirecionamento final:", target);
-          window.location.href = target;
+          console.log("[Auth] Login bem-sucedido. Redirecionando para:", target);
+          
+          // Garante que a sessão seja persistida antes do redirect forçado
+          setTimeout(() => {
+            window.location.href = target;
+          }, 100);
         } catch (e) {
           window.location.href = '/feed';
         }
