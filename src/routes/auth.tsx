@@ -1,27 +1,16 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth")({
   beforeLoad: async ({ location }) => {
     if (typeof window !== 'undefined') {
         const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
-        
-        if (hasMasterBypass || rawToken) {
-            const { getCurrentCategory } = await import("@/lib/current-user");
-            const cat = await getCurrentCategory(true);
-            const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-            
-            // Limpeza agressiva do estado do Router
-            if (typeof sessionStorage !== 'undefined') {
-                Object.keys(sessionStorage).forEach(key => {
-                    if (key.includes('tsr-') || key.includes('tanstack')) {
-                        sessionStorage.removeItem(key);
-                    }
-                });
-            }
-            
-            console.warn("[Auth Layout Guard] Sessão ativa detectada. Redirecionamento absoluto para:", target);
-            window.location.replace(window.location.origin + target);
+        const cat = localStorage.getItem('fixxer:last-category');
+
+        if ((hasMasterBypass && cat) || rawToken) {
+            const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
+            console.warn("[Auth Layout Guard] Sessão ativa detectada. Redirecionamento forçado para:", target);
+            window.location.href = window.location.origin + target;
             return { authenticated: true };
         }
     }
