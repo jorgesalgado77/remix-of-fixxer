@@ -123,7 +123,14 @@ function CreatorStudioPage() {
                 icon={<Zap className="w-4 h-4 text-amber-400" />}
                 label="Cupons"
               />
+              <TabButton 
+                active={activeTab === 'offers'} 
+                onClick={() => setActiveTab('offers')}
+                icon={<DollarSign className="w-4 h-4 text-emerald-400" />}
+                label="Ofertas"
+              />
             </div>
+
 
             {activeTab === 'products' && (
               <div className="space-y-6">
