@@ -13,6 +13,15 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
+    // Tenta bypass precoce para o Administrador Master
+    if (typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true') {
+      console.warn("[Route Guard] Bypass Master detectado no beforeLoad de _authenticated");
+      return {
+        userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+        userEmail: 'jorgericardosalgado@gmail.com',
+      };
+    }
+    
     // Tenta obter o usuário; se falhar (erro 500 do Supabase), 
     // permitimos continuar se houver e-mail master na sessão local.
     const user = await getCurrentUser(true);
