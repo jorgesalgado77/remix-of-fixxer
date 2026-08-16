@@ -253,6 +253,20 @@ export function clearCurrentUserCache() {
 }
 
 if (typeof window !== "undefined") {
+  // Inicialização bruta: Se houver bypass e estivermos em /auth, ejetar imediatamente ANTES de qualquer evento
+  const checkInitialEjection = async () => {
+    const isAuthPath = window.location.pathname.startsWith('/auth');
+    const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+    const cat = localStorage.getItem('fixxer:last-category');
+    
+    if (hasBypass && isAuthPath && cat) {
+      const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+      console.warn("[Identity] Ejeção Bruta na Inicialização (Bypass Ativo):", target);
+      window.location.replace(window.location.origin + target);
+    }
+  };
+  checkInitialEjection();
+
   supabaseExternal.auth.onAuthStateChange(async (event, session) => {
     console.log(`[Identity] Evento Auth: ${event}`, !!session);
     
@@ -264,7 +278,6 @@ if (typeof window !== "undefined") {
         cachedUser = session.user;
       }
       
-      // Auto-redirecionamento se estiver em /auth logado
       const isAuthPath = window.location.pathname.startsWith('/auth');
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
       
