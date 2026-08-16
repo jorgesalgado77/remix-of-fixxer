@@ -1,9 +1,7 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth")({
   beforeLoad: () => {
-    // LAYOUT NEUTRO: Não interfere no roteamento.
-    // O controle de acesso é feito nas páginas filhas ou no Root.
     return {};
   },
   component: AuthLayout,
@@ -11,7 +9,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthLayout() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-black flex flex-col">
       <Outlet />
     </div>
   );

@@ -8,14 +8,15 @@ export const Route = createFileRoute("/_authenticated")({
         const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
         
-        // Se houver qualquer sinal de autenticação, permite o carregamento da rota.
         if (hasMasterBypass || rawToken) {
             return { authenticated: true };
         }
     }
     
-    // Se não houver absolutamente nada, envia para login.
-    console.warn("[Authenticated Guard] Sem sessão. Redirecionando.");
+    // REDIRECIONAMENTO SILENCIOSO: Evita loop infinito no browser se o roteador falhar.
+    if (location.pathname.startsWith('/auth')) return { authenticated: false };
+
+    console.warn("[Authenticated Guard] Acesso negado.");
     throw redirect({ to: "/auth" as any });
   },
   component: AuthenticatedLayout,
@@ -23,14 +24,13 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const { user, loading } = useCurrentUser();
-  const [authChecked, setAuthChecked] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!loading) {
-      setAuthChecked(true);
-      // Fallback de segurança se o beforeLoad falhou por algum motivo de timing
+      setReady(true);
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-      if (!user && !hasBypass) {
+      if (!user && !hasBypass && !window.location.pathname.startsWith('/auth')) {
         window.location.href = window.location.origin + "/auth";
       }
     }
