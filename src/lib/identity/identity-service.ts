@@ -52,14 +52,14 @@ export async function resolveIdentity(
 
   // PROMPT 23: Identidade Fixa para o Admin Master no modo Bypass
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-  const isMasterId = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f';
+  const isMasterId = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' || userId === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9';
 
   if (isMasterBypass && isMasterId) {
     const masterResult: ResolvedProfile = {
       identity: {
         id: userId,
-        displayName: "Admin Master",
-        fullName: "Admin Master",
+        displayName: userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' ? "Admin Master" : "Prestador Teste",
+        fullName: userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' ? "Admin Master" : "Prestador Teste",
         avatarUrl: null,
         bio: "Administrador Geral do Sistema Fixxer",
         isOfficial: true,
@@ -74,8 +74,8 @@ export async function resolveIdentity(
       roles: ["admin"],
       mainCategory: "lojista" as any,
       presentation: {
-        name: "Admin Master",
-        initials: "AM",
+        name: userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' ? "Admin Master" : "Prestador Teste",
+        initials: userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' ? "AM" : "PT",
         avatarUrl: null,
         category: "lojista" as any,
         themeColor: "#FFD700",

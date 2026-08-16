@@ -268,7 +268,7 @@ export function ProfileSummaryCard({
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate max-w-[140px]">
+              <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate max-w-[200px]">
                 {loading && !profile ? "Carregando…" : name}
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
