@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated")({
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
         
         // Se estiver logado e tentar acessar /auth, sai de lá imediatamente
-        if (location.pathname.startsWith('/auth') && (hasMasterBypass || rawToken)) {
+        if ((location.pathname === '/auth' || location.pathname === '/auth/') && (hasMasterBypass || rawToken)) {
             const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
             console.log("[Auth Guard] Já autenticado, redirecionando para:", target);
