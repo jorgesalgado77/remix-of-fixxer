@@ -59,7 +59,8 @@ import {
   adminRefundSale,
   getGlobalMonetizationConfig,
   saveGlobalMonetizationConfig,
-  updateCouponStatus
+  updateCouponStatus,
+  getAdminAuditLogs
 } from "@/lib/info-products/v2-monetization";
 import { PanelActions } from "@/components/PanelActions";
 
