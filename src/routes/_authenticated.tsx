@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useNavigate, useRouterState, redirect } from "@tanstack/react-router";
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle, HelpCircle } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCurrentUser, isCurrentUserAdmin, clearCurrentUserCache, useCurrentUser, useIsAdmin } from "@/lib/current-user";
@@ -13,20 +13,29 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
-    // Tenta bypass precoce para o Administrador Master
-    if (typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true') {
-      console.warn("[Route Guard] Bypass Master detectado no beforeLoad de _authenticated");
+    // PROMPT 23: Bloqueio Total de Redirect para Admin Master
+    const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+    if (hasMasterBypass) {
+      console.warn("[Route Guard] Bypass Master ATIVO no beforeLoad.");
       return {
         userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
         userEmail: 'jorgericardosalgado@gmail.com',
+        isAdmin: true,
         bypass: true
       };
     }
     
+    // Tentamos resolver o usuário. TanStack Router aguarda essa promessa.
     const user = await getCurrentUser(true);
+    if (!user) {
+      console.warn("[Route Guard] Usuário não logado. Redirecionando para /auth.");
+      throw redirect({ to: "/auth" as any });
+    }
+
     return {
-      userId: user?.id ?? null,
-      userEmail: user?.email ?? null,
+      userId: user.id,
+      userEmail: user.email,
+      isAdmin: false,
       bypass: false
     };
   },
@@ -42,7 +51,8 @@ function AuthenticatedLayout() {
   const providerStats = useProviderStats();
   const [showPixModal, setShowPixModal] = useState(false);
 
-  const email = user?.email ?? '';
+  const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+  const email = hasMasterBypass ? 'jorgericardosalgado@gmail.com' : (user?.email ?? '');
 
   useEffect(() => {
     const handlePixModalEvent = (e: any) => {

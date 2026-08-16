@@ -91,8 +91,6 @@ function LoginComponent() {
          console.warn("[Auth] Admin Master acessando via credenciais master.");
          
          if (typeof window !== 'undefined') {
-           localStorage.setItem('fixxer:master-bypass', 'true');
-           
            const mockSession = {
              access_token: 'bypass-token-master',
              refresh_token: 'bypass-refresh-master',
@@ -111,19 +109,23 @@ function LoginComponent() {
              }
            };
            
-           localStorage.setItem('fixxer-auth-token-v1', JSON.stringify(mockSession));
-           localStorage.setItem('sb-fixxer-auth-token', JSON.stringify(mockSession));
-
-           localStorage.setItem('sb-auth-token', JSON.stringify(mockSession));
-           
-           toast.success('Bypass Master: Acesso emergencial concedido.');
-           
-           // NAVEGAÇÃO BRUTA PARA EVITAR TANSTACK ROUTER STATE
-           // Usamos replace para não permitir voltar para o login com bypass
-           window.location.replace('/admin');
-         }
-         return;
-      }
+            // Injeta em todas as chaves possíveis para garantir persistência do Supabase
+            const sessionStr = JSON.stringify(mockSession);
+            localStorage.setItem('fixxer-auth-token-v1', sessionStr);
+            localStorage.setItem('sb-fixxer-auth-token', sessionStr);
+            localStorage.setItem('sb-auth-token', sessionStr);
+            
+            // Flag interna do app para bypass de guards
+            localStorage.setItem('fixxer:master-bypass', 'true');
+            
+            toast.success('Bypass Master: Acesso emergencial concedido.');
+            
+            // PROMPT 23: Forçamos a limpeza do estado do roteador via Navegação Direta
+            console.log("[Auth] Bypass Master ativado. Navegando para /admin...");
+            window.location.href = '/admin';
+          }
+          return;
+       }
 
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
         email: normalizedEmail,
@@ -366,7 +368,11 @@ function LoginComponent() {
                 type="button"
                 id="login-button-regular"
                 disabled={loading}
-                onClick={handleLogin}
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log("[Auth] Botão de login clicado");
+                  handleLogin();
+                }}
                 className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}

@@ -42,10 +42,30 @@ export async function getCurrentUser(force = false): Promise<User | null> {
     try {
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
+      if (isMasterBypass) {
+        console.warn("[getCurrentUser] Bypass Master Ativo via LocalStorage");
+        const masterData: User = {
+          id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+          email: 'jorgericardosalgado@gmail.com',
+          app_metadata: {},
+          user_metadata: { 
+            full_name: 'Admin Master',
+            display_name: 'Admin Master'
+          },
+          aud: 'authenticated',
+          created_at: new Date().toISOString()
+        } as any;
+        cachedUser = masterData;
+        cachedAdmin = true; // Força cache de admin imediatamente
+        return masterData;
+      }
+
       // 1. Tenta obter a sessão do storage local primeiro
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
-      const sessionUser = session?.user;
-
+      
+      // Se falhou mas temos o bypass, simulamos a sessão master
+      let sessionUser = session?.user;
+      
       // Bypass Master Crítico: Refatorado para Admin Master
       const isMasterEmail = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
       const isMaster = isMasterEmail || isMasterBypass;
@@ -204,14 +224,21 @@ export function clearCurrentUserCache() {
 // Invalida cache automaticamente em qualquer mudança de sessão.
 if (typeof window !== "undefined") {
   supabaseExternal.auth.onAuthStateChange((event) => {
-    // Se o evento for SIGNED_OUT mas tivermos o bypass master, 
-    // NÃO limpamos tudo o que permite o bypass continuar funcionando.
     const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     
-    if (event === "SIGNED_OUT" && !hasMasterBypass) {
+    // Se o evento for INITIAL_SESSION ou SIGNED_IN e for master, forçamos o cache
+    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && hasMasterBypass) {
+      console.log("[Auth] Sessão Master detectada via evento:", event);
+      getCurrentUser(true);
+    }
+
+    if (event === "SIGNED_OUT") {
+      if (hasMasterBypass) {
+        console.warn("[Auth] Bloqueado signOut automático para Admin Master.");
+        return;
+      }
       clearCurrentUserCache();
       try {
-        // Remove chaves legadas de identidade que ainda estejam no dispositivo.
         localStorage.removeItem("fixxer_user_id");
         localStorage.removeItem("fixxer_user_email");
         localStorage.removeItem("fixxer_user_role");
