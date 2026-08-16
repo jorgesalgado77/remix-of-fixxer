@@ -47,12 +47,11 @@ export const Route = createFileRoute("/_authenticated")({
       console.log("[Route Guard] Usuário autenticado:", user?.email || 'Master Bypass');
       
       // Se o usuário está logado e tenta acessar /auth, mandamos para o feed
-      if (location.pathname.startsWith('/auth')) {
+      if (location.pathname === '/auth' || location.pathname === '/auth/') {
         console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed");
-        // Se estivermos no navegador, usamos window.location para garantir a saída do loop
         if (typeof window !== 'undefined') {
+          // Prevenimos que o router intercepte
           window.location.assign('/feed');
-          // Retornamos um objeto vazio para satisfazer o TS enquanto o reload acontece
           return { userId: '', userEmail: '', isAdmin: false, bypass: false };
         }
         throw redirect({ to: "/feed" as any });
@@ -116,9 +115,8 @@ function AuthenticatedLayout() {
     const isMaster = isMasterEmail || hasMasterBypass;
     
     // REDIRECT FIX: Forçamos a saída de /auth se houver usuário
-    if (user && pathname.startsWith('/auth')) {
+    if (user && (pathname === '/auth' || pathname === '/auth/')) {
       console.log("[AuthenticatedLayout] Login detectado. Forçando saída para /feed.");
-      // Se estivermos em /auth e logados, saímos imediatamente do React stack
       window.location.assign("/feed");
       return;
     }
