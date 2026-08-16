@@ -52,7 +52,10 @@ export async function resolveIdentity(
 
   // PROMPT 23: Identidade Fixa para o Admin Master no modo Bypass
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-  const isMasterId = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' || userId === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9';
+  const bypassUid = typeof window !== 'undefined' ? localStorage.getItem('fixxer:bypass-uid') : null;
+  const isMasterId = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' || 
+                    userId === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9' ||
+                    (bypassUid && userId === bypassUid);
 
   if (isMasterBypass && isMasterId) {
     console.log(`[IdentityService] Bypass ATIVO para ${userId}. Ignorando cache para garantir exibição master.`);
