@@ -44,6 +44,7 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
+      console.log("[Auth] Master/Test Bypass Detectado");
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
