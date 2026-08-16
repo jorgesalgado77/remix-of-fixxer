@@ -46,24 +46,26 @@ export async function getCurrentUser(force = false): Promise<User | null> {
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
       const sessionUser = session?.user;
 
-      // Bypass Master Crítico: Verificação de e-mail e flag de storage
+      // Bypass Master Crítico: Refatorado para Admin Master
       const isMasterEmail = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
       const isMaster = isMasterEmail || isMasterBypass;
 
-      // Redundância Master Precoce: Se temos o bypass ativo, já assumimos a identidade mock
-      // para evitar bloqueios por falha de rede/servidor no getUser().
-      if (isMasterBypass) {
-        const mockMaster: User = {
-          id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+      if (isMaster) {
+        const masterData: User = {
+          id: sessionUser?.id || '6ba65048-803f-44f6-88d2-24d04fee1a0f',
           email: 'jorgericardosalgado@gmail.com',
           app_metadata: {},
-          user_metadata: { full_name: 'Admin Master' },
+          user_metadata: { 
+            full_name: 'Admin Master',
+            display_name: 'Admin Master'
+          },
           aud: 'authenticated',
-          created_at: new Date().toISOString()
+          created_at: sessionUser?.created_at || new Date().toISOString()
         } as any;
-        cachedUser = mockMaster;
-        return mockMaster;
+        cachedUser = masterData;
+        return masterData;
       }
+
 
       // 2. Tenta validar no servidor
       try {
