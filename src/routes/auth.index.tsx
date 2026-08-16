@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import { clearCurrentUserCache } from "@/lib/current-user";
+import { resolveUserCategory } from "@/lib/user-category";
 
 export const Route = createFileRoute("/auth/")({
   component: LoginComponent,
