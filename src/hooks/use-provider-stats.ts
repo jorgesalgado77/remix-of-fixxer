@@ -167,11 +167,17 @@ export function useProviderStats(): ProviderStats {
           
           if (error) {
             console.warn("useProviderStats: user_coins access error:", error.message);
-            if (!cancelled) setBalance(0);
+            if (!cancelled) {
+              const local = localStorage.getItem(`fixxer_coins_balance_${uid}`);
+              setBalance(local ? Number(local) : 0);
+            }
           } else if (!cancelled && data && typeof (data as any).balance === "number") {
-            setBalance((data as any).balance as number);
+            const b = (data as any).balance as number;
+            setBalance(b);
+            localStorage.setItem(`fixxer_coins_balance_${uid}`, String(b));
           } else if (!cancelled) {
-            setBalance(0);
+            const local = localStorage.getItem(`fixxer_coins_balance_${uid}`);
+            setBalance(local ? Number(local) : 0);
           }
         } catch (e) {
           console.error("useProviderStats: balance fetch failed", e);
