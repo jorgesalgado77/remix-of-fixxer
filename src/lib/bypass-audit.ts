@@ -19,7 +19,7 @@ export async function auditBypassAccess() {
     // 1. Verificar Perfil no Banco
     const { data: profile, error: pErr } = await supabaseExternal
       .from('profiles')
-      .select('id, display_name, karma_score, plan_id')
+      .select('id, display_name, karma_score, plan_id, avatar_url, city, state')
       .eq('id', uid)
       .maybeSingle();
 
