@@ -155,20 +155,23 @@ export async function resolveIdentity(
 
 
   // REGRA ÚNICA DE FALLBACK PARA AVATAR
-  // 1. Avatar do perfil mestre (profiles.avatar_url) - Prioridade máxima pois é o que o usuário edita no perfil global
+  // 1. Avatar do perfil mestre (profiles.avatar_url)
   // 2. Logo da empresa (store_profiles.logo_url)
   // 3. Logo do fornecedor (supplier_profiles.logo_url)
   // 4. Foto profissional (provider_profiles.avatar_url)
-  // 5. null (fallback UI)
-  const avatarUrl = 
-    (isMasterBypass && userId === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9')
-      ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png'
-      : (effectiveProfile.avatar_url || 
-         effectiveProfile.logo_url ||
-         store?.logo_url || 
-         supplier?.logo_url || 
-         provider?.avatar_url || 
-         null);
+  // 5. Hardcoded master bypass fallback (Prompt 23)
+  // 6. null (fallback UI)
+  let avatarUrl = 
+    effectiveProfile.avatar_url || 
+    effectiveProfile.logo_url ||
+    store?.logo_url || 
+    supplier?.logo_url || 
+    provider?.avatar_url || 
+    null;
+
+  if (!avatarUrl && isMasterBypass && userId === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') {
+     avatarUrl = 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png';
+  }
 
   // Validação rigorosa: se for uma string vazia ou placeholder conhecido, tratar como null
   const validatedAvatar = (typeof avatarUrl === 'string' && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'))) ? avatarUrl : null;
