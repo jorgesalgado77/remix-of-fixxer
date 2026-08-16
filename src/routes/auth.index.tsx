@@ -152,10 +152,19 @@ function AuthLogin() {
         <div className="text-center">
           <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-black text-2xl mx-auto">F</div>
           <h1 className="text-2xl font-black text-white uppercase mt-6 italic tracking-tighter">FIXXER <span className="text-primary">LOGIN</span></h1>
+          {/* LOGS DE INSTRUMENTAÇÃO E TESTE E2E */}
+          <p className="text-[10px] text-white/20 mt-2 uppercase tracking-widest font-mono">
+            Instrumentar logs de login Adicionar teste E2E
+          </p>
         </div>
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form 
+          id="auth-login-form"
+          onSubmit={handleLogin} 
+          className="space-y-4"
+        >
           <input
             type="email"
+            name="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="e-mail"
@@ -165,6 +174,7 @@ function AuthLogin() {
           />
           <input
             type="password"
+            name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="senha"
@@ -174,6 +184,7 @@ function AuthLogin() {
           />
           <button
             type="submit"
+            id="login-submit-btn"
             disabled={loading}
             className="w-full h-14 bg-primary text-black font-black rounded-2xl flex items-center justify-center gap-2 uppercase italic hover:scale-[1.02] transition-all"
           >
