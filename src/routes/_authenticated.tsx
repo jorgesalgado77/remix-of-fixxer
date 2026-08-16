@@ -48,7 +48,9 @@ function AuthenticatedLayout() {
     if (userLoading) return;
     
     // Bypass para o Administrador Master em caso de instabilidade
-    const isMaster = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+    const isMaster = isMasterEmail || hasMasterBypass;
     
     if (!userLoading && !user && !isMaster) {
       console.warn("[AuthenticatedLayout] Usuário não detectado e não é master. Redirecionando para /auth.");

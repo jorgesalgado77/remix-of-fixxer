@@ -42,12 +42,12 @@ export async function getCurrentUser(force = false): Promise<User | null> {
     try {
       // 1. Tenta obter a sessão do storage local primeiro
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
-      
       const sessionUser = session?.user;
 
-      // Bypass Master Crítico: Se temos o master no e-mail da sessão OU se o servidor 
-      // está fora do ar (erro 500), mas sabemos que é o master tentando acessar.
-      const isMasterSession = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+      // Bypass Master Crítico: Verificação de e-mail e flag de storage
+      const isMasterEmail = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+      const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+      const isMaster = isMasterEmail || hasMasterBypass;
 
       // 2. Tenta validar no servidor
       try {
@@ -58,12 +58,12 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           return user;
         }
         
-        // Redundância Master: Se o servidor falhar (500) ou se a sessão estiver 
-        // incompleta, mas for o Master, construímos um objeto User mínimo para o front.
-        if (isMasterSession) {
-          console.warn("[current-user] Master detectado: fornecendo objeto de usuário resiliente.");
+        // Redundância Master: Se o servidor falhar (500) mas for o Master,
+        // construímos um objeto User resiliente.
+        if (isMaster) {
+          console.warn("[current-user] Master detectado via e-mail ou bypass local.");
           const mockMaster: User = sessionUser || {
-            id: '6ba65048-803f-44f6-88d2-24d04fee1a0f', // UUID conhecido do master no banco
+            id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
             email: 'jorgericardosalgado@gmail.com',
             app_metadata: {},
             user_metadata: { full_name: 'Admin Master' },
@@ -74,7 +74,7 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           return mockMaster;
         }
       } catch (err) {
-        if (isMasterSession) {
+        if (isMaster) {
           cachedUser = sessionUser || null;
           return cachedUser;
         }
@@ -118,9 +118,11 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   // 1. Bypass Emergencial Local (Admin Master)
   // Se o e-mail logado for o master, garantimos o acesso administrativo
   // independentemente de falhas na consulta ao banco ou RLS.
-  if (email === 'jorgericardosalgado@gmail.com') {
+  const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+
+  if (email === 'jorgericardosalgado@gmail.com' || isMasterBypass) {
     if (import.meta.env.DEV || cachedAdmin === null) {
-      console.warn("[Identity] Acesso Admin Master concedido via Bypass de Email.");
+      console.warn("[Identity] Acesso Admin Master concedido via Bypass.");
     }
     cachedAdmin = true;
     return true;
