@@ -51,8 +51,8 @@ function AuthLogin() {
       
       // Reset total para garantir que o roteador não intercepte a mudança de estado
       setTimeout(() => {
-        window.location.replace(window.location.origin + target);
-      }, 100);
+        window.location.href = window.location.origin + target;
+      }, 50);
       return;
     }
 
@@ -78,8 +78,8 @@ function AuthLogin() {
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
         
         setTimeout(() => {
-          window.location.replace(window.location.origin + target);
-        }, 100);
+          window.location.href = window.location.origin + target;
+        }, 50);
       }
     } catch (err: any) {
       toast.error(err.message || "Credenciais inválidas");
