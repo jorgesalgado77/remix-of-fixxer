@@ -46,6 +46,8 @@ function AuthLogin() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+
     if (loading) return;
     
     const emailVal = email.trim().toLowerCase();
@@ -102,9 +104,8 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
-      // Pequeno delay para garantir que o browser processe o toast e o storage antes do replace
       setTimeout(() => {
-        window.location.replace(window.location.origin + target);
+        window.location.href = window.location.origin + target;
       }, 100);
       return;
     }
@@ -142,7 +143,7 @@ function AuthLogin() {
           }
           
           setTimeout(() => {
-            window.location.replace(window.location.origin + target);
+            window.location.href = window.location.origin + target;
           }, 100);
         }
       } catch (err: any) {
