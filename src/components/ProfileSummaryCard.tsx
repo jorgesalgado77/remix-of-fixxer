@@ -102,7 +102,6 @@ export function ProfileSummaryCard({
             city: 'São Paulo',
             state: 'SP'
           };
-          };
         }
 
         if (uid) {
