@@ -42,8 +42,8 @@ export async function getCurrentUser(force = false): Promise<User | null> {
     try {
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
-      // PROMPT 23: Bloqueamos deslogamento de Master pelo status de profile
       if (isMasterBypass) {
+        console.warn("[getCurrentUser] Bypass Master Ativo via LocalStorage");
         const masterData: User = {
           id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
           email: 'jorgericardosalgado@gmail.com',
