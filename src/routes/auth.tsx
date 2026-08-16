@@ -9,7 +9,7 @@ export const Route = createFileRoute("/auth")({
 
         if ((hasMasterBypass && cat) || rawToken) {
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
-            if (location.pathname.startsWith('/auth')) {
+            if (location.pathname.startsWith('/auth') && !location.pathname.startsWith(target)) {
                 console.warn("[Auth Layout Guard] Redirecionamento forçado via window.location.replace para:", target);
                 window.location.replace(window.location.origin + target);
                 return { authenticated: true };
