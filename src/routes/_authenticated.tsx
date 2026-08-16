@@ -36,7 +36,10 @@ export const Route = createFileRoute("/_authenticated")({
 
       // Inicialização de serviços financeiros se logado
       if (hasMasterBypass || rawToken) {
-        const uid = hasMasterBypass ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : JSON.parse(rawToken!).user.id;
+        const uid = hasMasterBypass ? (cat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') : JSON.parse(rawToken!).user.id;
+        
+        // Disparar auditoria e inicialização em paralelo
+        void import("../lib/bypass-audit").then(m => m.auditBypassAccess());
         void import("../lib/coins").then(m => m.initCoinsForUser(uid));
       }
 
