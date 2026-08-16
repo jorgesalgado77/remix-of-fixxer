@@ -138,29 +138,18 @@ export async function resolveIdentity(
   // 5. Fallback genérico (apenas se não houver dados reais)
   let displayName = (baseProfile ? "Usuário Fixxer" : "Usuário");
   
-  if (isMasterBypass && isMasterId) {
-    displayName = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' ? "Admin Master" : "Jorge Criare";
-    console.log(`[IdentityService] FORÇANDO Identidade Bypass para ${userId}: ${displayName}`);
-  } else {
-    displayName = 
-      effectiveProfile.display_name?.trim() || 
-      effectiveProfile.company_name?.trim() || 
-      store?.company_name?.trim() || 
-      store?.social_name?.trim() ||
-      supplier?.company_name?.trim() || 
-      provider?.display_name?.trim() || 
-      effectiveProfile.full_name?.trim() || 
-      displayName;
-  }
-
+  // REGRA MESTRA: Priorizar SEMPRE os dados vindos do banco de dados externo (baseProfile)
+  displayName = 
+    effectiveProfile.display_name?.trim() || 
+    effectiveProfile.company_name?.trim() || 
+    store?.company_name?.trim() || 
+    store?.social_name?.trim() ||
+    supplier?.company_name?.trim() || 
+    provider?.display_name?.trim() || 
+    effectiveProfile.full_name?.trim() || 
+    displayName;
 
   // REGRA ÚNICA DE FALLBACK PARA AVATAR
-  // 1. Avatar do perfil mestre (profiles.avatar_url)
-  // 2. Logo da empresa (store_profiles.logo_url)
-  // 3. Logo do fornecedor (supplier_profiles.logo_url)
-  // 4. Foto profissional (provider_profiles.avatar_url)
-  // 5. Hardcoded master bypass fallback (Prompt 23)
-  // 6. null (fallback UI)
   let avatarUrl = 
     effectiveProfile.avatar_url || 
     effectiveProfile.logo_url ||
@@ -168,10 +157,6 @@ export async function resolveIdentity(
     supplier?.logo_url || 
     provider?.avatar_url || 
     null;
-
-  if (!avatarUrl && isMasterBypass && (userId === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9' || userId === bypassUid)) {
-     avatarUrl = 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png';
-  }
 
   // Validação rigorosa: se for uma string vazia ou placeholder conhecido, tratar como null
   const validatedAvatar = (typeof avatarUrl === 'string' && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'))) ? avatarUrl : null;

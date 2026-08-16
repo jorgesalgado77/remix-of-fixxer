@@ -83,10 +83,11 @@ export function ProfileSummaryCard({
   const [profile, setProfile] = useState<ProfileLite | null>(() => {
     if (typeof window !== "undefined") {
       try {
-        const auth = window.localStorage.getItem("fixxer-auth-token-v1");
         const isMaster = window.localStorage.getItem('fixxer:master-bypass') === 'true';
+        const auth = window.localStorage.getItem("fixxer-auth-token-v1");
         const lastCat = localStorage.getItem('fixxer:last-category');
         const bypassUid = localStorage.getItem('fixxer:bypass-uid');
+        
         const uid = isMaster 
           ? (bypassUid || (lastCat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9')) 
           : (auth ? JSON.parse(auth)?.user?.id : null);
@@ -97,7 +98,7 @@ export function ProfileSummaryCard({
           const res = identities[uid];
           
           if (res) {
-            console.log("[ProfileSummaryCard] Hidratação síncrona com dados reais:", res.identity.displayName);
+            console.log("[ProfileSummaryCard] Hidratação síncrona com dados REAIS do cache:", res.identity.displayName);
             return {
               id: res.identity.id,
               display_name: res.identity.displayName,
@@ -119,20 +120,6 @@ export function ProfileSummaryCard({
               plan_id: res.identity.planId,
               karma_score: res.identity.karmaScore,
               is_verified: res.identity.isVerified
-            };
-          }
-
-          if (isMaster) {
-            return {
-              id: uid,
-              display_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
-              full_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
-              plan_id: 'pro',
-              avatar_url: lastCat === 'prestador' ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null,
-              karma_score: 50,
-              is_verified: true,
-              city: 'São Paulo',
-              state: 'SP'
             };
           }
         }
@@ -231,12 +218,8 @@ export function ProfileSummaryCard({
   }, []);
 
 
-  const name = (typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true')
-    ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Jorge Criare') 
-    : (profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário"));
-  const avatar = (typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true' && window.localStorage.getItem('fixxer:last-category') === 'prestador')
-    ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png'
-    : (profile?.avatar_url || profile?.logo_url || null);
+  const name = profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário");
+  const avatar = profile?.avatar_url || profile?.logo_url || null;
   const planId = (profile?.plan_id || "free").toLowerCase();
   const isGold = planId === "pro" || planId === "premium";
   const city = profile?.city?.trim() || "";
@@ -295,11 +278,7 @@ export function ProfileSummaryCard({
 
             <div className="flex-1 min-w-0">
               <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate max-w-[200px]" data-testid="user-display-name">
-                {name === "USUÁRIO" || name === "Usuário" 
-                  ? (typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true' 
-                    ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Jorge Criare') 
-                    : name)
-                  : name}
+                {name}
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
