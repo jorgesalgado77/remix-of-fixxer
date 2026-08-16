@@ -9,7 +9,8 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 export async function auditBypassAccess() {
   const isMaster = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
   const cat = typeof window !== 'undefined' ? localStorage.getItem('fixxer:last-category') : null;
-  const uid = isMaster ? (cat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') : null;
+  const bypassUid = typeof window !== 'undefined' ? localStorage.getItem('fixxer:bypass-uid') : null;
+  const uid = isMaster ? (bypassUid || (cat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9')) : null;
 
   if (!uid) return { ok: false, error: "Bypass inativo ou UID não encontrado" };
 

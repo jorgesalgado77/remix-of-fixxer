@@ -34,9 +34,11 @@ export async function getCurrentUser(force = false): Promise<User | null> {
       if (isMasterBypass) {
         const category = (localStorage.getItem('fixxer:last-category') as Category) || 'admin';
         const storedUid = localStorage.getItem('fixxer:bypass-uid');
-        const email = (category === 'admin' || category === 'prestador') 
-          ? (category === 'admin' ? 'jorgericardosalgado@gmail.com' : 'jorgecriare2021@gmail.com')
-          : 'lojista@fixxer.app';
+        
+        // Define o e-mail baseado na categoria escolhida para o bypass
+        const email = (category === 'admin') 
+          ? 'jorgericardosalgado@gmail.com' 
+          : 'jorgecriare2021@gmail.com';
         
         const isMaster = email === 'jorgericardosalgado@gmail.com';
         const defaultUid = isMaster 
@@ -45,20 +47,24 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         
         const currentUid = storedUid || defaultUid;
 
-        // Tenta recuperar dados reais do cache de identidade primeiro
-        let displayName = isMaster ? 'Admin Master' : 'Jorge Criare';
-        let avatarUrl = !isMaster ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null;
+        // IMPORTANTE: Buscamos os dados REAIS no banco de dados externo ou cache de identidade.
+        // O bypass agora serve apenas para simular a SESSÃO, mas os DADOS devem ser reais.
+        let displayName = isMaster ? 'Admin Master' : 'Usuário';
+        let avatarUrl = null;
 
         if (typeof window !== 'undefined') {
           try {
-            const cached = JSON.parse(localStorage.getItem('fixxer_identity_cache_v1.2') || '{}');
-            const identity = cached[currentUid];
-            if (identity) {
-              displayName = identity.identity.displayName || displayName;
-              avatarUrl = identity.identity.avatarUrl || avatarUrl;
-              console.log("[current-user] Bypass usando dados reais do cache:", displayName);
+            const cachedRaw = localStorage.getItem('fixxer_identity_cache_v1.2');
+            const cached = cachedRaw ? JSON.parse(cachedRaw) : {};
+            const res = cached[currentUid];
+            if (res) {
+              displayName = res.identity.displayName || displayName;
+              avatarUrl = res.identity.avatarUrl || avatarUrl;
+              console.log("[current-user] Bypass usando dados REAIS do cache:", displayName);
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn("[current-user] Erro ao ler cache de identidade:", e);
+          }
         }
 
         const masterData: User = {
@@ -77,13 +83,14 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           aud: 'authenticated',
           created_at: new Date().toISOString()
         } as any;
+
         cachedUser = masterData;
         cachedCategory = category;
         cachedAdmin = category === 'admin';
         
-        // Sincroniza cache de identidade imediatamente
+        // Dispara a resolução da identidade real em background para atualizar o cache
         if (typeof window !== 'undefined') {
-          void import('./identity/identity-service').then(m => m.resolveIdentity(masterData.id, { refresh: true }));
+          void import('./identity/identity-service').then(m => m.resolveIdentity(currentUid, { refresh: true }));
         }
         
         return masterData;
