@@ -56,6 +56,7 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           created_at: new Date().toISOString()
         } as any;
         cachedUser = masterData;
+        cachedAdmin = true; // Força cache de admin imediatamente
         return masterData;
       }
 
