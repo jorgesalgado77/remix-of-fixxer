@@ -1,16 +1,13 @@
-import { createFileRoute, Outlet, Link, useNavigate, useRouterState, redirect, useMatch } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { createFileRoute, Outlet, Link, useNavigate, useRouterState, redirect } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useCurrentUser, isCurrentUserAdminSync } from "@/lib/current-user";
 import { supabaseExternal } from "@/lib/supabaseExternal";
-import { useCurrentUser, clearCurrentUserCache, isCurrentUserAdminSync } from "@/lib/current-user";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
-    const isMasterEmail = 'jorgericardosalgado@gmail.com';
-    const isProviderTestEmail = 'jorgecriare2021@gmail.com';
+    let session = null;
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     
-    let session = null;
     if (typeof window !== 'undefined') {
       try {
         const raw = localStorage.getItem('fixxer-auth-token-v1');
@@ -21,90 +18,58 @@ export const Route = createFileRoute("/_authenticated")({
           }
         }
         
+        // Se não houver no storage, tenta Supabase (fallthrough)
         if (!session && !hasMasterBypass) {
-          try {
-            const { data } = await supabaseExternal.auth.getSession();
-            session = data.session;
-          } catch (e) {
-            console.warn("[Route Guard] Supabase inacessível.");
-          }
+          const { data } = await supabaseExternal.auth.getSession();
+          session = data.session;
         }
       } catch (e) {
-        console.warn("[Route Guard] Erro storage:", e);
+        console.warn("[Authenticated Guard] Erro ao validar sessão:", e);
       }
     }
     
     const user = session?.user;
-    const isMaster = user?.email?.toLowerCase() === isMasterEmail || 
-                   user?.email?.toLowerCase() === isProviderTestEmail || 
-                   hasMasterBypass;
+    const isMaster = hasMasterBypass || 
+                   user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com' ||
+                   user?.email?.toLowerCase() === 'jorgecriare2021@gmail.com';
 
-    if (user || isMaster) {
-      if (location.pathname.startsWith('/auth')) {
-        const targetCategory = localStorage.getItem('fixxer:last-category') || 'lojista';
-        const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
-        
-        if (typeof window !== 'undefined') {
-          window.location.replace(window.location.origin + target);
-          return { userId: '', userEmail: '', isAdmin: false, bypass: false }; 
-        }
-        throw redirect({ to: target as any });
+    // Se NÃO estiver autenticado, manda para o /auth
+    if (!user && !isMaster) {
+      console.warn("[Authenticated Guard] Acesso não autorizado. Redirecionando.");
+      if (typeof window !== 'undefined') {
+        window.location.href = window.location.origin + "/auth";
       }
-
-      return {
-        userId: user?.id || 'master-emergency-id',
-        userEmail: user?.email || isMasterEmail,
-        isAdmin: isCurrentUserAdminSync(),
-        bypass: isMaster
-      };
+      throw redirect({ to: "/auth" as any });
     }
 
-    console.warn("[Route Guard] Acesso negado. Redirecionando para login.");
-    if (typeof window !== 'undefined') {
-        window.location.replace(window.location.origin + "/auth");
-    }
-    throw redirect({ to: "/auth" as any });
+    return {
+      userId: user?.id || 'master-bypass-id',
+      userEmail: user?.email || 'jorgericardosalgado@gmail.com',
+      isAdmin: isCurrentUserAdminSync(),
+      bypass: isMaster
+    };
   },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
-  const { user, loading: userLoading } = useCurrentUser();
-  const navigate = useNavigate();
+  const { user, loading } = useCurrentUser();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
+  // Monitoramento secundário de logout
   useEffect(() => {
-    if (userLoading) return;
-    
-    const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
-    const isProviderTestEmail = user?.email?.toLowerCase() === 'jorgecriare2021@gmail.com';
-    const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-    const isMaster = isMasterEmail || isProviderTestEmail || hasMasterBypass;
-    
-    if ((user || isMaster) && pathname.startsWith('/auth')) {
-      const targetCategory = localStorage.getItem('fixxer:last-category') || 'lojista';
-      const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
-      
-      navigate({ to: target as any, replace: true }).catch(() => {
-        window.location.replace(window.location.origin + target);
-      });
-      return;
+    if (!loading && !user && typeof window !== 'undefined') {
+        const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+        if (!hasBypass) {
+            window.location.href = window.location.origin + "/auth";
+        }
     }
+  }, [user, loading]);
 
-    if (!user && !isMaster && !pathname.startsWith('/auth') && pathname !== '/') {
-       window.location.replace(window.location.origin + "/auth");
-    }
-  }, [user, userLoading, pathname, navigate]);
-
-  if (userLoading && !isCurrentUserAdminSync()) {
+  if (loading && !isCurrentUserAdminSync()) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
-            Sincronizando...
-          </p>
-        </div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
