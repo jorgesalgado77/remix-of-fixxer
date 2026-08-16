@@ -51,8 +51,13 @@ function AuthenticatedLayout() {
     const isMaster = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
     
     if (!userLoading && !user && !isMaster) {
+      console.warn("[AuthenticatedLayout] Usuário não detectado e não é master. Redirecionando para /auth.");
       navigate({ to: "/auth" as any });
       return;
+    }
+
+    if (isMaster) {
+      console.log("[AuthenticatedLayout] Acesso Admin Master permitido via bypass.");
     }
   }, [user, userLoading, navigate]);
 
