@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_authenticated")({
       };
     }
     
+    // Tentamos resolver o usuário. TanStack Router aguarda essa promessa.
     const user = await getCurrentUser(true);
     if (!user) {
       console.warn("[Route Guard] Usuário não logado. Redirecionando para /auth.");
