@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
 import { clearCurrentUserCache } from "@/lib/current-user";
+import { getCurrentCategory } from "@/lib/current-user";
 
 export const Route = createFileRoute("/auth/")({
   component: LoginComponent,
@@ -163,35 +164,21 @@ function LoginComponent() {
         }
 
         try {
-          // Busca perfil via RPC ou query simples para evitar RLS Recursion em tabelas base
-          const { data: profile } = await supabaseExternal
-            .from('profiles')
-            .select('role, user_type, business_category')
-            .eq('id', data.session.user.id)
-            .maybeSingle();
-
-          const rawRole = ((profile?.role || profile?.user_type || profile?.business_category || '') as string).toLowerCase();
+          // Busca categoria usando o helper centralizado que tem tratamento de erro
+          const category = await getCurrentCategory(true);
+          const target = category === 'admin' ? '/admin/infoprodutos' : `/feed/${category}`;
           
-          // Mapeamento de rotas de feed por categoria
-          let target = '/feed';
-          if (rawRole.includes('prestador')) target = '/feed/prestador';
-          else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) target = '/feed/parceiro';
-          else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) target = '/feed/cliente';
-          else if (rawRole.includes('lojista')) target = '/feed/lojista';
-          
-          console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
-          
-          // FORCED NAVIGATION: Usamos window.location.assign para garantir que o navegador
-          // saia da pilha do React Router e reinicie o estado global com o novo token.
           console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
           
           // Limpa cache global antes da navegação para garantir carregamento limpo
           try { clearCurrentUserCache(); } catch {}
           
-          window.location.assign(target);
+          // HARD FIX: Redirecionamento forçado via origin completo para quebrar o loop do SPA
+          const finalUrl = window.location.origin + target;
+          window.location.href = finalUrl;
         } catch (e) {
           console.error("[Auth] Erro no redirecionamento pós-login:", e);
-          window.location.assign('/feed');
+          window.location.href = window.location.origin + '/feed';
         }
       }
 

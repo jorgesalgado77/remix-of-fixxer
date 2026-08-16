@@ -134,9 +134,9 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
       cachedAdmin = !!data;
     } catch (e) {
       console.warn("[Identity] Exceção na consulta de admin:", e);
-      // Em caso de exceção de rede ou banco, não travamos o login
-      cachedAdmin = false;
-      return false;
+      // Em caso de exceção de rede ou banco, retornamos false mas permitimos cachear se já tivermos um valor
+      if (cachedAdmin === null) cachedAdmin = false;
+      return cachedAdmin;
     }
   } catch (err) {
     cachedAdmin = false;
