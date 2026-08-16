@@ -202,8 +202,12 @@ export function clearCurrentUserCache() {
 // Invalida cache automaticamente em qualquer mudança de sessão.
 if (typeof window !== "undefined") {
   supabaseExternal.auth.onAuthStateChange((event) => {
-    clearCurrentUserCache();
-    if (event === "SIGNED_OUT") {
+    // Se o evento for SIGNED_OUT mas tivermos o bypass master, 
+    // NÃO limpamos tudo o que permite o bypass continuar funcionando.
+    const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+    
+    if (event === "SIGNED_OUT" && !hasMasterBypass) {
+      clearCurrentUserCache();
       try {
         // Remove chaves legadas de identidade que ainda estejam no dispositivo.
         localStorage.removeItem("fixxer_user_id");
@@ -215,6 +219,8 @@ if (typeof window !== "undefined") {
         localStorage.removeItem("fixxer_lojista_id");
         localStorage.removeItem("fixxer_derived_user_id");
       } catch {}
+    } else {
+      clearCurrentUserCache();
     }
     try { window.dispatchEvent(new Event("fixxer:identity-change")); } catch {}
   });
