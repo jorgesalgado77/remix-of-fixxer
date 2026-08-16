@@ -54,8 +54,8 @@ export async function getCurrentUser(force = false): Promise<User | null> {
             const cached = JSON.parse(localStorage.getItem('fixxer_identity_cache_v1.2') || '{}');
             const identity = cached[currentUid];
             if (identity) {
-              displayName = identity.presentation.name || displayName;
-              avatarUrl = identity.presentation.avatarUrl || avatarUrl;
+              displayName = identity.identity.displayName || displayName;
+              avatarUrl = identity.identity.avatarUrl || avatarUrl;
               console.log("[current-user] Bypass usando dados reais do cache:", displayName);
             }
           } catch (e) {}
