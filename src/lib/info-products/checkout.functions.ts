@@ -81,7 +81,8 @@ export const createAsaasPayment = createServerFn({ method: "POST" })
       pixCopyPaste: "00020126360014BR.GOV.BCB.PIX0114+55...",
       value: finalAmount,
       discount: discountAmount,
-      couponCode: data.couponCode
+      couponCode: data.couponCode,
+      offerId: usedOfferId
     };
   });
 
