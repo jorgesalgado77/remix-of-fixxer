@@ -125,7 +125,17 @@ function AuthLogin() {
         
         localStorage.setItem('fixxer:last-category', cat);
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        window.location.href = window.location.origin + target;
+        
+        // Limpeza absoluta do router para login normal
+        if (typeof sessionStorage !== 'undefined') {
+          Object.keys(sessionStorage).forEach(key => {
+            if (key.includes('tsr-') || key.includes('tanstack')) {
+              sessionStorage.removeItem(key);
+            }
+          });
+        }
+        
+        window.location.replace(window.location.origin + target);
       }
     } catch (err: any) {
       toast.error(err.message || "Credenciais inválidas");

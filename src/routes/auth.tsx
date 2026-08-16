@@ -12,12 +12,14 @@ export const Route = createFileRoute("/auth")({
             const fullTarget = window.location.origin + target;
             console.warn("[Auth Layout Guard] Ejeção absoluta para:", fullTarget);
             
-            // Limpeza bruta e imediata
-            Object.keys(sessionStorage).forEach(key => {
-              if (key.includes('tsr-') || key.includes('tanstack')) {
-                sessionStorage.removeItem(key);
-              }
-            });
+            // Limpeza bruta e imediata do cache do router para evitar loops de renderização
+            if (typeof sessionStorage !== 'undefined') {
+              Object.keys(sessionStorage).forEach(key => {
+                if (key.includes('tsr-') || key.includes('tanstack')) {
+                  sessionStorage.removeItem(key);
+                }
+              });
+            }
 
             window.location.replace(fullTarget);
             return; 
