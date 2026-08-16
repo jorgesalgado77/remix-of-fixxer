@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useNavigate, useRouterState, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useNavigate, useRouterState, redirect, useMatch } from "@tanstack/react-router";
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle, HelpCircle } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCurrentUser, isCurrentUserAdmin, isCurrentUserAdminSync, clearCurrentUserCache, useCurrentUser, useIsAdmin } from "@/lib/current-user";
@@ -145,7 +145,7 @@ function AuthenticatedLayout() {
       window.location.assign("/auth");
       return;
     }
-  }, [user, userLoading, pathname]);
+  }, [user, userLoading, pathname, navigate]);
 
   // SEGURANÇA DE ROTA: Validação de privilégios baseada na URL visitada vs Role real.
   useEffect(() => {
