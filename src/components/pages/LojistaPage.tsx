@@ -789,8 +789,10 @@ export function LojistaDashboard() {
           />
         </Suspense>
       )}
-      </div>
     </div>
+  );
+}
+
   );
 }
 
