@@ -101,7 +101,11 @@ function AuthLogin() {
       }).catch(e => console.warn("[Auth Audit] Falha ao importar supabase:", e));
       
       toast.success('Acesso Master concedido');
-      window.location.replace(window.location.origin + target);
+      
+      // Pequeno delay para garantir que o browser processe o toast e o storage antes do replace
+      setTimeout(() => {
+        window.location.replace(window.location.origin + target);
+      }, 100);
       return;
     }
 
@@ -137,7 +141,9 @@ function AuthLogin() {
             });
           }
           
-          window.location.replace(window.location.origin + target);
+          setTimeout(() => {
+            window.location.replace(window.location.origin + target);
+          }, 100);
         }
       } catch (err: any) {
         toast.error(err.message || "Credenciais inválidas");
