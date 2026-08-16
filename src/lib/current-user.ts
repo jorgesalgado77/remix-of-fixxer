@@ -186,16 +186,9 @@ if (typeof window !== "undefined") {
     
     const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     
-    // Se o evento for INITIAL_SESSION ou SIGNED_IN e for master, forçamos o cache
-    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && hasMasterBypass) {
-      getCurrentUser(true);
-    }
-
     if (event === "SIGNED_OUT") {
-      if (hasMasterBypass) {
-        console.warn("[Auth] Bloqueado signOut automático para Admin Master.");
-        return;
-      }
+      if (hasMasterBypass) return;
+      
       clearCurrentUserCache();
       try {
         localStorage.removeItem("fixxer_user_id");
@@ -207,10 +200,12 @@ if (typeof window !== "undefined") {
         localStorage.removeItem("fixxer_lojista_id");
         localStorage.removeItem("fixxer_derived_user_id");
       } catch {}
-      
-      // Evitamos redirecionamento automático aqui para deixar o guard de rota (_authenticated.tsx) decidir
+    } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+      // Ao entrar ou iniciar, atualizamos o cache com a sessão presente para evitar re-fetch
+      if (session?.user) {
+        cachedUser = session.user;
+      }
     } else {
-      // Para SIGNED_IN ou INITIAL_SESSION com sessão válida, garantimos cache limpo para re-fetch
       clearCurrentUserCache();
     }
     

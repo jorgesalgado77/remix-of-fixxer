@@ -19,17 +19,20 @@ export const Route = createFileRoute("/_authenticated")({
       return { userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f', userEmail: 'jorgericardosalgado@gmail.com', isAdmin: true, bypass: true };
     }
     
-    // 2. Verificação de Usuário
-    const user = await getCurrentUser();
+    // 2. Verificação de Usuário via storage (síncrona/rápida)
+    // Usamos getSession() que é muito menos propenso a falhas de rede/recursão do que getUser()
+    const { data: { session } } = await supabaseExternal.auth.getSession();
+    const user = session?.user;
     
     if (!user) {
-      console.warn("[Route Guard] Sessão não encontrada. Redirecionando para /auth.");
+      console.warn("[Route Guard] Sessão não encontrada no storage. Redirecionando para /auth.");
       throw redirect({ to: "/auth" as any });
     }
 
     // 3. Verificação de Admin (Resiliente a erros de banco)
     let isAdmin = false;
     try {
+      // isCurrentUserAdmin já possui bypass para recursão infinita e metadados
       isAdmin = await isCurrentUserAdmin();
     } catch (e) {
       console.error("[Route Guard] Erro silencioso na verificação de admin:", e);
