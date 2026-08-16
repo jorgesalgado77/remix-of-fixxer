@@ -21,7 +21,7 @@ function AuthLogin() {
       
       if (hasBypass && cat) {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-          if (window.location.pathname !== target) {
+          if (!window.location.pathname.includes(target)) {
               console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
               window.location.replace(window.location.origin + target);
           }
@@ -29,7 +29,7 @@ function AuthLogin() {
     };
 
     checkBypass();
-    const interval = setInterval(checkBypass, 500); // Frequência normal
+    const interval = setInterval(checkBypass, 500);
     return () => clearInterval(interval);
   }, []);
 
@@ -39,6 +39,8 @@ function AuthLogin() {
     
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
+    
+    console.warn("[Auth] Login manual:", emailVal);
     
     if (!emailVal || !passVal) {
       toast.error("Preencha todos os campos.");
@@ -54,10 +56,13 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.warn("[Auth] Master Bypass Ativado:", category);
+      console.warn("[Auth] MASTER BYPASS ATIVADO:", category);
+      
+      // Persistência síncrona
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
+      // Limpeza brutal do Router síncrona
       if (typeof sessionStorage !== 'undefined') {
         Object.keys(sessionStorage).forEach(key => {
           if (key.includes('tsr-') || key.includes('tanstack')) {
@@ -67,6 +72,9 @@ function AuthLogin() {
       }
 
       toast.success('Acesso Master concedido');
+      
+      // Redirecionamento brutal síncrono absoluto COM REPLACE
+      console.warn("[Auth] Redirecionando via window.location.replace para:", target);
       window.location.replace(window.location.origin + target);
       return;
     }
@@ -113,6 +121,7 @@ function AuthLogin() {
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             required
+            autoComplete="email"
           />
           <input
             type="password"
@@ -121,6 +130,7 @@ function AuthLogin() {
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             required
+            autoComplete="current-password"
           />
           <button
             type="submit"
