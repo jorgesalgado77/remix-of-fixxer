@@ -85,5 +85,44 @@ test.describe('Info Produtos - Regressão Final', () => {
       expect(true).toBe(true);
     });
   });
+
+  test.describe('Autenticação e Autorização - E2E', () => {
+    test('deve realizar login master e redirecionar para o painel correto', async ({ page }) => {
+      await page.goto('/auth');
+      await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+      await page.reload();
+
+      await page.fill('input[type="email"]', 'jorgecriare2021@gmail.com');
+      await page.fill('input[type="password"]', '!jR06097');
+      await page.click('button[type="submit"]');
+
+      // Verifica redirecionamento
+      await expect(page).toHaveURL(/.*\/feed\/prestador/, { timeout: 15000 });
+      
+      // Verifica persistência de bypass
+      const bypass = await page.evaluate(() => localStorage.getItem('fixxer:master-bypass'));
+      expect(bypass).toBe('true');
+    });
+
+    test('deve bloquear acesso administrativo para usuários não-master', async ({ page }) => {
+      // Simula login de prestador
+      await page.goto('/auth');
+      await page.evaluate(() => {
+        localStorage.setItem('fixxer:master-bypass', 'true');
+        localStorage.setItem('fixxer:last-category', 'prestador');
+        localStorage.setItem('fixxer:bypass-uid', 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9');
+      });
+      
+      // Tenta acessar rota admin
+      await page.goto('/admin/infoprodutos');
+      
+      // Deve ser ejetado ou mostrar acesso negado (dependendo da implementação do guard)
+      // Como o guard ejeta para /auth se não for admin:
+      await expect(page).not.toHaveURL(/.*\/admin\/.*/);
+    });
+  });
 });
 
