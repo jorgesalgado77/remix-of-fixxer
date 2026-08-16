@@ -170,14 +170,14 @@ function AuthLogin() {
           className="space-y-4"
         >
           <input
-            type="email"
+            type="text"
             name="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             required
-            autoComplete="email"
+            autoComplete="off"
           />
           <input
             type="password"
@@ -187,11 +187,15 @@ function AuthLogin() {
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             required
-            autoComplete="current-password"
+            autoComplete="off"
           />
           <button
-            type="submit"
+            type="button"
             id="login-submit-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              handleLogin(e as any);
+            }}
             disabled={loading}
             className="w-full h-14 bg-primary text-black font-black rounded-2xl flex items-center justify-center gap-2 uppercase italic hover:scale-[1.02] transition-all"
           >
