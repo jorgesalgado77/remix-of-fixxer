@@ -10,8 +10,8 @@ export const Route = createFileRoute("/auth")({
         if ((hasMasterBypass && cat) || rawToken) {
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
             if (location.pathname === '/auth' || location.pathname === '/auth/') {
-                console.warn("[Auth Layout Guard] Redirecionamento forçado para:", target);
-                window.location.replace(window.location.origin + target);
+                console.warn("[Auth Layout Guard] Redirecionamento forçado via window.location.href para:", target);
+                window.location.href = window.location.origin + target;
                 return { authenticated: true };
             }
         }
