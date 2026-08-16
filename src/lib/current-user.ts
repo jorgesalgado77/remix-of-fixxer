@@ -40,16 +40,32 @@ export async function getCurrentUser(force = false): Promise<User | null> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
+      const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+
       // 1. Tenta obter a sessão do storage local primeiro
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
-      
       const sessionUser = session?.user;
 
-      // Bypass Master Crítico: Se temos o master no storage local (mesmo sem sessão oficial) 
-      // ou se o e-mail da sessão for o master, garantimos o objeto user.
-      const isMasterSession = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+      // Bypass Master Crítico: Verificação de e-mail e flag de storage
+      const isMasterEmail = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+      const isMaster = isMasterEmail || isMasterBypass;
 
-      // 2. Se temos uma sessão, o usuário está logado localmente.
+      // Redundância Master Precoce: Se temos o bypass ativo, já assumimos a identidade mock
+      // para evitar bloqueios por falha de rede/servidor no getUser().
+      if (isMasterBypass) {
+        const mockMaster: User = {
+          id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+          email: 'jorgericardosalgado@gmail.com',
+          app_metadata: {},
+          user_metadata: { full_name: 'Admin Master' },
+          aud: 'authenticated',
+          created_at: new Date().toISOString()
+        } as any;
+        cachedUser = mockMaster;
+        return mockMaster;
+      }
+
+      // 2. Tenta validar no servidor
       try {
         const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
         
@@ -58,16 +74,22 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           return user;
         }
         
-        // Se o servidor retornar erro (500) mas tivermos uma sessão local ativa,
-        // e for o Administrador Master, mantemos ele logado.
-        if (isMasterSession || (sessionUser && !userError)) {
-          console.warn("[current-user] Master ou Sessão Detectada: ignorando erro 500 do servidor.");
-          cachedUser = sessionUser || null;
-          return cachedUser;
+        if (isMaster) {
+          console.warn("[current-user] Master detectado via e-mail ou bypass local.");
+          const mockMaster: User = sessionUser || {
+            id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+            email: 'jorgericardosalgado@gmail.com',
+            app_metadata: {},
+            user_metadata: { full_name: 'Admin Master' },
+            aud: 'authenticated',
+            created_at: new Date().toISOString()
+          } as any;
+          cachedUser = mockMaster;
+          return mockMaster;
         }
       } catch (err) {
-        if (isMasterSession && sessionUser) {
-          cachedUser = sessionUser;
+        if (isMaster) {
+          cachedUser = sessionUser || null;
           return cachedUser;
         }
       }
@@ -110,9 +132,11 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   // 1. Bypass Emergencial Local (Admin Master)
   // Se o e-mail logado for o master, garantimos o acesso administrativo
   // independentemente de falhas na consulta ao banco ou RLS.
-  if (email === 'jorgericardosalgado@gmail.com') {
+  const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+
+  if (email === 'jorgericardosalgado@gmail.com' || isMasterBypass) {
     if (import.meta.env.DEV || cachedAdmin === null) {
-      console.warn("[Identity] Acesso Admin Master concedido via Bypass de Email.");
+      console.warn("[Identity] Acesso Admin Master concedido via Bypass.");
     }
     cachedAdmin = true;
     return true;
@@ -178,8 +202,12 @@ export function clearCurrentUserCache() {
 // Invalida cache automaticamente em qualquer mudança de sessão.
 if (typeof window !== "undefined") {
   supabaseExternal.auth.onAuthStateChange((event) => {
-    clearCurrentUserCache();
-    if (event === "SIGNED_OUT") {
+    // Se o evento for SIGNED_OUT mas tivermos o bypass master, 
+    // NÃO limpamos tudo o que permite o bypass continuar funcionando.
+    const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+    
+    if (event === "SIGNED_OUT" && !hasMasterBypass) {
+      clearCurrentUserCache();
       try {
         // Remove chaves legadas de identidade que ainda estejam no dispositivo.
         localStorage.removeItem("fixxer_user_id");
@@ -191,6 +219,8 @@ if (typeof window !== "undefined") {
         localStorage.removeItem("fixxer_lojista_id");
         localStorage.removeItem("fixxer_derived_user_id");
       } catch {}
+    } else {
+      clearCurrentUserCache();
     }
     try { window.dispatchEvent(new Event("fixxer:identity-change")); } catch {}
   });

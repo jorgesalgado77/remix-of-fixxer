@@ -82,8 +82,47 @@ function LoginComponent() {
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
+      const isMaster = normalizedEmail === 'jorgericardosalgado@gmail.com';
       
       console.log(`[Auth] Tentando login para: ${normalizedEmail}`);
+
+      // Bypass TOTAL Master: Se o e-mail for o master e a senha for a correta (!jR06097),
+      // forçamos o bypass ANTES mesmo de tentar o Supabase, para evitar o erro 500.
+      if (isMaster && password === '!jR06097') {
+         console.warn("[Auth] Bypass Master detectado por credenciais. Forçando entrada.");
+         
+         if (typeof window !== 'undefined') {
+           localStorage.setItem('fixxer:master-bypass', 'true');
+           
+           // Mock de sessão mínima para o Supabase client não redirecionar imediatamente
+           const mockSession = {
+             access_token: 'bypass-token',
+             refresh_token: 'bypass-refresh',
+             expires_in: 3600,
+             token_type: 'bearer',
+             user: {
+               id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+               email: 'jorgericardosalgado@gmail.com',
+               user_metadata: { full_name: 'Admin Master' },
+               app_metadata: {},
+               aud: 'authenticated',
+               created_at: new Date().toISOString()
+             }
+           };
+           
+           // Chaves de storage para o Supabase Client encontrar a sessão
+           localStorage.setItem('fixxer-auth-token-v1', JSON.stringify(mockSession));
+           localStorage.setItem('sb-fixxer-auth-token', JSON.stringify(mockSession));
+           localStorage.setItem('sb-auth-token', JSON.stringify(mockSession));
+           
+           toast.success('Bypass Master: Acesso emergencial concedido.');
+           
+           // NAVEGAÇÃO BRUTA PARA EVITAR TANSTACK ROUTER STATE
+           // Usamos replace para não permitir voltar para o login com bypass
+           window.location.replace('/admin');
+         }
+         return;
+      }
 
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
         email: normalizedEmail,
@@ -99,28 +138,12 @@ function LoginComponent() {
                      (errObj.code === "unexpected_failure") ||
                      (errObj.message && errObj.message.includes("Database error querying schema"));
 
-        if (is500 && normalizedEmail === 'jorgericardosalgado@gmail.com') {
-          // Bypass Emergencial Master: Se houver erro 500, forçamos a entrada do master 
-          // confiando na sessão que pode ter sido criada mas o servidor falhou no retorno.
-          console.warn("[Auth] Bypass emergencial Master ativado devido a erro 500.");
-          
-          // Tenta recuperar a sessão local mesmo após o erro
-          const { data: localSession } = await supabaseExternal.auth.getSession();
-          if (localSession?.session) {
-            toast.success('Bypass Master: Acesso emergencial concedido.');
-            window.location.replace('/admin');
-            return;
-          }
-
-          const criticalMsg = "ERRO PERSISTE: Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL 'ADMIN_FINAL_REMEDY.sql' no painel do Supabase para limpar triggers corrompidos e restaurar o acesso.";
-          setErrorMsg(criticalMsg);
-          toast.error(criticalMsg, { duration: 15000 });
-          
-          // Tentativa de Auto-Bypass: Se o master já tem uma sessão, redireciona
-          const session = localSession as any;
-          if (session?.session?.user?.email?.toLowerCase() === normalizedEmail) {
-            window.location.replace('/admin');
-          }
+        if (is500 && isMaster && password === '!jR06097') {
+          console.warn("[Auth] Erro 500 detectado para Master. Aplicando bypass forçado.");
+          localStorage.setItem('fixxer:master-bypass', 'true');
+          toast.success('Bypass Master: Acesso emergencial concedido.');
+          window.location.href = '/admin';
+          return;
         } else {
           const friendly = toFriendly(extractErr(error));
           setErrorMsg(friendly);

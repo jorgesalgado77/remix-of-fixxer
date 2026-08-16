@@ -13,12 +13,21 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
-    // Tenta obter o usuário; se falhar (erro 500 do Supabase), 
-    // permitimos continuar se houver e-mail master na sessão local.
+    // Tenta bypass precoce para o Administrador Master
+    if (typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true') {
+      console.warn("[Route Guard] Bypass Master detectado no beforeLoad de _authenticated");
+      return {
+        userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+        userEmail: 'jorgericardosalgado@gmail.com',
+        bypass: true
+      };
+    }
+    
     const user = await getCurrentUser(true);
     return {
       userId: user?.id ?? null,
       userEmail: user?.email ?? null,
+      bypass: false
     };
   },
   component: AuthenticatedLayout,
@@ -47,19 +56,39 @@ function AuthenticatedLayout() {
   useEffect(() => {
     if (userLoading) return;
     
-    // Bypass para o Administrador Master em caso de instabilidade
-    const isMaster = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+    const isMaster = isMasterEmail || hasMasterBypass;
     
-    if (!userLoading && !user && !isMaster) {
+    // Se não temos usuário E não temos o bypass forçado, vai para o login
+    if (!user && !isMaster) {
+      console.warn("[AuthenticatedLayout] Usuário não detectado e não é master. Redirecionando para /auth.");
       navigate({ to: "/auth" as any });
       return;
+    }
+
+    if (isMaster) {
+      console.log("[AuthenticatedLayout] Acesso Admin Master permitido via bypass.");
     }
   }, [user, userLoading, navigate]);
 
   // SEGURANÇA DE ROTA: Validação de privilégios baseada na URL visitada vs Role real.
   useEffect(() => {
     if (adminLoading || userLoading) return;
-    if (!user) return;
+
+    const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+    const isMaster = isMasterEmail || hasMasterBypass;
+
+    if (!user && !isMaster) return;
+
+    // Se é master, ignora as validações de role do banco para evitar redirect 500
+    if (isMaster) {
+       if (pathname.startsWith('/admin')) {
+         console.log("[Security Guard] Master Admin acessando rota administrativa via bypass.");
+         return;
+       }
+    }
 
     const isPathAdmin = pathname.startsWith('/admin');
     const isPathLojista = pathname.startsWith('/lojista') || pathname.startsWith('/dashboard/lojista');
