@@ -197,13 +197,19 @@ function RootComponent() {
         ]);
         const { data } = await supabase.auth.getSession();
         if (data.session?.user?.id) {
-          await initCoinsForUser(data.session.user.id);
-          void subscribeBlockedStatus(data.session.user.id);
+          // PROMPT 24 FIX: Mover inicialização pesada para fora do fluxo crítico de renderização
+          // se estivermos em /auth para evitar concorrência com o login
+          if (!window.location.pathname.startsWith('/auth')) {
+            await initCoinsForUser(data.session.user.id);
+            void subscribeBlockedStatus(data.session.user.id);
+          }
         }
         supabase.auth.onAuthStateChange((event, session) => {
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && session?.user?.id) {
-            void initCoinsForUser(session.user.id);
-            void subscribeBlockedStatus(session.user.id);
+            if (!window.location.pathname.startsWith('/auth')) {
+              void initCoinsForUser(session.user.id);
+              void subscribeBlockedStatus(session.user.id);
+            }
             // PROMPT 15.6: Sincronização automática na etapa de login e mudanças de estado
             void resolveIdentity(session.user.id, { refresh: true }).catch(console.error);
           }
