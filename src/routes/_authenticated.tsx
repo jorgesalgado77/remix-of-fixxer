@@ -35,7 +35,13 @@ export const Route = createFileRoute("/_authenticated")({
         return { authenticated: false };
       }
 
-      return { authenticated: !!(hasMasterBypass || rawToken) };
+      if (hasMasterBypass || rawToken) {
+        // Inicialização de serviços financeiros se logado
+        const uid = hasMasterBypass ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : JSON.parse(rawToken!).user.id;
+        void import("../lib/coins").then(m => m.initCoinsForUser(uid));
+        return { authenticated: true };
+      }
+      return { authenticated: false };
     }
     return { authenticated: false };
   },

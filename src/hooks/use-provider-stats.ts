@@ -113,8 +113,8 @@ export function useProviderStats(): ProviderStats {
       setLoading(true);
       setError(null);
       try {
-        const { data: sess } = await supabaseExternal.auth.getSession();
-        const uid = sess.session?.user?.id ?? null;
+        const auth = typeof window !== 'undefined' ? localStorage.getItem('fixxer-auth-token-v1') : null;
+        const uid = auth ? JSON.parse(auth)?.user?.id : null;
         if (cancelled) return;
         setUserId(uid);
         if (!uid) return;
