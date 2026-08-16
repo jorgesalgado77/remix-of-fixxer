@@ -186,10 +186,14 @@ if (typeof window !== "undefined") {
       }
       
       // Auto-redirecionamento se estiver em /auth logado
-      if (session && (window.location.pathname === '/auth' || window.location.pathname === '/auth/')) {
+      const isAuthPath = window.location.pathname === '/auth' || window.location.pathname === '/auth/';
+      const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+      
+      if ((session || hasBypass) && isAuthPath) {
         const cat = await getCurrentCategory(true);
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        window.location.replace(window.location.origin + target);
+        console.warn("[Identity] Sessão/Bypass detectado em /auth, forçando saída.");
+        window.location.href = window.location.origin + target;
       }
     }
     
