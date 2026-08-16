@@ -175,6 +175,9 @@ function AuthLogin() {
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             autoComplete="off"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleLogin();
+            }}
           />
           <input
             type="password"
@@ -184,13 +187,16 @@ function AuthLogin() {
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             autoComplete="off"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleLogin();
+            }}
           />
           <button
             type="button"
             id="login-submit-btn"
             onClick={(e) => {
               e.preventDefault();
-              handleLogin(e as any);
+              handleLogin();
             }}
             disabled={loading}
             className="w-full h-14 bg-primary text-black font-black rounded-2xl flex items-center justify-center gap-2 uppercase italic hover:scale-[1.02] transition-all"
