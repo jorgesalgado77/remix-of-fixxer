@@ -431,10 +431,7 @@ export function LojistaDashboard() {
         <div className="md:hidden p-4 pt-20">
            <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="inline" />
         </div>
-      </div>
-    </div>
-  );
-}
+
 
 
 
