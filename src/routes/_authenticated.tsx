@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated")({
     // 1. Bypass Master Admin
     const emailMaster = 'jorgericardosalgado@gmail.com';
     const isMasterEmail = 'jorgericardosalgado@gmail.com';
+    const isProviderTestEmail = 'jorgecriare2021@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     
     console.log("[Route Guard] Bypass Info:", { hasMasterBypass, location: location.pathname });
@@ -126,8 +127,9 @@ function AuthenticatedLayout() {
     if (userLoading) return;
     
     const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    const isProviderTestEmail = user?.email?.toLowerCase() === 'jorgecriare2021@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-    const isMaster = isMasterEmail || hasMasterBypass;
+    const isMaster = isMasterEmail || isProviderTestEmail || hasMasterBypass;
     
     // REDIRECT FIX: Forçamos a saída de /auth se houver usuário
     if ((user || isMaster) && (pathname === '/auth' || pathname === '/auth/')) {
