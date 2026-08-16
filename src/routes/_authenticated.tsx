@@ -12,6 +12,7 @@ export const Route = createFileRoute("/_authenticated")({
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
         console.warn("[Auth Guard] Logado detectado em /auth. Ejetando para", target);
         
+        // Limpeza absoluta e redirecionamento instantâneo
         if (typeof sessionStorage !== 'undefined') {
           Object.keys(sessionStorage).forEach(key => {
             if (key.includes('tsr-') || key.includes('tanstack')) {
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/_authenticated")({
           });
         }
         window.location.replace(window.location.origin + target);
-        return { authenticated: true };
+        return; // Interrompe o carregamento da rota /auth
       }
 
       // Se NÃO estiver logado e NÃO estiver em rotas públicas, mandar para /auth

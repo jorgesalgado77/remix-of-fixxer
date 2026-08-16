@@ -21,24 +21,24 @@ function AuthLogin() {
       
       if (hasBypass && cat) {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-          if (window.location.pathname === '/auth' || window.location.pathname === '/auth/') {
-              const fullTarget = window.location.origin + target;
-              console.warn("[Auth Page] Bypass detectado. Ejetando para:", fullTarget);
+          if (window.location.pathname.startsWith('/auth')) {
+              console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
               
-              // Limpeza síncrona do cache do Router antes de sair
+              // Limpeza síncrona do cache do Router
               Object.keys(sessionStorage).forEach(key => {
                 if (key.includes('tsr-') || key.includes('tanstack')) {
                   sessionStorage.removeItem(key);
                 }
               });
               
-              window.location.href = fullTarget;
+              window.location.replace(window.location.origin + target);
           }
       }
     };
 
     checkBypass();
-    const interval = setInterval(checkBypass, 50); 
+    // Aumentar frequência para evitar loop visual
+    const interval = setInterval(checkBypass, 100); 
     return () => clearInterval(interval);
   }, []);
 
@@ -65,28 +65,11 @@ function AuthLogin() {
       
       console.warn("[Auth] MASTER BYPASS ATIVADO:", category);
       
-      // Persistência síncrona
+      // Persistência síncrona imediata
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
-      // Tenta buscar o ID real dinamicamente via profiles no banco externo
-      try {
-        const { supabaseExternal } = await import("@/lib/supabaseExternal");
-        const { data } = await supabaseExternal
-          .from("profiles")
-          .select("id")
-          .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Criare')
-          .maybeSingle();
-        
-        if (data?.id) {
-          console.warn("[Auth] ID Real detectado para bypass:", data.id);
-          localStorage.setItem('fixxer:bypass-uid', data.id);
-        }
-      } catch (e) {
-        console.warn("[Auth] Erro ao tentar resolver ID real no login:", e);
-      }
-      
-      // Limpeza brutal do Router síncrona
+      // Limpeza brutal do Router síncrona ANTES de qualquer async
       if (typeof sessionStorage !== 'undefined') {
         Object.keys(sessionStorage).forEach(key => {
           if (key.includes('tsr-') || key.includes('tanstack')) {
@@ -95,10 +78,31 @@ function AuthLogin() {
         });
       }
 
+      // Tenta buscar o ID real em background sem bloquear o redirect
+      void (async () => {
+        try {
+          const { supabaseExternal } = await import("@/lib/supabaseExternal");
+          const { data } = await supabaseExternal
+            .from("profiles")
+            .select("id")
+            .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Criare')
+            .maybeSingle();
+          
+          if (data?.id) {
+            console.warn("[Auth] ID Real detectado para bypass:", data.id);
+            localStorage.setItem('fixxer:bypass-uid', data.id);
+            // Avisa o sistema para atualizar identidades
+            window.dispatchEvent(new Event("fixxer:identity-change"));
+          }
+        } catch (e) {
+          console.warn("[Auth] Erro ao tentar resolver ID real no login:", e);
+        }
+      })();
+      
       toast.success('Acesso Master concedido');
       
-      // Redirecionamento brutal síncrono absoluto
-      window.location.href = window.location.origin + target;
+      // Redirecionamento instantâneo via replace para não sujar o histórico
+      window.location.replace(window.location.origin + target);
       return;
     }
 
