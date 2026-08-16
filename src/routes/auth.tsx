@@ -9,12 +9,18 @@ export const Route = createFileRoute("/auth")({
 
         if ((hasMasterBypass && cat) || rawToken) {
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
-            if (window.location.pathname.startsWith('/auth')) {
-                const fullTarget = window.location.origin + target;
-                console.warn("[Auth Layout Guard] Redirecionamento forçado para:", fullTarget);
-                window.location.replace(fullTarget);
-                return { authenticated: true };
-            }
+            const fullTarget = window.location.origin + target;
+            console.warn("[Auth Layout Guard] Redirecionamento síncrono absoluto para:", fullTarget);
+            
+            // Forçar limpeza de cache do Router antes do redirect absoluto
+            Object.keys(sessionStorage).forEach(key => {
+              if (key.includes('tsr-') || key.includes('tanstack')) {
+                sessionStorage.removeItem(key);
+              }
+            });
+
+            window.location.href = fullTarget;
+            throw new Error("Redirecting..."); // Stop component rendering
         }
     }
     return {};
