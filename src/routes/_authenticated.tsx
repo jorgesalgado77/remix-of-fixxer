@@ -31,7 +31,10 @@ export const Route = createFileRoute("/_authenticated")({
 
     if (!user) {
       console.warn("[Route Guard] Sessão não encontrada no storage. Redirecionando para /auth.");
-      throw redirect({ to: "/auth" as any });
+      // Se não houver usuário, mas for master bypass, deixamos passar para não travar
+      if (!hasMasterBypass) {
+        throw redirect({ to: "/auth" as any });
+      }
     }
 
     // 3. Verificação de Admin (Resiliente a erros de banco)
