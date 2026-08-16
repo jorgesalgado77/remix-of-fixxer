@@ -14,7 +14,8 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     // Tenta bypass precoce para o Administrador Master
-    if (typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true') {
+    const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+    if (hasMasterBypass) {
       console.warn("[Route Guard] Bypass Master detectado no beforeLoad de _authenticated");
       return {
         userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/_authenticated")({
       };
     }
     
-    // Tenta obter o usuário; se falhar, o AuthenticatedLayout cuidará do redirect no useEffect
+    // Tenta obter o usuário
     const user = await getCurrentUser(true);
     return {
       userId: user?.id ?? null,
