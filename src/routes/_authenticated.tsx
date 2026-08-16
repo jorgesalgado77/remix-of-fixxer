@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated")({
       };
     }
     
-    // Tenta obter o usuário
+    // Tenta obter o usuário; se falhar, o AuthenticatedLayout cuidará do redirect no useEffect
     const user = await getCurrentUser(true);
     return {
       userId: user?.id ?? null,
