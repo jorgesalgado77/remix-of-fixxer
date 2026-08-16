@@ -20,21 +20,21 @@ export const Route = createFileRoute("/_authenticated")({
     // 2. Verificação de Usuário via storage (síncrona/rápida)
     let session = null;
     try {
-      const result = await supabaseExternal.auth.getSession();
-      session = result.data.session;
+      const { data } = await supabaseExternal.auth.getSession();
+      session = data.session;
     } catch (e) {
       console.error("[Route Guard] Erro crítico ao ler sessão:", e);
     }
     
     const user = session?.user;
 
-    // 3. FORCE FORWARD: Se temos uma sessão, ignoramos o redirect para /auth
+    // 3. LOGICA DE REDIRECIONAMENTO E BYPASS
     if (user || hasMasterBypass) {
-      console.log("[Route Guard] Acesso permitido:", user?.email || 'Master Bypass');
+      console.log("[Route Guard] Usuário autenticado:", user?.email || 'Master Bypass');
       
-      // Se o usuário já está logado e tenta acessar /auth, redireciona para o feed
+      // Se o usuário está logado e tenta acessar /auth, mandamos para o feed
       if (location.pathname.startsWith('/auth')) {
-        console.log("[Route Guard] Usuário logado tentando acessar /auth. Redirecionando para feed.");
+        console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed");
         throw redirect({ to: "/feed" as any });
       }
 
@@ -44,6 +44,7 @@ export const Route = createFileRoute("/_authenticated")({
         if (user.email?.toLowerCase() === emailMaster) {
           isAdmin = true;
         } else {
+          // Usamos a checagem que ignora erros de RLS recursivo (42P17)
           isAdmin = await isCurrentUserAdmin().catch(() => false);
         }
       }
@@ -56,7 +57,7 @@ export const Route = createFileRoute("/_authenticated")({
       };
     }
 
-    // 4. Apenas redireciona se REALMENTE não houver sessão E não estivermos no /auth
+    // 4. Se não estiver no /auth e não tiver sessão, redireciona para o login
     if (!location.pathname.startsWith('/auth')) {
       console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
       throw redirect({ to: "/auth" as any });
@@ -87,28 +88,24 @@ function AuthenticatedLayout() {
   }, []);
 
   useEffect(() => {
-    // Se estiver carregando, não faz nada
     if (userLoading) return;
     
     const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     const isMaster = isMasterEmail || hasMasterBypass;
     
-    // REDIRECT FIX: Se NÃO houver usuário E NÃO for Master E NÃO estivermos na tela de login
-    if (!userLoading && !user && !isMaster && !pathname.startsWith('/auth')) {
-      console.warn("[AuthenticatedLayout] Sessão não encontrada. Redirecionando para /auth via window.location.");
-      window.location.assign("/auth");
+    // REDIRECT DE SAÍDA: Se o usuário estiver logado e na tela de login, forçamos a saída imediata
+    if (user && pathname.startsWith('/auth')) {
+      console.log("[AuthenticatedLayout] Usuário logado em /auth. Redirecionando via window.location para feed.");
+      window.location.replace("/feed");
       return;
     }
 
-    // OPOSTO: Se houver usuário E estivermos na tela de login, forçamos a saída para o feed
-    if (user && pathname.startsWith('/auth')) {
-      console.log("[AuthenticatedLayout] Usuário logado detectado em /auth. Forçando redirecionamento para feed.");
-      window.location.assign("/feed");
-    }
-
-    if (isMaster) {
-      console.log("[AuthenticatedLayout] Acesso Admin Master permitido via bypass.");
+    // REDIRECT DE ENTRADA: Se não houver usuário e não for Master, mandamos para o login
+    if (!user && !isMaster && !pathname.startsWith('/auth')) {
+      console.warn("[AuthenticatedLayout] Sem sessão. Redirecionando para /auth.");
+      window.location.replace("/auth");
+      return;
     }
   }, [user, userLoading, pathname]);
 
