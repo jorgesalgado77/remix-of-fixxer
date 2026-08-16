@@ -167,43 +167,34 @@ function AuthLogin() {
             Instrumentar logs de login Adicionar teste E2E
           </p>
         </div>
-        <form 
-          id="auth-login-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleLogin();
-          }} 
-          className="space-y-4"
-        >
+        
+        <div className="space-y-4">
           <input
-            type="text"
-            name="email"
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            required
             autoComplete="off"
           />
           <input
             type="password"
-            name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            required
             autoComplete="off"
           />
           <button
-            type="submit"
+            type="button"
             id="login-submit-btn"
+            onClick={handleLogin}
             disabled={loading}
             className="w-full h-14 bg-primary text-black font-black rounded-2xl flex items-center justify-center gap-2 uppercase italic hover:scale-[1.02] transition-all"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><RefreshCcw className="w-4 h-4" /> Entrar</>}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
