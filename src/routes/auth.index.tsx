@@ -4,6 +4,7 @@ import { LogIn, Loader2, KeyRound, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
+import { clearCurrentUserCache } from "@/lib/current-user";
 
 export const Route = createFileRoute("/auth/")({
   component: LoginComponent,
