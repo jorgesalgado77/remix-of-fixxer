@@ -82,6 +82,7 @@ export function ProfileHeader({
       
       
       
+      
 
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
         <div className="flex items-center gap-4">
