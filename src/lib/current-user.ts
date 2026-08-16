@@ -125,14 +125,16 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
         .maybeSingle();
       
       if (error) {
-         // Se for recursão infinita (42P17), apenas logamos e retornamos false, sem quebrar o fluxo de login
-         console.warn("[Identity] Erro de RLS detectado (provável recursão):", error.message);
+         // Se for recursão infinita (42P17) ou erro de banco 500
+         console.warn("[Identity] Erro de RLS ou Banco detectado:", error.message);
+         // Se o erro for recursão, assumimos false para o role de admin para permitir o login continuar
          cachedAdmin = false;
          return false;
       }
       cachedAdmin = !!data;
     } catch (e) {
       console.warn("[Identity] Exceção na consulta de admin:", e);
+      // Em caso de exceção de rede ou banco, não travamos o login
       cachedAdmin = false;
       return false;
     }
@@ -140,6 +142,18 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
     cachedAdmin = false;
   }
   return cachedAdmin;
+}
+
+// Versão síncrona/rápida para guards de rota que precisam de resposta imediata
+export function isCurrentUserAdminSync(): boolean {
+  if (cachedAdmin !== null) return cachedAdmin;
+  
+  // Se não houver cache, tentamos ver se o Master Bypass está ativo
+  if (typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true') {
+    return true;
+  }
+  
+  return false;
 }
 
 export async function getCurrentCategory(force = false): Promise<Category> {
