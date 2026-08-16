@@ -22,6 +22,20 @@ export const Route = createFileRoute("/_authenticated")({
     try {
       const { data } = await supabaseExternal.auth.getSession();
       session = data.session;
+      
+      // FALLBACK: Se o getSession falhar mas houver algo no localStorage com a chave correta
+      if (!session && typeof window !== 'undefined') {
+        const raw = localStorage.getItem('fixxer-auth-token-v1');
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.user) {
+              console.log("[Route Guard] Recuperando sessão via fallback localStorage direto");
+              session = parsed;
+            }
+          } catch {}
+        }
+      }
     } catch (e) {
       console.error("[Route Guard] Erro crítico ao ler sessão:", e);
     }
@@ -104,6 +118,7 @@ function AuthenticatedLayout() {
     // REDIRECT FIX: Forçamos a saída de /auth se houver usuário
     if (user && pathname.startsWith('/auth')) {
       console.log("[AuthenticatedLayout] Login detectado. Forçando saída para /feed.");
+      // Se estivermos em /auth e logados, saímos imediatamente do React stack
       window.location.assign("/feed");
       return;
     }
