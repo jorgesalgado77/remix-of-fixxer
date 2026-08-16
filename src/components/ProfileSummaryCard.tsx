@@ -211,8 +211,9 @@ export function ProfileSummaryCard({
 
 
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+  const lastCat = typeof window !== 'undefined' ? localStorage.getItem('fixxer:last-category') : null;
   const name = isMasterBypass 
-    ? (role === ('admin' as any) || (typeof window !== 'undefined' && window.location.pathname.includes('/admin')) ? 'Admin Master' : 'Prestador Teste') 
+    ? (lastCat === 'admin' ? 'Admin Master' : 'Prestador Teste') 
     : (profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário"));
   const avatar = profile?.avatar_url || profile?.logo_url || null;
   const planId = (profile?.plan_id || "free").toLowerCase();
