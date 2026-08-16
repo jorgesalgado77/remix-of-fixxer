@@ -24,7 +24,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getPublicInfoProducts, InfoProduct } from '@/lib/info-products/info-service';
 import { resolveIdentity } from '@/lib/identity/identity-service';
+import { getActiveOffer, InfoOffer } from '@/lib/info-products/offer-service';
 import { Badge } from '@/components/ui/badge';
+
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const Route = createFileRoute('/marketplace')({
@@ -184,10 +186,20 @@ function CategoryBadge({ label, active, onClick, icon }: { label: string; active
 }
 
 function ProductCard({ product }: { product: InfoProduct }) {
+  const [activeOffer, setActiveOffer] = useState<InfoOffer | null>(null);
+
+  useEffect(() => {
+    getActiveOffer(product.id).then(setActiveOffer);
+  }, [product.id]);
+
+  const displayPrice = activeOffer ? activeOffer.price : product.price;
+  const comparePrice = activeOffer?.compare_at_price || (activeOffer ? product.price : null);
+
   return (
     <Link 
       to="/info/$id" 
       params={{ id: product.id }} 
+      search={{ offerId: activeOffer?.id }}
       className="group flex flex-col bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden hover:border-primary/40 hover:bg-white/[0.05] transition-all duration-500"
     >
       <div className="aspect-[4/3] relative overflow-hidden bg-muted">
@@ -203,10 +215,15 @@ function ProductCard({ product }: { product: InfoProduct }) {
              <LayoutGrid className="w-12 h-12" />
            </div>
          )}
-         <div className="absolute top-4 left-4">
-            <Badge className="bg-black/60 backdrop-blur-md border-white/10 text-[9px] font-black uppercase tracking-widest">
+         <div className="absolute top-4 left-4 flex flex-col gap-2">
+            <Badge className="bg-black/60 backdrop-blur-md border-white/10 text-[9px] font-black uppercase tracking-widest w-fit">
               {product.category === 'ebook' ? 'E-book' : product.category === 'video' ? 'Vídeo' : 'Curso'}
             </Badge>
+            {activeOffer && (
+              <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black uppercase tracking-widest px-2 shadow-[0_0_10px_rgba(16,185,129,0.5)] w-fit">
+                Oferta Ativa
+              </Badge>
+            )}
          </div>
          {product.rating_avg > 0 && (
            <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10">
@@ -231,11 +248,18 @@ function ProductCard({ product }: { product: InfoProduct }) {
             </div>
          </div>
 
-         <div className="pt-2 mt-auto border-t border-white/5 flex items-center justify-between">
-            <div className="text-xl font-black text-white italic">
-               R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+         <div className="pt-2 mt-auto border-t border-white/5 flex items-center justify-between gap-2">
+            <div className="flex flex-col">
+               {comparePrice && (
+                 <span className="text-[10px] text-white/40 font-bold line-through uppercase tracking-widest">
+                   R$ {comparePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                 </span>
+               )}
+               <div className="text-xl font-black text-white italic">
+                  R$ {displayPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+               </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all shrink-0">
                <ArrowRight className="w-4 h-4" />
             </div>
          </div>
@@ -243,6 +267,7 @@ function ProductCard({ product }: { product: InfoProduct }) {
     </Link>
   );
 }
+
 
 function ProductSkeleton() {
   return (
