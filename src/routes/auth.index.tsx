@@ -121,13 +121,11 @@ function LoginComponent() {
            toast.success('Bypass Master: Acesso emergencial concedido.');
            
            // PROMPT 23: Forçamos a limpeza do estado do roteador via Navegação Direta
-           console.log("[Auth] Bypass Master ativado. Navegando para /admin...");
-           setTimeout(() => {
-             window.location.href = '/admin';
-           }, 100);
-         }
-         return;
-      }
+            console.log("[Auth] Bypass Master ativado. Navegando para /admin...");
+            window.location.href = window.location.origin + '/admin';
+          }
+          return;
+       }
 
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
         email: normalizedEmail,
