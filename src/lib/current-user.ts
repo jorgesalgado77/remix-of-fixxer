@@ -224,12 +224,13 @@ export function clearCurrentUserCache() {
 
 // Invalida cache automaticamente em qualquer mudança de sessão.
 if (typeof window !== "undefined") {
-  supabaseExternal.auth.onAuthStateChange((event) => {
+  supabaseExternal.auth.onAuthStateChange((event, session) => {
+    console.log(`[Identity] Evento Auth: ${event}`, !!session);
+    
     const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     
     // Se o evento for INITIAL_SESSION ou SIGNED_IN e for master, forçamos o cache
     if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && hasMasterBypass) {
-      console.log("[Auth] Sessão Master detectada via evento:", event);
       getCurrentUser(true);
     }
 
@@ -249,9 +250,13 @@ if (typeof window !== "undefined") {
         localStorage.removeItem("fixxer_lojista_id");
         localStorage.removeItem("fixxer_derived_user_id");
       } catch {}
+      
+      // Evitamos redirecionamento automático aqui para deixar o guard de rota (_authenticated.tsx) decidir
     } else {
+      // Para SIGNED_IN ou INITIAL_SESSION com sessão válida, garantimos cache limpo para re-fetch
       clearCurrentUserCache();
     }
+    
     try { window.dispatchEvent(new Event("fixxer:identity-change")); } catch {}
   });
 }

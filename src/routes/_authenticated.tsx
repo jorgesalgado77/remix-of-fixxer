@@ -70,23 +70,26 @@ function AuthenticatedLayout() {
   }, []);
 
   useEffect(() => {
+    // Se estiver carregando, não faz nada
     if (userLoading) return;
     
     const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     const isMaster = isMasterEmail || hasMasterBypass;
     
-    // Se não temos usuário E não temos o bypass forçado, vai para o login
+    // REDIRECT FIX: Se não houver usuário logado (Supabase Session vazia) E não for Master,
+    // garantimos que o usuário seja jogado para a tela de login.
     if (!user && !isMaster) {
-      console.warn("[AuthenticatedLayout] Usuário não detectado e não é master. Redirecionando para /auth.");
-      navigate({ to: "/auth" as any });
+      console.warn("[AuthenticatedLayout] Sessão Supabase não encontrada. Redirecionando para login.");
+      // Usamos location.href para garantir que o redirecionamento ocorra fora da pilha do router
+      window.location.href = "/auth";
       return;
     }
 
     if (isMaster) {
       console.log("[AuthenticatedLayout] Acesso Admin Master permitido via bypass.");
     }
-  }, [user, userLoading, navigate]);
+  }, [user, userLoading]);
 
   // SEGURANÇA DE ROTA: Validação de privilégios baseada na URL visitada vs Role real.
   useEffect(() => {
