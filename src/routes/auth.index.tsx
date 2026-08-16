@@ -44,10 +44,12 @@ function AuthLogin() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
+  const handleLogin = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (loading) return;
     
     const emailVal = email.trim().toLowerCase();
