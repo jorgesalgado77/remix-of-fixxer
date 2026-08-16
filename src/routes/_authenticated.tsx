@@ -19,15 +19,15 @@ export const Route = createFileRoute("/_authenticated")({
       return {
         userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
         userEmail: 'jorgericardosalgado@gmail.com',
+        bypass: true
       };
     }
     
-    // Tenta obter o usuário; se falhar (erro 500 do Supabase), 
-    // permitimos continuar se houver e-mail master na sessão local.
     const user = await getCurrentUser(true);
     return {
       userId: user?.id ?? null,
       userEmail: user?.email ?? null,
+      bypass: false
     };
   },
   component: AuthenticatedLayout,
@@ -56,11 +56,11 @@ function AuthenticatedLayout() {
   useEffect(() => {
     if (userLoading) return;
     
-    // Bypass para o Administrador Master em caso de instabilidade
     const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     const isMaster = isMasterEmail || hasMasterBypass;
     
+    // Se não temos usuário E não temos o bypass forçado, vai para o login
     if (!user && !isMaster) {
       console.warn("[AuthenticatedLayout] Usuário não detectado e não é master. Redirecionando para /auth.");
       navigate({ to: "/auth" as any });
