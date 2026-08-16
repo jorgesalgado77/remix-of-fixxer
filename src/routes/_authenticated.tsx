@@ -54,7 +54,7 @@ export const Route = createFileRoute("/_authenticated")({
       console.error("[Route Guard] Erro silencioso na verificação de admin:", e);
     }
 
-    return { userId: user.id, userEmail: user.email, isAdmin, bypass: hasMasterBypass };
+    return { userId: user?.id ?? 'master', userEmail: user?.email ?? emailMaster, isAdmin, bypass: hasMasterBypass };
   },
   component: AuthenticatedLayout,
 });
