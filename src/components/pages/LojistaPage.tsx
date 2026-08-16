@@ -428,9 +428,10 @@ export function LojistaDashboard() {
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
       <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="sidebar" />
       <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
-        <div className="md:hidden pt-20">
+        <div className="pt-20 lg:pt-0">
            <ProfileHeader role="lojista" />
         </div>
+
 
 
       {/* Mobile Menu Overlay */}
