@@ -426,7 +426,8 @@ export function LojistaDashboard() {
 
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
-      <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="sidebar" className="hidden lg:block" />
+      <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="sidebar" />
+
 
       {/* Mobile Top Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#050505]/95 backdrop-blur-md border-b border-white/10 z-50 flex items-center justify-between px-6">
