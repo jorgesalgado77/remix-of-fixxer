@@ -173,8 +173,8 @@ function LoginComponent() {
           // Limpa cache global antes da navegação para garantir carregamento limpo
           try { clearCurrentUserCache(); } catch {}
           
-          // HARD FIX: Redirecionamento forçado via origin completo para quebrar o loop do SPA
-          window.location.assign(target);
+          // HARD FIX: Forçar navegação absoluta e imediata limpando o estado do Router
+          window.location.replace(window.location.origin + target);
         } catch (e) {
           console.error("[Auth] Erro no redirecionamento pós-login:", e);
           window.location.assign('/feed');
