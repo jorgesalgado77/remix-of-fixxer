@@ -172,6 +172,7 @@ function AuthLogin() {
           <input
             type="email"
             name="email"
+            id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="e-mail"
@@ -187,6 +188,7 @@ function AuthLogin() {
           <input
             type="password"
             name="password"
+            id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="senha"
@@ -203,7 +205,10 @@ function AuthLogin() {
             type="button"
             id="login-submit-btn"
             onClick={(e) => {
-              e.preventDefault();
+              if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
               handleLogin();
             }}
             disabled={loading}
