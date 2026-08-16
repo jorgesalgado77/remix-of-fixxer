@@ -43,7 +43,6 @@ function PrestadorDashboard() {
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 lg:pl-72 animate-in fade-in duration-500">
       <ProfileHeader 
         role="prestador" 
-        hideSidebarCard
       />
 
 

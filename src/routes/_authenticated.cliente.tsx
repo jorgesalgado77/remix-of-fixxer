@@ -43,7 +43,6 @@ function ClientePortal() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-24 lg:pl-72 animate-in fade-in duration-500">
       <ProfileHeader 
         role="cliente" 
-        hideSidebarCard
         actions={
           <div className="flex items-center gap-3">
             <TabButton active={activeTab === 'jornada'} onClick={() => setActiveTab('jornada')} label="Minha Obra" icon={<Clock className="w-3 h-3" />} />
