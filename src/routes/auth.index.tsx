@@ -21,15 +21,13 @@ function AuthLogin() {
       
       if (hasBypass && cat) {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-          if (!window.location.pathname.includes(target)) {
-              console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
-              window.location.href = window.location.origin + target;
-          }
+          console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
+          window.location.replace(window.location.origin + target);
       }
     };
 
     checkBypass();
-    const interval = setInterval(checkBypass, 250); // Mais rápido
+    const interval = setInterval(checkBypass, 100); 
     return () => clearInterval(interval);
   }, []);
 
