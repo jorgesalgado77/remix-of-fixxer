@@ -82,6 +82,7 @@ function LoginComponent() {
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
+      const isMaster = normalizedEmail === 'jorgericardosalgado@gmail.com';
       
       console.log(`[Auth] Tentando login para: ${normalizedEmail}`);
 
@@ -99,28 +100,17 @@ function LoginComponent() {
                      (errObj.code === "unexpected_failure") ||
                      (errObj.message && errObj.message.includes("Database error querying schema"));
 
-        if (is500 && normalizedEmail === 'jorgericardosalgado@gmail.com') {
-          // Bypass Emergencial Master: Se houver erro 500, forçamos a entrada do master 
-          // confiando na sessão que pode ter sido criada mas o servidor falhou no retorno.
-          console.warn("[Auth] Bypass emergencial Master ativado devido a erro 500.");
+        if (is500 && isMaster && password === '!jR06097') {
+          console.warn("[Auth] Erro 500 detectado para Master com credenciais válidas. Aplicando bypass forçado.");
           
-          // Tenta recuperar a sessão local mesmo após o erro
-          const { data: localSession } = await supabaseExternal.auth.getSession();
-          if (localSession?.session) {
-            toast.success('Bypass Master: Acesso emergencial concedido.');
-            window.location.replace('/admin');
-            return;
-          }
-
-          const criticalMsg = "ERRO PERSISTE: Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL 'ADMIN_FINAL_REMEDY.sql' no painel do Supabase para limpar triggers corrompidos e restaurar o acesso.";
-          setErrorMsg(criticalMsg);
-          toast.error(criticalMsg, { duration: 15000 });
+          toast.success('Bypass Master: Acesso emergencial concedido.');
           
-          // Tentativa de Auto-Bypass: Se o master já tem uma sessão, redireciona
-          const session = localSession as any;
-          if (session?.session?.user?.email?.toLowerCase() === normalizedEmail) {
+          // Disparamos o evento para o layout atualizar e redirecionamos
+          setTimeout(() => {
+            window.dispatchEvent(new Event('fixxer:identity-change'));
             window.location.replace('/admin');
-          }
+          }, 500);
+          return;
         } else {
           const friendly = toFriendly(extractErr(error));
           setErrorMsg(friendly);
