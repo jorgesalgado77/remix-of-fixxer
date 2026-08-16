@@ -23,13 +23,13 @@ function AuthLogin() {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
           if (!window.location.pathname.includes(target)) {
               console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
-              window.location.replace(window.location.origin + target);
+              window.location.href = window.location.origin + target;
           }
       }
     };
 
     checkBypass();
-    const interval = setInterval(checkBypass, 500);
+    const interval = setInterval(checkBypass, 250); // Mais rápido
     return () => clearInterval(interval);
   }, []);
 
@@ -39,8 +39,6 @@ function AuthLogin() {
     
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
-    
-    console.warn("[Auth] Login manual:", emailVal);
     
     if (!emailVal || !passVal) {
       toast.error("Preencha todos os campos.");
@@ -73,7 +71,7 @@ function AuthLogin() {
 
       toast.success('Acesso Master concedido');
       
-      // Redirecionamento brutal absoluto síncrono
+      // Redirecionamento brutal síncrono absoluto
       window.location.href = window.location.origin + target;
       return;
     }
@@ -97,7 +95,7 @@ function AuthLogin() {
         
         localStorage.setItem('fixxer:last-category', cat);
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        window.location.replace(window.location.origin + target);
+        window.location.href = window.location.origin + target;
       }
     } catch (err: any) {
       toast.error(err.message || "Credenciais inválidas");
