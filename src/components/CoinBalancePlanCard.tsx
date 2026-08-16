@@ -30,12 +30,15 @@ export function CoinBalancePlanCard({ className = "" }: { className?: string }) 
     let cancelled = false;
     (async () => {
       try {
+        const isMaster = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
         const { data: { user } } = await supabaseExternal.auth.getUser();
-        if (!user?.id || cancelled) return;
+        const userId = isMaster ? (localStorage.getItem('fixxer:last-category') === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') : user?.id;
+        
+        if (!userId || cancelled) return;
         const { data } = await supabaseExternal
           .from("profiles")
           .select("plan_id, plan_renews_at")
-          .eq("id", user.id)
+          .eq("id", userId)
           .maybeSingle();
         if (cancelled) return;
         if (data?.plan_id) setPlanId(String(data.plan_id).toLowerCase() as PlanId);

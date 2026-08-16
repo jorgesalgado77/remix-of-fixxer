@@ -85,7 +85,7 @@ export function ProfileSummaryCard({
       try {
         const auth = window.localStorage.getItem("fixxer-auth-token-v1");
         const isMaster = window.localStorage.getItem('fixxer:master-bypass') === 'true';
-        const uid = isMaster ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : (auth ? JSON.parse(auth)?.user?.id : null);
+        const uid = isMaster ? (localStorage.getItem('fixxer:last-category') === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') : (auth ? JSON.parse(auth)?.user?.id : null);
         
         if (uid) {
           const cached = window.localStorage.getItem("fixxer_identity_cache_v1.2");
@@ -133,7 +133,7 @@ export function ProfileSummaryCard({
       try {
         const auth = window.localStorage.getItem("fixxer-auth-token-v1");
         const isMaster = window.localStorage.getItem('fixxer:master-bypass') === 'true';
-        const uid = isMaster ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : (auth ? JSON.parse(auth)?.user?.id : null);
+        const uid = isMaster ? (localStorage.getItem('fixxer:last-category') === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') : (auth ? JSON.parse(auth)?.user?.id : null);
         if (!uid) {
           console.warn("[ProfileSummaryCard] Sem UID na sessão");
           return;
@@ -190,7 +190,7 @@ export function ProfileSummaryCard({
     const { data: authListener } = supabaseExternal.auth.onAuthStateChange(async (event, session) => {
       console.log(`[ProfileSummaryCard] Auth Event: ${event}`, !!session);
       if (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "INITIAL_SESSION") {
-        const uid = session?.user?.id || (window.localStorage.getItem('fixxer:master-bypass') === 'true' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : null);
+        const uid = session?.user?.id || (window.localStorage.getItem('fixxer:master-bypass') === 'true' ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') : null);
         if (uid) {
           loadProfile();
         }
