@@ -210,8 +210,8 @@ export function ProfileSummaryCard({
   }, []);
 
 
-  const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-  const lastCat = typeof window !== 'undefined' ? localStorage.getItem('fixxer:last-category') : null;
+  const isMasterBypass = typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true';
+  const lastCat = typeof window !== 'undefined' ? window.localStorage.getItem('fixxer:last-category') : null;
   const name = isMasterBypass 
     ? (lastCat === 'admin' ? 'Admin Master' : 'Prestador Teste') 
     : (profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário"));
