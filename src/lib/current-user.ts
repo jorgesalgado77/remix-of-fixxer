@@ -46,6 +46,7 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           user_metadata: { 
             display_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Jorge Criare',
             full_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Jorge Criare',
+            avatar_url: email === 'jorgecriare2021@gmail.com' ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null,
             role: category,
             category: category,
             user_type: category,
