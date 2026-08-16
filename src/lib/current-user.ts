@@ -45,11 +45,11 @@ export async function getCurrentUser(force = false): Promise<User | null> {
       
       const sessionUser = session?.user;
 
-      // Bypass Master Crítico: Se temos o master no storage local (mesmo sem sessão oficial) 
-      // ou se o e-mail da sessão for o master, garantimos o objeto user.
+      // Bypass Master Crítico: Se temos o master no e-mail da sessão OU se o servidor 
+      // está fora do ar (erro 500), mas sabemos que é o master tentando acessar.
       const isMasterSession = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
 
-      // 2. Se temos uma sessão, o usuário está logado localmente.
+      // 2. Tenta validar no servidor
       try {
         const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
         
@@ -58,16 +58,24 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           return user;
         }
         
-        // Se o servidor retornar erro (500) mas tivermos uma sessão local ativa,
-        // e for o Administrador Master, mantemos ele logado.
-        if (isMasterSession || (sessionUser && !userError)) {
-          console.warn("[current-user] Master ou Sessão Detectada: ignorando erro 500 do servidor.");
-          cachedUser = sessionUser || null;
-          return cachedUser;
+        // Redundância Master: Se o servidor falhar (500) ou se a sessão estiver 
+        // incompleta, mas for o Master, construímos um objeto User mínimo para o front.
+        if (isMasterSession) {
+          console.warn("[current-user] Master detectado: fornecendo objeto de usuário resiliente.");
+          const mockMaster: User = sessionUser || {
+            id: '6ba65048-803f-44f6-88d2-24d04fee1a0f', // UUID conhecido do master no banco
+            email: 'jorgericardosalgado@gmail.com',
+            app_metadata: {},
+            user_metadata: { full_name: 'Admin Master' },
+            aud: 'authenticated',
+            created_at: new Date().toISOString()
+          } as any;
+          cachedUser = mockMaster;
+          return mockMaster;
         }
       } catch (err) {
-        if (isMasterSession && sessionUser) {
-          cachedUser = sessionUser;
+        if (isMasterSession) {
+          cachedUser = sessionUser || null;
           return cachedUser;
         }
       }
