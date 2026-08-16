@@ -17,7 +17,7 @@ function AuthLogin() {
     if (hasBypass) {
         const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        console.warn("[Auth Page] Redirecionamento Bypass via window.location.href");
+        console.warn("[Auth Page] Bypass detectado. Forçando saída via window.location.href");
         window.location.href = window.location.origin + target;
     }
   }, []);
@@ -30,27 +30,51 @@ function AuthLogin() {
     const passVal = password.trim();
     setLoading(true);
 
-    if ((emailVal === 'jorgericardosalgado@gmail.com' || emailVal === 'jorgecriare2021@gmail.com') && passVal === '!jR06097') {
-      const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
+    const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
+    const isTest = emailVal === 'jorgecriare2021@gmail.com';
+
+    if ((isMaster || isTest) && passVal === '!jR06097') {
+      const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
+      console.log("[Auth] Master/Test Bypass Detectado");
       localStorage.setItem('fixxer:master-bypass', 'true');
-      localStorage.setItem('fixxer:last-category', isMaster ? 'admin' : 'prestador');
+      localStorage.setItem('fixxer:last-category', category);
       
-      toast.success('Acesso concedido');
-      window.location.href = window.location.origin + target;
+      toast.success('Acesso Master concedido');
+      
+      setTimeout(() => {
+        window.location.href = window.location.origin + target;
+      }, 50);
       return;
     }
 
     try {
       const { supabaseExternal } = await import("@/lib/supabaseExternal");
       const { error, data } = await supabaseExternal.auth.signInWithPassword({ email: emailVal, password: passVal });
+      
       if (error) throw error;
+      
       if (data.session) {
-        window.location.href = window.location.origin + "/feed";
+        const { data: profile } = await supabaseExternal
+          .from("profiles")
+          .select("role, user_type")
+          .eq("id", data.session.user.id)
+          .maybeSingle();
+        
+        const raw = (profile as any)?.role || (profile as any)?.user_type || "lojista";
+        const cat = raw.toLowerCase().includes("prestador") ? "prestador" : 
+                    raw.toLowerCase().includes("admin") ? "admin" : "lojista";
+        
+        localStorage.setItem('fixxer:last-category', cat);
+        const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+        
+        setTimeout(() => {
+          window.location.href = window.location.origin + target;
+        }, 50);
       }
     } catch (err: any) {
-      toast.error(err.message || "Erro no login");
+      toast.error(err.message || "Credenciais inválidas");
       setLoading(false);
     }
   };
