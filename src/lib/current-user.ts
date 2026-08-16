@@ -42,6 +42,23 @@ export async function getCurrentUser(force = false): Promise<User | null> {
     try {
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
+      // PROMPT 23: Bloqueamos deslogamento de Master pelo status de profile
+      if (isMasterBypass) {
+        const masterData: User = {
+          id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+          email: 'jorgericardosalgado@gmail.com',
+          app_metadata: {},
+          user_metadata: { 
+            full_name: 'Admin Master',
+            display_name: 'Admin Master'
+          },
+          aud: 'authenticated',
+          created_at: new Date().toISOString()
+        } as any;
+        cachedUser = masterData;
+        return masterData;
+      }
+
       // 1. Tenta obter a sessão do storage local primeiro
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
       

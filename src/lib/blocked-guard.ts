@@ -8,6 +8,13 @@ let currentUserId: string | null = null;
 
 async function enforceBlockedNow(userId: string) {
   try {
+    // PROMPT 23: O Administrador Master é IMUNE ao bloqueio de status
+    const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+    if (isMasterBypass) {
+      console.warn("[BlockedGuard] Tentativa de bloqueio ignorada para Admin Master.");
+      return;
+    }
+
     try {
       const { data } = await supabase.from("profiles").select("status").eq("id", userId).maybeSingle();
       if (data?.status !== "bloqueado") return;
