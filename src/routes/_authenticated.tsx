@@ -16,26 +16,21 @@ export const Route = createFileRoute("/_authenticated")({
     // 1. Bypass Master Admin
     const emailMaster = 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-    if (hasMasterBypass) {
-      return { userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f', userEmail: emailMaster, isAdmin: true, bypass: true };
-    }
     
     // 2. Verificação de Usuário via storage (síncrona/rápida)
     const { data: { session } } = await supabaseExternal.auth.getSession();
     const user = session?.user;
-    
-    // REDIRECT BYPASS: Se estamos no /auth e temos uma sessão válida, NÃO redirecionamos para /auth
-    if (user && (location.pathname.includes('/auth'))) {
-       console.log("[Route Guard] Usuário logado detectado. Bypass de redirecionamento para /auth ativo.");
-       return { userId: user.id, userEmail: user.email, isAdmin: false, bypass: false };
+
+    console.log("[Route Guard] Path:", location.pathname, "User:", !!user, "Master:", hasMasterBypass);
+
+    // REDIRECT BYPASS: Se temos uma sessão ou bypass, e estamos no /auth, deixamos passar.
+    if ((user || hasMasterBypass) && location.pathname.includes('/auth')) {
+       return { userId: user?.id ?? 'master', userEmail: user?.email ?? emailMaster, isAdmin: hasMasterBypass, bypass: hasMasterBypass };
     }
 
-    if (!user) {
-      console.warn("[Route Guard] Sessão não encontrada no storage. Redirecionando para /auth.");
-      // Se não houver usuário, mas for master bypass, deixamos passar para não travar
-      if (!hasMasterBypass) {
-        throw redirect({ to: "/auth" as any });
-      }
+    if (!user && !hasMasterBypass) {
+      console.warn("[Route Guard] Acesso negado. Redirecionando para /auth.");
+      throw redirect({ to: "/auth" as any });
     }
 
     // 3. Verificação de Admin (Resiliente a erros de banco)
