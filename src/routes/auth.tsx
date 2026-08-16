@@ -10,17 +10,17 @@ export const Route = createFileRoute("/auth")({
         if ((hasMasterBypass && cat) || rawToken) {
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
             const fullTarget = window.location.origin + target;
-            console.warn("[Auth Layout Guard] Redirecionamento síncrono absoluto para:", fullTarget);
+            console.warn("[Auth Layout Guard] Ejeção absoluta para:", fullTarget);
             
-            // Forçar limpeza de cache do Router antes do redirect absoluto
+            // Limpeza bruta e imediata
             Object.keys(sessionStorage).forEach(key => {
               if (key.includes('tsr-') || key.includes('tanstack')) {
                 sessionStorage.removeItem(key);
               }
             });
 
-            window.location.href = fullTarget;
-            throw new Error("Redirecting..."); // Stop component rendering
+            window.location.replace(fullTarget);
+            return; 
         }
     }
     return {};
