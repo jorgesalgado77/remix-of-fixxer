@@ -165,7 +165,7 @@ function LoginComponent() {
 
         try {
           // Busca categoria usando o helper centralizado que tem tratamento de erro
-          const category = await resolveUserCategory(data.session.user.id);
+          const category = await getCurrentCategory(true);
           const target = category === 'admin' ? '/admin/infoprodutos' : `/feed/${category}`;
           
           console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
