@@ -109,12 +109,16 @@ function LoginComponent() {
                created_at: new Date().toISOString()
              }
            };
+           
+           // Chaves de storage para o Supabase Client encontrar a sessão
            localStorage.setItem('fixxer-auth-token-v1', JSON.stringify(mockSession));
            localStorage.setItem('sb-fixxer-auth-token', JSON.stringify(mockSession));
+           localStorage.setItem('sb-auth-token', JSON.stringify(mockSession));
            
            toast.success('Bypass Master: Acesso emergencial concedido.');
            
            // NAVEGAÇÃO BRUTA PARA EVITAR TANSTACK ROUTER STATE
+           // Usamos replace para não permitir voltar para o login com bypass
            window.location.replace('/admin');
          }
          return;
