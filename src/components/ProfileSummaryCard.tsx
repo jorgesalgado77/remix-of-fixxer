@@ -217,10 +217,10 @@ export function ProfileSummaryCard({
 
   const wrapperVariantClass =
     variant === "sidebar"
-      ? "hidden md:block fixed left-4 top-24 w-64 z-30"
+      ? "hidden lg:block fixed left-4 top-24 w-64 z-[70]"
       : variant === "inline"
         ? ""
-        : "md:hidden";
+        : "md:hidden mb-6";
 
   const theme = getCategoryTheme(role as any);
 

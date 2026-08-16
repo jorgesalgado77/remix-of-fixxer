@@ -73,11 +73,10 @@ export function ProfileHeader({
 
   return (
     <div className="relative isolate">
-      {/* 
-          O ProfileSummaryCard lateral aparece em desktop e mobile por padrão agora, 
-          conforme ordem mestra de não permitir sua remoção.
-      */}
       <ProfileSummaryCard role={role} variant="sidebar" />
+
+      
+      
       
       
 

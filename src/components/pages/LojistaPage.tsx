@@ -427,24 +427,11 @@ export function LojistaDashboard() {
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
       <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="sidebar" />
-
-
-      {/* Mobile Top Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#050505]/95 backdrop-blur-md border-b border-white/10 z-50 flex items-center justify-between px-6">
-        <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center text-black font-black text-sm">F</div>
-
-            <h1 className="font-bold text-white text-sm uppercase italic">FIXXER</h1>
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
+        <div className="md:hidden pt-20">
+           <ProfileHeader role="lojista" />
         </div>
-        <div className="flex items-center gap-2">
-            <div className="relative mr-2">
-                {/* Notificações agora estão integradas no ProfileSummaryCard */}
-            </div>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-white">
-                <Menu className="w-6 h-6" />
-            </button>
-        </div>
-      </div>
+
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
@@ -801,11 +788,28 @@ export function LojistaDashboard() {
           />
         </Suspense>
       )}
+      </div>
     </div>
   );
 }
 
+
+
+
+
+
+
+
+
+
+
 function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [], missingKeys = [], onOpenProfile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string; isVerified?: boolean; planId?: string }; missingLabels?: string[]; missingKeys?: string[]; onOpenProfile?: (focusKey?: string) => void }) {
+
+
+
+
+
+
     const isGold = profile?.planId === 'pro' || profile?.planId === 'premium';
     const planLabel = profile?.planId ? (profile.planId === 'free' ? 'Free' : profile.planId === 'basico' ? 'Básico' : profile.planId === 'pro' ? 'Pro' : 'Premium') : 'Free';
 
