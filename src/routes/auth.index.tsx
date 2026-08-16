@@ -164,7 +164,7 @@ function AuthLogin() {
           <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-black text-2xl mx-auto">F</div>
           <h1 className="text-2xl font-black text-white uppercase mt-6 italic tracking-tighter">FIXXER <span className="text-primary">LOGIN</span></h1>
           <p className="text-[10px] text-white/20 mt-2 uppercase tracking-widest font-mono">
-            Instrumentar logs de login Adicionar teste E2E
+            não deve usar localhost para identificar e logar os usuarios, os dados de login devem vir do supabase externo, corrija, faça acessar o sistema normalmente conforme da permissões e categoria de cada usuario e carregar os dados corretamente nas paginas vindos do supabase externo
           </p>
         </div>
         
