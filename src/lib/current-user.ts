@@ -31,7 +31,8 @@ export async function getCurrentUser(force = false): Promise<User | null> {
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
       if (isMasterBypass) {
-        const email = localStorage.getItem('fixxer:last-category') === 'admin' 
+        const category = localStorage.getItem('fixxer:last-category');
+        const email = category === 'admin' 
           ? 'jorgericardosalgado@gmail.com' 
           : 'jorgecriare2021@gmail.com';
         
@@ -41,11 +42,16 @@ export async function getCurrentUser(force = false): Promise<User | null> {
               : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9',
           email: email,
           app_metadata: {},
-          user_metadata: { display_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Prestador Teste' },
+          user_metadata: { 
+            display_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Prestador Teste',
+            role: category === 'admin' ? 'admin' : 'prestador'
+          },
           aud: 'authenticated',
           created_at: new Date().toISOString()
         } as any;
         cachedUser = masterData;
+        cachedCategory = category as Category;
+        cachedAdmin = category === 'admin';
         return masterData;
       }
 
