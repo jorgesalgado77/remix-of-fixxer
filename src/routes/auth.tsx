@@ -8,7 +8,12 @@ export const Route = createFileRoute("/auth")({
         if (hasMasterBypass || rawToken) {
             const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-            console.log("[Auth Layout] Sessão ativa detectada, forçando saída de /auth");
+            console.warn("[Auth Layout] Sessão ativa, forçando saída.");
+            
+            if (typeof window !== 'undefined') {
+                window.location.replace(window.location.origin + target);
+                return { authenticated: true };
+            }
             throw redirect({ to: target as any });
         }
     }
