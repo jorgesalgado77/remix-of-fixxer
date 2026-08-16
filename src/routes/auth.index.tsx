@@ -16,13 +16,18 @@ function AuthLogin() {
     if (typeof window === 'undefined') return;
 
     const checkBypass = async () => {
+      if (typeof window === 'undefined') return;
+      
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
       if (hasBypass) {
           const { getCurrentCategory } = await import("@/lib/current-user");
           const cat = await getCurrentCategory(true);
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-          console.warn("[Auth Page] Bypass detectado. Forçando saída via window.location.href.");
-          window.location.href = window.location.origin + target;
+          
+          if (window.location.pathname !== target) {
+              console.warn("[Auth Page] Bypass detectado. Forçando redirecionamento para:", target);
+              window.location.replace(window.location.origin + target);
+          }
       }
     };
 
