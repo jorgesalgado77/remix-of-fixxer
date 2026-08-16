@@ -23,7 +23,6 @@ function AuthLogin() {
       }
     };
     checkBypass();
-    // Re-check a cada 500ms caso o bypass seja setado async
     const interval = setInterval(checkBypass, 500);
     return () => clearInterval(interval);
   }, []);
@@ -36,7 +35,6 @@ function AuthLogin() {
     const passVal = password.trim();
     setLoading(true);
 
-    // Estratégia de Bypass Master e Teste
     const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
     const isTest = emailVal === 'jorgecriare2021@gmail.com';
 
@@ -50,7 +48,6 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
-      // Reset total para garantir que o roteador não intercepte a mudança de estado
       setTimeout(() => {
         window.location.href = window.location.origin + target;
       }, 50);
@@ -64,7 +61,6 @@ function AuthLogin() {
       if (error) throw error;
       
       if (data.session) {
-        // Recuperar perfil real para usuários padrão
         const { data: profile } = await supabaseExternal
           .from("profiles")
           .select("role, user_type")
