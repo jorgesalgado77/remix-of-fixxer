@@ -47,6 +47,7 @@ function PrestadorDashboard() {
 
 
 
+
       <CoinBalancePlanCard />
 
       <RecentStoresCarousel />
