@@ -21,16 +21,24 @@ function AuthLogin() {
       
       if (hasBypass && cat) {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-          if (window.location.pathname.startsWith('/auth')) {
+          if (window.location.pathname === '/auth' || window.location.pathname === '/auth/') {
               const fullTarget = window.location.origin + target;
               console.warn("[Auth Page] Bypass detectado. Ejetando para:", fullTarget);
-              window.location.replace(fullTarget);
+              
+              // Limpeza síncrona do cache do Router antes de sair
+              Object.keys(sessionStorage).forEach(key => {
+                if (key.includes('tsr-') || key.includes('tanstack')) {
+                  sessionStorage.removeItem(key);
+                }
+              });
+              
+              window.location.href = fullTarget;
           }
       }
     };
 
     checkBypass();
-    const interval = setInterval(checkBypass, 100); 
+    const interval = setInterval(checkBypass, 50); 
     return () => clearInterval(interval);
   }, []);
 
