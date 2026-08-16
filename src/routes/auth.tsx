@@ -15,10 +15,6 @@ export const Route = createFileRoute("/auth")({
                 window.location.replace(fullTarget);
                 return { authenticated: true };
             }
-                console.warn("[Auth Layout Guard] Redirecionamento forçado via window.location.replace para:", target);
-                window.location.replace(window.location.origin + target);
-                return { authenticated: true };
-            }
         }
     }
     return {};

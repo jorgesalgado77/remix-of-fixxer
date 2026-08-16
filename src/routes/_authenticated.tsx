@@ -30,18 +30,17 @@ export const Route = createFileRoute("/_authenticated")({
       
       if (!hasMasterBypass && !rawToken && !isPublic) {
         console.warn("[Authenticated Guard] Acesso negado. Redirecionando para /auth.");
-        // Usamos replace absoluto para garantir limpeza do estado do router
         window.location.replace(window.location.origin + '/auth');
         return { authenticated: false };
       }
 
+      // Inicialização de serviços financeiros se logado
       if (hasMasterBypass || rawToken) {
-        // Inicialização de serviços financeiros se logado
         const uid = hasMasterBypass ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : JSON.parse(rawToken!).user.id;
         void import("../lib/coins").then(m => m.initCoinsForUser(uid));
-        return { authenticated: true };
       }
-      return { authenticated: false };
+
+      return { authenticated: !!(hasMasterBypass || rawToken) };
     }
     return { authenticated: false };
   },
