@@ -132,9 +132,12 @@ function AuthenticatedLayout() {
     // REDIRECT FIX: Forçamos a saída de /auth se houver usuário
     if ((user || isMaster) && (pathname === '/auth' || pathname === '/auth/')) {
       console.log("[AuthenticatedLayout] Login detectado. Navegando para /feed.");
+      const targetCategory = localStorage.getItem('fixxer:last-category') || 'lojista';
+      const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
+      
       // Usamos replace e then catch para garantir a navegação
-      navigate({ to: "/feed" as any, replace: true }).catch(() => {
-        window.location.assign('/feed');
+      navigate({ to: target as any, replace: true }).catch(() => {
+        window.location.replace(window.location.origin + target);
       });
       return;
     }
