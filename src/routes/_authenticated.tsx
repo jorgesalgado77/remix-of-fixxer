@@ -57,7 +57,7 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     // 4. Apenas redireciona se REALMENTE não houver sessão E não estivermos no /auth
-    if (!location.pathname.includes('/auth')) {
+    if (!location.pathname.startsWith('/auth')) {
       console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
       throw redirect({ to: "/auth" as any });
     }
@@ -96,9 +96,9 @@ function AuthenticatedLayout() {
     
     // REDIRECT FIX: Se não houver usuário logado E não for Master,
     // garantimos que o usuário seja jogado para a tela de login.
-    if (!userLoading && !user && !isMaster && !pathname.includes('/auth')) {
+    if (!userLoading && !user && !isMaster && !pathname.startsWith('/auth')) {
       console.warn("[AuthenticatedLayout] Sessão não encontrada. Redirecionando para /auth via window.location.");
-      window.location.href = "/auth";
+      window.location.assign("/auth");
       return;
     }
 
