@@ -35,6 +35,8 @@ function AuthLogin() {
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
     
+    console.log("[Auth] Iniciando tentativa de login para:", emailVal);
+    
     if (!emailVal || !passVal) {
       toast.error("Por favor, preencha todos os campos.");
       return;
@@ -49,16 +51,18 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.log("[Auth] Master/Test Bypass Detectado");
-      window.localStorage.setItem('fixxer:master-bypass', 'true');
-      window.localStorage.setItem('fixxer:last-category', category);
+      console.warn("[Auth] MASTER BYPASS ATIVADO");
+      localStorage.setItem('fixxer:master-bypass', 'true');
+      localStorage.setItem('fixxer:last-category', category);
       
       toast.success('Acesso Master concedido');
       
+      // Redirecionamento brutal
       setTimeout(() => {
-        console.log("[Auth] Redirecionando para:", target);
-        window.location.replace(window.location.origin + target);
-      }, 300);
+        const finalUrl = window.location.origin + target;
+        console.warn("[Auth] Executando redirecionamento brutal para:", finalUrl);
+        window.location.href = finalUrl;
+      }, 500);
       return;
     }
 
