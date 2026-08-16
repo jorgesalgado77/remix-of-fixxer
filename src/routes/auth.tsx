@@ -23,7 +23,9 @@ export const Route = createFileRoute("/auth")({
         const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
         
         // Se estivermos no navegador, forçamos o replace imediato e retornamos redirect para o router
-        window.location.replace(window.location.origin + target);
+        setTimeout(() => {
+          window.location.replace(window.location.origin + target);
+        }, 50);
         throw redirect({ to: target as any });
       }
     }
