@@ -185,7 +185,7 @@ function AdminInfoProductsPage() {
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <PanelActions />
+
               {dirtyAI && (
                 <Button onClick={handleSaveAI} className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl">
                   Salvar IA

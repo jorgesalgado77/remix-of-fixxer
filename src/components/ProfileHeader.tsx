@@ -73,12 +73,8 @@ export function ProfileHeader({
 
   return (
     <div className="relative isolate">
-      {/* 
-          O ProfileSummaryCard lateral aparece em desktop e mobile por padrão agora.
-          Em mobile (variant="auto"), ele renderiza acima do header.
-      */}
-      <ProfileSummaryCard role={role} variant="auto" />
       <ProfileSummaryCard role={role} variant="sidebar" />
+
       
       
       
