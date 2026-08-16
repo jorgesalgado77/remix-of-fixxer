@@ -110,11 +110,12 @@ function LoginComponent() {
              }
            };
            localStorage.setItem('fixxer-auth-token-v1', JSON.stringify(mockSession));
+           localStorage.setItem('sb-fixxer-auth-token', JSON.stringify(mockSession));
            
            toast.success('Bypass Master: Acesso emergencial concedido.');
            
            // NAVEGAÇÃO BRUTA PARA EVITAR TANSTACK ROUTER STATE
-           window.location.href = '/admin';
+           window.location.replace('/admin');
          }
          return;
       }
