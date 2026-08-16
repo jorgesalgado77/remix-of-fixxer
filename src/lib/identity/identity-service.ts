@@ -136,7 +136,7 @@ export async function resolveIdentity(
   let displayName = (baseProfile ? "Usuário Fixxer" : "Usuário");
   
   if (isMasterBypass && isMasterId) {
-    displayName = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' ? "Admin Master" : "Prestador Teste";
+    displayName = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' ? "Admin Master" : "Jorge Criare";
     console.log(`[IdentityService] FORÇANDO Identidade Bypass para ${userId}: ${displayName}`);
   } else {
     displayName = 
