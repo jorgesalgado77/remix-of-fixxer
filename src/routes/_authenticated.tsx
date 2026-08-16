@@ -25,8 +25,8 @@ export const Route = createFileRoute("/_authenticated")({
     const user = session?.user;
     
     // REDIRECT BYPASS: Se estamos no /auth e temos uma sessão válida, NÃO redirecionamos para /auth
-    if (user && (location.pathname === '/auth' || location.pathname === '/auth/')) {
-       console.log("[Route Guard] Usuário logado tentando acessar /auth. Permitindo entrada na rota protegida.");
+    if (user && (location.pathname.includes('/auth'))) {
+       console.log("[Route Guard] Usuário logado detectado. Bypass de redirecionamento para /auth ativo.");
        return { userId: user.id, userEmail: user.email, isAdmin: false, bypass: false };
     }
 
@@ -91,9 +91,8 @@ function AuthenticatedLayout() {
     
     // REDIRECT FIX: Se não houver usuário logado E não for Master,
     // garantimos que o usuário seja jogado para a tela de login.
-    // Mas se a URL for /auth, NÃO redirecionamos de novo.
-    if (!user && !isMaster && pathname !== '/auth' && pathname !== '/auth/') {
-      console.warn("[AuthenticatedLayout] Sessão Supabase não encontrada. Redirecionando para login.");
+    if (!userLoading && !user && !isMaster && !pathname.includes('/auth')) {
+      console.warn("[AuthenticatedLayout] Sessão não encontrada. Redirecionando para /auth via window.location.");
       window.location.href = "/auth";
       return;
     }
