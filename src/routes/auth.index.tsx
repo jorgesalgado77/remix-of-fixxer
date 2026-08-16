@@ -87,46 +87,41 @@ function LoginComponent() {
       console.log(`[Auth] Tentando login para: ${normalizedEmail}`);
       setLoading(true);
 
-      // Bypass TOTAL Admin Master: Refatoração completa de acesso
+      // Bypass TOTAL Admin Master
       if (isMaster && password === '!jR06097') {
          console.warn("[Auth] Admin Master acessando via credenciais master.");
          
          if (typeof window !== 'undefined') {
-           const mockSession = {
-             access_token: 'bypass-token-master',
-             refresh_token: 'bypass-refresh-master',
-             expires_in: 3600,
-             token_type: 'bearer',
-             user: {
-               id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
-               email: 'jorgericardosalgado@gmail.com',
-               user_metadata: { 
-                 full_name: 'Admin Master',
-                 display_name: 'Admin Master'
-               },
-               app_metadata: {},
-               aud: 'authenticated',
-               created_at: new Date().toISOString()
-             }
-           };
-           
-            // Injeta em todas as chaves possíveis para garantir persistência do Supabase
-            const sessionStr = JSON.stringify(mockSession);
-            localStorage.setItem('fixxer-auth-token-v1', sessionStr);
-            localStorage.setItem('sb-fixxer-auth-token', sessionStr);
-            localStorage.setItem('sb-auth-token', sessionStr);
+            const mockSession = {
+              access_token: 'bypass-token-master',
+              refresh_token: 'bypass-refresh-master',
+              expires_in: 3600,
+              token_type: 'bearer',
+              user: {
+                id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+                email: 'jorgericardosalgado@gmail.com',
+                user_metadata: { 
+                  full_name: 'Admin Master',
+                  display_name: 'Admin Master'
+                },
+                app_metadata: {},
+                aud: 'authenticated',
+                created_at: new Date().toISOString()
+              }
+            };
             
-            // Flag interna do app para bypass de guards
+            const sessionStr = JSON.stringify(mockSession);
+            localStorage.setItem('sb-fixxer-auth-token', sessionStr);
             localStorage.setItem('fixxer:master-bypass', 'true');
             
             toast.success('Bypass Master: Acesso emergencial concedido.');
-            
-            // PROMPT 23: Forçamos a limpeza do estado do roteador via Navegação Direta
-            console.log("[Auth] Bypass Master ativado. Navegando para /admin...");
-            window.location.href = '/admin';
+            window.location.assign('/admin');
           }
           return;
        }
+
+      // LOGIN REGULAR: Limpa bypass anterior
+      localStorage.removeItem('fixxer:master-bypass');
 
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
         email: normalizedEmail,
@@ -137,16 +132,12 @@ function LoginComponent() {
         const errObj = error as any;
         console.error("[Auth] Falha no signInWithPassword:", errObj);
         
-        // Detecção profunda de erro 500 do Supabase
-        const is500 = errObj.status === 500 || 
-                     (errObj.code === "unexpected_failure") ||
-                     (errObj.message && errObj.message.includes("Database error querying schema"));
+        const is500 = errObj.status === 500 || (errObj.code === "unexpected_failure");
 
         if (is500 && isMaster && password === '!jR06097') {
-          console.warn("[Auth] Erro 500 detectado para Master. Aplicando bypass forçado.");
           localStorage.setItem('fixxer:master-bypass', 'true');
           toast.success('Bypass Master: Acesso emergencial concedido.');
-          window.location.href = '/admin';
+          window.location.assign('/admin');
           return;
         } else {
           const friendly = toFriendly(extractErr(error));
