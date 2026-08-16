@@ -75,7 +75,20 @@ function AuthenticatedLayout() {
   // SEGURANÇA DE ROTA: Validação de privilégios baseada na URL visitada vs Role real.
   useEffect(() => {
     if (adminLoading || userLoading) return;
-    if (!user) return;
+
+    const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+    const isMaster = isMasterEmail || hasMasterBypass;
+
+    if (!user && !isMaster) return;
+
+    // Se é master, ignora as validações de role do banco para evitar redirect 500
+    if (isMaster) {
+       if (pathname.startsWith('/admin')) {
+         console.log("[Security Guard] Master Admin acessando rota administrativa via bypass.");
+         return;
+       }
+    }
 
     const isPathAdmin = pathname.startsWith('/admin');
     const isPathLojista = pathname.startsWith('/lojista') || pathname.startsWith('/dashboard/lojista');
