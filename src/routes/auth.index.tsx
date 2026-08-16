@@ -184,11 +184,11 @@ function LoginComponent() {
 
           const rawRole = ((profile?.role || profile?.user_type || profile?.business_category || '') as string).toLowerCase();
           
-          if (rawRole.includes('prestador')) window.location.href = '/prestador';
-          else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) window.location.href = '/parceiro';
-          else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) window.location.href = '/cliente';
-          else if (rawRole.includes('lojista')) window.location.href = '/lojista';
-          else window.location.href = '/feed';
+            if (rawRole.includes('prestador')) window.location.href = '/feed/prestador';
+            else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) window.location.href = '/feed/parceiro';
+            else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) window.location.href = '/feed/cliente';
+            else if (rawRole.includes('lojista')) window.location.href = '/feed/lojista';
+            else window.location.href = '/feed';
         } catch (e) {
           console.error("[Auth] Erro ao buscar perfil para redirect:", e);
           window.location.href = '/feed';
