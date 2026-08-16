@@ -13,7 +13,12 @@ export const Route = createFileRoute("/_authenticated")({
         if (isAuthRoute && (hasMasterBypass || rawToken)) {
             const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-            console.log("[Auth Guard] Já autenticado, redirecionando para:", target);
+            console.warn("[Auth Guard] Já autenticado em rota de login, forçando saída.");
+            
+            if (typeof window !== 'undefined') {
+                window.location.replace(window.location.origin + target);
+                return { authenticated: true };
+            }
             throw redirect({ to: target as any });
         }
 
