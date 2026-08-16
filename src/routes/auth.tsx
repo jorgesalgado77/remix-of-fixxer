@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth")({
   beforeLoad: async ({ location }) => {
@@ -9,22 +9,14 @@ export const Route = createFileRoute("/auth")({
 
         if ((hasMasterBypass && cat) || rawToken) {
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
-            if (location.pathname !== target) {
-                console.warn("[Auth Layout Guard] Sessão ativa. Redirecionando...");
+            if (location.pathname === '/auth' || location.pathname === '/auth/') {
+                console.warn("[Auth Layout Guard] Redirecionamento forçado para:", target);
                 window.location.replace(window.location.origin + target);
+                return { authenticated: true };
             }
-            return { authenticated: true };
         }
     }
     return {};
   },
-  component: AuthLayout,
+  component: () => <Outlet />,
 });
-
-function AuthLayout() {
-  return (
-    <div className="min-h-screen bg-black flex flex-col">
-      <Outlet />
-    </div>
-  );
-}
