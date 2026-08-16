@@ -14,7 +14,17 @@ export const Route = createFileRoute("/_authenticated")({
                 const { getCurrentCategory } = await import("@/lib/current-user");
                 const cat = await getCurrentCategory(true);
                 const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-                console.warn("[Auth Guard] Logado em /auth. Ejetando brutalmente.");
+                
+                // Limpeza crítica para evitar loop
+                if (typeof sessionStorage !== 'undefined') {
+                  Object.keys(sessionStorage).forEach(key => {
+                    if (key.includes('tsr-') || key.includes('tanstack')) {
+                      sessionStorage.removeItem(key);
+                    }
+                  });
+                }
+                
+                console.warn("[Auth Guard] Logado detectado em /auth. Ejetando brutalmente para", target);
                 window.location.replace(window.location.origin + target);
                 return { authenticated: true };
             }
@@ -23,7 +33,7 @@ export const Route = createFileRoute("/_authenticated")({
     }
     
     if (!location.pathname.startsWith('/auth')) {
-        console.warn("[Authenticated Guard] Acesso negado. Redirecionando para /auth.");
+        console.warn("[Authenticated Guard] Acesso negado em", location.pathname, ". Redirecionando para /auth.");
         throw redirect({ to: "/auth" as any });
     }
 

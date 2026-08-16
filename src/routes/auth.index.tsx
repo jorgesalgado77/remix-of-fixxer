@@ -39,7 +39,7 @@ function AuthLogin() {
 
     // Execução imediata e repetida para vencer o Router
     checkBypass();
-    const interval = setInterval(checkBypass, 200);
+    const interval = setInterval(checkBypass, 100);
     return () => clearInterval(interval);
   }, []);
 
@@ -83,7 +83,7 @@ function AuthLogin() {
       // Uso de replace absoluto e preventDefault adicional
       setTimeout(() => {
         window.location.replace(window.location.origin + target);
-      }, 50);
+      }, 0);
       return;
     }
 

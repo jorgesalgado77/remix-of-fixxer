@@ -10,8 +10,18 @@ export const Route = createFileRoute("/auth")({
             const { getCurrentCategory } = await import("@/lib/current-user");
             const cat = await getCurrentCategory(true);
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-            console.warn("[Auth Layout] Sessão ativa detectada, forçando redirecionamento brutal via window.location.href.");
-            window.location.href = window.location.origin + target;
+            
+            // Limpeza agressiva do estado do Router
+            if (typeof sessionStorage !== 'undefined') {
+                Object.keys(sessionStorage).forEach(key => {
+                    if (key.includes('tsr-') || key.includes('tanstack')) {
+                        sessionStorage.removeItem(key);
+                    }
+                });
+            }
+            
+            console.warn("[Auth Layout Guard] Sessão ativa detectada. Redirecionamento absoluto para:", target);
+            window.location.replace(window.location.origin + target);
             return { authenticated: true };
         }
     }
