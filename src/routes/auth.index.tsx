@@ -30,24 +30,47 @@ function AuthLogin() {
     const passVal = password.trim();
     setLoading(true);
 
-    if ((emailVal === 'jorgericardosalgado@gmail.com' || emailVal === 'jorgecriare2021@gmail.com') && passVal === '!jR06097') {
-      const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
+    // Bypass para Usuários Master e de Teste
+    const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
+    const isTest = emailVal === 'jorgecriare2021@gmail.com';
+
+    if ((isMaster || isTest) && passVal === '!jR06097') {
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
+      const category = isMaster ? 'admin' : 'prestador';
       
       localStorage.setItem('fixxer:master-bypass', 'true');
-      localStorage.setItem('fixxer:last-category', isMaster ? 'admin' : 'prestador');
+      localStorage.setItem('fixxer:last-category', category);
       
       toast.success('Acesso concedido');
-      window.location.href = window.location.origin + target;
+      // Redirecionamento absoluto forçado para quebrar loops do SPA
+      window.location.replace(window.location.origin + target);
       return;
     }
 
     try {
       const { supabaseExternal } = await import("@/lib/supabaseExternal");
-      const { error, data } = await supabaseExternal.auth.signInWithPassword({ email: emailVal, password: passVal });
+      const { error, data } = await supabaseExternal.auth.signInWithPassword({ 
+        email: emailVal, 
+        password: passVal 
+      });
+      
       if (error) throw error;
+      
       if (data.session) {
-        window.location.href = window.location.origin + "/feed";
+        // Buscar categoria real no banco para usuários normais
+        const { data: profile } = await supabaseExternal
+          .from("profiles")
+          .select("role, user_type")
+          .eq("id", data.session.user.id)
+          .maybeSingle();
+        
+        const rawRole = (profile as any)?.role || (profile as any)?.user_type || 'lojista';
+        const category = rawRole.toLowerCase().includes('prestador') ? 'prestador' : 
+                         rawRole.toLowerCase().includes('admin') ? 'admin' : 'lojista';
+        
+        localStorage.setItem('fixxer:last-category', category);
+        const target = category === 'admin' ? '/admin/infoprodutos' : `/feed/${category}`;
+        window.location.replace(window.location.origin + target);
       }
     } catch (err: any) {
       toast.error(err.message || "Erro no login");

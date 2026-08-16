@@ -8,12 +8,21 @@ export const Route = createFileRoute("/_authenticated")({
         const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
         
+        // Se estiver em /auth e tiver bypass/sessão, redireciona para fora
+        if (location.pathname.startsWith('/auth')) {
+            if (hasMasterBypass || rawToken) {
+                const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
+                const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+                throw redirect({ to: target as any });
+            }
+            return { authenticated: false };
+        }
+
         if (hasMasterBypass || rawToken) {
             return { authenticated: true };
         }
     }
     
-    // REDIRECIONAMENTO SILENCIOSO
     if (location.pathname.startsWith('/auth')) return { authenticated: false };
 
     console.warn("[Authenticated Guard] Redirecionando para login.");
