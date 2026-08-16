@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth")({
   beforeLoad: () => {
+    // LAYOUT NEUTRO: Apenas renderiza os filhos.
     return {};
   },
   component: AuthLayout,

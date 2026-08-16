@@ -4,6 +4,8 @@ import { useCurrentUser, isCurrentUserAdminSync } from "@/lib/current-user";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
+    // No beforeLoad, permitimos o carregamento se houver sinais de autenticação no storage.
+    // Isso evita bloqueios síncronos pesados e loops de redirecionamento imediato.
     if (typeof window !== 'undefined') {
         const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
@@ -13,22 +15,24 @@ export const Route = createFileRoute("/_authenticated")({
         }
     }
     
-    // REDIRECIONAMENTO SILENCIOSO: Evita loop infinito no browser se o roteador falhar.
-    if (location.pathname.startsWith('/auth')) return { authenticated: false };
-
-    console.warn("[Authenticated Guard] Acesso negado.");
-    throw redirect({ to: "/auth" as any });
+    // Se não estiver em rota de auth e não tiver nada, manda para /auth
+    if (!location.pathname.startsWith('/auth')) {
+      console.warn("[Authenticated Guard] Acesso negado. Redirecionando para login.");
+      throw redirect({ to: "/auth" as any });
+    }
+    
+    return { authenticated: false };
   },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
   const { user, loading } = useCurrentUser();
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // Fallback de segurança em runtime: se o carregamento terminar e não houver usuário nem bypass,
+    // e NÃO estivermos na página de login, forçamos a ida para lá.
     if (!loading) {
-      setReady(true);
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
       if (!user && !hasBypass && !window.location.pathname.startsWith('/auth')) {
         window.location.href = window.location.origin + "/auth";

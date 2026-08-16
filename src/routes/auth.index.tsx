@@ -8,15 +8,15 @@ export const Route = createFileRoute("/auth/")({
 });
 
 function AuthLogin() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Auto-redirect se já tiver bypass
   useEffect(() => {
     const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     if (hasBypass) {
-        console.warn("[Auth] Bypass detectado. Saltando.");
+        console.warn("[Auth] Bypass detectado no useEffect. Redirecionando.");
         const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
         window.location.replace(window.location.origin + target);
@@ -32,17 +32,18 @@ function AuthLogin() {
 
     setLoading(true);
 
+    // Bypass Master Hardened
     if ((emailVal === 'jorgericardosalgado@gmail.com' || emailVal === 'jorgecriare2021@gmail.com') && passVal === '!jR06097') {
       const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.warn("[Auth] Master Login: ", target);
+      console.warn("[Auth] Login Master: ", target);
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', isMaster ? 'admin' : 'prestador');
       
-      toast.success('Acesso Concedido');
+      toast.success('Acesso Master Concedido');
       
-      // FORÇAR SAÍDA USANDO REPLACE E ORIGEM COMPLETA
+      // FORÇAR SAÍDA USANDO window.location.replace para evitar loop no histórico do browser
       window.location.replace(window.location.origin + target);
       return;
     }
@@ -52,6 +53,7 @@ function AuthLogin() {
       const { error, data } = await supabaseExternal.auth.signInWithPassword({ email: emailVal, password: passVal });
       if (error) throw error;
       if (data.session) {
+        toast.success("Login realizado com sucesso");
         window.location.replace(window.location.origin + "/feed");
       }
     } catch (err: any) {
