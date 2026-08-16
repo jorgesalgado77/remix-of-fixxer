@@ -105,11 +105,8 @@ function LoginComponent() {
           
           toast.success('Bypass Master: Acesso emergencial concedido.');
           
-          // Disparamos o evento para o layout atualizar e redirecionamos
-          setTimeout(() => {
-            window.dispatchEvent(new Event('fixxer:identity-change'));
-            window.location.replace('/admin');
-          }, 500);
+          // FORÇAMOS A NAVEGAÇÃO IMEDIATA SEM DELAY
+          window.location.href = '/admin';
           return;
         } else {
           const friendly = toFriendly(extractErr(error));
