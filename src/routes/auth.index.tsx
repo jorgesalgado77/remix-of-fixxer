@@ -21,8 +21,11 @@ function AuthLogin() {
       
       if (hasBypass && cat) {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-          console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
-          window.location.replace(window.location.origin + target);
+          if (window.location.pathname.startsWith('/auth')) {
+              const fullTarget = window.location.origin + target;
+              console.warn("[Auth Page] Bypass detectado. Ejetando para:", fullTarget);
+              window.location.replace(fullTarget);
+          }
       }
     };
 
