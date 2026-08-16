@@ -50,6 +50,44 @@ export async function resolveIdentity(
   const start = performance.now();
   console.log(`[IdentityService] Resolvendo para ${userId} (refresh: ${!!options?.refresh})`);
 
+  // PROMPT 23: Identidade Fixa para o Admin Master no modo Bypass
+  const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+  const isMasterId = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f';
+
+  if (isMasterBypass && isMasterId) {
+    const masterResult: ResolvedProfile = {
+      identity: {
+        id: userId,
+        displayName: "Admin Master",
+        fullName: "Admin Master",
+        avatarUrl: null,
+        bio: "Administrador Geral do Sistema Fixxer",
+        isOfficial: true,
+        isVerified: true,
+        planId: "premium",
+        createdAt: new Date().toISOString(),
+        karmaScore: 100,
+        lastActiveAt: new Date().toISOString(),
+        verificationStatus: "verified",
+        verificationNote: "Master Access Guard Active"
+      },
+      roles: ["admin"],
+      mainCategory: "admin",
+      presentation: {
+        name: "Admin Master",
+        initials: "AM",
+        avatarUrl: null,
+        category: "admin",
+        themeColor: "#FFD700",
+        label: "Admin Master",
+        badges: ["Verificado", "Master"],
+        activityLabel: "Online"
+      },
+      specializations: { store: null, provider: null, supplier: null }
+    };
+    return masterResult;
+  }
+
   if (!options?.refresh) {
     const stored = getStoredIdentities();
     if (stored[userId]) {
