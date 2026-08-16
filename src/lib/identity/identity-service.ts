@@ -140,6 +140,7 @@ export async function resolveIdentity(
   
   if (isMasterBypass && isMasterId) {
     displayName = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' ? "Admin Master" : "Prestador Teste";
+    console.log(`[IdentityService] FORÇANDO Identidade Bypass para ${userId}: ${displayName}`);
   } else {
     displayName = 
       effectiveProfile.display_name?.trim() || 
