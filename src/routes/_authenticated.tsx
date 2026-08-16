@@ -53,10 +53,12 @@ export const Route = createFileRoute("/_authenticated")({
       if (location.pathname === '/auth' || location.pathname === '/auth/' || location.pathname.startsWith('/auth/')) {
         console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed via window.location");
         if (typeof window !== 'undefined') {
-          // Pequeno delay para garantir que o token no localStorage esteja estável
+          const targetCategory = localStorage.getItem('fixxer:last-category') || 'lojista';
+          const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
+          
           setTimeout(() => {
-            window.location.href = window.location.origin + '/feed';
-          }, 100);
+            window.location.replace(window.location.origin + target);
+          }, 50);
           return { userId: '', userEmail: '', isAdmin: false, bypass: false }; 
         }
         throw redirect({ to: "/feed" as any });
