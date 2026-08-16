@@ -88,22 +88,25 @@ function AuthenticatedLayout() {
   }, []);
 
   useEffect(() => {
+    // Se estiver carregando ou se o usuário estiver nulo, não fazemos nada aqui
+    // para evitar redirecionamentos prematuros. O guard beforeLoad cuida da primeira barreira.
     if (userLoading) return;
     
     const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     const isMaster = isMasterEmail || hasMasterBypass;
     
-    // REDIRECT DE SAÍDA: Se o usuário estiver logado e na tela de login, forçamos a saída imediata
+    // REDIRECT FIX: Forçamos a saída de /auth se houver usuário
     if (user && pathname.startsWith('/auth')) {
-      console.log("[AuthenticatedLayout] Usuário logado em /auth. Redirecionando via window.location para feed.");
+      console.log("[AuthenticatedLayout] Login detectado. Forçando saída para /feed.");
+      // Usamos replace para não sujar o histórico
       window.location.replace("/feed");
       return;
     }
 
-    // REDIRECT DE ENTRADA: Se não houver usuário e não for Master, mandamos para o login
-    if (!user && !isMaster && !pathname.startsWith('/auth')) {
-      console.warn("[AuthenticatedLayout] Sem sessão. Redirecionando para /auth.");
+    // Se NÃO houver usuário, NÃO for Master, NÃO estiver carregando E NÃO estiver no /auth
+    if (!user && !isMaster && !userLoading && !pathname.startsWith('/auth')) {
+      console.warn("[AuthenticatedLayout] Sessão ausente. Redirecionando para login.");
       window.location.replace("/auth");
       return;
     }
