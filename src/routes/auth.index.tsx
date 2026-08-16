@@ -73,7 +73,6 @@ function AuthLogin() {
         target
       });
       
-      // PERSISTÊNCIA SÍNCRONA OBRIGATÓRIA
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
@@ -85,7 +84,6 @@ function AuthLogin() {
         });
       }
 
-      // Busca ID real sem travar a UI
       import("@/lib/supabaseExternal").then(({ supabaseExternal }) => {
         supabaseExternal
           .from("profiles")
@@ -103,13 +101,10 @@ function AuthLogin() {
       }).catch(e => console.warn("[Auth Audit] Falha ao importar supabase:", e));
       
       toast.success('Acesso Master concedido');
-      
-      // EJEÇÃO BRUTAL SÍNCRONA
       window.location.replace(window.location.origin + target);
       return;
     }
 
-    // Login normal via Supabase (async)
     (async () => {
       try {
         const { supabaseExternal } = await import("@/lib/supabaseExternal");
@@ -149,43 +144,6 @@ function AuthLogin() {
         setLoading(false);
       }
     })();
-  };
-
-    try {
-      const { supabaseExternal } = await import("@/lib/supabaseExternal");
-      const { error, data } = await supabaseExternal.auth.signInWithPassword({ email: emailVal, password: passVal });
-      
-      if (error) throw error;
-      
-      if (data.session) {
-        const { data: profile } = await supabaseExternal
-          .from("profiles")
-          .select("role, user_type")
-          .eq("id", data.session.user.id)
-          .maybeSingle();
-        
-        const raw = (profile as any)?.role || (profile as any)?.user_type || "lojista";
-        const cat = raw.toLowerCase().includes("prestador") ? "prestador" : 
-                    raw.toLowerCase().includes("admin") ? "admin" : "lojista";
-        
-        localStorage.setItem('fixxer:last-category', cat);
-        const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        
-        // Limpeza absoluta do router para login normal
-        if (typeof sessionStorage !== 'undefined') {
-          Object.keys(sessionStorage).forEach(key => {
-            if (key.includes('tsr-') || key.includes('tanstack')) {
-              sessionStorage.removeItem(key);
-            }
-          });
-        }
-        
-        window.location.replace(window.location.origin + target);
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Credenciais inválidas");
-      setLoading(false);
-    }
   };
 
   return (
