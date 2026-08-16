@@ -223,14 +223,21 @@ export function clearCurrentUserCache() {
 // Invalida cache automaticamente em qualquer mudança de sessão.
 if (typeof window !== "undefined") {
   supabaseExternal.auth.onAuthStateChange((event) => {
-    // Se o evento for SIGNED_OUT mas tivermos o bypass master, 
-    // NÃO limpamos tudo o que permite o bypass continuar funcionando.
     const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     
-    if (event === "SIGNED_OUT" && !hasMasterBypass) {
+    // Se o evento for INITIAL_SESSION ou SIGNED_IN e for master, forçamos o cache
+    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && hasMasterBypass) {
+      console.log("[Auth] Sessão Master detectada via evento:", event);
+      getCurrentUser(true);
+    }
+
+    if (event === "SIGNED_OUT") {
+      if (hasMasterBypass) {
+        console.warn("[Auth] Bloqueado signOut automático para Admin Master.");
+        return;
+      }
       clearCurrentUserCache();
       try {
-        // Remove chaves legadas de identidade que ainda estejam no dispositivo.
         localStorage.removeItem("fixxer_user_id");
         localStorage.removeItem("fixxer_user_email");
         localStorage.removeItem("fixxer_user_role");
