@@ -793,9 +793,6 @@ export function LojistaDashboard() {
   );
 }
 
-  );
-}
-
 
 
 
