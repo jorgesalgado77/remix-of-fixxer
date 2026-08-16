@@ -98,7 +98,10 @@ export function ProfileSummaryCard({
             plan_id: 'pro',
             avatar_url: lastCat === 'prestador' ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null,
             karma_score: 50,
-            is_verified: true
+            is_verified: true,
+            city: 'São Paulo',
+            state: 'SP'
+          };
           };
         }
 
@@ -227,9 +230,10 @@ export function ProfileSummaryCard({
 
   const name = (typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true')
     ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Jorge Criare') 
-
     : (profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário"));
-  const avatar = profile?.avatar_url || profile?.logo_url || null;
+  const avatar = (typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true' && window.localStorage.getItem('fixxer:last-category') === 'prestador')
+    ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png'
+    : (profile?.avatar_url || profile?.logo_url || null);
   const planId = (profile?.plan_id || "free").toLowerCase();
   const isGold = planId === "pro" || planId === "premium";
   const city = profile?.city?.trim() || "";
