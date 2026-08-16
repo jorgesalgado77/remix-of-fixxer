@@ -69,6 +69,23 @@ function AuthLogin() {
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
+      // Tenta buscar o ID real dinamicamente via profiles no banco externo
+      try {
+        const { supabaseExternal } = await import("@/lib/supabaseExternal");
+        const { data } = await supabaseExternal
+          .from("profiles")
+          .select("id")
+          .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Criare')
+          .maybeSingle();
+        
+        if (data?.id) {
+          console.warn("[Auth] ID Real detectado para bypass:", data.id);
+          localStorage.setItem('fixxer:bypass-uid', data.id);
+        }
+      } catch (e) {
+        console.warn("[Auth] Erro ao tentar resolver ID real no login:", e);
+      }
+      
       // Limpeza brutal do Router síncrona
       if (typeof sessionStorage !== 'undefined') {
         Object.keys(sessionStorage).forEach(key => {
