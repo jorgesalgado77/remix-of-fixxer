@@ -29,14 +29,14 @@ export async function getCurrentUser(force = false): Promise<User | null> {
   
   inflight = (async () => {
     try {
-      // Prioridade total para a sessão real do Supabase Externo
-      const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
+      // Prioridade absoluta para a sessão real do Supabase Externo (Real Data First)
+      const { data: { session } } = await supabaseExternal.auth.getSession();
       
       if (session?.user) {
-        console.log("[current-user] Usuário recuperado via sessão real do Supabase.");
+        console.log("[current-user] Usuário real autenticado via Supabase Externo.");
         cachedUser = session.user;
         
-        // Determinar e cachear categoria a partir do profile real
+        // Sincronização imediata de categoria baseada no banco real
         try {
           const { data: profile } = await supabaseExternal
             .from("profiles")
@@ -48,15 +48,16 @@ export async function getCurrentUser(force = false): Promise<User | null> {
             const raw = ((profile as any)?.role || (profile as any)?.user_type || (profile as any)?.business_category || "") as string;
             cachedCategory = normalizeCategory(raw);
             cachedAdmin = cachedCategory === 'admin' || session.user.email === 'jorgericardosalgado@gmail.com';
+            console.log("[current-user] Categoria real resolvida:", cachedCategory);
           }
         } catch (err) {
-          console.warn("[current-user] Falha ao resolver categoria do perfil real:", err);
+          console.warn("[current-user] Falha ao sincronizar categoria real:", err);
         }
 
         return session.user;
       }
 
-      // Fallback para Master Bypass apenas se explicitamente configurado no ambiente local
+      // Fallback para Master Bypass apenas se não houver sessão ativa
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
       if (isMasterBypass) {
@@ -85,7 +86,6 @@ export async function getCurrentUser(force = false): Promise<User | null> {
             if (res) {
               displayName = res.identity.displayName || displayName;
               avatarUrl = res.identity.avatarUrl || avatarUrl;
-              console.log("[current-user] Bypass usando dados do cache:", displayName);
             }
           } catch (e) {
             console.warn("[current-user] Erro ao ler cache de identidade:", e);
@@ -114,7 +114,7 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         return masterData;
       }
 
-      // Se não houver sessão nem bypass, tentar getUser para garantir integridade
+      // Garantia final via getUser (API Call)
       if (typeof navigator !== 'undefined' && navigator.onLine) {
         const { data: { user } } = await supabaseExternal.auth.getUser();
         if (user) {
