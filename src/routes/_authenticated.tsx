@@ -117,16 +117,19 @@ function AuthenticatedLayout() {
     const isMaster = isMasterEmail || hasMasterBypass;
     
     // REDIRECT FIX: Forçamos a saída de /auth se houver usuário
-    if (user && (pathname === '/auth' || pathname === '/auth/')) {
+    if ((user || isMaster) && (pathname === '/auth' || pathname === '/auth/')) {
       console.log("[AuthenticatedLayout] Login detectado. Navegando para /feed.");
-      navigate({ to: "/feed" as any });
+      // Usamos replace e then catch para garantir a navegação
+      navigate({ to: "/feed" as any, replace: true }).catch(() => {
+        window.location.assign('/feed');
+      });
       return;
     }
 
-    // Se NÃO houver usuário, NÃO for Master, NÃO estiver carregando E NÃO estiver no /auth
-    if (!user && !isMaster && !userLoading && !pathname.startsWith('/auth')) {
+    // Se NÃO houver usuário, NÃO for Master E NÃO estiver no /auth
+    if (!user && !isMaster && !pathname.startsWith('/auth')) {
       console.warn("[AuthenticatedLayout] Sessão ausente. Redirecionando para login.");
-      window.location.replace("/auth");
+      window.location.assign("/auth");
       return;
     }
   }, [user, userLoading, pathname]);
