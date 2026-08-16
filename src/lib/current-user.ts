@@ -36,97 +36,40 @@ function normalizeCategory(raw?: string | null): Category {
 }
 
 export async function getCurrentUser(force = false): Promise<User | null> {
-  // Aumentamos a resiliência do cache para evitar loops de re-fetch
   if (!force && cachedUser) return cachedUser;
   if (inflight && !force) return inflight;
+  
   inflight = (async () => {
     try {
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
       if (isMasterBypass) {
-        console.warn("[getCurrentUser] Bypass Master Ativo via LocalStorage");
         const masterData: User = {
           id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
           email: 'jorgericardosalgado@gmail.com',
           app_metadata: {},
-          user_metadata: { 
-            full_name: 'Admin Master',
-            display_name: 'Admin Master'
-          },
+          user_metadata: { display_name: 'Admin Master' },
           aud: 'authenticated',
           created_at: new Date().toISOString()
         } as any;
         cachedUser = masterData;
-        cachedAdmin = true; // Força cache de admin imediatamente
         return masterData;
       }
 
-      // 1. Tenta obter a sessão do storage local primeiro
-      const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
+      // 1.getSession() é síncrono para o storage, muito mais rápido e resiliente a falhas de rede/banco
+      const { data: { session } } = await supabaseExternal.auth.getSession();
       
-      // Se falhou mas temos o bypass, simulamos a sessão master
-      let sessionUser = session?.user;
-      
-      // Bypass Master Crítico: Refatorado para Admin Master
-      const isMasterEmail = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
-      const isMaster = isMasterEmail || isMasterBypass;
-
-      if (isMaster) {
-        const masterData: User = {
-          id: sessionUser?.id || '6ba65048-803f-44f6-88d2-24d04fee1a0f',
-          email: 'jorgericardosalgado@gmail.com',
-          app_metadata: {},
-          user_metadata: { 
-            full_name: 'Admin Master',
-            display_name: 'Admin Master'
-          },
-          aud: 'authenticated',
-          created_at: sessionUser?.created_at || new Date().toISOString()
-        } as any;
-        cachedUser = masterData;
-        return masterData;
+      if (session?.user) {
+        cachedUser = session.user;
+        return session.user;
       }
 
-
-      // 2. Tenta validar no servidor
-      try {
-        const { data: { user }, error: userError } = await supabaseExternal.auth.getUser();
-        
-        if (!userError && user) {
-          cachedUser = user;
-          return user;
-        }
-        
-        if (isMaster) {
-          console.warn("[current-user] Master detectado via e-mail ou bypass local.");
-          const mockMaster: User = sessionUser || {
-            id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
-            email: 'jorgericardosalgado@gmail.com',
-            app_metadata: {},
-            user_metadata: { full_name: 'Admin Master' },
-            aud: 'authenticated',
-            created_at: new Date().toISOString()
-          } as any;
-          cachedUser = mockMaster;
-          return mockMaster;
-        }
-      } catch (err) {
-        if (isMaster) {
-          cachedUser = sessionUser || null;
-          return cachedUser;
-        }
-      }
-
-      if (sessionError || !session) {
-        cachedUser = null;
-        return null;
-      }
-      
-      cachedUser = null;
-      return null;
+      // 2. Se falhar o storage, tentamos getUser() apenas uma vez
+      const { data: { user } } = await supabaseExternal.auth.getUser();
+      cachedUser = user;
+      return user;
     } catch (e) {
-      console.warn("[current-user] Erro crítico ao recuperar identidade:", e);
-      cachedUser = null;
+      console.warn("[current-user] Falha ao recuperar usuário:", e);
       return null;
     } finally {
       inflight = null;
