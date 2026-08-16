@@ -24,8 +24,7 @@ function AuthLogin() {
           console.warn("[Auth Page] Bypass detectado. Categoria:", cat, "Target:", target);
           
           if (window.location.pathname !== target) {
-              console.warn("[Auth Page] Bypass detectado. Forçando redirecionamento brutal para:", target);
-              // Limpeza extra para garantir que o Router não intercepte
+              console.warn("[Auth Page] Forçando redirecionamento brutal...");
               if (typeof sessionStorage !== 'undefined') {
                 Object.keys(sessionStorage).forEach(key => {
                   if (key.includes('tsr-') || key.includes('tanstack')) {
