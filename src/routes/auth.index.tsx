@@ -13,13 +13,13 @@ function AuthLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Auto-redirect se já tiver bypass
   useEffect(() => {
     const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     if (hasBypass) {
+        console.warn("[Auth] Bypass detectado. Saltando.");
         const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        window.location.href = window.location.origin + target;
+        window.location.replace(window.location.origin + target);
     }
   }, []);
 
@@ -36,13 +36,14 @@ function AuthLogin() {
       const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
+      console.warn("[Auth] Master Login: ", target);
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', isMaster ? 'admin' : 'prestador');
       
-      toast.success('Acesso Master Concedido');
+      toast.success('Acesso Concedido');
       
-      // RESET TOTAL
-      window.location.href = window.location.origin + target;
+      // FORÇAR SAÍDA USANDO REPLACE E ORIGEM COMPLETA
+      window.location.replace(window.location.origin + target);
       return;
     }
 
@@ -51,7 +52,7 @@ function AuthLogin() {
       const { error, data } = await supabaseExternal.auth.signInWithPassword({ email: emailVal, password: passVal });
       if (error) throw error;
       if (data.session) {
-        window.location.href = window.location.origin + "/feed";
+        window.location.replace(window.location.origin + "/feed");
       }
     } catch (err: any) {
       toast.error(err.message || "Erro no login");
