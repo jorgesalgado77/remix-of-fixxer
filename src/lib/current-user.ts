@@ -38,10 +38,15 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           : 'lojista@fixxer.app';
         
         const isMaster = email === 'jorgericardosalgado@gmail.com';
+        
+        // RECUPERAÇÃO DINÂMICA DE UUID DO LOCALSTORAGE PARA EVITAR FK ERRADO
+        const storedUid = localStorage.getItem('fixxer:bypass-uid');
+        const defaultUid = isMaster 
+          ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' 
+          : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9';
+        
         const masterData: User = {
-          id: isMaster 
-              ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' 
-              : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9',
+          id: storedUid || defaultUid,
           email: email,
           app_metadata: { provider: 'email', providers: ['email'] },
           user_metadata: { 
