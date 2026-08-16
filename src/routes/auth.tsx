@@ -19,8 +19,10 @@ export const Route = createFileRoute("/auth")({
       
       if ((hasSession || hasBypass) && isAuthPath) {
         console.warn("[Auth Layout Guard] Sessão ativa detectada. Forçando saída via window.location.");
-        // Usamos replace para não sujar o histórico com o loop
-        window.location.replace(window.location.origin + '/feed');
+        // Usamos replace e um pequeno delay para garantir que o browser processe a URL
+        setTimeout(() => {
+          window.location.replace(window.location.origin + '/feed');
+        }, 50);
         throw redirect({ to: '/feed' as any });
       }
     }

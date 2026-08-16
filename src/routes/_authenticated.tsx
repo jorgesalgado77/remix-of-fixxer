@@ -17,8 +17,11 @@ export const Route = createFileRoute("/_authenticated")({
     
     // 1. Bypass Master Admin
     const emailMaster = 'jorgericardosalgado@gmail.com';
+    const isMasterEmail = 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     
+    console.log("[Route Guard] Bypass Info:", { hasMasterBypass, location: location.pathname });
+
     // 2. Verificação de Usuário via storage
     let session = null;
     if (typeof window !== 'undefined') {
@@ -26,12 +29,12 @@ export const Route = createFileRoute("/_authenticated")({
         const raw = localStorage.getItem('fixxer-auth-token-v1');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed && parsed.user) {
-            session = parsed;
+          if (parsed && (parsed.user || parsed.session?.user)) {
+            session = parsed.session || parsed;
           }
         }
         
-        if (!session) {
+        if (!session && !hasMasterBypass) {
           const { data } = await supabaseExternal.auth.getSession();
           session = data.session;
         }
