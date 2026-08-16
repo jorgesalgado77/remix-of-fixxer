@@ -54,22 +54,19 @@ export async function resolveIdentity(
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
   const isMasterId = userId === '6ba65048-803f-44f6-88d2-24d04fee1a0f' || userId === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9';
 
-  if (!options?.refresh) {
+  if (isMasterBypass && isMasterId) {
+    console.log(`[IdentityService] Bypass ATIVO para ${userId}. Ignorando cache para garantir exibição master.`);
+  } else if (!options?.refresh) {
     const stored = getStoredIdentities();
     if (stored[userId]) {
-      // Se for bypass, verificar se o nome no cache está correto (não "USUÁRIO")
-      if (!isMasterBypass || (stored[userId].identity.displayName !== "Usuário" && stored[userId].identity.displayName !== "USUÁRIO")) {
-        console.log(`[IdentityService] Cache LocalStorage HIT para ${userId}`);
-        return stored[userId];
-      }
+      console.log(`[IdentityService] Cache LocalStorage HIT para ${userId}`);
+      return stored[userId];
     }
 
     const cached = IDENTITY_CACHE.get(userId);
     if (cached && Date.now() - cached.at < TTL_MS) {
-      if (!isMasterBypass || (cached.value.identity.displayName !== "Usuário" && cached.value.identity.displayName !== "USUÁRIO")) {
-        console.log(`[IdentityService] Cache Memory HIT para ${userId} (${(performance.now() - start).toFixed(2)}ms)`);
-        return cached.value;
-      }
+      console.log(`[IdentityService] Cache Memory HIT para ${userId} (${(performance.now() - start).toFixed(2)}ms)`);
+      return cached.value;
     }
   }
 
