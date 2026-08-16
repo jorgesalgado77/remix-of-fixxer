@@ -44,12 +44,7 @@ function AuthLogin() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogin = (e?: React.FormEvent | React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
+  const handleLogin = () => {
     if (loading) return;
     
     const emailVal = email.trim().toLowerCase();
@@ -108,9 +103,9 @@ function AuthLogin() {
       
       setTimeout(() => {
         const fullTarget = window.location.origin + target;
-        console.warn("[Auth Audit] Executando redirecionamento via replace para:", fullTarget);
+        console.warn("[Auth Audit] Redirecionamento Brutal via REPLACE para:", fullTarget);
         window.location.replace(fullTarget);
-      }, 100);
+      }, 50);
       return;
     }
 
@@ -148,7 +143,7 @@ function AuthLogin() {
           
           setTimeout(() => {
             window.location.replace(window.location.origin + target);
-          }, 100);
+          }, 50);
         }
       } catch (err: any) {
         toast.error(err.message || "Credenciais inválidas");
