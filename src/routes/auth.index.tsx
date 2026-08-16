@@ -113,7 +113,6 @@ function LoginComponent() {
            const sessionStr = JSON.stringify(mockSession);
            localStorage.setItem('fixxer-auth-token-v1', sessionStr);
            localStorage.setItem('sb-fixxer-auth-token', sessionStr);
-           localStorage.setItem('sb-a2e86b01-ac4b-4241-8403-babc7f152d85-auth-token', sessionStr);
            localStorage.setItem('sb-auth-token', sessionStr);
            
            // Flag interna do app para bypass de guards
@@ -121,9 +120,11 @@ function LoginComponent() {
            
            toast.success('Bypass Master: Acesso emergencial concedido.');
            
-           // NAVEGAÇÃO BRUTA PARA EVITAR TANSTACK ROUTER STATE STALL
-           console.log("[Auth] Redirecionando master para /admin...");
-           window.location.replace('/admin');
+           // PROMPT 23: Forçamos a limpeza do estado do roteador via Navegação Direta
+           console.log("[Auth] Bypass Master ativado. Navegando para /admin...");
+           setTimeout(() => {
+             window.location.href = '/admin';
+           }, 100);
          }
          return;
       }
