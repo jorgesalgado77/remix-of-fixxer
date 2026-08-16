@@ -13,13 +13,19 @@ function AuthLogin() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-    if (hasBypass) {
-        const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
-        const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        console.warn("[Auth Page] Bypass detectado. Forçando saída via window.location.href");
-        window.location.href = window.location.origin + target;
-    }
+    const checkBypass = () => {
+      const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+      if (hasBypass) {
+          const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
+          const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+          console.warn("[Auth Page] Bypass detectado. Forçando saída via window.location.replace");
+          window.location.replace(window.location.origin + target);
+      }
+    };
+    checkBypass();
+    // Re-check a cada 500ms caso o bypass seja setado async por outro componente
+    const interval = setInterval(checkBypass, 500);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -28,6 +34,12 @@ function AuthLogin() {
     
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
+    
+    if (!emailVal || !passVal) {
+      toast.error("Por favor, preencha todos os campos.");
+      return;
+    }
+
     setLoading(true);
 
     const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
@@ -43,7 +55,6 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
-      // Reset total para garantir que o roteador não intercepte a mudança de estado
       setTimeout(() => {
         console.log("[Auth] Redirecionando para:", target);
         window.location.replace(window.location.origin + target);
@@ -72,8 +83,8 @@ function AuthLogin() {
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
         
         setTimeout(() => {
-          window.location.href = window.location.origin + target;
-        }, 50);
+          window.location.replace(window.location.origin + target);
+        }, 100);
       }
     } catch (err: any) {
       toast.error(err.message || "Credenciais inválidas");
@@ -96,6 +107,7 @@ function AuthLogin() {
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50 placeholder:text-white/20 transition-all"
             required
+            autoComplete="email"
           />
           <input
             type="password"
@@ -104,6 +116,7 @@ function AuthLogin() {
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50 placeholder:text-white/20 transition-all"
             required
+            autoComplete="current-password"
           />
           <button
             type="submit"
