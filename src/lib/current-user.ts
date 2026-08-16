@@ -31,11 +31,17 @@ export async function getCurrentUser(force = false): Promise<User | null> {
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
       if (isMasterBypass) {
+        const email = localStorage.getItem('fixxer:last-category') === 'admin' 
+          ? 'jorgericardosalgado@gmail.com' 
+          : 'jorgecriare2021@gmail.com';
+        
         const masterData: User = {
-          id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
-          email: 'jorgericardosalgado@gmail.com',
+          id: email === 'jorgericardosalgado@gmail.com' 
+              ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' 
+              : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9',
+          email: email,
           app_metadata: {},
-          user_metadata: { display_name: 'Admin Master' },
+          user_metadata: { display_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Prestador Teste' },
           aud: 'authenticated',
           created_at: new Date().toISOString()
         } as any;
@@ -180,10 +186,14 @@ if (typeof window !== "undefined") {
       }
       
       // Auto-redirecionamento se estiver em /auth logado
-      if (session && (window.location.pathname === '/auth' || window.location.pathname === '/auth/')) {
+      const isAuthPath = window.location.pathname === '/auth' || window.location.pathname === '/auth/';
+      const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+      
+      if ((session || hasBypass) && isAuthPath) {
         const cat = await getCurrentCategory(true);
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        window.location.replace(window.location.origin + target);
+        console.warn("[Identity] Sessão/Bypass detectado em /auth, forçando saída.");
+        window.location.href = window.location.origin + target;
       }
     }
     

@@ -9,10 +9,16 @@ export const Route = createFileRoute("/_authenticated")({
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
         
         // Se estiver logado e tentar acessar /auth, sai de lá imediatamente
-        if (location.pathname.startsWith('/auth') && (hasMasterBypass || rawToken)) {
+        const isAuthRoute = location.pathname.startsWith('/auth');
+        if (isAuthRoute && (hasMasterBypass || rawToken)) {
             const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-            console.log("[Auth Guard] Já autenticado, redirecionando para:", target);
+            console.warn("[Auth Guard] Já autenticado em rota de login, forçando saída.");
+            
+            if (typeof window !== 'undefined') {
+                window.location.replace(window.location.origin + target);
+                return { authenticated: true };
+            }
             throw redirect({ to: target as any });
         }
 

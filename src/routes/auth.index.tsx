@@ -13,12 +13,14 @@ function AuthLogin() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Se estiver em /auth e tiver bypass, sai IMEDIATAMENTE antes de renderizar qualquer coisa
     const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     if (hasBypass) {
         const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        console.warn("[Auth Page] Bypass detectado. Forçando saída via window.location.href");
+        console.warn("[Auth Page] Bypass detectado no mount. Forçando saída.");
         window.location.href = window.location.origin + target;
+        return;
     }
   }, []);
 
@@ -28,6 +30,14 @@ function AuthLogin() {
     
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
+    
+    console.log("[Auth] Iniciando tentativa de login para:", emailVal);
+    
+    if (!emailVal || !passVal) {
+      toast.error("Por favor, preencha todos os campos.");
+      return;
+    }
+
     setLoading(true);
 
     const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
@@ -37,15 +47,14 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.log("[Auth] Master/Test Bypass Detectado");
+      console.warn("[Auth] MASTER BYPASS ATIVADO");
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
       toast.success('Acesso Master concedido');
       
-      setTimeout(() => {
-        window.location.href = window.location.origin + target;
-      }, 50);
+      // Redirecionamento instantâneo via window.location.replace para evitar loop de Router
+      window.location.replace(window.location.origin + target);
       return;
     }
 
@@ -70,8 +79,8 @@ function AuthLogin() {
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
         
         setTimeout(() => {
-          window.location.href = window.location.origin + target;
-        }, 50);
+          window.location.replace(window.location.origin + target);
+        }, 100);
       }
     } catch (err: any) {
       toast.error(err.message || "Credenciais inválidas");
@@ -94,6 +103,7 @@ function AuthLogin() {
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50 placeholder:text-white/20 transition-all"
             required
+            autoComplete="email"
           />
           <input
             type="password"
@@ -102,6 +112,7 @@ function AuthLogin() {
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50 placeholder:text-white/20 transition-all"
             required
+            autoComplete="current-password"
           />
           <button
             type="submit"
