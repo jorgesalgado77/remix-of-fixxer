@@ -193,6 +193,8 @@ function CreatorStudioPage() {
             
             {activeTab === 'sales' && <SalesDashboard />}
             {activeTab === 'coupons' && <CouponDashboard />}
+            {activeTab === 'offers' && <OfferDashboard />}
+
 
 
           </>
