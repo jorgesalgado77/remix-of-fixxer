@@ -161,33 +161,38 @@ function LoginComponent() {
       if (data?.session) {
         toast.success('Login realizado com sucesso!');
         
-        // Pequeno delay para garantir persistência da sessão no storage do Supabase
-        setTimeout(async () => {
-          const userEmail = data.session.user.email?.toLowerCase();
-          if (userEmail === 'jorgericardosalgado@gmail.com') {
-            window.location.href = '/admin';
-            return;
-          }
+        // Limpamos flags de bypass anteriores para garantir que a role venha do banco
+        localStorage.removeItem('fixxer:master-bypass');
 
-          try {
-            // Busca perfil para direcionamento
-            const { data: profile } = await supabaseExternal
-              .from('profiles')
-              .select('role, user_type, business_category')
-              .eq('id', data.session.user.id)
-              .maybeSingle();
+        // Navegação via window.location.href é mais robusta para resetar o estado do roteador e auth
+        const userEmail = data.session.user.email?.toLowerCase();
+        
+        // Se for o master, vai direto pro admin (segurança extra)
+        if (userEmail === 'jorgericardosalgado@gmail.com') {
+          console.log("[Auth] Master detectado via login comum. Redirecionando...");
+          window.location.href = '/admin';
+          return;
+        }
 
-            const rawRole = ((profile?.role || profile?.user_type || profile?.business_category || '') as string).toLowerCase();
-            
-            if (rawRole.includes('prestador')) window.location.href = '/prestador';
-            else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) window.location.href = '/parceiro';
-            else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) window.location.href = '/cliente';
-            else if (rawRole.includes('lojista')) window.location.href = '/lojista';
-            else window.location.href = '/feed';
-          } catch (e) {
-            window.location.href = '/feed';
-          }
-        }, 500);
+        // Tenta buscar o perfil para o redirecionamento correto
+        try {
+          const { data: profile } = await supabaseExternal
+            .from('profiles')
+            .select('role, user_type, business_category')
+            .eq('id', data.session.user.id)
+            .maybeSingle();
+
+          const rawRole = ((profile?.role || profile?.user_type || profile?.business_category || '') as string).toLowerCase();
+          
+          if (rawRole.includes('prestador')) window.location.href = '/prestador';
+          else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) window.location.href = '/parceiro';
+          else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) window.location.href = '/cliente';
+          else if (rawRole.includes('lojista')) window.location.href = '/lojista';
+          else window.location.href = '/feed';
+        } catch (e) {
+          console.error("[Auth] Erro ao buscar perfil para redirect:", e);
+          window.location.href = '/feed';
+        }
       }
 
     } catch (err: any) {
