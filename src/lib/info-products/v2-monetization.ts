@@ -905,7 +905,7 @@ export async function saveGlobalMonetizationConfig(config: any) {
     admin_id: adminId,
     action: 'UPDATE_CONFIG',
     entity_type: 'GLOBAL_CONFIG',
-    details: JSON.stringify(config)
+    details: config // O Supabase JS lida com objetos se a coluna for JSONB
   });
 
   return true;
