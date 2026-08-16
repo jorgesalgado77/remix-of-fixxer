@@ -72,12 +72,12 @@ export async function resolveIdentity(
         verificationNote: "Master Access Guard Active"
       },
       roles: ["admin"],
-      mainCategory: "admin",
+      mainCategory: "lojista" as any,
       presentation: {
         name: "Admin Master",
         initials: "AM",
         avatarUrl: null,
-        category: "admin",
+        category: "lojista" as any,
         themeColor: "#FFD700",
         label: "Admin Master",
         badges: ["Verificado", "Master"],
