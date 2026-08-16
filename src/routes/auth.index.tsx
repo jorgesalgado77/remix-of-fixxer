@@ -55,11 +55,17 @@ function AuthLogin() {
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
+      // Persistência imediata forçada para o Safari/Firefox
+      try {
+        window.dispatchEvent(new Event('storage'));
+      } catch (e) {}
+
       toast.success('Acesso Master concedido');
       
-      // Redirecionamento forçado e imediato
-      console.warn("[Auth] MASTER BYPASS ATIVADO - Redirecionando...");
-      window.location.href = window.location.origin + target;
+      // Redirecionamento forçado via window.location.href para limpar estado do Router
+      const finalUrl = window.location.origin + target;
+      console.warn("[Auth] Redirecionando para:", finalUrl);
+      window.location.href = finalUrl;
       return;
     }
 
