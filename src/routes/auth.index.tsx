@@ -270,75 +270,70 @@ function LoginComponent() {
                 {errorMsg}
               </div>
             )}
-            <div>
-              <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
-              <input
-                id="email-input"
-                name="email"
-                type="email"
-                defaultValue={email}
-                onBlur={(e) => setEmail(e.target.value)}
-                placeholder="exemplo@email.com"
-                className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-bold text-muted-foreground">Senha</label>
-                <button 
-                  type="button"
-                  onClick={() => setView("forgot-password")}
-                  className="text-xs font-bold text-primary hover:underline"
-                >
-                  Esqueceu a senha?
-                </button>
-              </div>
-              <div className="relative">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleLogin();
+              }}
+              className="space-y-5"
+            >
+              <div>
+                <label className="block text-sm font-bold text-muted-foreground mb-2">E-mail</label>
                 <input
-                  type={showPassword ? "text" : "password"}
-                  id="password-input"
-                  name="password"
-                  defaultValue={password}
-                  onBlur={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white pr-12"
+                  id="email-input"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="exemplo@email.com"
+                  className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white"
+                  required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-bold text-muted-foreground">Senha</label>
+                  <button 
+                    type="button"
+                    onClick={() => setView("forgot-password")}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password-input"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 rounded-xl bg-background border border-white/10 text-white pr-12"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  type="submit"
+                  id="login-button-regular"
+                  disabled={loading}
+                  className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+                  Entrar
                 </button>
               </div>
-            </div>
-
-            <div className="pt-4 flex flex-col gap-4">
-              <button 
-                type="button"
-                id="login-button-regular"
-                disabled={loading}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  console.log("[Auth] Botão login clicado");
-                  
-                  // Tentar disparar um evento de mudança para garantir que o React veja os valores
-                  const emailInput = document.getElementById('email-input') as HTMLInputElement;
-                  const passInput = document.getElementById('password-input') as HTMLInputElement;
-                  
-                  if (emailInput && passInput) {
-                    console.log("[Auth] Valores via DOM no click:", emailInput.value ? "tem email" : "email vazio");
-                    handleLogin();
-                  } else {
-                    console.error("[Auth] Inputs não encontrados via DOM no click");
-                  }
-                }}
-                className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-                Entrar
-              </button>
-            </div>
+            </form>
 
           </div>
 
