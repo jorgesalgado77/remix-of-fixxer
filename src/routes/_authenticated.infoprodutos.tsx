@@ -984,4 +984,288 @@ function CouponForm({ initialData, onSuccess }: { initialData?: any; onSuccess: 
   );
 }
 
+function OfferDashboard() {
+  const userId = useCurrentUserId();
+  const [products, setProducts] = useState<any[]>([]);
+  const [offers, setOffers] = useState<InfoOffer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<InfoOffer | undefined>();
+
+  const loadData = async () => {
+    if (!userId) return;
+    setLoading(true);
+    try {
+      const { data: prods } = await supabaseExternal
+        .from('info_products')
+        .select('id, title')
+        .eq('creator_id', userId);
+      setProducts(prods || []);
+
+      const { data: off } = await supabaseExternal
+        .from('info_offers')
+        .select('*, info_products(title)')
+        .eq('creator_id', userId)
+        .order('created_at', { ascending: false });
+      setOffers(off || []);
+    } catch (error) {
+      toast.error("Erro ao carregar ofertas");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [userId]);
+
+  const handleStatusChange = async (offerId: string, newStatus: InfoOffer['status']) => {
+    try {
+      await updateOfferStatus(offerId, newStatus);
+      toast.success("Status atualizado");
+      loadData();
+    } catch (error) {
+      toast.error("Erro ao atualizar status");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Ofertas Comerciais</h2>
+          <p className="text-muted-foreground text-sm">Gerencie preços especiais, escassez e períodos de validade.</p>
+        </div>
+        
+        <Button 
+          onClick={() => { setSelectedOffer(undefined); setIsFormOpen(true); }}
+          className="bg-emerald-500 text-white font-black px-6 py-6 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-105 transition-all uppercase tracking-widest text-xs gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Nova Oferta
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
+          {[1,2,3].map(i => <div key={i} className="h-48 bg-white/5 rounded-[32px]" />)}
+        </div>
+      ) : offers.length === 0 ? (
+        <div className="py-20 text-center space-y-4 bg-white/[0.02] border border-dashed border-white/10 rounded-[32px]">
+          <DollarSign className="w-12 h-12 text-muted-foreground/30 mx-auto" />
+          <p className="text-muted-foreground font-bold uppercase tracking-widest text-sm">Nenhuma oferta comercial ativa.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {offers.map(offer => (
+            <div key={offer.id} className="bg-white/[0.03] border border-white/10 p-6 rounded-[32px] space-y-4 relative group hover:bg-white/[0.05] transition-all">
+              <div className="flex items-start justify-between">
+                <div>
+                  <Badge className={`${
+                    offer.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400' :
+                    offer.status === 'PAUSED' ? 'bg-amber-500/20 text-amber-400' :
+                    'bg-white/10 text-muted-foreground'
+                  } border-none text-[8px] font-black uppercase tracking-widest px-2`}>
+                    {offer.status}
+                  </Badge>
+                  <h3 className="text-lg font-black text-white italic mt-2 truncate max-w-[180px]">{offer.name}</h3>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase truncate">{ (offer as any).info_products?.title }</p>
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white rounded-xl">
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-[#0f172a] border-white/10 text-white rounded-xl">
+                    <DropdownMenuItem onClick={() => { setSelectedOffer(offer); setIsFormOpen(true); }} className="flex gap-2 text-xs font-bold uppercase tracking-widest focus:bg-white/5 focus:text-white cursor-pointer p-3">
+                      <Edit className="w-4 h-4" /> Editar
+                    </DropdownMenuItem>
+                    {offer.status === 'ACTIVE' ? (
+                      <DropdownMenuItem onClick={() => handleStatusChange(offer.id, 'PAUSED')} className="flex gap-2 text-xs font-bold uppercase tracking-widest focus:bg-amber-500/20 focus:text-amber-400 cursor-pointer p-3 text-amber-400">
+                        <Pause className="w-4 h-4" /> Pausar
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={() => handleStatusChange(offer.id, 'ACTIVE')} className="flex gap-2 text-xs font-bold uppercase tracking-widest focus:bg-emerald-500/20 focus:text-emerald-400 cursor-pointer p-3 text-emerald-400">
+                        <Play className="w-4 h-4" /> Ativar
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => handleStatusChange(offer.id, 'ARCHIVED')} className="flex gap-2 text-xs font-bold uppercase tracking-widest focus:bg-red-500/20 focus:text-red-400 cursor-pointer p-3 text-red-400">
+                      <Archive className="w-4 h-4" /> Arquivar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 py-4 border-y border-white/5">
+                <div>
+                  <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">Preço Oferta</p>
+                  <p className="text-xl font-black text-emerald-400 italic">R$ {offer.price.toFixed(2)}</p>
+                </div>
+                {offer.compare_at_price && (
+                  <div>
+                    <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">De (Comparativo)</p>
+                    <p className="text-sm font-black text-white/40 italic line-through">R$ {offer.compare_at_price.toFixed(2)}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Package className="w-3 h-3" />
+                  {offer.sales_count} {offer.max_sales ? `/ ${offer.max_sales} vendas` : 'vendas'}
+                </div>
+                {offer.expires_at && (
+                  <div className="flex items-center gap-1 text-amber-400">
+                    <Clock className="w-3 h-3" />
+                    Expira em {new Date(offer.expires_at).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="bg-[#0f172a] border-white/10 text-white max-w-2xl rounded-[32px] overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">
+              {selectedOffer ? 'Editar Oferta' : 'Nova Oferta Comercial'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <OfferForm 
+            products={products}
+            initialData={selectedOffer} 
+            onSuccess={() => { setIsFormOpen(false); loadData(); }}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function OfferForm({ products, initialData, onSuccess }: { products: any[]; initialData?: InfoOffer; onSuccess: () => void }) {
+  const userId = useCurrentUserId();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    product_id: initialData?.product_id || '',
+    name: initialData?.name || '',
+    description: initialData?.description || '',
+    price: initialData?.price || 0,
+    compare_at_price: initialData?.compare_at_price || null,
+    max_sales: initialData?.max_sales || null,
+    starts_at: initialData?.starts_at || new Date().toISOString(),
+    expires_at: initialData?.expires_at || null,
+    status: (initialData?.status as any) || 'DRAFT',
+    is_featured: initialData?.is_featured || false
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userId || !formData.product_id) return;
+    setLoading(true);
+    try {
+      if (initialData?.id) {
+        const { error } = await supabaseExternal
+          .from('info_offers')
+          .update({ ...formData, updated_at: new Date().toISOString() })
+          .eq('id', initialData.id);
+        if (error) throw error;
+      } else {
+        await createInfoOffer({ ...formData, creator_id: userId } as any);
+      }
+      toast.success("Oferta salva com sucesso!");
+      onSuccess();
+    } catch (error) {
+      toast.error("Erro ao salvar oferta");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+      <div className="space-y-2">
+        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Produto da Oferta</label>
+        <select 
+          value={formData.product_id}
+          onChange={e => setFormData(prev => ({ ...prev, product_id: e.target.value }))}
+          className="w-full bg-white/5 border border-white/10 rounded-2xl h-12 px-4 font-bold text-white outline-none focus:ring-1 ring-emerald-500/50"
+          required
+        >
+          <option value="">Selecione um produto...</option>
+          {products.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Nome da Oferta</label>
+          <Input 
+            value={formData.name}
+            onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="EX: Lançamento Black Friday"
+            required
+            className="bg-white/5 border-white/10 rounded-2xl h-12 font-bold"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Preço (R$)</label>
+          <Input 
+            type="number"
+            value={formData.price}
+            onChange={e => setFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
+            required
+            className="bg-white/5 border-white/10 rounded-2xl h-12 font-black italic text-emerald-400 text-xl"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Preço Comparativo (R$)</label>
+          <Input 
+            type="number"
+            value={formData.compare_at_price || ''}
+            onChange={e => setFormData(prev => ({ ...prev, compare_at_price: e.target.value ? Number(e.target.value) : null }))}
+            placeholder="Preço Riscado"
+            className="bg-white/5 border-white/10 rounded-2xl h-12"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Limite Vendas</label>
+          <Input 
+            type="number"
+            value={formData.max_sales || ''}
+            onChange={e => setFormData(prev => ({ ...prev, max_sales: e.target.value ? Number(e.target.value) : null }))}
+            placeholder="Ilimitado"
+            className="bg-white/5 border-white/10 rounded-2xl h-12"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Expira em</label>
+          <Input 
+            type="date"
+            value={formData.expires_at ? new Date(formData.expires_at).toISOString().split('T')[0] : ''}
+            onChange={e => setFormData(prev => ({ ...prev, expires_at: e.target.value ? new Date(e.target.value).toISOString() : null }))}
+            className="bg-white/5 border-white/10 rounded-2xl h-12"
+          />
+        </div>
+      </div>
+
+      <Button 
+        type="submit" 
+        disabled={loading}
+        className="w-full bg-emerald-500 text-white font-black py-7 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.2)] uppercase tracking-widest text-xs"
+      >
+        {loading ? "Salvando..." : "Confirmar Oferta Real"}
+      </Button>
+    </form>
+  );
+}
+
+
 
