@@ -189,6 +189,7 @@ if (typeof window !== "undefined") {
     const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     
     if (event === "SIGNED_OUT") {
+      // PROMPT 15.6 FIX: Se o storage for limpo externamente, mantemos o cache se houver bypass Master
       if (hasMasterBypass) {
         console.warn("[Identity] SIGNED_OUT ignorado devido ao bypass Master.");
         return;

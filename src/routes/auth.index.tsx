@@ -113,7 +113,7 @@ function LoginComponent() {
             };
             
             const sessionStr = JSON.stringify(mockSession);
-            localStorage.setItem('sb-fixxer-auth-token', sessionStr);
+            localStorage.setItem('fixxer-auth-token-v1', sessionStr);
             localStorage.setItem('fixxer:master-bypass', 'true');
             
             toast.success('Bypass Master: Acesso emergencial concedido.');
