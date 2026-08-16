@@ -271,8 +271,10 @@ export function ProfileSummaryCard({
 
             <div className="flex-1 min-w-0">
               <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate max-w-[200px]" data-testid="user-display-name">
-                {(typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true')
-                  ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Prestador Teste')
+                {name === "USUÁRIO" || name === "Usuário" 
+                  ? (typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true' 
+                    ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Prestador Teste') 
+                    : name)
                   : name}
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
