@@ -164,52 +164,32 @@ function AuthLogin() {
         </div>
         
         <div className="space-y-4">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setEmail(e.target.value);
-            }}
-            placeholder="e-mail"
-            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            autoComplete="off"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                handleLogin();
-              }
-            }}
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setPassword(e.target.value);
-            }}
-            placeholder="senha"
-            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            autoComplete="off"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                handleLogin();
-              }
-            }}
-          />
+          <div>
+            <input
+              type="text"
+              name="email-input-field"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="e-mail"
+              className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
+              autoComplete="off"
+            />
+          </div>
+          <div>
+            <input
+              type="password"
+              name="password-input-field"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="senha"
+              className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
+              autoComplete="off"
+            />
+          </div>
           <button
             type="button"
             id="login-submit-btn"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleLogin();
-            }}
+            onClick={handleLogin}
             disabled={loading}
             className="w-full h-14 bg-primary text-black font-black rounded-2xl flex items-center justify-center gap-2 uppercase italic hover:scale-[1.02] transition-all"
           >
