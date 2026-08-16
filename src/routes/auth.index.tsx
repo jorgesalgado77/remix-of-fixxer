@@ -159,38 +159,46 @@ function LoginComponent() {
       }
 
       if (data?.session) {
+        console.log("[Auth] Sessão criada com sucesso, preparando redirecionamento...");
         toast.success('Login realizado com sucesso!');
         
-        // Limpamos flags de bypass anteriores para garantir que a role venha do banco
         localStorage.removeItem('fixxer:master-bypass');
 
-        // Navegação via window.location.href é mais robusta para resetar o estado do roteador e auth
         const userEmail = data.session.user.email?.toLowerCase();
         
-        // Se for o master, vai direto pro admin (segurança extra)
         if (userEmail === 'jorgericardosalgado@gmail.com') {
-          console.log("[Auth] Master detectado via login comum. Redirecionando...");
+          console.log("[Auth] Master detectado. Indo para /admin");
           window.location.href = '/admin';
           return;
         }
 
-        // Tenta buscar o perfil para o redirecionamento correto
         try {
-          const { data: profile } = await supabaseExternal
+          console.log("[Auth] Buscando perfil para o usuário:", data.session.user.id);
+          const { data: profile, error: profileError } = await supabaseExternal
             .from('profiles')
             .select('role, user_type, business_category')
             .eq('id', data.session.user.id)
             .maybeSingle();
 
+          if (profileError) {
+            console.error("[Auth] Erro ao buscar perfil:", profileError);
+            window.location.href = '/feed';
+            return;
+          }
+
+          console.log("[Auth] Perfil encontrado:", profile);
           const rawRole = ((profile?.role || profile?.user_type || profile?.business_category || '') as string).toLowerCase();
           
-            if (rawRole.includes('prestador')) window.location.href = '/feed/prestador';
-            else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) window.location.href = '/feed/parceiro';
-            else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) window.location.href = '/feed/cliente';
-            else if (rawRole.includes('lojista')) window.location.href = '/feed/lojista';
-            else window.location.href = '/feed';
+          let targetPath = '/feed';
+          if (rawRole.includes('prestador')) targetPath = '/feed/prestador';
+          else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) targetPath = '/feed/parceiro';
+          else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) targetPath = '/feed/cliente';
+          else if (rawRole.includes('lojista')) targetPath = '/feed/lojista';
+          
+          console.log("[Auth] Redirecionando para:", targetPath);
+          window.location.href = targetPath;
         } catch (e) {
-          console.error("[Auth] Erro ao buscar perfil para redirect:", e);
+          console.error("[Auth] Exceção no fluxo de perfil:", e);
           window.location.href = '/feed';
         }
       }
