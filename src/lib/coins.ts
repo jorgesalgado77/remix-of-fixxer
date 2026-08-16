@@ -95,12 +95,30 @@ export async function initCoinsForUser(userId: string): Promise<number> {
       .select("balance")
       .eq("user_id", userId)
       .maybeSingle();
-    if (!error && data && typeof data.balance === "number") {
+
+    if (error) throw error;
+
+    if (data && typeof data.balance === "number") {
       writeLocalBalance(userId, data.balance);
       notify(data.balance);
+    } else {
+      // Se não existe registro no banco, tentamos inicializar via RPC ou mantemos o local 0
+      console.log(`[coins] Usuário ${userId} sem registro de saldo. Tentando registrar...`);
+      // A RPC credit_coins_safe com valor 0 pode ser usada para garantir a existência da linha
+      try {
+        await supabaseExternal.rpc("credit_coins_safe", {
+          _user_id: userId,
+          _amount: 0,
+          _source: "bonus",
+          _description: "Inicialização de conta",
+          _idempotency_key: `init_${userId}`
+        });
+      } catch (rpcErr) {
+        console.warn("[coins] Falha ao auto-inicializar linha de moedas:", rpcErr);
+      }
     }
   } catch (e) {
-    console.warn("[coins] supabase indisponível", e);
+    console.warn("[coins] supabase indisponível ou erro de permissão", e);
   }
 
   // realtime
