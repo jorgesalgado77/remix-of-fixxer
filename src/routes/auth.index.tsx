@@ -38,14 +38,15 @@ function AuthLogin() {
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
       console.log("[Auth] Master/Test Bypass Detectado");
-      localStorage.setItem('fixxer:master-bypass', 'true');
-      localStorage.setItem('fixxer:last-category', category);
+      window.localStorage.setItem('fixxer:master-bypass', 'true');
+      window.localStorage.setItem('fixxer:last-category', category);
       
       toast.success('Acesso Master concedido');
       
       setTimeout(() => {
+        console.log("[Auth] Redirecionando para:", target);
         window.location.href = window.location.origin + target;
-      }, 50);
+      }, 200);
       return;
     }
 
