@@ -107,7 +107,9 @@ function AuthLogin() {
       toast.success('Acesso Master concedido');
       
       setTimeout(() => {
-        window.location.href = window.location.origin + target;
+        const fullTarget = window.location.origin + target;
+        console.warn("[Auth Audit] Executando redirecionamento para:", fullTarget);
+        window.location.href = fullTarget;
       }, 100);
       return;
     }
