@@ -174,11 +174,10 @@ function LoginComponent() {
           try { clearCurrentUserCache(); } catch {}
           
           // HARD FIX: Redirecionamento forçado via origin completo para quebrar o loop do SPA
-          const finalUrl = window.location.origin + target;
-          window.location.href = finalUrl;
+          window.location.assign(target);
         } catch (e) {
           console.error("[Auth] Erro no redirecionamento pós-login:", e);
-          window.location.href = window.location.origin + '/feed';
+          window.location.assign('/feed');
         }
       }
 

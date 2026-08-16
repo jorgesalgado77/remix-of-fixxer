@@ -33,15 +33,13 @@ export const Route = createFileRoute("/_authenticated")({
       console.log("[Route Guard] Usuário autenticado:", user?.email || 'Master Bypass');
       
       // Se o usuário está logado e tenta acessar /auth, mandamos para o feed
-      // Usamos window.location.replace para quebrar o loop do roteador se ele estiver preso
       if (location.pathname.startsWith('/auth')) {
-        console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed via window.location");
+        console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed");
+        // Se estivermos no navegador, usamos window.location para garantir a saída do loop
         if (typeof window !== 'undefined') {
-          // Pequeno delay para garantir que o router não intercepte a navegação nativa
-          setTimeout(() => {
-            window.location.replace('/feed');
-          }, 100);
-          return;
+          window.location.assign('/feed');
+          // Retornamos um objeto vazio para satisfazer o TS enquanto o reload acontece
+          return { userId: '', userEmail: '', isAdmin: false, bypass: false };
         }
         throw redirect({ to: "/feed" as any });
       }
@@ -106,8 +104,7 @@ function AuthenticatedLayout() {
     // REDIRECT FIX: Forçamos a saída de /auth se houver usuário
     if (user && pathname.startsWith('/auth')) {
       console.log("[AuthenticatedLayout] Login detectado. Forçando saída para /feed.");
-      // Usamos replace para não sujar o histórico
-      window.location.replace("/feed");
+      window.location.assign("/feed");
       return;
     }
 
