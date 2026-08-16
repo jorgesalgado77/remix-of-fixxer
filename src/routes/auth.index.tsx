@@ -164,28 +164,26 @@ function AuthLogin() {
         </div>
         
         <div className="space-y-4">
-          <div>
-            <input
-              type="text"
-              name="email-input-field"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="e-mail"
-              className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <input
-              type="password"
-              name="password-input-field"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="senha"
-              className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-              autoComplete="off"
-            />
-          </div>
+          <input
+            key="email-field"
+            type="text"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="e-mail"
+            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
+            autoComplete="off"
+            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+          />
+          <input
+            key="password-field"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="senha"
+            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
+            autoComplete="off"
+            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+          />
           <button
             type="button"
             id="login-submit-btn"
