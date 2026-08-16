@@ -135,7 +135,8 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
 export function isCurrentUserAdminSync(): boolean {
   if (cachedAdmin !== null) return cachedAdmin;
   if (typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true') {
-    return true;
+    const cat = localStorage.getItem('fixxer:last-category');
+    return cat === 'admin';
   }
   return false;
 }

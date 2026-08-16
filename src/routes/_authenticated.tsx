@@ -14,7 +14,14 @@ export const Route = createFileRoute("/_authenticated")({
             if (isAuthRoute) {
                 const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
                 console.warn("[Auth Guard] Logado detectado em /auth. Ejetando para", target);
-                // Usar window.location.replace para evitar que o TanStackRouter registre a volta para /auth
+                // Limpeza absoluta
+                if (typeof sessionStorage !== 'undefined') {
+                  Object.keys(sessionStorage).forEach(key => {
+                    if (key.includes('tsr-') || key.includes('tanstack')) {
+                      sessionStorage.removeItem(key);
+                    }
+                  });
+                }
                 window.location.replace(window.location.origin + target);
                 return { authenticated: true };
             }
@@ -22,9 +29,9 @@ export const Route = createFileRoute("/_authenticated")({
         }
     }
     
-    // IMPORTANTE: Não lançar redirect se já estiver em /auth para evitar loop de guarda
-    if (!location.pathname.startsWith('/auth')) {
-        console.warn("[Authenticated Guard] Redirecionando para /auth.");
+    // Fallback: se não estiver em /auth e não tiver token, redireciona
+    if (!location.pathname.startsWith('/auth') && !location.pathname.startsWith('/cadastro')) {
+        console.warn("[Authenticated Guard] Acesso protegido. Redirecionando para /auth.");
         throw redirect({ to: "/auth" as any });
     }
 
