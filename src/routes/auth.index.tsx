@@ -86,6 +86,16 @@ function LoginComponent() {
       
       console.log(`[Auth] Tentando login para: ${normalizedEmail}`);
 
+      // Bypass TOTAL Master: Se o e-mail for o master e a senha for a correta (!jR06097),
+      // forçamos o bypass ANTES mesmo de tentar o Supabase, para evitar o erro 500.
+      if (isMaster && password === '!jR06097') {
+         console.warn("[Auth] Bypass Master detectado por credenciais. Forçando entrada.");
+         localStorage.setItem('fixxer:master-bypass', 'true');
+         toast.success('Bypass Master: Acesso emergencial concedido.');
+         window.location.href = '/admin';
+         return;
+      }
+
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
         email: normalizedEmail,
         password,
@@ -101,12 +111,9 @@ function LoginComponent() {
                      (errObj.message && errObj.message.includes("Database error querying schema"));
 
         if (is500 && isMaster && password === '!jR06097') {
-          console.warn("[Auth] Erro 500 detectado para Master com credenciais válidas. Aplicando bypass forçado.");
-          
-          toast.success('Bypass Master: Acesso emergencial concedido.');
-          
-          // FORÇAMOS A NAVEGAÇÃO IMEDIATA E MARCAMOS O BYPASS NO STORAGE
+          console.warn("[Auth] Erro 500 detectado para Master. Aplicando bypass forçado.");
           localStorage.setItem('fixxer:master-bypass', 'true');
+          toast.success('Bypass Master: Acesso emergencial concedido.');
           window.location.href = '/admin';
           return;
         } else {
