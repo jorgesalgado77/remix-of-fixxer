@@ -31,26 +31,27 @@ export async function getCurrentUser(force = false): Promise<User | null> {
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
       if (isMasterBypass) {
-        const category = localStorage.getItem('fixxer:last-category');
-        const email = category === 'admin' 
-          ? 'jorgericardosalgado@gmail.com' 
-          : 'jorgecriare2021@gmail.com';
+        const category = (localStorage.getItem('fixxer:last-category') as Category) || 'admin';
+        const email = (category === 'admin' || category === 'prestador') 
+          ? (category === 'admin' ? 'jorgericardosalgado@gmail.com' : 'jorgecriare2021@gmail.com')
+          : 'lojista@fixxer.app';
         
         const masterData: User = {
           id: email === 'jorgericardosalgado@gmail.com' 
               ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' 
               : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9',
           email: email,
-          app_metadata: {},
+          app_metadata: { provider: 'email', providers: ['email'] },
           user_metadata: { 
             display_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Prestador Teste',
-            role: category === 'admin' ? 'admin' : 'prestador'
+            role: category,
+            category: category
           },
           aud: 'authenticated',
           created_at: new Date().toISOString()
         } as any;
         cachedUser = masterData;
-        cachedCategory = category as Category;
+        cachedCategory = category;
         cachedAdmin = category === 'admin';
         return masterData;
       }

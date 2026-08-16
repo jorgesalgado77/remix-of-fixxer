@@ -13,15 +13,24 @@ function AuthLogin() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Se estiver em /auth e tiver bypass, sai IMEDIATAMENTE antes de renderizar qualquer coisa
-    const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-    if (hasBypass) {
-        const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
-        const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        console.warn("[Auth Page] Bypass detectado no mount. Forçando saída.");
-        window.location.href = window.location.origin + target;
-        return;
-    }
+    if (typeof window === 'undefined') return;
+
+    const checkBypass = async () => {
+      const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+      if (hasBypass) {
+          const { getCurrentCategory } = await import("@/lib/current-user");
+          const cat = await getCurrentCategory(true);
+          const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+          console.warn("[Auth Page] Bypass detectado. Forçando saída via window.location.href.");
+          window.location.href = window.location.origin + target;
+      }
+    };
+
+    checkBypass();
+    
+    // Watchdog agressivo para capturar mudanças assíncronas no bypass
+    const interval = setInterval(checkBypass, 500);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
