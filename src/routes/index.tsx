@@ -122,9 +122,9 @@ function Index() {
                 const cat = localStorage.getItem('fixxer:last-category');
                 const bypass = localStorage.getItem('fixxer:master-bypass');
                 if (bypass === 'true' && cat) {
-                   window.location.href = window.location.origin + (cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`);
+                   window.location.replace(window.location.origin + (cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`));
                 } else {
-                   navigate({ to: "/auth/" as any });
+                   window.location.href = window.location.origin + "/auth/";
                 }
               }}
               className="px-10 py-5 bg-primary text-primary-foreground font-black rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.4)] hover:scale-105 active:scale-95 transition-all text-lg uppercase tracking-widest flex items-center justify-center gap-3"
