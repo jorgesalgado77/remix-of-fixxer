@@ -22,8 +22,10 @@ import { resolveIdentity } from '@/lib/identity/identity-service';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InfoSecurePlayer } from '@/components/InfoSecurePlayer';
+import { getActiveOffer, InfoOffer } from '@/lib/info-products/offer-service';
 import type { ResolvedProfile } from '@/lib/identity/identity-types';
 import { toast } from 'sonner';
+
 
 export const Route = createFileRoute('/info/$id')({
   component: ProductDetailsPage,
@@ -31,10 +33,13 @@ export const Route = createFileRoute('/info/$id')({
 
 function ProductDetailsPage() {
   const { id } = Route.useParams();
+  const search = Route.useSearch() as { offerId?: string };
   const navigate = useNavigate();
   const [product, setProduct] = useState<any>(null);
+  const [activeOffer, setActiveOffer] = useState<InfoOffer | null>(null);
   const [creator, setCreator] = useState<ResolvedProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     async function load() {
@@ -49,6 +54,8 @@ function ProductDetailsPage() {
         setProduct(data);
         const identity = await resolveIdentity(data.creator_id);
         setCreator(identity);
+        const offer = await getActiveOffer(id);
+        setActiveOffer(offer);
       } catch (e) {
         console.error("Erro ao carregar detalhes:", e);
       } finally {
@@ -57,6 +64,7 @@ function ProductDetailsPage() {
     }
     load();
   }, [id]);
+
 
   if (loading) return <DetailsSkeleton />;
   if (!product) return null;
@@ -180,21 +188,40 @@ function ProductDetailsPage() {
 
           {/* COLUNA DIREITA: COMPRA */}
           <div className="space-y-6">
-            <div className="sticky top-32 p-8 rounded-[40px] bg-white/[0.03] border border-white/10 backdrop-blur-xl space-y-8 shadow-2xl">
+            <div className="sticky top-32 p-8 rounded-[40px] bg-white/[0.03] border border-white/10 backdrop-blur-xl space-y-8 shadow-2xl overflow-hidden relative">
+               {activeOffer && (
+                 <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1 rounded-bl-2xl shadow-lg">
+                   Oferta Ativa
+                 </div>
+               )}
+
                <div className="space-y-2">
-                 <div className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Investimento Único</div>
-                 <div className="text-5xl font-black text-white italic tracking-tighter">
-                   R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                 <div className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">
+                   {activeOffer ? 'Preço de Oferta' : 'Investimento Único'}
+                 </div>
+                 
+                 <div className="flex flex-col">
+                   {(activeOffer?.compare_at_price || (activeOffer ? product.price : null)) && (
+                     <span className="text-sm font-black text-white/30 italic line-through uppercase">
+                       R$ {(activeOffer?.compare_at_price || product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                     </span>
+                   )}
+                   <div className="text-5xl font-black text-white italic tracking-tighter">
+                     R$ {(activeOffer ? activeOffer.price : product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                   </div>
                  </div>
                </div>
 
                <div className="space-y-4">
                  <Button 
                    onClick={() => {
-                     // Fluxo integrado de Checkout (Prompt 21)
+                     // Fluxo integrado de Checkout (Prompt 21) com suporte a Ofertas
                      navigate({ 
                        to: '/checkout' as any, 
-                       search: { productId: product.id } as any 
+                       search: { 
+                         productId: product.id,
+                         offerId: activeOffer?.id
+                       } as any 
                      });
                    }}
                    className="w-full bg-primary text-primary-foreground font-black py-8 rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.4)] hover:scale-105 transition-all uppercase tracking-widest text-sm gap-3"
@@ -202,6 +229,7 @@ function ProductDetailsPage() {
                    Garantir Acesso Agora
                    <ArrowRight className="w-5 h-5" />
                  </Button>
+
                  
                  <p className="text-[10px] text-center text-muted-foreground font-bold uppercase tracking-widest">
                    Pagamento 100% Seguro • Acesso Imediato
