@@ -74,7 +74,7 @@ export const Route = createFileRoute('/_authenticated/infoprodutos')({
 
 function CreatorStudioPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'products' | 'sales' | 'analytics' | 'coupons'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'sales' | 'analytics' | 'coupons' | 'offers'>('products');
   const [isCreating, setIsCreating] = useState(false);
 
   return (
