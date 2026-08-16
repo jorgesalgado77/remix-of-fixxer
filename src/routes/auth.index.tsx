@@ -164,11 +164,15 @@ function LoginComponent() {
 
         try {
           // Busca perfil via RPC ou query simples para evitar RLS Recursion em tabelas base
-          const { data: profile } = await supabaseExternal
+          const { data: profile, error: profileError } = await supabaseExternal
             .from('profiles')
             .select('role, user_type, business_category')
             .eq('id', data.session.user.id)
             .maybeSingle();
+
+          if (profileError) {
+            console.warn("[Auth] Erro ao buscar perfil, usando redirecionamento genérico:", profileError);
+          }
 
           const rawRole = ((profile?.role || profile?.user_type || profile?.business_category || '') as string).toLowerCase();
           
@@ -181,13 +185,10 @@ function LoginComponent() {
           
           console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
           
-          // FORCED NAVIGATION: Usamos window.location.assign para garantir que o navegador
-          // saia da pilha do React Router e reinicie o estado global com o novo token.
-          console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
-          
           // Limpa cache global antes da navegação para garantir carregamento limpo
           try { clearCurrentUserCache(); } catch {}
           
+          // Usamos window.location.assign para garantir um reload limpo do estado
           window.location.assign(target);
         } catch (e) {
           console.error("[Auth] Erro no redirecionamento pós-login:", e);

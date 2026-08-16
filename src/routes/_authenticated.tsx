@@ -28,14 +28,19 @@ export const Route = createFileRoute("/_authenticated")({
     
     const user = session?.user;
 
-    // FORCE FORWARD: Se temos uma sessão, ignoramos o redirect para /auth
+    // 3. FORCE FORWARD: Se temos uma sessão, ignoramos o redirect para /auth
     if (user || hasMasterBypass) {
       console.log("[Route Guard] Acesso permitido:", user?.email || 'Master Bypass');
       
+      // Se o usuário já está logado e tenta acessar /auth, redireciona para o feed
+      if (location.pathname.startsWith('/auth')) {
+        console.log("[Route Guard] Usuário logado tentando acessar /auth. Redirecionando para feed.");
+        throw redirect({ to: "/feed" as any });
+      }
+
       // Verificação de Admin (Resiliente)
       let isAdmin = hasMasterBypass;
       if (!isAdmin && user) {
-        // Bypass Master Email mesmo sem flag
         if (user.email?.toLowerCase() === emailMaster) {
           isAdmin = true;
         } else {
@@ -51,7 +56,7 @@ export const Route = createFileRoute("/_authenticated")({
       };
     }
 
-    // Apenas redireciona se REALMENTE não houver sessão E não estivermos no /auth
+    // 4. Apenas redireciona se REALMENTE não houver sessão E não estivermos no /auth
     if (!location.pathname.includes('/auth')) {
       console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
       throw redirect({ to: "/auth" as any });
