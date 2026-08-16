@@ -22,14 +22,9 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    // Pré-carrega rota alvo ao pairar/tocar num <Link>, dando sensação instantânea.
-    defaultPreload: "intent",
-    defaultPreloadDelay: 50,
-    // Query controla freshness — mantém 0 conforme integração TanStack Query.
-    defaultPreloadStaleTime: 0,
-    // Só mostra spinner se a rota realmente demorar; evita flash de loader.
-    defaultPendingMs: 300,
-    defaultPendingMinMs: 150,
+    defaultPreload: false,
+    defaultPendingMs: 500,
+    defaultPendingMinMs: 200,
   });
 
   return router;

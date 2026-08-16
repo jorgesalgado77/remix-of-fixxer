@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, RefreshCcw } from "lucide-react";
@@ -15,26 +15,21 @@ function AuthLogin() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const checkBypass = async () => {
-      if (typeof window === 'undefined') return;
-      
+    const checkBypass = () => {
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-      if (hasBypass) {
-          const { getCurrentCategory } = await import("@/lib/current-user");
-          const cat = await getCurrentCategory(true);
+      const cat = localStorage.getItem('fixxer:last-category');
+      
+      if (hasBypass && cat) {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-          
-          if (window.location.pathname !== target) {
-              console.warn("[Auth Page] Bypass detectado. Forçando redirecionamento para:", target);
-              window.location.replace(window.location.origin + target);
+          if (!window.location.pathname.includes(target)) {
+              console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
+              window.location.href = window.location.origin + target;
           }
       }
     };
 
     checkBypass();
-    
-    // Watchdog agressivo para capturar mudanças assíncronas no bypass
-    const interval = setInterval(checkBypass, 500);
+    const interval = setInterval(checkBypass, 250); // Mais rápido
     return () => clearInterval(interval);
   }, []);
 
@@ -45,10 +40,8 @@ function AuthLogin() {
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
     
-    console.log("[Auth] Iniciando tentativa de login para:", emailVal);
-    
     if (!emailVal || !passVal) {
-      toast.error("Por favor, preencha todos os campos.");
+      toast.error("Preencha todos os campos.");
       return;
     }
 
@@ -61,12 +54,13 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.warn("[Auth] MASTER BYPASS ATIVADO");
+      console.warn("[Auth] MASTER BYPASS ATIVADO:", category);
+      
+      // Persistência síncrona
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
-      toast.success('Acesso Master concedido');
-      
+      // Limpeza brutal do Router síncrona
       if (typeof sessionStorage !== 'undefined') {
         Object.keys(sessionStorage).forEach(key => {
           if (key.includes('tsr-') || key.includes('tanstack')) {
@@ -75,10 +69,10 @@ function AuthLogin() {
         });
       }
 
-      // Uso de replace absoluto e preventDefault adicional
-      setTimeout(() => {
-        window.location.replace(window.location.origin + target);
-      }, 50);
+      toast.success('Acesso Master concedido');
+      
+      // Redirecionamento brutal síncrono absoluto
+      window.location.href = window.location.origin + target;
       return;
     }
 
@@ -101,10 +95,7 @@ function AuthLogin() {
         
         localStorage.setItem('fixxer:last-category', cat);
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        
-        setTimeout(() => {
-          window.location.replace(window.location.origin + target);
-        }, 100);
+        window.location.href = window.location.origin + target;
       }
     } catch (err: any) {
       toast.error(err.message || "Credenciais inválidas");
@@ -114,9 +105,9 @@ function AuthLogin() {
 
   return (
     <div className="flex-1 flex items-center justify-center p-6 bg-black min-h-screen">
-      <div className="w-full max-w-[400px] space-y-8 animate-in fade-in duration-700">
+      <div className="w-full max-w-[400px] space-y-8">
         <div className="text-center">
-          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-black text-2xl mx-auto shadow-[0_0_20px_rgba(0,255,135,0.4)]">F</div>
+          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-black text-2xl mx-auto">F</div>
           <h1 className="text-2xl font-black text-white uppercase mt-6 italic tracking-tighter">FIXXER <span className="text-primary">LOGIN</span></h1>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
@@ -125,7 +116,7 @@ function AuthLogin() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="e-mail"
-            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50 placeholder:text-white/20 transition-all"
+            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             required
             autoComplete="email"
           />
@@ -134,16 +125,16 @@ function AuthLogin() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="senha"
-            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50 placeholder:text-white/20 transition-all"
+            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
             required
             autoComplete="current-password"
           />
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-14 bg-primary text-black font-black rounded-2xl shadow-[0_0_20px_rgba(0,255,135,0.4)] flex items-center justify-center gap-2 uppercase tracking-widest text-xs italic hover:scale-[1.02] active:scale-95 transition-all"
+            className="w-full h-14 bg-primary text-black font-black rounded-2xl flex items-center justify-center gap-2 uppercase italic hover:scale-[1.02] transition-all"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><RefreshCcw className="w-4 h-4" /> Entrar na plataforma</>}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><RefreshCcw className="w-4 h-4" /> Entrar</>}
           </button>
         </form>
       </div>

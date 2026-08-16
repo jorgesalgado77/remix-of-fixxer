@@ -63,7 +63,7 @@ function Index() {
 
           <div className="hidden md:flex items-center gap-4">
             <button 
-              onClick={() => navigate({ to: "/auth/" as any })}
+              onClick={() => window.location.href = window.location.origin + "/auth"}
               className="px-6 py-2 text-sm font-bold text-white hover:text-primary transition-colors uppercase tracking-widest"
             >
               Entrar
@@ -91,7 +91,7 @@ function Index() {
             <a href="#planos" onClick={() => setIsMenuOpen(false)} className="text-lg font-bold text-white uppercase tracking-widest">Planos</a>
             <Link to="/terms" onClick={() => setIsMenuOpen(false)} className="text-lg font-bold text-white uppercase tracking-widest">Termos</Link>
             <div className="flex flex-col gap-3 pt-4 border-t border-white/10">
-              <button onClick={() => navigate({ to: "/auth/" as any })} className="w-full py-4 bg-white/5 text-white font-bold rounded-xl">Entrar</button>
+              <button onClick={() => window.location.href = window.location.origin + "/auth"} className="w-full py-4 bg-white/5 text-white font-bold rounded-xl">Entrar</button>
               <button onClick={() => navigate({ to: "/cadastro" as any })} className="w-full py-4 bg-primary text-primary-foreground font-black rounded-xl">Cadastrar-se</button>
             </div>
           </div>
@@ -124,7 +124,7 @@ function Index() {
                 if (bypass === 'true' && cat) {
                    window.location.replace(window.location.origin + (cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`));
                 } else {
-                   window.location.href = window.location.origin + "/auth/";
+                   window.location.href = window.location.origin + "/auth";
                 }
               }}
               className="px-10 py-5 bg-primary text-primary-foreground font-black rounded-2xl shadow-[0_0_30px_rgba(0,255,135,0.4)] hover:scale-105 active:scale-95 transition-all text-lg uppercase tracking-widest flex items-center justify-center gap-3"
