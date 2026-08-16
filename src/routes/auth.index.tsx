@@ -164,11 +164,7 @@ function AuthLogin() {
             Instrumentar logs de login Adicionar teste E2E
           </p>
         </div>
-        <form 
-          id="auth-login-form"
-          onSubmit={handleLogin} 
-          className="space-y-4"
-        >
+        <div className="space-y-4">
           <input
             type="text"
             name="email"
@@ -176,7 +172,6 @@ function AuthLogin() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            required
             autoComplete="off"
           />
           <input
@@ -186,7 +181,6 @@ function AuthLogin() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            required
             autoComplete="off"
           />
           <button
@@ -201,7 +195,7 @@ function AuthLogin() {
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><RefreshCcw className="w-4 h-4" /> Entrar</>}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
