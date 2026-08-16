@@ -66,8 +66,7 @@ function AuthenticatedLayout() {
     // Se não temos usuário E não temos o bypass forçado, vai para o login
     if (!user && !isMaster) {
       console.warn("[AuthenticatedLayout] Usuário não detectado e não é master. Redirecionando para /auth.");
-      // Usamos window.location.replace para garantir a saída do grafo de rotas atual
-      window.location.replace('/auth');
+      navigate({ to: "/auth" as any });
       return;
     }
 
