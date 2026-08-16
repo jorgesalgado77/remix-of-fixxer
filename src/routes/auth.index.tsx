@@ -91,8 +91,6 @@ function LoginComponent() {
          console.warn("[Auth] Admin Master acessando via credenciais master.");
          
          if (typeof window !== 'undefined') {
-           localStorage.setItem('fixxer:master-bypass', 'true');
-           
            const mockSession = {
              access_token: 'bypass-token-master',
              refresh_token: 'bypass-refresh-master',
@@ -111,15 +109,19 @@ function LoginComponent() {
              }
            };
            
-           localStorage.setItem('fixxer-auth-token-v1', JSON.stringify(mockSession));
-           localStorage.setItem('sb-fixxer-auth-token', JSON.stringify(mockSession));
-
-           localStorage.setItem('sb-auth-token', JSON.stringify(mockSession));
+           // Injeta em todas as chaves possíveis para garantir persistência do Supabase
+           const sessionStr = JSON.stringify(mockSession);
+           localStorage.setItem('fixxer-auth-token-v1', sessionStr);
+           localStorage.setItem('sb-fixxer-auth-token', sessionStr);
+           localStorage.setItem('sb-auth-token', sessionStr);
+           
+           // Flag interna do app para bypass de guards
+           localStorage.setItem('fixxer:master-bypass', 'true');
            
            toast.success('Bypass Master: Acesso emergencial concedido.');
            
-           // NAVEGAÇÃO BRUTA PARA EVITAR TANSTACK ROUTER STATE
-           // Usamos replace para não permitir voltar para o login com bypass
+           // NAVEGAÇÃO BRUTA PARA EVITAR TANSTACK ROUTER STATE STALL
+           console.log("[Auth] Redirecionando master para /admin...");
            window.location.replace('/admin');
          }
          return;

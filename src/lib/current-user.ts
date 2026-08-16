@@ -44,8 +44,10 @@ export async function getCurrentUser(force = false): Promise<User | null> {
 
       // 1. Tenta obter a sessão do storage local primeiro
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
-      const sessionUser = session?.user;
-
+      
+      // Se falhou mas temos o bypass, simulamos a sessão master
+      let sessionUser = session?.user;
+      
       // Bypass Master Crítico: Refatorado para Admin Master
       const isMasterEmail = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
       const isMaster = isMasterEmail || isMasterBypass;

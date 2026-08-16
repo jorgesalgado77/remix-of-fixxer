@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authenticated")({
       return {
         userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
         userEmail: 'jorgericardosalgado@gmail.com',
+        isAdmin: true, // Injeta isAdmin diretamente no context do bypass
         bypass: true
       };
     }
