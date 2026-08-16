@@ -427,10 +427,11 @@ export function LojistaDashboard() {
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
       <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="sidebar" />
-      <div className="flex-1 flex flex-col min-w-0 md:pl-72 lg:pl-72">
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
+        <div className="md:hidden pt-20">
+           <ProfileHeader role="lojista" />
+        </div>
 
-
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#050505]/95 backdrop-blur-md border-b border-white/10 z-50 flex items-center justify-between px-6">
         <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-primary rounded flex items-center justify-center text-black font-black text-sm">F</div>
 
