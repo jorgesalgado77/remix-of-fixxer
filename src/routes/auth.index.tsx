@@ -53,7 +53,16 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
-      // Redirecionamento instantâneo via window.location.replace para evitar loop de Router
+      // Limpa qualquer cache de roteamento antes de sair
+      if (typeof sessionStorage !== 'undefined') {
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.includes('tsr-') || key.includes('tanstack')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
+
+      // Redirecionamento brutal e absoluto para forçar recarregamento total da plataforma
       window.location.replace(window.location.origin + target);
       return;
     }

@@ -7,19 +7,15 @@ export const Route = createFileRoute("/_authenticated")({
     if (typeof window !== 'undefined') {
         const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
-        
-        // Se estiver logado e tentar acessar /auth, sai de lá imediatamente
         const isAuthRoute = location.pathname.startsWith('/auth');
+
+        // Se estiver autenticado e tentar acessar rotas de login, ejeta imediatamente
         if (isAuthRoute && (hasMasterBypass || rawToken)) {
             const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-            console.warn("[Auth Guard] Já autenticado em rota de login, forçando saída.");
-            
-            if (typeof window !== 'undefined') {
-                window.location.replace(window.location.origin + target);
-                return { authenticated: true };
-            }
-            throw redirect({ to: target as any });
+            console.warn("[Auth Guard] Sessão ativa detectada em /auth, forçando saída.");
+            window.location.replace(window.location.origin + target);
+            return { authenticated: true };
         }
 
         // Se tiver bypass ou token, permite acesso a rotas protegidas
@@ -28,12 +24,13 @@ export const Route = createFileRoute("/_authenticated")({
         }
     }
     
-    // Rotas de auth são permitidas para não autenticados
-    if (location.pathname.startsWith('/auth')) return { authenticated: false };
+    // Se não estiver autenticado e não for rota de auth, bloqueia
+    if (!location.pathname.startsWith('/auth')) {
+        console.warn("[Authenticated Guard] Acesso negado para:", location.pathname);
+        throw redirect({ to: "/auth" as any });
+    }
 
-    // Bloqueia qualquer outra rota se não houver sessão
-    console.warn("[Authenticated Guard] Acesso negado, redirecionando para /auth");
-    throw redirect({ to: "/auth" as any });
+    return { authenticated: false };
   },
   component: AuthenticatedLayout,
 });
