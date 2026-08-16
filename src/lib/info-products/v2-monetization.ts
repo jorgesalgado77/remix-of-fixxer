@@ -902,7 +902,7 @@ export async function saveGlobalMonetizationConfig(config: any) {
     admin_id: user?.user?.id,
     action: 'UPDATE_CONFIG',
     entity_type: 'GLOBAL_CONFIG',
-    new_value: config
+    details: JSON.stringify(config) // Alterado para stringify JSON
   });
 
   return true;
