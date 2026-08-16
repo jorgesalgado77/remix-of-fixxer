@@ -176,7 +176,7 @@ function AuthLogin() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            autoComplete="off"
+            autoComplete="username"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -191,7 +191,7 @@ function AuthLogin() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            autoComplete="off"
+            autoComplete="current-password"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
