@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useLocation } from "@tanstack/react-route
 import { useState, useEffect } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
-import { Mail, Lock, Loader2, ShieldAlert } from "lucide-react";
+import { Mail, Lock, Loader2, ShieldAlert, Eye, EyeOff } from "lucide-react";
 import { clearCurrentUserCache } from "@/lib/current-user";
 
 export const Route = createFileRoute("/auth/")({
@@ -14,9 +14,9 @@ function AuthLogin() {
   const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Redirecionamento instantâneo se já houver bypass ou sessão detectada via layout
   useEffect(() => {
     const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     if (hasBypass) {
@@ -46,7 +46,6 @@ function AuthLogin() {
       const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
       const isProviderTest = emailVal === 'jorgecriare2021@gmail.com';
       
-      // Bypass Hardened para Master
       if ((isMaster || isProviderTest) && passVal === '!jR06097') {
          console.warn("[Auth] Bypass Master ativado.");
          const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
@@ -56,8 +55,6 @@ function AuthLogin() {
          if (isMaster) localStorage.setItem('fixxer:master-identity', 'true');
          
          toast.success('Acesso Master Concedido');
-         
-         // Força a saída usando o origin completo para evitar que o TanStack intercepte e cause loop
          window.location.href = window.location.origin + target;
          return;
       }
@@ -71,7 +68,6 @@ function AuthLogin() {
 
       if (data?.session) {
         toast.success("Login realizado com sucesso");
-        // Deixa o layout _authenticated lidar com o destino com base no perfil
         window.location.reload();
       }
     } catch (err: any) {
@@ -92,9 +88,9 @@ function AuthLogin() {
           >
             F
           </div>
-          <h1 className="text-2xl font-black tracking-tighter text-white uppercase mt-6">Bem-vindo de volta</h1>
+          <h1 className="text-2xl font-black tracking-tighter text-white uppercase mt-6">Login</h1>
           <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
-            Acesse sua conta FIXXER
+            Acesse sua conta para continuar
           </p>
         </div>
 
@@ -102,14 +98,13 @@ function AuthLogin() {
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">E-mail</label>
             <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
+                placeholder="exemplo@email.com"
                 required
-                className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all font-bold placeholder:text-white/20"
+                className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all font-bold placeholder:text-white/20"
               />
             </div>
           </div>
@@ -117,17 +112,24 @@ function AuthLogin() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-1">
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Senha</label>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline cursor-pointer">Esqueceu a senha?</span>
             </div>
             <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all font-bold placeholder:text-white/20"
+                className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all font-bold placeholder:text-white/20 pr-12"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -139,19 +141,22 @@ function AuthLogin() {
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              "Entrar na conta"
+              <>
+                <RefreshCcw className="w-4 h-4" />
+                Entrar
+              </>
             )}
           </button>
         </form>
 
         <div className="text-center">
            <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
-            Não tem uma conta?{" "}
+            Ainda não tem conta?{" "}
             <span 
               onClick={() => navigate({ to: "/cadastro" as any })}
               className="text-primary hover:underline cursor-pointer"
             >
-              Cadastre-se aqui
+              Cadastre-se
             </span>
           </p>
         </div>
