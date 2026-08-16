@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import type { User } from "@supabase/supabase-js";
 
-type Category = "admin" | "lojista" | "prestador" | "fornecedor" | "cliente";
+type Category = "admin" | "lojista" | "prestador" | "fornecedor" | "cliente" | "user";
 
 let cachedUser: User | null = null;
 let cachedAdmin: boolean | null = null;
@@ -19,6 +19,7 @@ function normalizeCategory(raw?: string | null): Category {
   if (r.includes("parceiro") || r.includes("fornecedor") || r.includes("b2b")) return "fornecedor";
   if (r.includes("cliente") || r.includes("casual") || r.includes("final")) return "cliente";
   if (r.includes("lojista")) return "lojista";
+  if (r.includes("user")) return "user";
   return "lojista";
 }
 
