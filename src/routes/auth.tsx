@@ -18,10 +18,15 @@ export const Route = createFileRoute("/auth")({
       const isAuthPath = location.pathname === '/auth' || location.pathname === '/auth/' || location.pathname.startsWith('/auth/');
       
       if ((hasSession || hasBypass) && isAuthPath) {
-        console.warn("[Auth Layout Guard] Sessão ativa detectada. Forçando saída via window.location.");
-        // Usamos replace para não sujar o histórico com o loop
-        window.location.replace(window.location.origin + '/feed');
-        throw redirect({ to: '/feed' as any });
+        console.warn("[Auth Layout Guard] Sessão ativa detectada. Forçando saída.");
+        const targetCategory = localStorage.getItem('fixxer:last-category') || 'lojista';
+        const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
+        
+        // Se estivermos no navegador, forçamos o replace imediato e retornamos redirect para o router
+        setTimeout(() => {
+          window.location.replace(window.location.origin + target);
+        }, 50);
+        throw redirect({ to: target as any });
       }
     }
     return {};

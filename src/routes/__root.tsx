@@ -201,7 +201,9 @@ function RootComponent() {
           const isAuthPath = window.location.pathname === '/auth' || window.location.pathname === '/auth/' || window.location.pathname.startsWith('/auth/');
           if (isAuthPath) {
             console.warn("[Root] Sessão detectada em /auth. Forçando salto via window.location.");
-            window.location.replace(window.location.origin + '/feed');
+            const targetCategory = localStorage.getItem('fixxer:last-category') || 'lojista';
+            const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
+            window.location.replace(window.location.origin + target);
             return;
           }
           await initCoinsForUser(data.session.user.id);
@@ -214,7 +216,9 @@ function RootComponent() {
             const isAuthPath = window.location.pathname === '/auth' || window.location.pathname === '/auth/' || window.location.pathname.startsWith('/auth/');
             if (isAuthPath) {
                console.warn("[Root] Login detectado em /auth via evento. Forçando salto.");
-               window.location.replace(window.location.origin + '/feed');
+               const targetCategory = localStorage.getItem('fixxer:last-category') || 'lojista';
+               const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
+               window.location.replace(window.location.origin + target);
                return;
             }
             void initCoinsForUser(session.user.id);

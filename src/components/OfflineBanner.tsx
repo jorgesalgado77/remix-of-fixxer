@@ -104,7 +104,7 @@ export function OfflineBanner() {
     window.addEventListener("offline", goOffline);
     window.addEventListener("online", goOnline);
     // Estado inicial: se o navegador diz offline, confirma com ping antes de assustar o usuário.
-    if (!navigator.onLine) {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
         pingBackend().then(ok => {
             if (!ok) confirmAndSetOffline();
         });

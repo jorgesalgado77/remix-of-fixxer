@@ -112,7 +112,9 @@ function LoginComponent() {
          
          if (isMaster) localStorage.setItem('fixxer:master-identity', 'true');
          
-         window.location.assign(window.location.origin + target);
+         setTimeout(() => {
+           window.location.replace(window.location.origin + target);
+         }, 100);
          return;
       }
 

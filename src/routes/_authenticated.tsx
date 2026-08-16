@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useNavigate, useRouterState, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useNavigate, useRouterState, redirect, useMatch } from "@tanstack/react-router";
 import { User, Rss, LayoutDashboard, ShieldCheck, LogOut, Users, FileText, DollarSign, Activity, CheckCircle, HelpCircle } from "lucide-react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { getCurrentUser, isCurrentUserAdmin, isCurrentUserAdminSync, clearCurrentUserCache, useCurrentUser, useIsAdmin } from "@/lib/current-user";
@@ -17,8 +17,12 @@ export const Route = createFileRoute("/_authenticated")({
     
     // 1. Bypass Master Admin
     const emailMaster = 'jorgericardosalgado@gmail.com';
+    const isMasterEmail = 'jorgericardosalgado@gmail.com';
+    const isProviderTestEmail = 'jorgecriare2021@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     
+    console.log("[Route Guard] Bypass Info:", { hasMasterBypass, location: location.pathname });
+
     // 2. Verificação de Usuário via storage
     let session = null;
     if (typeof window !== 'undefined') {
@@ -26,12 +30,12 @@ export const Route = createFileRoute("/_authenticated")({
         const raw = localStorage.getItem('fixxer-auth-token-v1');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed && parsed.user) {
-            session = parsed;
+          if (parsed && (parsed.user || parsed.session?.user)) {
+            session = parsed.session || parsed;
           }
         }
         
-        if (!session) {
+        if (!session && !hasMasterBypass) {
           const { data } = await supabaseExternal.auth.getSession();
           session = data.session;
         }
@@ -50,10 +54,12 @@ export const Route = createFileRoute("/_authenticated")({
       if (location.pathname === '/auth' || location.pathname === '/auth/' || location.pathname.startsWith('/auth/')) {
         console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed via window.location");
         if (typeof window !== 'undefined') {
-          // Pequeno delay para garantir que o token no localStorage esteja estável
+          const targetCategory = localStorage.getItem('fixxer:last-category') || 'lojista';
+          const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
+          
           setTimeout(() => {
-            window.location.href = window.location.origin + '/feed';
-          }, 100);
+            window.location.replace(window.location.origin + target);
+          }, 50);
           return { userId: '', userEmail: '', isAdmin: false, bypass: false }; 
         }
         throw redirect({ to: "/feed" as any });
@@ -121,15 +127,19 @@ function AuthenticatedLayout() {
     if (userLoading) return;
     
     const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    const isProviderTestEmail = user?.email?.toLowerCase() === 'jorgecriare2021@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-    const isMaster = isMasterEmail || hasMasterBypass;
+    const isMaster = isMasterEmail || isProviderTestEmail || hasMasterBypass;
     
     // REDIRECT FIX: Forçamos a saída de /auth se houver usuário
     if ((user || isMaster) && (pathname === '/auth' || pathname === '/auth/')) {
       console.log("[AuthenticatedLayout] Login detectado. Navegando para /feed.");
+      const targetCategory = localStorage.getItem('fixxer:last-category') || 'lojista';
+      const target = targetCategory === 'admin' ? '/admin/infoprodutos' : `/feed/${targetCategory}`;
+      
       // Usamos replace e then catch para garantir a navegação
-      navigate({ to: "/feed" as any, replace: true }).catch(() => {
-        window.location.assign('/feed');
+      navigate({ to: target as any, replace: true }).catch(() => {
+        window.location.replace(window.location.origin + target);
       });
       return;
     }
@@ -140,7 +150,7 @@ function AuthenticatedLayout() {
       window.location.assign("/auth");
       return;
     }
-  }, [user, userLoading, pathname]);
+  }, [user, userLoading, pathname, navigate]);
 
   // SEGURANÇA DE ROTA: Validação de privilégios baseada na URL visitada vs Role real.
   useEffect(() => {
