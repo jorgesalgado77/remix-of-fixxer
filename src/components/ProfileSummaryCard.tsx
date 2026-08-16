@@ -91,25 +91,13 @@ export function ProfileSummaryCard({
           ? (bypassUid || (lastCat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9')) 
           : (auth ? JSON.parse(auth)?.user?.id : null);
         
-        if (isMaster) {
-          return {
-            id: uid,
-            display_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
-            full_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
-            plan_id: 'pro',
-            avatar_url: lastCat === 'prestador' ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null,
-            karma_score: 50,
-            is_verified: true,
-            city: 'São Paulo',
-            state: 'SP'
-          };
-        }
-
         if (uid) {
-          const cached = window.localStorage.getItem("fixxer_identity_cache_v1.2");
-          const identities = cached ? JSON.parse(cached) : {};
+          const cachedRaw = window.localStorage.getItem("fixxer_identity_cache_v1.2");
+          const identities = cachedRaw ? JSON.parse(cachedRaw) : {};
           const res = identities[uid];
+          
           if (res) {
+            console.log("[ProfileSummaryCard] Hidratação síncrona com dados reais:", res.identity.displayName);
             return {
               id: res.identity.id,
               display_name: res.identity.displayName,
@@ -131,6 +119,20 @@ export function ProfileSummaryCard({
               plan_id: res.identity.planId,
               karma_score: res.identity.karmaScore,
               is_verified: res.identity.isVerified
+            };
+          }
+
+          if (isMaster) {
+            return {
+              id: uid,
+              display_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
+              full_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
+              plan_id: 'pro',
+              avatar_url: lastCat === 'prestador' ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null,
+              karma_score: 50,
+              is_verified: true,
+              city: 'São Paulo',
+              state: 'SP'
             };
           }
         }
