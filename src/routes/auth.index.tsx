@@ -51,6 +51,8 @@ function AuthLogin() {
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
     
+    console.log("[Auth Audit] Tentativa de login iniciada:", { email: emailVal });
+
     if (!emailVal || !passVal) {
       toast.error("Preencha todos os campos.");
       return;
@@ -65,13 +67,15 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.warn("[Auth] MASTER BYPASS ATIVADO:", category);
+      console.warn("[Auth Audit] MASTER BYPASS IDENTIFICADO:", { 
+        user: isMaster ? 'Admin Master' : 'Jorge Criare',
+        category,
+        target
+      });
       
-      // Persistência síncrona imediata
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
-      // Limpeza brutal do Router síncrona ANTES de qualquer async
       if (typeof sessionStorage !== 'undefined') {
         Object.keys(sessionStorage).forEach(key => {
           if (key.includes('tsr-') || key.includes('tanstack')) {
@@ -80,30 +84,27 @@ function AuthLogin() {
         });
       }
 
-      // Tenta buscar o ID real em background sem bloquear o redirect
       void (async () => {
         try {
           const { supabaseExternal } = await import("@/lib/supabaseExternal");
-          const { data } = await supabaseExternal
+          const { data, error } = await supabaseExternal
             .from("profiles")
             .select("id")
             .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Criare')
             .maybeSingle();
           
+          if (error) console.error("[Auth Audit] Erro ao buscar ID real:", error);
           if (data?.id) {
-            console.warn("[Auth] ID Real detectado para bypass:", data.id);
+            console.warn("[Auth Audit] ID Real resolvido:", data.id);
             localStorage.setItem('fixxer:bypass-uid', data.id);
-            // Avisa o sistema para atualizar identidades
             window.dispatchEvent(new Event("fixxer:identity-change"));
           }
         } catch (e) {
-          console.warn("[Auth] Erro ao tentar resolver ID real no login:", e);
+          console.warn("[Auth Audit] Falha crítica na resolução de ID:", e);
         }
       })();
       
       toast.success('Acesso Master concedido');
-      
-      // Redirecionamento instantâneo via replace para não sujar o histórico
       window.location.replace(window.location.origin + target);
       return;
     }
