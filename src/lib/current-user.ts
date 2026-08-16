@@ -37,16 +37,17 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           ? (category === 'admin' ? 'jorgericardosalgado@gmail.com' : 'jorgecriare2021@gmail.com')
           : 'lojista@fixxer.app';
         
+        const isMaster = email === 'jorgericardosalgado@gmail.com';
         const masterData: User = {
-          id: email === 'jorgericardosalgado@gmail.com' 
+          id: isMaster 
               ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' 
               : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9',
           email: email,
           app_metadata: { provider: 'email', providers: ['email'] },
           user_metadata: { 
-            display_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Jorge Criare',
-            full_name: email === 'jorgericardosalgado@gmail.com' ? 'Admin Master' : 'Jorge Criare',
-            avatar_url: email === 'jorgecriare2021@gmail.com' ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null,
+            display_name: isMaster ? 'Admin Master' : 'Jorge Criare',
+            full_name: isMaster ? 'Admin Master' : 'Jorge Criare',
+            avatar_url: !isMaster ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null,
             role: category,
             category: category,
             user_type: category,
@@ -58,6 +59,12 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         cachedUser = masterData;
         cachedCategory = category;
         cachedAdmin = category === 'admin';
+        
+        // Sincroniza cache de identidade imediatamente
+        if (typeof window !== 'undefined') {
+          void import('./identity/identity-service').then(m => m.resolveIdentity(masterData.id, { refresh: true }));
+        }
+        
         return masterData;
       }
 
