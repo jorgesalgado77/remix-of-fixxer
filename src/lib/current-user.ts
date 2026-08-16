@@ -213,7 +213,9 @@ if (typeof window !== "undefined") {
       
       // PROMPT 24: Se houver sessão mas estivermos em /auth, o SPA está preso. 
       // Forçamos o redirecionamento absoluto aqui como última linha de defesa.
-      if (session && window.location.pathname.startsWith('/auth')) {
+      // Usamos uma verificação mais rigorosa para evitar loops infinitos de recarregamento
+      if (session && typeof window !== 'undefined' && 
+          (window.location.pathname === '/auth' || window.location.pathname === '/auth/')) {
         console.warn("[Identity] Forçando saída de /auth via onAuthStateChange");
         window.location.assign('/feed');
         return;

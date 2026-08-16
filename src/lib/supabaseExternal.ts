@@ -16,7 +16,6 @@ export const supabaseExternal = createClient(
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: 'fixxer-auth-token-v1',
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
     global: {
       headers: { 'x-application-name': 'fixxer-hub' },
