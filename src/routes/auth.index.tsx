@@ -22,9 +22,12 @@ function AuthLogin() {
       if (hasBypass && cat) {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
           if (window.location.pathname.startsWith('/auth')) {
-              console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
+              console.warn("[Auth Page Audit] Ejeção Automática (Bypass Ativo):", {
+                category: cat,
+                target,
+                uid: localStorage.getItem('fixxer:bypass-uid')
+              });
               
-              // Limpeza síncrona do cache do Router
               Object.keys(sessionStorage).forEach(key => {
                 if (key.includes('tsr-') || key.includes('tanstack')) {
                   sessionStorage.removeItem(key);
@@ -37,18 +40,23 @@ function AuthLogin() {
     };
 
     checkBypass();
-    // Aumentar frequência para evitar loop visual
     const interval = setInterval(checkBypass, 100); 
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (loading) return;
     
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
     
+    console.log("[Auth Audit] Tentativa de login iniciada:", { email: emailVal });
+
     if (!emailVal || !passVal) {
       toast.error("Preencha todos os campos.");
       return;
@@ -63,13 +71,15 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.warn("[Auth] MASTER BYPASS ATIVADO:", category);
+      console.warn("[Auth Audit] MASTER BYPASS IDENTIFICADO:", { 
+        user: isMaster ? 'Admin Master' : 'Jorge Criare',
+        category,
+        target
+      });
       
-      // Persistência síncrona imediata
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
-      // Limpeza brutal do Router síncrona ANTES de qualquer async
       if (typeof sessionStorage !== 'undefined') {
         Object.keys(sessionStorage).forEach(key => {
           if (key.includes('tsr-') || key.includes('tanstack')) {
@@ -78,69 +88,73 @@ function AuthLogin() {
         });
       }
 
-      // Tenta buscar o ID real em background sem bloquear o redirect
-      void (async () => {
-        try {
-          const { supabaseExternal } = await import("@/lib/supabaseExternal");
-          const { data } = await supabaseExternal
-            .from("profiles")
-            .select("id")
-            .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Criare')
-            .maybeSingle();
-          
-          if (data?.id) {
-            console.warn("[Auth] ID Real detectado para bypass:", data.id);
-            localStorage.setItem('fixxer:bypass-uid', data.id);
-            // Avisa o sistema para atualizar identidades
-            window.dispatchEvent(new Event("fixxer:identity-change"));
-          }
-        } catch (e) {
-          console.warn("[Auth] Erro ao tentar resolver ID real no login:", e);
-        }
-      })();
+      import("@/lib/supabaseExternal").then(({ supabaseExternal }) => {
+        supabaseExternal
+          .from("profiles")
+          .select("id")
+          .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Criare')
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) console.error("[Auth Audit] Erro ao buscar ID real:", error);
+            if (data?.id) {
+              console.warn("[Auth Audit] ID Real resolvido:", data.id);
+              localStorage.setItem('fixxer:bypass-uid', data.id);
+              window.dispatchEvent(new Event("fixxer:identity-change"));
+            }
+          });
+      }).catch(e => console.warn("[Auth Audit] Falha ao importar supabase:", e));
       
       toast.success('Acesso Master concedido');
       
-      // Redirecionamento instantâneo via replace para não sujar o histórico
-      window.location.replace(window.location.origin + target);
+      setTimeout(() => {
+        const fullTarget = window.location.origin + target;
+        console.warn("[Auth Audit] Redirecionamento Brutal via REPLACE para:", fullTarget);
+        window.location.replace(fullTarget);
+      }, 50);
       return;
     }
 
-    try {
-      const { supabaseExternal } = await import("@/lib/supabaseExternal");
-      const { error, data } = await supabaseExternal.auth.signInWithPassword({ email: emailVal, password: passVal });
-      
-      if (error) throw error;
-      
-      if (data.session) {
-        const { data: profile } = await supabaseExternal
-          .from("profiles")
-          .select("role, user_type")
-          .eq("id", data.session.user.id)
-          .maybeSingle();
+    (async () => {
+      try {
+        const { supabaseExternal } = await import("@/lib/supabaseExternal");
+        const { error, data } = await supabaseExternal.auth.signInWithPassword({ 
+          email: emailVal, 
+          password: passVal 
+        });
         
-        const raw = (profile as any)?.role || (profile as any)?.user_type || "lojista";
-        const cat = raw.toLowerCase().includes("prestador") ? "prestador" : 
-                    raw.toLowerCase().includes("admin") ? "admin" : "lojista";
+        if (error) throw error;
         
-        localStorage.setItem('fixxer:last-category', cat);
-        const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        
-        // Limpeza absoluta do router para login normal
-        if (typeof sessionStorage !== 'undefined') {
-          Object.keys(sessionStorage).forEach(key => {
-            if (key.includes('tsr-') || key.includes('tanstack')) {
-              sessionStorage.removeItem(key);
-            }
-          });
+        if (data.session) {
+          const { data: profile } = await supabaseExternal
+            .from("profiles")
+            .select("role, user_type")
+            .eq("id", data.session.user.id)
+            .maybeSingle();
+          
+          const raw = (profile as any)?.role || (profile as any)?.user_type || "lojista";
+          const cat = raw.toLowerCase().includes("prestador") ? "prestador" : 
+                      raw.toLowerCase().includes("admin") ? "admin" : "lojista";
+          
+          localStorage.setItem('fixxer:last-category', cat);
+          const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+          
+          if (typeof sessionStorage !== 'undefined') {
+            Object.keys(sessionStorage).forEach(key => {
+              if (key.includes('tsr-') || key.includes('tanstack')) {
+                sessionStorage.removeItem(key);
+              }
+            });
+          }
+          
+          setTimeout(() => {
+            window.location.replace(window.location.origin + target);
+          }, 50);
         }
-        
-        window.location.replace(window.location.origin + target);
+      } catch (err: any) {
+        toast.error(err.message || "Credenciais inválidas");
+        setLoading(false);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Credenciais inválidas");
-      setLoading(false);
-    }
+    })();
   };
 
   return (
@@ -149,34 +163,60 @@ function AuthLogin() {
         <div className="text-center">
           <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-black text-2xl mx-auto">F</div>
           <h1 className="text-2xl font-black text-white uppercase mt-6 italic tracking-tighter">FIXXER <span className="text-primary">LOGIN</span></h1>
+          <p className="text-[10px] text-white/20 mt-2 uppercase tracking-widest font-mono">
+            Instrumentar logs de login Adicionar teste E2E
+          </p>
         </div>
-        <form onSubmit={handleLogin} className="space-y-4">
+        
+        <div className="space-y-4">
           <input
             type="email"
+            name="email"
+            id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="e-mail"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            required
-            autoComplete="email"
+            autoComplete="username"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleLogin();
+              }
+            }}
           />
           <input
             type="password"
+            name="password"
+            id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="senha"
             className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary/50"
-            required
             autoComplete="current-password"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleLogin();
+              }
+            }}
           />
           <button
-            type="submit"
+            type="button"
+            id="login-submit-btn"
+            onClick={(e) => {
+              if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+              handleLogin();
+            }}
             disabled={loading}
             className="w-full h-14 bg-primary text-black font-black rounded-2xl flex items-center justify-center gap-2 uppercase italic hover:scale-[1.02] transition-all"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><RefreshCcw className="w-4 h-4" /> Entrar</>}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
