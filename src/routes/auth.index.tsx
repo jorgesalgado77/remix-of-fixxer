@@ -108,8 +108,8 @@ function AuthLogin() {
       
       setTimeout(() => {
         const fullTarget = window.location.origin + target;
-        console.warn("[Auth Audit] Executando redirecionamento para:", fullTarget);
-        window.location.href = fullTarget;
+        console.warn("[Auth Audit] Executando redirecionamento via replace para:", fullTarget);
+        window.location.replace(fullTarget);
       }, 100);
       return;
     }
@@ -147,7 +147,7 @@ function AuthLogin() {
           }
           
           setTimeout(() => {
-            window.location.href = window.location.origin + target;
+            window.location.replace(window.location.origin + target);
           }, 100);
         }
       } catch (err: any) {
