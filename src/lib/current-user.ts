@@ -29,13 +29,41 @@ export async function getCurrentUser(force = false): Promise<User | null> {
   
   inflight = (async () => {
     try {
+      // Prioridade absoluta para a sessão real do Supabase Externo (Real Data First)
+      const { data: { session } } = await supabaseExternal.auth.getSession();
+      
+      if (session?.user) {
+        console.log("[current-user] Usuário real autenticado via Supabase Externo.");
+        cachedUser = session.user;
+        
+        // Sincronização imediata de categoria baseada no banco real
+        try {
+          const { data: profile } = await supabaseExternal
+            .from("profiles")
+            .select("role, user_type, business_category")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          
+          if (profile) {
+            const raw = ((profile as any)?.role || (profile as any)?.user_type || (profile as any)?.business_category || "") as string;
+            cachedCategory = normalizeCategory(raw);
+            cachedAdmin = cachedCategory === 'admin' || session.user.email === 'jorgericardosalgado@gmail.com';
+            console.log("[current-user] Categoria real resolvida:", cachedCategory);
+          }
+        } catch (err) {
+          console.warn("[current-user] Falha ao sincronizar categoria real:", err);
+        }
+
+        return session.user;
+      }
+
+      // Fallback para Master Bypass apenas se não houver sessão ativa
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
       if (isMasterBypass) {
         const category = (localStorage.getItem('fixxer:last-category') as Category) || 'admin';
         const storedUid = localStorage.getItem('fixxer:bypass-uid');
         
-        // Define o e-mail baseado na categoria escolhida para o bypass
         const email = (category === 'admin') 
           ? 'jorgericardosalgado@gmail.com' 
           : 'jorgecriare2021@gmail.com';
@@ -47,8 +75,6 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         
         const currentUid = storedUid || defaultUid;
 
-        // IMPORTANTE: Buscamos os dados REAIS no banco de dados externo ou cache de identidade.
-        // O bypass agora serve apenas para simular a SESSÃO, mas os DADOS devem ser reais.
         let displayName = isMaster ? 'Admin Master' : 'Usuário';
         let avatarUrl = null;
 
@@ -60,7 +86,6 @@ export async function getCurrentUser(force = false): Promise<User | null> {
             if (res) {
               displayName = res.identity.displayName || displayName;
               avatarUrl = res.identity.avatarUrl || avatarUrl;
-              console.log("[current-user] Bypass usando dados REAIS do cache:", displayName);
             }
           } catch (e) {
             console.warn("[current-user] Erro ao ler cache de identidade:", e);
@@ -76,9 +101,7 @@ export async function getCurrentUser(force = false): Promise<User | null> {
             full_name: displayName,
             avatar_url: avatarUrl,
             role: category,
-            category: category,
-            user_type: category,
-            business_category: category
+            category: category
           },
           aud: 'authenticated',
           created_at: new Date().toISOString()
@@ -86,34 +109,23 @@ export async function getCurrentUser(force = false): Promise<User | null> {
 
         cachedUser = masterData;
         cachedCategory = category;
-        cachedAdmin = category === 'admin';
-        
-        // Dispara a resolução da identidade real em background para atualizar o cache
-        if (typeof window !== 'undefined') {
-          void import('./identity/identity-service').then(m => m.resolveIdentity(currentUid, { refresh: true }));
-        }
+        cachedAdmin = category === 'admin' || email === 'jorgericardosalgado@gmail.com';
         
         return masterData;
       }
 
-      // getSession é resiliente e rápido (lê storage)
-      const { data: { session }, error } = await supabaseExternal.auth.getSession();
-      
-      if (session?.user) {
-        cachedUser = session.user;
-        return session.user;
-      }
-
-      // Apenas se o storage falhar e estivermos online, tentamos a API
+      // Garantia final via getUser (API Call)
       if (typeof navigator !== 'undefined' && navigator.onLine) {
         const { data: { user } } = await supabaseExternal.auth.getUser();
-        cachedUser = user;
-        return user;
+        if (user) {
+          cachedUser = user;
+          return user;
+        }
       }
       
       return null;
     } catch (e) {
-      console.warn("[current-user] Falha ao recuperar usuário:", e);
+      console.warn("[current-user] Falha crítica ao recuperar usuário:", e);
       return null;
     } finally {
       inflight = null;

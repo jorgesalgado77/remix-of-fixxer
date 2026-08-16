@@ -98,7 +98,7 @@ export function ProfileSummaryCard({
           const res = identities[uid];
           
           if (res) {
-            console.log("[ProfileSummaryCard] Hidratação síncrona com dados REAIS do cache:", res.identity.displayName);
+            console.log("[ProfileSummaryCard] Hidratação síncrona com dados do cache:", res.identity.displayName);
             return {
               id: res.identity.id,
               display_name: res.identity.displayName,
