@@ -29,7 +29,7 @@ function AuthLogin() {
     };
 
     checkBypass();
-    const interval = setInterval(checkBypass, 100);
+    const interval = setInterval(checkBypass, 50);
     return () => clearInterval(interval);
   }, []);
 
@@ -40,7 +40,7 @@ function AuthLogin() {
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
     
-    console.log("[Auth] Tentativa:", emailVal);
+    console.warn("[Auth] Login manual:", emailVal);
     
     if (!emailVal || !passVal) {
       toast.error("Preencha todos os campos.");
@@ -56,19 +56,23 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.warn("[Auth] Master Bypass Ativado:", category);
+      console.warn("[Auth] MASTER BYPASS ATIVADO:", category);
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
-      // Limpeza de cache síncrona se possível
-      try {
-        const { clearCurrentUserCache } = await import("@/lib/current-user");
-        clearCurrentUserCache();
-      } catch (e) {}
+      // Limpeza brutal do Router síncrona
+      if (typeof sessionStorage !== 'undefined') {
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.includes('tsr-') || key.includes('tanstack')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
 
       toast.success('Acesso Master concedido');
       
-      // Redirecionamento brutal síncrono
+      // Redirecionamento brutal síncrono absoluto
+      console.warn("[Auth] Redirecionando brutalmente para:", target);
       window.location.href = window.location.origin + target;
       return;
     }
