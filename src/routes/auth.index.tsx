@@ -114,7 +114,13 @@ function LoginComponent() {
 
           const criticalMsg = "ERRO PERSISTE: Erro Crítico no Supabase (500): O servidor de autenticação está instável. Por favor, execute o script SQL 'ADMIN_FINAL_REMEDY.sql' no painel do Supabase para limpar triggers corrompidos e restaurar o acesso.";
           setErrorMsg(criticalMsg);
-          toast.error(criticalMsg, { duration: 10000 });
+          toast.error(criticalMsg, { duration: 15000 });
+          
+          // Tentativa de Auto-Bypass: Se o master já tem uma sessão, redireciona
+          const session = localSession as any;
+          if (session?.session?.user?.email?.toLowerCase() === normalizedEmail) {
+            window.location.replace('/admin');
+          }
         } else {
           const friendly = toFriendly(extractErr(error));
           setErrorMsg(friendly);
