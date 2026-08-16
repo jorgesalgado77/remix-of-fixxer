@@ -8,6 +8,7 @@ export const createAsaasPayment = createServerFn({ method: "POST" })
   .validator((data: unknown) => z.object({
     productId: z.string().uuid(),
     userId: z.string().uuid(),
+    offerId: z.string().uuid().optional(),
     couponCode: z.string().optional(),
   }).parse(data))
   .handler(async ({ data }) => {
@@ -17,7 +18,7 @@ export const createAsaasPayment = createServerFn({ method: "POST" })
       throw new Error("Configuração ASAAS ausente no Admin.");
     }
 
-    // 1. Buscar o produto para obter o preço original
+    // 1. Buscar o produto para obter o preço base
     const { data: product, error: prodErr } = await supabaseExternal
       .from('info_products')
       .select('price, title')
@@ -29,6 +30,27 @@ export const createAsaasPayment = createServerFn({ method: "POST" })
     let finalAmount = product.price;
     let discountAmount = 0;
     let couponId = null;
+    let usedOfferId = null;
+
+    // 1.5 Validação de Oferta (Prompt 23)
+    if (data.offerId) {
+      const { data: offerRes, error: offerErr } = await supabaseExternal
+        .rpc('validate_and_apply_info_offer', {
+          _offer_id: data.offerId,
+          _product_id: data.productId
+        });
+
+      if (offerErr) throw new Error("Erro ao validar oferta");
+      
+      const res = offerRes?.[0];
+      if (!res?.success) {
+        throw new Error(res?.error_message || "Oferta inválida");
+      }
+
+      finalAmount = res.final_price;
+      usedOfferId = data.offerId;
+    }
+
 
     // 2. Validar Cupom se fornecido (Prompt 19 - Centralized Validation)
     if (data.couponCode) {
