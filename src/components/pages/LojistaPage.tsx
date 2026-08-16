@@ -821,8 +821,8 @@ export function LojistaDashboard() {
   );
 }
 
-
 function UserProfileCard({ isProfileComplete, rating, getRatingStarColor, getRatingColor, profile, missingLabels = [], missingKeys = [], onOpenProfile }: { isProfileComplete: boolean; rating: number; getRatingStarColor: (val: number) => string; getRatingColor: (val: number) => string; profile?: { companyName?: string; logoUrl?: string | null; city?: string; state?: string; isVerified?: boolean; planId?: string }; missingLabels?: string[]; missingKeys?: string[]; onOpenProfile?: (focusKey?: string) => void }) {
+
 
 
 
