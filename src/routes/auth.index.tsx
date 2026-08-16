@@ -57,12 +57,9 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
-      // Redirecionamento brutal
-      setTimeout(() => {
-        const finalUrl = window.location.origin + target;
-        console.warn("[Auth] Executando redirecionamento brutal para:", finalUrl);
-        window.location.href = finalUrl;
-      }, 500);
+      // Redirecionamento forçado e imediato
+      console.warn("[Auth] MASTER BYPASS ATIVADO - Redirecionando...");
+      window.location.href = window.location.origin + target;
       return;
     }
 
