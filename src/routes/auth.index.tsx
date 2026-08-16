@@ -105,7 +105,8 @@ function LoginComponent() {
           
           toast.success('Bypass Master: Acesso emergencial concedido.');
           
-          // FORÇAMOS A NAVEGAÇÃO IMEDIATA SEM DELAY
+          // FORÇAMOS A NAVEGAÇÃO IMEDIATA E MARCAMOS O BYPASS NO STORAGE
+          localStorage.setItem('fixxer:master-bypass', 'true');
           window.location.href = '/admin';
           return;
         } else {
