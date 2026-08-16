@@ -8,24 +8,25 @@ export const Route = createFileRoute("/_authenticated")({
         const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
         
-        // Se estiver em /auth e tiver bypass/sessão, redireciona para fora
-        if (location.pathname.startsWith('/auth')) {
-            if (hasMasterBypass || rawToken) {
-                const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
-                const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-                throw redirect({ to: target as any });
-            }
-            return { authenticated: false };
+        // Se estiver logado e tentar acessar /auth, sai de lá imediatamente
+        if (location.pathname.startsWith('/auth') && (hasMasterBypass || rawToken)) {
+            const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
+            const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+            console.log("[Auth Guard] Já autenticado, redirecionando para:", target);
+            throw redirect({ to: target as any });
         }
 
+        // Se tiver bypass ou token, permite acesso a rotas protegidas
         if (hasMasterBypass || rawToken) {
             return { authenticated: true };
         }
     }
     
+    // Rotas de auth são permitidas para não autenticados
     if (location.pathname.startsWith('/auth')) return { authenticated: false };
 
-    console.warn("[Authenticated Guard] Redirecionando para login.");
+    // Bloqueia qualquer outra rota se não houver sessão
+    console.warn("[Authenticated Guard] Acesso negado, redirecionando para /auth");
     throw redirect({ to: "/auth" as any });
   },
   component: AuthenticatedLayout,
