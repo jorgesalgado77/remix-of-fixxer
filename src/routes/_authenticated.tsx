@@ -14,6 +14,7 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     console.log("[Route Guard] Running beforeLoad for:", location.pathname);
+    
     // 1. Bypass Master Admin
     const emailMaster = 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
@@ -30,7 +31,6 @@ export const Route = createFileRoute("/_authenticated")({
           }
         }
         
-        // Se não achou no localStorage direto, tenta o helper do Supabase
         if (!session) {
           const { data } = await supabaseExternal.auth.getSession();
           session = data.session;
@@ -49,11 +49,6 @@ export const Route = createFileRoute("/_authenticated")({
       // Se o usuário está logado e tenta acessar /auth, mandamos para o feed
       if (location.pathname === '/auth' || location.pathname === '/auth/') {
         console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed");
-        if (typeof window !== 'undefined') {
-          // REMOVIDO window.location.assign para evitar reload infinito se o router decidir voltar
-          // Mas mantemos o redirect do router
-          throw redirect({ to: "/feed" as any });
-        }
         throw redirect({ to: "/feed" as any });
       }
 
@@ -63,7 +58,6 @@ export const Route = createFileRoute("/_authenticated")({
         if (user.email?.toLowerCase() === emailMaster) {
           isAdmin = true;
         } else {
-          // Usamos a versão sync se possível ou a async com catch
           isAdmin = isCurrentUserAdminSync() || await isCurrentUserAdmin().catch(() => false);
         }
       }
@@ -77,16 +71,16 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     // 4. Se não estiver no /auth e não tiver sessão, redireciona para o login
+    // IMPORTANTE: Permitir acesso a /auth sem redirecionar de volta
+    if (location.pathname === '/auth' || location.pathname === '/auth/') {
+      return { userId: '', userEmail: '', isAdmin: false, bypass: false };
+    }
+
     if (!location.pathname.startsWith('/auth')) {
       console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
-      if (typeof window !== 'undefined') {
-        window.location.assign('/auth');
-        return { userId: '', userEmail: '', isAdmin: false, bypass: false };
-      }
       throw redirect({ to: "/auth" as any });
     }
     
-    // 5. Caso neutro (se cair aqui, é porque não há sessão e estamos em /auth, o que é permitido)
     return { userId: '', userEmail: '', isAdmin: false, bypass: false };
   },
   component: AuthenticatedLayout,
