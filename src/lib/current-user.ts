@@ -186,9 +186,17 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
 
 export function isCurrentUserAdminSync(): boolean {
   if (cachedAdmin !== null) return cachedAdmin;
-  if (typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true') {
+  
+  if (typeof window !== 'undefined') {
+    const isMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     const cat = localStorage.getItem('fixxer:last-category');
-    return cat === 'admin';
+    const storedUid = localStorage.getItem('fixxer:bypass-uid');
+    
+    // Apenas o e-mail/ID do Master tem acesso admin
+    const masterId = '6ba65048-803f-44f6-88d2-24d04fee1a0f';
+    if (isMasterBypass && cat === 'admin' && storedUid === masterId) {
+      return true;
+    }
   }
   return false;
 }
