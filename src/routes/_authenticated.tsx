@@ -29,14 +29,20 @@ export const Route = createFileRoute("/_authenticated")({
     const user = await getCurrentUser();
     
     if (!user) {
-      console.warn("[Route Guard] Usuário não logado. Redirecionando para /auth.");
+      console.warn("[Route Guard] Usuário não logado ou falha na sessão. Redirecionando para /auth.");
+      // Se não for master, redireciona.
       throw redirect({ 
         to: "/auth" as any
       });
     }
 
-    // Verifica admin de forma assíncrona para o contexto
-    const isAdmin = await isCurrentUserAdmin();
+    // Tenta obter admin, mas não deixa erro de banco quebrar o carregamento da rota
+    let isAdmin = false;
+    try {
+      isAdmin = await isCurrentUserAdmin();
+    } catch (e) {
+      console.error("[Route Guard] Erro ao validar admin:", e);
+    }
 
     return {
       userId: user.id,
