@@ -13,18 +13,13 @@ function AuthLogin() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const checkBypass = () => {
-      const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-      if (hasBypass) {
-          const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
-          const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-          console.warn("[Auth Page] Bypass detectado. Forçando saída via window.location.href");
-          window.location.href = window.location.origin + target;
-      }
-    };
-    checkBypass();
-    const interval = setInterval(checkBypass, 500);
-    return () => clearInterval(interval);
+    const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+    if (hasBypass) {
+        const cat = localStorage.getItem('fixxer:last-category') || 'lojista';
+        const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+        console.warn("[Auth Page] Bypass detectado. Forçando saída via window.location.href");
+        window.location.href = window.location.origin + target;
+    }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
