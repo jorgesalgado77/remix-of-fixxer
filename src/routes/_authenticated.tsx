@@ -17,27 +17,26 @@ export const Route = createFileRoute("/_authenticated")({
     const emailMaster = 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     
-    // 2. Verificação de Usuário via storage (síncrona/rápida)
+    // 2. Verificação de Usuário via storage
     let session = null;
-    try {
-      const { data } = await supabaseExternal.auth.getSession();
-      session = data.session;
-      
-      // FALLBACK: Se o getSession falhar mas houver algo no localStorage com a chave correta
-      if (!session && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
+      try {
         const raw = localStorage.getItem('fixxer-auth-token-v1');
         if (raw) {
-          try {
-            const parsed = JSON.parse(raw);
-            if (parsed && parsed.user) {
-              console.log("[Route Guard] Recuperando sessão via fallback localStorage direto");
-              session = parsed;
-            }
-          } catch {}
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.user) {
+            session = parsed;
+          }
         }
+        
+        // Se não achou no localStorage direto, tenta o helper do Supabase
+        if (!session) {
+          const { data } = await supabaseExternal.auth.getSession();
+          session = data.session;
+        }
+      } catch (e) {
+        console.warn("[Route Guard] Erro ao ler sessão:", e);
       }
-    } catch (e) {
-      console.error("[Route Guard] Erro crítico ao ler sessão:", e);
     }
     
     const user = session?.user;
@@ -50,7 +49,6 @@ export const Route = createFileRoute("/_authenticated")({
       if (location.pathname === '/auth' || location.pathname === '/auth/') {
         console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed");
         if (typeof window !== 'undefined') {
-          // Prevenimos que o router intercepte
           window.location.assign('/feed');
           return { userId: '', userEmail: '', isAdmin: false, bypass: false };
         }
@@ -63,7 +61,8 @@ export const Route = createFileRoute("/_authenticated")({
         if (user.email?.toLowerCase() === emailMaster) {
           isAdmin = true;
         } else {
-          isAdmin = await isCurrentUserAdmin().catch(() => false);
+          // Usamos a versão sync se possível ou a async com catch
+          isAdmin = isCurrentUserAdminSync() || await isCurrentUserAdmin().catch(() => false);
         }
       }
 
@@ -78,6 +77,10 @@ export const Route = createFileRoute("/_authenticated")({
     // 4. Se não estiver no /auth e não tiver sessão, redireciona para o login
     if (!location.pathname.startsWith('/auth')) {
       console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
+      if (typeof window !== 'undefined') {
+        window.location.assign('/auth');
+        return { userId: '', userEmail: '', isAdmin: false, bypass: false };
+      }
       throw redirect({ to: "/auth" as any });
     }
   },
