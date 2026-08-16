@@ -148,7 +148,7 @@ function AuthLogin() {
            <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
             Não tem uma conta?{" "}
             <span 
-              onClick={() => navigate({ to: "/cadastro" })}
+              onClick={() => navigate({ to: "/cadastro" as any })}
               className="text-primary hover:underline cursor-pointer"
             >
               Cadastre-se aqui
