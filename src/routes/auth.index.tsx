@@ -158,78 +158,35 @@ function LoginComponent() {
       }
 
       if (data?.session) {
-        // Bloqueio de acesso — lê o perfil no Supabase externo (fonte de verdade).
-        // Usa select('*') para não quebrar caso alguma coluna (role, is_admin, etc.)
-        // ainda não exista no schema do projeto.
-        let statusRow: Record<string, any> | null = null;
-        try {
-          const { data: ext } = await supabaseExternal
-            .from('profiles')
-            .select('id, status, role, user_type, business_category')
-            .eq('id', data.session.user.id)
-            .maybeSingle();
-          statusRow = (ext as any) || null;
-        } catch { /* silencioso — schema pode variar */ }
-
-        const safeGet = (key: string): any => {
-          try { return statusRow ? (statusRow as any)[key] : undefined; } catch { return undefined; }
-        };
-
-        if (safeGet('status') === 'bloqueado') {
-          await supabaseExternal.auth.signOut();
-          const msg = 'Sua conta está SUSPENSA. Contate o suporte para mais informações.';
-          setErrorMsg(msg);
-          toast.error(msg);
-          setLoading(false);
-          return;
-        }
-
-        // Papel de admin — única fonte de verdade: tabela user_roles no servidor.
-        let isAdmin = false;
-        const userEmail = data.session.user.email?.toLowerCase();
-        
-        // Override emergencial para o admin master
-        if (userEmail === 'jorgericardosalgado@gmail.com') {
-          console.warn("[Auth] Admin Master detectado via email.");
-          isAdmin = true;
-        } else {
-          try {
-            const { data: adminRow } = await supabaseExternal
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', data.session.user.id)
-              .eq('role', 'admin')
-              .maybeSingle();
-            isAdmin = !!adminRow;
-          } catch { /* silencioso */ }
-        }
-
-        // Limpeza defensiva de flag legada (sessões anteriores).
-        try { localStorage.removeItem('@fixxer:is_admin'); } catch {}
-
-        const rawRole = (
-          safeGet('role') || safeGet('user_type') || safeGet('business_category') || ''
-        ).toString().toLowerCase();
-
-
-        let category: 'admin' | 'lojista' | 'prestador' | 'fornecedor' | 'cliente' = 'lojista';
-        if (isAdmin) category = 'admin';
-        else if (rawRole.includes('prestador')) category = 'prestador';
-        else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) category = 'fornecedor';
-        else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) category = 'cliente';
-        else if (rawRole.includes('lojista')) category = 'lojista';
-        else category = 'lojista';
-
-        try { window.dispatchEvent(new Event('fixxer:identity-change')); } catch {}
         toast.success('Login realizado com sucesso!');
+        
+        // Pequeno delay para garantir persistência da sessão no storage do Supabase
+        setTimeout(() => {
+          const userEmail = data.session.user.email?.toLowerCase();
+          if (userEmail === 'jorgericardosalgado@gmail.com') {
+            window.location.href = '/admin';
+            return;
+          }
 
-        if (isAdmin) window.location.replace('/admin');
-        else if (category === 'cliente') window.location.replace('/cliente');
-        else if (category === 'prestador') window.location.replace('/prestador');
-        else if (category === 'fornecedor') window.location.replace('/parceiro');
-        else if (category === 'lojista') window.location.replace('/lojista');
-        else window.location.replace('/dashboard');
-
+          // Busca perfil para direcionamento
+          supabaseExternal
+            .from('profiles')
+            .select('role, user_type, business_category')
+            .eq('id', data.session.user.id)
+            .maybeSingle()
+            .then(({ data: profile }) => {
+              const rawRole = ((profile?.role || profile?.user_type || profile?.business_category || '') as string).toLowerCase();
+              
+              if (rawRole.includes('prestador')) window.location.href = '/prestador';
+              else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) window.location.href = '/parceiro';
+              else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) window.location.href = '/cliente';
+              else if (rawRole.includes('lojista')) window.location.href = '/lojista';
+              else window.location.href = '/feed';
+            })
+            .catch(() => {
+              window.location.href = '/feed';
+            });
+        }, 500);
       }
 
     } catch (err: any) {
