@@ -17,27 +17,17 @@ function AuthLogin() {
 
     const checkBypass = async () => {
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-      if (hasBypass) {
-          const { getCurrentCategory } = await import("@/lib/current-user");
-          const cat = await getCurrentCategory(true);
+      const cat = localStorage.getItem('fixxer:last-category');
+      
+      if (hasBypass && cat) {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-          console.warn("[Auth Page] Bypass detectado. Categoria:", cat, "Target:", target);
-          
           if (window.location.pathname !== target) {
-              console.warn("[Auth Page] Forçando redirecionamento brutal...");
-              if (typeof sessionStorage !== 'undefined') {
-                Object.keys(sessionStorage).forEach(key => {
-                  if (key.includes('tsr-') || key.includes('tanstack')) {
-                    sessionStorage.removeItem(key);
-                  }
-                });
-              }
-              window.location.replace(window.location.origin + target);
+              console.warn("[Auth Page] Ejetando para:", target);
+              window.location.href = window.location.origin + target;
           }
       }
     };
 
-    // Execução imediata e repetida para vencer o Router
     checkBypass();
     const interval = setInterval(checkBypass, 100);
     return () => clearInterval(interval);
@@ -85,9 +75,7 @@ function AuthLogin() {
       }
 
       // Uso de replace absoluto e preventDefault adicional
-      setTimeout(() => {
-        window.location.replace(window.location.origin + target);
-      }, 0);
+      window.location.href = window.location.origin + target;
       return;
     }
 
