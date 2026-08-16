@@ -18,39 +18,36 @@ export const Route = createFileRoute("/_authenticated")({
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     
     // 2. Verificação de Usuário via storage (síncrona/rápida)
-    const { data: { session } } = await supabaseExternal.auth.getSession();
+    let session = null;
+    try {
+      const result = await supabaseExternal.auth.getSession();
+      session = result.data.session;
+    } catch (e) {
+      console.error("[Route Guard] Erro crítico ao ler sessão:", e);
+    }
+    
     const user = session?.user;
 
-    console.log("[Route Guard] Path:", location.pathname, "User:", !!user, "Master:", hasMasterBypass);
-
-    // REDIRECT BYPASS: Se temos uma sessão ou bypass, e estamos no /auth, deixamos passar.
-    if ((user || hasMasterBypass) && location.pathname.includes('/auth')) {
-       return { userId: user?.id ?? 'master', userEmail: user?.email ?? emailMaster, isAdmin: hasMasterBypass, bypass: hasMasterBypass };
-    }
-
-    if (!user && !hasMasterBypass) {
-      console.warn("[Route Guard] Acesso negado. Redirecionando para /auth.");
-      throw redirect({ to: "/auth" as any });
-    }
-
-    // 3. Verificação de Admin (Resiliente a erros de banco)
-    let isAdmin = false;
-    try {
-      // Usamos getSession para pegar o user e checar o cache síncrono
-      const { data: { session: currentSession } } = await supabaseExternal.auth.getSession();
-      const email = currentSession?.user?.email?.toLowerCase();
+    // FORCE FORWARD: Se temos uma sessão, ignoramos o redirect para /auth
+    if (user || hasMasterBypass) {
+      console.log("[Route Guard] Acesso permitido:", user?.email || 'Master Bypass');
       
-      if (email === 'jorgericardosalgado@gmail.com' || hasMasterBypass) {
-        isAdmin = true;
-      } else {
-        // Tentamos a verificação assíncrona, mas com timeout ou catch agressivo
+      // Verificação de Admin (Resiliente)
+      let isAdmin = hasMasterBypass;
+      if (!isAdmin && user) {
         isAdmin = await isCurrentUserAdmin().catch(() => false);
       }
-    } catch (e) {
-      console.error("[Route Guard] Erro silencioso na verificação de admin:", e);
+
+      return { 
+        userId: user?.id ?? '6ba65048-803f-44f6-88d2-24d04fee1a0f', 
+        userEmail: user?.email ?? emailMaster, 
+        isAdmin, 
+        bypass: hasMasterBypass 
+      };
     }
 
-    return { userId: user?.id ?? 'master', userEmail: user?.email ?? emailMaster, isAdmin, bypass: hasMasterBypass };
+    console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
+    throw redirect({ to: "/auth" as any });
   },
   component: AuthenticatedLayout,
 });
