@@ -29,10 +29,13 @@ import {
   PieChart,
   Tag,
   Pause,
-  Play
+  Play,
+  Hammer
 } from "lucide-react";
 
+import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
 import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import { 
   getAIAdminConfig, 
