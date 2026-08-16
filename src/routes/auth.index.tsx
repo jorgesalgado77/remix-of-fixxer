@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useLocation } from "@tanstack/react-route
 import { useState, useEffect } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
-import { Mail, Lock, Loader2, ShieldAlert, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Loader2, ShieldAlert, Eye, EyeOff, RefreshCcw, LogIn } from "lucide-react";
 import { clearCurrentUserCache } from "@/lib/current-user";
 
 export const Route = createFileRoute("/auth/")({
