@@ -36,8 +36,9 @@ function normalizeCategory(raw?: string | null): Category {
 }
 
 export async function getCurrentUser(force = false): Promise<User | null> {
+  // Aumentamos a resiliência do cache para evitar loops de re-fetch
   if (!force && cachedUser) return cachedUser;
-  if (inflight) return inflight;
+  if (inflight && !force) return inflight;
   inflight = (async () => {
     try {
       const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';

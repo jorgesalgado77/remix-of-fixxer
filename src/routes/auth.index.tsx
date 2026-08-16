@@ -85,6 +85,7 @@ function LoginComponent() {
       const isMaster = normalizedEmail === 'jorgericardosalgado@gmail.com';
       
       console.log(`[Auth] Tentando login para: ${normalizedEmail}`);
+      setLoading(true);
 
       // Bypass TOTAL Admin Master: Refatoração completa de acesso
       if (isMaster && password === '!jR06097') {

@@ -31,8 +31,7 @@ export const Route = createFileRoute("/_authenticated")({
     if (!user) {
       console.warn("[Route Guard] Usuário não logado. Redirecionando para /auth.");
       throw redirect({ 
-        to: "/auth" as any,
-        search: { redirect: location.href }
+        to: "/auth" as any
       });
     }
 
