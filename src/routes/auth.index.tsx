@@ -73,9 +73,8 @@ function AuthLogin() {
 
       toast.success('Acesso Master concedido');
       
-      // Redirecionamento brutal síncrono absoluto COM REPLACE
-      console.warn("[Auth] Redirecionando via window.location.replace para:", target);
-      window.location.replace(window.location.origin + target);
+      // Redirecionamento brutal absoluto síncrono
+      window.location.href = window.location.origin + target;
       return;
     }
 
