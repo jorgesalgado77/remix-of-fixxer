@@ -898,11 +898,14 @@ export async function saveGlobalMonetizationConfig(config: any) {
 
   // Registrar auditoria
   const { data: user } = await supabaseExternal.auth.getUser();
+  const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+  const adminId = isMasterBypass ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : user?.user?.id;
+
   await supabaseExternal.from('info_admin_audit_logs').insert({
-    admin_id: user?.user?.id,
+    admin_id: adminId,
     action: 'UPDATE_CONFIG',
     entity_type: 'GLOBAL_CONFIG',
-    details: JSON.stringify(config) // Alterado para stringify JSON
+    details: JSON.stringify(config)
   });
 
   return true;
