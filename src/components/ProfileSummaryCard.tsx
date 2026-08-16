@@ -271,7 +271,9 @@ export function ProfileSummaryCard({
 
             <div className="flex-1 min-w-0">
               <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate max-w-[200px]" data-testid="user-display-name">
-                {name}
+                {(typeof window !== 'undefined' && window.localStorage.getItem('fixxer:master-bypass') === 'true')
+                  ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? 'Admin Master' : 'Prestador Teste')
+                  : name}
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
