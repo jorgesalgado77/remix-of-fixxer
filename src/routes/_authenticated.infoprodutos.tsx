@@ -30,7 +30,10 @@ import {
 } from 'lucide-react';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { PanelActions } from '@/components/PanelActions';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { supabaseExternal } from '@/lib/supabaseExternal';
+import { InfoOffer, getProductOffers, updateOfferStatus, createInfoOffer } from '@/lib/info-products/offer-service';
+
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu, 
