@@ -432,7 +432,6 @@ export function LojistaDashboard() {
            <ProfileHeader role="lojista" />
         </div>
 
-      </div>
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
