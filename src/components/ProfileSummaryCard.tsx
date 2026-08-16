@@ -210,7 +210,8 @@ export function ProfileSummaryCard({
   }, []);
 
 
-  const name = profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário");
+  const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+  const name = isMasterBypass ? (role === 'admin' ? 'Admin Master' : 'Prestador Teste') : (profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário"));
   const avatar = profile?.avatar_url || profile?.logo_url || null;
   const planId = (profile?.plan_id || "free").toLowerCase();
   const isGold = planId === "pro" || planId === "premium";
@@ -269,7 +270,7 @@ export function ProfileSummaryCard({
 
             <div className="flex-1 min-w-0">
               <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate max-w-[200px]">
-                {loading && !profile ? "Carregando…" : name}
+                {name}
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
