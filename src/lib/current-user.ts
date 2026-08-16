@@ -114,41 +114,29 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   }
   
   try {
-    // 1. Bypass de segurança para o Master Admin (jorgericardosalgado@gmail.com)
-    const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-    if (email === 'jorgericardosalgado@gmail.com' || isMasterBypass) {
-      cachedAdmin = true;
-      return true;
-    }
-
-    // 2. Bypass para erros de banco (Recursion 42P17): Se a role estiver no metadata do auth, confiamos nela.
-    const metadataRole = (user as any)?.user_metadata?.role;
-    if (metadataRole === 'admin') {
-      cachedAdmin = true;
-      return true;
-    }
-
-    // 3. Consulta ao banco (Supabase)
-    const { data, error } = await supabaseExternal
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", uid)
-      .eq("role", "admin")
-      .maybeSingle();
+    // 1. Bypass para erros de banco (42P17): Se houver erro, retornamos false mas NÃO limpamos o cache de forma agressiva.
+    // Usamos um bloco try-catch interno para capturar especificamente o erro de RLS.
+    try {
+      const { data, error } = await supabaseExternal
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", uid)
+        .eq("role", "admin")
+        .maybeSingle();
       
-    if (error) {
-      console.error("[Identity] Erro ao consultar user_roles:", error);
-      
-      // SE O ERRO FOR RECURSÃO INFINITA (42P17):
-      // Retornamos falso mas não limpamos o cache de forma agressiva que cause loop.
-      // O guard de rota deve decidir se bloqueia ou não.
+      if (error) {
+         // Se for recursão infinita (42P17), apenas logamos e retornamos false, sem quebrar o fluxo de login
+         console.warn("[Identity] Erro de RLS detectado (provável recursão):", error.message);
+         cachedAdmin = false;
+         return false;
+      }
+      cachedAdmin = !!data;
+    } catch (e) {
+      console.warn("[Identity] Exceção na consulta de admin:", e);
       cachedAdmin = false;
       return false;
     }
-
-    cachedAdmin = !!data;
   } catch (err) {
-    console.error("[Identity] Exceção em isCurrentUserAdmin:", err);
     cachedAdmin = false;
   }
   return cachedAdmin;
