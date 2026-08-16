@@ -62,7 +62,6 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
-      // Limpa qualquer cache de roteamento antes de sair
       if (typeof sessionStorage !== 'undefined') {
         Object.keys(sessionStorage).forEach(key => {
           if (key.includes('tsr-') || key.includes('tanstack')) {
@@ -71,8 +70,10 @@ function AuthLogin() {
         });
       }
 
-      // Redirecionamento brutal e absoluto para forçar recarregamento total da plataforma
-      window.location.replace(window.location.origin + target);
+      // Uso de replace absoluto e preventDefault adicional
+      setTimeout(() => {
+        window.location.replace(window.location.origin + target);
+      }, 50);
       return;
     }
 
