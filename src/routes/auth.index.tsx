@@ -163,36 +163,21 @@ function LoginComponent() {
         }
 
         try {
-          // Busca perfil via RPC ou query simples para evitar RLS Recursion em tabelas base
-          const { data: profile, error: profileError } = await supabaseExternal
-            .from('profiles')
-            .select('role, user_type, business_category')
-            .eq('id', data.session.user.id)
-            .maybeSingle();
-
-          if (profileError) {
-            console.warn("[Auth] Erro ao buscar perfil, usando redirecionamento genérico:", profileError);
-          }
-
-          const rawRole = ((profile?.role || profile?.user_type || profile?.business_category || '') as string).toLowerCase();
-          
-          // Mapeamento de rotas de feed por categoria
-          let target = '/feed';
-          if (rawRole.includes('prestador')) target = '/feed/prestador';
-          else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) target = '/feed/parceiro';
-          else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) target = '/feed/cliente';
-          else if (rawRole.includes('lojista')) target = '/feed/lojista';
+          // Busca categoria usando o helper centralizado que tem tratamento de erro
+          const category = await resolveUserCategory(data.session.user.id);
+          const target = category === 'admin' ? '/admin/infoprodutos' : `/feed/${category}`;
           
           console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
           
           // Limpa cache global antes da navegação para garantir carregamento limpo
           try { clearCurrentUserCache(); } catch {}
           
-          // Usamos window.location.assign para garantir um reload limpo do estado
-          window.location.assign(target);
+          // HARD FIX: Redirecionamento forçado via origin completo para quebrar o loop do SPA
+          const finalUrl = window.location.origin + target;
+          window.location.href = finalUrl;
         } catch (e) {
           console.error("[Auth] Erro no redirecionamento pós-login:", e);
-          window.location.assign('/feed');
+          window.location.href = window.location.origin + '/feed';
         }
       }
 
