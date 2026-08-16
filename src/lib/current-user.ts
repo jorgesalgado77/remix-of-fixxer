@@ -100,8 +100,9 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   const email = user?.email?.toLowerCase();
 
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+  const localCategory = typeof window !== 'undefined' ? localStorage.getItem('fixxer:last-category') : null;
 
-  if (email === 'jorgericardosalgado@gmail.com' || (isMasterBypass && localStorage.getItem('fixxer:last-category') === 'admin')) {
+  if (email === 'jorgericardosalgado@gmail.com' || (isMasterBypass && localCategory === 'admin')) {
     cachedAdmin = true;
     return true;
   }
@@ -141,16 +142,25 @@ export function isCurrentUserAdminSync(): boolean {
 
 export async function getCurrentCategory(force = false): Promise<Category> {
   if (!force && cachedCategory) return cachedCategory;
-  const uid = await getCurrentUserId();
-  if (!uid) { cachedCategory = "lojista"; return cachedCategory; }
   
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-  const email = (await getCurrentUserEmail())?.toLowerCase();
+  const localCategory = typeof window !== 'undefined' ? localStorage.getItem('fixxer:last-category') as Category : null;
+
+  if (isMasterBypass && localCategory) {
+    cachedCategory = localCategory;
+    return localCategory;
+  }
+
+  const user = await getCurrentUser(force);
+  const uid = user?.id;
+  const email = user?.email?.toLowerCase();
   
-  if (email === 'jorgericardosalgado@gmail.com' || (isMasterBypass && (localStorage.getItem('fixxer:last-category') === 'admin'))) {
+  if (email === 'jorgericardosalgado@gmail.com') {
     cachedCategory = "admin";
     return "admin";
   }
+
+  if (!uid) { cachedCategory = "lojista"; return cachedCategory; }
 
   try {
     const { data, error } = await supabaseExternal
@@ -164,11 +174,7 @@ export async function getCurrentCategory(force = false): Promise<Category> {
     const raw = ((data as any)?.role || (data as any)?.user_type || (data as any)?.business_category || "") as string;
     cachedCategory = normalizeCategory(raw);
   } catch {
-    // Se falhar o banco, tentamos o cache local do redirecionamento
-    if (typeof window !== 'undefined') {
-      const last = localStorage.getItem('fixxer:last-category') as Category;
-      if (last) return last;
-    }
+    if (localCategory) return localCategory;
     cachedCategory = "lojista";
   }
   return cachedCategory;

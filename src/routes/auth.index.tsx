@@ -21,6 +21,7 @@ function AuthLogin() {
           const { getCurrentCategory } = await import("@/lib/current-user");
           const cat = await getCurrentCategory(true);
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+          console.warn("[Auth Page] Bypass detectado. Categoria:", cat, "Target:", target);
           
           if (window.location.pathname !== target) {
               console.warn("[Auth Page] Bypass detectado. Forçando redirecionamento brutal para:", target);
