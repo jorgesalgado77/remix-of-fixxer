@@ -35,7 +35,12 @@ export const Route = createFileRoute("/_authenticated")({
       // Verificação de Admin (Resiliente)
       let isAdmin = hasMasterBypass;
       if (!isAdmin && user) {
-        isAdmin = await isCurrentUserAdmin().catch(() => false);
+        // Bypass Master Email mesmo sem flag
+        if (user.email?.toLowerCase() === emailMaster) {
+          isAdmin = true;
+        } else {
+          isAdmin = await isCurrentUserAdmin().catch(() => false);
+        }
       }
 
       return { 
@@ -46,8 +51,11 @@ export const Route = createFileRoute("/_authenticated")({
       };
     }
 
-    console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
-    throw redirect({ to: "/auth" as any });
+    // Apenas redireciona se REALMENTE não houver sessão E não estivermos no /auth
+    if (!location.pathname.includes('/auth')) {
+      console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
+      throw redirect({ to: "/auth" as any });
+    }
   },
   component: AuthenticatedLayout,
 });
