@@ -96,6 +96,7 @@ export function ProfileSummaryCard({
             display_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
             full_name: lastCat === 'admin' ? 'Admin Master' : 'Jorge Criare',
             plan_id: 'pro',
+            avatar_url: lastCat === 'prestador' ? 'https://id-preview--a2e86b01-ac4b-4241-8403-babc7f152d85.lovable.app/lovable-uploads/67107775-7286-4fba-a98b-70014b533d32.png' : null,
             karma_score: 50,
             is_verified: true
           };
