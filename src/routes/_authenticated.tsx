@@ -60,12 +60,12 @@ function AuthenticatedLayout() {
   useEffect(() => {
     if (userLoading) return;
     
-    const isMasterEmail = user?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
+    const isMasterEmail = userEmail?.toLowerCase() === 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     const isMaster = isMasterEmail || hasMasterBypass;
     
     // Se não temos usuário E não temos o bypass forçado, vai para o login
-    if (!user && !isMaster) {
+    if (!userId && !isMaster) {
       console.warn("[AuthenticatedLayout] Usuário não detectado e não é master. Redirecionando para /auth.");
       navigate({ to: "/auth" as any });
       return;
@@ -74,7 +74,7 @@ function AuthenticatedLayout() {
     if (isMaster) {
       console.log("[AuthenticatedLayout] Acesso Admin Master permitido via bypass.");
     }
-  }, [user, userLoading, navigate]);
+  }, [userId, userLoading, navigate, userEmail]);
 
   // SEGURANÇA DE ROTA: Validação de privilégios baseada na URL visitada vs Role real.
   useEffect(() => {
