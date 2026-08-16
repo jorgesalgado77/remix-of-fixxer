@@ -189,7 +189,10 @@ if (typeof window !== "undefined") {
     const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
     
     if (event === "SIGNED_OUT") {
-      if (hasMasterBypass) return;
+      if (hasMasterBypass) {
+        console.warn("[Identity] SIGNED_OUT ignorado devido ao bypass Master.");
+        return;
+      }
       
       clearCurrentUserCache();
       try {
@@ -203,12 +206,13 @@ if (typeof window !== "undefined") {
         localStorage.removeItem("fixxer_derived_user_id");
       } catch {}
     } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-      // Ao entrar ou iniciar, atualizamos o cache com a sessão presente para evitar re-fetch
       if (session?.user) {
         cachedUser = session.user;
       }
-    } else {
-      clearCurrentUserCache();
+    } else if (event === "USER_UPDATED") {
+      if (session?.user) {
+        cachedUser = session.user;
+      }
     }
     
     try { window.dispatchEvent(new Event("fixxer:identity-change")); } catch {}
