@@ -142,9 +142,21 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
   const localCategory = typeof window !== 'undefined' ? localStorage.getItem('fixxer:last-category') : null;
 
-  if (email === 'jorgericardosalgado@gmail.com' || (isMasterBypass && localCategory === 'admin')) {
+  // REGRA MESTRA: Apenas o e-mail oficial do Admin Master tem acesso administrativo
+  if (email === 'jorgericardosalgado@gmail.com') {
     cachedAdmin = true;
     return true;
+  }
+
+  // Se estiver em bypass mas NÃO for o e-mail master, não é admin (ex: jorgecriare)
+  if (isMasterBypass && localCategory === 'admin' && email === 'jorgericardosalgado@gmail.com') {
+    cachedAdmin = true;
+    return true;
+  }
+
+  if (isMasterBypass && email !== 'jorgericardosalgado@gmail.com') {
+    cachedAdmin = false;
+    return false;
   }
 
   if (!uid) { 
