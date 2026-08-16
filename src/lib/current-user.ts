@@ -40,14 +40,30 @@ export async function getCurrentUser(force = false): Promise<User | null> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
+      const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+
       // 1. Tenta obter a sessão do storage local primeiro
       const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
       const sessionUser = session?.user;
 
       // Bypass Master Crítico: Verificação de e-mail e flag de storage
       const isMasterEmail = sessionUser?.email?.toLowerCase() === 'jorgericardosalgado@gmail.com';
-      const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-      const isMaster = isMasterEmail || hasMasterBypass;
+      const isMaster = isMasterEmail || isMasterBypass;
+
+      // Redundância Master Precoce: Se temos o bypass ativo, já assumimos a identidade mock
+      // para evitar bloqueios por falha de rede/servidor no getUser().
+      if (isMasterBypass) {
+        const mockMaster: User = {
+          id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+          email: 'jorgericardosalgado@gmail.com',
+          app_metadata: {},
+          user_metadata: { full_name: 'Admin Master' },
+          aud: 'authenticated',
+          created_at: new Date().toISOString()
+        } as any;
+        cachedUser = mockMaster;
+        return mockMaster;
+      }
 
       // 2. Tenta validar no servidor
       try {
@@ -58,8 +74,6 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           return user;
         }
         
-        // Redundância Master: Se o servidor falhar (500) mas for o Master,
-        // construímos um objeto User resiliente.
         if (isMaster) {
           console.warn("[current-user] Master detectado via e-mail ou bypass local.");
           const mockMaster: User = sessionUser || {
