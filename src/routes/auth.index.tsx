@@ -22,9 +22,12 @@ function AuthLogin() {
       if (hasBypass && cat) {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
           if (window.location.pathname.startsWith('/auth')) {
-              console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
+              console.warn("[Auth Page Audit] Ejeção Automática (Bypass Ativo):", {
+                category: cat,
+                target,
+                uid: localStorage.getItem('fixxer:bypass-uid')
+              });
               
-              // Limpeza síncrona do cache do Router
               Object.keys(sessionStorage).forEach(key => {
                 if (key.includes('tsr-') || key.includes('tanstack')) {
                   sessionStorage.removeItem(key);
@@ -37,7 +40,6 @@ function AuthLogin() {
     };
 
     checkBypass();
-    // Aumentar frequência para evitar loop visual
     const interval = setInterval(checkBypass, 100); 
     return () => clearInterval(interval);
   }, []);
