@@ -53,12 +53,8 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
-      // Redirecionamento forçado via window.location.href para limpar estado do Router
-      setTimeout(() => {
-        const finalUrl = window.location.origin + target;
-        console.warn("[Auth] Redirecionando para:", finalUrl);
-        window.location.href = finalUrl;
-      }, 100);
+      // Redirecionamento instantâneo via window.location.replace para evitar loop de Router
+      window.location.replace(window.location.origin + target);
       return;
     }
 
