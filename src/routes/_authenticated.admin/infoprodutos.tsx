@@ -83,6 +83,7 @@ function AdminInfoProductsPage() {
   const [dirtyMon, setDirtyMon] = useState(false);
   const [sales, setSales] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [filters, setFilters] = useState({
     period: 'all' as any,
     status: 'ALL'
@@ -111,6 +112,9 @@ function AdminInfoProductsPage() {
     }
     if (tab === 'cupons') {
       getAdminCouponList().then(setCoupons);
+    }
+    if (tab === 'auditoria') {
+      getAdminAuditLogs().then(setAuditLogs);
     }
   }, [tab]);
 
@@ -719,27 +723,36 @@ function AdminInfoProductsPage() {
                    <div className="p-6 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
                       <h3 className="text-xs font-black text-white uppercase italic flex items-center gap-2">
                         <Activity className="w-4 h-4 text-amber-500" />
-                        Conciliação de Webhooks & Falhas
+                        Histórico de Auditoria Master
                       </h3>
-                      <Button size="sm" variant="ghost" className="text-[9px] font-black uppercase text-primary">Reprocessar Todos</Button>
+                      <Button size="sm" variant="ghost" className="text-[9px] font-black uppercase text-primary" onClick={() => getAdminAuditLogs().then(setAuditLogs)}>Atualizar</Button>
                    </div>
                    <div className="p-0 overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                          <thead>
                             <tr className="border-b border-white/5 bg-white/[0.01]">
-                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Provider</th>
-                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
-                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Retentativas</th>
-                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Erro</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Data</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Admin</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ação</th>
+                               <th className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Detalhes</th>
                             </tr>
                          </thead>
-                         <tbody className="text-xs">
-                            <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                               <td className="p-4 font-bold">ASAAS</td>
-                               <td className="p-4"><span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 text-[9px] font-black uppercase">Falha (Timeout)</span></td>
-                               <td className="p-4 font-mono">3 / 5</td>
-                               <td className="p-4 text-muted-foreground truncate max-w-[200px]">Network error: request timed out...</td>
-                            </tr>
+                         <tbody className="text-[10px]">
+                            {auditLogs.map((log) => (
+                              <tr key={log.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                                <td className="p-4 text-muted-foreground font-mono">{new Date(log.created_at).toLocaleString('pt-BR')}</td>
+                                <td className="p-4 font-bold text-emerald-400">{log.admin?.display_name || 'Admin Master'}</td>
+                                <td className="p-4 font-black uppercase italic">{log.action}</td>
+                                <td className="p-4 text-muted-foreground font-mono max-w-xs truncate" title={log.details}>
+                                  {log.details || '-'}
+                                </td>
+                              </tr>
+                            ))}
+                            {auditLogs.length === 0 && (
+                              <tr>
+                                <td colSpan={4} className="p-8 text-center text-muted-foreground font-bold uppercase tracking-widest">Nenhum log encontrado</td>
+                              </tr>
+                            )}
                          </tbody>
                       </table>
                    </div>
