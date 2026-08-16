@@ -94,12 +94,17 @@ function AuthenticatedLayout() {
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     const isMaster = isMasterEmail || hasMasterBypass;
     
-    // REDIRECT FIX: Se não houver usuário logado E não for Master,
-    // garantimos que o usuário seja jogado para a tela de login.
+    // REDIRECT FIX: Se NÃO houver usuário E NÃO for Master E NÃO estivermos na tela de login
     if (!userLoading && !user && !isMaster && !pathname.startsWith('/auth')) {
       console.warn("[AuthenticatedLayout] Sessão não encontrada. Redirecionando para /auth via window.location.");
       window.location.assign("/auth");
       return;
+    }
+
+    // OPOSTO: Se houver usuário E estivermos na tela de login, forçamos a saída para o feed
+    if (user && pathname.startsWith('/auth')) {
+      console.log("[AuthenticatedLayout] Usuário logado detectado em /auth. Forçando redirecionamento para feed.");
+      window.location.assign("/feed");
     }
 
     if (isMaster) {
