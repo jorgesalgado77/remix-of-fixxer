@@ -117,7 +117,8 @@ function LoginComponent() {
           toast.error(criticalMsg, { duration: 15000 });
           
           // Tentativa de Auto-Bypass: Se o master já tem uma sessão, redireciona
-          if (localSession?.session?.user?.email?.toLowerCase() === normalizedEmail) {
+          const session = localSession as any;
+          if (session?.session?.user?.email?.toLowerCase() === normalizedEmail) {
             window.location.replace('/admin');
           }
         } else {
