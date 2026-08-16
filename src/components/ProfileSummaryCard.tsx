@@ -86,8 +86,9 @@ export function ProfileSummaryCard({
         const auth = window.localStorage.getItem("fixxer-auth-token-v1");
         const isMaster = window.localStorage.getItem('fixxer:master-bypass') === 'true';
         const lastCat = localStorage.getItem('fixxer:last-category');
+        const bypassUid = localStorage.getItem('fixxer:bypass-uid');
         const uid = isMaster 
-          ? (lastCat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') 
+          ? (bypassUid || (lastCat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9')) 
           : (auth ? JSON.parse(auth)?.user?.id : null);
         
         if (isMaster) {
