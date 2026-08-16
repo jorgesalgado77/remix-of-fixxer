@@ -13,6 +13,7 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
+    console.log("[Route Guard] Running beforeLoad for:", location.pathname);
     // 1. Bypass Master Admin
     const emailMaster = 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
@@ -84,6 +85,9 @@ export const Route = createFileRoute("/_authenticated")({
       }
       throw redirect({ to: "/auth" as any });
     }
+    
+    // 5. Caso neutro (se cair aqui, é porque não há sessão e estamos em /auth, o que é permitido)
+    return { userId: '', userEmail: '', isAdmin: false, bypass: false };
   },
   component: AuthenticatedLayout,
 });
