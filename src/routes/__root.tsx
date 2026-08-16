@@ -197,15 +197,36 @@ function RootComponent() {
         ]);
         const { data } = await supabase.auth.getSession();
         if (data.session?.user?.id) {
+          // PROMPT 24 FIX: Forçar saída se estiver em /auth e logado
+          if (window.location.pathname.startsWith('/auth')) {
+            console.warn("[Root] Login detectado em /auth. Forçando salto via window.location.");
+            window.location.assign('/feed');
+            return;
+          }
           await initCoinsForUser(data.session.user.id);
           void subscribeBlockedStatus(data.session.user.id);
         }
-        supabase.auth.onAuthStateChange((event, session) => {
+        supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log(`[Identity] Evento Auth: ${event}`, !!session);
+          
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && session?.user?.id) {
+            if (window.location.pathname.startsWith('/auth')) {
+               console.warn("[Root] Login detectado em /auth via evento. Forçando salto.");
+               window.location.assign('/feed');
+               return;
+            }
             void initCoinsForUser(session.user.id);
             void subscribeBlockedStatus(session.user.id);
-            // PROMPT 15.6: Sincronização automática na etapa de login e mudanças de estado
             void resolveIdentity(session.user.id, { refresh: true }).catch(console.error);
+          }
+          
+          if (event === "SIGNED_OUT") {
+            const isMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
+            if (isMasterBypass) return;
+            try {
+              const { clearCurrentUserCache } = await import("@/lib/current-user");
+              clearCurrentUserCache();
+            } catch {}
           }
         });
       } catch (e) { console.warn("[coins init] falhou", e); }

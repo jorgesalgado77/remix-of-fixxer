@@ -113,7 +113,7 @@ function LoginComponent() {
             };
             
             const sessionStr = JSON.stringify(mockSession);
-            localStorage.setItem('sb-fixxer-auth-token', sessionStr);
+            localStorage.setItem('fixxer-auth-token-v1', sessionStr);
             localStorage.setItem('fixxer:master-bypass', 'true');
             
             toast.success('Bypass Master: Acesso emergencial concedido.');
@@ -173,12 +173,11 @@ function LoginComponent() {
           // Limpa cache global antes da navegação para garantir carregamento limpo
           try { clearCurrentUserCache(); } catch {}
           
-          // HARD FIX: Redirecionamento forçado via origin completo para quebrar o loop do SPA
-          const finalUrl = window.location.origin + target;
-          window.location.href = finalUrl;
+          // HARD FIX: Forçar navegação absoluta e imediata limpando o estado do Router
+          window.location.replace(window.location.origin + target);
         } catch (e) {
           console.error("[Auth] Erro no redirecionamento pós-login:", e);
-          window.location.href = window.location.origin + '/feed';
+          window.location.assign('/feed');
         }
       }
 
