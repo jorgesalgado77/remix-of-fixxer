@@ -43,10 +43,11 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
+      // Reset total para garantir que o roteador não intercepte a mudança de estado
       setTimeout(() => {
         console.log("[Auth] Redirecionando para:", target);
-        window.location.href = window.location.origin + target;
-      }, 200);
+        window.location.replace(window.location.origin + target);
+      }, 300);
       return;
     }
 
