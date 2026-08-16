@@ -165,6 +165,7 @@ function LoginComponent() {
         const userEmail = data.session.user.email?.toLowerCase();
         
         if (userEmail === 'jorgericardosalgado@gmail.com') {
+          console.log("[Auth] Redirecionamento Master Admin...");
           window.location.href = '/admin';
           return;
         }
