@@ -171,15 +171,21 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   }
   
   try {
-    // 2. Bypass de segurança: Se estivermos em um ambiente onde o banco falha (500/Recursion),
-    // e o usuário já tem uma role injetada no metadata via Auth (Supabase Auth), usamos ela.
-    const metadataRole = (user as any)?.user_metadata?.role;
-    if (metadataRole === 'admin') {
-      console.warn("[Identity] Admin detectado via metadata (DB Bypass).");
+    // 1. Bypass de segurança para o Master Admin (jorgericardosalgado@gmail.com)
+    const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+    if (email === 'jorgericardosalgado@gmail.com' || isMasterBypass) {
       cachedAdmin = true;
       return true;
     }
 
+    // 2. Bypass para erros de banco (Recursion 42P17): Se a role estiver no metadata do auth, confiamos nela.
+    const metadataRole = (user as any)?.user_metadata?.role;
+    if (metadataRole === 'admin') {
+      cachedAdmin = true;
+      return true;
+    }
+
+    // 3. Consulta ao banco (Supabase)
     const { data, error } = await supabaseExternal
       .from("user_roles")
       .select("role")
@@ -190,18 +196,14 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
     if (error) {
       console.error("[Identity] Erro ao consultar user_roles:", error);
       
-      // FALLBACK CRÍTICO: Se houver erro de recursão no banco (erro 42P17),
-      // não podemos simplesmente retornar false e deslogar o usuário, 
-      // pois isso causa loop. Retornamos false mas permitimos que o app continue.
+      // SE O ERRO FOR RECURSÃO INFINITA (42P17):
+      // Retornamos falso mas não limpamos o cache de forma agressiva que cause loop.
+      // O guard de rota deve decidir se bloqueia ou não.
       cachedAdmin = false;
       return false;
     }
 
     cachedAdmin = !!data;
-    
-    if (import.meta.env.DEV) {
-      console.log(`[Identity] Status Admin (DB): ${cachedAdmin}`);
-    }
   } catch (err) {
     console.error("[Identity] Exceção em isCurrentUserAdmin:", err);
     cachedAdmin = false;

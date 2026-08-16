@@ -13,43 +13,29 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
-    // PROMPT 23: Bloqueio Total de Redirect para Admin Master
+    // 1. Bypass Master Admin
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     if (hasMasterBypass) {
-      console.warn("[Route Guard] Bypass Master ATIVO no beforeLoad.");
-      return {
-        userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
-        userEmail: 'jorgericardosalgado@gmail.com',
-        isAdmin: true,
-        bypass: true
-      };
+      return { userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f', userEmail: 'jorgericardosalgado@gmail.com', isAdmin: true, bypass: true };
     }
     
-    // Tenta resolver o usuário sem forçar reload constante
+    // 2. Verificação de Usuário
     const user = await getCurrentUser();
     
     if (!user) {
-      console.warn("[Route Guard] Usuário não logado ou falha na sessão. Redirecionando para /auth.");
-      // Se não for master, redireciona.
-      throw redirect({ 
-        to: "/auth" as any
-      });
+      console.warn("[Route Guard] Sessão não encontrada. Redirecionando para /auth.");
+      throw redirect({ to: "/auth" as any });
     }
 
-    // Tenta obter admin, mas não deixa erro de banco quebrar o carregamento da rota
+    // 3. Verificação de Admin (Resiliente a erros de banco)
     let isAdmin = false;
     try {
       isAdmin = await isCurrentUserAdmin();
     } catch (e) {
-      console.error("[Route Guard] Erro ao validar admin:", e);
+      console.error("[Route Guard] Erro silencioso na verificação de admin:", e);
     }
 
-    return {
-      userId: user.id,
-      userEmail: user.email,
-      isAdmin,
-      bypass: false
-    };
+    return { userId: user.id, userEmail: user.email, isAdmin, bypass: false };
   },
   component: AuthenticatedLayout,
 });
