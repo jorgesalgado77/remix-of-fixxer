@@ -33,8 +33,13 @@ export const Route = createFileRoute("/_authenticated")({
       console.log("[Route Guard] Usuário autenticado:", user?.email || 'Master Bypass');
       
       // Se o usuário está logado e tenta acessar /auth, mandamos para o feed
+      // Usamos window.location.replace para quebrar o loop do roteador se ele estiver preso
       if (location.pathname.startsWith('/auth')) {
-        console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed");
+        console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed via window.location");
+        if (typeof window !== 'undefined') {
+          window.location.replace('/feed');
+          return;
+        }
         throw redirect({ to: "/feed" as any });
       }
 
@@ -44,7 +49,6 @@ export const Route = createFileRoute("/_authenticated")({
         if (user.email?.toLowerCase() === emailMaster) {
           isAdmin = true;
         } else {
-          // Usamos a checagem que ignora erros de RLS recursivo (42P17)
           isAdmin = await isCurrentUserAdmin().catch(() => false);
         }
       }
