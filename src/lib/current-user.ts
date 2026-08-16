@@ -183,7 +183,7 @@ export function clearCurrentUserCache() {
 
 // Invalida cache automaticamente em qualquer mudança de sessão.
 if (typeof window !== "undefined") {
-  supabaseExternal.auth.onAuthStateChange((event, session) => {
+  supabaseExternal.auth.onAuthStateChange(async (event, session) => {
     console.log(`[Identity] Evento Auth: ${event}`, !!session);
     
     const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
@@ -206,13 +206,17 @@ if (typeof window !== "undefined") {
         localStorage.removeItem("fixxer_lojista_id");
         localStorage.removeItem("fixxer_derived_user_id");
       } catch {}
-    } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+    } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "USER_UPDATED") {
       if (session?.user) {
         cachedUser = session.user;
       }
-    } else if (event === "USER_UPDATED") {
-      if (session?.user) {
-        cachedUser = session.user;
+      
+      // PROMPT 24: Se houver sessão mas estivermos em /auth, o SPA está preso. 
+      // Forçamos o redirecionamento absoluto aqui como última linha de defesa.
+      if (session && window.location.pathname.startsWith('/auth')) {
+        console.warn("[Identity] Forçando saída de /auth via onAuthStateChange");
+        window.location.assign('/feed');
+        return;
       }
     }
     
