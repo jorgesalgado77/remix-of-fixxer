@@ -13,37 +13,49 @@ const PixManagerModal = lazy(() => import("@/components/PixManagerModal").then(m
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
-    // PROMPT 23: Bloqueio Total de Redirect para Admin Master
+    // 1. Bypass Master Admin
+    const emailMaster = 'jorgericardosalgado@gmail.com';
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-    if (hasMasterBypass) {
-      console.warn("[Route Guard] Bypass Master ATIVO no beforeLoad.");
-      return {
-        userId: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
-        userEmail: 'jorgericardosalgado@gmail.com',
-        isAdmin: true,
-        bypass: true
+    
+    // 2. Verificação de Usuário via storage (síncrona/rápida)
+    let session = null;
+    try {
+      const result = await supabaseExternal.auth.getSession();
+      session = result.data.session;
+    } catch (e) {
+      console.error("[Route Guard] Erro crítico ao ler sessão:", e);
+    }
+    
+    const user = session?.user;
+
+    // FORCE FORWARD: Se temos uma sessão, ignoramos o redirect para /auth
+    if (user || hasMasterBypass) {
+      console.log("[Route Guard] Acesso permitido:", user?.email || 'Master Bypass');
+      
+      // Verificação de Admin (Resiliente)
+      let isAdmin = hasMasterBypass;
+      if (!isAdmin && user) {
+        // Bypass Master Email mesmo sem flag
+        if (user.email?.toLowerCase() === emailMaster) {
+          isAdmin = true;
+        } else {
+          isAdmin = await isCurrentUserAdmin().catch(() => false);
+        }
+      }
+
+      return { 
+        userId: user?.id ?? '6ba65048-803f-44f6-88d2-24d04fee1a0f', 
+        userEmail: user?.email ?? emailMaster, 
+        isAdmin, 
+        bypass: hasMasterBypass 
       };
     }
-    
-    // Tenta resolver o usuário sem forçar reload constante
-    const user = await getCurrentUser();
-    
-    if (!user) {
-      console.warn("[Route Guard] Usuário não logado. Redirecionando para /auth.");
-      throw redirect({ 
-        to: "/auth" as any
-      });
+
+    // Apenas redireciona se REALMENTE não houver sessão E não estivermos no /auth
+    if (!location.pathname.includes('/auth')) {
+      console.warn("[Route Guard] Sessão ausente. Redirecionando para /auth.");
+      throw redirect({ to: "/auth" as any });
     }
-
-    // Verifica admin de forma assíncrona para o contexto
-    const isAdmin = await isCurrentUserAdmin();
-
-    return {
-      userId: user.id,
-      userEmail: user.email,
-      isAdmin,
-      bypass: false
-    };
   },
   component: AuthenticatedLayout,
 });
@@ -77,11 +89,10 @@ function AuthenticatedLayout() {
     const hasMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
     const isMaster = isMasterEmail || hasMasterBypass;
     
-    // REDIRECT FIX: Se não houver usuário logado (Supabase Session vazia) E não for Master,
+    // REDIRECT FIX: Se não houver usuário logado E não for Master,
     // garantimos que o usuário seja jogado para a tela de login.
-    if (!user && !isMaster) {
-      console.warn("[AuthenticatedLayout] Sessão Supabase não encontrada. Redirecionando para login.");
-      // Usamos location.href para garantir que o redirecionamento ocorra fora da pilha do router
+    if (!userLoading && !user && !isMaster && !pathname.includes('/auth')) {
+      console.warn("[AuthenticatedLayout] Sessão não encontrada. Redirecionando para /auth via window.location.");
       window.location.href = "/auth";
       return;
     }
@@ -89,7 +100,7 @@ function AuthenticatedLayout() {
     if (isMaster) {
       console.log("[AuthenticatedLayout] Acesso Admin Master permitido via bypass.");
     }
-  }, [user, userLoading]);
+  }, [user, userLoading, pathname]);
 
   // SEGURANÇA DE ROTA: Validação de privilégios baseada na URL visitada vs Role real.
   useEffect(() => {

@@ -4,6 +4,7 @@ import { LogIn, Loader2, KeyRound, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
 import { toast } from "sonner";
+import { clearCurrentUserCache } from "@/lib/current-user";
 
 export const Route = createFileRoute("/auth/")({
   component: LoginComponent,
@@ -87,46 +88,41 @@ function LoginComponent() {
       console.log(`[Auth] Tentando login para: ${normalizedEmail}`);
       setLoading(true);
 
-      // Bypass TOTAL Admin Master: Refatoração completa de acesso
+      // Bypass TOTAL Admin Master
       if (isMaster && password === '!jR06097') {
          console.warn("[Auth] Admin Master acessando via credenciais master.");
          
          if (typeof window !== 'undefined') {
-           const mockSession = {
-             access_token: 'bypass-token-master',
-             refresh_token: 'bypass-refresh-master',
-             expires_in: 3600,
-             token_type: 'bearer',
-             user: {
-               id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
-               email: 'jorgericardosalgado@gmail.com',
-               user_metadata: { 
-                 full_name: 'Admin Master',
-                 display_name: 'Admin Master'
-               },
-               app_metadata: {},
-               aud: 'authenticated',
-               created_at: new Date().toISOString()
-             }
-           };
-           
-            // Injeta em todas as chaves possíveis para garantir persistência do Supabase
-            const sessionStr = JSON.stringify(mockSession);
-            localStorage.setItem('fixxer-auth-token-v1', sessionStr);
-            localStorage.setItem('sb-fixxer-auth-token', sessionStr);
-            localStorage.setItem('sb-auth-token', sessionStr);
+            const mockSession = {
+              access_token: 'bypass-token-master',
+              refresh_token: 'bypass-refresh-master',
+              expires_in: 3600,
+              token_type: 'bearer',
+              user: {
+                id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+                email: 'jorgericardosalgado@gmail.com',
+                user_metadata: { 
+                  full_name: 'Admin Master',
+                  display_name: 'Admin Master'
+                },
+                app_metadata: {},
+                aud: 'authenticated',
+                created_at: new Date().toISOString()
+              }
+            };
             
-            // Flag interna do app para bypass de guards
+            const sessionStr = JSON.stringify(mockSession);
+            localStorage.setItem('sb-fixxer-auth-token', sessionStr);
             localStorage.setItem('fixxer:master-bypass', 'true');
             
             toast.success('Bypass Master: Acesso emergencial concedido.');
-            
-            // PROMPT 23: Forçamos a limpeza do estado do roteador via Navegação Direta
-            console.log("[Auth] Bypass Master ativado. Navegando para /admin...");
-            window.location.href = '/admin';
+            window.location.assign('/admin');
           }
           return;
        }
+
+      // LOGIN REGULAR: Limpa bypass anterior
+      localStorage.removeItem('fixxer:master-bypass');
 
       const { data, error } = await supabaseExternal.auth.signInWithPassword({
         email: normalizedEmail,
@@ -137,16 +133,12 @@ function LoginComponent() {
         const errObj = error as any;
         console.error("[Auth] Falha no signInWithPassword:", errObj);
         
-        // Detecção profunda de erro 500 do Supabase
-        const is500 = errObj.status === 500 || 
-                     (errObj.code === "unexpected_failure") ||
-                     (errObj.message && errObj.message.includes("Database error querying schema"));
+        const is500 = errObj.status === 500 || (errObj.code === "unexpected_failure");
 
         if (is500 && isMaster && password === '!jR06097') {
-          console.warn("[Auth] Erro 500 detectado para Master. Aplicando bypass forçado.");
           localStorage.setItem('fixxer:master-bypass', 'true');
           toast.success('Bypass Master: Acesso emergencial concedido.');
-          window.location.href = '/admin';
+          window.location.assign('/admin');
           return;
         } else {
           const friendly = toFriendly(extractErr(error));
@@ -160,22 +152,18 @@ function LoginComponent() {
 
       if (data?.session) {
         toast.success('Login realizado com sucesso!');
-        
-        // Limpamos flags de bypass anteriores para garantir que a role venha do banco
         localStorage.removeItem('fixxer:master-bypass');
 
-        // Navegação via window.location.href é mais robusta para resetar o estado do roteador e auth
         const userEmail = data.session.user.email?.toLowerCase();
         
-        // Se for o master, vai direto pro admin (segurança extra)
         if (userEmail === 'jorgericardosalgado@gmail.com') {
-          console.log("[Auth] Master detectado via login comum. Redirecionando...");
+          console.log("[Auth] Redirecionamento Master Admin...");
           window.location.href = '/admin';
           return;
         }
 
-        // Tenta buscar o perfil para o redirecionamento correto
         try {
+          // Busca perfil via RPC ou query simples para evitar RLS Recursion em tabelas base
           const { data: profile } = await supabaseExternal
             .from('profiles')
             .select('role, user_type, business_category')
@@ -184,14 +172,26 @@ function LoginComponent() {
 
           const rawRole = ((profile?.role || profile?.user_type || profile?.business_category || '') as string).toLowerCase();
           
-          if (rawRole.includes('prestador')) window.location.href = '/prestador';
-          else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) window.location.href = '/parceiro';
-          else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) window.location.href = '/cliente';
-          else if (rawRole.includes('lojista')) window.location.href = '/lojista';
-          else window.location.href = '/feed';
+          // Mapeamento de rotas de feed por categoria
+          let target = '/feed';
+          if (rawRole.includes('prestador')) target = '/feed/prestador';
+          else if (rawRole.includes('parceiro') || rawRole.includes('fornecedor') || rawRole.includes('b2b')) target = '/feed/parceiro';
+          else if (rawRole.includes('cliente') || rawRole.includes('casual') || rawRole.includes('final')) target = '/feed/cliente';
+          else if (rawRole.includes('lojista')) target = '/feed/lojista';
+          
+          console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
+          
+          // FORCED NAVIGATION: Usamos window.location.assign para garantir que o navegador
+          // saia da pilha do React Router e reinicie o estado global com o novo token.
+          console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
+          
+          // Limpa cache global antes da navegação para garantir carregamento limpo
+          try { clearCurrentUserCache(); } catch {}
+          
+          window.location.assign(target);
         } catch (e) {
-          console.error("[Auth] Erro ao buscar perfil para redirect:", e);
-          window.location.href = '/feed';
+          console.error("[Auth] Erro no redirecionamento pós-login:", e);
+          window.location.assign('/feed');
         }
       }
 
