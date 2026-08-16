@@ -37,7 +37,10 @@ export const Route = createFileRoute("/_authenticated")({
       if (location.pathname.startsWith('/auth')) {
         console.log("[Route Guard] Redirecionando usuário logado de /auth para /feed via window.location");
         if (typeof window !== 'undefined') {
-          window.location.replace('/feed');
+          // Pequeno delay para garantir que o router não intercepte a navegação nativa
+          setTimeout(() => {
+            window.location.replace('/feed');
+          }, 100);
           return;
         }
         throw redirect({ to: "/feed" as any });
