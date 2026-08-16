@@ -182,6 +182,11 @@ function LoginComponent() {
           
           // FORCED NAVIGATION: Usamos window.location.assign para garantir que o navegador
           // saia da pilha do React Router e reinicie o estado global com o novo token.
+          console.log("[Auth] Redirecionamento Final -> Navegando para:", target);
+          
+          // Limpa cache global antes da navegação para garantir carregamento limpo
+          try { clearCurrentUserCache(); } catch {}
+          
           window.location.assign(target);
         } catch (e) {
           console.error("[Auth] Erro no redirecionamento pós-login:", e);
