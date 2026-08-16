@@ -9,8 +9,10 @@ export const Route = createFileRoute("/auth")({
 
         if ((hasMasterBypass && cat) || rawToken) {
             const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
-            console.warn("[Auth Layout Guard] Sessão ativa detectada. Redirecionamento forçado para:", target);
-            window.location.href = window.location.origin + target;
+            if (location.pathname !== target) {
+                console.warn("[Auth Layout Guard] Sessão ativa. Redirecionando...");
+                window.location.replace(window.location.origin + target);
+            }
             return { authenticated: true };
         }
     }

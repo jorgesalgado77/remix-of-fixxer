@@ -15,7 +15,7 @@ function AuthLogin() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const checkBypass = async () => {
+    const checkBypass = () => {
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
       const cat = localStorage.getItem('fixxer:last-category');
       
@@ -23,13 +23,13 @@ function AuthLogin() {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
           if (window.location.pathname !== target) {
               console.warn("[Auth Page] Bypass detectado. Ejetando para:", target);
-              window.location.href = window.location.origin + target;
+              window.location.replace(window.location.origin + target);
           }
       }
     };
 
     checkBypass();
-    const interval = setInterval(checkBypass, 50);
+    const interval = setInterval(checkBypass, 500); // Frequência normal
     return () => clearInterval(interval);
   }, []);
 
@@ -39,8 +39,6 @@ function AuthLogin() {
     
     const emailVal = email.trim().toLowerCase();
     const passVal = password.trim();
-    
-    console.warn("[Auth] Login manual:", emailVal);
     
     if (!emailVal || !passVal) {
       toast.error("Preencha todos os campos.");
@@ -56,11 +54,10 @@ function AuthLogin() {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
-      console.warn("[Auth] MASTER BYPASS ATIVADO:", category);
+      console.warn("[Auth] Master Bypass Ativado:", category);
       localStorage.setItem('fixxer:master-bypass', 'true');
       localStorage.setItem('fixxer:last-category', category);
       
-      // Limpeza brutal do Router síncrona
       if (typeof sessionStorage !== 'undefined') {
         Object.keys(sessionStorage).forEach(key => {
           if (key.includes('tsr-') || key.includes('tanstack')) {
@@ -70,10 +67,7 @@ function AuthLogin() {
       }
 
       toast.success('Acesso Master concedido');
-      
-      // Redirecionamento brutal síncrono absoluto
-      console.warn("[Auth] Redirecionando brutalmente para:", target);
-      window.location.href = window.location.origin + target;
+      window.location.replace(window.location.origin + target);
       return;
     }
 
@@ -96,7 +90,7 @@ function AuthLogin() {
         
         localStorage.setItem('fixxer:last-category', cat);
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-        window.location.href = window.location.origin + target;
+        window.location.replace(window.location.origin + target);
       }
     } catch (err: any) {
       toast.error(err.message || "Credenciais inválidas");

@@ -8,23 +8,12 @@ export const Route = createFileRoute("/_authenticated")({
         const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
         const isAuthRoute = location.pathname.startsWith('/auth');
+        const cat = localStorage.getItem('fixxer:last-category');
 
         if (hasMasterBypass || rawToken) {
             if (isAuthRoute) {
-                const { getCurrentCategory } = await import("@/lib/current-user");
-                const cat = await getCurrentCategory(true);
-                const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-                
-                // Limpeza crítica para evitar loop
-                if (typeof sessionStorage !== 'undefined') {
-                  Object.keys(sessionStorage).forEach(key => {
-                    if (key.includes('tsr-') || key.includes('tanstack')) {
-                      sessionStorage.removeItem(key);
-                    }
-                  });
-                }
-                
-                console.warn("[Auth Guard] Logado detectado em /auth. Ejetando brutalmente para", target);
+                const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat || 'lojista'}`;
+                console.warn("[Auth Guard] Logado detectado em /auth. Ejetando para", target);
                 window.location.replace(window.location.origin + target);
                 return { authenticated: true };
             }
@@ -33,7 +22,7 @@ export const Route = createFileRoute("/_authenticated")({
     }
     
     if (!location.pathname.startsWith('/auth')) {
-        console.warn("[Authenticated Guard] Acesso negado em", location.pathname, ". Redirecionando para /auth.");
+        console.warn("[Authenticated Guard] Redirecionando para /auth.");
         throw redirect({ to: "/auth" as any });
     }
 
