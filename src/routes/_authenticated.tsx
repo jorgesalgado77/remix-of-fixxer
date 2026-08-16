@@ -9,23 +9,21 @@ export const Route = createFileRoute("/_authenticated")({
         const rawToken = localStorage.getItem('fixxer-auth-token-v1');
         const isAuthRoute = location.pathname.startsWith('/auth');
 
-        // Se estiver autenticado e tentar acessar rotas de login, ejeta IMEDIATAMENTE
-        if (isAuthRoute && (hasMasterBypass || rawToken)) {
-            const { getCurrentCategory } = await import("@/lib/current-user");
-            const cat = await getCurrentCategory(true);
-            const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
-            console.warn("[Auth Guard] Sessão ativa em /auth. Ejetando via location.replace.");
-            window.location.replace(window.location.origin + target);
-            return { authenticated: true };
-        }
-
         if (hasMasterBypass || rawToken) {
+            if (isAuthRoute) {
+                const { getCurrentCategory } = await import("@/lib/current-user");
+                const cat = await getCurrentCategory(true);
+                const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+                console.warn("[Auth Guard] Logado em /auth. Ejetando brutalmente.");
+                window.location.replace(window.location.origin + target);
+                return { authenticated: true };
+            }
             return { authenticated: true };
         }
     }
     
     if (!location.pathname.startsWith('/auth')) {
-        console.warn("[Authenticated Guard] Acesso negado. Ejetando para /auth.");
+        console.warn("[Authenticated Guard] Acesso negado. Redirecionando para /auth.");
         throw redirect({ to: "/auth" as any });
     }
 

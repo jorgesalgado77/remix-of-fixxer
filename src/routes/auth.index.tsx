@@ -16,8 +16,6 @@ function AuthLogin() {
     if (typeof window === 'undefined') return;
 
     const checkBypass = async () => {
-      if (typeof window === 'undefined') return;
-      
       const hasBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
       if (hasBypass) {
           const { getCurrentCategory } = await import("@/lib/current-user");
@@ -25,16 +23,23 @@ function AuthLogin() {
           const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
           
           if (window.location.pathname !== target) {
-              console.warn("[Auth Page] Bypass detectado. Forçando redirecionamento para:", target);
+              console.warn("[Auth Page] Bypass detectado. Forçando redirecionamento brutal para:", target);
+              // Limpeza extra para garantir que o Router não intercepte
+              if (typeof sessionStorage !== 'undefined') {
+                Object.keys(sessionStorage).forEach(key => {
+                  if (key.includes('tsr-') || key.includes('tanstack')) {
+                    sessionStorage.removeItem(key);
+                  }
+                });
+              }
               window.location.replace(window.location.origin + target);
           }
       }
     };
 
+    // Execução imediata e repetida para vencer o Router
     checkBypass();
-    
-    // Watchdog agressivo para capturar mudanças assíncronas no bypass
-    const interval = setInterval(checkBypass, 500);
+    const interval = setInterval(checkBypass, 200);
     return () => clearInterval(interval);
   }, []);
 
