@@ -819,7 +819,7 @@ export function LojistaDashboard() {
           />
         </Suspense>
       )}
-    </div>
+
   );
 }
 
