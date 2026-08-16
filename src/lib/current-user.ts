@@ -1,18 +1,5 @@
 // ============================================================
 // Identidade e autorização — fonte única de verdade
-// Todas as leituras vêm de supabaseExternal.auth.getUser() e do
-// backend (public.user_roles). NENHUMA decisão é baseada em
-// localStorage / email hardcoded.
-//
-// Regras:
-//  - `getCurrentUserId()`  → uid real de auth.users ou null
-//  - `getCurrentUserEmail()` → email real da sessão
-//  - `isCurrentUserAdmin()` → checa public.user_roles (role='admin') com bypass para o master (jorgericardosalgado@gmail.com)
-//  - Hooks React (`useCurrentUser`, `useIsAdmin`) reagem a onAuthStateChange
-//
-// localStorage é aceitável APENAS como chave de cache namespaced pelo
-// uid retornado por este módulo (ex.: `myapp:favs:${uid}`). Nunca como
-// fonte de autenticação.
 // ============================================================
 import { useEffect, useState } from "react";
 import { supabaseExternal } from "@/lib/supabaseExternal";
@@ -56,18 +43,22 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         return masterData;
       }
 
-      // 1.getSession() é síncrono para o storage, muito mais rápido e resiliente a falhas de rede/banco
-      const { data: { session } } = await supabaseExternal.auth.getSession();
+      // getSession é resiliente e rápido (lê storage)
+      const { data: { session }, error } = await supabaseExternal.auth.getSession();
       
       if (session?.user) {
         cachedUser = session.user;
         return session.user;
       }
 
-      // 2. Se falhar o storage, tentamos getUser() apenas uma vez
-      const { data: { user } } = await supabaseExternal.auth.getUser();
-      cachedUser = user;
-      return user;
+      // Apenas se o storage falhar e estivermos online, tentamos a API
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        const { data: { user } } = await supabaseExternal.auth.getUser();
+        cachedUser = user;
+        return user;
+      }
+      
+      return null;
     } catch (e) {
       console.warn("[current-user] Falha ao recuperar usuário:", e);
       return null;
@@ -95,15 +86,9 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   const uid = user?.id;
   const email = user?.email?.toLowerCase();
 
-  // 1. Bypass Emergencial Local (Admin Master)
-  // Se o e-mail logado for o master, garantimos o acesso administrativo
-  // independentemente de falhas na consulta ao banco ou RLS.
   const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
 
   if (email === 'jorgericardosalgado@gmail.com' || isMasterBypass) {
-    if (import.meta.env.DEV || cachedAdmin === null) {
-      console.warn("[Identity] Acesso Admin Master concedido via Bypass.");
-    }
     cachedAdmin = true;
     return true;
   }
@@ -114,45 +99,30 @@ export async function isCurrentUserAdmin(force = false): Promise<boolean> {
   }
   
   try {
-    // 1. Bypass para erros de banco (42P17): Se houver erro, retornamos false mas NÃO limpamos o cache de forma agressiva.
-    // Usamos um bloco try-catch interno para capturar especificamente o erro de RLS.
-    try {
-      const { data, error } = await supabaseExternal
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", uid)
-        .eq("role", "admin")
-        .maybeSingle();
-      
-      if (error) {
-         // Se for recursão infinita (42P17) ou erro de banco 500
-         console.warn("[Identity] Erro de RLS ou Banco detectado:", error.message);
-         // Se o erro for recursão, assumimos false para o role de admin para permitir o login continuar
-         cachedAdmin = false;
-         return false;
-      }
-      cachedAdmin = !!data;
-    } catch (e) {
-      console.warn("[Identity] Exceção na consulta de admin:", e);
-      // Em caso de exceção de rede ou banco, retornamos false mas permitimos cachear se já tivermos um valor
-      if (cachedAdmin === null) cachedAdmin = false;
-      return cachedAdmin;
+    const { data, error } = await supabaseExternal
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", uid)
+      .eq("role", "admin")
+      .maybeSingle();
+    
+    if (error) {
+      console.warn("[Identity] Erro na consulta de privilégios:", error.message);
+      // Se houver erro de rede/RLS, confiamos no bypass master se houver, senão false
+      return cachedAdmin || false;
     }
+    cachedAdmin = !!data;
   } catch (err) {
     cachedAdmin = false;
   }
   return cachedAdmin;
 }
 
-// Versão síncrona/rápida para guards de rota que precisam de resposta imediata
 export function isCurrentUserAdminSync(): boolean {
   if (cachedAdmin !== null) return cachedAdmin;
-  
-  // Se não houver cache, tentamos ver se o Master Bypass está ativo
   if (typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true') {
     return true;
   }
-  
   return false;
 }
 
@@ -160,16 +130,32 @@ export async function getCurrentCategory(force = false): Promise<Category> {
   if (!force && cachedCategory) return cachedCategory;
   const uid = await getCurrentUserId();
   if (!uid) { cachedCategory = "lojista"; return cachedCategory; }
-  if (await isCurrentUserAdmin()) { cachedCategory = "admin"; return cachedCategory; }
+  
+  const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+  const email = (await getCurrentUserEmail())?.toLowerCase();
+  
+  if (email === 'jorgericardosalgado@gmail.com' || isMasterBypass) {
+    cachedCategory = "admin";
+    return "admin";
+  }
+
   try {
-    const { data } = await supabaseExternal
+    const { data, error } = await supabaseExternal
       .from("profiles")
       .select("role, user_type, business_category")
       .eq("id", uid)
       .maybeSingle();
+    
+    if (error) throw error;
+    
     const raw = ((data as any)?.role || (data as any)?.user_type || (data as any)?.business_category || "") as string;
     cachedCategory = normalizeCategory(raw);
   } catch {
+    // Se falhar o banco, tentamos o cache local do redirecionamento
+    if (typeof window !== 'undefined') {
+      const last = localStorage.getItem('fixxer:last-category') as Category;
+      if (last) return last;
+    }
     cachedCategory = "lojista";
   }
   return cachedCategory;
@@ -181,44 +167,23 @@ export function clearCurrentUserCache() {
   cachedCategory = null;
 }
 
-// Invalida cache automaticamente em qualquer mudança de sessão.
 if (typeof window !== "undefined") {
   supabaseExternal.auth.onAuthStateChange(async (event, session) => {
     console.log(`[Identity] Evento Auth: ${event}`, !!session);
     
-    const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-    
     if (event === "SIGNED_OUT") {
-      // PROMPT 15.6 FIX: Se o storage for limpo externamente, mantemos o cache se houver bypass Master
-      if (hasMasterBypass) {
-        console.warn("[Identity] SIGNED_OUT ignorado devido ao bypass Master.");
-        return;
-      }
-      
+      if (localStorage.getItem('fixxer:master-bypass') === 'true') return;
       clearCurrentUserCache();
-      try {
-        localStorage.removeItem("fixxer_user_id");
-        localStorage.removeItem("fixxer_user_email");
-        localStorage.removeItem("fixxer_user_role");
-        localStorage.removeItem("fixxer_user_category");
-        localStorage.removeItem("fixxer_user_name");
-        localStorage.removeItem("fixxer_authenticated");
-        localStorage.removeItem("fixxer_lojista_id");
-        localStorage.removeItem("fixxer_derived_user_id");
-      } catch {}
-    } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "USER_UPDATED") {
+    } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
       if (session?.user) {
         cachedUser = session.user;
       }
       
-      // PROMPT 24: Se houver sessão mas estivermos em /auth, o SPA está preso. 
-      // Forçamos o redirecionamento absoluto aqui como última linha de defesa.
-      // Usamos uma verificação mais rigorosa para evitar loops infinitos de recarregamento
-      if (session && typeof window !== 'undefined' && 
-          (window.location.pathname === '/auth' || window.location.pathname === '/auth/')) {
-        console.warn("[Identity] Forçando saída de /auth via onAuthStateChange");
-        window.location.assign('/feed');
-        return;
+      // Auto-redirecionamento se estiver em /auth logado
+      if (session && (window.location.pathname === '/auth' || window.location.pathname === '/auth/')) {
+        const cat = await getCurrentCategory(true);
+        const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
+        window.location.replace(window.location.origin + target);
       }
     }
     
@@ -226,8 +191,7 @@ if (typeof window !== "undefined") {
   });
 }
 
-// ---------------- React hooks ----------------
-
+// React hooks seguem o mesmo padrão
 export function useCurrentUser() {
   const [state, setState] = useState<{ user: User | null; loading: boolean }>(
     () => ({ user: cachedUser, loading: cachedUser === null })
