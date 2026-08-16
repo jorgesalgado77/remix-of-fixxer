@@ -240,10 +240,11 @@ export function ProfileSummaryCard({
 
   const wrapperVariantClass =
     variant === "sidebar"
-      ? "hidden lg:block fixed left-4 top-24 w-64 z-[70]"
+      ? "hidden lg:block fixed left-4 top-24 w-64 z-[70] transition-all duration-300"
       : variant === "inline"
         ? ""
-        : "lg:hidden mb-6";
+        : "lg:hidden mb-4";
+
 
 
   const theme = getCategoryTheme(role as any);

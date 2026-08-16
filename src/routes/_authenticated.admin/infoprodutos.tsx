@@ -29,10 +29,13 @@ import {
   PieChart,
   Tag,
   Pause,
-  Play
+  Play,
+  Hammer
 } from "lucide-react";
 
+import { ProfileSummaryCard } from "@/components/ProfileSummaryCard";
 import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import { 
   getAIAdminConfig, 
@@ -172,8 +175,11 @@ function AdminInfoProductsPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#0A0A0B] text-white">
-      <header className="sticky top-0 z-[60] bg-[#0A0A0B]/95 backdrop-blur border-b border-white/10">
+    <div className="min-h-dvh bg-[#0A0A0B] text-white relative isolate">
+      {/* Sidebar de Perfil Fixa no Admin */}
+      <ProfileSummaryCard role="lojista" variant="sidebar" />
+
+      <header className="sticky top-0 z-[60] bg-[#0A0A0B]/95 backdrop-blur border-b border-white/10 lg:pl-72 transition-all">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link to="/admin" className="p-2 rounded-xl hover:bg-white/10 transition-colors">
@@ -181,16 +187,20 @@ function AdminInfoProductsPage() {
             </Link>
             <div>
               <div className="flex items-center gap-2 text-primary mb-0.5">
-                <ShoppingBag className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Módulo Info Produtos</span>
+                <Hammer className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Creator Studio</span>
               </div>
-              <h1 className="text-xl font-black italic uppercase tracking-tighter">Gestão Administrativa</h1>
+              <h1 className="text-xl font-black italic uppercase tracking-tighter">Gestão de Info Produtos e Vendas</h1>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+            {/* Barra de Ações Rápidas no Topo */}
+            <div className="hidden md:flex items-center gap-3 mr-4 border-r border-white/10 pr-4">
+              <PanelActions role="lojista" />
+            </div>
 
+            <div className="flex items-center gap-2">
               {dirtyAI && (
                 <Button onClick={handleSaveAI} className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl">
                   Salvar IA
@@ -202,32 +212,24 @@ function AdminInfoProductsPage() {
                 </Button>
               )}
             </div>
-
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 pb-4">
+        <div className="max-w-7xl mx-auto px-4 pb-2">
+          {/* Card Mobile Inline */}
+          <ProfileSummaryCard role="lojista" variant="auto" />
+          
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 border-t border-white/5 mt-2">
-            <TabBtn active={tab === 'config'} onClick={() => setTab('config')} icon={<Settings className="w-3.5 h-3.5" />} label="Config" />
-            <TabBtn active={tab === 'taxa'} onClick={() => setTab('taxa')} icon={<Coins className="w-3.5 h-3.5" />} label="Taxas" />
-            <TabBtn active={tab === 'ia'} onClick={() => setTab('ia')} icon={<Cpu className="w-3.5 h-3.5" />} label="IA" />
-            <TabBtn active={tab === 'vendas'} onClick={() => setTab('vendas')} icon={<TrendingUp className="w-3.5 h-3.5" />} label="Vendas" />
-            <TabBtn active={tab === 'afiliados'} onClick={() => setTab('afiliados')} icon={<Users className="w-3.5 h-3.5" />} label="Afiliados" />
-            <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Auditoria" />
-            <TabBtn active={tab === 'certificados'} onClick={() => setTab('certificados')} icon={<Award className="w-3.5 h-3.5" />} label="Certs" />
-            <TabBtn active={tab === 'preview'} onClick={() => setTab('preview')} icon={<Palette className="w-3.5 h-3.5" />} label="Preview" />
-            <TabBtn active={tab === 'cupons'} onClick={() => setTab('cupons')} icon={<Tag className="w-3.5 h-3.5" />} label="Cupons" />
-            <TabBtn active={tab === 'assinatura'} onClick={() => setTab('assinatura')} icon={<Zap className="w-3.5 h-3.5" />} label="Assinatura" />
-            <TabBtn active={tab === 'storage'} onClick={() => setTab('storage')} icon={<Database className="w-3.5 h-3.5" />} label="Storage" />
-            <TabBtn active={tab === 'moderacao'} onClick={() => setTab('moderacao')} icon={<ShieldAlert className="w-3.5 h-3.5" />} label="Moderação" />
             <TabBtn active={tab === 'produtos'} onClick={() => setTab('produtos')} icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Produtos" />
-            <TabBtn active={tab === 'criadores'} onClick={() => setTab('criadores')} icon={<Users className="w-3.5 h-3.5" />} label="Criadores" />
+            <TabBtn active={tab === 'vendas'} onClick={() => setTab('vendas')} icon={<TrendingUp className="w-3.5 h-3.5" />} label="Vendas" />
+            <TabBtn active={tab === 'auditoria'} onClick={() => setTab('auditoria')} icon={<Search className="w-3.5 h-3.5" />} label="Analytics" />
+            <TabBtn active={tab === 'cupons'} onClick={() => setTab('cupons')} icon={<Tag className="w-3.5 h-3.5" />} label="Cupons" />
           </div>
         </div>
       </header>
 
+      <main className="max-w-7xl mx-auto px-4 py-8 lg:pl-72 transition-all">
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
         {tab === 'ia' && (
           <div className="space-y-6">
             <div className="bg-white/[0.03] border border-white/10 rounded-[32px] overflow-hidden">

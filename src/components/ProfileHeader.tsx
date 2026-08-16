@@ -77,8 +77,12 @@ export function ProfileHeader({
           O ProfileSummaryCard é renderizado como sidebar fixa em lg+.
           A variante "auto" interna do ProfileSummaryCard lida com a visibilidade mobile (inline em <lg).
       */}
-      <ProfileSummaryCard role={role} variant="auto" />
-      <ProfileSummaryCard role={role} variant="sidebar" />
+      {!hideSidebarCard && (
+        <>
+          <ProfileSummaryCard role={role} variant="auto" />
+          <ProfileSummaryCard role={role} variant="sidebar" />
+        </>
+      )}
 
 
       
