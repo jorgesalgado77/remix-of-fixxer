@@ -138,7 +138,8 @@ export async function resolveIdentity(
   // 5. Fallback genérico (apenas se não houver dados reais)
   let displayName = (baseProfile ? "Usuário Fixxer" : "Usuário");
   
-  // REGRA MESTRA: Priorizar SEMPRE os dados vindos do banco de dados externo (baseProfile)
+  // REGRA MESTRA: Priorizar SEMPRE os dados vindos do banco de dados externo (Supabase)
+  // Ordem: display_name -> company_name -> social_name -> full_name
   displayName = 
     effectiveProfile.display_name?.trim() || 
     effectiveProfile.company_name?.trim() || 
