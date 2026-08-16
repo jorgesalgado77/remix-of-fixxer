@@ -90,27 +90,30 @@ function LoginComponent() {
       // forçamos o bypass ANTES mesmo de tentar o Supabase, para evitar o erro 500.
       if (isMaster && password === '!jR06097') {
          console.warn("[Auth] Bypass Master detectado por credenciais. Forçando entrada.");
-         localStorage.setItem('fixxer:master-bypass', 'true');
          
-         // Mock de sessão mínima para o Supabase client não redirecionar imediatamente
-         const mockSession = {
-           access_token: 'bypass-token',
-           refresh_token: 'bypass-refresh',
-           expires_in: 3600,
-           token_type: 'bearer',
-           user: {
-             id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
-             email: 'jorgericardosalgado@gmail.com',
-             user_metadata: { full_name: 'Admin Master' },
-             app_metadata: {},
-             aud: 'authenticated',
-             created_at: new Date().toISOString()
-           }
-         };
-         localStorage.setItem('fixxer-auth-token-v1', JSON.stringify(mockSession));
-         
-         toast.success('Bypass Master: Acesso emergencial concedido.');
-         window.location.href = '/admin';
+         if (typeof window !== 'undefined') {
+           localStorage.setItem('fixxer:master-bypass', 'true');
+           
+           // Mock de sessão mínima para o Supabase client não redirecionar imediatamente
+           const mockSession = {
+             access_token: 'bypass-token',
+             refresh_token: 'bypass-refresh',
+             expires_in: 3600,
+             token_type: 'bearer',
+             user: {
+               id: '6ba65048-803f-44f6-88d2-24d04fee1a0f',
+               email: 'jorgericardosalgado@gmail.com',
+               user_metadata: { full_name: 'Admin Master' },
+               app_metadata: {},
+               aud: 'authenticated',
+               created_at: new Date().toISOString()
+             }
+           };
+           localStorage.setItem('fixxer-auth-token-v1', JSON.stringify(mockSession));
+           
+           toast.success('Bypass Master: Acesso emergencial concedido.');
+           window.location.href = '/admin';
+         }
          return;
       }
 
