@@ -161,22 +161,22 @@ function ProviderStatsGrid() {
     meta: fmtDate(r.created_at),
   }));
 
-  const txItems: StatListItem[] = filterByPeriod(stats.transactions).map((t) => {
+  const txItems: StatListItem[] = stats.transactions.map((t) => {
     const amount = t.amount ?? 0;
-    const isCredit = amount > 0;
+    const isCredit = t.type === "credit";
     const gross = Math.abs(amount);
     const fee = gross * 0.15;
     const net = gross - fee;
 
     return {
       id: t.id,
-      title: t.reason?.trim() || t.source?.trim() || "Movimentação",
+      title: t.description || t.reason?.trim() || t.source?.trim() || "Movimentação",
       subtitle: t.source ? `Origem: ${t.source}` : undefined,
       meta: fmtDate(t.created_at),
-      right: isCredit ? BRL(amount) : `${amount}`,
-      amount_gross: isCredit ? gross : undefined,
-      amount_fee: isCredit ? fee : undefined,
-      amount_net: isCredit ? net : undefined,
+      right: isCredit ? BRL(gross) : `-${BRL(gross)}`,
+      amount_gross: gross,
+      amount_fee: fee,
+      amount_net: net,
     };
   });
 
@@ -234,7 +234,7 @@ function ProviderStatsGrid() {
         <StatCard
           icon={<DollarSign className="w-5 h-5" />}
           label="Saldo PIX"
-          value={stats.loading ? dash : BRL(stats.balance * 10)} 
+          value={stats.loading ? dash : BRL(stats.balance)} 
           color="text-emerald-400"
           onClick={() => setOpenKey("saldo")}
           showChart
