@@ -234,7 +234,7 @@ function ProviderStatsGrid() {
         <StatCard
           icon={<DollarSign className="w-5 h-5" />}
           label="Saldo PIX"
-          value={stats.loading ? dash : BRL(stats.balance * 10)} 
+          value={stats.loading ? dash : BRL(stats.balance)} 
           color="text-emerald-400"
           onClick={() => setOpenKey("saldo")}
           showChart
