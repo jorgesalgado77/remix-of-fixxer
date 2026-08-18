@@ -72,7 +72,7 @@ function AuthLogin() {
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
       console.warn("[Auth Audit] MASTER BYPASS IDENTIFICADO:", { 
-        user: isMaster ? 'Admin Master' : 'Jorge Criare',
+        user: isMaster ? 'Admin Master' : 'Jorge Salgado',
         category,
         target
       });
@@ -92,7 +92,7 @@ function AuthLogin() {
         supabaseExternal
           .from("profiles")
           .select("id")
-          .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Criare')
+          .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Salgado')
           .maybeSingle()
           .then(({ data, error }) => {
             if (error) console.error("[Auth Audit] Erro ao buscar ID real:", error);

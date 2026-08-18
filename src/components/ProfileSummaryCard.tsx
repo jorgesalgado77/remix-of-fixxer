@@ -84,7 +84,7 @@ export function ProfileSummaryCard({
     if (typeof window !== "undefined") {
       try {
         const isMaster = window.localStorage.getItem('fixxer:master-bypass') === 'true';
-        const auth = window.localStorage.getItem("fixxer-auth-token-v1");
+        const auth = window.localStorage.getItem("fixxer-auth-token-v1") || window.localStorage.getItem("sb-rnhgpxembtgupxnrohxo-auth-token");
         const lastCat = localStorage.getItem('fixxer:last-category');
         const bypassUid = localStorage.getItem('fixxer:bypass-uid');
         
@@ -93,7 +93,7 @@ export function ProfileSummaryCard({
           : (auth ? JSON.parse(auth)?.user?.id : null);
         
         if (uid) {
-          const cachedRaw = window.localStorage.getItem("fixxer_identity_cache_v1.2");
+          const cachedRaw = window.localStorage.getItem("fixxer_identity_cache_v1.3");
           const identities = cachedRaw ? JSON.parse(cachedRaw) : {};
           const res = identities[uid];
           
@@ -138,7 +138,7 @@ export function ProfileSummaryCard({
     let cancelled = false;
     const loadProfile = async () => {
       try {
-        const auth = window.localStorage.getItem("fixxer-auth-token-v1");
+        const auth = window.localStorage.getItem("fixxer-auth-token-v1") || window.localStorage.getItem("sb-rnhgpxembtgupxnrohxo-auth-token");
         const isMaster = window.localStorage.getItem('fixxer:master-bypass') === 'true';
         const bypassUid = localStorage.getItem('fixxer:bypass-uid');
         const uid = isMaster ? (bypassUid || (localStorage.getItem('fixxer:last-category') === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9')) : (auth ? JSON.parse(auth)?.user?.id : null);
