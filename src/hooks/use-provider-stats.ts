@@ -20,6 +20,8 @@ export type StatReview = {
 export type StatTx = {
   id: string;
   amount: number | null;
+  type?: "credit" | "debit" | null;
+  description?: string | null;
   reason?: string | null;
   source?: string | null;
   created_at: string | null;
