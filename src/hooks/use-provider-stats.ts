@@ -198,7 +198,7 @@ export function useProviderStats(): ProviderStats {
             console.warn("useProviderStats: transactions access error:", error.message);
             if (!cancelled) setTransactions([]);
           } else if (!cancelled && Array.isArray(data)) {
-            setTransactions(data as StatTx[]);
+            setTransactions(data as unknown as StatTx[]);
           } else if (!cancelled) {
             setTransactions([]);
           }
