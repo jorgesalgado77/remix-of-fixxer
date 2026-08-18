@@ -4,7 +4,7 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     if (typeof window !== 'undefined') {
       const hasMasterBypass = localStorage.getItem('fixxer:master-bypass') === 'true';
-      const rawToken = localStorage.getItem('fixxer-auth-token-v1');
+      const rawToken = localStorage.getItem('fixxer-auth-token-v1') || localStorage.getItem('sb-rnhgpxembtgupxnrohxo-auth-token');
       const cat = localStorage.getItem('fixxer:last-category');
 
       // Se estiver logado e tentar acessar /auth, ejetar imediatamente
