@@ -91,7 +91,7 @@ function AuthLogin() {
       import("@/lib/supabaseExternal").then(({ supabaseExternal }) => {
         supabaseExternal
           .from("profiles")
-          .select("id")
+          .select("id, display_name, avatar_url")
           .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Salgado')
           .maybeSingle()
           .then(({ data, error }) => {
@@ -99,6 +99,13 @@ function AuthLogin() {
             if (data?.id) {
               console.warn("[Auth Audit] ID Real resolvido:", data.id);
               localStorage.setItem('fixxer:bypass-uid', data.id);
+              // Forçar atualização do cache de identidade com dados reais do banco
+              const cacheKey = "fixxer_identity_cache_v1.3";
+              const stored = JSON.parse(localStorage.getItem(cacheKey) || "{}");
+              if (stored[data.id]) {
+                delete stored[data.id];
+                localStorage.setItem(cacheKey, JSON.stringify(stored));
+              }
               window.dispatchEvent(new Event("fixxer:identity-change"));
             }
           });
