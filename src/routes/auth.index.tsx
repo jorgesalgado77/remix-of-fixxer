@@ -65,14 +65,14 @@ function AuthLogin() {
     setLoading(true);
 
     const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
-    const isTest = emailVal === 'jorgecriare2021@gmail.com';
+    const isJorge = emailVal === 'jorgecriare2021@gmail.com';
 
-    if ((isMaster || isTest) && passVal === '!jR06097') {
+    if ((isMaster || isJorge) && passVal === '!jR06097') {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
       console.warn("[Auth Audit] MASTER BYPASS IDENTIFICADO:", { 
-        user: isMaster ? 'Admin Master' : 'Jorge Salgado',
+        user: isMaster ? 'Admin Master' : 'JORGE SALGADO',
         category,
         target
       });
