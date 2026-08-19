@@ -29,99 +29,91 @@ export async function getCurrentUser(force = false): Promise<User | null> {
   
   inflight = (async () => {
     try {
-      // Prioridade absoluta para a sessão real do Supabase Externo (Real Data First)
-      const { data: { session } } = await supabaseExternal.auth.getSession();
+      // 1. PRIORIDADE ABSOLUTA: Verificar Sessão Real via Supabase Externo
+      const { data: { session }, error: sessionError } = await supabaseExternal.auth.getSession();
       
       if (session?.user) {
-        console.log("[current-user] Usuário real autenticado via Supabase Externo.");
-        cachedUser = session.user;
+        console.log("[current-user] Usuário autenticado detectado. Sincronizando dados reais...");
+        const user = session.user;
         
-        // Sincronização imediata de categoria baseada no banco real
+        // Buscar perfil real imediatamente para garantir consistência
+        const { data: profile } = await supabaseExternal
+          .from("profiles")
+          .select("role, user_type, business_category, display_name, avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profile) {
+          const raw = ((profile as any)?.role || (profile as any)?.user_type || (profile as any)?.business_category || "") as string;
+          cachedCategory = normalizeCategory(raw);
+          cachedAdmin = cachedCategory === 'admin' || user.email === 'jorgericardosalgado@gmail.com';
+          
+          // Mesclar metadados do perfil com o objeto User para a UI
+          const mergedUser: User = {
+            ...user,
+            user_metadata: {
+              ...user.user_metadata,
+              display_name: profile.display_name || user.user_metadata?.display_name,
+              avatar_url: profile.avatar_url || user.user_metadata?.avatar_url,
+              role: cachedCategory
+            }
+          } as any;
+
+          cachedUser = mergedUser;
+          console.log("[current-user] Identidade real sincronizada:", mergedUser.user_metadata.display_name);
+          return mergedUser;
+        }
+
+        cachedUser = user;
+        return user;
+      }
+
+      // 2. FALLBACK CONTROLADO: Master Bypass (Apenas se configurado localmente)
+      const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
+      if (isMasterBypass) {
+        const storedUid = localStorage.getItem('fixxer:bypass-uid');
+        const category = (localStorage.getItem('fixxer:last-category') as Category) || 'admin';
+        const email = category === 'admin' ? 'jorgericardosalgado@gmail.com' : 'jorgecriare2021@gmail.com';
+        
+        // Tentar resolver UID real se não estiver no localStorage
+        let uid = storedUid;
+        if (!uid) {
+           uid = category === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9';
+        }
+
+        // Tentar buscar perfil real mesmo em bypass (Real Data First)
         try {
           const { data: profile } = await supabaseExternal
             .from("profiles")
-            .select("role, user_type, business_category")
-            .eq("id", session.user.id)
+            .select("display_name, avatar_url, role")
+            .eq("id", uid)
             .maybeSingle();
-          
-          if (profile) {
-            const raw = ((profile as any)?.role || (profile as any)?.user_type || (profile as any)?.business_category || "") as string;
-            cachedCategory = normalizeCategory(raw);
-            cachedAdmin = cachedCategory === 'admin' || session.user.email === 'jorgericardosalgado@gmail.com';
-            console.log("[current-user] Categoria real resolvida:", cachedCategory);
-          }
-        } catch (err) {
-          console.warn("[current-user] Falha ao sincronizar categoria real:", err);
-        }
 
-        return session.user;
-      }
+          const masterData: User = {
+            id: uid,
+            email: email,
+            app_metadata: { provider: 'email', providers: ['email'] },
+            user_metadata: { 
+              display_name: profile?.display_name || (category === 'admin' ? 'Admin Master' : 'Jorge Salgado'),
+              full_name: profile?.display_name || (category === 'admin' ? 'Admin Master' : 'Jorge Salgado'),
+              avatar_url: profile?.avatar_url || null,
+              role: category,
+              category: category
+            },
+            aud: 'authenticated',
+            created_at: new Date().toISOString()
+          } as any;
 
-      // Fallback para Master Bypass apenas se não houver sessão ativa
-      const isMasterBypass = typeof window !== 'undefined' && localStorage.getItem('fixxer:master-bypass') === 'true';
-
-      if (isMasterBypass) {
-        const category = (localStorage.getItem('fixxer:last-category') as Category) || 'admin';
-        const storedUid = localStorage.getItem('fixxer:bypass-uid');
-        
-        const email = (category === 'admin') 
-          ? 'jorgericardosalgado@gmail.com' 
-          : 'jorgecriare2021@gmail.com';
-        
-        const isMaster = email === 'jorgericardosalgado@gmail.com';
-        const defaultUid = isMaster 
-          ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' 
-          : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9';
-        
-        const currentUid = storedUid || defaultUid;
-
-        let displayName = isMaster ? 'Admin Master' : 'Usuário';
-        let avatarUrl = null;
-
-        if (typeof window !== 'undefined') {
-          try {
-            const cachedRaw = localStorage.getItem('fixxer_identity_cache_v1.2');
-            const cached = cachedRaw ? JSON.parse(cachedRaw) : {};
-            const res = cached[currentUid];
-            if (res) {
-              displayName = res.identity.displayName || displayName;
-              avatarUrl = res.identity.avatarUrl || avatarUrl;
-            }
-          } catch (e) {
-            console.warn("[current-user] Erro ao ler cache de identidade:", e);
-          }
-        }
-
-        const masterData: User = {
-          id: currentUid,
-          email: email,
-          app_metadata: { provider: 'email', providers: ['email'] },
-          user_metadata: { 
-            display_name: displayName,
-            full_name: displayName,
-            avatar_url: avatarUrl,
-            role: category,
-            category: category
-          },
-          aud: 'authenticated',
-          created_at: new Date().toISOString()
-        } as any;
-
-        cachedUser = masterData;
-        cachedCategory = category;
-        cachedAdmin = category === 'admin' || email === 'jorgericardosalgado@gmail.com';
-        
-        return masterData;
-      }
-
-      // Garantia final via getUser (API Call)
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        const { data: { user } } = await supabaseExternal.auth.getUser();
-        if (user) {
-          cachedUser = user;
-          return user;
+          cachedUser = masterData;
+          cachedCategory = category;
+          cachedAdmin = category === 'admin' || email === 'jorgericardosalgado@gmail.com';
+          return masterData;
+        } catch (e) {
+          console.warn("[current-user] Falha ao enriquecer bypass com dados reais:", e);
         }
       }
+      
+      return null;
       
       return null;
     } catch (e) {
