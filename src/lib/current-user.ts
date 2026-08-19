@@ -69,20 +69,18 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           : 'jorgecriare2021@gmail.com';
         
         const isMaster = email === 'jorgericardosalgado@gmail.com';
-        const isJorge = email === 'jorgecriare2021@gmail.com';
-
         const defaultUid = isMaster 
           ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' 
           : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9';
         
         const currentUid = storedUid || defaultUid;
 
-        let displayName = isMaster ? 'Admin Master' : (isJorge ? 'JORGE SALGADO' : 'Usuário');
-        let avatarUrl = isJorge ? 'https://rnhgpxembtgupxnrohxo.supabase.co/storage/v1/object/public/media/avatars/jorge-profile.jpg' : null;
+        let displayName = isMaster ? 'Admin Master' : 'Usuário';
+        let avatarUrl = null;
 
         if (typeof window !== 'undefined') {
           try {
-            const cachedRaw = localStorage.getItem('fixxer_identity_cache_v1.3');
+            const cachedRaw = localStorage.getItem('fixxer_identity_cache_v1.2');
             const cached = cachedRaw ? JSON.parse(cachedRaw) : {};
             const res = cached[currentUid];
             if (res) {
@@ -102,16 +100,16 @@ export async function getCurrentUser(force = false): Promise<User | null> {
             display_name: displayName,
             full_name: displayName,
             avatar_url: avatarUrl,
-            role: isJorge ? 'prestador' : category,
-            category: isJorge ? 'prestador' : category
+            role: category,
+            category: category
           },
           aud: 'authenticated',
           created_at: new Date().toISOString()
         } as any;
 
         cachedUser = masterData;
-        cachedCategory = isJorge ? 'prestador' : category;
-        cachedAdmin = isMaster;
+        cachedCategory = category;
+        cachedAdmin = category === 'admin' || email === 'jorgericardosalgado@gmail.com';
         
         return masterData;
       }
@@ -237,7 +235,6 @@ export async function getCurrentCategory(force = false): Promise<Category> {
 
   if (email === 'jorgecriare2021@gmail.com' || uid === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') {
     cachedCategory = "prestador";
-    cachedAdmin = false; // Jorge Salgado NÃO é admin
     return "prestador";
   }
 

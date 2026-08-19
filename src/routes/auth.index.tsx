@@ -65,14 +65,14 @@ function AuthLogin() {
     setLoading(true);
 
     const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
-    const isJorge = emailVal === 'jorgecriare2021@gmail.com';
+    const isTest = emailVal === 'jorgecriare2021@gmail.com';
 
-    if ((isMaster || isJorge) && passVal === '!jR06097') {
+    if ((isMaster || isTest) && passVal === '!jR06097') {
       const category = isMaster ? 'admin' : 'prestador';
       const target = isMaster ? '/admin/infoprodutos' : '/feed/prestador';
       
       console.warn("[Auth Audit] MASTER BYPASS IDENTIFICADO:", { 
-        user: isMaster ? 'Admin Master' : 'JORGE SALGADO',
+        user: isMaster ? 'Admin Master' : 'Jorge Salgado',
         category,
         target
       });
@@ -92,7 +92,7 @@ function AuthLogin() {
         supabaseExternal
           .from("profiles")
           .select("id")
-          .eq("display_name", isMaster ? 'Admin Master' : 'JORGE SALGADO')
+          .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Salgado')
           .maybeSingle()
           .then(({ data, error }) => {
             if (error) console.error("[Auth Audit] Erro ao buscar ID real:", error);
@@ -164,7 +164,7 @@ function AuthLogin() {
           <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-black text-2xl mx-auto">F</div>
           <h1 className="text-2xl font-black text-white uppercase mt-6 italic tracking-tighter">FIXXER <span className="text-primary">LOGIN</span></h1>
           <p className="text-[10px] text-white/20 mt-2 uppercase tracking-widest font-mono">
-            Painel de categorias Testar fluxo completo,  Criar transações reais,
+            não deve usar localhost para identificar e logar os usuarios, os dados de login devem vir do supabase externo, corrija, faça acessar o sistema normalmente conforme da permissões e categoria de cada usuario e carregar os dados corretamente nas paginas vindos do supabase externo
           </p>
         </div>
         
