@@ -65,7 +65,7 @@ function AuthLogin() {
     setLoading(true);
 
     const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
-    const isTest = emailVal === 'jorgecriare2021@gmail.com';
+    const isTest = emailVal === 'jorgecriare2021@gmail.com'; // Jorge Salgado é usuário PRESTADOR
 
     if ((isMaster || isTest) && passVal === '!jR06097') {
       const category = isMaster ? 'admin' : 'prestador';
