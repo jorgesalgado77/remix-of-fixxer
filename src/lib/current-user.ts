@@ -46,7 +46,8 @@ export async function getCurrentUser(force = false): Promise<User | null> {
         if (profile) {
           const raw = ((profile as any)?.role || (profile as any)?.user_type || (profile as any)?.business_category || "") as string;
           cachedCategory = normalizeCategory(raw);
-          cachedAdmin = cachedCategory === 'admin' || user.email === 'jorgericardosalgado@gmail.com';
+          // SEGURANÇA MESTRA: Apenas o e-mail oficial pode ser admin, mesmo que o banco retorne algo diferente (Redundância de segurança)
+          cachedAdmin = user.email === 'jorgericardosalgado@gmail.com' && cachedCategory === 'admin';
           
           // Mesclar metadados do perfil com o objeto User para a UI
           const mergedUser: User = {
@@ -106,7 +107,7 @@ export async function getCurrentUser(force = false): Promise<User | null> {
 
           cachedUser = masterData;
           cachedCategory = category;
-          cachedAdmin = category === 'admin' || email === 'jorgericardosalgado@gmail.com';
+          cachedAdmin = category === 'admin' && email === 'jorgericardosalgado@gmail.com';
           return masterData;
         } catch (e) {
           console.warn("[current-user] Falha ao enriquecer bypass com dados reais:", e);
