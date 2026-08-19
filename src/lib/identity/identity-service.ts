@@ -131,33 +131,37 @@ export async function resolveIdentity(
 
 
   // REGRA ÚNICA DE FALLBACK (CANONICAL PRIORITY)
-  // 1. Master Bypass (Prompt 23)
-  // 2. Nome profissional/empresa (se disponível)
-  // 3. Nome de exibição customizado no perfil mestre
-  // 4. Nome completo (perfil mestre)
-  // 5. Fallback genérico (apenas se não houver dados reais)
-  let displayName = (baseProfile ? "Usuário Fixxer" : "Usuário");
+  // 1. DADOS REAIS DO PERFIL (Prio 1)
+  // 2. Master Bypass (Prompt 23/24)
+  // 3. Especializações (Store/Provider/Supplier)
   
-  // REGRA MESTRA: Priorizar SEMPRE os dados vindos do banco de dados externo (Supabase)
-  // Ordem: display_name -> company_name -> social_name -> full_name
-  displayName = 
-    effectiveProfile.display_name?.trim() || 
-    effectiveProfile.company_name?.trim() || 
-    store?.company_name?.trim() || 
-    store?.social_name?.trim() ||
-    supplier?.company_name?.trim() || 
-    provider?.display_name?.trim() || 
-    effectiveProfile.full_name?.trim() || 
-    displayName;
+  let displayName = "Usuário";
+  
+  // Prioridade 1: Dados do Perfil Mestre (profiles)
+  if (effectiveProfile.display_name?.trim()) {
+    displayName = effectiveProfile.display_name.trim();
+  } 
+  // Prioridade 2: Dados de Especialização (Store/Provider/Supplier)
+  else if (store?.company_name?.trim() || store?.social_name?.trim()) {
+    displayName = store.company_name?.trim() || store.social_name?.trim();
+  }
+  else if (supplier?.company_name?.trim()) {
+    displayName = supplier.company_name.trim();
+  }
+  else if (provider?.display_name?.trim()) {
+    displayName = provider.display_name.trim();
+  }
+  // Prioridade 3: Nome Completo
+  else if (effectiveProfile.full_name?.trim()) {
+    displayName = effectiveProfile.full_name.trim();
+  }
 
   // REGRA ÚNICA DE FALLBACK PARA AVATAR
-  let avatarUrl = 
-    effectiveProfile.avatar_url || 
-    effectiveProfile.logo_url ||
-    store?.logo_url || 
-    supplier?.logo_url || 
-    provider?.avatar_url || 
-    null;
+  let avatarUrl = effectiveProfile.avatar_url || effectiveProfile.logo_url || null;
+  
+  if (!avatarUrl) {
+    avatarUrl = store?.logo_url || supplier?.logo_url || provider?.avatar_url || null;
+  }
 
   // Validação rigorosa: se for uma string vazia ou placeholder conhecido, tratar como null
   const validatedAvatar = (typeof avatarUrl === 'string' && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'))) ? avatarUrl : null;
