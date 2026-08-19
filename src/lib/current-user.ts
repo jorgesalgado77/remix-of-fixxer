@@ -235,6 +235,7 @@ export async function getCurrentCategory(force = false): Promise<Category> {
 
   if (email === 'jorgecriare2021@gmail.com' || uid === 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') {
     cachedCategory = "prestador";
+    cachedAdmin = false; // Jorge Salgado NÃO é admin
     return "prestador";
   }
 
