@@ -307,7 +307,7 @@ export function ProfileSummaryCard({
                 </div>
                 <div className="mt-0.5 flex items-center gap-1 text-xs font-black text-white">
                   <Star className="w-3 h-3 text-emerald-400 fill-current" aria-hidden="true" />
-                  <span>{profile?.karma_score && profile.karma_score > 0 ? (profile.karma_score / 10).toFixed(1) : "s/av."} / 5.0</span>
+                  <span>{profile?.karma_score && profile.karma_score > 0 ? (profile.karma_score).toFixed(1) : "s/av."} / 5.0</span>
                 </div>
               </button>
 
