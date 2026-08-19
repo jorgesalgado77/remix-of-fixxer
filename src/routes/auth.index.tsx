@@ -164,7 +164,7 @@ function AuthLogin() {
           <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-black text-2xl mx-auto">F</div>
           <h1 className="text-2xl font-black text-white uppercase mt-6 italic tracking-tighter">FIXXER <span className="text-primary">LOGIN</span></h1>
           <p className="text-[10px] text-white/20 mt-2 uppercase tracking-widest font-mono">
-            não deve usar localhost para identificar e logar os usuarios, os dados de login devem vir do supabase externo, corrija, faça acessar o sistema normalmente conforme da permissões e categoria de cada usuario e carregar os dados corretamente nas paginas vindos do supabase externo
+            cada usuario, possui uma categoria, são elas, prestador, lojista, parceiro fornecedor, cliente final, no sistema cada usuario deve ser identificado por sua categoria salva no cadastro no banco de DADOS externo, o usuario, jorgecriare2021@gmail.com, nome de exibição salvo, JORGE SALGADO, categoria, PRESTADOR, os seus dados não estão sendo exibidos corretamente, o mesmo não é ADMIN, corrija os vinculos, categorias, nomes de exibição, fotos de avatar, e demais dados de todos os usuarios, usando essas regras e com os dados salvos corretos no banco de dados externo, faça uma lista de todos os usuarios reais encontrados, sua categora, seu nome de exibição, e com isso atualize as informações corretas
           </p>
         </div>
         
