@@ -92,7 +92,7 @@ function AuthLogin() {
         supabaseExternal
           .from("profiles")
           .select("id")
-          .eq("display_name", isMaster ? 'Admin Master' : 'Jorge Salgado')
+          .eq("display_name", isMaster ? 'Admin Master' : 'JORGE SALGADO')
           .maybeSingle()
           .then(({ data, error }) => {
             if (error) console.error("[Auth Audit] Erro ao buscar ID real:", error);
