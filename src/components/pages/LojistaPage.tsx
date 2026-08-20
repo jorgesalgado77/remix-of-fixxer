@@ -1501,32 +1501,32 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                         return (
                             <>
                                 {paginated.length > 0 ? paginated.map((service) => (
-                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20 feed-item-cv">
-                                        <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20 feed-item-cv animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                        <div className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color}`}>
+                                            <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color} shrink-0`}>
                                                 {service.icon}
                                             </div>
-                                            <div>
-                                                <div className="text-xs font-black uppercase italic text-white">{service.title}</div>
-                                                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-{service.id} • {service.location}</div>
+                                            <div className="min-w-0">
+                                                <div className="text-[10px] md:text-xs font-black uppercase italic text-white truncate">{service.title}</div>
+                                                <div className="text-[8px] md:text-[9px] text-muted-foreground uppercase tracking-wider truncate">OS-{service.id} • {service.location}</div>
                                             </div>
                                             </div>
                                             <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
-                                            <div className="flex flex-col items-end mr-2">
-                                                <span className="font-black text-xs text-white">{service.value}</span>
+                                            <div className="flex flex-col items-end mr-1 md:mr-2">
+                                                <span className="font-black text-[10px] md:text-xs text-white">{service.value}</span>
                                                 <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: {service.deadline}</span>
                                             </div>
-                                            <span className={`px-3 py-1 ${service.bg} ${service.color} font-bold text-[9px] rounded-full uppercase`}>
+                                            <span className={`px-2 py-0.5 md:px-3 md:py-1 ${service.bg} ${service.color} font-bold text-[8px] md:text-[9px] rounded-full uppercase`}>
                                                 {service.status}
                                             </span>
                                             <Button 
                                                 size="icon" 
                                                 variant="ghost" 
                                                 onClick={() => setExpandedServiceId(expandedServiceId === service.id ? null : service.id)}
-                                                className={`h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary transition-transform ${expandedServiceId === service.id ? 'rotate-90' : ''}`}
+                                                className={`h-7 w-7 md:h-8 md:w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary transition-transform ${expandedServiceId === service.id ? 'rotate-90' : ''}`}
                                             >
-                                                <ChevronRight className="w-4 h-4" />
+                                                <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
                                             </Button>
                                             </div>
                                         </div>
