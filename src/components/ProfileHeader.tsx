@@ -90,7 +90,7 @@ export function ProfileHeader({
       
       
 
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+      <header className="sticky top-0 z-[60] bg-[#050505]/95 backdrop-blur-md -mx-4 md:-mx-8 px-4 md:px-8 py-4 mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-white/5">
         <div className="flex items-center gap-4">
           <div className={`w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary shrink-0`}>
             {displayIcon}
