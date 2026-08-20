@@ -32,6 +32,7 @@ export function useProfile(userId?: string | null) {
       return resolveIdentity(effectiveUid, { refresh: true });
     },
     enabled: !!effectiveUid,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 30, // 30 segundos - Garantir que dados venham do banco externo com frequência
+    gcTime: 1000 * 60 * 5, // 5 minutos de retenção
   });
 }

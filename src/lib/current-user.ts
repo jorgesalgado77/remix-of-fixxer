@@ -255,6 +255,16 @@ export function clearCurrentUserCache() {
   cachedUser = null;
   cachedAdmin = null;
   cachedCategory = null;
+  
+  if (typeof window !== 'undefined') {
+    // Limpar chaves de bypass e dados temporários
+    localStorage.removeItem('fixxer:master-bypass');
+    localStorage.removeItem('fixxer:bypass-uid');
+    localStorage.removeItem('fixxer:last-category');
+    
+    // Notificar mudanças
+    window.dispatchEvent(new Event("fixxer:identity-change"));
+  }
 }
 
 if (typeof window !== "undefined") {

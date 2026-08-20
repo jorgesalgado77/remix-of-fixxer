@@ -63,6 +63,14 @@ function AuthLogin() {
       return;
     }
 
+    // Limpeza absoluta pré-login para evitar lixo de sessões anteriores
+    localStorage.removeItem('fixxer:master-bypass');
+    localStorage.removeItem('fixxer:bypass-uid');
+    localStorage.removeItem('fixxer:last-category');
+    if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.clear();
+    }
+    
     setLoading(true);
 
     const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
@@ -114,11 +122,12 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
+      // Pequeno delay para garantir que o bypass-uid foi gravado
       setTimeout(() => {
         const fullTarget = window.location.origin + target;
-        console.warn("[Auth Audit] Redirecionamento Brutal via REPLACE para:", fullTarget);
+        console.warn("[Auth Audit] Redirecionamento Brutal Final para:", fullTarget);
         window.location.replace(fullTarget);
-      }, 50);
+      }, 150);
       return;
     }
 
