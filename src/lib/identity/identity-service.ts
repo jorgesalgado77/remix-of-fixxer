@@ -48,6 +48,27 @@ export async function resolveIdentity(
   if (!userId) throw new Error("userId is required");
 
   const start = performance.now();
+  
+  // PROMPT 25: Auditoria de Integridade de Tabelas Base
+  const integrityCheck = async () => {
+    if (typeof window === 'undefined') return;
+    const cat = localStorage.getItem('fixxer:last-category');
+    if (cat === 'prestador') {
+      try {
+        const { data, error } = await supabaseExternal.from("provider_profiles").select("id").eq("user_id", userId).maybeSingle();
+        if (error || !data) {
+          console.error("[Identity Integrity] FALHA: provider_profiles ausente para prestador", userId);
+          window.dispatchEvent(new CustomEvent("fixxer:integrity-error", { 
+            detail: { table: 'provider_profiles', userId } 
+          }));
+        }
+      } catch (e) {
+        console.error("[Identity Integrity] Erro crítico na checagem de integridade", e);
+      }
+    }
+  };
+  integrityCheck();
+
   console.log(`[IdentityService] Resolvendo para ${userId} (refresh: ${!!options?.refresh})`);
 
   // PROMPT 23: Identidade Fixa para o Admin Master no modo Bypass
