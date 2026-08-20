@@ -37,105 +37,74 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        # Funcionalidade: Melhorias na Autenticação e Proteção de Rotas
+        ## Testes E2E e Correções de Layout para Painel da Categoria Lojista
 
+### 1. Teste E2E de Sobreposição de Elementos
 
+**Funcionalidade:** Garantir que o feed de cards no painel da categoria lojista não sobreponha a barra de ações e o cabeçalho em nenhuma circunstância.
 
-PROBLEMAS NA PAGINA /AUTH PERSISTEM, CORRIJA
+**Requisitos Técnicos:**
+*   Utilizar um framework de testes E2E (ex: Cypress, Playwright).
+*   Simular diferentes tamanhos de tela e resoluções.
+*   Verificar posições e dimensões dos elementos `feed-cards`, `action-bar` e `header`.
 
+**Passos Necessários:**
+1.  Configurar o ambiente de testes E2E.
+2.  Navegar até o painel da categoria lojista.
+3.  Definir um conjunto de viewports representativas (desktop, tablet, mobile).
+4.  Para cada viewport:
+    *   Capturar as coordenadas e dimensões do cabeçalho.
+    *   Capturar as coordenadas e dimensões da barra de ações.
+    *   Capturar as coordenadas e dimensões do contêiner do feed de cards.
+    *   Verificar se o topo do feed de cards está abaixo do rodapé do cabeçalho e acima do topo da barra de ações.
+    *   Registrar falhas caso ocorra sobreposição.
 
+### 2. Otimização de Layout Responsivo
 
-## 1. Estado de Carregamento e Desabilitação de Botão no Login
+**Funcionalidade:** Assegurar que o layout do painel lojista seja totalmente visível e sem sobreposições em telas pequenas, ajustando `z-index` e espaçamentos conforme necessário.
 
+**Requisitos Técnicos:**
+*   Aplicar media queries para diferentes breakpoints.
+*   Ajustar `padding`, `margin`, `height` e `width` dos componentes.
+*   Otimizar o `z-index` de elementos sobrepostos.
 
+**Passos Necessários:**
+1.  Identificar os breakpoints críticos para o design responsivo.
+2.  Para cada breakpoint:
+    *   Revisar e ajustar os espaçamentos entre os componentes (cabeçalho, perfil, feed, barra de ações).
+    *   Avaliar e modificar o `z-index` de elementos que possam competir por espaço ou visibilidade (ex: modais, dropdowns, cards).
+    *   Testar a visibilidade de todos os elementos essenciais.
 
-**Descrição:**
+### 3. Correções de Overflow e Scroll no Feed
 
-Implementar um estado de carregamento visual e desabilitar o botão de login (`signInWithPassword`) na página `/auth` durante o processo de autenticação. Isso visa prevenir envios duplicados e o efeito de "flicker" (cintilação) na interface.
+**Funcionalidade:** Implementar correções para `overflow` e comportamento de `scroll` no feed, prevenindo que o conteúdo ultrapasse as áreas designadas (barra de botões e card de perfil).
 
+**Requisitos Técnicos:**
+*   Utilizar `overflow: auto` ou `overflow: scroll` com `max-height` no contêiner do feed.
+*   Ajustar `padding` e `margin` para garantir espaço para a barra de botões e o card de perfil.
+*   Garantir que a barra de botões e o card de perfil permaneçam fixos ou visíveis quando o feed rolar.
 
+**Passos Necessários:**
+1.  Identificar o contêiner principal do feed de cards.
+2.  Aplicar `max-height` ao contêiner do feed, garantindo que ele não ultrapasse a área abaixo do card de perfil e acima da barra de botões.
+3.  Definir `overflow-y: auto` para habilitar a rolagem vertical.
+4.  Verificar se o `padding` inferior do feed acomoda a barra de botões e se o `padding` superior acomoda o card de perfil.
+5.  Testar a rolagem do feed em diferentes cenários de conteúdo.
 
-**Requisitos:**
+### 4. Testes de Regressão de Hierarquia de Camadas (z-index)
 
-- Exibir um indicador visual de carregamento (ex: spinner) quando o login estiver em andamento.
+**Funcionalidade:** Adicionar um conjunto de testes de regressão para validar a hierarquia de camadas (`z-index`) dos componentes no painel lojista.
 
-- Desabilitar o botão de login enquanto o indicador de carregamento estiver visível.
+**Requisitos Técnicos:**
+*   Utilizar um framework de testes automatizados (unitários ou de integração).
+*   Definir um conjunto de componentes com `z-index` esperado.
+*   Verificar a ordem de empilhamento dos elementos em diferentes estados.
 
-- Restaurar o estado normal do botão e remover o indicador de carregamento após a conclusão do login (sucesso ou falha).
-
-
-
-## 2. Testes E2E de Regressão para Login
-
-
-
-**Descrição:**
-
-Criar testes E2E (End-to-End) de regressão para garantir que o processo de login na página `/auth` funcione corretamente, sem cintilação visual e com o redirecionamento adequado para a página de destino do usuário.
-
-
-
-**Requisitos:**
-
-- Testar o fluxo completo de login com credenciais válidas.
-
-- Verificar se o botão de login é desabilitado durante o processo.
-
-- Confirmar que não há cintilação visual na página durante o login.
-
-- Validar se o usuário é redirecionado para a página correta após o login bem-sucedido.
-
-- Cobrir cenários de login em diferentes navegadores, se aplicável.
-
-
-
-## 3. Mensagens de Erro Detalhadas e Persistentes na Página de Autenticação
-
-
-
-**Descrição:**
-
-Implementar mensagens de erro claras e persistentes na página `/auth` para informar o usuário sobre falhas de conexão ou credenciais inválidas. As mensagens devem permanecer visíveis até que o usuário tome uma ação ou o erro seja resolvido, e os campos de entrada não devem ser resetados.
-
-
-
-**Requisitos:**
-
-- Exibir mensagens de erro específicas para:
-
-    - Falha de conexão com o servidor.
-
-    - Credenciais inválidas (email/senha incorretos).
-
-- As mensagens de erro devem ser visíveis e fáceis de entender.
-
-- As mensagens devem persistir na tela após a tentativa de login falha.
-
-- Os campos de email e senha não devem ser limpos após uma falha de login.
-
-- Limpar as mensagens de erro quando o usuário começar a digitar novamente ou quando um novo login for iniciado.
-
-
-
-## 4. Proteção de Rotas para `/admin` e `/prestador`
-
-
-
-**Descrição:**
-
-Implementar um mecanismo de proteção de rotas para as páginas `/admin` e `/prestador`. O acesso a essas rotas deve ser restrito apenas a usuários que possuam as permissões adequadas, conforme definido em `current-user.ts`.
-
-
-
-**Requisitos:**
-
-- Verificar as permissões do usuário logado (`current-user.ts`) antes de permitir o acesso às rotas `/admin` e `/prestador`.
-
-- Se o usuário não tiver as permissões necessárias, redirecioná-lo para uma página apropriada (ex: página de login, página de erro de permissão).
-
-- Garantir que a verificação de permissões seja feita de forma eficiente e segura.
-
-- Implementar a lógica de proteção de rotas no nível do roteamento da aplicação.
+**Passos Necessários:**
+1.  Listar todos os componentes do painel lojista que possuem ou interagem com `z-index` (ex: modais, tooltips, dropdowns, cards, cabeçalho, barra de ações).
+2.  Definir o `z-index` esperado para cada um desses componentes em seu estado normal e em estados de interação (ex: modal aberto).
+3.  Criar testes que verifiquem a propriedade `z-index` dos elementos no DOM renderizado.
+4.  Executar esses testes após cada alteração significativa nos componentes ou em suas estilizações para detectar regressões.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
