@@ -1,61 +1,108 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 /**
- * # Implementação de Testes e Refatoração de Estado para Isolamento de Dados e Cores
+ * # Testes e Refatoração de Autenticação e Troca de Categoria
  *
- * ## Objetivo
+ * ## Objetivo Geral
  *
- * Garantir que os dados (padrões) e cores associados a lojistas e prestadores sejam completamente isolados após o login e durante a troca de categorias. Evitar a persistência indevida de estado entre sessões e categorias.
+ * Garantir a integridade, isolamento e segurança dos dados e da interface do usuário durante os processos de login e troca de categoria entre "lojista" e "prestador", com validações visuais, lógicas e de auditoria.
  *
- * ## Funcionalidades
+ * ## 1. Testes End-to-End (E2E) com Playwright
  *
- * 1. **Testes Automatizados de Isolamento:**
- *    * Verificar que dados e cores padrão de lojista e prestador não se misturem após o login.
- *    * Verificar que dados e cores padrão de lojista e prestador não se misturem após a troca de categoria.
+ * ### Funcionalidade
  *
- * 2. **Refatoração da Lógica de Login:**
- *    * Implementar a limpeza e o isolamento completo do estado do usuário ao trocar de categoria.
- *    * Garantir que não haja persistência indevida de estado entre diferentes sessões ou categorias.
+ * Simular o fluxo completo de login para os perfis "lojista" e "prestador". Após o login, simular a troca de categoria e verificar visualmente se as cores e padrões corretos são exibidos para a categoria ativa.
  *
- * 3. **Validações no Fluxo de Renderização:**
- *    * Adicionar validações para assegurar que as cores padrão sejam carregadas exclusivamente da categoria autenticada.
- *    * Prevenir o carregamento de cores padrão de categorias não autenticadas.
+ * ### Requisitos Técnicos
  *
- * 4. **Teste End-to-End (E2E):**
- *    * Criar um teste E2E que simule o fluxo de login:
- *        * Login como lojista.
- *        * Verificação visual de cores e padrões corretos na área do lojista.
- *        * Login como prestador.
- *        * Verificação visual de cores e padrões corretos na área do prestador.
+ * * Utilizar Playwright para a automação.
+ * * Criar testes E2E que cubram os cenários de login e troca de categoria.
+ * * Implementar asserções visuais para verificar a correspondência de cores e padrões com o esperado para cada categoria.
  *
- * 5. **Auditoria e Logging:**
- *    * Incluir logs e indicadores de auditoria no aplicativo.
- *    * Registrar a categoria autenticada.
- *    * Rastrear o carregamento de padrões e campos.
+ * ### Passos Necessários
  *
- * ## Requisitos Técnicos
+ * 1. Configurar o ambiente de testes com Playwright.
+ * 2. Desenvolver scripts de teste para login como "lojista".
+ * 3. Desenvolver scripts de teste para login como "prestador".
+ * 4. Implementar a lógica de troca de categoria dentro dos testes.
+ * 5. Adicionar validações visuais (ex: `toHaveCSS` ou `toMatchSnapshot` se aplicável) para cores e padrões após a troca.
  *
- * * **Linguagem/Framework:** TypeScript, React, TanStack Start
- * * **Ferramenta de Teste E2E:** Playwright
- * * **Gerenciamento de Estado:** TanStack Query, React Context
- * * **Formato de Logs:** JSON
+ * ## 2. Testes Unitários e de Integração
  *
- * ## Passos para Implementação
+ * ### Funcionalidade
  *
- * 1. **Análise do Estado Atual:** Identificar os pontos onde o estado (dados e cores) é compartilhado ou persistido indevidamente entre categorias.
- * 2. **Implementação dos Testes Unitários/Integração:**
- *    * Desenvolver testes que validem o isolamento de dados e cores após login e troca de categoria.
- * 3. **Refatoração do Gerenciamento de Estado:**
- *    * Modificar a lógica de login e troca de categoria para limpar e resetar o estado de forma adequada.
- * 4. **Implementação das Validações de Renderização:**
- *    * Adicionar verificações no código de renderização para garantir a origem correta das cores.
- * 5. **Desenvolvimento do Teste E2E:**
- *    * Configurar o ambiente de teste E2E.
- *    * Escrever o script de teste simulando os fluxos de login e verificando os resultados visuais.
- * 6. **Implementação de Logging e Auditoria:**
- *    * Integrar o sistema de logging para registrar as informações necessárias.
- * 7. **Revisão e Testes:**
- *    * Revisar o código implementado.
- *    * Executar todos os testes (unitários, integração, E2E).
+ * Validar o isolamento de dados e cores entre os perfis "lojista" e "prestador" em diferentes estados: após o login inicial e após a troca de categoria.
+ *
+ * ### Requisitos Técnicos
+ *
+ * * Implementar testes unitários para funções específicas de manipulação de dados e cores.
+ * * Implementar testes de integração para fluxos que envolvem múltiplos componentes ou serviços.
+ * * Garantir que dados e configurações visuais de uma categoria não "vazem" para a outra.
+ *
+ * ### Passos Necessários
+ *
+ * 1. Identificar as unidades de código responsáveis por carregar e gerenciar dados e configurações de cores por categoria.
+ * 2. Escrever testes unitários para verificar se essas unidades retornam os dados/cores corretos para o perfil ativo e não misturam informações.
+ * 3. Criar testes de integração que simulem o login e a troca de categoria, verificando o estado global da aplicação ou dos componentes relevantes para confirmar o isolamento.
+ *
+ * ## 3. Refatoração da Lógica de Login e Troca de Categoria
+ *
+ * ### Funcionalidade
+ *
+ * Refatorar a lógica de autenticação e troca de categoria para garantir um estado de usuário limpo e resetado antes do carregamento de dados e cores da nova categoria autenticada.
+ *
+ * ### Requisitos Técnicos
+ *
+ * * Implementar um mecanismo de "reset" de estado que limpe completamente as informações da categoria anterior.
+ * * Garantir que o carregamento de dados e cores da nova categoria ocorra após o reset completo.
+ * * Evitar estados residuais ou inconsistências entre as trocas.
+ *
+ * ### Passos Necessários
+ *
+ * 1. Analisar o código existente de login e troca de categoria.
+ * 2. Identificar pontos de estado que precisam ser resetados (ex: cache, variáveis globais, estado de componentes).
+ * 3. Implementar uma função ou serviço de `resetUserState` que seja chamado antes de carregar os dados da nova categoria.
+ * 4. Modificar os fluxos de login e troca de categoria para invocar o `resetUserState` de forma apropriada.
+ *
+ * ## 4. Validações no Fluxo de Renderização
+ *
+ * ### Funcionalidade
+ *
+ * Adicionar validações no fluxo de renderização para assegurar que as cores e padrões exibidos sejam exclusivamente provenientes da categoria autenticada, prevenindo o carregamento de dados de categorias não autenticadas.
+ *
+ * ### Requisitos Técnicos
+ *
+ * * Implementar mecanismos de verificação durante a renderização de componentes.
+ * * Garantir que as fontes de dados para estilos visuais sejam estritamente a categoria ativa.
+ *
+ * ### Passos Necessários
+ *
+ * 1. Revisar os componentes responsáveis pela exibição de cores e padrões.
+ * 2. Implementar verificações (ex: em `useEffect`, `componentDidMount`, ou hooks de renderização) para validar a origem das propriedades de estilo.
+ * 3. Se um componente tentar carregar ou aplicar estilos de uma categoria não autenticada, disparar um erro ou log apropriado.
+ *
+ * ## 5. Logs de Auditoria
+ *
+ * ### Funcionalidade
+ *
+ * Incluir logs de auditoria em formato JSON para registrar a categoria autenticada e os eventos de carregamento de padrões/campos, com identificadores correlacionáveis.
+ *
+ * ### Requisitos Técnicos
+ *
+ * * Implementar um sistema de logging que gere saídas em formato JSON.
+ * * Registrar eventos chave relacionados à autenticação e carregamento de dados.
+ * * Incluir campos que permitam a correlação de eventos (ex: `requestId`, `userId`, `timestamp`).
+ *
+ * ### Passos Necessários
+ *
+ * 1. Definir o schema JSON para os logs de auditoria, incluindo campos como:
+ *    * `timestamp`: Data e hora do evento.
+ *    * `eventType`: Tipo de evento (e.g., `LOGIN_SUCCESS`, `CATEGORY_SWITCH`, `DATA_LOAD`, `PATTERN_LOAD`).
+ *    * `userId`: Identificador do usuário.
+ *    * `authenticatedCategory`: Categoria para a qual o usuário está autenticado/trocou.
+ *    * `correlationId`: Um ID único para correlacionar requisições e eventos relacionados.
+ *    * `details`: Objeto com informações adicionais específicas do evento (e.g., nome do padrão carregado, campos exibidos).
+ * 2. Integrar o sistema de logging na lógica de autenticação, troca de categoria e carregamento de dados/padrões.
+ * 3. Garantir que os logs sejam gerados em formato JSON válido.
  */
 import { 
   ShieldCheck, 
