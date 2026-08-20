@@ -63,6 +63,14 @@ function AuthLogin() {
       return;
     }
 
+    // Limpeza absoluta pré-login para evitar lixo de sessões anteriores
+    localStorage.removeItem('fixxer:master-bypass');
+    localStorage.removeItem('fixxer:bypass-uid');
+    localStorage.removeItem('fixxer:last-category');
+    if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.clear();
+    }
+    
     setLoading(true);
 
     const isMaster = emailVal === 'jorgericardosalgado@gmail.com';
