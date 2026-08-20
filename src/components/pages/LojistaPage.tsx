@@ -1219,51 +1219,78 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 </div>
             </div>
 
-            {/* Filtros Globais - Agora Responsivos */}
-            <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <h3 className="font-black text-white uppercase italic text-xs md:text-sm tracking-widest">Filtro de Período Global</h3>
-                    <div className="flex flex-col gap-3 w-full sm:w-auto">
-                        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                            {['Hoje', '7 dias', '30 dias', 'Personalizado'].map(period => (
-                                <button 
-                                    key={period} 
-                                    onClick={() => setFilter(period)}
-                                    className={`flex-1 sm:flex-none px-3 py-2 rounded-xl text-[9px] md:text-[10px] font-bold uppercase border transition-all ${
-                                        filter === period 
-                                        ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_15px_rgba(0,255,135,0.3)]' 
-                                        : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
-                                    }`}
-                                >
-                                    {period}
-                                </button>
-                            ))}
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Filtros Globais */}
+              <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <h3 className="font-black text-white uppercase italic text-xs md:text-sm tracking-widest">Período Global</h3>
+                      <div className="flex flex-col gap-3 w-full sm:w-auto">
+                          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                              {['Hoje', '7 dias', '30 dias', 'Personalizado'].map(period => (
+                                  <button 
+                                      key={period} 
+                                      onClick={() => setFilter(period)}
+                                      className={`flex-1 sm:flex-none px-3 py-2 rounded-xl text-[9px] md:text-[10px] font-bold uppercase border transition-all ${
+                                          filter === period 
+                                          ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_15px_rgba(0,255,135,0.3)]' 
+                                          : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
+                                      }`}
+                                  >
+                                      {period}
+                                  </button>
+                              ))}
+                          </div>
 
-                        {filter === 'Personalizado' && (
-                            <div className="flex flex-col sm:flex-row gap-2 animate-in slide-in-from-top-2 duration-300">
-                                <div className="flex-1 space-y-1">
-                                    <Label className="text-[8px] uppercase font-bold text-muted-foreground">Início</Label>
-                                    <Input 
-                                        type="date" 
-                                        value={customDates.start}
-                                        onChange={(e) => setCustomDates({...customDates, start: e.target.value})}
-                                        className="bg-black/40 border-white/10 h-9 rounded-lg text-[10px] text-white" 
-                                    />
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                    <Label className="text-[8px] uppercase font-bold text-muted-foreground">Fim</Label>
-                                    <Input 
-                                        type="date" 
-                                        value={customDates.end}
-                                        onChange={(e) => setCustomDates({...customDates, end: e.target.value})}
-                                        className="bg-black/40 border-white/10 h-9 rounded-lg text-[10px] text-white" 
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
+                          {filter === 'Personalizado' && (
+                              <div className="flex flex-col sm:flex-row gap-2 animate-in slide-in-from-top-2 duration-300">
+                                  <div className="flex-1 space-y-1">
+                                      <Label className="text-[8px] uppercase font-bold text-muted-foreground">Início</Label>
+                                      <Input 
+                                          type="date" 
+                                          value={customDates.start}
+                                          onChange={(e) => setCustomDates({...customDates, start: e.target.value})}
+                                          className="bg-black/40 border-white/10 h-9 rounded-lg text-[10px] text-white" 
+                                      />
+                                  </div>
+                                  <div className="flex-1 space-y-1">
+                                      <Label className="text-[8px] uppercase font-bold text-muted-foreground">Fim</Label>
+                                      <Input 
+                                          type="date" 
+                                          value={customDates.end}
+                                          onChange={(e) => setCustomDates({...customDates, end: e.target.value})}
+                                          className="bg-black/40 border-white/10 h-9 rounded-lg text-[10px] text-white" 
+                                      />
+                                  </div>
+                              </div>
+                          )}
+                      </div>
+                  </div>
+              </div>
+
+              {/* Filtro de Status Rápido */}
+              <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl flex flex-col justify-center">
+                  <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-black text-white uppercase italic text-[10px] tracking-widest">Status Rápido</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                      {['Todos', 'Pendente', 'Concluído', 'Em andamento'].map((status) => (
+                          <button
+                              key={status}
+                              onClick={() => {
+                                  setStatusFilter(status);
+                                  setCurrentPage(1);
+                              }}
+                              className={`flex-1 px-3 py-2 rounded-xl text-[9px] font-black uppercase italic transition-all border ${
+                                  statusFilter === status
+                                      ? 'bg-primary text-black border-primary'
+                                      : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'
+                              }`}
+                          >
+                              {status}
+                          </button>
+                      ))}
+                  </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
