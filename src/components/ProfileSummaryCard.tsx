@@ -27,6 +27,7 @@ type ProfileLite = {
   display_name?: string | null;
   company_name?: string | null;
   full_name?: string | null;
+  email?: string | null;
   avatar_url?: string | null;
   logo_url?: string | null;
   city?: string | null;
@@ -103,6 +104,7 @@ export function ProfileSummaryCard({
               id: res.identity.id,
               display_name: res.identity.displayName,
               full_name: res.identity.fullName,
+              email: res.identity.email,
               avatar_url: res.identity.avatarUrl,
               company_name: res.specializations?.store?.company_name || 
                             res.specializations?.supplier?.company_name || 
@@ -157,6 +159,7 @@ export function ProfileSummaryCard({
             id: resolved.identity.id,
             display_name: resolved.identity.displayName,
             full_name: resolved.identity.fullName,
+            email: resolved.identity.email,
             avatar_url: resolved.identity.avatarUrl,
             // Prioriza nomes e logos profissionais/empresa vindos das especializações
             company_name: (resolved.specializations as any)?.store?.company_name || 
@@ -287,6 +290,16 @@ export function ProfileSummaryCard({
                 </div>
                 <AvailabilityBadge userId={profile?.id ?? null} className="!border-none !bg-transparent !px-0" />
               </div>
+              
+              {profile?.email && (
+                <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/10 w-fit">
+                  <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
+                  <span className="text-[9px] font-medium text-white/50 lowercase tracking-tight truncate max-w-[160px]">
+                    {profile.email}
+                  </span>
+                </div>
+              )}
+
               {location && (
                 <div className="mt-1.5 flex items-center gap-1 text-[10px] text-white/60 font-bold uppercase tracking-widest">
                   <MapPin className="w-3 h-3 text-primary" aria-hidden="true" />
