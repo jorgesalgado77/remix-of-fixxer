@@ -37,27 +37,35 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Correção de Fluxo de Autenticação e Redirecionamento
+        ## Funcionalidade: Redirecionamento Pós-Login Baseado em Categoria
 
-**Funcionalidade:**
+### Descrição
+Implementar a lógica de redirecionamento de usuários após o login bem-sucedido na rota `/auth`. O redirecionamento deve ser direcionado para a página apropriada com base na categoria do usuário.
 
-Corrigir um bug no fluxo de autenticação que impede o redirecionamento correto do usuário para a página apropriada após o login, com base em sua categoria.
+### Requisitos Técnicos
+1.  **Verificação de Redirecionamento:**
+    *   Validar se, após o login na rota `/auth`, o usuário é redirecionado corretamente para a página designada, conforme sua categoria.
 
-**Requisitos Técnicos:**
+2.  **Lógica de Identificação de Categoria:**
+    *   Revisar e refinar a lógica que identifica a categoria do usuário logado.
+    *   Garantir que o valor da categoria utilizado para o redirecionamento seja confiável e consistente.
 
-1.  **Identificar a Causa Raiz:** Investigar por que o redirecionamento não está ocorrendo após a inserção das credenciais na página `/auth` e o clique no botão "Entrar".
-2.  **Verificar a Lógica de Categoria:** Garantir que a categoria do usuário logado está sendo corretamente identificada e utilizada para determinar a próxima página.
-3.  **Implementar Redirecionamento Condicional:** Implementar ou corrigir a lógica de redirecionamento para que os usuários sejam direcionados para a página correta com base em sua categoria.
+3.  **Feedback de Usuário:**
+    *   Adicionar mensagens de erro claras para o usuário quando a categoria não puder ser determinada ou quando o redirecionamento falhar.
+    *   Implementar estados de carregamento visuais durante o processo de autenticação e redirecionamento.
 
-**Passos Necessários:**
+4.  **Logging e Depuração:**
+    *   Instrumentar logs detalhados no fluxo de autenticação.
+    *   Registrar a decisão de redirecionamento, a categoria detectada e quaisquer erros ocorridos.
+    *   O objetivo é facilitar a depuração e o rastreamento de problemas relacionados ao redirecionamento.
 
-1.  Acessar a página `/auth`.
-2.  Inserir credenciais válidas.
-3.  Clicar no botão "Entrar".
-4.  Observar o comportamento do sistema: verificar se o redirecionamento para a página subsequente ocorre conforme esperado para diferentes categorias de usuário.
-5.  Analisar o código-fonte, logs e console do navegador para identificar erros ou comportamentos inesperados durante o processo de autenticação e redirecionamento.
-6.  Modificar o código para corrigir a lógica de redirecionamento condicional, assegurando que o usuário seja direcionado para a página correta após o login.
-7.  Testar exaustivamente o fluxo de login com diferentes categorias de usuário para confirmar a correção.
+### Passos Necessários
+1.  Analisar o fluxo de autenticação atual na rota `/auth`.
+2.  Implementar ou refatorar a função de identificação de categoria do usuário.
+3.  Desenvolver a lógica de redirecionamento condicional com base na categoria.
+4.  Integrar mensagens de erro e indicadores de carregamento na interface do usuário.
+5.  Adicionar pontos de log para registrar eventos relevantes do fluxo de autenticação e redirecionamento.
+6.  Testar exaustivamente todos os cenários de login e redirecionamento para diferentes categorias de usuários.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
