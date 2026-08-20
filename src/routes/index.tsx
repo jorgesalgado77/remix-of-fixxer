@@ -37,33 +37,26 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Correção de Duplicidade e Layout de Card de Usuário
+        ## Correção de Bug: Exibição do Card do Usuário no Layout Mobile
 
-**Problema:**
+**Funcionalidade:**
 
-A imagem fornecida mostra itens circulados em vermelho que estão duplicados.
+O card do usuário não está sendo exibido corretamente na visualização mobile da aplicação. É necessário investigar e corrigir o bug para que o card apareça de forma adequada em dispositivos móveis.
 
-**Objetivo:**
+**Requisitos Técnicos:**
 
-Substituir os itens duplicados pelo card de informações do usuário, que deve conter:
+*   Identificar a causa raiz do problema de renderização do card do usuário em telas menores.
+*   Garantir que o card do usuário seja responsivo e se ajuste corretamente ao layout mobile.
+*   Testar a solução em diferentes dispositivos e tamanhos de tela mobile.
 
-*   Foto de perfil
-*   Nome de exibição
-*   Saldo de moedas
-*   Outras informações relevantes (a serem definidas com base no contexto visual)
+**Passos Necessários:**
 
-**Requisitos de Layout:**
-
-*   O card do usuário deve ser exibido sem espaço adicional no topo.
-*   O layout geral deve ser organizado para apresentar todas as informações do usuário de forma clara e correta.
-
-**Passos para Implementação:**
-
-1.  Identificar e remover os elementos duplicados marcados em vermelho.
-2.  Criar um componente de card para exibir as informações do usuário.
-3.  Integrar o componente do card no local dos elementos duplicados.
-4.  Ajustar o layout para garantir que o card e as informações contidas nele sejam exibidos corretamente, sem sobreposição ou espaços indesejados.
-5.  Garantir que o saldo de moedas e outras informações relevantes sejam carregados e exibidos adequadamente.
+1.  Analisar o código responsável pela renderização do card do usuário.
+2.  Verificar as media queries e estilos CSS aplicados ao card para garantir a responsividade.
+3.  Depurar o código para identificar quaisquer erros de JavaScript ou lógica que possam estar impedindo a exibição.
+4.  Implementar as correções necessárias no código.
+5.  Realizar testes em ambiente de desenvolvimento e staging para validar a correção.
+6.  Testar em dispositivos móveis reais (ou em emuladores confiáveis) para confirmar a exibição correta.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
