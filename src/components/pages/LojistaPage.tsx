@@ -334,6 +334,22 @@ export function LojistaDashboard() {
     };
   }, []);
 
+  // Forçar scroll funcional na página /lojista
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    const originalHtmlStyle = window.getComputedStyle(document.documentElement).overflow;
+    
+    document.body.style.overflowY = 'auto';
+    document.body.style.height = 'auto';
+    document.documentElement.style.overflowY = 'auto';
+    document.documentElement.style.height = 'auto';
+    
+    return () => {
+      document.body.style.overflow = originalStyle;
+      document.documentElement.style.overflow = originalHtmlStyle;
+    };
+  }, []);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = (id: number) => {
