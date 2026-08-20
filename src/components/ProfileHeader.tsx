@@ -79,7 +79,6 @@ export function ProfileHeader({
       */}
       {!hideSidebarCard && (
         <>
-          <ProfileSummaryCard role={role} variant="auto" />
           <ProfileSummaryCard role={role} variant="sidebar" />
         </>
       )}

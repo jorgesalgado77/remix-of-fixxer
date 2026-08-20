@@ -37,57 +37,37 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        # Tarefa: Otimização e Validação de Layout da Página `/lojista`
+        ## Tarefa: Otimização de Interface de Loja Virtual
 
-## Objetivo Principal
+**Objetivo:** Refinar a experiência do usuário em uma loja virtual, corrigindo problemas visuais e de conteúdo em diferentes dispositivos.
 
-Garantir a estabilidade, performance e responsividade do layout da página `/lojista`, com foco na renderização e rolagem dos cards.
+**Funcionalidades Solicitadas:**
 
-## Funcionalidades e Requisitos
+1.  **Remoção de Elementos:**
+    *   Identificar e remover todos os itens circulados em vermelho na imagem fornecida.
 
-1.  **Validação de Renderização de Cards:**
+2.  **Correção de Conteúdo na Página `/lojista`:**
+    *   Garantir que todos os cards de produtos ausentes na página `/lojista` sejam exibidos corretamente.
 
-    *   Verificar se todos os cards na página `/lojista` são renderizados corretamente.
+3.  **Ajustes Visuais Gerais:**
+    *   Corrigir todas as visualizações da interface, assegurando a correta renderização em:
+        *   Desktop
+        *   Tablet
+        *   Mobile (celular)
 
-    *   Assegurar que não ocorram sobreposições visuais entre os cards.
+**Requisitos Técnicos:**
 
-    *   Confirmar que a renderização não cause travamentos ou lentidão na interface.
+*   Acesso à imagem de referência para identificação dos itens a serem removidos.
+*   Acesso ao código-fonte da loja virtual para realizar as modificações.
+*   Capacidade de testar as alterações em diferentes tamanhos de tela e dispositivos.
 
-2.  **Implementação de Rolagem Consistente:**
+**Passos Necessários:**
 
-    *   Implementar ou otimizar a funcionalidade de rolagem vertical na página `/lojista`.
-
-    *   Garantir que a navegação através da rolagem seja fluida e consistente em todos os cenários.
-
-3.  **Logs e Diagnósticos de Layout:**
-
-    *   Adicionar mecanismos de logging e diagnóstico específicos para problemas de layout.
-
-    *   O foco deve ser na identificação de causas para travamentos ou falhas durante a rolagem dos itens na página `/lojista`.
-
-    *   Os logs devem fornecer informações detalhadas sobre o estado do layout e dos componentes durante a rolagem.
-
-4.  **Testes de Responsividade:**
-
-    *   Testar o layout da página `/lojista` em diferentes tamanhos de tela (desktops, tablets, dispositivos móveis).
-
-    *   Validar se a estrutura em grid e a funcionalidade de rolagem permanecem estáveis e funcionais em todas as resoluções testadas.
-
-## Passos Sugeridos
-
-1.  Analisar o componente de card e sua lógica de renderização.
-
-2.  Implementar ou refinar o mecanismo de rolagem (ex: virtual scrolling, lazy loading).
-
-3.  Integrar um sistema de logging que capture eventos de layout e rolagem.
-
-4.  Definir métricas para avaliar a performance de renderização e rolagem.
-
-5.  Configurar e executar testes em diferentes dispositivos e emuladores de navegador.
-
-6.  Analisar os logs e métricas para identificar e corrigir gargalos.
-
-7.  Documentar as correções e melhorias implementadas.
+1.  Analisar a imagem fornecida e identificar os elementos marcados em vermelho.
+2.  Implementar as alterações de código para remover os elementos identificados.
+3.  Verificar a página `/lojista` para identificar e corrigir a exibição de cards faltantes.
+4.  Realizar testes de responsividade em resoluções de desktop, tablet e mobile.
+5.  Garantir que todas as correções visuais estejam aplicadas e consistentes em todos os dispositivos.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">

@@ -448,7 +448,6 @@ export function LojistaDashboard() {
                     </button>
                 </div>
 
-                <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} missingKeys={profileMissingKeys} onOpenProfile={handleOpenSettings} />
 
 
                 <TooltipProvider>
@@ -515,7 +514,7 @@ export function LojistaDashboard() {
 
       {/* Sidebar Retrátil (Desktop) */}
       <aside className="w-72 border-r border-white/10 p-6 flex flex-col gap-6 hidden md:flex bg-[#0A0A0A] overflow-y-auto scrollbar-none">
-        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} missingKeys={profileMissingKeys} onOpenProfile={handleOpenSettings} />
+        
 
 
         <TooltipProvider>
@@ -1515,7 +1514,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                         return (
                             <>
                                 {paginated.length > 0 ? paginated.map((service) => (
-                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20">
+                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20 feed-item-cv">
                                         <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
                                             <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color}`}>
