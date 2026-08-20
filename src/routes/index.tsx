@@ -37,7 +37,29 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        O problema persiste, corrija.
+        ## Correção de Bug: Cards de Informação e Dados não exibidos no painel mobile
+
+**Problema:**
+
+Os cards de informação e dados não estão sendo exibidos corretamente no painel do usuário quando acessado via dispositivo móvel.
+
+**Objetivo:**
+
+Identificar a causa raiz do problema e implementar a correção necessária para que os cards sejam exibidos adequadamente em dispositivos móveis.
+
+**Requisitos:**
+
+*   Manter a funcionalidade e a exibição dos cards de informação e dados.
+*   Garantir que os cards permaneçam visíveis e funcionais em telas de dispositivos móveis.
+*   Preservar a integridade do design e layout dos cards.
+
+**Passos para a resolução:**
+
+1.  **Análise:** Investigar o código responsável pela renderização dos cards no painel do usuário, com foco específico na adaptação para telas mobile.
+2.  **Identificação:** Determinar se o problema está relacionado a CSS (responsividade, media queries), JavaScript (manipulação do DOM, lógica de exibição condicional) ou a alguma limitação específica do ambiente mobile.
+3.  **Correção:** Implementar as modificações necessárias no código para corrigir o bug.
+4.  **Testes:** Realizar testes exaustivos em diferentes dispositivos móveis e navegadores para validar a correção.
+5.  **Verificação:** Confirmar que os cards de informação e dados estão sendo exibidos corretamente e que o card do usuário permanece intacto.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
