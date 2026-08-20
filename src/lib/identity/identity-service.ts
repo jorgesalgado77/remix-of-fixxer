@@ -8,7 +8,7 @@ const IDENTITY_CACHE = new Map<string, { at: number; value: ResolvedProfile }>()
 const TTL_MS = 600_000; // Aumentado para 10 minutos para maior estabilidade visual
 
 // Chave para persistência em localStorage para evitar flash de "Usuário" no refresh
-const PERSISTENCE_KEY = "fixxer_identity_cache_v1.3";
+const PERSISTENCE_KEY = "fixxer_identity_cache_v1.4";
 
 function getStoredIdentities(): Record<string, ResolvedProfile> {
   if (typeof window === "undefined") return {};
