@@ -37,25 +37,7 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Correção de Layout e Exibição de Card de Usuário
-
-**Objetivo:** Ajustar o layout da interface conforme especificado e exibir o card do usuário em uma área designada.
-
-**Tarefas:**
-
-1.  **Remover Elementos Indesejados:**
-    *   Identificar e remover todos os elementos marcados com um círculo vermelho na imagem de referência.
-
-2.  **Exibir Card do Usuário:**
-    *   Substituir o conteúdo da área marcada com um círculo verde pelo componente "Card do Usuário".
-
-**Requisitos Técnicos:**
-
-*   A manipulação do layout deve ser feita utilizando as tecnologias front-end atuais (HTML, CSS, JavaScript, ou framework relevante).
-*   O "Card do Usuário" deve ser um componente reutilizável, exibindo informações relevantes do usuário (nome, avatar, etc.).
-*   A correção deve ser aplicada imediatamente.
-
-**Observação:** A imagem de referência é crucial para a correta identificação dos elementos a serem removidos e da área de destino.
+        O problema persiste, corrija.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
