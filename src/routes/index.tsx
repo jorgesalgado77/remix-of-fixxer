@@ -36,79 +36,19 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Correção Automática de Ausência de `public.provider_profiles` e Tratamento de Erro `23503`
+        ## Testes E2E: Tratamento de Erro 42P01 (Tabela Ausente)
 
-### Funcionalidade Solicitada
+**Descrição:**
+Criar testes E2E adicionais para validar o tratamento e a mensagem acionável quando ocorrer o erro 42P01 (tabela ausente), incluindo o comportamento do botão de recuperação.
 
-1.  **Correção Automática de `public.provider_profiles`:**
-    *   Detectar automaticamente a ausência da tabela `public.provider_profiles`.
-    *   Criar a estrutura necessária para `public.provider_profiles` caso não exista.
-    *   Tentar a sincronização novamente após a criação, sem intervenção manual do usuário.
-
-2.  **Tratamento de Erro `23503` (Foreign Key `profiles_id_fkey`):**
-    *   Implementar uma checagem no aplicativo para identificar o erro `23503` (violação de chave estrangeira `profiles_id_fkey`).
-    *   Exibir uma mensagem de erro clara e acionável para o usuário, indicando a necessidade de correção.
-    *   Tentar a sincronização novamente após a exibição da mensagem.
-
-3.  **Teste E2E para Erro `23503`:**
-    *   Criar um teste de ponta a ponta (E2E).
-    *   Simular um cenário onde o usuário não existe na tabela `auth.users`.
-    *   Validar que o sistema trata corretamente o erro `23503` ao tentar sincronizar.
-
-4.  **Validação de Existência de Usuário na Sincronização:**
-    *   Ajustar a lógica de sincronização.
-    *   Garantir que a existência do usuário na tabela `auth.users` seja validada **antes** de qualquer inserção ou atualização nas tabelas `public.profiles` e `public.provider_profiles`.
-
-5.  **Botão de Recuperação no Painel de Status:**
-    *   Adicionar um botão ao painel de "Status".
-    *   Este botão deve permitir a execução manual do fluxo de recuperação para o erro de chave estrangeira ausente (`FK ausente`).
-    *   A funcionalidade deve ser acionável para um usuário específico.
-    *   Registrar logs detalhados da execução.
-    *   Registrar a versão do script aplicada durante a recuperação.
-
-### Requisitos Técnicos
-
-*   Acesso ao código-fonte da aplicação e ao banco de dados.
-*   Conhecimento em SQL (PostgreSQL preferencialmente) para manipulação de esquemas e dados.
-*   Experiência com testes E2E (ex: Cypress, Playwright).
-*   Implementação de mecanismos de logging.
-*   Desenvolvimento de interface de usuário para o painel de Status.
-
-### Passos Necessários
-
-1.  **Análise e Implementação da Correção Automática:**
-    *   Identificar o ponto exato na lógica de sincronização onde a ausência de `public.provider_profiles` pode ocorrer.
-    *   Implementar a lógica de criação da tabela `public.provider_profiles` com a estrutura correta (definir colunas e constraints).
-    *   Integrar a chamada para a criação da tabela antes da tentativa de sincronização.
-
-2.  **Implementação do Tratamento de Erro `23503`:**
-    *   Capturar a exceção específica do erro `23503` durante o processo de sincronização.
-    *   Desenvolver a lógica para exibir uma mensagem informativa ao usuário.
-    *   Implementar a funcionalidade de nova tentativa de sincronização após a exibição da mensagem.
-
-3.  **Desenvolvimento do Teste E2E:**
-    *   Configurar o ambiente de teste E2E.
-    *   Criar um fluxo de teste que:
-        *   Inicie uma sincronização para um usuário inexistente em `auth.users`.
-        *   Verifique se o erro `23503` é tratado corretamente.
-        *   Confirme que a mensagem acionável é exibida.
-        *   Valide o comportamento esperado do sistema.
-
-4.  **Refatoração da Lógica de Sincronização:**
-    *   Modificar a função/método de sincronização para incluir uma verificação explícita de `auth.users` no início.
-    *   Utilizar `EXISTS` ou similar para otimizar a consulta.
-    *   Garantir que as operações de `INSERT`/`UPDATE` em `public.profiles` e `public.provider_profiles` só ocorram se o usuário existir.
-
-5.  **Implementação do Botão de Recuperação:**
-    *   No painel de Status, adicionar um campo de input para o ID do usuário.
-    *   Adicionar um botão "Recuperar FK Ausente".
-    *   Implementar o endpoint/serviço que será chamado pelo botão.
-    *   Este serviço deve:
-        *   Receber o ID do usuário.
-        *   Executar a lógica de correção para o erro `23503` e criação de `public.provider_profiles` (se necessário).
-        *   Registrar logs detalhados (timestamp, usuário, ação, resultado).
-        *   Registrar a versão do script/código em execução.
-    *   Exibir o status da operação (sucesso/falha) e os logs na interface.
+**Requisitos:**
+- Simular o erro 42P01 (tabela ausente) durante uma operação que envolva a consulta ou manipulação de tabelas.
+- Validar que a mensagem de erro exibida ao usuário seja clara e informativa.
+- Verificar se a mensagem de erro inclui uma ação acionável para o usuário.
+- Testar o comportamento do botão de recuperação quando o erro 42P01 ocorrer:
+    - O botão deve estar visível e habilitado (se aplicável).
+    - Clicar no botão deve acionar o fluxo de recuperação apropriado.
+    - Validar o resultado do acionamento do botão de recuperação em resposta ao erro 42P01.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
