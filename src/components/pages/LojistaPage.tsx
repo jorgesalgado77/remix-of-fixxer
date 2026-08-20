@@ -427,8 +427,8 @@ export function LojistaDashboard() {
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
       <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="sidebar" />
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
-        <div className="pt-20 lg:pt-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-72 relative z-0">
+        <div className="pt-20 lg:pt-0 relative z-[60]">
            <ProfileHeader role="lojista" />
         </div>
 
