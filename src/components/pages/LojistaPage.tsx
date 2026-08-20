@@ -1219,51 +1219,78 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 </div>
             </div>
 
-            {/* Filtros Globais - Agora Responsivos */}
-            <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <h3 className="font-black text-white uppercase italic text-xs md:text-sm tracking-widest">Filtro de Período Global</h3>
-                    <div className="flex flex-col gap-3 w-full sm:w-auto">
-                        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                            {['Hoje', '7 dias', '30 dias', 'Personalizado'].map(period => (
-                                <button 
-                                    key={period} 
-                                    onClick={() => setFilter(period)}
-                                    className={`flex-1 sm:flex-none px-3 py-2 rounded-xl text-[9px] md:text-[10px] font-bold uppercase border transition-all ${
-                                        filter === period 
-                                        ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_15px_rgba(0,255,135,0.3)]' 
-                                        : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
-                                    }`}
-                                >
-                                    {period}
-                                </button>
-                            ))}
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Filtros Globais */}
+              <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <h3 className="font-black text-white uppercase italic text-xs md:text-sm tracking-widest">Período Global</h3>
+                      <div className="flex flex-col gap-3 w-full sm:w-auto">
+                          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                              {['Hoje', '7 dias', '30 dias', 'Personalizado'].map(period => (
+                                  <button 
+                                      key={period} 
+                                      onClick={() => setFilter(period)}
+                                      className={`flex-1 sm:flex-none px-3 py-2 rounded-xl text-[9px] md:text-[10px] font-bold uppercase border transition-all ${
+                                          filter === period 
+                                          ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_15px_rgba(0,255,135,0.3)]' 
+                                          : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
+                                      }`}
+                                  >
+                                      {period}
+                                  </button>
+                              ))}
+                          </div>
 
-                        {filter === 'Personalizado' && (
-                            <div className="flex flex-col sm:flex-row gap-2 animate-in slide-in-from-top-2 duration-300">
-                                <div className="flex-1 space-y-1">
-                                    <Label className="text-[8px] uppercase font-bold text-muted-foreground">Início</Label>
-                                    <Input 
-                                        type="date" 
-                                        value={customDates.start}
-                                        onChange={(e) => setCustomDates({...customDates, start: e.target.value})}
-                                        className="bg-black/40 border-white/10 h-9 rounded-lg text-[10px] text-white" 
-                                    />
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                    <Label className="text-[8px] uppercase font-bold text-muted-foreground">Fim</Label>
-                                    <Input 
-                                        type="date" 
-                                        value={customDates.end}
-                                        onChange={(e) => setCustomDates({...customDates, end: e.target.value})}
-                                        className="bg-black/40 border-white/10 h-9 rounded-lg text-[10px] text-white" 
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
+                          {filter === 'Personalizado' && (
+                              <div className="flex flex-col sm:flex-row gap-2 animate-in slide-in-from-top-2 duration-300">
+                                  <div className="flex-1 space-y-1">
+                                      <Label className="text-[8px] uppercase font-bold text-muted-foreground">Início</Label>
+                                      <Input 
+                                          type="date" 
+                                          value={customDates.start}
+                                          onChange={(e) => setCustomDates({...customDates, start: e.target.value})}
+                                          className="bg-black/40 border-white/10 h-9 rounded-lg text-[10px] text-white" 
+                                      />
+                                  </div>
+                                  <div className="flex-1 space-y-1">
+                                      <Label className="text-[8px] uppercase font-bold text-muted-foreground">Fim</Label>
+                                      <Input 
+                                          type="date" 
+                                          value={customDates.end}
+                                          onChange={(e) => setCustomDates({...customDates, end: e.target.value})}
+                                          className="bg-black/40 border-white/10 h-9 rounded-lg text-[10px] text-white" 
+                                      />
+                                  </div>
+                              </div>
+                          )}
+                      </div>
+                  </div>
+              </div>
+
+              {/* Filtro de Status Rápido */}
+              <div className="bg-[#1A1A1B] border border-white/10 p-4 md:p-6 rounded-2xl md:rounded-3xl flex flex-col justify-center">
+                  <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-black text-white uppercase italic text-[10px] tracking-widest">Status Rápido</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                      {['Todos', 'Pendente', 'Concluído', 'Em andamento'].map((status) => (
+                          <button
+                              key={status}
+                              onClick={() => {
+                                  setStatusFilter(status);
+                                  setCurrentPage(1);
+                              }}
+                              className={`flex-1 px-3 py-2 rounded-xl text-[9px] font-black uppercase italic transition-all border ${
+                                  statusFilter === status
+                                      ? 'bg-primary text-black border-primary'
+                                      : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'
+                              }`}
+                          >
+                              {status}
+                          </button>
+                      ))}
+                  </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
@@ -1277,157 +1304,117 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                                     <Coins className="w-5 h-5" />
                                 </div>
                                 <div className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase italic tracking-wider">
-                                    Saldo de Moedas &amp; Plano
+                                    Moedas & Plano
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setShowPlanModal(true)}
-                                    className="ml-auto md:ml-2 inline-flex items-center gap-1.5 rounded-full border border-fuchsia-400/40 bg-gradient-to-r from-fuchsia-500/25 to-purple-500/10 text-fuchsia-200 px-2.5 py-1 text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:brightness-125 active:scale-95 transition-all"
+                                    className="ml-auto md:ml-2 inline-flex items-center gap-1.5 rounded-full border border-fuchsia-400/40 bg-gradient-to-r from-fuchsia-500/25 to-purple-500/10 text-fuchsia-200 px-2 py-0.5 text-[8px] md:text-[9px] font-black uppercase tracking-widest hover:brightness-125 active:scale-95 transition-all"
                                     title="Ver detalhes do plano"
                                 >
-                                    <Crown className="w-3 h-3" />
-                                    Plano {activePlan?.name || "Free"}
+                                    <Crown className="w-2.5 h-2.5" />
+                                    {activePlan?.name || "Free"}
                                 </button>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowExtractModal(true)}
-                                className="block text-left"
-                                title="Ver extrato de moedas"
-                            >
-                                <div className="text-3xl md:text-5xl font-black italic text-white tabular-nums leading-none">
-                                    {(coinBalance ?? 0).toLocaleString("pt-BR")}
-                                    <span className="text-amber-300 text-xl md:text-3xl ml-2">🪙</span>
+                            <div className="flex items-baseline gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowExtractModal(true)}
+                                    className="block text-left"
+                                    title="Ver extrato de moedas"
+                                >
+                                    <div className="text-3xl md:text-5xl font-black italic text-white tabular-nums leading-none">
+                                        {(coinBalance ?? 0).toLocaleString("pt-BR")}
+                                        <span className="text-amber-300 text-xl md:text-3xl ml-2">🪙</span>
+                                    </div>
+                                </button>
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-white/5 flex flex-wrap gap-x-4 gap-y-1">
+                                <div className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    Renovação: <span className="text-white ml-1">{nextRenewalLabel}</span>
                                 </div>
-                            </button>
-                            <div className="mt-3 pt-2 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                                <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                    Renovação Mensal: <span className="text-white ml-1">{nextRenewalLabel}</span>
-                                </div>
-                                <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                    Franquia do Plano: <span className="text-emerald-300 ml-1">{(activePlan?.coinsMonthly ?? 0).toLocaleString("pt-BR")} moedas/mês</span>
+                                <div className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    Franquia: <span className="text-emerald-300 ml-1">{(activePlan?.coinsMonthly ?? 0).toLocaleString("pt-BR")} / mês</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-wrap md:flex-nowrap items-center gap-2 md:flex-col md:items-stretch md:min-w-[190px]">
+                        <div className="flex flex-row md:flex-col items-center md:items-stretch gap-2 w-full md:w-auto md:min-w-[160px]">
                             <button
                                 type="button"
                                 onClick={() => setShowCoinStore(true)}
-                                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black uppercase tracking-wider text-[10px] md:text-xs px-3 py-2 active:scale-95 transition-all"
+                                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black uppercase tracking-wider text-[9px] md:text-xs px-3 py-2 active:scale-95 transition-all h-9"
                             >
-                                <Zap className="w-3.5 h-3.5" /> Comprar Moedas
+                                <Zap className="w-3 h-3" /> Comprar
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setShowExtractModal(true)}
-                                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-wider text-[10px] md:text-xs px-3 py-2 active:scale-95 transition-all"
+                                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-wider text-[9px] md:text-xs px-3 py-2 active:scale-95 transition-all h-9"
                             >
-                                <Receipt className="w-3.5 h-3.5" /> Extrato
+                                <Receipt className="w-3 h-3" /> Extrato
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setShowPlanModal(true)}
-                                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-500 hover:brightness-110 text-white font-black uppercase tracking-wider text-[10px] md:text-xs px-3 py-2 active:scale-95 transition-all"
+                                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-500 hover:brightness-110 text-white font-black uppercase tracking-wider text-[9px] md:text-xs px-3 py-2 active:scale-95 transition-all h-9"
                             >
-                                <Rocket className="w-3.5 h-3.5" /> Upgrade
+                                <Rocket className="w-3 h-3" /> Planos
                             </button>
                         </div>
                     </div>
                 </div>
                 {/* ─────────────────────────────────────────────────── */}
                 <MetricCard 
-                    label="Serviços Criados" 
+                    label="Criados" 
                     value={loadingStats ? "..." : (realStats.created + createdBoost).toString()} 
-                    icon={<Briefcase />} 
+                    icon={<Briefcase className="w-4 h-4" />} 
                     color="text-blue-400" 
                     bgColor="bg-blue-400/5"
-                    ariaLabel={`Serviços Criados: ${realStats.created + createdBoost}`}
+                    ariaLabel={`Criados: ${realStats.created + createdBoost}`}
                     onClick={() => {
                         toast.info("Filtrando serviços criados...");
                         handleTabChange('dashboard');
                     }}
                 />
                 <MetricCard 
-                    label="Serviços Pendentes" 
+                    label="Pendentes" 
                     value={loadingStats ? "..." : realStats.pending.toString()} 
-                    icon={<Clock />} 
+                    icon={<Clock className="w-4 h-4" />} 
                     color="text-orange-400" 
                     bgColor="bg-orange-400/5"
-                    ariaLabel={`Serviços Pendentes: ${realStats.pending}`}
+                    ariaLabel={`Pendentes: ${realStats.pending}`}
                     onClick={() => {
                         toast.info("Filtrando serviços pendentes...");
                         handleTabChange('dashboard');
-                        if (typeof (window as any).setStatusFilter === 'function') {
-                            (window as any).setStatusFilter('Pendente');
-                        }
+                        setStatusFilter('Pendente');
                     }}
-                    subValue={
-                        <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
-                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
-                                <span className="text-muted-foreground">Aguardando:</span>
-                                <span className="text-white">{loadingStats ? "..." : realStats.pending}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
-                                <span className="text-muted-foreground">Em andamento:</span>
-                                <span className="text-white">0</span>
-                            </div>
-                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
-                                <span className="text-muted-foreground">Atrasado:</span>
-                                <span className="text-red-500">0</span>
-                            </div>
-                            <div className="mt-1 flex items-center gap-1 text-[7px] font-black italic uppercase">
-                                <span className="text-green-400">↑ 0%</span>
-                                <span className="text-muted-foreground/50">vs. semana ant.</span>
-                            </div>
-                        </div>
-                    }
                 />
                 <MetricCard 
                     label="Concluídos" 
                     value={loadingStats ? "..." : realStats.completed.toString()} 
-                    icon={<ShieldCheck />} 
+                    icon={<ShieldCheck className="w-4 h-4" />} 
                     color="text-primary" 
                     bgColor="bg-primary/5"
-                    ariaLabel={`Serviços Concluídos: ${realStats.completed}`}
+                    ariaLabel={`Concluídos: ${realStats.completed}`}
                     onClick={() => {
                         toast.info("Filtrando serviços concluídos...");
                         handleTabChange('dashboard');
-                        if (typeof (window as any).setStatusFilter === 'function') {
-                            (window as any).setStatusFilter('Concluído');
-                        }
+                        setStatusFilter('Concluído');
                     }}
                 />
                 <MetricCard 
-                    label="Saldo do Período" 
-                    value={loadingStats ? "..." : `R$ 0,00`} 
-                    icon={<DollarSign />} 
+                    label="Saldo" 
+                    value={loadingStats ? "..." : `R$ 0`} 
+                    icon={<DollarSign className="w-4 h-4" />} 
                     color="text-emerald-400"
                     bgColor="bg-emerald-400/5"
-                    ariaLabel="Saldo do Período: R$ 0,00"
-                    onClick={() => {
-                        toast.info("Abrindo extrato financeiro...");
-                        setShowExtractModal(true);
-                    }}
-                    subValue={
-                        <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
-                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ 0,00</span></span>
-                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Comissões: <span className="text-white">R$ 0,00</span></span>
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowExtractModal(true);
-                                }}
-                                className="mt-1 text-[7px] font-black text-emerald-400 hover:text-emerald-300 uppercase italic flex items-center gap-1 transition-colors"
-                            >
-                                Ver Extrato Detalhado <TrendingUp className="w-2 h-2" />
-                            </button>
-                        </div>
-                    }
+                    ariaLabel="Saldo: R$ 0,00"
+                    onClick={() => setShowExtractModal(true)}
                 />
                 <MetricCard 
-                    label="Reputação" 
+                    label="Votos" 
                     value={`${rating.toFixed(1)} ⭐`} 
-                    icon={<Star />} 
+                    icon={<Star className="w-4 h-4" />} 
                     color={getRatingColor(rating)} 
                     bgColor="bg-amber-400/5"
                     onClick={() => handleTabChange('reviews')}
@@ -1514,32 +1501,32 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                         return (
                             <>
                                 {paginated.length > 0 ? paginated.map((service) => (
-                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20 feed-item-cv">
-                                        <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20 feed-item-cv animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                        <div className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color}`}>
+                                            <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color} shrink-0`}>
                                                 {service.icon}
                                             </div>
-                                            <div>
-                                                <div className="text-xs font-black uppercase italic text-white">{service.title}</div>
-                                                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">OS-{service.id} • {service.location}</div>
+                                            <div className="min-w-0">
+                                                <div className="text-[10px] md:text-xs font-black uppercase italic text-white truncate">{service.title}</div>
+                                                <div className="text-[8px] md:text-[9px] text-muted-foreground uppercase tracking-wider truncate">OS-{service.id} • {service.location}</div>
                                             </div>
                                             </div>
                                             <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 w-full sm:w-auto">
-                                            <div className="flex flex-col items-end mr-2">
-                                                <span className="font-black text-xs text-white">{service.value}</span>
+                                            <div className="flex flex-col items-end mr-1 md:mr-2">
+                                                <span className="font-black text-[10px] md:text-xs text-white">{service.value}</span>
                                                 <span className="text-[7px] text-muted-foreground uppercase font-bold">Prazo: {service.deadline}</span>
                                             </div>
-                                            <span className={`px-3 py-1 ${service.bg} ${service.color} font-bold text-[9px] rounded-full uppercase`}>
+                                            <span className={`px-2 py-0.5 md:px-3 md:py-1 ${service.bg} ${service.color} font-bold text-[8px] md:text-[9px] rounded-full uppercase`}>
                                                 {service.status}
                                             </span>
                                             <Button 
                                                 size="icon" 
                                                 variant="ghost" 
                                                 onClick={() => setExpandedServiceId(expandedServiceId === service.id ? null : service.id)}
-                                                className={`h-8 w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary transition-transform ${expandedServiceId === service.id ? 'rotate-90' : ''}`}
+                                                className={`h-7 w-7 md:h-8 md:w-8 rounded-lg border border-white/5 hover:bg-white/5 text-primary transition-transform ${expandedServiceId === service.id ? 'rotate-90' : ''}`}
                                             >
-                                                <ChevronRight className="w-4 h-4" />
+                                                <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
                                             </Button>
                                             </div>
                                         </div>
