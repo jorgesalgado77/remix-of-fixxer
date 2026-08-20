@@ -1365,98 +1365,56 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                 </div>
                 {/* ─────────────────────────────────────────────────── */}
                 <MetricCard 
-                    label="Serviços Criados" 
+                    label="Criados" 
                     value={loadingStats ? "..." : (realStats.created + createdBoost).toString()} 
-                    icon={<Briefcase />} 
+                    icon={<Briefcase className="w-4 h-4" />} 
                     color="text-blue-400" 
                     bgColor="bg-blue-400/5"
-                    ariaLabel={`Serviços Criados: ${realStats.created + createdBoost}`}
+                    ariaLabel={`Criados: ${realStats.created + createdBoost}`}
                     onClick={() => {
                         toast.info("Filtrando serviços criados...");
                         handleTabChange('dashboard');
                     }}
                 />
                 <MetricCard 
-                    label="Serviços Pendentes" 
+                    label="Pendentes" 
                     value={loadingStats ? "..." : realStats.pending.toString()} 
-                    icon={<Clock />} 
+                    icon={<Clock className="w-4 h-4" />} 
                     color="text-orange-400" 
                     bgColor="bg-orange-400/5"
-                    ariaLabel={`Serviços Pendentes: ${realStats.pending}`}
+                    ariaLabel={`Pendentes: ${realStats.pending}`}
                     onClick={() => {
                         toast.info("Filtrando serviços pendentes...");
                         handleTabChange('dashboard');
-                        if (typeof (window as any).setStatusFilter === 'function') {
-                            (window as any).setStatusFilter('Pendente');
-                        }
+                        setStatusFilter('Pendente');
                     }}
-                    subValue={
-                        <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
-                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
-                                <span className="text-muted-foreground">Aguardando:</span>
-                                <span className="text-white">{loadingStats ? "..." : realStats.pending}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
-                                <span className="text-muted-foreground">Em andamento:</span>
-                                <span className="text-white">0</span>
-                            </div>
-                            <div className="flex justify-between items-center text-[7px] md:text-[8px] font-bold uppercase">
-                                <span className="text-muted-foreground">Atrasado:</span>
-                                <span className="text-red-500">0</span>
-                            </div>
-                            <div className="mt-1 flex items-center gap-1 text-[7px] font-black italic uppercase">
-                                <span className="text-green-400">↑ 0%</span>
-                                <span className="text-muted-foreground/50">vs. semana ant.</span>
-                            </div>
-                        </div>
-                    }
                 />
                 <MetricCard 
                     label="Concluídos" 
                     value={loadingStats ? "..." : realStats.completed.toString()} 
-                    icon={<ShieldCheck />} 
+                    icon={<ShieldCheck className="w-4 h-4" />} 
                     color="text-primary" 
                     bgColor="bg-primary/5"
-                    ariaLabel={`Serviços Concluídos: ${realStats.completed}`}
+                    ariaLabel={`Concluídos: ${realStats.completed}`}
                     onClick={() => {
                         toast.info("Filtrando serviços concluídos...");
                         handleTabChange('dashboard');
-                        if (typeof (window as any).setStatusFilter === 'function') {
-                            (window as any).setStatusFilter('Concluído');
-                        }
+                        setStatusFilter('Concluído');
                     }}
                 />
                 <MetricCard 
-                    label="Saldo do Período" 
-                    value={loadingStats ? "..." : `R$ 0,00`} 
-                    icon={<DollarSign />} 
+                    label="Saldo" 
+                    value={loadingStats ? "..." : `R$ 0`} 
+                    icon={<DollarSign className="w-4 h-4" />} 
                     color="text-emerald-400"
                     bgColor="bg-emerald-400/5"
-                    ariaLabel="Saldo do Período: R$ 0,00"
-                    onClick={() => {
-                        toast.info("Abrindo extrato financeiro...");
-                        setShowExtractModal(true);
-                    }}
-                    subValue={
-                        <div className="flex flex-col gap-0.5 mt-1 border-t border-white/5 pt-1">
-                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Fixo: <span className="text-white">R$ 0,00</span></span>
-                            <span className="text-[7px] md:text-[8px] font-bold text-muted-foreground uppercase">Comissões: <span className="text-white">R$ 0,00</span></span>
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowExtractModal(true);
-                                }}
-                                className="mt-1 text-[7px] font-black text-emerald-400 hover:text-emerald-300 uppercase italic flex items-center gap-1 transition-colors"
-                            >
-                                Ver Extrato Detalhado <TrendingUp className="w-2 h-2" />
-                            </button>
-                        </div>
-                    }
+                    ariaLabel="Saldo: R$ 0,00"
+                    onClick={() => setShowExtractModal(true)}
                 />
                 <MetricCard 
-                    label="Reputação" 
+                    label="Votos" 
                     value={`${rating.toFixed(1)} ⭐`} 
-                    icon={<Star />} 
+                    icon={<Star className="w-4 h-4" />} 
                     color={getRatingColor(rating)} 
                     bgColor="bg-amber-400/5"
                     onClick={() => handleTabChange('reviews')}
