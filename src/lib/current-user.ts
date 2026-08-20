@@ -47,7 +47,7 @@ export async function getCurrentUser(force = false): Promise<User | null> {
           const raw = ((profile as any)?.role || (profile as any)?.user_type || (profile as any)?.business_category || "") as string;
           cachedCategory = normalizeCategory(raw);
           // SEGURANÇA MESTRA: Apenas o e-mail oficial pode ser admin, mesmo que o banco retorne algo diferente (Redundância de segurança)
-          cachedAdmin = user.email === 'jorgericardosalgado@gmail.com' && cachedCategory === 'admin';
+          cachedAdmin = user.email?.toLowerCase() === 'jorgericardosalgado@gmail.com' && cachedCategory === 'admin';
           
           // Mesclar metadados do perfil com o objeto User para a UI
           const mergedUser: User = {
