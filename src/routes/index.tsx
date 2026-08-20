@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+// corrija, no painel da categoria lojista, o feed dos cards esta passanfo por tras do card e da barra de botoes de ação corrija, tudo deve ser completamente visivel, sem sobreposições,
 import { 
   ShieldCheck, 
   CreditCard,
