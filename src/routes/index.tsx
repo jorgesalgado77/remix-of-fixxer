@@ -8,24 +8,28 @@ export const Route = createFileRoute('/')({
       </div>
 
       <section className="prose dark:prose-invert max-w-none">
-        <h2>Correção de Bug: Redirecionamento Incorreto na Página de Autenticação</h2>
+        <h2>Correção de Scroll Vertical Travado na Página "/lojista"</h2>
 
-        <p><strong>Problema:</strong></p>
+        <p><strong>Funcionalidade:</strong></p>
 
-        <p>Após o usuário informar suas credenciais na página <code>/auth</code> e clicar em "Entrar", o sistema não está redirecionando para a página correta de acordo com a categoria do usuário.</p>
+        <p>Corrigir o comportamento do scroll vertical na página <code>/lojista</code>, que atualmente está travado e impedindo a navegação adequada.</p>
 
-        <p><strong>Objetivo:</strong></p>
+        <p><strong>Requisitos Técnicos:</strong></p>
 
-        <p>Identificar e corrigir o erro responsável pelo redirecionamento incorreto após a autenticação bem-sucedida.</p>
+        <ul>
+          <li>Identificar a causa raiz do travamento do scroll (ex: conflitos de CSS, JavaScript bloqueando o evento, elementos com <code>overflow: hidden</code> incorretos).</li>
+          <li>Implementar a solução que restaure a funcionalidade de scroll vertical.</li>
+          <li>Garantir que a correção não introduza novos problemas de layout ou usabilidade em diferentes navegadores e tamanhos de tela.</li>
+        </ul>
 
-        <p><strong>Passos para Correção:</strong></p>
+        <p><strong>Passos Necessários:</strong></p>
 
         <ol>
-          <li><strong>Analisar a lógica de autenticação:</strong> Revisar o código responsável por processar as credenciais do usuário e verificar a autenticidade.</li>
-          <li><strong>Verificar a lógica de redirecionamento:</strong> Examinar a seção do código que determina a próxima página a ser exibida após a autenticação.</li>
-          <li><strong>Identificar a condição de erro:</strong> Determinar em qual cenário ou com qual tipo de categoria de usuário o redirecionamento está falhando.</li>
-          <li><strong>Implementar a correção:</strong> Ajustar a lógica de redirecionamento para garantir que o usuário seja direcionado para a página apropriada com base em sua categoria.</li>
-          <li><strong>Testar exaustivamente:</strong> Realizar testes com diferentes tipos de usuários e credenciais para confirmar que o problema foi resolvido e que o redirecionamento está funcionando corretamente em todos os casos.</li>
+          <li>Analisar o código HTML, CSS e JavaScript da página <code>/lojista</code>.</li>
+          <li>Utilizar as ferramentas de desenvolvedor do navegador para inspecionar elementos e identificar possíveis causas.</li>
+          <li>Testar diferentes cenários e dispositivos para verificar a correção.</li>
+          <li>Aplicar as modificações necessárias no código.</li>
+          <li>Realizar testes de regressão.</li>
         </ol>
       </section>
     </div>
