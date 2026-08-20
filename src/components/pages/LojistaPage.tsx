@@ -514,7 +514,7 @@ export function LojistaDashboard() {
 
       {/* Sidebar Retrátil (Desktop) */}
       <aside className="w-72 border-r border-white/10 p-6 flex flex-col gap-6 hidden md:flex bg-[#0A0A0A] overflow-y-auto scrollbar-none">
-        <UserProfileCard isProfileComplete={isProfileComplete} rating={rating} getRatingStarColor={getRatingStarColor} getRatingColor={getRatingColor} profile={profileSummary} missingLabels={profileMissing} missingKeys={profileMissingKeys} onOpenProfile={handleOpenSettings} />
+        
 
 
         <TooltipProvider>
