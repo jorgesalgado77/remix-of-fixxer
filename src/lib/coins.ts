@@ -94,11 +94,25 @@ export async function initCoinsForUser(userId: string): Promise<number> {
 
   // busca remoto
   try {
-    const { data, error } = await supabaseExternal
-      .from("user_coins")
+    // Tenta primeiro a tabela coin_balances (moderna)
+    let { data, error } = await supabaseExternal
+      .from("coin_balances")
       .select("balance")
       .eq("user_id", userId)
       .maybeSingle();
+
+    // Se falhar ou não encontrar, tenta user_coins (legado)
+    if (error || !data) {
+      console.log(`[coins] coin_balances falhou ou vazio para ${userId}, tentando user_coins...`);
+      const { data: legacyData, error: legacyError } = await supabaseExternal
+        .from("user_coins")
+        .select("balance")
+        .eq("user_id", userId)
+        .maybeSingle();
+      
+      data = legacyData;
+      error = legacyError;
+    }
 
     if (error) throw error;
 
@@ -106,7 +120,6 @@ export async function initCoinsForUser(userId: string): Promise<number> {
       writeLocalBalance(userId, data.balance);
       notify(data.balance);
     } else {
-      // Se não existe registro no banco, tentamos inicializar via RPC ou mantemos o local 0
       console.log(`[coins] Usuário ${userId} sem registro de saldo. Tentando registrar...`);
       // A RPC credit_coins_safe com valor 0 pode ser usada para garantir a existência da linha
       try {
@@ -132,6 +145,12 @@ export async function initCoinsForUser(userId: string): Promise<number> {
     }
     realtimeChannel = supabaseExternal
       .channel(`coins:${userId}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "coin_balances", filter: `user_id=eq.${userId}` },
+        (payload: any) => {
+          const b = payload?.new?.balance;
+          if (typeof b === "number") { writeLocalBalance(userId, b); notify(b); }
+        })
       .on("postgres_changes",
         { event: "*", schema: "public", table: "user_coins", filter: `user_id=eq.${userId}` },
         (payload: any) => {
