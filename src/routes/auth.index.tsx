@@ -166,10 +166,11 @@ function AuthLogin() {
           setTimeout(() => {
             console.log("[Auth Audit] Login bem-sucedido, redirecionando para:", target);
             window.location.href = window.location.origin + target;
-          }, 10);
+          }, 5);
         }
       } catch (err: any) {
         console.error("[Auth Audit] Falha na autenticação:", err);
+        // Persistir campos em caso de erro (não resetar estado local)
         toast.error(err.message || "Credenciais inválidas");
         setLoading(false);
       }
