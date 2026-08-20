@@ -122,11 +122,12 @@ function AuthLogin() {
       
       toast.success('Acesso Master concedido');
       
+      // Pequeno delay para garantir que o bypass-uid foi gravado
       setTimeout(() => {
         const fullTarget = window.location.origin + target;
-        console.warn("[Auth Audit] Redirecionamento Brutal via REPLACE para:", fullTarget);
+        console.warn("[Auth Audit] Redirecionamento Brutal Final para:", fullTarget);
         window.location.replace(fullTarget);
-      }, 50);
+      }, 150);
       return;
     }
 
