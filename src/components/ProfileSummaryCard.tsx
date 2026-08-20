@@ -105,7 +105,7 @@ export function ProfileSummaryCard({
            (resolved.specializations as any)?.provider?.state || 
            (resolved.specializations as any)?.supplier?.state || null,
     plan_id: resolved.identity.planId,
-    plan_renews_at: null, // Pode ser adicionado à CanonicalIdentity se necessário
+    plan_renews_at: resolved.identity.planRenewsAt,
     karma_score: resolved.identity.karmaScore,
     is_verified: resolved.identity.isVerified
   } : null;
