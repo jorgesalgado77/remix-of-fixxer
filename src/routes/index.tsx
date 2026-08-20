@@ -37,26 +37,45 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Correção de Bug: Exibição do Card do Usuário no Layout Mobile
+        ## Implementação e Testes de Responsividade para o Card do Usuário
 
-**Funcionalidade:**
+### Funcionalidade Solicitada
 
-O card do usuário não está sendo exibido corretamente na visualização mobile da aplicação. É necessário investigar e corrigir o bug para que o card apareça de forma adequada em dispositivos móveis.
+Implementar e testar a responsividade do componente "Card do Usuário" para garantir sua correta renderização em diferentes tamanhos de tela mobile e tablet.
 
-**Requisitos Técnicos:**
+### Requisitos Técnicos
 
-*   Identificar a causa raiz do problema de renderização do card do usuário em telas menores.
-*   Garantir que o card do usuário seja responsivo e se ajuste corretamente ao layout mobile.
-*   Testar a solução em diferentes dispositivos e tamanhos de tela mobile.
+1.  **Checagem Visual de Responsividade Mobile:**
+    *   Garantir que the "Card do Usuário" seja renderizado corretamente em todas as larguras de tela mobile.
 
-**Passos Necessários:**
+2.  **Testes Automatizados de Responsividade:**
+    *   Desenvolver testes automatizados para verificar o layout do "Card do Usuário" nos seguintes breakpoints:
+        *   Mobile
+        *   Tablet
 
-1.  Analisar o código responsável pela renderização do card do usuário.
-2.  Verificar as media queries e estilos CSS aplicados ao card para garantir a responsividade.
-3.  Depurar o código para identificar quaisquer erros de JavaScript ou lógica que possam estar impedindo a exibição.
-4.  Implementar as correções necessárias no código.
-5.  Realizar testes em ambiente de desenvolvimento e staging para validar a correção.
-6.  Testar em dispositivos móveis reais (ou em emuladores confiáveis) para confirmar a exibição correta.
+3.  **Monitoramento e Diagnóstico:**
+    *   Adicionar logs e métricas específicas no arquivo `src/routes/index.tsx` para auxiliar no diagnóstico de falhas de renderização do "Card do Usuário" em dispositivos mobile.
+
+4.  **Ajustes de Estilo e Layout:**
+    *   Revisar e ajustar os estilos CSS e media queries aplicados ao "Card do Usuário".
+    *   Corrigir quaisquer problemas relacionados a altura, overflow ou posicionamento que afetem a renderização mobile.
+
+### Passos Necessários
+
+1.  **Analisar o componente "Card do Usuário":** Identificar a estrutura HTML, estilos CSS e quaisquer dependências.
+2.  **Definir breakpoints de responsividade:** Estabelecer os pontos de quebra (breakpoints) para mobile e tablet com base nas diretrizes de design ou requisitos do projeto.
+3.  **Implementar a checagem visual:** Realizar testes manuais em dispositivos reais ou em emuladores para verificar a renderização em diversas larguras de tela mobile.
+4.  **Desenvolver testes automatizados:**
+    *   Utilizar uma ferramenta de testes de UI (ex: Cypress, Playwright) para criar testes que simulem diferentes tamanhos de tela.
+    *   Verificar o layout, alinhamento e visibilidade de todos os elementos dentro do "Card do Usuário" em cada breakpoint.
+5.  **Integrar logs e métricas:**
+    *   No `src/routes/index.tsx`, adicionar lógica para registrar informações relevantes quando o "Card do Usuário" é renderizado ou quando ocorrem erros.
+    *   Considerar o uso de bibliotecas de logging ou métricas, se aplicável.
+6.  **Refatorar estilos e media queries:**
+    *   Modificar as regras CSS existentes para garantir que o card se adapte corretamente a diferentes tamanhos de tela.
+    *   Utilizar media queries para aplicar estilos específicos para mobile e tablet.
+    *   Resolver problemas de overflow, altura e posicionamento que possam surgir.
+7.  **Executar testes e validar correções:** Rodar os testes automatizados e realizar novas checagens visuais para confirmar que os problemas foram resolvidos.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
