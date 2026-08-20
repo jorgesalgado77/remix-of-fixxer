@@ -1514,7 +1514,7 @@ function DashboardView({ rating, getRatingColor, handleTabChange, isProfileCompl
                         return (
                             <>
                                 {paginated.length > 0 ? paginated.map((service) => (
-                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20">
+                                    <div key={service.id} className="group flex flex-col rounded-xl overflow-hidden bg-black/40 border border-white/5 transition-all hover:border-white/20 feed-item-cv">
                                         <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
                                             <div className={`w-8 h-8 rounded-lg ${service.bg} flex items-center justify-center ${service.color}`}>
