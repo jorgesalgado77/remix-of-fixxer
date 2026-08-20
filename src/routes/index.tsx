@@ -40,6 +40,10 @@ function Index() {
 
 
 
+PROBLEMAS NA PAGINA /AUTH PERSISTEM, CORRIJA
+
+
+
 ## 1. Estado de Carregamento e Desabilitação de Botão no Login
 
 

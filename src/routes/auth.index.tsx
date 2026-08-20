@@ -169,6 +169,7 @@ function AuthLogin() {
           }, 10);
         }
       } catch (err: any) {
+        console.error("[Auth Audit] Falha na autenticação:", err);
         toast.error(err.message || "Credenciais inválidas");
         setLoading(false);
       }
