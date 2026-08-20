@@ -13,7 +13,7 @@ import { usePerformanceMode } from "@/hooks/use-performance-mode";
 import { toast } from "sonner";
 
 export function ProfileSyncStatus({ userId }: { userId: string }) {
-  const integrityError = useIdentityIntegrity();
+  const integrityError = useIdentityIntegrity() as any;
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const { glassClass } = usePerformanceMode();
@@ -43,18 +43,37 @@ export function ProfileSyncStatus({ userId }: { userId: string }) {
       {integrityError && integrityError.userId === userId && (
         <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-start gap-3 animate-pulse">
           <ShieldAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h4 className="text-xs font-black text-red-500 uppercase italic">Erro de Integridade Detectado</h4>
+          <div className="space-y-1 w-full">
+            <h4 className="text-xs font-black text-red-500 uppercase italic">
+              {integrityError.code === '23503' ? 'Erro de Vínculo (Chave Estrangeira)' : 'Erro de Integridade Detectado'}
+            </h4>
             <p className="text-[10px] text-red-500/80 font-medium">
-              A tabela <span className="font-bold underline">{integrityError.table}</span> não foi encontrada para o seu perfil. 
-              Isso pode causar falhas na exibição de dados.
+              {integrityError.code === '23503' 
+                ? `O usuário ${userId.substring(0,8)}... não possui um registro correspondente na tabela de autenticação. É necessária a recuperação da FK.`
+                : `A tabela ${integrityError.table} não foi encontrada. Isso pode causar falhas na exibição de dados.`}
             </p>
-            <button 
-              onClick={handleManualSync}
-              className="mt-2 px-3 py-1 bg-red-500 text-white text-[9px] font-black rounded-lg uppercase italic hover:bg-red-600 transition-all flex items-center gap-2"
-            >
-              <RefreshCcw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} /> Tentar Corrigir Agora
-            </button>
+            
+            <div className="flex flex-col gap-2 mt-3">
+              <button 
+                onClick={handleManualSync}
+                className="px-3 py-1 bg-red-500 text-white text-[9px] font-black rounded-lg uppercase italic hover:bg-red-600 transition-all flex items-center gap-2 justify-center"
+              >
+                <RefreshCcw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} /> Tentar Corrigir Agora
+              </button>
+              
+              {integrityError.code === '23503' && (
+                <button 
+                  onClick={() => {
+                    console.log(`[Recuperação] Executando script de reparo FK para ${userId}`);
+                    toast.info("Executando reparo de emergência...");
+                    handleManualSync();
+                  }}
+                  className="px-3 py-1 bg-white/10 text-white text-[9px] font-black rounded-lg uppercase italic hover:bg-white/20 transition-all flex items-center gap-2 justify-center"
+                >
+                  <Database className="w-3 h-3" /> Recuperar FK Ausente
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -89,7 +108,7 @@ export function ProfileSyncStatus({ userId }: { userId: string }) {
         {integrityError ? (
            <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex items-center gap-3">
              <AlertTriangle className="w-4 h-4 text-amber-500" />
-             <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest">Logs: 42P01 - Relation Missing</span>
+             <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest">Logs: {integrityError.code || '42P01'} - {integrityError.code === '23503' ? 'FK Violation' : 'Relation Missing'}</span>
            </div>
         ) : (
           <div className="flex items-center gap-2 text-[9px] font-bold text-primary uppercase tracking-widest">

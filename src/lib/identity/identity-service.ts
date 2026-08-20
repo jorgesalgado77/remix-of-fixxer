@@ -104,6 +104,12 @@ export async function resolveIdentity(
 
   if (profileError) {
     console.error(`[IdentityService] Erro ao buscar perfis para ${userId}:`, profileError);
+    // PROMPT 25: Captura de Erro 23503 (Foreign Key)
+    if ((profileError as any)?.code === '23503' || profileError.message?.includes('foreign key')) {
+      window.dispatchEvent(new CustomEvent("fixxer:integrity-error", { 
+        detail: { table: 'profiles (FK Violation)', userId, code: '23503' } 
+      }));
+    }
   }
 
 
