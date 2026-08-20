@@ -8,115 +8,62 @@ export const Route = createFileRoute('/')({
       </div>
 
       <section className="prose dark:prose-invert max-w-none">
-        <h2>Tarefa: Otimização e Teste de Cards de Informação em Dispositivos Móveis</h2>
+        <h2>Funcionalidade: Estado de Fallback Visual para Cards em Dispositivos Móveis</h2>
 
-        <h3>Descrição Geral</h3>
-        <p>O objetivo desta tarefa é garantir que os cards de informação e dados sejam exibidos corretamente em dispositivos móveis e tablets, além de implementar mecanismos de diagnóstico e fallback para falhas de renderização.</p>
+        <h3>Descrição</h3>
+        <p>Implementar um estado de fallback visual para cards que falharem ao carregar ou renderizar em dispositivos móveis. Este estado deve garantir que uma representação alternativa seja exibida de forma clara e informativa para o usuário quando o conteúdo principal do card não puder ser apresentado.</p>
 
-        <h3>Funcionalidades Solicitadas</h3>
+        <h3>Requisitos Técnicos</h3>
         <ol>
+          <li>
+            <strong>Estado de Fallback Visual:</strong>
+            <ul>
+              <li>Definir um componente ou padrão visual para o estado de fallback.</li>
+              <li>Garantir que o fallback seja acionado em casos de erro de carregamento (ex: falha na requisição de dados) ou erro de renderização (ex: dados inválidos ou mal formatados).</li>
+              <li>O fallback deve ser responsivo e adaptado para telas de dispositivos móveis.</li>
+            </ul>
+          </li>
           <li>
             <strong>Testes Automatizados de UI:</strong>
             <ul>
-              <li>Implementar testes automatizados para validar a exibição correta dos cards de informação e dados nos breakpoints mobile e tablet.</li>
-              <li>Os testes devem abranger diferentes cenários de dados e estados dos cards.</li>
+              <li>Criar testes automatizados para validar a exibição correta dos cards nos breakpoints mobile e tablet.</li>
+              <li>Os testes devem cobrir diferentes cenários de dados, incluindo sucesso, falha no carregamento e falha na renderização.</li>
+              <li>Utilizar ferramentas de teste de UI apropriadas (ex: Cypress, Playwright).</li>
             </ul>
           </li>
           <li>
-            <strong>Diagnóstico de Falhas de Renderização (Mobile):</strong>
+            <strong>Logs e Métricas:</strong>
             <ul>
-              <li>Adicionar logs detalhados e métricas específicas no arquivo <code>src/routes/index.tsx</code> para diagnosticar as causas de falha na renderização dos cards de informação e dados em dispositivos móveis.</li>
-              <li>Os logs devem capturar informações relevantes sobre o estado dos dados, erros de componente e fluxo de renderização.</li>
+              <li>Implementar logging detalhado para diagnosticar falhas de renderização dos cards em dispositivos móveis.</li>
+              <li>Registrar métricas relevantes (ex: contagem de falhas de renderização, tempo de carregamento do card).</li>
+              <li>Os logs e métricas devem ser direcionados para o arquivo <code>src/routes/index.tsx</code> ou um local centralizado de logs.</li>
             </ul>
           </li>
           <li>
-            <strong>Ajustes de Layout e Estilo (Mobile):</strong>
+            <strong>Otimização de CSS e Media Queries:</strong>
             <ul>
-              <li>Revisar e ajustar o CSS e as media queries existentes no layout.</li>
-              <li>Garantir que os cards de informação e dados permaneçam visíveis e com o comportamento de <code>height</code>/<code>overflow</code> adequado em dispositivos móveis.</li>
+              <li>Otimizar o CSS e as media queries existentes para garantir que os cards sejam visíveis e utilizáveis em dispositivos móveis.</li>
+              <li>Ajustar <code>height</code> e <code>overflow</code> das propriedades CSS para garantir a correta exibição do conteúdo ou do estado de fallback em telas menores.</li>
             </ul>
           </li>
           <li>
-            <strong>Testes em Dispositivos Reais e Navegadores:</strong>
+            <strong>Testes Manuais:</strong>
             <ul>
-              <li>Realizar testes manuais em uma variedade de dispositivos móveis (smartphones) e tablets.</li>
-              <li>Verificar a renderização em diferentes navegadores móveis populares.</li>
-              <li>Confirmar que os cards de informação e dados aparecem corretamente em todos os ambientes testados.</li>
-            </ul>
-          </li>
-          <li>
-            <strong>Implementação de Estado de Fallback:</strong>
-            <ul>
-              <li>Desenvolver e implementar um estado de fallback visualmente claro e informativo.</li>
-              <li>Este estado deve ser exibido caso os cards de informação e dados falhem ao carregar ou renderizar em dispositivos móveis, prevenindo a exibição de uma tela vazia ou quebrada.</li>
+              <li>Realizar testes manuais em dispositivos móveis reais e em navegadores móveis populares (ex: Chrome Mobile, Safari Mobile).</li>
+              <li>Verificar a correta exibição dos cards e do estado de fallback em todos os ambientes testados.</li>
             </ul>
           </li>
         </ol>
 
-        <h3>Requisitos Técnicos</h3>
-        <ul>
-          <li><strong>Linguagem/Framework:</strong> (Presume-se JavaScript/React, com base no caminho do arquivo)</li>
-          <li><strong>Ferramentas de Teste:</strong> (A definir, ex: Jest, React Testing Library, Cypress)</li>
-          <li><strong>Logging/Métricas:</strong> (A definir, ex: console.log, bibliotecas de logging, ferramentas de APM)</li>
-          <li><strong>CSS/Media Queries:</strong> (Ajustes no CSS existente)</li>
-          <li><strong>Gerenciamento de Estado:</strong> (Considerar como o estado de fallback será acionado)</li>
-        </ul>
-
-        <h3>Passos Sugeridos</h3>
+        <h3>Passos Necessários</h3>
         <ol>
-          <li>
-            <strong>Análise e Planejamento:</strong>
-            <ul>
-              <li>Identificar os componentes exatos dos cards de informação e dados.</li>
-              <li>Definir os breakpoints mobile e tablet a serem testados.</li>
-              <li>Planejar a estratégia de logging e métricas.</li>
-              <li>Esboçar o design do estado de fallback.</li>
-            </ul>
-          </li>
-          <li>
-            <strong>Implementação dos Testes Automatizados:</strong>
-            <ul>
-              <li>Escrever testes unitários e/ou de integração para os componentes dos cards.</li>
-              <li>Configurar testes de UI para simular os breakpoints.</li>
-            </ul>
-          </li>
-          <li>
-            <strong>Adição de Logs e Métricas:</strong>
-            <ul>
-              <li>Modificar <code>src/routes/index.tsx</code> para incluir <code>console.log</code> ou outras ferramentas de logging em pontos críticos da renderização dos cards.</li>
-              <li>Implementar a coleta de métricas relevantes.</li>
-            </ul>
-          </li>
-          <li>
-            <strong>Ajustes de CSS e Layout:</strong>
-            <ul>
-              <li>Aplicar as modificações de CSS e media queries necessárias.</li>
-              <li>Testar visualmente os ajustes em um ambiente de desenvolvimento com simulação de dispositivos.</li>
-            </ul>
-          </li>
-          <li>
-            <strong>Desenvolvimento do Fallback:</strong>
-            <ul>
-              <li>Criar o componente ou a lógica para o estado de fallback.</li>
-              <li>Integrar o fallback com a lógica de renderização dos cards.</li>
-            </ul>
-          </li>
-          <li>
-            <strong>Testes e Validação:</strong>
-            <ul>
-              <li>Executar todos os testes automatizados.</li>
-              <li>Realizar testes manuais em dispositivos físicos e em emuladores/simuladores.</li>
-              <li>Validar a eficácia dos logs e métricas na identificação de problemas.</li>
-              <li>Verificar se o estado de fallback funciona conforme o esperado.</li>
-            </ul>
-          </li>
-          <li>
-            <strong>Refinamento:</strong>
-            <ul>
-              <li>Refatorar o código conforme necessário.</li>
-              <li>Ajustar logs, métricas e o fallback com base nos resultados dos testes.</li>
-            </ul>
-          </li>
+          <li><strong>Análise e Design do Fallback:</strong> Definir a aparência e o comportamento do estado de fallback visual.</li>
+          <li><strong>Implementação do Fallback:</strong> Desenvolver o código para o estado de fallback e integrá-lo à lógica de renderização dos cards.</li>
+          <li><strong>Implementação de Testes de UI:</strong> Escrever e executar os testes automatizados de UI para os cenários definidos.</li>
+          <li><strong>Implementação de Logging e Métricas:</strong> Adicionar o código para registrar logs e métricas detalhadas.</li>
+          <li><strong>Otimização de CSS:</strong> Revisar e ajustar o CSS e as media queries para responsividade mobile.</li>
+          <li><strong>Testes Manuais:</strong> Executar testes em dispositivos e navegadores reais.</li>
+          <li><strong>Refatoração e Revisão:</strong> Refinar o código com base nos resultados dos testes e revisões.</li>
         </ol>
       </section>
     </div>
