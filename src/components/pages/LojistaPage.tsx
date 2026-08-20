@@ -334,6 +334,23 @@ export function LojistaDashboard() {
     };
   }, []);
 
+  // Forçar scroll funcional na página /lojista
+  useEffect(() => {
+    // Adicionamos um delay para garantir que o DOM renderizou completamente
+    const timer = setTimeout(() => {
+      document.body.style.setProperty('overflow-y', 'auto', 'important');
+      document.body.style.setProperty('height', 'auto', 'important');
+      document.body.style.setProperty('position', 'relative', 'important');
+      
+      document.documentElement.style.setProperty('overflow-y', 'auto', 'important');
+      document.documentElement.style.setProperty('height', 'auto', 'important');
+      
+      console.log("[LojistaScrollFix] Estilos de scroll forçados");
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = (id: number) => {
@@ -425,10 +442,10 @@ export function LojistaDashboard() {
 
 
   return (
-    <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
+    <div className="flex flex-col min-h-screen bg-black font-sans text-white relative overflow-visible">
       <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="sidebar" />
       <div className="flex-1 flex flex-col min-w-0 lg:pl-72 relative z-0">
-        <div className="pt-20 lg:pt-0 relative z-[60]">
+        <div className="sticky top-0 z-[100] bg-black">
            <ProfileHeader role="lojista" />
         </div>
 
@@ -582,7 +599,7 @@ export function LojistaDashboard() {
       </aside>
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 overflow-y-auto scrollbar-none bg-[#050505] pt-16 md:pt-0 relative z-0">
+      <div className="flex-1 bg-[#050505] pt-16 md:pt-0 relative z-0">
         <div className="p-4 md:p-8 space-y-8">
           <ProfileHeader 
             role="lojista" 
@@ -737,7 +754,7 @@ export function LojistaDashboard() {
             )}
             {activeTab === 'reviews' && <ReviewsView />}
         </div>
-      </main>
+      </div>
       
       {/* Barra de ações fixa inferior Mobile (Global-like Dashboard Nav) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 p-3 z-[100] flex items-center justify-around pb-safe">
