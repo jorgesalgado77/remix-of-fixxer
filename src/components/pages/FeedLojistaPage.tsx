@@ -443,7 +443,7 @@ export default function FeedLojistaPage() {
     >
       <UniversalSearchPanel defaultPill="lojista" />
       {/* Topbar Fixa */}
-      <header className="border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-white/10 bg-[#0A0A0B]/95 backdrop-blur-md sticky top-0 z-[60]">
         <div className="max-w-3xl mx-auto">
           <FeedFiltersBar
             accent="#00E5FF"
