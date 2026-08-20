@@ -336,18 +336,19 @@ export function LojistaDashboard() {
 
   // Forçar scroll funcional na página /lojista
   useEffect(() => {
-    const originalStyle = window.getComputedStyle(document.body).overflow;
-    const originalHtmlStyle = window.getComputedStyle(document.documentElement).overflow;
+    // Adicionamos um delay para garantir que o DOM renderizou completamente
+    const timer = setTimeout(() => {
+      document.body.style.setProperty('overflow-y', 'auto', 'important');
+      document.body.style.setProperty('height', 'auto', 'important');
+      document.body.style.setProperty('position', 'relative', 'important');
+      
+      document.documentElement.style.setProperty('overflow-y', 'auto', 'important');
+      document.documentElement.style.setProperty('height', 'auto', 'important');
+      
+      console.log("[LojistaScrollFix] Estilos de scroll forçados");
+    }, 100);
     
-    document.body.style.overflowY = 'auto';
-    document.body.style.height = 'auto';
-    document.documentElement.style.overflowY = 'auto';
-    document.documentElement.style.height = 'auto';
-    
-    return () => {
-      document.body.style.overflow = originalStyle;
-      document.documentElement.style.overflow = originalHtmlStyle;
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -441,7 +442,7 @@ export function LojistaDashboard() {
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-black font-sans text-white relative">
+    <div className="flex flex-col min-h-screen bg-black font-sans text-white relative overflow-visible">
       <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="sidebar" />
       <div className="flex-1 flex flex-col min-w-0 lg:pl-72 relative z-0">
         <div className="sticky top-0 z-[100] bg-black">
