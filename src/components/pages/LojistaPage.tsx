@@ -583,7 +583,7 @@ export function LojistaDashboard() {
       </aside>
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 overflow-y-auto scrollbar-none bg-[#050505] pt-16 md:pt-0">
+      <main className="flex-1 overflow-y-auto scrollbar-none bg-[#050505] pt-16 md:pt-0 relative z-0">
         <div className="p-4 md:p-8 space-y-8">
           <ProfileHeader 
             role="lojista" 
