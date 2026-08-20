@@ -300,7 +300,7 @@ if (typeof window !== "undefined") {
         const cat = await getCurrentCategory(true);
         const target = cat === 'admin' ? '/admin/infoprodutos' : `/feed/${cat}`;
         console.warn("[Identity] Sessão/Bypass detectado em /auth, forçando saída absoluta.");
-        window.location.replace(window.location.origin + target);
+        window.location.href = window.location.origin + target;
       }
     }
     

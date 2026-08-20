@@ -164,8 +164,9 @@ function AuthLogin() {
           }
           
           setTimeout(() => {
-            window.location.replace(window.location.origin + target);
-          }, 50);
+            console.log("[Auth Audit] Login bem-sucedido, redirecionando para:", target);
+            window.location.href = window.location.origin + target;
+          }, 10);
         }
       } catch (err: any) {
         toast.error(err.message || "Credenciais inválidas");
