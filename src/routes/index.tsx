@@ -37,35 +37,76 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Funcionalidade: Redirecionamento Pós-Login Baseado em Categoria
+        ## Refatoração e Implementação de Fluxo de Autenticação e Redirecionamento
 
-### Descrição
-Implementar a lógica de redirecionamento de usuários após o login bem-sucedido na rota `/auth`. O redirecionamento deve ser direcionado para a página apropriada com base na categoria do usuário.
+**Objetivo:** Garantir um fluxo de autenticação robusto e um redirecionamento pós-login confiável, com feedback visual e logs detalhados.
 
-### Requisitos Técnicos
-1.  **Verificação de Redirecionamento:**
-    *   Validar se, após o login na rota `/auth`, o usuário é redirecionado corretamente para a página designada, conforme sua categoria.
+**Funcionalidades:**
+
+1.  **Validação de Redirecionamento:**
+    *   Verificar se, após o login bem-sucedido na rota `/auth`, o usuário é redirecionado para a página correta com base em sua categoria.
 
 2.  **Lógica de Identificação de Categoria:**
-    *   Revisar e refinar a lógica que identifica a categoria do usuário logado.
+    *   Implementar ou refatorar a lógica responsável por identificar a categoria do usuário logado.
     *   Garantir que o valor da categoria utilizado para o redirecionamento seja confiável e consistente.
 
-3.  **Feedback de Usuário:**
-    *   Adicionar mensagens de erro claras para o usuário quando a categoria não puder ser determinada ou quando o redirecionamento falhar.
-    *   Implementar estados de carregamento visuais durante o processo de autenticação e redirecionamento.
+3.  **Feedback de Interface do Usuário:**
+    *   Adicionar mensagens de erro claras na interface quando a categoria do usuário não puder ser determinada.
+    *   Implementar indicadores visuais de carregamento durante o processo de determinação da categoria e redirecionamento.
+    *   Exibir mensagens de erro claras caso o redirecionamento falhe.
 
-4.  **Logging e Depuração:**
-    *   Instrumentar logs detalhados no fluxo de autenticação.
-    *   Registrar a decisão de redirecionamento, a categoria detectada e quaisquer erros ocorridos.
-    *   O objetivo é facilitar a depuração e o rastreamento de problemas relacionados ao redirecionamento.
+4.  **Instrumentação de Logs:**
+    *   Registrar logs detalhados durante o fluxo de autenticação.
+    *   Os logs devem incluir:
+        *   A decisão de redirecionamento tomada.
+        *   A categoria detectada para o usuário.
+        *   Quaisquer erros que ocorram durante o processo.
 
-### Passos Necessários
-1.  Analisar o fluxo de autenticação atual na rota `/auth`.
-2.  Implementar ou refatorar a função de identificação de categoria do usuário.
-3.  Desenvolver a lógica de redirecionamento condicional com base na categoria.
-4.  Integrar mensagens de erro e indicadores de carregamento na interface do usuário.
-5.  Adicionar pontos de log para registrar eventos relevantes do fluxo de autenticação e redirecionamento.
-6.  Testar exaustivamente todos os cenários de login e redirecionamento para diferentes categorias de usuários.
+5.  **Testes End-to-End (E2E):**
+    *   Implementar testes E2E utilizando Playwright.
+    *   Os testes devem cobrir os seguintes cenários:
+        *   Login bem-sucedido.
+        *   Redirecionamento pós-login para diferentes categorias de usuários.
+
+**Requisitos Técnicos:**
+
+*   **Framework/Linguagem:** (Especificar, se aplicável. Ex: Node.js, Python, Java)
+*   **Framework de Testes E2E:** Playwright
+*   **Sistema de Logging:** (Especificar, se aplicável. Ex: Winston, Pino, console.log)
+*   **Gerenciamento de Estado/Contexto:** (Especificar, se aplicável, para a categoria do usuário)
+
+**Passos para Implementação:**
+
+1.  **Analisar e Refatorar/Implementar a Lógica de Categoria:**
+    *   Revisar a implementação atual da identificação de categoria.
+    *   Desenvolver uma nova lógica ou refatorar a existente para garantir robustez e consistência.
+    *   Definir os critérios claros para cada categoria.
+
+2.  **Integrar a Lógica de Redirecionamento:**
+    *   Modificar o fluxo de autenticação na rota `/auth` para chamar a lógica de categoria.
+    *   Implementar o redirecionamento baseado na categoria retornada.
+
+3.  **Implementar Feedback de UI:**
+    *   Adicionar componentes de loading na interface.
+    *   Implementar a exibição de mensagens de erro contextuais.
+
+4.  **Configurar e Implementar Logging:**
+    *   Escolher e configurar uma biblioteca de logging adequada.
+    *   Inserir chamadas de log nos pontos relevantes do fluxo de autenticação e redirecionamento.
+
+5.  **Desenvolver Testes E2E com Playwright:**
+    *   Criar testes para simular o fluxo de login.
+    *   Verificar os redirecionamentos corretos para diferentes tipos de usuários.
+    *   Testar cenários de falha (ex: categoria não definida).
+    *   Garantir que os logs estejam sendo gerados conforme esperado (se possível verificar via logs de console do teste).
+
+**Critérios de Aceitação:**
+
+*   O redirecionamento pós-login funciona corretamente para todas as categorias de usuários definidas.
+*   Mensagens de erro e indicadores de carregamento são exibidos de forma apropriada.
+*   Logs detalhados são gerados e contêm as informações especificadas.
+*   Testes E2E with Playwright passam e cobrem os cenários definidos.
+*   A lógica de identificação de categoria é clara, testável e confiável.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
