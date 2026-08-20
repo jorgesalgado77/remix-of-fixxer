@@ -75,19 +75,11 @@ export function ProfileHeader({
     <div className="relative isolate">
       {/* 
           O ProfileSummaryCard é renderizado como sidebar fixa em lg+.
-          A variante "auto" interna do ProfileSummaryCard lida com a visibilidade mobile (inline em <lg).
+          A variante "auto" lida com a visibilidade mobile (inline em <lg).
       */}
       {!hideSidebarCard && (
-        <>
-          <ProfileSummaryCard role={role} variant="sidebar" />
-        </>
+        <ProfileSummaryCard role={role} variant="auto" />
       )}
-
-
-      
-      
-      
-      
 
       <header className="sticky top-0 z-[60] bg-[#050505]/95 backdrop-blur-md -mx-4 md:-mx-8 px-4 md:px-8 py-4 mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-white/5">
         <div className="flex items-center gap-4">
@@ -121,11 +113,6 @@ export function ProfileHeader({
           </div>
         </div>
       </header>
-
-      {/* 
-          Removido o ProfileSummaryCard redundante no mobile que aparecia abaixo do header.
-          A barra de botões (PanelActions) já está no topo dentro do header acima.
-      */}
     </div>
   );
 }
