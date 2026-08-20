@@ -36,19 +36,34 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Testes E2E: Tratamento de Erro 42P01 (Tabela Ausente)
+        ## Correção de Bug na Página de Autenticação (/auth)
 
-**Descrição:**
-Criar testes E2E adicionais para validar o tratamento e a mensagem acionável quando ocorrer o erro 42P01 (tabela ausente), incluindo o comportamento do botão de recuperação.
+**Contexto:**
+A página de autenticação (`/auth`) apresenta um comportamento instável, onde, após a submissão das credenciais, a tela pisca e os campos de entrada são resetados, impedindo o login do usuário. Isso indica uma falha na sincronização com o banco de dados externo ou no processamento da autenticação.
 
-**Requisitos:**
-- Simular o erro 42P01 (tabela ausente) durante uma operação que envolva a consulta ou manipulação de tabelas.
-- Validar que a mensagem de erro exibida ao usuário seja clara e informativa.
-- Verificar se a mensagem de erro inclui uma ação acionável para o usuário.
-- Testar o comportamento do botão de recuperação quando o erro 42P01 ocorrer:
-    - O botão deve estar visível e habilitado (se aplicável).
-    - Clicar no botão deve acionar o fluxo de recuperação apropriado.
-    - Validar o resultado do acionamento do botão de recuperação em resposta ao erro 42P01.
+**Problema:**
+O usuário insere credenciais válidas, clica em "entrar", mas a página não responde corretamente. Em vez de prosseguir para a próxima etapa do fluxo de autenticação, a tela pisca e os campos de entrada ficam vazios, exigindo que o usuário insira as credenciais novamente. Este comportamento não é esperado e impede a continuidade do uso do sistema.
+
+**Objetivo:**
+Garantir que a página `/auth` esteja sempre corretamente conectada e sincronizada com o banco de dados externo. Ao clicar em "entrar", o sistema deve processar as credenciais de forma automática e instantânea, redirecionando o usuário para a próxima tela e carregando seus dados, categoria e permissões de acesso de acordo com as informações fornecidas.
+
+**Requisitos Técnicos:**
+1.  **Conexão com Banco de Dados:** Verificar e garantir a estabilidade e a correta configuração da conexão entre a página `/auth` e o banco de dados externo.
+2.  **Validação de Credenciais:** Implementar ou revisar a lógica de validação das credenciais (usuário e senha) no lado do servidor.
+3.  **Processamento de Autenticação:** Assegurar que, após a validação bem-sucedida, o processo de autenticação seja concluído sem interrupções.
+4.  **Redirecionamento e Carregamento de Dados:** Após a autenticação, o sistema deve:
+    *   Redirecionar o usuário instantaneamente para a próxima página designada.
+    *   Carregar os dados do usuário, incluindo sua categoria e permissões de acesso, de forma eficiente e correta.
+5.  **Tratamento de Erros:** Implementar um mecanismo robusto de tratamento de erros para identificar e reportar falhas durante o processo de autenticação, fornecendo feedback claro ao usuário, se necessário.
+
+**Passos para Implementação:**
+1.  **Análise do Código:** Revisar o código da página `/auth`, incluindo o código front-end (HTML, CSS, JavaScript) e back-end (se aplicável) responsável pela submissão das credenciais e pela comunicação com o banco de dados.
+2.  **Debugging:** Utilizar ferramentas de debugging para identificar o ponto exato onde a falha ocorre (ex: requisição HTTP, resposta do servidor, manipulação de dados no front-end).
+3.  **Verificação da Conexão:** Testar a conexão com o banco de dados externo a partir do ambiente onde a aplicação está rodando.
+4.  **Revisão da Lógica de Autenticação:** Analisar a lógica que compara as credenciais fornecidas com os dados armazenados no banco de dados.
+5.  **Implementação de Correções:** Aplicar as correções necessárias no código, seja para restabelecer a conexão, corrigir a lógica de validação, ou otimizar o processamento pós-autenticação.
+6.  **Testes:** Realizar testes exaustivos para verificar se o problema foi resolvido e se o comportamento esperado está sendo atingido em diferentes cenários (usuário válido, usuário inválido, falha de conexão, etc.).
+7.  **Monitoramento:** Após a implementação da correção, monitorar o sistema para garantir que o problema não retorne.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
