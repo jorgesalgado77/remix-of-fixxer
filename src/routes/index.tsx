@@ -37,74 +37,27 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Testes E2E e Correções de Layout para Painel da Categoria Lojista
+        ## Correção de Fluxo de Autenticação e Redirecionamento
 
-### 1. Teste E2E de Sobreposição de Elementos
+**Funcionalidade:**
 
-**Funcionalidade:** Garantir que o feed de cards no painel da categoria lojista não sobreponha a barra de ações e o cabeçalho em nenhuma circunstância.
-
-**Requisitos Técnicos:**
-*   Utilizar um framework de testes E2E (ex: Cypress, Playwright).
-*   Simular diferentes tamanhos de tela e resoluções.
-*   Verificar posições e dimensões dos elementos `feed-cards`, `action-bar` e `header`.
-
-**Passos Necessários:**
-1.  Configurar o ambiente de testes E2E.
-2.  Navegar até o painel da categoria lojista.
-3.  Definir um conjunto de viewports representativas (desktop, tablet, mobile).
-4.  Para cada viewport:
-    *   Capturar as coordenadas e dimensões do cabeçalho.
-    *   Capturar as coordenadas e dimensões da barra de ações.
-    *   Capturar as coordenadas e dimensões do contêiner do feed de cards.
-    *   Verificar se o topo do feed de cards está abaixo do rodapé do cabeçalho e acima do topo da barra de ações.
-    *   Registrar falhas caso ocorra sobreposição.
-
-### 2. Otimização de Layout Responsivo
-
-**Funcionalidade:** Assegurar que o layout do painel lojista seja totalmente visível e sem sobreposições em telas pequenas, ajustando `z-index` e espaçamentos conforme necessário.
+Corrigir um bug no fluxo de autenticação que impede o redirecionamento correto do usuário para a página apropriada após o login, com base em sua categoria.
 
 **Requisitos Técnicos:**
-*   Aplicar media queries para diferentes breakpoints.
-*   Ajustar `padding`, `margin`, `height` e `width` dos componentes.
-*   Otimizar o `z-index` de elementos sobrepostos.
+
+1.  **Identificar a Causa Raiz:** Investigar por que o redirecionamento não está ocorrendo após a inserção das credenciais na página `/auth` e o clique no botão "Entrar".
+2.  **Verificar a Lógica de Categoria:** Garantir que a categoria do usuário logado está sendo corretamente identificada e utilizada para determinar a próxima página.
+3.  **Implementar Redirecionamento Condicional:** Implementar ou corrigir a lógica de redirecionamento para que os usuários sejam direcionados para a página correta com base em sua categoria.
 
 **Passos Necessários:**
-1.  Identificar os breakpoints críticos para o design responsivo.
-2.  Para cada breakpoint:
-    *   Revisar e ajustar os espaçamentos entre os componentes (cabeçalho, perfil, feed, barra de ações).
-    *   Avaliar e modificar o `z-index` de elementos que possam competir por espaço ou visibilidade (ex: modais, dropdowns, cards).
-    *   Testar a visibilidade de todos os elementos essenciais.
 
-### 3. Correções de Overflow e Scroll no Feed
-
-**Funcionalidade:** Implementar correções para `overflow` e comportamento de `scroll` no feed, prevenindo que o conteúdo ultrapasse as áreas designadas (barra de botões e card de perfil).
-
-**Requisitos Técnicos:**
-*   Utilizar `overflow: auto` ou `overflow: scroll` com `max-height` no contêiner do feed.
-*   Ajustar `padding` e `margin` para garantir espaço para a barra de botões e o card de perfil.
-*   Garantir que a barra de botões e o card de perfil permaneçam fixos ou visíveis quando o feed rolar.
-
-**Passos Necessários:**
-1.  Identificar o contêiner principal do feed de cards.
-2.  Aplicar `max-height` ao contêiner do feed, garantindo que ele não ultrapasse a área abaixo do card de perfil e acima da barra de botões.
-3.  Definir `overflow-y: auto` para habilitar a rolagem vertical.
-4.  Verificar se o `padding` inferior do feed acomoda a barra de botões e se o `padding` superior acomoda o card de perfil.
-5.  Testar a rolagem do feed em diferentes cenários de conteúdo.
-
-### 4. Testes de Regressão de Hierarquia de Camadas (z-index)
-
-**Funcionalidade:** Adicionar um conjunto de testes de regressão para validar a hierarquia de camadas (`z-index`) dos componentes no painel lojista.
-
-**Requisitos Técnicos:**
-*   Utilizar um framework de testes automatizados (unitários ou de integração).
-*   Definir um conjunto de componentes com `z-index` esperado.
-*   Verificar a ordem de empilhamento dos elementos em diferentes estados.
-
-**Passos Necessários:**
-1.  Listar todos os componentes do painel lojista que possuem ou interagem com `z-index` (ex: modais, tooltips, dropdowns, cards, cabeçalho, barra de ações).
-2.  Definir o `z-index` esperado para cada um desses componentes em seu estado normal e em estados de interação (ex: modal aberto).
-3.  Criar testes que verifiquem a propriedade `z-index` dos elementos no DOM renderizado.
-4.  Executar esses testes após cada alteração significativa nos componentes ou em suas estilizações para detectar regressões.
+1.  Acessar a página `/auth`.
+2.  Inserir credenciais válidas.
+3.  Clicar no botão "Entrar".
+4.  Observar o comportamento do sistema: verificar se o redirecionamento para a página subsequente ocorre conforme esperado para diferentes categorias de usuário.
+5.  Analisar o código-fonte, logs e console do navegador para identificar erros ou comportamentos inesperados durante o processo de autenticação e redirecionamento.
+6.  Modificar o código para corrigir a lógica de redirecionamento condicional, assegurando que o usuário seja direcionado para a página correta após o login.
+7.  Testar exaustivamente o fluxo de login com diferentes categorias de usuário para confirmar a correção.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
