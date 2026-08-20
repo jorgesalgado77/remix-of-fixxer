@@ -161,25 +161,36 @@ export function useProviderStats(): ProviderStats {
         }
 
         try {
+          // Priorizar a tabela coin_balances (mais moderna/segura) antes de user_coins
           const { data, error } = await supabaseExternal
-            .from("user_coins")
+            .from("coin_balances")
             .select("balance")
             .eq("user_id", uid)
             .maybeSingle();
           
-          if (error) {
-            console.warn("useProviderStats: user_coins access error:", error.message);
-            if (!cancelled) {
+          let finalBalance = 0;
+          
+          if (!error && data && typeof (data as any).balance === "number") {
+            finalBalance = (data as any).balance;
+          } else {
+            // Fallback para user_coins se coin_balances falhar ou estiver vazio
+            const { data: legacyData } = await supabaseExternal
+              .from("user_coins")
+              .select("balance")
+              .eq("user_id", uid)
+              .maybeSingle();
+            
+            if (legacyData && typeof (legacyData as any).balance === "number") {
+              finalBalance = (legacyData as any).balance;
+            } else {
               const local = localStorage.getItem(`fixxer_coins_balance_${uid}`);
-              setBalance(local ? Number(local) : 0);
+              finalBalance = local ? Number(local) : 0;
             }
-          } else if (!cancelled && data && typeof (data as any).balance === "number") {
-            const b = (data as any).balance as number;
-            setBalance(b);
-            localStorage.setItem(`fixxer_coins_balance_${uid}`, String(b));
-          } else if (!cancelled) {
-            const local = localStorage.getItem(`fixxer_coins_balance_${uid}`);
-            setBalance(local ? Number(local) : 0);
+          }
+
+          if (!cancelled) {
+            setBalance(finalBalance);
+            localStorage.setItem(`fixxer_coins_balance_${uid}`, String(finalBalance));
           }
         } catch (e) {
           console.error("useProviderStats: balance fetch failed", e);
