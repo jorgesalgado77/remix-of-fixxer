@@ -308,6 +308,17 @@ if (typeof window !== "undefined") {
   });
 }
 
+// PROMPT 25: Auditoria de Sincronização e Checagem de Erro Acionável
+export function useIdentityIntegrity() {
+  const [error, setError] = useState<{ table: string; userId: string } | null>(null);
+  useEffect(() => {
+    const handler = (e: any) => setError(e.detail);
+    window.addEventListener("fixxer:integrity-error" as any, handler);
+    return () => window.removeEventListener("fixxer:integrity-error" as any, handler);
+  }, []);
+  return error;
+}
+
 // React hooks seguem o mesmo padrão
 export function useCurrentUser() {
   const [state, setState] = useState<{ user: User | null; loading: boolean }>(

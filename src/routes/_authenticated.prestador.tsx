@@ -27,6 +27,8 @@ import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 import { RecentStoresCarousel } from "@/components/RecentStoresCarousel";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
 import { ProfileHeader } from "@/components/ProfileHeader";
+import { ProfileSyncStatus } from "@/components/ProfileSyncStatus";
+import { useCurrentUserId } from "@/lib/current-user";
 
 
 
@@ -38,6 +40,7 @@ export const Route = createFileRoute("/_authenticated/prestador")({
 
 function PrestadorDashboard() {
   const { glassClass } = usePerformanceMode();
+  const userId = useCurrentUserId();
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 lg:pl-72 animate-in fade-in duration-500">
@@ -45,10 +48,10 @@ function PrestadorDashboard() {
         role="prestador" 
       />
 
-
-
-
-      <CoinBalancePlanCard />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <CoinBalancePlanCard />
+        {userId && <ProfileSyncStatus userId={userId} />}
+      </div>
 
       <RecentStoresCarousel />
 
