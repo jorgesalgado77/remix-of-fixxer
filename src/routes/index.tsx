@@ -8,49 +8,79 @@ export const Route = createFileRoute('/')({
       </div>
 
       <section className="prose dark:prose-invert max-w-none">
-        <h2>Correção de Scroll na Página `/lojista`</h2>
+        <h1>Correção de Scroll e Implementação de Testes na Página /lojista</h1>
 
-        <h3>1. Correção de Scroll Vertical Travado</h3>
-
-        <p><strong>Funcionalidade:</strong> Restaurar a rolagem vertical funcional em dispositivos móveis e tablets na página `/lojista`.</p>
-
-        <p><strong>Requisitos:</strong></p>
+        <h2>1. Correção de Travamento do Scroll Vertical</h2>
+        <p><strong>Funcionalidade:</strong> Garantir que a rolagem vertical na página `/lojista` seja fluida e responsiva em dispositivos móveis e tablets.</p>
+        <p><strong>Requisitos Técnicos:</strong></p>
         <ul>
-          <li>A rolagem vertical deve responder corretamente aos gestos de toque e deslize em smartphones e tablets.</li>
-          <li>A funcionalidade de scroll não deve ser bloqueada por nenhum elemento ou script na página.</li>
+          <li>Identificar e corrigir a causa raiz do travamento do scroll vertical.</li>
+          <li>Revisar e ajustar estilos CSS, especialmente <code>overflow</code> e <code>position</code>, que possam estar interferindo nos eventos de <code>touchmove</code> e scroll.</li>
         </ul>
+        <p><strong>Passos Necessários:</strong></p>
+        <ol>
+          <li>Analisar o comportamento do scroll em diferentes dispositivos móveis e tablets.</li>
+          <li>Inspecionar os elementos da página `/lojista` para identificar estilos CSS conflitantes.</li>
+          <li>Implementar as correções necessárias no CSS.</li>
+          <li>Testar a fluidez do scroll após as correções.</li>
+        </ol>
 
-        <h3>2. Implementação de Testes Automatizados</h3>
-
-        <p><strong>Funcionalidade:</strong> Validar que a rolagem vertical na página `/lojista` funciona corretamente nos principais <em>breakpoints</em> de dispositivos.</p>
-
-        <p><strong>Requisitos:</strong></p>
+        <h2>2. Implementação de Testes End-to-End (E2E) com Playwright</h2>
+        <p><strong>Funcionalidade:</strong> Criar testes automatizados para verificar a funcionalidade do scroll vertical na página `/lojista` em diferentes tamanhos de tela.</p>
+        <p><strong>Requisitos Técnicos:</strong></p>
         <ul>
-          <li>Criar testes automatizados (e.g., usando Cypress, Playwright) que simulem a navegação em diferentes tamanhos de tela.</li>
-          <li>Os testes devem verificar se a rolagem vertical está ativa e responsiva em <em>breakpoints</em> definidos (e.g., mobile, tablet, desktop).</li>
+          <li>Utilizar a biblioteca Playwright para a automação de testes.</li>
+          <li>Configurar testes para simular diferentes viewports (tamanhos de tela).</li>
         </ul>
+        <p><strong>Passos Necessários:</strong></p>
+        <ol>
+          <li>Configurar o ambiente de testes com Playwright.</li>
+          <li>Escrever testes E2E que naveguem para a página `/lojista`.</li>
+          <li>Implementar a lógica de scroll simulado em cada teste.</li>
+          <li>Validar que o scroll funciona corretamente para cada viewport configurada.</li>
+          <li>Integrar os testes ao pipeline de CI/CD, se aplicável.</li>
+        </ol>
 
-        <h3>3. Auditoria de CSS e JavaScript</h3>
-
-        <p><strong>Funcionalidade:</strong> Identificar e remover conflitos de CSS e JavaScript que possam estar bloqueando ou interferindo na rolagem vertical da página `/lojista`.</p>
-
-        <p><strong>Requisitos:</strong></p>
+        <h2>3. Detecção em Runtime de Scroll Travado e Logging para Sentry</h2>
+        <p><strong>Funcionalidade:</strong> Implementar um mecanismo de detecção em tempo de execução para identificar scroll travado na página `/lojista` e enviar logs detalhados para o Sentry.</p>
+        <p><strong>Requisitos Técnicos:</strong></p>
         <ul>
-          <li>Revisar o código CSS em busca de propriedades como <code>overflow: hidden;</code>, <code>overflow: scroll;</code> ou <code>position: fixed;</code> em elementos que possam restringir a rolagem.</li>
-          <li>Analisar o código JavaScript para identificar <em>event listeners</em> ou scripts que interceptem ou cancelem o evento de scroll (<code>scroll</code>, <code>touchmove</code>).</li>
-          <li>Remover ou refatorar os trechos de código identificados que causam o bloqueio da rolagem.</li>
+          <li>Desenvolver lógica JavaScript para monitorar o comportamento do scroll.</li>
+          <li>Integrar com a SDK do Sentry para envio de logs.</li>
+          <li>Capturar informações relevantes do dispositivo e a causa provável do travamento.</li>
         </ul>
+        <p><strong>Passos Necessários:</strong></p>
+        <ol>
+          <li>Implementar um listener de eventos de scroll na página `/lojista`.</li>
+          <li>Desenvolver a lógica para detectar um scroll "travado" (ex: scroll não progride após um certo tempo ou distância).</li>
+          <li>Configurar o envio de eventos para o Sentry.</li>
+          <li>No evento enviado ao Sentry, incluir:
+            <ul>
+              <li>User Agent do navegador.</li>
+              <li>Informações do dispositivo (se disponíveis).</li>
+              <li>Causa provável do travamento (ex: conflito CSS, elemento bloqueando).</li>
+              <li>URL da página (<code>/lojista</code>).</li>
+            </ul>
+          </li>
+          <li>Testar a detecção e o envio de logs em cenários simulados de scroll travado.</li>
+        </ol>
 
-        <h3>4. Adição de Logs e Métricas</h3>
-
-        <p><strong>Funcionalidade:</strong> Implementar mecanismos de log e métricas para detectar quando a página `/lojista` apresenta problemas de scroll e registrar a causa para diagnóstico.</p>
-
-        <p><strong>Requisitos:</strong></p>
+        <h2>4. Revisão e Ajuste de Estilos CSS na Página /lojista</h2>
+        <p><strong>Funcionalidade:</strong> Revisar e otimizar os estilos CSS da página `/lojista` para garantir que não haja conflitos de <code>overflow</code> e <code>position</code> que impeçam a rolagem e interações de toque.</p>
+        <p><strong>Requisitos Técnicos:</strong></p>
         <ul>
-          <li>Adicionar logs no console e/ou em um serviço de monitoramento (e.g., Sentry, Datadog) que sejam acionados quando a funcionalidade de scroll for detectada como inoperante.</li>
-          <li>Registrar informações relevantes no log, como o tipo de dispositivo, o navegador, e a possível causa do problema (e.g., conflito CSS, script bloqueador).</li>
-          <li>Implementar métricas que possam quantificar a frequência e o impacto de problemas de scroll na página `/lojista`.</li>
+          <li>Análise aprofundada do código CSS existente.</li>
+          <li>Identificação de propriedades CSS problemáticas (<code>overflow</code>, <code>position</code>, <code>z-index</code>, etc.).</li>
+          <li>Aplicação de correções e refatoração de estilos.</li>
         </ul>
+        <p><strong>Passos Necessários:</strong></p>
+        <ol>
+          <li>Realizar uma auditoria completa do CSS da página `/lojista`.</li>
+          <li>Identificar quaisquer regras que possam estar restringindo indevidamente o fluxo de conteúdo ou a interação do usuário.</li>
+          <li>Refatorar ou remover estilos conflitantes.</li>
+          <li>Garantir que as correções de scroll e touch não introduzam novos problemas visuais ou de layout.</li>
+          <li>Validar a responsividade e a interatividade após os ajustes.</li>
+        </ol>
       </section>
     </div>
   )
