@@ -27,6 +27,8 @@ import { CoinBalancePlanCard } from "@/components/CoinBalancePlanCard";
 import { RecentStoresCarousel } from "@/components/RecentStoresCarousel";
 import { MyAppointmentsSection } from "@/components/MyAppointmentsSection";
 import { ProfileHeader } from "@/components/ProfileHeader";
+import { ProfileSyncStatus } from "@/components/ProfileSyncStatus";
+import { useCurrentUserId } from "@/lib/current-user";
 
 
 
