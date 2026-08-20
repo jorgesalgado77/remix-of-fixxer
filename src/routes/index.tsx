@@ -1,32 +1,61 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 /**
- * ## Correção de Erro de Mistura de Dados entre Categorias
+ * # Implementação de Testes e Refatoração de Estado para Isolamento de Dados e Cores
  *
- * **Problema:**
+ * ## Objetivo
  *
- * Atualmente, os dados e informações das diferentes categorias (ex: lojista, prestador) estão sendo misturados incorretamente durante o login e a exibição. Isso resulta na persistência de padrões e dados de uma categoria em outra, além da incorreta atribuição de cores padrão.
+ * Garantir que os dados (padrões) e cores associados a lojistas e prestadores sejam completamente isolados após o login e durante a troca de categorias. Evitar a persistência indevida de estado entre sessões e categorias.
  *
- * **Exemplo:**
+ * ## Funcionalidades
  *
- * * As cores padrão da categoria "lojista" (azul ciano) estão aparecendo na categoria "prestador" (laranja âmbar).
- * * Padrões e dados de uma categoria estão sendo exibidos indevidamente em outras.
+ * 1. **Testes Automatizados de Isolamento:**
+ *    * Verificar que dados e cores padrão de lojista e prestador não se misturem após o login.
+ *    * Verificar que dados e cores padrão de lojista e prestador não se misturem após a troca de categoria.
  *
- * **Objetivo:**
+ * 2. **Refatoração da Lógica de Login:**
+ *    * Implementar a limpeza e o isolamento completo do estado do usuário ao trocar de categoria.
+ *    * Garantir que não haja persistência indevida de estado entre diferentes sessões ou categorias.
  *
- * Garantir que cada categoria logada mantenha exclusivamente suas próprias informações e dados, incluindo cores padrão, sem interferência de outras categorias.
+ * 3. **Validações no Fluxo de Renderização:**
+ *    * Adicionar validações para assegurar que as cores padrão sejam carregadas exclusivamente da categoria autenticada.
+ *    * Prevenir o carregamento de cores padrão de categorias não autenticadas.
  *
- * **Requisitos Técnicos:**
+ * 4. **Teste End-to-End (E2E):**
+ *    * Criar um teste E2E que simule o fluxo de login:
+ *        * Login como lojista.
+ *        * Verificação visual de cores e padrões corretos na área do lojista.
+ *        * Login como prestador.
+ *        * Verificação visual de cores e padrões corretos na área do prestador.
  *
- * 1. **Isolamento de Dados por Categoria:** Implementar um mecanismo que assegure o isolamento completo dos dados e configurações de cada categoria. Ao logar em uma categoria específica, apenas os dados e padrões pertencentes a essa categoria devem ser carregados e exibidos.
- * 2. **Persistência de Padrões da Categoria:** Ao logar como "lojista", os padrões e dados específicos da categoria "lojista" devem ser persistidos. O mesmo se aplica a todas as outras categorias existentes.
- * 3. **Gerenciamento de Cores Padrão:** As cores padrão de cada categoria devem ser rigidamente controladas. As cores de uma categoria (ex: azul ciano para lojista) não devem ser aplicadas ou misturadas com as cores de outra categoria (ex: laranja âmbar para prestador).
+ * 5. **Auditoria e Logging:**
+ *    * Incluir logs e indicadores de auditoria no aplicativo.
+ *    * Registrar a categoria autenticada.
+ *    * Rastrear o carregamento de padrões e campos.
  *
- * **Passos para Implementação:**
+ * ## Requisitos Técnicos
  *
- * 1. **Análise do Código Existente:** Identificar os pontos no código onde ocorre a mistura de dados e a atribuição incorreta de cores.
- * 2. **Refatoração da Lógica de Login:** Modificar a lógica de login para garantir que, ao autenticar um usuário em uma categoria, apenas os dados e configurações associados a essa categoria sejam carregados.
- * 3. **Implementação de Mecanismos de Isolamento:** Desenvolver ou refinar mecanismos (ex: escopos de dados, gerenciamento de estado) que garantam o isolamento dos dados entre as categorias.
- * 4. **Validação e Teste:** Realizar testes exaustivos para verificar se os dados e cores de cada categoria estão corretamente isolados e se não há mais misturas indevidas.
+ * * **Linguagem/Framework:** TypeScript, React, TanStack Start
+ * * **Ferramenta de Teste E2E:** Playwright
+ * * **Gerenciamento de Estado:** TanStack Query, React Context
+ * * **Formato de Logs:** JSON
+ *
+ * ## Passos para Implementação
+ *
+ * 1. **Análise do Estado Atual:** Identificar os pontos onde o estado (dados e cores) é compartilhado ou persistido indevidamente entre categorias.
+ * 2. **Implementação dos Testes Unitários/Integração:**
+ *    * Desenvolver testes que validem o isolamento de dados e cores após login e troca de categoria.
+ * 3. **Refatoração do Gerenciamento de Estado:**
+ *    * Modificar a lógica de login e troca de categoria para limpar e resetar o estado de forma adequada.
+ * 4. **Implementação das Validações de Renderização:**
+ *    * Adicionar verificações no código de renderização para garantir a origem correta das cores.
+ * 5. **Desenvolvimento do Teste E2E:**
+ *    * Configurar o ambiente de teste E2E.
+ *    * Escrever o script de teste simulando os fluxos de login e verificando os resultados visuais.
+ * 6. **Implementação de Logging e Auditoria:**
+ *    * Integrar o sistema de logging para registrar as informações necessárias.
+ * 7. **Revisão e Testes:**
+ *    * Revisar o código implementado.
+ *    * Executar todos os testes (unitários, integração, E2E).
  */
 import { 
   ShieldCheck, 
