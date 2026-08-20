@@ -37,25 +37,23 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Correção de Exibição de Painel e Feed por Categoria
+        ## Correção de Layout na Página /lojista
 
-**Funcionalidade Solicitada:**
+**Funcionalidade:**
 
-Garantir que o painel e o feed exibidos para o usuário correspondam à categoria correta associada às suas credenciais.
+Corrigir problemas de exibição de itens e rolagem na página `/lojista`.
 
 **Requisitos Técnicos:**
 
-1.  **Autenticação e Verificação de Categoria:** O sistema deve autenticar o usuário com as credenciais fornecidas (`andreiamaria4841@gmail.com`) e verificar se a categoria associada é "LOJISTA".
-2.  **Exibição Condicional de Painel:** Com base na categoria verificada ("LOJISTA"), o sistema deve exibir o painel específico para lojistas.
-3.  **Exibição Condicional de Feed:** Com base na categoria verificada ("LOJISTA"), o sistema deve exibir o feed específico para lojistas.
-4.  **Correção de Erro Atual:** O sistema atualmente exibe o painel e o feed da categoria "PRESTADOR" para usuários da categoria "LOJISTA", o que está incorreto e precisa ser corrigido.
+*   Garantir que todos os cards sejam exibidos corretamente.
+*   Implementar a funcionalidade de rolagem (scroll) adequada para a página.
+*   Resolver o travamento dos itens na tela.
 
 **Passos Necessários:**
 
-1.  Revisar a lógica de autenticação e atribuição de categoria para o usuário `andreiamaria4841@gmail.com`.
-2.  Implementar ou corrigir a lógica que determina qual painel e feed devem ser exibidos com base na categoria do usuário.
-3.  Testar a funcionalidade com as credenciais fornecidas para garantir que o painel e o feed da categoria "LOJISTA" sejam exibidos corretamente.
-4.  Verificar se o erro de exibição da categoria "PRESTADOR" foi completamente eliminado.
+1.  Acessar a página `/lojista`.
+2.  Analisar o layout e identificar a causa dos itens travados e da rolagem incorreta.
+3.  Corrigir os elementos visuais e de layout para que todos os cards sejam exibidos e a rolagem funcione como esperado.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
