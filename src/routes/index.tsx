@@ -37,76 +37,25 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Refatoração e Implementação de Fluxo de Autenticação e Redirecionamento
+        ## Correção de Exibição de Painel e Feed por Categoria
 
-**Objetivo:** Garantir um fluxo de autenticação robusto e um redirecionamento pós-login confiável, com feedback visual e logs detalhados.
+**Funcionalidade Solicitada:**
 
-**Funcionalidades:**
-
-1.  **Validação de Redirecionamento:**
-    *   Verificar se, após o login bem-sucedido na rota `/auth`, o usuário é redirecionado para a página correta com base em sua categoria.
-
-2.  **Lógica de Identificação de Categoria:**
-    *   Implementar ou refatorar a lógica responsável por identificar a categoria do usuário logado.
-    *   Garantir que o valor da categoria utilizado para o redirecionamento seja confiável e consistente.
-
-3.  **Feedback de Interface do Usuário:**
-    *   Adicionar mensagens de erro claras na interface quando a categoria do usuário não puder ser determinada.
-    *   Implementar indicadores visuais de carregamento durante o processo de determinação da categoria e redirecionamento.
-    *   Exibir mensagens de erro claras caso o redirecionamento falhe.
-
-4.  **Instrumentação de Logs:**
-    *   Registrar logs detalhados durante o fluxo de autenticação.
-    *   Os logs devem incluir:
-        *   A decisão de redirecionamento tomada.
-        *   A categoria detectada para o usuário.
-        *   Quaisquer erros que ocorram durante o processo.
-
-5.  **Testes End-to-End (E2E):**
-    *   Implementar testes E2E utilizando Playwright.
-    *   Os testes devem cobrir os seguintes cenários:
-        *   Login bem-sucedido.
-        *   Redirecionamento pós-login para diferentes categorias de usuários.
+Garantir que o painel e o feed exibidos para o usuário correspondam à categoria correta associada às suas credenciais.
 
 **Requisitos Técnicos:**
 
-*   **Framework/Linguagem:** (Especificar, se aplicável. Ex: Node.js, Python, Java)
-*   **Framework de Testes E2E:** Playwright
-*   **Sistema de Logging:** (Especificar, se aplicável. Ex: Winston, Pino, console.log)
-*   **Gerenciamento de Estado/Contexto:** (Especificar, se aplicável, para a categoria do usuário)
+1.  **Autenticação e Verificação de Categoria:** O sistema deve autenticar o usuário com as credenciais fornecidas (`andreiamaria4841@gmail.com`) e verificar se a categoria associada é "LOJISTA".
+2.  **Exibição Condicional de Painel:** Com base na categoria verificada ("LOJISTA"), o sistema deve exibir o painel específico para lojistas.
+3.  **Exibição Condicional de Feed:** Com base na categoria verificada ("LOJISTA"), o sistema deve exibir o feed específico para lojistas.
+4.  **Correção de Erro Atual:** O sistema atualmente exibe o painel e o feed da categoria "PRESTADOR" para usuários da categoria "LOJISTA", o que está incorreto e precisa ser corrigido.
 
-**Passos para Implementação:**
+**Passos Necessários:**
 
-1.  **Analisar e Refatorar/Implementar a Lógica de Categoria:**
-    *   Revisar a implementação atual da identificação de categoria.
-    *   Desenvolver uma nova lógica ou refatorar a existente para garantir robustez e consistência.
-    *   Definir os critérios claros para cada categoria.
-
-2.  **Integrar a Lógica de Redirecionamento:**
-    *   Modificar o fluxo de autenticação na rota `/auth` para chamar a lógica de categoria.
-    *   Implementar o redirecionamento baseado na categoria retornada.
-
-3.  **Implementar Feedback de UI:**
-    *   Adicionar componentes de loading na interface.
-    *   Implementar a exibição de mensagens de erro contextuais.
-
-4.  **Configurar e Implementar Logging:**
-    *   Escolher e configurar uma biblioteca de logging adequada.
-    *   Inserir chamadas de log nos pontos relevantes do fluxo de autenticação e redirecionamento.
-
-5.  **Desenvolver Testes E2E com Playwright:**
-    *   Criar testes para simular o fluxo de login.
-    *   Verificar os redirecionamentos corretos para diferentes tipos de usuários.
-    *   Testar cenários de falha (ex: categoria não definida).
-    *   Garantir que os logs estejam sendo gerados conforme esperado (se possível verificar via logs de console do teste).
-
-**Critérios de Aceitação:**
-
-*   O redirecionamento pós-login funciona corretamente para todas as categorias de usuários definidas.
-*   Mensagens de erro e indicadores de carregamento são exibidos de forma apropriada.
-*   Logs detalhados são gerados e contêm as informações especificadas.
-*   Testes E2E with Playwright passam e cobrem os cenários definidos.
-*   A lógica de identificação de categoria é clara, testável e confiável.
+1.  Revisar a lógica de autenticação e atribuição de categoria para o usuário `andreiamaria4841@gmail.com`.
+2.  Implementar ou corrigir a lógica que determina qual painel e feed devem ser exibidos com base na categoria do usuário.
+3.  Testar a funcionalidade com as credenciais fornecidas para garantir que o painel e o feed da categoria "LOJISTA" sejam exibidos corretamente.
+4.  Verificar se o erro de exibição da categoria "PRESTADOR" foi completamente eliminado.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
