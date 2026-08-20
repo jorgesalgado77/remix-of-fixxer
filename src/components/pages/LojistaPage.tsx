@@ -425,10 +425,10 @@ export function LojistaDashboard() {
 
 
   return (
-    <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
+    <div className="flex h-screen bg-black font-sans text-white overflow-y-auto">
       <ProfileSummaryCard role={userRole === 'admin' ? 'lojista' : userRole as any} variant="sidebar" />
       <div className="flex-1 flex flex-col min-w-0 lg:pl-72 relative z-0">
-        <div className="pt-20 lg:pt-0 relative z-[60]">
+        <div className="sticky top-0 z-[100] bg-black">
            <ProfileHeader role="lojista" />
         </div>
 
@@ -582,7 +582,7 @@ export function LojistaDashboard() {
       </aside>
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 overflow-y-auto scrollbar-none bg-[#050505] pt-16 md:pt-0 relative z-0">
+      <main className="flex-1 bg-[#050505] pt-16 md:pt-0 relative z-0">
         <div className="p-4 md:p-8 space-y-8">
           <ProfileHeader 
             role="lojista" 
