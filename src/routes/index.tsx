@@ -1,5 +1,33 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-// corrija, no painel da categoria lojista, o feed dos cards esta passanfo por tras do card e da barra de botoes de ação corrija, tudo deve ser completamente visivel, sem sobreposições,
+/**
+ * ## Correção de Erro de Mistura de Dados entre Categorias
+ *
+ * **Problema:**
+ *
+ * Atualmente, os dados e informações das diferentes categorias (ex: lojista, prestador) estão sendo misturados incorretamente durante o login e a exibição. Isso resulta na persistência de padrões e dados de uma categoria em outra, além da incorreta atribuição de cores padrão.
+ *
+ * **Exemplo:**
+ *
+ * * As cores padrão da categoria "lojista" (azul ciano) estão aparecendo na categoria "prestador" (laranja âmbar).
+ * * Padrões e dados de uma categoria estão sendo exibidos indevidamente em outras.
+ *
+ * **Objetivo:**
+ *
+ * Garantir que cada categoria logada mantenha exclusivamente suas próprias informações e dados, incluindo cores padrão, sem interferência de outras categorias.
+ *
+ * **Requisitos Técnicos:**
+ *
+ * 1. **Isolamento de Dados por Categoria:** Implementar um mecanismo que assegure o isolamento completo dos dados e configurações de cada categoria. Ao logar em uma categoria específica, apenas os dados e padrões pertencentes a essa categoria devem ser carregados e exibidos.
+ * 2. **Persistência de Padrões da Categoria:** Ao logar como "lojista", os padrões e dados específicos da categoria "lojista" devem ser persistidos. O mesmo se aplica a todas as outras categorias existentes.
+ * 3. **Gerenciamento de Cores Padrão:** As cores padrão de cada categoria devem ser rigidamente controladas. As cores de uma categoria (ex: azul ciano para lojista) não devem ser aplicadas ou misturadas com as cores de outra categoria (ex: laranja âmbar para prestador).
+ *
+ * **Passos para Implementação:**
+ *
+ * 1. **Análise do Código Existente:** Identificar os pontos no código onde ocorre a mistura de dados e a atribuição incorreta de cores.
+ * 2. **Refatoração da Lógica de Login:** Modificar a lógica de login para garantir que, ao autenticar um usuário em uma categoria, apenas os dados e configurações associados a essa categoria sejam carregados.
+ * 3. **Implementação de Mecanismos de Isolamento:** Desenvolver ou refinar mecanismos (ex: escopos de dados, gerenciamento de estado) que garantam o isolamento dos dados entre as categorias.
+ * 4. **Validação e Teste:** Realizar testes exaustivos para verificar se os dados e cores de cada categoria estão corretamente isolados e se não há mais misturas indevidas.
+ */
 import { 
   ShieldCheck, 
   CreditCard,
