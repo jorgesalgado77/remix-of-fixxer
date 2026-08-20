@@ -15,6 +15,7 @@ export interface CanonicalIdentity {
   isVerified: boolean;
   planId: string;
   createdAt: string;
+  planRenewsAt: string | null;
   karmaScore?: number;
   lastActiveAt: string | null;
   verificationStatus: "none" | "pending" | "verified" | "rejected";
