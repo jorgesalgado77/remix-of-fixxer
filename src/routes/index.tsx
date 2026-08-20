@@ -37,37 +37,33 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
       <div className="hidden">
-        ## Tarefa: Otimização de Interface de Loja Virtual
+        ## Correção de Duplicidade e Layout de Card de Usuário
 
-**Objetivo:** Refinar a experiência do usuário em uma loja virtual, corrigindo problemas visuais e de conteúdo em diferentes dispositivos.
+**Problema:**
 
-**Funcionalidades Solicitadas:**
+A imagem fornecida mostra itens circulados em vermelho que estão duplicados.
 
-1.  **Remoção de Elementos:**
-    *   Identificar e remover todos os itens circulados em vermelho na imagem fornecida.
+**Objetivo:**
 
-2.  **Correção de Conteúdo na Página `/lojista`:**
-    *   Garantir que todos os cards de produtos ausentes na página `/lojista` sejam exibidos corretamente.
+Substituir os itens duplicados pelo card de informações do usuário, que deve conter:
 
-3.  **Ajustes Visuais Gerais:**
-    *   Corrigir todas as visualizações da interface, assegurando a correta renderização em:
-        *   Desktop
-        *   Tablet
-        *   Mobile (celular)
+*   Foto de perfil
+*   Nome de exibição
+*   Saldo de moedas
+*   Outras informações relevantes (a serem definidas com base no contexto visual)
 
-**Requisitos Técnicos:**
+**Requisitos de Layout:**
 
-*   Acesso à imagem de referência para identificação dos itens a serem removidos.
-*   Acesso ao código-fonte da loja virtual para realizar as modificações.
-*   Capacidade de testar as alterações em diferentes tamanhos de tela e dispositivos.
+*   O card do usuário deve ser exibido sem espaço adicional no topo.
+*   O layout geral deve ser organizado para apresentar todas as informações do usuário de forma clara e correta.
 
-**Passos Necessários:**
+**Passos para Implementação:**
 
-1.  Analisar a imagem fornecida e identificar os elementos marcados em vermelho.
-2.  Implementar as alterações de código para remover os elementos identificados.
-3.  Verificar a página `/lojista` para identificar e corrigir a exibição de cards faltantes.
-4.  Realizar testes de responsividade em resoluções de desktop, tablet e mobile.
-5.  Garantir que todas as correções visuais estejam aplicadas e consistentes em todos os dispositivos.
+1.  Identificar e remover os elementos duplicados marcados em vermelho.
+2.  Criar um componente de card para exibir as informações do usuário.
+3.  Integrar o componente do card no local dos elementos duplicados.
+4.  Ajustar o layout para garantir que o card e as informações contidas nele sejam exibidos corretamente, sem sobreposição ou espaços indesejados.
+5.  Garantir que o saldo de moedas e outras informações relevantes sejam carregados e exibidos adequadamente.
       </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
