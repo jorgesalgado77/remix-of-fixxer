@@ -35,6 +35,17 @@ function Index() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 overflow-x-hidden">
+      <div className="hidden">
+        Verifique se a tabela public.provider_profiles já existe e se os campos user_id, display_name e avatar_url foram criados corretamente no Supabase externo.
+
+Execute o script sql/FIXXER_CORE_BASE_TABLES_REMEDY.sql no meu Supabase externo e confirme que não há mais erros 42P01 nem falhas de RLS.
+
+Implemente policies de INSERT/UPDATE para public.provider_profiles e confirme que o usuário autenticado consegue sincronizar seus dados após o login.
+
+Reexecute a sincronização dos dados de Jorge Salgado jorgecriare2021@gmail.com, este é um usuario categoria PRESTADOR  e não é ADMIN MASTER, não deve ter os acessos de admin master, não confunda e misture as permissões do usuarios  para atualizar provider_profiles e profiles com consistência.
+
+Adicione uma checagem automática no app para detectar quando public.provider_profiles estiver ausente e mostrar uma mensagem de erro acionável antes de tentar carregar o usuário.
+      </div>
       {/* HEADER / NAVBAR FIXA */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
