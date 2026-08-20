@@ -177,6 +177,7 @@ export async function resolveIdentity(
     id: userId,
     displayName,
     fullName: effectiveProfile.full_name || null,
+    email: effectiveProfile.email || null,
     avatarUrl: validatedAvatar,
     bio: effectiveProfile.bio || effectiveProfile.about_bio || null,
     isOfficial: !!(effectiveProfile as any).is_official,
@@ -189,6 +190,7 @@ export async function resolveIdentity(
     lastActiveAt: effectiveProfile.last_active_at || null,
     verificationStatus: effectiveProfile.verification_status || (effectiveProfile.is_verified ? "verified" : "none"),
     verificationNote: effectiveProfile.verification_note || null,
+    planRenewsAt: effectiveProfile.plan_renews_at || null,
   };
 
   // CÁLCULO DE ANTIGUIDADE REAL

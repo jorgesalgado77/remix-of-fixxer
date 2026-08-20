@@ -10,23 +10,25 @@
  * Usa dados do próprio usuário via supabaseExternal. Se algum campo estiver
  * ausente, o card degrada graciosamente (sem quebrar layout).
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { MapPin, ShieldCheck, Star, User as UserIcon } from "lucide-react";
 import { NotificationsCenter } from "@/components/NotificationsCenter";
 import { ReviewsModal, type Review } from "@/components/ReviewsModal";
-import { supabaseExternal } from "@/lib/supabaseExternal";
 import { PlanBadge } from "@/components/PlanBadge";
 import { GoldMedalBadge } from "@/components/GoldMedalBadge";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import type { PanelRole } from "@/components/PanelActions";
 import { getCategoryTheme } from "@/lib/category-colors";
+import { useProfile } from "@/hooks/use-profile";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ProfileLite = {
   id: string;
   display_name?: string | null;
   company_name?: string | null;
   full_name?: string | null;
+  email?: string | null;
   avatar_url?: string | null;
   logo_url?: string | null;
   city?: string | null;
@@ -80,142 +82,35 @@ export function ProfileSummaryCard({
   variant?: "auto" | "inline" | "sidebar";
   className?: string;
 }) {
-  const [profile, setProfile] = useState<ProfileLite | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const isMaster = window.localStorage.getItem('fixxer:master-bypass') === 'true';
-        const auth = window.localStorage.getItem("fixxer-auth-token-v1") || window.localStorage.getItem("sb-rnhgpxembtgupxnrohxo-auth-token");
-        const lastCat = localStorage.getItem('fixxer:last-category');
-        const bypassUid = localStorage.getItem('fixxer:bypass-uid');
-        
-        const uid = isMaster 
-          ? (bypassUid || (lastCat === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9')) 
-          : (auth ? JSON.parse(auth)?.user?.id : null);
-        
-        if (uid) {
-          const cachedRaw = window.localStorage.getItem("fixxer_identity_cache_v1.3");
-          const identities = cachedRaw ? JSON.parse(cachedRaw) : {};
-          const res = identities[uid];
-          
-          if (res) {
-            console.log("[ProfileSummaryCard] Hidratação síncrona com dados do cache:", res.identity.displayName);
-            return {
-              id: res.identity.id,
-              display_name: res.identity.displayName,
-              full_name: res.identity.fullName,
-              avatar_url: res.identity.avatarUrl,
-              company_name: res.specializations?.store?.company_name || 
-                            res.specializations?.supplier?.company_name || 
-                            res.identity.displayName,
-              logo_url: res.specializations?.store?.logo_url || 
-                        res.specializations?.supplier?.logo_url || 
-                        res.specializations?.provider?.avatar_url || 
-                        res.identity.avatarUrl,
-              city: res.specializations?.store?.city || 
-                    res.specializations?.provider?.city || 
-                    res.specializations?.supplier?.city || null,
-              state: res.specializations?.store?.state || 
-                     res.specializations?.provider?.state || 
-                     res.specializations?.supplier?.state || null,
-              plan_id: res.identity.planId,
-              karma_score: res.identity.karmaScore,
-              is_verified: res.identity.isVerified
-            };
-          }
-        }
-      } catch (e) {
-        console.warn("[ProfileSummaryCard] Erro na hidratação inicial:", e);
-      }
-    }
-    return null;
-  });
-  const [rating, setRating] = useState<{ avg: number; count: number } | null>(null);
-  const [allReviews, setAllReviews] = useState<Review[]>([]);
+  const { data: resolved, isLoading: loading } = useProfile();
   const [showReviewsModal, setShowReviewsModal] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    const loadProfile = async () => {
-      try {
-        const auth = window.localStorage.getItem("fixxer-auth-token-v1") || window.localStorage.getItem("sb-rnhgpxembtgupxnrohxo-auth-token");
-        const isMaster = window.localStorage.getItem('fixxer:master-bypass') === 'true';
-        const bypassUid = localStorage.getItem('fixxer:bypass-uid');
-        const uid = isMaster ? (bypassUid || (localStorage.getItem('fixxer:last-category') === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9')) : (auth ? JSON.parse(auth)?.user?.id : null);
-        if (!uid) {
-          console.warn("[ProfileSummaryCard] Sem UID na sessão");
-          return;
-        }
+  const profile = resolved ? {
+    id: resolved.identity.id,
+    display_name: resolved.identity.displayName,
+    full_name: resolved.identity.fullName,
+    email: resolved.identity.email,
+    avatar_url: resolved.identity.avatarUrl,
+    company_name: (resolved.specializations as any)?.store?.company_name || 
+                  (resolved.specializations as any)?.supplier?.company_name || 
+                  resolved.identity.displayName,
+    logo_url: (resolved.specializations as any)?.store?.logo_url || 
+              (resolved.specializations as any)?.supplier?.logo_url || 
+              (resolved.specializations as any)?.provider?.avatar_url || 
+              resolved.identity.avatarUrl,
+    city: (resolved.specializations as any)?.store?.city || 
+          (resolved.specializations as any)?.provider?.city || 
+          (resolved.specializations as any)?.supplier?.city || null,
+    state: (resolved.specializations as any)?.store?.state || 
+           (resolved.specializations as any)?.provider?.state || 
+           (resolved.specializations as any)?.supplier?.state || null,
+    plan_id: resolved.identity.planId,
+    plan_renews_at: resolved.identity.planRenewsAt,
+    karma_score: resolved.identity.karmaScore,
+    is_verified: resolved.identity.isVerified
+  } : null;
 
-        const { resolveIdentity } = await import("@/lib/identity/identity-service");
-        // Forçamos o refresh uma vez no mount para garantir o estado inicial, 
-        // mas mantemos refresh: false nas navegações subsequentes via cache.
-        const resolved = await resolveIdentity(uid as string, { refresh: isMaster });
-        
-        if (!cancelled && resolved) {
-          const prof: ProfileLite = {
-            id: resolved.identity.id,
-            display_name: resolved.identity.displayName,
-            full_name: resolved.identity.fullName,
-            avatar_url: resolved.identity.avatarUrl,
-            // Prioriza nomes e logos profissionais/empresa vindos das especializações
-            company_name: (resolved.specializations as any)?.store?.company_name || 
-                          (resolved.specializations as any)?.supplier?.company_name || 
-                          resolved.identity.displayName,
-            logo_url: (resolved.specializations as any)?.store?.logo_url || 
-                      (resolved.specializations as any)?.supplier?.logo_url || 
-                      (resolved.specializations as any)?.provider?.avatar_url || 
-                      resolved.identity.avatarUrl,
-            city: (resolved.specializations as any)?.store?.city || 
-                  (resolved.specializations as any)?.provider?.city || 
-                  (resolved.specializations as any)?.supplier?.city || null,
-            state: (resolved.specializations as any)?.store?.state || 
-                   (resolved.specializations as any)?.provider?.state || 
-                   (resolved.specializations as any)?.supplier?.state || null,
-            plan_id: resolved.identity.planId,
-            karma_score: resolved.identity.karmaScore,
-            is_verified: resolved.identity.isVerified
-          };
-          
-          console.log("[ProfileSummaryCard] Aplicando Perfil Consistente:", {
-            uid,
-            name: prof.display_name,
-            hasLogo: !!prof.logo_url
-          });
-          
-          setProfile(prof);
-        }
-      } catch (err) {
-        console.error("[ProfileSummaryCard] Erro crítico no carregamento:", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    loadProfile();
-
-    // Inscrição para mudanças de autenticação - força refetch imediato
-    const { data: authListener } = supabaseExternal.auth.onAuthStateChange(async (event, session) => {
-      console.log(`[ProfileSummaryCard] Auth Event: ${event}`, !!session);
-      if (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "INITIAL_SESSION") {
-        const uid = session?.user?.id || (window.localStorage.getItem('fixxer:master-bypass') === 'true' ? (window.localStorage.getItem('fixxer:last-category') === 'admin' ? '6ba65048-803f-44f6-88d2-24d04fee1a0f' : 'b3378b88-5c46-4e50-9c2e-4b7264a4d6e9') : null);
-        if (uid) {
-          loadProfile();
-        }
-      } else if (event === "SIGNED_OUT") {
-        if (window.localStorage.getItem('fixxer:master-bypass') !== 'true') {
-          setProfile(null);
-        }
-      }
-    });
-
-    return () => { 
-      cancelled = true; 
-      if (authListener?.subscription) {
-        authListener.subscription.unsubscribe();
-      }
-    };
-  }, []);
+  const allReviews: Review[] = []; // Placeholder para reviews se necessário
 
 
   const name = profile?.display_name || profile?.company_name || profile?.full_name || (loading ? "Carregando..." : "Usuário");
@@ -278,7 +173,7 @@ export function ProfileSummaryCard({
 
             <div className="flex-1 min-w-0">
               <div className="text-sm font-black uppercase italic tracking-tighter text-white truncate max-w-[200px]" id="user-display-name-card">
-                {name}
+                {loading ? <Skeleton className="h-4 w-32 bg-white/10" /> : name}
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
@@ -287,6 +182,22 @@ export function ProfileSummaryCard({
                 </div>
                 <AvailabilityBadge userId={profile?.id ?? null} className="!border-none !bg-transparent !px-0" />
               </div>
+              
+              {loading ? (
+                <Skeleton className="mt-1 h-3 w-40 bg-white/10" />
+              ) : profile?.email ? (
+                <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/10 w-fit">
+                  <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
+                  <span className="text-[9px] font-medium text-white/50 lowercase tracking-tight truncate max-w-[160px]">
+                    {profile.email}
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-1 px-2 py-0.5 rounded bg-white/5 border border-dashed border-white/10 w-fit">
+                   <span className="text-[9px] font-medium text-white/20 lowercase tracking-tight">e-mail não disponível</span>
+                </div>
+              )}
+
               {location && (
                 <div className="mt-1.5 flex items-center gap-1 text-[10px] text-white/60 font-bold uppercase tracking-widest">
                   <MapPin className="w-3 h-3 text-primary" aria-hidden="true" />

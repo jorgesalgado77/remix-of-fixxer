@@ -8,14 +8,15 @@ export interface CanonicalIdentity {
   id: string;
   displayName: string;
   fullName: string | null;
+  email: string | null;
   avatarUrl: string | null;
   bio: string | null;
   isOfficial: boolean;
   isVerified: boolean;
   planId: string;
-   createdAt: string;
-   karmaScore?: number;
-
+  createdAt: string;
+  planRenewsAt: string | null;
+  karmaScore?: number;
   lastActiveAt: string | null;
   verificationStatus: "none" | "pending" | "verified" | "rejected";
   verificationNote?: string | null;
