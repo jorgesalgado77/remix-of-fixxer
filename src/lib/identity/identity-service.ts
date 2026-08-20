@@ -177,6 +177,7 @@ export async function resolveIdentity(
     id: userId,
     displayName,
     fullName: effectiveProfile.full_name || null,
+    email: effectiveProfile.email || null,
     avatarUrl: validatedAvatar,
     bio: effectiveProfile.bio || effectiveProfile.about_bio || null,
     isOfficial: !!(effectiveProfile as any).is_official,
